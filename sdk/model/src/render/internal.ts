@@ -1,5 +1,10 @@
 import type { Optional } from "utility-types";
-import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
+import type {
+  Branded,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
+  StringifiedJson,
+} from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -22,7 +27,6 @@ import type {
   PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -167,13 +171,8 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   specFrameDiscoverColumns(
     handle: string,
-    request: PFrameInternal.DiscoverColumnsRequest,
-  ): PFrameInternal.DiscoverColumnsResponse;
-
-  specFrameFindColumns(
-    handle: string,
-    request: PFrameInternal.FindColumnsRequest,
-  ): PFrameInternal.FindColumnsResponse;
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse;
 
   specFrameDispose(handle: string): void;
 

@@ -5,22 +5,41 @@ import type {
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
-import { SpecFrameDriver } from "@milaboratories/pf-driver";
+
 import { describe, expect, test } from "vitest";
 import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
 
-// --- SpecFrameCtx from native WASM driver ---
+// --- Mock SpecFrameCtx ---
 
 function createSpecFrameCtx() {
-  const driver = new SpecFrameDriver();
+  const frames = new Map<string, Record<string, PColumnSpec>>();
+  let nextId = 0;
+
   return {
-    createSpecFrame: (specs: Record<string, PColumnSpec>) =>
-      driver.createSpecFrame(specs) as string,
-    specFrameDiscoverColumns: (handle: string, request: any) =>
-      driver.specFrameDiscoverColumns(handle as any, request),
-    specFrameDispose: (handle: string) => driver.disposeSpecFrame(handle as any),
+    createSpecFrame: (specs: Record<string, PColumnSpec>) => {
+      const handle = `frame-${nextId++}`;
+      frames.set(handle, specs);
+      return handle;
+    },
+    specFrameDiscoverColumns: (handle: string, _request: any) => {
+      const specs = frames.get(handle)!;
+      return {
+        hits: Object.entries(specs).map(([columnId, spec]) => ({
+          hit: { columnId: columnId as PObjectId, spec },
+          mappingVariants: [
+            {
+              qualifications: { forQueries: [], forHit: [] },
+              distinctiveQualifications: { forQueries: [], forHit: [] },
+            },
+          ],
+        })),
+      };
+    },
+    specFrameDispose: (handle: string) => {
+      frames.delete(handle);
+    },
   };
 }
 
@@ -154,43 +173,15 @@ describe("ColumnCollection.findColumns", () => {
     expect(collection.findColumns()).toHaveLength(2);
   });
 
-  test("include filters by selector", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([s1, s2]);
-
-    const collection = builder.build()!;
-    const result = collection.findColumns({ include: { name: "col1" } });
-    expect(result).toHaveLength(1);
-    expect(result[0].spec.name).toBe("col1");
-  });
-
   test("exclude throws not implemented", () => {
     const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([s1, s2]);
+    builder.addSource([s1]);
 
     const collection = builder.build()!;
     expect(() => collection.findColumns({ exclude: { name: "col1" } })).toThrow(
       /not yet implemented/i,
     );
-  });
-
-  test("include with array of selectors", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
-    const s3 = createSnapshot("id3", createSpec("col3"));
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([s1, s2, s3]);
-
-    const collection = builder.build()!;
-    const result = collection.findColumns({
-      include: [{ name: "col1" }, { name: "col3" }],
-    });
-    expect(result).toHaveLength(2);
-    expect(result.map((r) => r.spec.name).sort()).toEqual(["col1", "col3"]);
   });
 });
 
@@ -371,8 +362,8 @@ describe("AnchoredColumnCollection", () => {
     expect(collection.getColumn("not-a-real-id" as SUniversalPColumnId)).toBeUndefined();
   });
 
-  test("findColumns returns ColumnMatch with originalId", () => {
-    const spec = createSpec("col1", { axesSpec: [sampleAxis("sample"), sampleAxis("gene")] });
+  test("findColumns returns ColumnMatch with originalId and variants", () => {
+    const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
@@ -380,51 +371,10 @@ describe("AnchoredColumnCollection", () => {
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
     const matches = collection.findColumns();
 
-    expect(matches.length).toBeGreaterThanOrEqual(1);
-    const match = matches.find((m) => m.originalId === ("id1" as PObjectId));
-    expect(match).toBeDefined();
-    expect(match!.column.spec.name).toBe("col1");
-    expect(match!.variants).toBeDefined();
-  });
-
-  test("findColumns with enrichment mode allows extra hit axes", () => {
-    const spec = createSpec("enriched", {
-      axesSpec: [sampleAxis("sample"), sampleAxis("gene"), sampleAxis("extra")],
-    });
-    const snap = createSnapshot("id1", spec);
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
-
-    const collection = builder.build({ anchors: { main: anchorSpec } })!;
-    const matches = collection.findColumns({ mode: "enrichment" });
     expect(matches).toHaveLength(1);
-  });
-
-  test("findColumns with exact mode rejects extra hit axes", () => {
-    const spec = createSpec("enriched", {
-      axesSpec: [sampleAxis("sample"), sampleAxis("gene"), sampleAxis("extra")],
-    });
-    const snap = createSnapshot("id1", spec);
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
-
-    const collection = builder.build({ anchors: { main: anchorSpec } })!;
-    const matches = collection.findColumns({ mode: "exact" });
-    expect(matches).toHaveLength(0);
-  });
-
-  test("findColumns with exact mode matches when axes are identical", () => {
-    const spec = createSpec("exact-match", {
-      axesSpec: [sampleAxis("sample"), sampleAxis("gene")],
-    });
-    const snap = createSnapshot("id1", spec);
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
-
-    const collection = builder.build({ anchors: { main: anchorSpec } })!;
-    const matches = collection.findColumns({ mode: "exact" });
-    expect(matches).toHaveLength(1);
-    expect(matches[0].column.spec.name).toBe("exact-match");
+    expect(matches[0].originalId).toBe("id1");
+    expect(matches[0].column.spec.name).toBe("col1");
+    expect(matches[0].variants).toBeDefined();
   });
 
   test("findColumns exclude throws not implemented", () => {

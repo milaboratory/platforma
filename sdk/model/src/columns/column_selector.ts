@@ -1,43 +1,12 @@
-import type { RegExpString } from "@milaboratories/helpers";
-import type { PColumnSpec, ValueType } from "@milaboratories/pl-model-common";
+import type {
+  MultiAxisSelector,
+  MultiColumnSelector,
+  PColumnSpec,
+  StringMatcher,
+  ValueType,
+} from "@milaboratories/pl-model-common";
 
-// --- StringMatcher ---
-
-/** Matches a string value exactly. */
-export interface ExactMatcher {
-  readonly type: "exact";
-  readonly value: string;
-}
-
-/** Matches a string value against a regex pattern (full match). */
-export interface RegexMatcher {
-  readonly type: "regex";
-  readonly value: RegExpString;
-}
-
-export type StringMatcher = ExactMatcher | RegexMatcher;
-
-// --- Strict types ---
-
-/** Strict axis selector — all fields use arrays of StringMatcher. */
-export interface AxisSelector {
-  name?: StringMatcher[];
-  type?: ValueType[];
-  domain?: Record<string, StringMatcher[]>;
-  contextDomain?: Record<string, StringMatcher[]>;
-  annotations?: Record<string, StringMatcher[]>;
-}
-
-/** Strict column selector — AND across fields within a single selector. */
-export interface ColumnSelector {
-  name?: StringMatcher[];
-  type?: ValueType[];
-  domain?: Record<string, StringMatcher[]>;
-  contextDomain?: Record<string, StringMatcher[]>;
-  annotations?: Record<string, StringMatcher[]>;
-  axes?: AxisSelector[];
-  partialAxesMatch?: boolean;
-}
+export type { StringMatcher } from "@milaboratories/pl-model-common";
 
 // --- Relaxed types ---
 
@@ -73,10 +42,10 @@ export type ColumnSelectorInput = RelaxedColumnSelector | RelaxedColumnSelector[
 // --- Normalization ---
 
 function normalizeStringMatchers(input: RelaxedStringMatchers): StringMatcher[] {
-  if (typeof input === "string") return [{ type: "regex", value: input as RegExpString }];
+  if (typeof input === "string") return [{ type: "regex", value: input }];
   if (!Array.isArray(input)) return [input];
   return input.map((v) =>
-    typeof v === "string" ? { type: "regex" as const, value: v as RegExpString } : v,
+    typeof v === "string" ? ({ type: "regex", value: v } satisfies StringMatcher) : v,
   );
 }
 
@@ -92,8 +61,10 @@ function normalizeTypes(input: ValueType | ValueType[]): ValueType[] {
   return Array.isArray(input) ? input : [input];
 }
 
-function normalizeAxisSelector(input: RelaxedAxisSelector): AxisSelector {
-  const result: AxisSelector = {};
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
+function normalizeAxisSelector(input: RelaxedAxisSelector): MultiAxisSelector {
+  const result: Mutable<MultiAxisSelector> = {};
   if (input.name !== undefined) result.name = normalizeStringMatchers(input.name);
   if (input.type !== undefined) result.type = normalizeTypes(input.type);
   if (input.domain !== undefined) result.domain = normalizeRecord(input.domain);
@@ -104,13 +75,13 @@ function normalizeAxisSelector(input: RelaxedAxisSelector): AxisSelector {
 }
 
 /** Normalize relaxed input to strict ColumnSelector[]. */
-export function normalizeSelectors(input: ColumnSelectorInput): ColumnSelector[] {
+export function normalizeSelectors(input: ColumnSelectorInput): MultiColumnSelector[] {
   const arr = Array.isArray(input) ? input : [input];
   return arr.map(normalizeSingleSelector);
 }
 
-function normalizeSingleSelector(input: RelaxedColumnSelector): ColumnSelector {
-  const result: ColumnSelector = {};
+function normalizeSingleSelector(input: RelaxedColumnSelector): MultiColumnSelector {
+  const result: Mutable<MultiColumnSelector> = {};
   if (input.name !== undefined) result.name = normalizeStringMatchers(input.name);
   if (input.type !== undefined) result.type = normalizeTypes(input.type);
   if (input.domain !== undefined) result.domain = normalizeRecord(input.domain);
@@ -164,7 +135,10 @@ function getCombinedContextDomain(spec: PColumnSpec): Record<string, string> {
   return result;
 }
 
-function matchAxisSelector(axis: PColumnSpec["axesSpec"][number], selector: AxisSelector): boolean {
+function matchAxisSelector(
+  axis: PColumnSpec["axesSpec"][number],
+  selector: MultiAxisSelector,
+): boolean {
   if (selector.name !== undefined && !matchStringValue(axis.name, selector.name)) return false;
   if (selector.type !== undefined && !selector.type.includes(axis.type as ValueType)) return false;
   if (selector.domain !== undefined && !matchRecordField(axis.domain, selector.domain))
@@ -186,7 +160,7 @@ function matchAxisSelector(axis: PColumnSpec["axesSpec"][number], selector: Axis
 }
 
 /** Check if a PColumnSpec matches a single strict ColumnSelector. */
-export function matchColumn(spec: PColumnSpec, selector: ColumnSelector): boolean {
+export function matchColumn(spec: PColumnSpec, selector: MultiColumnSelector): boolean {
   if (selector.name !== undefined && !matchStringValue(spec.name, selector.name)) return false;
   if (selector.type !== undefined && !selector.type.includes(spec.valueType)) return false;
 
@@ -222,7 +196,7 @@ export function matchColumn(spec: PColumnSpec, selector: ColumnSelector): boolea
 }
 
 /** Check if a PColumnSpec matches any of the selectors (OR across array). */
-export function matchColumnSelectors(selectors: ColumnSelector[], spec: PColumnSpec): boolean {
+export function matchColumnSelectors(selectors: MultiColumnSelector[], spec: PColumnSpec): boolean {
   return selectors.some((sel) => matchColumn(spec, sel));
 }
 

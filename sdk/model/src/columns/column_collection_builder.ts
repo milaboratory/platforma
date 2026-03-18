@@ -1,16 +1,17 @@
 import type {
+  AxisQualification,
+  ColumnAxesWithQualifications,
+  DiscoverColumnsConstraints,
+  MultiColumnSelector,
   NativePObjectId,
   PColumnSpec,
   PlRef,
   PObjectId,
-  SingleAxisSelector,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { AnchoredIdDeriver, deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type { ColumnSelectorInput } from "./column_selector";
 import { normalizeSelectors } from "./column_selector";
-import type { ColumnSelector, AxisSelector } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { createColumnSnapshot } from "./column_snapshot";
@@ -67,7 +68,7 @@ export interface AnchoredFindColumnsOptions extends FindColumnsOptions {
   /** Controls axis matching behavior. Default: 'enrichment'. */
   mode?: MatchingMode;
   /** Maximum linker hops for cross-domain discovery (0 = direct only, default: 4). */
-  maxLinkerHops?: number;
+  maxHops?: number;
 }
 
 /** Result of anchored discovery — column snapshot + routing info. */
@@ -78,14 +79,6 @@ export interface ColumnMatch {
   readonly originalId: PObjectId;
   /** Match variants — different paths/qualifications that reach this column. */
   readonly variants: MatchVariant[];
-}
-
-/** Qualification applied to a single axis to make it compatible during integration. */
-export interface AxisQualification {
-  /** Axis selector identifying which axis is qualified. */
-  readonly axis: SingleAxisSelector;
-  /** Additional context domain entries applied to the axis. */
-  readonly contextDomain: Record<string, string>;
 }
 
 /** Qualifications needed for both query (already-integrated) columns and the hit column. */
@@ -220,7 +213,7 @@ export class ColumnCollectionBuilder {
 
 // --- Permissive constraints for plain (non-anchored) filtering ---
 
-const PLAIN_CONSTRAINTS: PFrameInternal.DiscoverColumnsConstraints = {
+const PLAIN_CONSTRAINTS: DiscoverColumnsConstraints = {
   allowFloatingSourceAxes: true,
   allowFloatingHitAxes: true,
   allowSourceQualifications: false,
@@ -297,7 +290,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly idDeriver: AnchoredIdDeriver;
   private readonly specFrameHandle: string;
-  private readonly anchorAxes: PFrameInternal.ColumnAxesWithQualifications[];
+  private readonly anchorAxes: ColumnAxesWithQualifications[];
   /** Reverse lookup: SUniversalPColumnId → PObjectId */
   private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
   public readonly columnListComplete: boolean;
@@ -396,35 +389,9 @@ function remapSnapshot<Id extends PObjectId>(
   return createColumnSnapshot(id, col.spec, col.dataStatus, col.data);
 }
 
-// --- Selector conversion helpers ---
-
-type Mutable<T> = { -readonly [K in keyof T]: T[K] };
-
-function convertAxisSelector(sel: AxisSelector): PFrameInternal.MultiAxisSelector {
-  const result: Mutable<PFrameInternal.MultiAxisSelector> = {};
-  if (sel.name) result.name = sel.name;
-  if (sel.type) result.type = sel.type as string[];
-  if (sel.domain) result.domain = sel.domain;
-  if (sel.contextDomain) result.contextDomain = sel.contextDomain;
-  if (sel.annotations) result.annotations = sel.annotations;
-  return result;
-}
-
-function convertColumnSelector(sel: ColumnSelector): PFrameInternal.MultiColumnSelector {
-  const result: Mutable<PFrameInternal.MultiColumnSelector> = {};
-  if (sel.name) result.name = sel.name;
-  if (sel.type) result.type = sel.type as string[];
-  if (sel.domain) result.domain = sel.domain;
-  if (sel.contextDomain) result.contextDomain = sel.contextDomain;
-  if (sel.annotations) result.annotations = sel.annotations;
-  if (sel.axes) result.axes = sel.axes.map(convertAxisSelector);
-  if (sel.partialAxesMatch !== undefined) result.partialAxesMatch = sel.partialAxesMatch;
-  return result;
-}
-
-/** Convert SDK ColumnSelectorInput to WASM MultiColumnSelector[]. */
-function toMultiColumnSelectors(input: ColumnSelectorInput): PFrameInternal.MultiColumnSelector[] {
-  return normalizeSelectors(input).map(convertColumnSelector);
+/** Normalize SDK ColumnSelectorInput to MultiColumnSelector[]. */
+function toMultiColumnSelectors(input: ColumnSelectorInput): MultiColumnSelector[] {
+  return normalizeSelectors(input);
 }
 
 // --- Anchor resolution ---
@@ -461,7 +428,7 @@ function resolveAnchorSpecs(
 
 // --- MatchingMode → DiscoverColumnsConstraints ---
 
-function matchingModeToConstraints(mode: MatchingMode): PFrameInternal.DiscoverColumnsConstraints {
+function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsConstraints {
   switch (mode) {
     case "enrichment":
       return {

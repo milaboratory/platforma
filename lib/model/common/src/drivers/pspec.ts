@@ -1,0 +1,143 @@
+import type {
+  AxisSpec,
+  PColumnIdAndSpec,
+  PColumnSpec,
+  SingleAxisSelector,
+  ValueType,
+} from "@milaboratories/pl-model-common";
+import type { Branded } from "@milaboratories/helpers";
+
+// --- Discover columns types (duplicated from middle-layer internal_api) ---
+
+/** Matches a string value either exactly or by regex pattern */
+export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
+
+/** Map of key to array of string matchers (OR-ed per key, AND-ed across keys) */
+export type MatcherMap = Record<string, StringMatcher[]>;
+
+/** Selector for matching axes by various criteria */
+export interface MultiAxisSelector {
+  /** Match any of the axis types listed here */
+  readonly type?: ValueType[];
+  /** Match any of the axis names listed here */
+  readonly name?: StringMatcher[];
+  /** Match requires all the domains listed here */
+  readonly domain?: MatcherMap;
+  /** Match requires all the context domains listed here */
+  readonly contextDomain?: MatcherMap;
+  /** Match requires all the annotations listed here */
+  readonly annotations?: MatcherMap;
+}
+
+/** Column selector for discover columns request, matching columns by various criteria.
+ * Multiple selectors are OR-ed: a column matches if it satisfies any selector. */
+export interface MultiColumnSelector {
+  /** Match any of the value types listed here */
+  readonly type?: ValueType[];
+  /** Match any of the names listed here */
+  readonly name?: StringMatcher[];
+  /** Match requires all the domains listed here */
+  readonly domain?: MatcherMap;
+  /** Match requires all the context domains listed here */
+  readonly contextDomain?: MatcherMap;
+  /** Match requires all the annotations listed here */
+  readonly annotations?: MatcherMap;
+  /** Match any of the axis selectors listed here */
+  readonly axes?: MultiAxisSelector[];
+  /** When true (default), allows matching if only a subset of axes match */
+  readonly partialAxesMatch?: boolean;
+}
+
+/** Qualification applied to a single axis to make it compatible during integration. */
+export interface AxisQualification {
+  /** Axis selector identifying which axis is qualified. */
+  readonly axis: SingleAxisSelector;
+  /** Additional context domain entries applied to the axis. */
+  readonly contextDomain: Record<string, string>;
+}
+
+/** Qualifications needed for both query (already-integrated) columns and the hit column. */
+export interface ColumnAxesWithQualifications {
+  /** Already integrated (query) columns with their qualifications. */
+  axesSpec: AxisSpec[];
+  /** Qualifications for each already integrated (query) column. */
+  qualifications: AxisQualification[];
+}
+
+/** Fine-grained constraints controlling axes matching and qualification behavior */
+export interface DiscoverColumnsConstraints {
+  /** Allow source (query) axes that have no match in the hit column */
+  allowFloatingSourceAxes: boolean;
+  /** Allow hit column axes that have no match in the source (query) */
+  allowFloatingHitAxes: boolean;
+  /** Allow source (query) axes to be qualified (contextDomain extended) */
+  allowSourceQualifications: boolean;
+  /** Allow hit column axes to be qualified (contextDomain extended) */
+  allowHitQualifications: boolean;
+}
+
+/** Request for discovering columns compatible with a given axes integration */
+export interface DiscoverColumnsRequest {
+  /** Column filters (OR-ed); empty array matches all columns */
+  columnFilter?: MultiColumnSelector[];
+  /** Already integrated axes with qualifications */
+  axes: ColumnAxesWithQualifications[];
+  /** Constraints controlling axes matching and qualification behavior */
+  constraints: DiscoverColumnsConstraints;
+}
+
+/** Qualifications info for a discover columns response mapping variant */
+export interface DiscoverColumnsResponseQualifications {
+  /** Qualifications for each query (already-integrated) column set */
+  forQueries: AxisQualification[][];
+  /** Qualifications for the hit column */
+  forHit: AxisQualification[];
+}
+
+/** A single mapping variant describing how a hit column can be integrated */
+export interface DiscoverColumnsMappingVariant {
+  /** Full qualifications needed for integration */
+  qualifications: DiscoverColumnsResponseQualifications;
+  /** Distinctive (minimal) qualifications needed for integration */
+  distinctiveQualifications: DiscoverColumnsResponseQualifications;
+}
+
+/** A single hit in the discover columns response */
+export interface DiscoverColumnsResponseHit {
+  /** The column that was found compatible */
+  hit: PColumnIdAndSpec;
+  /** Possible ways to integrate this column with the existing set */
+  mappingVariants: DiscoverColumnsMappingVariant[];
+}
+
+/** Response from discover columns */
+export interface DiscoverColumnsResponse {
+  /** Columns that could be integrated and possible ways to integrate them */
+  hits: DiscoverColumnsResponseHit[];
+}
+
+// --- Spec driver ---
+
+/** Handle to a spec-only PFrame (no data, synchronous operations). */
+export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
+
+/**
+ * Synchronous driver for spec-level PFrame operations.
+ *
+ * Unlike the async PFrameDriver (which works with data), this driver
+ * operates on column specifications only. All methods are synchronous
+ * because the underlying WASM PFrame computes results immediately.
+ */
+export interface PSpecDriver {
+  /** Create a spec-only PFrame from column specs. Returns a handle. */
+  createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle;
+
+  /** Discover columns compatible with given axes integration. */
+  specFrameDiscoverColumns(
+    handle: SpecFrameHandle,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse;
+
+  /** Dispose a spec frame, freeing WASM resources. */
+  disposeSpecFrame(handle: SpecFrameHandle): void;
+}

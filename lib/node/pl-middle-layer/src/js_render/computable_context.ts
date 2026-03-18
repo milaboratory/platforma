@@ -44,9 +44,13 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
-import type { PColumnSpec } from "@milaboratories/pl-model-common";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { SpecFrameDriver } from "@milaboratories/pf-driver";
+import type {
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
+  PColumnSpec,
+  SpecFrameHandle,
+} from "@milaboratories/pl-model-common";
+import { SpecDriver } from "./spec_driver";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -60,7 +64,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
-  private readonly specFrameDriver = new SpecFrameDriver();
+  private readonly specDriver = new SpecDriver();
 
   private readonly meta: Map<string, Block>;
 
@@ -434,34 +438,21 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   // Spec Frames
   //
 
-  public createSpecFrame(specs: Record<string, PColumnSpec>): PFrameInternal.SpecFrameHandle {
-    const handle = this.specFrameDriver.createSpecFrame(specs);
-    this.computableCtx?.addOnDestroy(() => this.specFrameDriver.disposeSpecFrame(handle));
+  public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
+    const handle = this.specDriver.createSpecFrame(specs);
+    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
     return handle;
   }
 
   public specFrameDiscoverColumns(
-    handle: PFrameInternal.SpecFrameHandle,
-    request: PFrameInternal.DiscoverColumnsRequest,
-  ): PFrameInternal.DiscoverColumnsResponse {
-    return this.specFrameDriver.specFrameDiscoverColumns(
-      handle as PFrameInternal.SpecFrameHandle,
-      request,
-    );
+    handle: SpecFrameHandle,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
+    return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
   }
 
-  public specFrameFindColumns(
-    handle: PFrameInternal.SpecFrameHandle,
-    request: PFrameInternal.FindColumnsRequest,
-  ): PFrameInternal.FindColumnsResponse {
-    return this.specFrameDriver.specFrameFindColumns(
-      handle as PFrameInternal.SpecFrameHandle,
-      request,
-    );
-  }
-
-  public specFrameDispose(handle: PFrameInternal.SpecFrameHandle): void {
-    this.specFrameDriver.disposeSpecFrame(handle as PFrameInternal.SpecFrameHandle);
+  public specFrameDispose(handle: SpecFrameHandle): void {
+    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
   }
 
   /**
@@ -910,25 +901,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
         return parent.exportObjectViaJson(
           this.specFrameDiscoverColumns(
-            vm.getString(handle) as PFrameInternal.SpecFrameHandle,
-            parent.importObjectViaJson(request) as PFrameInternal.DiscoverColumnsRequest,
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("specFrameFindColumns", (handle, request) => {
-        return parent.exportObjectViaJson(
-          this.specFrameFindColumns(
-            vm.getString(handle) as PFrameInternal.SpecFrameHandle,
-            parent.importObjectViaJson(request) as PFrameInternal.FindColumnsRequest,
+            vm.getString(handle) as SpecFrameHandle,
+            parent.importObjectViaJson(request) as DiscoverColumnsRequest,
           ),
           undefined,
         );
       });
 
       exportCtxFunction("specFrameDispose", (handle) => {
-        this.specFrameDispose(vm.getString(handle) as PFrameInternal.SpecFrameHandle);
+        this.specFrameDispose(vm.getString(handle) as SpecFrameHandle);
       });
 
       //

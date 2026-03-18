@@ -3,6 +3,8 @@ import type {
   AnyFunction,
   AxisId,
   DataInfo,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
   Option,
   PColumn,
   PColumnLazy,
@@ -26,7 +28,6 @@ import type {
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
   AnchoredIdDeriver,
   collectSpecQueryColumns,
@@ -721,16 +722,9 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 
   public specFrameDiscoverColumns(
     handle: string,
-    request: PFrameInternal.DiscoverColumnsRequest,
-  ): PFrameInternal.DiscoverColumnsResponse {
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
     return this.ctx.specFrameDiscoverColumns(handle, request);
-  }
-
-  public specFrameFindColumns(
-    handle: string,
-    request: PFrameInternal.FindColumnsRequest,
-  ): PFrameInternal.FindColumnsResponse {
-    return this.ctx.specFrameFindColumns(handle, request);
   }
 
   public specFrameDispose(handle: string): void {

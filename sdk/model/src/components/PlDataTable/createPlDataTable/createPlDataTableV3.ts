@@ -17,6 +17,7 @@ import type {
   SpecQueryJoinEntry,
   PColumnSpec,
   PlRef,
+  MultiColumnSelector,
 } from "@milaboratories/pl-model-common";
 import {
   Annotation,
@@ -39,7 +40,7 @@ import { distillFilterSpec } from "../../../filters/distill";
 import type { PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnSelector, ColumnSource, MatchingMode } from "../../../columns";
+import type { ColumnSource, MatchingMode } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { isColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
@@ -139,11 +140,11 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
 
 /** Structured source config — selectors/anchors instead of raw ColumnSource. */
 type ColumnsSelectorConfig = {
-  include?: ColumnSelector | ColumnSelector[];
-  exclude?: ColumnSelector | ColumnSelector[];
+  include?: MultiColumnSelector | MultiColumnSelector[];
+  exclude?: MultiColumnSelector | MultiColumnSelector[];
   anchors?: Record<string, PlRef | PObjectId | PColumnSpec>;
   mode?: MatchingMode;
-  maxLinkerHops?: number;
+  maxHops?: number;
 };
 
 export type createPlDataTableOptionsV3 = {
@@ -206,7 +207,7 @@ export function createPlDataTableV3<A, U>(
         include: options.columns.include,
         exclude: options.columns.exclude,
         mode: options.columns.mode,
-        maxLinkerHops: options.columns.maxLinkerHops,
+        maxHops: options.columns.maxHops,
       }
     : undefined;
   const findResult = collection.findColumns(findOptions);

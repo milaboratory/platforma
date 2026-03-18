@@ -1667,6 +1667,9 @@ importers:
 
   lib/model/common:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../pl-error-like
@@ -2208,6 +2211,9 @@ importers:
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.14(encoding@0.1.13)
+      '@milaboratories/pframes-rs-wasm':
+        specifier: 'catalog:'
+        version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client

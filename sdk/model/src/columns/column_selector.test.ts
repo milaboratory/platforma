@@ -1,6 +1,6 @@
-import type { PColumnSpec } from "@milaboratories/pl-model-common";
+import type { MultiColumnSelector, PColumnSpec } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
-import type { ColumnSelector, RelaxedColumnSelector } from "./column_selector";
+import type { RelaxedColumnSelector } from "./column_selector";
 import {
   matchColumn,
   matchColumnSelectors,
@@ -112,19 +112,19 @@ describe("matchColumn", () => {
   describe("name matching", () => {
     test("exact name match", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/sequence" }] };
+      const sel: MultiColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/sequence" }] };
       expect(matchColumn(s, sel)).toBe(true);
     });
 
     test("exact name mismatch", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/other" }] };
+      const sel: MultiColumnSelector = { name: [{ type: "exact", value: "pl7.app/vdj/other" }] };
       expect(matchColumn(s, sel)).toBe(false);
     });
 
     test("regex name match", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         name: [{ type: "regex", value: "pl7\\.app/vdj/.*" as RegExpString }],
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -132,13 +132,13 @@ describe("matchColumn", () => {
 
     test("regex full match required", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ type: "regex", value: "vdj" as RegExpString }] };
+      const sel: MultiColumnSelector = { name: [{ type: "regex", value: "vdj" as RegExpString }] };
       expect(matchColumn(s, sel)).toBe(false);
     });
 
     test("OR across name matchers", () => {
       const s = spec({ name: "colB" });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         name: [
           { type: "exact", value: "colA" },
           { type: "exact", value: "colB" },
@@ -151,19 +151,19 @@ describe("matchColumn", () => {
   describe("type matching", () => {
     test("single type match", () => {
       const s = spec({ name: "c", valueType: "Int" });
-      const sel: ColumnSelector = { type: ["Int"] };
+      const sel: MultiColumnSelector = { type: ["Int"] };
       expect(matchColumn(s, sel)).toBe(true);
     });
 
     test("type mismatch", () => {
       const s = spec({ name: "c", valueType: "String" });
-      const sel: ColumnSelector = { type: ["Int"] };
+      const sel: MultiColumnSelector = { type: ["Int"] };
       expect(matchColumn(s, sel)).toBe(false);
     });
 
     test("OR across types", () => {
       const s = spec({ name: "c", valueType: "Long" });
-      const sel: ColumnSelector = { type: ["Int", "Long"] };
+      const sel: MultiColumnSelector = { type: ["Int", "Long"] };
       expect(matchColumn(s, sel)).toBe(true);
     });
   });
@@ -171,7 +171,7 @@ describe("matchColumn", () => {
   describe("domain matching", () => {
     test("matches column domain", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy" } });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -184,7 +184,7 @@ describe("matchColumn", () => {
           { name: "axis1", type: "String", domain: { chain: "IGHeavy" }, annotations: {} },
         ] as PColumnSpec["axesSpec"],
       });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -192,7 +192,7 @@ describe("matchColumn", () => {
 
     test("domain key missing fails", () => {
       const s = spec({ name: "c", domain: {} });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         domain: { chain: [{ type: "exact", value: "IGHeavy" }] },
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -200,7 +200,7 @@ describe("matchColumn", () => {
 
     test("multiple domain keys AND-ed", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy", species: "human" } });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         domain: {
           chain: [{ type: "exact", value: "IGHeavy" }],
           species: [{ type: "exact", value: "human" }],
@@ -211,7 +211,7 @@ describe("matchColumn", () => {
 
     test("one domain key mismatch fails", () => {
       const s = spec({ name: "c", domain: { chain: "IGHeavy", species: "mouse" } });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         domain: {
           chain: [{ type: "exact", value: "IGHeavy" }],
           species: [{ type: "exact", value: "human" }],
@@ -224,7 +224,7 @@ describe("matchColumn", () => {
   describe("annotations matching", () => {
     test("exact annotation match", () => {
       const s = spec({ name: "c", annotations: { label: "CDR3" } });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         annotations: { label: [{ type: "exact", value: "CDR3" }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -232,7 +232,7 @@ describe("matchColumn", () => {
 
     test("regex annotation match", () => {
       const s = spec({ name: "c", annotations: { label: "CDR3-length" } });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         annotations: { label: [{ type: "regex", value: ".*CDR3.*" as RegExpString }] },
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -240,7 +240,7 @@ describe("matchColumn", () => {
 
     test("missing annotation key fails", () => {
       const s = spec({ name: "c", annotations: {} });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         annotations: { label: [{ type: "exact", value: "CDR3" }] },
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -255,7 +255,7 @@ describe("matchColumn", () => {
 
     test("partial match (default) — selector axis found", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [{ name: [{ type: "exact", value: "a1" }] }],
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -263,7 +263,7 @@ describe("matchColumn", () => {
 
     test("partial match — selector axis not found", () => {
       const s = withAxes([axis("a1")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [{ name: [{ type: "exact", value: "missing" }] }],
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -271,7 +271,7 @@ describe("matchColumn", () => {
 
     test("exact match — same count and order", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [
           { name: [{ type: "exact", value: "a1" }] },
           { name: [{ type: "exact", value: "a2" }] },
@@ -283,7 +283,7 @@ describe("matchColumn", () => {
 
     test("exact match — wrong order fails", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [
           { name: [{ type: "exact", value: "a2" }] },
           { name: [{ type: "exact", value: "a1" }] },
@@ -295,7 +295,7 @@ describe("matchColumn", () => {
 
     test("exact match — count mismatch fails", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [{ name: [{ type: "exact", value: "a1" }] }],
         partialAxesMatch: false,
       };
@@ -304,7 +304,7 @@ describe("matchColumn", () => {
 
     test("axis type matching", () => {
       const s = withAxes([axis("a1", "Int")]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [{ type: ["Int"] }],
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -318,7 +318,7 @@ describe("matchColumn", () => {
         annotations: {},
       } as PColumnSpec["axesSpec"][number];
       const s = withAxes([a]);
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         axes: [{ domain: { k: [{ type: "exact", value: "v" }] } }],
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -332,7 +332,7 @@ describe("matchColumn", () => {
         valueType: "Int",
         annotations: { label: "x" },
       });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         name: [{ type: "exact", value: "col1" }],
         type: ["Int"],
         annotations: { label: [{ type: "exact", value: "x" }] },
@@ -345,7 +345,7 @@ describe("matchColumn", () => {
         name: "col1",
         valueType: "String",
       });
-      const sel: ColumnSelector = {
+      const sel: MultiColumnSelector = {
         name: [{ type: "exact", value: "col1" }],
         type: ["Int"],
       };
@@ -364,7 +364,7 @@ describe("matchColumn", () => {
 describe("matchColumnSelectors", () => {
   test("matches if any selector matches", () => {
     const s = spec({ name: "col2" });
-    const selectors: ColumnSelector[] = [
+    const selectors: MultiColumnSelector[] = [
       { name: [{ type: "exact", value: "col1" }] },
       { name: [{ type: "exact", value: "col2" }] },
     ];
@@ -373,7 +373,7 @@ describe("matchColumnSelectors", () => {
 
   test("no match if none match", () => {
     const s = spec({ name: "col3" });
-    const selectors: ColumnSelector[] = [
+    const selectors: MultiColumnSelector[] = [
       { name: [{ type: "exact", value: "col1" }] },
       { name: [{ type: "exact", value: "col2" }] },
     ];

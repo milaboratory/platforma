@@ -1,5 +1,5 @@
 {
   "extends": "@milaboratories/ts-configs/tsconfig.node.json",
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../common/src/drivers/pspec.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
