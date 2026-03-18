@@ -332,7 +332,7 @@ Comparison against the [Platforma MCP Server spec](https://github.com/milaborato
 | R27 | `query_table` | Step 7 skipped — PFrame query deferred |
 | R28 | `list_columns` | Step 7 skipped — PFrame column listing deferred |
 | R31 | `get_block_info` | Step 9 skipped — detailed block info deferred |
-| — | Port auto-increment | Spec says try 4201, 4202... on conflict; we just log error |
+| — | ~~Port auto-increment~~ | ~~Spec says try 4201, 4202... on conflict; we just log error~~ — DONE: tries up to 10 ports |
 
 ### Implemented differently
 

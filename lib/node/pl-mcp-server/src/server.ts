@@ -71,7 +71,7 @@ function textResult(data: unknown) {
 
 export class PlMcpServer {
   private ml: MiddleLayer | undefined;
-  private readonly port: number;
+  private port: number;
   private readonly secret: string;
   private readonly callbacks: PlMcpServerCallbacks;
   private httpServer: Server | undefined;
@@ -152,10 +152,28 @@ export class PlMcpServer {
       res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
     });
 
-    await new Promise<void>((resolve, reject) => {
-      this.httpServer!.listen(this.port, "127.0.0.1", () => resolve());
-      this.httpServer!.once("error", reject);
-    });
+    const maxRetries = 10;
+    const requestHandler = this.httpServer.listeners("request")[0] as (
+      req: IncomingMessage,
+      res: ServerResponse,
+    ) => void;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          this.httpServer!.listen(this.port, "127.0.0.1", () => resolve());
+          this.httpServer!.once("error", reject);
+        });
+        return;
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code === "EADDRINUSE" && attempt < maxRetries - 1) {
+          this.httpServer!.removeAllListeners();
+          this.httpServer = createServer(requestHandler);
+          this.port++;
+          continue;
+        }
+        throw err;
+      }
+    }
   }
 
   async stop(): Promise<void> {
