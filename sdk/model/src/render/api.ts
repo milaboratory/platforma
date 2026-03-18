@@ -782,31 +782,33 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  * Render context for plugin output functions.
  * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
  *
- * Parameterized on the factory-like phantom F so that getPluginData returns
- * InferFactoryData<F> directly — no casts needed for the data getter.
+ * Extends RenderCtxBase to inherit outputs, prerun, resultPool, and all helper methods.
+ * Overrides `data` to read plugin-specific data from blockStorage instead of block data.
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
-  private readonly ctx: GlobalCfgRenderCtx;
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> extends RenderCtxBase<
+  unknown,
+  InferFactoryData<F>
+> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
   constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
-    this.ctx = getCfgRenderCtx();
+    super();
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 
-  private dataCache?: { v: InferFactoryData<F> };
+  private pluginDataCache?: { v: InferFactoryData<F> };
 
   /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
-  public get data(): InferFactoryData<F> {
-    if (this.dataCache === undefined) {
+  public override get data(): InferFactoryData<F> {
+    if (this.pluginDataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+      this.pluginDataCache = { v: getPluginData(parseJson(raw), this.handle) };
     }
-    return this.dataCache.v;
+    return this.pluginDataCache.v;
   }
 
   private paramsCache?: { v: InferFactoryParams<F> };
@@ -821,62 +823,6 @@ export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
       this.paramsCache = { v: result as InferFactoryParams<F> };
     }
     return this.paramsCache.v;
-  }
-
-  /** Result pool — same as block, from cfgRenderCtx methods */
-  public readonly resultPool = new ResultPool();
-
-  public createPFrame(
-    def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>,
-  ): PFrameHandle | undefined {
-    verifyInlineAndExplicitColumnsSupport(this.ctx, def);
-    if (!allPColumnsReady(def)) return undefined;
-    return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
-  }
-
-  // TODO remove all non-PColumn fields
-  public createPTable(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined;
-  public createPTable(def: {
-    columns: PColumn<PColumnDataUniversal>[];
-    filters?: PTableRecordFilter[];
-    /** Table sorting */
-    sorting?: PTableSorting[];
-  }): PTableHandle | undefined;
-  public createPTable(
-    def:
-      | PTableDef<PColumn<PColumnDataUniversal>>
-      | {
-          columns: PColumn<PColumnDataUniversal>[];
-          filters?: PTableRecordFilter[];
-          /** Table sorting */
-          sorting?: PTableSorting[];
-        },
-  ): PTableHandle | undefined {
-    let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
-    if ("columns" in def) {
-      rawDef = patchPTableDef(this.ctx, {
-        src: {
-          type: "full",
-          entries: def.columns.map((c) => ({ type: "column", column: c })),
-        },
-        partitionFilters: def.filters ?? [],
-        filters: [],
-        sorting: def.sorting ?? [],
-      });
-    } else {
-      rawDef = patchPTableDef(this.ctx, def);
-    }
-    const columns = extractAllColumns(rawDef.src);
-    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
-    if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
-  }
-
-  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
-    const columns = collectSpecQueryColumns(def.query);
-    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
-    if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 }
 

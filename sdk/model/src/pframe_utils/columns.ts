@@ -9,11 +9,11 @@ import {
 } from "@milaboratories/pl-model-common";
 import type { AxesVault } from "./axes";
 import { enrichCompatible, getAvailableWithLinkersAxes } from "./axes";
-import type { PColumnDataUniversal, ResultPool } from "../render";
+import type { PColumnDataUniversal, RenderCtxBase } from "../render";
 import { PColumnCollection } from "../render";
 
 export function getAllRelatedColumns(
-  ctx: { resultPool: ResultPool },
+  ctx: RenderCtxBase,
   predicate: (spec: PColumnSpec) => boolean,
 ): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
   // if current block doesn't produce own columns then use all columns from result pool
@@ -41,7 +41,7 @@ export function getAllRelatedColumns(
 }
 
 export function getRelatedColumns(
-  ctx: { resultPool: ResultPool },
+  ctx: RenderCtxBase,
   {
     columns: rootColumns,
     predicate,
