@@ -41,7 +41,6 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",

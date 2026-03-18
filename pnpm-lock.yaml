@@ -1854,9 +1854,6 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../sdk/model
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2
