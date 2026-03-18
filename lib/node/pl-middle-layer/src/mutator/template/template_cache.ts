@@ -1,10 +1,10 @@
 import { createHash, type Hash } from "node:crypto";
 import type {
-  AnyRef,
   AnyResourceRef,
   PlClient,
   PlTransaction,
   ResourceId,
+  ResourceRef,
 } from "@milaboratories/pl-client";
 import {
   ensureResourceIdNotNull,
@@ -36,10 +36,13 @@ export const TemplateCacheType = resourceType("TemplateCache", "1");
 
 export const TemplateCacheFieldName = "__templateCache";
 const BATCH_SIZE = 50;
-const GC_ACCESS_THRESHOLD = 50;
+/** @internal exported for testing */
+export const GC_ACCESS_THRESHOLD = 50;
 const GC_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const ACCESS_COUNT_KEY = "_accessCount";
-const ACCESS_KEY_PREFIX = "access_";
+/** @internal exported for testing */
+export const ACCESS_COUNT_KEY = "_accessCount";
+/** @internal exported for testing */
+export const ACCESS_KEY_PREFIX = "access_";
 
 // ─── Tree node abstraction ───────────────────────────────────────────────────
 
@@ -48,7 +51,7 @@ interface CacheableNode {
   hash: string;
   /** Creates this node's resource in a transaction.
    *  childRefs maps child hash → already-resolved ResourceRef or ResourceId */
-  create: (tx: PlTransaction, childRefs: ReadonlyMap<string, AnyRef>) => AnyResourceRef;
+  create: (tx: PlTransaction, childRefs: ReadonlyMap<string, AnyResourceRef>) => ResourceRef;
   /** Hashes of direct child nodes this node depends on */
   childHashes: string[];
 }
@@ -508,14 +511,35 @@ export async function loadTemplateCached(
   // Resolve or create cache resource
   const cacheRid = options?.cacheResourceId ?? (await getOrCreateTemplateCache(pl));
 
-  // Resolved IDs from all batches
-  const resolvedIds = new Map<string, ResourceId>();
-
   // Split into batches
   const batches: CacheableNode[][] = [];
   for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
     batches.push(nodes.slice(i, i + BATCH_SIZE));
   }
+
+  // Retry loop: if a batch commit fails because a previously-cached resource
+  // was GC'd between batches, restart the entire materialization from scratch.
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await materializeBatches(pl, cacheRid, rootHash, batches);
+    } catch (e) {
+      if (attempt === MAX_RETRIES - 1) throw e;
+      // Retry from scratch — previous batch results may reference GC'd resources
+    }
+  }
+
+  throw new Error("BUG: unreachable");
+}
+
+async function materializeBatches(
+  pl: PlClient,
+  cacheRid: ResourceId,
+  rootHash: string,
+  batches: CacheableNode[][],
+): Promise<ResourceId> {
+  // Resolved IDs from all batches (global ResourceIds only)
+  const resolvedIds = new Map<string, ResourceId>();
 
   for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
     const batch = batches[batchIdx];
@@ -566,12 +590,14 @@ export async function loadTemplateCached(
       await Promise.all(fieldReads);
 
       // ── Create missing nodes ──
-      const newRefs = new Map<string, AnyResourceRef>();
+      const toCreateSet = new Set(toCreate);
+      const newRefs = new Map<string, ResourceRef>();
       const now = Date.now().toString();
+      let hasWrites = false;
 
       for (const node of toCreate) {
         // Build child refs from resolvedIds + newRefs in this batch
-        const childRefs = new Map<string, AnyRef>();
+        const childRefs = new Map<string, AnyResourceRef>();
         for (const ch of node.childHashes) {
           const resolved = resolvedIds.get(ch);
           if (resolved !== undefined) {
@@ -594,12 +620,14 @@ export async function loadTemplateCached(
 
         // Access tracking
         tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + node.hash, now);
+        hasWrites = true;
       }
 
       // Also update access tracking for cache-hit nodes in this batch
       for (let i = 0; i < batch.length; i++) {
-        if (existsResults[i] && !toCreate.includes(batch[i])) {
+        if (existsResults[i] && !toCreateSet.has(batch[i])) {
           tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + batch[i].hash, now);
+          hasWrites = true;
         }
       }
 
@@ -608,10 +636,11 @@ export async function loadTemplateCached(
         const countStr = await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY);
         const count = countStr ? parseInt(countStr, 10) : 0;
         tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (count + 1).toString());
+        hasWrites = true;
       }
 
-      // Commit if we created resources or wrote KV metadata (first batch always writes KV)
-      if (toCreate.length > 0 || isFirstBatch) {
+      // Commit if we have any pending writes
+      if (hasWrites) {
         await tx.commit();
       }
 
