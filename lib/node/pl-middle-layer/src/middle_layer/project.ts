@@ -131,7 +131,7 @@ export class Project {
           this.env.pl,
           this.rid,
           (prj) => {
-            prj.doRefresh(this.env.ops.stagingRenderingRate);
+            prj.doRefresh();
           },
           { name: "doRefresh", lockId: this.projectLockId },
         );
