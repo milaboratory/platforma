@@ -228,15 +228,37 @@ Tools:
   - Reads from `~/Library/Logs/platforma/main.log` (macOS) or equivalent
   - Useful for debugging block loading errors, connection issues, MCP server problems
 
-**Test:** `logs.test.ts`:
+**Test:** `logs.test.ts` (deferred for `get_block_logs`, manual for `get_app_log`):
 1. Run a block, await completion
-2. `get_block_logs` → returns log text
-3. `get_block_logs` with search filter → returns filtered lines
-4. `get_block_logs` on non-running block → returns available logs or empty
+2. `get_block_logs` → returns log text (deferred — needs log handle extraction)
+3. `get_block_logs` with search filter → returns filtered lines (deferred)
+4. `get_block_logs` on non-running block → returns available logs or empty (deferred)
 5. `get_app_log` → returns recent app log entries
 6. `get_app_log` with search "MCP" → returns MCP-related log lines
 
-**Desktop validation:** Run a block, read logs via MCP, compare with log viewer in desktop app.
+**Manual desktop testing for `get_app_log`:**
+
+Prerequisites: desktop app running and connected to a backend, MCP server started.
+
+```
+# From Claude Code (after /mcp reconnect):
+get_app_log lines=5
+→ returns last 5 lines of main.log
+
+get_app_log lines=10 search="error"
+→ returns last 10 lines containing "error" (case-sensitive)
+
+get_app_log lines=5 search="MCP"
+→ returns MCP-related log entries (server start, callbacks, etc.)
+```
+
+Verify:
+- Output matches `~/Library/Logs/platforma/main.log` content (macOS)
+- Search filter correctly narrows results
+- Large `lines` values work without issues
+- Tool returns error string (not crash) if log file is missing
+
+Note: the MCP server only starts after the app connects to a backend. If the app just launched and hasn't connected yet, the MCP URL won't be reachable.
 
 ---
 
