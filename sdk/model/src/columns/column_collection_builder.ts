@@ -13,11 +13,7 @@ import { normalizeSelectors } from "./column_selector";
 import type { ColumnSelector, AxisSelector, StringMatcher } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
-import {
-  createColumnSnapshot,
-  createComputingColumnData,
-  createReadyColumnData,
-} from "./column_snapshot";
+import { createColumnSnapshot } from "./column_snapshot";
 import type { ColumnSnapshotProvider, ColumnSource } from "./column_snapshot_provider";
 import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot_provider";
 
@@ -120,12 +116,6 @@ export interface AnchoredBuildOptions extends BuildOptions {
 
 // --- ColumnCollectionBuilder ---
 
-export interface ColumnCollectionBuilderOptions {
-  /** Callback to mark the render context unstable.
-   *  Used when constructing ColumnData active objects for computing columns. */
-  readonly markUnstable?: () => void;
-}
-
 /**
  * Mutable builder that accumulates column sources, then produces
  * a ColumnCollection (plain) or AnchoredColumnCollection (with anchors).
@@ -135,14 +125,8 @@ export interface ColumnCollectionBuilderOptions {
  */
 export class ColumnCollectionBuilder {
   private readonly providers: ColumnSnapshotProvider[] = [];
-  private readonly markUnstable?: () => void;
 
-  constructor(
-    private readonly specFrameCtx: SpecFrameCtx,
-    options: ColumnCollectionBuilderOptions = {},
-  ) {
-    this.markUnstable = options.markUnstable;
-  }
+  constructor(private readonly specFrameCtx: SpecFrameCtx) {}
 
   /**
    * Register a column source. Sources added first take precedence for dedup.
@@ -202,13 +186,11 @@ export class ColumnCollectionBuilder {
         columns: columnMap,
         idDeriver,
         anchorSpecs,
-        markUnstable: this.markUnstable,
         columnListComplete: allowPartial ? allComplete : false,
       });
     } else {
       return new ColumnCollectionImpl(this.specFrameCtx, {
         columns: columnMap,
-        markUnstable: this.markUnstable,
         columnListComplete: allowPartial ? allComplete : false,
       });
     }
@@ -248,13 +230,11 @@ const PLAIN_CONSTRAINTS: PFrameInternal.DiscoverColumnsConstraints = {
 // --- ColumnCollectionImpl ---
 
 interface ColumnCollectionImplOptions {
-  readonly markUnstable?: () => void;
   readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   readonly columnListComplete?: boolean;
 }
 
 class ColumnCollectionImpl implements ColumnCollection {
-  private readonly markUnstable: () => void;
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly specFrameHandle: string;
   public readonly columnListComplete: boolean;
@@ -263,7 +243,6 @@ class ColumnCollectionImpl implements ColumnCollection {
     private readonly ctx: SpecFrameCtx,
     options: ColumnCollectionImplOptions,
   ) {
-    this.markUnstable = options.markUnstable ?? (() => {});
     this.columns = options.columns;
     this.columnListComplete = options.columnListComplete ?? false;
     this.specFrameHandle = this.ctx.createSpecFrame(
@@ -303,7 +282,7 @@ class ColumnCollectionImpl implements ColumnCollection {
   }
 
   private toSnapshot(col: ColumnSnapshot<PObjectId>): ColumnSnapshot<PObjectId> {
-    return remapSnapshot(col.id, col, this.markUnstable);
+    return remapSnapshot(col.id, col);
   }
 }
 
@@ -315,7 +294,6 @@ interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOption
 }
 
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
-  private readonly markUnstable: () => void;
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly idDeriver: AnchoredIdDeriver;
   private readonly specFrameHandle: string;
@@ -328,7 +306,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
     private readonly ctx: SpecFrameCtx,
     options: AnchoredColumnCollectionImplOptions,
   ) {
-    this.markUnstable = options.markUnstable ?? (() => {});
     this.columns = options.columns;
     this.idDeriver = options.idDeriver;
     this.columnListComplete = options.columnListComplete ?? false;
@@ -405,31 +382,18 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
     universalId: SUniversalPColumnId,
     col: ColumnSnapshot<PObjectId>,
   ): ColumnSnapshot<SUniversalPColumnId> {
-    return remapSnapshot(universalId, col, this.markUnstable);
+    return remapSnapshot(universalId, col);
   }
 }
 
 // --- Shared snapshot helpers ---
 
-/** Create a new snapshot with a different ID, wiring up data accessors with instability tracking. */
+/** Create a new snapshot with a different ID, preserving data accessors. */
 function remapSnapshot<Id extends PObjectId>(
   id: Id,
   col: ColumnSnapshot<PObjectId>,
-  markUnstable: () => void,
 ): ColumnSnapshot<Id> {
-  let data;
-  switch (col.dataStatus) {
-    case "ready":
-      data = createReadyColumnData(() => col.data?.get());
-      break;
-    case "computing":
-      data = createComputingColumnData(markUnstable);
-      break;
-    case "absent":
-      data = undefined;
-      break;
-  }
-  return createColumnSnapshot(id, col.spec, col.dataStatus, data);
+  return createColumnSnapshot(id, col.spec, col.dataStatus, col.data);
 }
 
 // --- Selector conversion helpers ---

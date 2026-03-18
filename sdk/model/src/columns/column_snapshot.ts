@@ -42,16 +42,6 @@ export function createReadyColumnData(getData: () => PColumnDataUniversal | unde
   return { get: getData };
 }
 
-/** Creates a ColumnData active object for a computing column. */
-export function createComputingColumnData(markUnstable: () => void): ColumnData {
-  return {
-    get() {
-      markUnstable();
-      return undefined;
-    },
-  };
-}
-
 // --- Snapshot construction helpers ---
 
 /** Creates a ColumnSnapshot from parts. */

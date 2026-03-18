@@ -6,7 +6,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
 import { SpecFrameDriver } from "@milaboratories/pf-driver";
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
@@ -243,11 +243,10 @@ describe("data status handling", () => {
     expect(found.data!.get()).toBe(data);
   });
 
-  test("computing column data calls markUnstable", () => {
-    const markUnstable = vi.fn();
+  test("computing column data returns undefined", () => {
     const snap = createSnapshot("id1", createSpec("col1"), "computing");
 
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx(), { markUnstable });
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
     const collection = builder.build()!;
 
@@ -257,7 +256,6 @@ describe("data status handling", () => {
 
     const result = found.data!.get();
     expect(result).toBeUndefined();
-    expect(markUnstable).toHaveBeenCalledOnce();
   });
 
   test("absent column has no data accessor", () => {
@@ -463,11 +461,10 @@ describe("AnchoredColumnCollection", () => {
   });
 
   test("data status is preserved through anchored snapshots", () => {
-    const markUnstable = vi.fn();
     const spec = createSpec("computing-col", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec, "computing");
 
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx(), { markUnstable });
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
@@ -476,6 +473,5 @@ describe("AnchoredColumnCollection", () => {
     const found = collection.getColumn(idDeriver.deriveS(spec))!;
     expect(found.dataStatus).toBe("computing");
     expect(found.data!.get()).toBeUndefined();
-    expect(markUnstable).toHaveBeenCalledOnce();
   });
 });
