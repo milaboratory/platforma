@@ -30,17 +30,17 @@ export type Entry =
   | { spec: PObjectSpec; prefixTrace?: TraceEntry[]; suffixTrace?: TraceEntry[] };
 
 export type DeriveLabelsOptions = {
-  /** Force inclusion of native column label */
-  includeNativeLabel?: boolean;
   /** Separator to use between label parts (" / " by default) */
   separator?: string;
   /** If true, label will be added as suffix (at the end of the generated label). By default label added as a prefix. */
   addLabelAsSuffix?: boolean;
+  /** Force inclusion of native column label */
+  includeNativeLabel?: boolean;
   /** Trace elements list that will be forced to be included in the label. */
   forceTraceElements?: string[];
 };
 
-export function deriveLabels<T extends Entry>(
+export function deriveDistinctLabels<T extends Entry>(
   values: T[],
   options: DeriveLabelsOptions = {},
 ): WithLabel<T>[] {
