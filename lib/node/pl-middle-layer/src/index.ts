@@ -21,5 +21,8 @@ export type { InternalLsDriver } from "@milaboratories/pl-drivers";
 export * from "./mutator/template/template_loading";
 export * from "./mutator/template/render_template";
 export * from "./model/template_spec";
+
+// project duplication (used by pl-cli and other consumers)
+export { duplicateProject } from "./mutator/project";
 export { parseFinalPObjectCollection } from "./pool/p_object_collection";
 export { deriveGlobalPObjectId, deriveLocalPObjectId } from "./pool/data";
