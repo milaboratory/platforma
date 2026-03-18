@@ -5,7 +5,7 @@ import type { ColumnSnapshot } from "./column_snapshot";
 import type { ColumnDataStatus } from "./column_snapshot";
 import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import { OutputColumnProvider } from "./column_snapshot_provider";
-import { ResourceTypeName } from "@milaboratories/pl-client";
+import { ResourceTypeName } from "@milaboratories/pl-model-common";
 import type { ValueOf } from "@milaboratories/helpers";
 
 /**

@@ -1,6 +1,8 @@
 import type { Optional } from "utility-types";
 import type { BasicResourceData, ResourceData } from "./types";
 import { getField, isNotNullResourceId, isNullResourceId } from "./types";
+import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
+export { ResourceTypeName, ResourceTypePrefix };
 
 /**
  * Function is used to guide multiple layers of caching in pl-client and derived pl-tree.
@@ -29,54 +31,6 @@ function readyAndHasAllOutputsFilled(r: Optional<ResourceData, "fields">): boole
     if (isNullResourceId(f.error) && (isNullResourceId(f.value) || !f.valueIsFinal)) return false;
   return true;
 }
-
-/** Well-known resource type names used across the platform. */
-export const ResourceTypeName = {
-  StreamManager: "StreamManager",
-  StdMap: "StdMap",
-  StdMapSlash: "std/map",
-  EphStdMap: "EphStdMap",
-  PFrame: "PFrame",
-  ParquetChunk: "ParquetChunk",
-  BContext: "BContext",
-  BlockPackCustom: "BlockPackCustom",
-  BinaryMap: "BinaryMap",
-  BinaryValue: "BinaryValue",
-  BlobMap: "BlobMap",
-  BResolveSingle: "BResolveSingle",
-  BResolveSingleNoResult: "BResolveSingleNoResult",
-  BQueryResult: "BQueryResult",
-  TengoTemplate: "TengoTemplate",
-  TengoLib: "TengoLib",
-  SoftwareInfo: "SoftwareInfo",
-  Dummy: "Dummy",
-  JsonResourceError: "json/resourceError",
-  JsonObject: "json/object",
-  JsonGzObject: "json-gz/object",
-  JsonString: "json/string",
-  JsonArray: "json/array",
-  JsonNumber: "json/number",
-  BContextEnd: "BContextEnd",
-  FrontendFromUrl: "Frontend/FromUrl",
-  FrontendFromFolder: "Frontend/FromFolder",
-  BObjectSpec: "BObjectSpec",
-  Blob: "Blob",
-  Null: "Null",
-  Binary: "binary",
-  LSProvider: "LSProvider",
-  UserProject: "UserProject",
-  Projects: "Projects",
-  ClientRoot: "ClientRoot",
-} as const;
-
-/** Resource type name prefix constants. */
-export const ResourceTypePrefix = {
-  Blob: "Blob/",
-  BlobUpload: "BlobUpload/",
-  BlobIndex: "BlobIndex/",
-  PColumnData: "PColumnData/",
-  StreamWorkdir: "StreamWorkdir/",
-} as const;
 
 // solely for logging
 const unknownResourceTypeNames = new Set<string>();

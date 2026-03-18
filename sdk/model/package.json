@@ -37,7 +37,6 @@
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",

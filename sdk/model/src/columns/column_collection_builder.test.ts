@@ -7,7 +7,7 @@ import type {
 import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
 import { SpecFrameDriver } from "@milaboratories/pf-driver";
 import { describe, expect, test, vi } from "vitest";
-import type { ColumnProvider } from "./column_snapshot_provider";
+import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
 
@@ -59,13 +59,13 @@ function createSnapshot(
   };
 }
 
-function createProvider(snapshots: ColumnSnapshot<PObjectId>[], complete = true): ColumnProvider {
+function createProvider(
+  snapshots: ColumnSnapshot<PObjectId>[],
+  complete = true,
+): ColumnSnapshotProvider {
   return {
     getAllColumns() {
       return snapshots;
-    },
-    getColumn(id) {
-      return snapshots.find((s) => s.id === id);
     },
     isColumnListComplete() {
       return complete;
