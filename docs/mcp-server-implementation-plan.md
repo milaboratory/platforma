@@ -316,6 +316,49 @@ Implemented tools:
 
 ---
 
+## Spec compliance
+
+Comparison against the [Platforma MCP Server spec](https://github.com/milaboratory/text/pull/60) (requirements R1–R31).
+
+### Not implemented
+
+| Req | Tool | Notes |
+|-----|------|-------|
+| R15 | `reorder_blocks` | Not needed for current workflows |
+| R19 | `get_block_outputs` | Step 7 skipped — PFrame output rendering deferred |
+| R20 | `get_block_status` | Not a separate tool; status info is in `get_project_overview` |
+| R22 | `invoke_action` | Deferred — depends on action system readiness |
+| R23 | `AuthorMarker` on mutations | `set_block_data` doesn't pass per-session author markers |
+| R27 | `query_table` | Step 7 skipped — PFrame query deferred |
+| R28 | `list_columns` | Step 7 skipped — PFrame column listing deferred |
+| R31 | `get_block_info` | Step 9 skipped — detailed block info deferred |
+| — | Port auto-increment | Spec says try 4201, 4202... on conflict; we just log error |
+
+### Implemented differently
+
+| Req | Spec | Implementation |
+|-----|------|----------------|
+| R2 | Secret persisted in app settings | Secret persisted in Platforma data folder (`.mcp-secret` file) — survives app rebuilds |
+| R4 | Server starts when connected to backend | Server starts on app init (after worker spawn), before backend connection; ML is optional and set later |
+| R11 | `add_block` takes `registryId`, `version` | Takes full `spec` object (supports both `from-registry-v2` and `dev-v2`) |
+| R16 | Tool named `open_block` | Named `select_block` |
+| R25 | `await_stable` as separate tool | Merged into `await_block_done` (two-phase wait) — callers rarely need the intermediate state |
+| R26 | `get_logs` with regex filter | Split into `get_block_logs` + `get_app_log`; search is substring, not regex |
+| R29 | Screenshot errors if no block open | Captures topmost view (modal > blockView > main) — works without a block open |
+| R30 | `search_blocks` with `category` filter | Named `list_available_blocks`; simpler — name filter only, no category |
+
+### Implemented beyond spec
+
+| Tool | Description |
+|------|-------------|
+| `click`, `type_text`, `press_key`, `scroll` | UI interaction via Electron sendInputEvent |
+| `execute_js` | Run JavaScript in renderer process |
+| `list_available_blocks` | Registry search (simpler than spec's `search_blocks`) |
+| `list_connections`, `connect_to_server`, `disconnect`, `get_connection_status` | Server connection management |
+| `get_app_log` | Electron main process log reading |
+
+---
+
 ## Dependency graph
 
 ```
