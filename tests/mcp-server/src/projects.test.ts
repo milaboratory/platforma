@@ -22,9 +22,11 @@ test("create and list projects", { timeout: 30_000 }, async () => {
     expect(created.projectId).toBeDefined();
 
     // List should contain the project
-    const list = parseResult(
-      await client.callTool({ name: "list_projects", arguments: {} }),
-    ) as { projectId: string; label: string; opened: boolean }[];
+    const list = parseResult(await client.callTool({ name: "list_projects", arguments: {} })) as {
+      projectId: string;
+      label: string;
+      opened: boolean;
+    }[];
     expect(list).toHaveLength(1);
     expect(list[0].projectId).toBe(created.projectId);
     expect(list[0].label).toBe("Test Project");
@@ -45,9 +47,10 @@ test("open and close project", { timeout: 30_000 }, async () => {
     expect(openResult.ok).toBe(true);
 
     // Verify it's opened
-    const list = parseResult(
-      await client.callTool({ name: "list_projects", arguments: {} }),
-    ) as { projectId: string; opened: boolean }[];
+    const list = parseResult(await client.callTool({ name: "list_projects", arguments: {} })) as {
+      projectId: string;
+      opened: boolean;
+    }[];
     expect(list[0].opened).toBe(true);
 
     // Close
@@ -57,9 +60,10 @@ test("open and close project", { timeout: 30_000 }, async () => {
     expect(closeResult.ok).toBe(true);
 
     // Verify it's closed
-    const list2 = parseResult(
-      await client.callTool({ name: "list_projects", arguments: {} }),
-    ) as { projectId: string; opened: boolean }[];
+    const list2 = parseResult(await client.callTool({ name: "list_projects", arguments: {} })) as {
+      projectId: string;
+      opened: boolean;
+    }[];
     expect(list2[0].opened).toBe(false);
   });
 });
