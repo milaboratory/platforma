@@ -26,11 +26,35 @@ export interface PlMcpServerCallbacks {
   selectBlock?: (projectId: string, blockId: string) => Promise<void>;
   /** Read recent lines from the application log. */
   readAppLog?: (lines: number, search?: string) => Promise<string>;
+  /** List saved server connections. */
+  listConnections?: () => Promise<ServerConnection[]>;
+  /** Connect to a server. */
+  connectToServer?: (
+    addr: string,
+    login: string,
+    password?: string,
+  ) => Promise<{ status: string; message: string }>;
+  /** Get current connection status. */
+  getConnectionStatus?: () => Promise<{
+    connected: boolean;
+    type?: string;
+    addr?: string;
+    login?: string;
+  }>;
+  /** Disconnect from current server. */
+  disconnect?: () => Promise<void>;
+}
+
+export interface ServerConnection {
+  addr: string;
+  login: string;
+  coreVersion?: string;
+  lastConnected?: string;
 }
 
 export interface PlMcpServerOptions {
-  /** MiddleLayer instance providing access to projects, blocks, etc. */
-  middleLayer: MiddleLayer;
+  /** MiddleLayer instance providing access to projects, blocks, etc. Optional — server can start without it. */
+  middleLayer?: MiddleLayer;
   /** Port to listen on. */
   port: number;
   /** Secret path segment for URL security. */
@@ -46,7 +70,7 @@ function textResult(data: unknown) {
 }
 
 export class PlMcpServer {
-  private readonly ml: MiddleLayer;
+  private ml: MiddleLayer | undefined;
   private readonly port: number;
   private readonly secret: string;
   private readonly callbacks: PlMcpServerCallbacks;
@@ -58,6 +82,11 @@ export class PlMcpServer {
     this.port = options.port;
     this.secret = options.secret;
     this.callbacks = options.callbacks ?? {};
+  }
+
+  /** Set or update the MiddleLayer instance (e.g. after connecting to a server). */
+  setMiddleLayer(ml: MiddleLayer | undefined) {
+    this.ml = ml;
   }
 
   get url(): string {
@@ -154,6 +183,7 @@ export class PlMcpServer {
 
   private registerTools(server: McpServer): void {
     this.registerPingTool(server);
+    this.registerConnectionTools(server);
     this.registerProjectTools(server);
     this.registerBlockTools(server);
     this.registerBlockStateTools(server);
@@ -163,10 +193,17 @@ export class PlMcpServer {
     this.registerUIInteractionTools(server);
   }
 
+  /** Throws if MiddleLayer is not available (not connected to a server). */
+  private requireMl(): MiddleLayer {
+    if (!this.ml) throw new Error("Not connected to a server. Use connect_to_server first.");
+    return this.ml;
+  }
+
   /** Resolves a project from the list by its projectId (resourceIdToString format). */
   private async resolveProject(projectId: string) {
-    await this.ml.projectList.refreshState();
-    const projects = await this.ml.projectList.awaitStableValue();
+    const ml = this.requireMl();
+    await ml.projectList.refreshState();
+    const projects = await ml.projectList.awaitStableValue();
     const entry = projects.find((p) => resourceIdToString(p.rid) === projectId);
     if (!entry) throw new Error(`Project ${projectId} not found`);
     return entry;
@@ -174,23 +211,77 @@ export class PlMcpServer {
 
   /** Gets an opened project by projectId. Resolves via project list → rid → getOpenedProject. */
   private async getOpenedProject(projectId: string) {
+    const ml = this.requireMl();
     const entry = await this.resolveProject(projectId);
-    return this.ml.getOpenedProject(entry.rid);
+    return ml.getOpenedProject(entry.rid);
   }
 
   private registerPingTool(server: McpServer): void {
     server.registerTool("ping", { description: "Health check" }, async () => {
-      return textResult({ status: "ok" });
+      return textResult({ status: "ok", connected: !!this.ml });
     });
   }
 
-  private registerProjectTools(server: McpServer): void {
-    const ml = this.ml;
+  private registerConnectionTools(server: McpServer): void {
+    server.registerTool(
+      "get_connection_status",
+      { description: "Get current server connection status" },
+      async () => {
+        if (!this.callbacks.getConnectionStatus) {
+          return textResult({ connected: !!this.ml });
+        }
+        return textResult(await this.callbacks.getConnectionStatus());
+      },
+    );
 
+    server.registerTool(
+      "list_connections",
+      { description: "List saved server connections" },
+      async () => {
+        if (!this.callbacks.listConnections) {
+          return textResult({ error: "Connection management not available" });
+        }
+        return textResult(await this.callbacks.listConnections());
+      },
+    );
+
+    server.registerTool(
+      "connect_to_server",
+      {
+        description: "Connect to a Platforma server. Use list_connections to see saved servers.",
+        inputSchema: {
+          addr: z.string().describe("Server address (e.g. https://pl6.demo2.platforma.bio:6346)"),
+          login: z.string().describe("Username"),
+          password: z.string().optional().describe("Password (uses saved token if omitted)"),
+        },
+      },
+      async ({ addr, login, password }) => {
+        if (!this.callbacks.connectToServer) {
+          return textResult({ error: "Connection management not available" });
+        }
+        return textResult(await this.callbacks.connectToServer(addr, login, password));
+      },
+    );
+
+    server.registerTool(
+      "disconnect",
+      { description: "Disconnect from current server" },
+      async () => {
+        if (!this.callbacks.disconnect) {
+          return textResult({ error: "Connection management not available" });
+        }
+        await this.callbacks.disconnect();
+        return textResult({ ok: true });
+      },
+    );
+  }
+
+  private registerProjectTools(server: McpServer): void {
     server.registerTool(
       "list_projects",
       { description: "List all projects with their IDs, labels, and status" },
       async () => {
+        const ml = this.requireMl();
         await ml.projectList.refreshState();
         const projects = await ml.projectList.awaitStableValue();
         return textResult(
@@ -212,7 +303,7 @@ export class PlMcpServer {
         inputSchema: { label: z.string().describe("Project name") },
       },
       async ({ label }) => {
-        const rid = await ml.createProject({ label });
+        const rid = await this.requireMl().createProject({ label });
         const projectId = resourceIdToString(rid);
         await this.callbacks.onProjectCreated?.(projectId);
         return textResult({ projectId });
@@ -229,7 +320,7 @@ export class PlMcpServer {
       },
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
-        await ml.openProject(entry.rid);
+        await this.requireMl().openProject(entry.rid);
         await this.callbacks.onProjectOpened?.(projectId);
         return textResult({ ok: true });
       },
@@ -243,7 +334,7 @@ export class PlMcpServer {
       },
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
-        await ml.closeProject(entry.rid);
+        await this.requireMl().closeProject(entry.rid);
         await this.callbacks.onProjectClosed?.(projectId);
         return textResult({ ok: true });
       },
@@ -257,7 +348,7 @@ export class PlMcpServer {
       },
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
-        await ml.deleteProject(entry.id);
+        await this.requireMl().deleteProject(entry.id);
         await this.callbacks.onProjectDeleted?.(projectId);
         return textResult({ ok: true });
       },
@@ -595,7 +686,7 @@ export class PlMcpServer {
         }
 
         const logEntries = logsOutput.value.data;
-        const logDriver = this.ml.driverKit.logDriver;
+        const logDriver = this.requireMl().driverKit.logDriver;
         const results: Record<string, string> = {};
 
         for (const entry of logEntries) {

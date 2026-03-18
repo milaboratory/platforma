@@ -10,7 +10,9 @@ test("ping tool returns ok", { timeout: 30_000 }, async () => {
   await withMcpServer(async ({ client }) => {
     const result = await client.callTool({ name: "ping", arguments: {} });
     expect(result.isError).toBeFalsy();
-    expect(result.content).toEqual([{ type: "text", text: JSON.stringify({ status: "ok" }) }]);
+    expect(result.content).toEqual([
+      { type: "text", text: JSON.stringify({ status: "ok", connected: true }) },
+    ]);
   });
 });
 
