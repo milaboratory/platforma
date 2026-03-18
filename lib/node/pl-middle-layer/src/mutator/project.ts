@@ -303,6 +303,9 @@ export type ClearState = {
 };
 
 export class ProjectMutator {
+  /** Max number of blocks to render staging for in a single background refresh pass. */
+  private static readonly STAGING_REFRESH_MAX_BATCH = 10;
+
   private globalModCount = 0;
   private fieldsChanged: boolean = false;
 
@@ -1254,12 +1257,9 @@ export class ProjectMutator {
     // Find the first position that changed to avoid rebuilding the entire chain.
     const newBlocks = [...allBlocks(newStructure)];
     const oldBlocks = [...currentStagingGraph.nodes.keys()];
+    const n = Math.min(newBlocks.length, oldBlocks.length);
     let firstChangedIdx = 0;
-    while (
-      firstChangedIdx < newBlocks.length &&
-      firstChangedIdx < oldBlocks.length &&
-      newBlocks[firstChangedIdx].id === oldBlocks[firstChangedIdx]
-    ) {
+    while (firstChangedIdx < n && newBlocks[firstChangedIdx].id === oldBlocks[firstChangedIdx]) {
       firstChangedIdx++;
     }
     if (firstChangedIdx < newBlocks.length) {
@@ -1596,7 +1596,7 @@ export class ProjectMutator {
 
   /** Renders staging for blocks that need it (have currentPrerunArgs but no staging). */
   private refreshStagings() {
-    const maxBatch = 10;
+    const maxBatch = ProjectMutator.STAGING_REFRESH_MAX_BATCH;
     let rendered = 0;
     for (const block of allBlocks(this.struct)) {
       if (rendered >= maxBatch) break;
