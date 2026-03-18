@@ -99,8 +99,8 @@ function walkTree(node: TreeNodeAccessor, out: ColumnSnapshotProvider[]): void {
   }
 
   if (typeName === ResourceTypeName.StdMap || typeName === ResourceTypeName.StdMapSlash) {
-    for (const field of node.listOutputFields()) {
-      const child = node.resolveOutput(field);
+    for (const field of node.listInputFields()) {
+      const child = node.resolve(field);
       if (child) walkTree(child, out);
     }
   }

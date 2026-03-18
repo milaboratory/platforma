@@ -686,11 +686,11 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       exportCtxFunction("listOutputFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listOutputFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("listDynamicFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listDynamicFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("getKeyValueBase64", (handle, key) => {
