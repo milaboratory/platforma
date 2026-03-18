@@ -548,6 +548,39 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   }
 }
 
+function verifyInlineAndExplicitColumnsSupport(
+  ctx: GlobalCfgRenderCtx,
+  columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
+) {
+  const hasInlineColumns = columns.some(
+    (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
+  );
+  if (hasInlineColumns && ctx.featureFlags?.inlineColumnsSupport !== true)
+    throw Error(`Inline or explicit columns not supported`);
+}
+
+function patchPTableDef(
+  ctx: GlobalCfgRenderCtx,
+  def: PTableDef<PColumn<PColumnDataUniversal>>,
+): PTableDef<PColumn<PColumnDataUniversal>> {
+  if (!ctx.featureFlags?.pTablePartitionFiltersSupport) {
+    // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
+    def = {
+      ...def,
+      partitionFilters: [],
+      filters: [...def.partitionFilters, ...def.filters],
+    };
+  }
+  if (!ctx.featureFlags?.pFrameInSetFilterSupport) {
+    def = {
+      ...def,
+      partitionFilters: patchInSetFilters(def.partitionFilters),
+      filters: patchInSetFilters(def.filters),
+    };
+  }
+  return def;
+}
+
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
 export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
@@ -619,35 +652,13 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   private verifyInlineAndExplicitColumnsSupport(
     columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
   ) {
-    const hasInlineColumns = columns.some(
-      (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
-    ); // Updated check for DataInfo
-    const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
-    if (hasInlineColumns && !inlineColumnsSupport)
-      throw Error(`Inline or explicit columns not supported`); // Combined check
-
-    // Removed redundant explicitColumns check
+    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
   }
 
   private patchPTableDef(
     def: PTableDef<PColumn<PColumnDataUniversal>>,
   ): PTableDef<PColumn<PColumnDataUniversal>> {
-    if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
-      // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
-      def = {
-        ...def,
-        partitionFilters: [],
-        filters: [...def.partitionFilters, ...def.filters],
-      };
-    }
-    if (!this.ctx.featureFlags?.pFrameInSetFilterSupport) {
-      def = {
-        ...def,
-        partitionFilters: patchInSetFilters(def.partitionFilters),
-        filters: patchInSetFilters(def.filters),
-      };
-    }
-    return def;
+    return patchPTableDef(this.ctx, def);
   }
 
   // TODO remove all non-PColumn fields
@@ -814,6 +825,59 @@ export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
 
   /** Result pool — same as block, from cfgRenderCtx methods */
   public readonly resultPool = new ResultPool();
+
+  public createPFrame(
+    def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>,
+  ): PFrameHandle | undefined {
+    verifyInlineAndExplicitColumnsSupport(this.ctx, def);
+    if (!allPColumnsReady(def)) return undefined;
+    return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
+  }
+
+  // TODO remove all non-PColumn fields
+  public createPTable(def: PTableDef<PColumn<PColumnDataUniversal>>): PTableHandle | undefined;
+  public createPTable(def: {
+    columns: PColumn<PColumnDataUniversal>[];
+    filters?: PTableRecordFilter[];
+    /** Table sorting */
+    sorting?: PTableSorting[];
+  }): PTableHandle | undefined;
+  public createPTable(
+    def:
+      | PTableDef<PColumn<PColumnDataUniversal>>
+      | {
+          columns: PColumn<PColumnDataUniversal>[];
+          filters?: PTableRecordFilter[];
+          /** Table sorting */
+          sorting?: PTableSorting[];
+        },
+  ): PTableHandle | undefined {
+    let rawDef: PTableDef<PColumn<PColumnDataUniversal>>;
+    if ("columns" in def) {
+      rawDef = patchPTableDef(this.ctx, {
+        src: {
+          type: "full",
+          entries: def.columns.map((c) => ({ type: "column", column: c })),
+        },
+        partitionFilters: def.filters ?? [],
+        filters: [],
+        sorting: def.sorting ?? [],
+      });
+    } else {
+      rawDef = patchPTableDef(this.ctx, def);
+    }
+    const columns = extractAllColumns(rawDef.src);
+    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
+    if (!allPColumnsReady(columns)) return undefined;
+    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
+  }
+
+  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+    const columns = collectSpecQueryColumns(def.query);
+    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
+    if (!allPColumnsReady(columns)) return undefined;
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
+  }
 }
 
 /** @deprecated Use BlockRenderCtx instead */
