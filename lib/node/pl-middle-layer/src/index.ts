@@ -19,6 +19,7 @@ export type { InternalLsDriver } from "@milaboratories/pl-drivers";
 
 // for tests etc..
 export * from "./mutator/template/template_loading";
+export * from "./mutator/template/template_cache";
 export * from "./mutator/template/render_template";
 export * from "./model/template_spec";
 
