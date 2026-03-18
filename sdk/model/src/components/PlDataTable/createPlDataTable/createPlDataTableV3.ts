@@ -187,9 +187,8 @@ export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
-  const { source } = options;
-  const providers = source
-    ? normalizeSourceList(source).filter(isColumnSnapshotProvider)
+  const providers = options.source
+    ? normalizeSourceList(options.source).filter(isColumnSnapshotProvider)
     : collectCtxColumnSnapshotProviders(ctx);
 
   if (providers.length === 0) return undefined;

@@ -14,7 +14,6 @@ export {
   deriveDataFromStorage,
   type MutateStoragePayload,
   updateStorageData,
-  type StorageDebugView,
   type MigrationSuccess,
   type MigrationFailure,
   type MigrationResult,

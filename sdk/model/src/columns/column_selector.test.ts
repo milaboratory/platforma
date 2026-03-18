@@ -5,7 +5,7 @@ import {
   matchColumn,
   matchColumnSelectors,
   normalizeSelectors,
-  selectorsToPredicate,
+  columnSelectorsToPredicate,
 } from "./column_selector";
 import type { RegExpString } from "@milaboratories/helpers";
 
@@ -386,24 +386,24 @@ describe("matchColumnSelectors", () => {
   });
 });
 
-// --- selectorsToPredicate ---
+// --- columnSelectorsToPredicate ---
 
-describe("selectorsToPredicate", () => {
+describe("columnSelectorsToPredicate", () => {
   test("works with relaxed single selector", () => {
-    const pred = selectorsToPredicate({ name: "col1" });
+    const pred = columnSelectorsToPredicate({ name: "col1" });
     expect(pred(spec({ name: "col1" }))).toBe(true);
     expect(pred(spec({ name: "col2" }))).toBe(false);
   });
 
   test("works with relaxed array of selectors", () => {
-    const pred = selectorsToPredicate([{ name: "col1" }, { name: "col2" }]);
+    const pred = columnSelectorsToPredicate([{ name: "col1" }, { name: "col2" }]);
     expect(pred(spec({ name: "col1" }))).toBe(true);
     expect(pred(spec({ name: "col2" }))).toBe(true);
     expect(pred(spec({ name: "col3" }))).toBe(false);
   });
 
   test("works with regex in relaxed form", () => {
-    const pred = selectorsToPredicate({
+    const pred = columnSelectorsToPredicate({
       name: { type: "regex", value: "col[12]" as RegExpString },
     });
     expect(pred(spec({ name: "col1" }))).toBe(true);
@@ -412,7 +412,7 @@ describe("selectorsToPredicate", () => {
   });
 
   test("domain filter in relaxed form", () => {
-    const pred = selectorsToPredicate({
+    const pred = columnSelectorsToPredicate({
       domain: { chain: "IGHeavy" },
     });
     expect(pred(spec({ name: "c", domain: { chain: "IGHeavy" } }))).toBe(true);
@@ -462,7 +462,7 @@ describe("relaxed selectors end-to-end", () => {
   });
 
   test("design doc example: domain key with multiple values", () => {
-    const pred = selectorsToPredicate({
+    const pred = columnSelectorsToPredicate({
       domain: { "pl7.app/vdj/chain": ["IGHeavy", "IGLight"] },
     });
     expect(pred(spec({ name: "c", domain: { "pl7.app/vdj/chain": "IGHeavy" } }))).toBe(true);

@@ -430,6 +430,40 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return key;
   }
 
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): PFrameInternal.SpecFrameHandle {
+    const handle = this.specFrameDriver.createSpecFrame(specs);
+    this.computableCtx?.addOnDestroy(() => this.specFrameDriver.disposeSpecFrame(handle));
+    return handle;
+  }
+
+  public specFrameDiscoverColumns(
+    handle: PFrameInternal.SpecFrameHandle,
+    request: PFrameInternal.DiscoverColumnsRequest,
+  ): PFrameInternal.DiscoverColumnsResponse {
+    return this.specFrameDriver.specFrameDiscoverColumns(
+      handle as PFrameInternal.SpecFrameHandle,
+      request,
+    );
+  }
+
+  public specFrameFindColumns(
+    handle: PFrameInternal.SpecFrameHandle,
+    request: PFrameInternal.FindColumnsRequest,
+  ): PFrameInternal.FindColumnsResponse {
+    return this.specFrameDriver.specFrameFindColumns(
+      handle as PFrameInternal.SpecFrameHandle,
+      request,
+    );
+  }
+
+  public specFrameDispose(handle: PFrameInternal.SpecFrameHandle): void {
+    this.specFrameDriver.disposeSpecFrame(handle as PFrameInternal.SpecFrameHandle);
+  }
+
   /**
    * Transforms input data for PFrame/PTable creation
    * - Converts string handles to accessors
@@ -867,17 +901,16 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       //
 
       exportCtxFunction("createSpecFrame", (specs) => {
-        const handle = this.specFrameDriver.createSpecFrame(
-          parent.importObjectViaJson(specs) as Record<string, PColumnSpec>,
+        return parent.exportSingleValue(
+          this.createSpecFrame(parent.importObjectViaJson(specs) as Record<string, PColumnSpec>),
+          undefined,
         );
-        this.computableCtx?.addOnDestroy(() => this.specFrameDriver.disposeSpecFrame(handle));
-        return parent.exportSingleValue(handle, undefined);
       });
 
       exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
         return parent.exportObjectViaJson(
-          this.specFrameDriver.specFrameDiscoverColumns(
-            vm.getString(handle),
+          this.specFrameDiscoverColumns(
+            vm.getString(handle) as PFrameInternal.SpecFrameHandle,
             parent.importObjectViaJson(request) as PFrameInternal.DiscoverColumnsRequest,
           ),
           undefined,
@@ -886,8 +919,8 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("specFrameFindColumns", (handle, request) => {
         return parent.exportObjectViaJson(
-          this.specFrameDriver.specFrameFindColumns(
-            vm.getString(handle),
+          this.specFrameFindColumns(
+            vm.getString(handle) as PFrameInternal.SpecFrameHandle,
             parent.importObjectViaJson(request) as PFrameInternal.FindColumnsRequest,
           ),
           undefined,
@@ -895,7 +928,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       exportCtxFunction("specFrameDispose", (handle) => {
-        this.specFrameDriver.disposeSpecFrame(vm.getString(handle));
+        this.specFrameDispose(vm.getString(handle) as PFrameInternal.SpecFrameHandle);
       });
 
       //
