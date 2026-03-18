@@ -74,7 +74,8 @@ export const ProjectResourceType: ResourceType = { name: "UserProject", version:
 
 export const SchemaVersionKey = "SchemaVersion";
 export const SchemaVersionV2 = "2";
-export const SchemaVersionCurrent = "3";
+export const SchemaVersionV3 = "3";
+export const SchemaVersionCurrent = "4";
 
 export const ProjectCreatedTimestamp = "ProjectCreated";
 export const ProjectLastModifiedTimestamp = "ProjectLastModified";
@@ -106,6 +107,7 @@ export interface ProjectField {
     | "prodArgs"
     | "currentArgs"
     | "currentPrerunArgs" // Derived args for staging/prerun rendering (from prerunArgs() or args())
+    | "prodChainCtx" // Pre-built production context chain node (accumulated prodCtx from all blocks above)
     | "prodCtx"
     | "prodUiCtx"
     | "prodOutput"
@@ -137,7 +139,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

@@ -215,12 +215,8 @@ export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
 
   /** Defines interval in milliseconds for running periodic project maintenance job.
-   * Project maintenance includes gradual staging rendering and cached outputs cleanup. */
+   * Project maintenance includes background staging rendering and cached outputs cleanup. */
   readonly projectRefreshInterval: number;
-
-  /** This controls average number of block staging states that are rendered per
-   * second during project maintenance job execution. */
-  readonly stagingRenderingRate: number;
 
   /** How often to check for dev block updates */
   readonly devBlockUpdateRecheckInterval: number;
@@ -237,7 +233,6 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   | keyof typeof DefaultDriverKitOpsSettings
   | "defaultTreeOptions"
   | "projectRefreshInterval"
-  | "stagingRenderingRate"
   | "devBlockUpdateRecheckInterval"
   | "debugOps"
 > = {
@@ -251,8 +246,7 @@ export const DefaultMiddleLayerOpsSettings: Pick<
     dumpInitialTreeState: false,
   },
   devBlockUpdateRecheckInterval: 1000,
-  projectRefreshInterval: 700,
-  stagingRenderingRate: 5,
+  projectRefreshInterval: 2000,
 };
 
 export function DefaultMiddleLayerOpsPaths(
