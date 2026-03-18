@@ -447,10 +447,11 @@ export async function dropTemplateCache(pl: PlClient): Promise<void> {
 
 // ─── GC ──────────────────────────────────────────────────────────────────────
 
-async function runGcIfNeeded(tx: PlTransaction, cacheRid: ResourceId): Promise<void> {
+/** @returns true if GC ran (counter was reset to 0) */
+async function runGcIfNeeded(tx: PlTransaction, cacheRid: ResourceId): Promise<boolean> {
   const countStr = await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY);
   const accessCount = countStr ? parseInt(countStr, 10) : 0;
-  if (accessCount < GC_ACCESS_THRESHOLD) return;
+  if (accessCount < GC_ACCESS_THRESHOLD) return false;
 
   const kvs = await tx.listKeyValuesString(cacheRid);
   const now = Date.now();
@@ -466,6 +467,7 @@ async function runGcIfNeeded(tx: PlTransaction, cacheRid: ResourceId): Promise<v
   }
 
   tx.setKValue(cacheRid, ACCESS_COUNT_KEY, "0");
+  return true;
 }
 
 // ─── Batched materialization ─────────────────────────────────────────────────
@@ -546,6 +548,8 @@ async function materializeBatches(
     const isFirstBatch = batchIdx === 0;
 
     const batchResult = await pl.withWriteTx("templateCache:materialize", async (tx) => {
+      let gcRan = false;
+
       // ── First batch: happy path + GC ──
       if (isFirstBatch) {
         // Happy path: check if root is already cached
@@ -563,7 +567,7 @@ async function materializeBatches(
         }
 
         // Run GC if threshold exceeded
-        await runGcIfNeeded(tx, cacheRid);
+        gcRan = await runGcIfNeeded(tx, cacheRid);
       }
 
       // ── Parallel cache checks for all nodes in this batch ──
@@ -633,9 +637,12 @@ async function materializeBatches(
 
       // Increment global access count (once per loadTemplateCached call, in first batch)
       if (isFirstBatch) {
-        const countStr = await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY);
-        const count = countStr ? parseInt(countStr, 10) : 0;
-        tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (count + 1).toString());
+        // If GC just ran, counter was reset to "0" in this tx — use 0 directly
+        // to avoid reading the stale committed value
+        const prevCount = gcRan
+          ? 0
+          : parseInt((await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY)) ?? "0", 10);
+        tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (prevCount + 1).toString());
         hasWrites = true;
       }
 
