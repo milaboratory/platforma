@@ -267,9 +267,10 @@ class ColumnCollectionImpl implements ColumnCollection {
     this.columns = options.columns;
     this.columnListComplete = options.columnListComplete ?? false;
     this.specFrameHandle = this.ctx.createSpecFrame(
-      this.columns
-        .entries()
-        .reduce((acc, [id, col]) => ((acc[id] = col.spec), acc), {} as Record<string, PColumnSpec>),
+      Array.from(this.columns.entries()).reduce(
+        (acc, [id, col]) => ((acc[id] = col.spec), acc),
+        {} as Record<string, PColumnSpec>,
+      ),
     );
   }
 
@@ -334,9 +335,10 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
 
     // Create spec frame from all collected columns
     this.specFrameHandle = this.ctx.createSpecFrame(
-      this.columns
-        .entries()
-        .reduce((acc, [id, col]) => ((acc[id] = col.spec), acc), {} as Record<string, PColumnSpec>),
+      Array.from(this.columns.entries()).reduce(
+        (acc, [id, col]) => ((acc[id] = col.spec), acc),
+        {} as Record<string, PColumnSpec>,
+      ),
     );
 
     // Build anchor axes for discovery requests
@@ -347,7 +349,9 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
 
     // Build reverse lookup map
     this.idToOriginal = new Map(
-      this.columns.entries().map(([id, col]) => [this.idDeriver.deriveS(col.spec), id] as const),
+      Array.from(this.columns.entries()).map(
+        ([id, col]) => [this.idDeriver.deriveS(col.spec), id] as const,
+      ),
     );
   }
 
