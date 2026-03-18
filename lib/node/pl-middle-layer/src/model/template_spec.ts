@@ -19,7 +19,7 @@ export interface PreparedTemplate {
 
 export interface CachedTemplate {
   readonly type: "cached";
-  resourceId: ResourceId;
+  readonly resourceId: ResourceId;
 }
 
 export interface TemplateFromFile {
