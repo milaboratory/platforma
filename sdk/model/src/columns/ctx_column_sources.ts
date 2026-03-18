@@ -1,16 +1,15 @@
-import type { PColumnSelector, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
-import { selectorsToPredicate } from "@milaboratories/pl-model-common";
+import type { PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { RenderCtxBase, ResultPool } from "../render";
 import type { ColumnSnapshot } from "./column_snapshot";
 import type { ColumnDataStatus } from "./column_snapshot";
-import type { ColumnProvider } from "./column_provider";
-import { OutputColumnProvider } from "./column_provider";
+import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
+import { OutputColumnProvider } from "./column_snapshot_provider";
 import { ResourceTypeName } from "@milaboratories/pl-client";
 import type { ValueOf } from "@milaboratories/helpers";
 
 /**
- * Collect ColumnProviders from all render context sources:
+ * Collect ColumnSnapshotProviders from all render context sources:
  *
  * - **resultPool** — all upstream columns (always included)
  * - **outputs** — PFrame fields from block execution outputs
@@ -18,11 +17,13 @@ import type { ValueOf } from "@milaboratories/helpers";
  *
  * Returns an array of providers suitable for `ColumnCollectionBuilder.addSource()`.
  */
-export function collectCtxColumnProviders<A, U>(ctx: RenderCtxBase<A, U>): ColumnProvider[] {
-  const providers: ColumnProvider[] = [];
+export function collectCtxColumnSnapshotProviders<A, U>(
+  ctx: RenderCtxBase<A, U>,
+): ColumnSnapshotProvider[] {
+  const providers: ColumnSnapshotProvider[] = [];
 
   // ResultPool — all upstream columns
-  providers.push(new ResultPoolColumnProvider(ctx.resultPool));
+  providers.push(new ResultPoolColumnSnapshotProvider(ctx.resultPool));
 
   // Outputs — each PFrame-like output field becomes a provider
   const outputs = ctx.outputs;
@@ -40,28 +41,19 @@ export function collectCtxColumnProviders<A, U>(ctx: RenderCtxBase<A, U>): Colum
 }
 
 /**
- * Adapter wrapping ResultPool into the new ColumnProvider interface.
+ * Adapter wrapping ResultPool into the new ColumnSnapshotProvider interface.
  *
  * - `isColumnListComplete()` always returns true — the result pool
  *   is a stable snapshot within a single render cycle.
  * - Data status is derived from the underlying TreeNodeAccessor:
  *   ready (getIsReadyOrError), computing, or absent (no data resource).
  */
-export class ResultPoolColumnProvider implements ColumnProvider {
+export class ResultPoolColumnSnapshotProvider implements ColumnSnapshotProvider {
   constructor(private readonly pool: ResultPool) {}
 
-  selectColumns(
-    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
-  ): ColumnSnapshot[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
-    const pColumns = this.pool.selectColumns(predicate);
+  getAllColumns(): ColumnSnapshot[] {
+    const pColumns = this.pool.selectColumns(() => true);
     return pColumns.map((col) => toSnapshot(col.id, col.spec, col.data));
-  }
-
-  getColumn(id: PObjectId): ColumnSnapshot | undefined {
-    // ResultPool has no direct ID lookup — linear scan over all columns
-    const all = this.selectColumns(() => true);
-    return all.find((col) => col.id === id);
   }
 
   isColumnListComplete(): boolean {
@@ -92,13 +84,13 @@ function toSnapshot(
  * - If a node's resourceType is StdMap/std/map → recurse into its output fields.
  * - Otherwise → skip (leaf of unknown type).
  */
-function collectPFrameProviders(accessor: TreeNodeAccessor): ColumnProvider[] {
-  const out: ColumnProvider[] = [];
+function collectPFrameProviders(accessor: TreeNodeAccessor): ColumnSnapshotProvider[] {
+  const out: ColumnSnapshotProvider[] = [];
   walkTree(accessor, out);
   return out;
 }
 
-function walkTree(node: TreeNodeAccessor, out: ColumnProvider[]): void {
+function walkTree(node: TreeNodeAccessor, out: ColumnSnapshotProvider[]): void {
   const typeName = node.resourceType.name as ValueOf<typeof ResourceTypeName>;
 
   if (typeName === ResourceTypeName.PFrame) {

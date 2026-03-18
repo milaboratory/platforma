@@ -41,8 +41,8 @@ import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSelector, ColumnSource, MatchingMode } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
-import { isColumnProvider } from "../../../columns/column_provider";
-import { collectCtxColumnProviders } from "../../../columns/ctx_column_sources";
+import { isColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
+import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 
 /** Convert a PTableColumnId to a SpecQueryExpression reference. */
@@ -189,8 +189,8 @@ export function createPlDataTableV3<A, U>(
 ): PlDataTableModel | undefined {
   const { source } = options;
   const providers = source
-    ? normalizeSourceList(source).filter(isColumnProvider)
-    : collectCtxColumnProviders(ctx);
+    ? normalizeSourceList(source).filter(isColumnSnapshotProvider)
+    : collectCtxColumnSnapshotProviders(ctx);
 
   if (providers.length === 0) return undefined;
 
@@ -366,7 +366,7 @@ function normalizeSourceList(source: ColumnSource | ColumnSource[]): ColumnSourc
   if (
     Array.isArray(source) &&
     source.length > 0 &&
-    (Array.isArray(source[0]) || isColumnProvider(source[0]))
+    (Array.isArray(source[0]) || isColumnSnapshotProvider(source[0]))
   ) {
     return source as ColumnSource[];
   }

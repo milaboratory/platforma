@@ -1,10 +1,4 @@
-import type {
-  PColumn,
-  PColumnSelector,
-  PColumnSpec,
-  PObjectId,
-} from "@milaboratories/pl-model-common";
-import { selectorsToPredicate } from "@milaboratories/pl-model-common";
+import { PColumn } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { PColumnDataUniversal } from "../render/internal";
 import type { ColumnDataStatus, ColumnSnapshot } from "./column_snapshot";
@@ -17,15 +11,9 @@ import type { ColumnDataStatus, ColumnSnapshot } from "./column_snapshot";
  * Knows nothing about the render framework, stability tracking, labels,
  * anchoring, or splitting. All that complexity lives in the collection layer.
  */
-export interface ColumnProvider {
-  /** Returns currently known columns matching the selectors. */
-  selectColumns(
-    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
-  ): ColumnSnapshot[];
-
-  /** Direct lookup by provider-native ID.
-   *  Used for anchor resolution at build time. */
-  getColumn(id: PObjectId): undefined | ColumnSnapshot;
+export interface ColumnSnapshotProvider {
+  /** Returns all currently known columns. */
+  getAllColumns(): ColumnSnapshot[];
 
   /** Whether the provider has finished enumerating all its columns.
    *  Calling this may mark the render context unstable — it touches
@@ -40,7 +28,7 @@ export interface ColumnProvider {
  * Does NOT include TreeNodeAccessor — call `.toColumnSource()` on it first.
  */
 export type ColumnSource =
-  | ColumnProvider
+  | ColumnSnapshotProvider
   | ColumnSnapshot[]
   | PColumn<PColumnDataUniversal | undefined>[];
 
@@ -50,7 +38,7 @@ export type ColumnSource =
  * Simple provider wrapping an array of PColumns.
  * Always complete, data status always 'ready'.
  */
-export class ArrayColumnProvider implements ColumnProvider {
+export class ArrayColumnProvider implements ColumnSnapshotProvider {
   private readonly columns: ColumnSnapshot[];
 
   constructor(columns: PColumn<PColumnDataUniversal | undefined>[]) {
@@ -62,15 +50,8 @@ export class ArrayColumnProvider implements ColumnProvider {
     }));
   }
 
-  selectColumns(
-    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
-  ): ColumnSnapshot[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
-    return this.columns.filter((col) => predicate(col.spec));
-  }
-
-  getColumn(id: PObjectId): undefined | ColumnSnapshot {
-    return this.columns.find((col) => col.id === id);
+  getAllColumns(): ColumnSnapshot[] {
+    return this.columns;
   }
 
   isColumnListComplete(): boolean {
@@ -84,18 +65,11 @@ export class ArrayColumnProvider implements ColumnProvider {
  * Provider wrapping an array of ColumnSnapshots.
  * Always complete. Data status taken from each snapshot.
  */
-export class SnapshotColumnProvider implements ColumnProvider {
+export class SnapshotColumnProvider implements ColumnSnapshotProvider {
   constructor(private readonly snapshots: ColumnSnapshot[]) {}
 
-  selectColumns(
-    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
-  ): ColumnSnapshot[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
-    return this.snapshots.filter((col) => predicate(col.spec));
-  }
-
-  getColumn(id: PObjectId): undefined | ColumnSnapshot {
-    return this.snapshots.find((col) => col.id === id);
+  getAllColumns(): ColumnSnapshot[] {
+    return this.snapshots;
   }
 
   isColumnListComplete(): boolean {
@@ -114,21 +88,14 @@ export interface OutputColumnProviderOpts {
  * Provider wrapping a TreeNodeAccessor (output/prerun resolve result).
  * Detects data status from accessor readiness state.
  */
-export class OutputColumnProvider implements ColumnProvider {
+export class OutputColumnProvider implements ColumnSnapshotProvider {
   constructor(
     private readonly accessor: TreeNodeAccessor,
     private readonly opts?: OutputColumnProviderOpts,
   ) {}
 
-  selectColumns(
-    selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
-  ): ColumnSnapshot[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
-    return this.getColumns().filter((col) => predicate(col.spec));
-  }
-
-  getColumn(id: PObjectId): undefined | ColumnSnapshot {
-    return this.getColumns().find((col) => col.id === id);
+  getAllColumns(): ColumnSnapshot[] {
+    return this.getColumns();
   }
 
   isColumnListComplete(): boolean {
@@ -167,17 +134,15 @@ export class OutputColumnProvider implements ColumnProvider {
 
 // --- Source normalization ---
 
-/** Checks if a value is a ColumnProvider (duck-typing). */
-export function isColumnProvider(source: unknown): source is ColumnProvider {
+/** Checks if a value is a ColumnSnapshotProvider (duck-typing). */
+export function isColumnSnapshotProvider(source: unknown): source is ColumnSnapshotProvider {
   return (
     typeof source === "object" &&
     source !== null &&
-    "selectColumns" in source &&
-    "getColumn" in source &&
+    "getAllColumns" in source &&
     "isColumnListComplete" in source &&
-    typeof (source as ColumnProvider).selectColumns === "function" &&
-    typeof (source as ColumnProvider).getColumn === "function" &&
-    typeof (source as ColumnProvider).isColumnListComplete === "function"
+    typeof (source as ColumnSnapshotProvider).getAllColumns === "function" &&
+    typeof (source as ColumnSnapshotProvider).isColumnListComplete === "function"
   );
 }
 
@@ -190,7 +155,7 @@ function isPColumnArray(source: unknown): source is PColumn<PColumnDataUniversal
 }
 
 /** Checks if a value looks like a ColumnSnapshot array. */
-function isSnapshotArray(source: unknown): source is ColumnSnapshot[] {
+function isColumnSnapshotArray(source: unknown): source is ColumnSnapshot[] {
   if (!Array.isArray(source)) return false;
   if (source.length === 0) return true; // empty array — treat as snapshots
   const first = source[0];
@@ -198,14 +163,14 @@ function isSnapshotArray(source: unknown): source is ColumnSnapshot[] {
 }
 
 /**
- * Normalize any ColumnSource into a ColumnProvider.
- * - ColumnProvider → returned as-is
+ * Normalize any ColumnSource into a ColumnSnapshotProvider.
+ * - ColumnSnapshotProvider → returned as-is
  * - ColumnSnapshot[] → wrapped in SnapshotColumnProvider
  * - PColumn[] → wrapped in ArrayColumnProvider
  */
-export function toColumnProvider(source: ColumnSource): ColumnProvider {
-  if (isColumnProvider(source)) return source;
-  if (isSnapshotArray(source)) return new SnapshotColumnProvider(source);
+export function toColumnSnapshotProvider(source: ColumnSource): ColumnSnapshotProvider {
+  if (isColumnSnapshotProvider(source)) return source;
+  if (isColumnSnapshotArray(source)) return new SnapshotColumnProvider(source);
   if (isPColumnArray(source)) return new ArrayColumnProvider(source);
   // Should not reach here given the type union, but be safe
   throw new Error("Unknown ColumnSource type");

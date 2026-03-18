@@ -3,6 +3,7 @@ import type {
   PColumnSpec,
   PlRef,
   PObjectId,
+  SingleAxisSelector,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { AnchoredIdDeriver, deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
@@ -17,8 +18,8 @@ import {
   createComputingColumnData,
   createReadyColumnData,
 } from "./column_snapshot";
-import type { ColumnProvider, ColumnSource } from "./column_provider";
-import { ArrayColumnProvider, toColumnProvider } from "./column_provider";
+import type { ColumnSnapshotProvider, ColumnSource } from "./column_snapshot_provider";
+import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot_provider";
 
 import type { GlobalCfgRenderCtxMethods } from "../render/internal";
 
@@ -83,9 +84,28 @@ export interface ColumnMatch {
   readonly variants: MatchVariant[];
 }
 
-/** @TODO: mirror Phase 3 discoverColumns response structure */
+/** Qualification applied to a single axis to make it compatible during integration. */
+export interface AxisQualification {
+  /** Axis selector identifying which axis is qualified. */
+  readonly axis: SingleAxisSelector;
+  /** Additional context domain entries applied to the axis. */
+  readonly contextDomain: Record<string, string>;
+}
+
+/** Qualifications needed for both query (already-integrated) columns and the hit column. */
+export interface MatchQualifications {
+  /** Qualifications for each query (already-integrated) column set. */
+  readonly forQueries: AxisQualification[][];
+  /** Qualifications for the hit column. */
+  readonly forHit: AxisQualification[];
+}
+
+/** A single mapping variant describing how a hit column can be integrated. */
 export interface MatchVariant {
-  // Placeholder — will be populated in Step 7 / M2
+  /** Full qualifications needed for integration. */
+  readonly qualifications: MatchQualifications;
+  /** Distinctive (minimal) qualifications needed for integration. */
+  readonly distinctiveQualifications: MatchQualifications;
 }
 
 // --- Build options ---
@@ -114,7 +134,7 @@ export interface ColumnCollectionBuilderOptions {
  * computable framework where each output tracks its own dependencies.
  */
 export class ColumnCollectionBuilder {
-  private readonly providers: ColumnProvider[] = [];
+  private readonly providers: ColumnSnapshotProvider[] = [];
   private readonly markUnstable?: () => void;
 
   constructor(
@@ -134,7 +154,7 @@ export class ColumnCollectionBuilder {
       const columns = source.getPColumns();
       if (columns) this.providers.push(new ArrayColumnProvider(columns));
     } else {
-      this.providers.push(toColumnProvider(source));
+      this.providers.push(toColumnSnapshotProvider(source));
     }
     return this;
   }
@@ -203,8 +223,7 @@ export class ColumnCollectionBuilder {
     const result = new Map<PObjectId, ColumnSnapshot<PObjectId>>();
 
     for (const provider of this.providers) {
-      // Select all columns (pass-through predicate)
-      const columns = provider.selectColumns(() => true);
+      const columns = provider.getAllColumns();
       for (const col of columns) {
         const nativeId = deriveNativeId(col.spec);
         if (seen.has(nativeId)) continue;
@@ -361,7 +380,12 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
         return {
           column: this.toSnapshot(universalId, col),
           originalId: origId,
-          variants: hit.mappingVariants.map((): MatchVariant => ({})),
+          variants: hit.mappingVariants.map(
+            (v): MatchVariant => ({
+              qualifications: v.qualifications,
+              distinctiveQualifications: v.distinctiveQualifications,
+            }),
+          ),
         } satisfies ColumnMatch;
       })
       .filter((m): m is ColumnMatch => m !== undefined);
