@@ -1,4 +1,4 @@
-import { createHash, type Hash } from "node:crypto";
+import { createHash } from "node:crypto";
 import type {
   AnyResourceRef,
   PlClient,
@@ -31,6 +31,7 @@ import type {
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { BlockPackSpecPrepared } from "../../model";
 import type { TemplateSpecPrepared } from "../../model/template_spec";
+import { getDebugFlags } from "../../debug";
 
 export const TemplateCacheType = resourceType("TemplateCache", "1");
 
@@ -43,6 +44,40 @@ const GC_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 export const ACCESS_COUNT_KEY = "_accessCount";
 /** @internal exported for testing */
 export const ACCESS_KEY_PREFIX = "access_";
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+
+export type TemplateCacheStat = {
+  totalMs: number;
+  flattenMs: number;
+  cacheInitMs: number;
+  materializeMs: number;
+  totalNodes: number;
+  cacheHits: number;
+  cacheMisses: number;
+  batchCount: number;
+  happyPath: boolean;
+  gcTriggered: boolean;
+  retries: number;
+  templateFormat: string;
+};
+
+function initialStat(): TemplateCacheStat {
+  return {
+    totalMs: 0,
+    flattenMs: 0,
+    cacheInitMs: 0,
+    materializeMs: 0,
+    totalNodes: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    batchCount: 0,
+    happyPath: false,
+    gcTriggered: false,
+    retries: 0,
+    templateFormat: "",
+  };
+}
 
 // ─── Tree node abstraction ───────────────────────────────────────────────────
 
@@ -58,64 +93,6 @@ interface CacheableNode {
 
 // ─── Hash computation helpers ────────────────────────────────────────────────
 
-function sortedEntries<T>(obj: Record<string, T>): [string, T][] {
-  const entries = Object.entries(obj);
-  entries.sort((a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1));
-  return entries;
-}
-
-// V2 hash helpers
-
-function hashLibV2(lib: TemplateLibData, h: Hash): void {
-  h.update(PlTemplateLibV1.type.name)
-    .update(PlTemplateLibV1.type.version)
-    .update(lib.name)
-    .update(lib.version)
-    .update(lib.src);
-}
-
-function hashSoftwareV2(sw: TemplateSoftwareData, h: Hash): void {
-  h.update(PlTemplateSoftwareV1.type.name)
-    .update(PlTemplateSoftwareV1.type.version)
-    .update(sw.name)
-    .update(sw.version)
-    .update(sw.src);
-}
-
-function hashTemplateV2(tpl: TemplateData, h: Hash): void {
-  h.update(PlTemplateV1.type.name)
-    .update(PlTemplateV1.type.version)
-    .update(tpl.hashOverride ?? "no-override")
-    .update(tpl.name)
-    .update(tpl.version)
-    .update(tpl.src);
-
-  for (const [libId, lib] of sortedEntries(tpl.libs ?? {})) {
-    h.update("lib:" + libId);
-    hashLibV2(lib, h);
-  }
-  for (const [swId, sw] of sortedEntries(tpl.software ?? {})) {
-    h.update("soft:" + swId);
-    hashSoftwareV2(sw, h);
-  }
-  for (const [swId, sw] of sortedEntries(tpl.assets ?? {})) {
-    h.update("asset:" + swId);
-    hashSoftwareV2(sw, h);
-  }
-  for (const [tplId, sub] of sortedEntries(tpl.templates ?? {})) {
-    h.update("tpl:" + tplId);
-    hashTemplateV2(sub, h);
-  }
-}
-
-function computeHashV2<T>(data: T, hashFn: (d: T, h: Hash) => void): string {
-  const h = createHash("sha256");
-  hashFn(data, h);
-  return h.digest("hex");
-}
-
-// V3 hash helpers
-
 function getSourceCode(name: string, sources: Record<string, string>, sourceHash: string): string {
   return notEmpty(
     sources[sourceHash],
@@ -123,60 +100,53 @@ function getSourceCode(name: string, sources: Record<string, string>, sourceHash
   );
 }
 
-function hashLibV3(lib: TemplateLibDataV3, h: Hash, sources: Record<string, string>): void {
-  h.update(PlTemplateLibV1.type.name)
+/**
+ * Bottom-up hash composition: each node hashes its OWN content + child hash STRINGS.
+ * This means each unique node is hashed exactly once → O(n) instead of O(n * depth).
+ */
+
+// V2 leaf hashes (libs, software — no children)
+
+function hashLibV2(lib: TemplateLibData): string {
+  return createHash("sha256")
+    .update(PlTemplateLibV1.type.name)
     .update(PlTemplateLibV1.type.version)
     .update(lib.name)
     .update(lib.version)
-    .update(getSourceCode(lib.name, sources, lib.sourceHash));
+    .update(lib.src)
+    .digest("hex");
 }
 
-function hashSoftwareV3(
-  sw: TemplateSoftwareDataV3,
-  h: Hash,
-  sources: Record<string, string>,
-): void {
-  h.update(PlTemplateSoftwareV1.type.name)
+function hashSoftwareV2(sw: TemplateSoftwareData): string {
+  return createHash("sha256")
+    .update(PlTemplateSoftwareV1.type.name)
     .update(PlTemplateSoftwareV1.type.version)
     .update(sw.name)
     .update(sw.version)
-    .update(getSourceCode(sw.name, sources, sw.sourceHash));
+    .update(sw.src)
+    .digest("hex");
 }
 
-function hashTemplateV3(tpl: TemplateDataV3, h: Hash, sources: Record<string, string>): void {
-  h.update(PlTemplateV1.type.name)
-    .update(PlTemplateV1.type.version)
-    .update(tpl.hashOverride ?? "no-override")
-    .update(tpl.name)
-    .update(tpl.version)
-    .update(getSourceCode(tpl.name, sources, tpl.sourceHash));
+// V3 leaf hashes — use sourceHash directly instead of resolving source content
 
-  for (const [libId, lib] of sortedEntries(tpl.libs ?? {})) {
-    h.update("lib:" + libId);
-    hashLibV3(lib, h, sources);
-  }
-  for (const [swId, sw] of sortedEntries(tpl.software ?? {})) {
-    h.update("soft:" + swId);
-    hashSoftwareV3(sw, h, sources);
-  }
-  for (const [swId, sw] of sortedEntries(tpl.assets ?? {})) {
-    h.update("asset:" + swId);
-    hashSoftwareV3(sw, h, sources);
-  }
-  for (const [tplId, sub] of sortedEntries(tpl.templates ?? {})) {
-    h.update("tpl:" + tplId);
-    hashTemplateV3(sub, h, sources);
-  }
+function hashLibV3(lib: TemplateLibDataV3): string {
+  return createHash("sha256")
+    .update(PlTemplateLibV1.type.name)
+    .update(PlTemplateLibV1.type.version)
+    .update(lib.name)
+    .update(lib.version)
+    .update(lib.sourceHash)
+    .digest("hex");
 }
 
-function computeHashV3<T>(
-  data: T,
-  hashFn: (d: T, h: Hash, s: Record<string, string>) => void,
-  sources: Record<string, string>,
-): string {
-  const h = createHash("sha256");
-  hashFn(data, h, sources);
-  return h.digest("hex");
+function hashSoftwareV3(sw: TemplateSoftwareDataV3): string {
+  return createHash("sha256")
+    .update(PlTemplateSoftwareV1.type.name)
+    .update(PlTemplateSoftwareV1.type.version)
+    .update(sw.name)
+    .update(sw.version)
+    .update(sw.sourceHash)
+    .digest("hex");
 }
 
 // ─── Tree flattening ─────────────────────────────────────────────────────────
@@ -186,7 +156,7 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
   const seen = new Set<string>();
 
   function processLib(lib: TemplateLibData): string {
-    const hash = computeHashV2(lib, hashLibV2);
+    const hash = hashLibV2(lib);
     if (!seen.has(hash)) {
       seen.add(hash);
       nodes.push({
@@ -203,7 +173,7 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
   }
 
   function processSoftware(sw: TemplateSoftwareData): string {
-    const hash = computeHashV2(sw, hashSoftwareV2);
+    const hash = hashSoftwareV2(sw);
     if (!seen.has(hash)) {
       seen.add(hash);
       nodes.push({
@@ -222,10 +192,7 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
   }
 
   function processTemplate(tpl: TemplateData): string {
-    const hash = computeHashV2(tpl, hashTemplateV2);
-    if (seen.has(hash)) return hash;
-
-    // Process children first (topological order)
+    // Process children first (bottom-up) — their hashes are computed before ours
     const childHashes: string[] = [];
     const children: { fieldName: string; hash: string }[] = [];
 
@@ -250,6 +217,20 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
       children.push({ fieldName: `${PlTemplateV1.tplPrefix}/${tplId}`, hash: h });
     }
 
+    // Compose hash from own content + child hash strings (NOT child content)
+    const h = createHash("sha256")
+      .update(PlTemplateV1.type.name)
+      .update(PlTemplateV1.type.version)
+      .update(tpl.hashOverride ?? "no-override")
+      .update(tpl.name)
+      .update(tpl.version)
+      .update(tpl.src);
+    for (const child of children) {
+      h.update("child:" + child.fieldName + ":" + child.hash);
+    }
+    const hash = h.digest("hex");
+
+    if (seen.has(hash)) return hash;
     seen.add(hash);
     nodes.push({
       hash,
@@ -293,7 +274,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
   const sources = data.hashToSource;
 
   function processLib(lib: TemplateLibDataV3): string {
-    const hash = computeHashV3(lib, hashLibV3, sources);
+    const hash = hashLibV3(lib);
     if (!seen.has(hash)) {
       seen.add(hash);
       nodes.push({
@@ -313,7 +294,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
   }
 
   function processSoftware(sw: TemplateSoftwareDataV3): string {
-    const hash = computeHashV3(sw, hashSoftwareV3, sources);
+    const hash = hashSoftwareV3(sw);
     if (!seen.has(hash)) {
       seen.add(hash);
       nodes.push({
@@ -335,9 +316,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
   }
 
   function processTemplate(tpl: TemplateDataV3): string {
-    const hash = computeHashV3(tpl, hashTemplateV3, sources);
-    if (seen.has(hash)) return hash;
-
+    // Process children first (bottom-up)
     const childHashes: string[] = [];
     const children: { fieldName: string; hash: string }[] = [];
 
@@ -362,6 +341,21 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
       children.push({ fieldName: `${PlTemplateV1.tplPrefix}/${tplId}`, hash: h });
     }
 
+    // Compose hash from own content + child hash strings (NOT child content).
+    // Uses sourceHash directly — it already uniquely identifies the source.
+    const h = createHash("sha256")
+      .update(PlTemplateV1.type.name)
+      .update(PlTemplateV1.type.version)
+      .update(tpl.hashOverride ?? "no-override")
+      .update(tpl.name)
+      .update(tpl.version)
+      .update(tpl.sourceHash);
+    for (const child of children) {
+      h.update("child:" + child.fieldName + ":" + child.hash);
+    }
+    const hash = h.digest("hex");
+
+    if (seen.has(hash)) return hash;
     seen.add(hash);
     nodes.push({
       hash,
@@ -411,16 +405,31 @@ export function flattenTemplateTree(data: TemplateData | CompiledTemplateV3): Ca
 
 // ─── Cache operations ────────────────────────────────────────────────────────
 
+/** In-memory cache for the TemplateCache ResourceId per PlClient instance. */
+const cacheRidMap = new WeakMap<PlClient, ResourceId>();
+
+/** Clear the in-memory cacheRid entry (call on errors referencing the cache resource). */
+export function invalidateTemplateCacheId(pl: PlClient): void {
+  cacheRidMap.delete(pl);
+}
+
 /** Find or create the TemplateCache/1 resource on user root. */
 export async function getOrCreateTemplateCache(pl: PlClient): Promise<ResourceId> {
-  // Try read-only check first to avoid unnecessary write tx
+  // Check in-memory cache first (0ms after first call)
+  const cached = cacheRidMap.get(pl);
+  if (cached !== undefined) return cached;
+
+  // Try read-only check
   const existing = await pl.withReadTx("templateCache:check", async (tx) => {
     const fd = await tx.getFieldIfExists(field(pl.clientRoot, TemplateCacheFieldName));
     return fd ? ensureResourceIdNotNull(fd.value) : undefined;
   });
-  if (existing) return existing;
+  if (existing) {
+    cacheRidMap.set(pl, existing);
+    return existing;
+  }
 
-  return pl.withWriteTx("templateCache:init", async (tx) => {
+  const result = await pl.withWriteTx("templateCache:init", async (tx) => {
     // Double-check inside write tx (another instance may have created it)
     const fd = await tx.getFieldIfExists(field(pl.clientRoot, TemplateCacheFieldName));
     if (fd) return ensureResourceIdNotNull(fd.value);
@@ -431,6 +440,8 @@ export async function getOrCreateTemplateCache(pl: PlClient): Promise<ResourceId
     await tx.commit();
     return await cache.globalId;
   });
+  cacheRidMap.set(pl, result);
+  return result;
 }
 
 /** Remove the template cache from user root. */
@@ -443,6 +454,7 @@ export async function dropTemplateCache(pl: PlClient): Promise<void> {
       await tx.commit();
     }
   });
+  invalidateTemplateCacheId(pl);
 }
 
 // ─── GC ──────────────────────────────────────────────────────────────────────
@@ -483,55 +495,79 @@ export async function loadTemplateCached(
   spec: TemplateSpecPrepared,
   options?: { cacheResourceId?: ResourceId },
 ): Promise<ResourceId> {
-  // Parse to data if needed
-  let tplData: TemplateData | CompiledTemplateV3;
-  switch (spec.type) {
-    case "explicit":
-      tplData = parseTemplate(spec.content);
-      break;
-    case "prepared":
-      tplData = spec.data;
-      break;
-    case "cached":
-      return spec.resourceId;
-    case "from-registry":
-      throw new Error(
-        "loadTemplateCached does not support from-registry specs; use loadTemplate instead",
-      );
-    default: {
-      const _: never = spec;
-      throw new Error(`unexpected spec type: ${(_ as any).type}`);
+  const stat = initialStat();
+  const t0 = performance.now();
+
+  try {
+    // Parse to data if needed
+    let tplData: TemplateData | CompiledTemplateV3;
+    switch (spec.type) {
+      case "explicit":
+        tplData = parseTemplate(spec.content);
+        break;
+      case "prepared":
+        tplData = spec.data;
+        break;
+      case "cached":
+        return spec.resourceId;
+      case "from-registry":
+        throw new Error(
+          "loadTemplateCached does not support from-registry specs; use loadTemplate instead",
+        );
+      default: {
+        const _: never = spec;
+        throw new Error(`unexpected spec type: ${(_ as any).type}`);
+      }
+    }
+
+    stat.templateFormat = tplData.type;
+
+    // Flatten to ordered nodes
+    const tFlatten = performance.now();
+    const nodes = flattenTemplateTree(tplData);
+    stat.flattenMs = performance.now() - tFlatten;
+    if (nodes.length === 0) throw new Error("template tree produced no nodes");
+
+    stat.totalNodes = nodes.length;
+    const rootHash = nodes[nodes.length - 1].hash;
+
+    // Resolve or create cache resource
+    const tCacheInit = performance.now();
+    const cacheRid = options?.cacheResourceId ?? (await getOrCreateTemplateCache(pl));
+    stat.cacheInitMs = performance.now() - tCacheInit;
+
+    // Split into batches
+    const batches: CacheableNode[][] = [];
+    for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
+      batches.push(nodes.slice(i, i + BATCH_SIZE));
+    }
+    stat.batchCount = batches.length;
+
+    // Retry loop: if a batch commit fails because a previously-cached resource
+    // was GC'd between batches, restart the entire materialization from scratch.
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const tMat = performance.now();
+        const result = await materializeBatches(pl, cacheRid, rootHash, batches, stat);
+        stat.materializeMs = performance.now() - tMat;
+        stat.retries = attempt;
+        return result;
+      } catch (e) {
+        if (attempt === MAX_RETRIES - 1) throw e;
+        // Retry from scratch — previous batch results may reference GC'd resources
+        stat.cacheHits = 0;
+        stat.cacheMisses = 0;
+      }
+    }
+
+    throw new Error("BUG: unreachable");
+  } finally {
+    stat.totalMs = performance.now() - t0;
+    if (getDebugFlags().logTemplateCacheStat) {
+      console.log(`[templateCache] ${JSON.stringify(stat)}`);
     }
   }
-
-  // Flatten to ordered nodes
-  const nodes = flattenTemplateTree(tplData);
-  if (nodes.length === 0) throw new Error("template tree produced no nodes");
-
-  const rootHash = nodes[nodes.length - 1].hash;
-
-  // Resolve or create cache resource
-  const cacheRid = options?.cacheResourceId ?? (await getOrCreateTemplateCache(pl));
-
-  // Split into batches
-  const batches: CacheableNode[][] = [];
-  for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
-    batches.push(nodes.slice(i, i + BATCH_SIZE));
-  }
-
-  // Retry loop: if a batch commit fails because a previously-cached resource
-  // was GC'd between batches, restart the entire materialization from scratch.
-  const MAX_RETRIES = 3;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      return await materializeBatches(pl, cacheRid, rootHash, batches);
-    } catch (e) {
-      if (attempt === MAX_RETRIES - 1) throw e;
-      // Retry from scratch — previous batch results may reference GC'd resources
-    }
-  }
-
-  throw new Error("BUG: unreachable");
 }
 
 async function materializeBatches(
@@ -539,6 +575,7 @@ async function materializeBatches(
   cacheRid: ResourceId,
   rootHash: string,
   batches: CacheableNode[][],
+  stat: TemplateCacheStat,
 ): Promise<ResourceId> {
   // Resolved IDs from all batches (global ResourceIds only)
   const resolvedIds = new Map<string, ResourceId>();
@@ -552,49 +589,68 @@ async function materializeBatches(
 
       // ── First batch: happy path + GC ──
       if (isFirstBatch) {
-        // Happy path: check if root is already cached
-        if (await tx.fieldExists(field(cacheRid, rootHash))) {
+        // Happy path: parallel check for root existence + access count (2 ops, 1 roundtrip)
+        // NOTE: getFieldIfExists can't be used in Promise.all within write tx — the NOT_FOUND
+        // error from getField leaks through the shared PromiseTracker to other parallel ops.
+        // fieldExists returns a boolean and never throws NOT_FOUND.
+        const [rootExists, countStr] = await Promise.all([
+          tx.fieldExists(field(cacheRid, rootHash)),
+          tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY),
+        ]);
+
+        if (rootExists) {
+          // Root confirmed to exist — safe to getField (1 more roundtrip)
           const rootFd = await tx.getField(field(cacheRid, rootHash));
           const rootRid = ensureResourceIdNotNull(rootFd.value);
-          // Update access tracking
+          // Update access tracking (fire-and-forget writes, only commit awaited)
           const now = Date.now().toString();
           tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + rootHash, now);
-          const countStr = await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY);
           const count = countStr ? parseInt(countStr, 10) : 0;
           tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (count + 1).toString());
           await tx.commit();
+          stat.happyPath = true;
+          stat.cacheHits = stat.totalNodes;
           return { done: true as const, rootId: rootRid };
         }
 
         // Run GC if threshold exceeded
         gcRan = await runGcIfNeeded(tx, cacheRid);
+        if (gcRan) stat.gcTriggered = true;
       }
 
       // ── Parallel cache checks for all nodes in this batch ──
+      // fieldExists in parallel (1 roundtrip), then getField for hits (1 roundtrip)
       const existsResults = await Promise.all(
-        batch.map((node) => tx.fieldExists(field(cacheRid, node.hash))),
+        batch.map((node) =>
+          resolvedIds.has(node.hash)
+            ? Promise.resolve(false)
+            : tx.fieldExists(field(cacheRid, node.hash)),
+        ),
       );
 
-      // Resolve existing entries
+      // Resolve existing entries — read values for cache hits in parallel
       const toCreate: CacheableNode[] = [];
+      const cacheHitHashes: string[] = [];
       const fieldReads: Promise<void>[] = [];
       for (let i = 0; i < batch.length; i++) {
         const node = batch[i];
-        if (resolvedIds.has(node.hash)) continue; // Already resolved from a prior batch
+        if (resolvedIds.has(node.hash)) continue;
         if (existsResults[i]) {
           fieldReads.push(
             tx.getField(field(cacheRid, node.hash)).then((fd) => {
               resolvedIds.set(node.hash, ensureResourceIdNotNull(fd.value));
             }),
           );
+          cacheHitHashes.push(node.hash);
+          stat.cacheHits++;
         } else {
           toCreate.push(node);
+          stat.cacheMisses++;
         }
       }
       await Promise.all(fieldReads);
 
       // ── Create missing nodes ──
-      const toCreateSet = new Set(toCreate);
       const newRefs = new Map<string, ResourceRef>();
       const now = Date.now().toString();
       let hasWrites = false;
@@ -628,11 +684,9 @@ async function materializeBatches(
       }
 
       // Also update access tracking for cache-hit nodes in this batch
-      for (let i = 0; i < batch.length; i++) {
-        if (existsResults[i] && !toCreateSet.has(batch[i])) {
-          tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + batch[i].hash, now);
-          hasWrites = true;
-        }
+      for (const hitHash of cacheHitHashes) {
+        tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + hitHash, now);
+        hasWrites = true;
       }
 
       // Increment global access count (once per loadTemplateCached call, in first batch)

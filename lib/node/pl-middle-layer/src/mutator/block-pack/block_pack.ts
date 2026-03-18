@@ -16,6 +16,7 @@ import { resolveDevPacket } from "../../dev_env";
 import { getDevV2PacketMtime } from "../../block_registry";
 import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { LRUCache } from "lru-cache";
+import canonicalize from "canonicalize";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
 import { z } from "zod";
@@ -65,6 +66,9 @@ export class BlockPackPreparer {
     sizeCalculation: (value) => value.byteLength,
   });
 
+  /** Cache of prepared block packs for registry specs (immutable by version). */
+  private readonly preparedCache = new LRUCache<string, BlockPackSpecPrepared>({ max: 50 });
+
   public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
     switch (spec.type) {
       case "explicit":
@@ -106,16 +110,35 @@ export class BlockPackPreparer {
     }
   }
 
+  /** Returns a stable cache key for registry specs (immutable by version). Dev specs return undefined. */
+  private specKey(spec: BlockPackSpecAny): string | undefined {
+    switch (spec.type) {
+      case "from-registry-v1":
+        return `v1:${spec.registryUrl}:${spec.id.organization}:${spec.id.name}:${spec.id.version}`;
+      case "from-registry-v2":
+        return `v2:${spec.registryUrl}:${canonicalize(spec.id)}`;
+      default:
+        return undefined; // dev, explicit, prepared — not cacheable
+    }
+  }
+
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
     if (spec.type === "prepared") {
       return spec;
+    }
+
+    // Check prepare cache for registry specs
+    const key = this.specKey(spec);
+    if (key) {
+      const cached = this.preparedCache.get(key);
+      if (cached) return cached;
     }
 
     const explicit = await this.prepareWithoutUnpacking(spec);
 
     await using workerManager = new WorkerManager();
 
-    return {
+    const result: BlockPackSpecPrepared = {
       ...explicit,
       type: "prepared",
       template: {
@@ -123,6 +146,12 @@ export class BlockPackPreparer {
         data: await workerManager.process("parseTemplate", explicit.template.content),
       },
     };
+
+    if (key) {
+      this.preparedCache.set(key, result);
+    }
+
+    return result;
   }
 
   private async prepareWithoutUnpacking(

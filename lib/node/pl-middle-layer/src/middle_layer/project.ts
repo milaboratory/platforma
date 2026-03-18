@@ -211,8 +211,7 @@ export class Project {
     blockId: string = randomUUID(),
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
-    const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
+    const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
 
@@ -305,9 +304,7 @@ export class Project {
     author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = extractConfig(
-      await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec),
-    );
+    const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
 
