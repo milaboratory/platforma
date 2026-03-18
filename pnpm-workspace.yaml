@@ -47,6 +47,7 @@ packages:
   - tools/package-builder
   - tools/ts-builder
   - tools/r-builder
+  - tools/pl-cli
   - tools/pl-bootstrap
   - tools/eslint-config
   - tools/blocks-deps-updater
