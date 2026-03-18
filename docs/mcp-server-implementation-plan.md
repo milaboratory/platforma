@@ -219,16 +219,22 @@ This requires access to PFrame infrastructure. The `MiddleLayer` provides `drive
 
 ### Step 8: Logs tool
 
-Tool:
+Tools:
 - `get_logs` → reads execution logs for a block
   - Input: `projectId`, `blockId`, `lines` (default 100), `search` (regex filter)
   - Reuses `logsApi` patterns
+- `get_app_log` → reads the Electron main process log (application-level diagnostics)
+  - Input: `lines` (default 100), `search` (substring filter)
+  - Reads from `~/Library/Logs/platforma/main.log` (macOS) or equivalent
+  - Useful for debugging block loading errors, connection issues, MCP server problems
 
 **Test:** `logs.test.ts`:
 1. Run a block, await completion
 2. `get_logs` → returns log text
 3. `get_logs` with search filter → returns filtered lines
 4. `get_logs` on non-running block → returns available logs or empty
+5. `get_app_log` → returns recent app log entries
+6. `get_app_log` with search "MCP" → returns MCP-related log lines
 
 **Desktop validation:** Run a block, read logs via MCP, compare with log viewer in desktop app.
 
