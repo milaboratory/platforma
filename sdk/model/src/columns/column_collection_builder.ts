@@ -10,7 +10,7 @@ import { AnchoredIdDeriver, deriveNativeId, isPlRef } from "@milaboratories/pl-m
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type { ColumnSelectorInput } from "./column_selector";
 import { normalizeSelectors } from "./column_selector";
-import type { ColumnSelector, AxisSelector, StringMatcher } from "./column_selector";
+import type { ColumnSelector, AxisSelector } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { createColumnSnapshot } from "./column_snapshot";
@@ -398,38 +398,28 @@ function remapSnapshot<Id extends PObjectId>(
 
 // --- Selector conversion helpers ---
 
-function convertMatcherArray(arr: StringMatcher[]): PFrameInternal.StringMatcher[] {
-  return arr;
-}
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
-function convertMatcherMap(record: Record<string, StringMatcher[]>): PFrameInternal.MatcherMap {
-  const result: PFrameInternal.MatcherMap = {};
-  for (const [key, matchers] of Object.entries(record)) {
-    result[key] = convertMatcherArray(matchers);
-  }
+function convertAxisSelector(sel: AxisSelector): PFrameInternal.MultiAxisSelector {
+  const result: Mutable<PFrameInternal.MultiAxisSelector> = {};
+  if (sel.name) result.name = sel.name;
+  if (sel.type) result.type = sel.type as string[];
+  if (sel.domain) result.domain = sel.domain;
+  if (sel.contextDomain) result.contextDomain = sel.contextDomain;
+  if (sel.annotations) result.annotations = sel.annotations;
   return result;
 }
 
-function convertAxisSelector(sel: AxisSelector): PFrameInternal.MultiAxisSelector {
-  return {
-    ...(sel.name && { name: convertMatcherArray(sel.name) }),
-    ...(sel.type && { type: sel.type as string[] }),
-    ...(sel.domain && { domain: convertMatcherMap(sel.domain) }),
-    ...(sel.contextDomain && { contextDomain: convertMatcherMap(sel.contextDomain) }),
-    ...(sel.annotations && { annotations: convertMatcherMap(sel.annotations) }),
-  };
-}
-
 function convertColumnSelector(sel: ColumnSelector): PFrameInternal.MultiColumnSelector {
-  return {
-    ...(sel.name && { name: convertMatcherArray(sel.name) }),
-    ...(sel.type && { type: sel.type as string[] }),
-    ...(sel.domain && { domain: convertMatcherMap(sel.domain) }),
-    ...(sel.contextDomain && { contextDomain: convertMatcherMap(sel.contextDomain) }),
-    ...(sel.annotations && { annotations: convertMatcherMap(sel.annotations) }),
-    ...(sel.axes && { axes: sel.axes.map(convertAxisSelector) }),
-    ...(sel.partialAxesMatch !== undefined && { partialAxesMatch: sel.partialAxesMatch }),
-  };
+  const result: Mutable<PFrameInternal.MultiColumnSelector> = {};
+  if (sel.name) result.name = sel.name;
+  if (sel.type) result.type = sel.type as string[];
+  if (sel.domain) result.domain = sel.domain;
+  if (sel.contextDomain) result.contextDomain = sel.contextDomain;
+  if (sel.annotations) result.annotations = sel.annotations;
+  if (sel.axes) result.axes = sel.axes.map(convertAxisSelector);
+  if (sel.partialAxesMatch !== undefined) result.partialAxesMatch = sel.partialAxesMatch;
+  return result;
 }
 
 /** Convert SDK ColumnSelectorInput to WASM MultiColumnSelector[]. */
