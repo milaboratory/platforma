@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.50.1
+
+### Patch Changes
+
+- 5b83cd7: Export project model constants and duplicateProject for external consumers
+
+  Added public exports:
+
+  - `ProjectMetaKey`, `ProjectCreatedTimestamp`, `ProjectLastModifiedTimestamp`, `SchemaVersionKey`, `SchemaVersionCurrent`, `ProjectStructureKey`, `ProjectResourceType`, `BlockArgsAuthorKeyPrefix`, `ProjectStructureAuthorKey` from model
+  - `ProjectsField` from middle_layer
+  - `duplicateProject` from mutator/project
+
 ## 1.50.0
 
 ### Minor Changes
