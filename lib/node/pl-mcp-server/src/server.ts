@@ -223,7 +223,9 @@ export class PlMcpServer {
       "open_project",
       {
         description: "Open a project for editing. Required before working with blocks.",
-        inputSchema: { projectId: z.string().describe("Project ID from list_projects or create_project") },
+        inputSchema: {
+          projectId: z.string().describe("Project ID from list_projects or create_project"),
+        },
       },
       async ({ projectId }) => {
         const entry = await this.resolveProject(projectId);
@@ -348,9 +350,13 @@ export class PlMcpServer {
     server.registerTool(
       "list_available_blocks",
       {
-        description: "List available blocks from configured registries. Optional query to filter by name.",
+        description:
+          "List available blocks from configured registries. Optional query to filter by name.",
         inputSchema: {
-          query: z.string().optional().describe("Filter blocks by name (case-insensitive substring match)"),
+          query: z
+            .string()
+            .optional()
+            .describe("Filter blocks by name (case-insensitive substring match)"),
         },
       },
       async ({ query }) => {
@@ -472,11 +478,7 @@ export class PlMcpServer {
         inputSchema: {
           projectId: z.string().describe("Project ID"),
           blockId: z.string().describe("Block ID to wait for"),
-          timeout: z
-            .number()
-            .optional()
-            .default(120000)
-            .describe("Timeout in ms (default 120000)"),
+          timeout: z.number().optional().default(120000).describe("Timeout in ms (default 120000)"),
         },
       },
       async ({ projectId, blockId, timeout }) => {
@@ -568,8 +570,15 @@ export class PlMcpServer {
         inputSchema: {
           projectId: z.string().describe("Project ID"),
           blockId: z.string().describe("Block ID"),
-          lines: z.number().optional().default(100).describe("Number of lines per log (default 100)"),
-          sampleId: z.string().optional().describe("Specific sample/key to read logs for (reads all if omitted)"),
+          lines: z
+            .number()
+            .optional()
+            .default(100)
+            .describe("Number of lines per log (default 100)"),
+          sampleId: z
+            .string()
+            .optional()
+            .describe("Specific sample/key to read logs for (reads all if omitted)"),
         },
       },
       async ({ projectId, blockId, lines, sampleId }) => {
@@ -612,7 +621,11 @@ export class PlMcpServer {
       {
         description: "Read recent lines from the application log. Useful for debugging errors.",
         inputSchema: {
-          lines: z.number().optional().default(50).describe("Number of lines to return (default 50)"),
+          lines: z
+            .number()
+            .optional()
+            .default(50)
+            .describe("Number of lines to return (default 50)"),
           search: z.string().optional().describe("Filter lines containing this substring"),
         },
       },
@@ -646,7 +659,8 @@ export class PlMcpServer {
     server.registerTool(
       "click",
       {
-        description: "Click at coordinates (x, y) in the application window. Use capture_screenshot to find element positions.",
+        description:
+          "Click at coordinates (x, y) in the application window. Use capture_screenshot to find element positions.",
         inputSchema: {
           x: z.number().describe("X coordinate"),
           y: z.number().describe("Y coordinate"),
@@ -658,7 +672,13 @@ export class PlMcpServer {
           return textResult({ error: "UI interaction not available" });
         }
         const clickCount = doubleClick ? 2 : 1;
-        await this.callbacks.sendInputEvent({ type: "mouseDown", x, y, button: "left", clickCount });
+        await this.callbacks.sendInputEvent({
+          type: "mouseDown",
+          x,
+          y,
+          button: "left",
+          clickCount,
+        });
         await this.callbacks.sendInputEvent({ type: "mouseUp", x, y, button: "left", clickCount });
         return textResult({ ok: true });
       },
@@ -688,9 +708,12 @@ export class PlMcpServer {
     server.registerTool(
       "press_key",
       {
-        description: "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
+        description:
+          "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
         inputSchema: {
-          key: z.string().describe("Key name (e.g. 'Enter', 'Tab', 'Escape', 'Backspace', 'ArrowDown')"),
+          key: z
+            .string()
+            .describe("Key name (e.g. 'Enter', 'Tab', 'Escape', 'Backspace', 'ArrowDown')"),
           modifiers: z
             .array(z.enum(["shift", "control", "alt", "meta"]))
             .optional()
@@ -754,7 +777,8 @@ export class PlMcpServer {
     server.registerTool(
       "execute_js",
       {
-        description: "Execute JavaScript in the renderer process and return the result. Useful for querying DOM, reading text, or complex interactions.",
+        description:
+          "Execute JavaScript in the renderer process and return the result. Useful for querying DOM, reading text, or complex interactions.",
         inputSchema: {
           code: z.string().describe("JavaScript code to execute"),
         },

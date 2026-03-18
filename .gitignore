@@ -34,3 +34,4 @@ work/
 .venv
 __pycache__/
 .ruff_cache
+tests/mcp-server/.test_auth.json

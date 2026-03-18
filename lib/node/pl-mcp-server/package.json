@@ -33,18 +33,18 @@
     "@modelcontextprotocol/sdk": "catalog:",
     "zod": "catalog:"
   },
-  "peerDependencies": {
-    "@milaboratories/pl-middle-layer": ">=1.48.0"
-  },
   "devDependencies": {
-    "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@milaboratories/pl-middle-layer": ">=1.48.0"
   },
   "engines": {
     "node": ">=22.19.0"
