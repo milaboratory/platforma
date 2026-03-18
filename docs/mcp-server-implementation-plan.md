@@ -173,12 +173,12 @@ Tools:
 ### Step 6: Await + run full pipeline
 
 Tools:
-- `await_block_done` → polls `project.overview`, watches `calculationStatus` until `"Done"` or error
+- `await_block_done` → two-phase wait: first polls `project.overview` until `calculationStatus` reaches `"Done"` or error, then calls `project.getBlockState(blockId).awaitStableValue()` to ensure outputs are fully materialized
   - Input: `projectId`, `blockId`, `timeout` (default 120000ms)
-  - Returns: block overview on completion, or `{ timedOut: true, status }` on timeout
-  - Follows pattern from `sdk/test/src/test-block.ts:awaitBlockDone`
-- `await_stable` → `project.getBlockState(blockId)` computable → `awaitStableValue(timeout)`
-  - Returns: stable block state, or `{ timedOut: true, stable: false }` on timeout
+  - Returns: `{ status, block, data, outputs }` on success, or `{ timedOut: true, status }` on timeout
+  - Phase 1 (production done): follows pattern from `sdk/test/src/test-block.ts:awaitBlockDone`
+  - Phase 2 (outputs stable): waits for block state computable to settle so outputs are readable
+  - Combined because callers rarely need the intermediate "done but not stable" state
 
 **Test:** `pipeline.test.ts` — **the key e2e test proving the full automated loop**:
 1. Create project
@@ -186,10 +186,9 @@ Tools:
 3. `set_block_data` on enter-numbers with `{ numbers: [10, 20, 30] }`
 4. Wire sum-numbers to use enter-numbers output (via `set_block_data` on sum-numbers)
 5. `run_block` on sum-numbers (with `addUpstreams` so enter-numbers runs first)
-6. `await_block_done` → waits for completion
-7. `await_stable` → waits for outputs
-8. `get_block_state` → verify final state
-9. Timeout test: set very short timeout, verify `timedOut: true` response
+6. `await_block_done` → waits for completion + stable outputs
+7. `get_block_state` → verify final state has outputs
+8. Timeout test: set very short timeout, verify `timedOut: true` response
 
 **Desktop validation:** Run the full pipeline via MCP client while watching the desktop app — see blocks transition through NotCalculated → Running → Done states in real time.
 
