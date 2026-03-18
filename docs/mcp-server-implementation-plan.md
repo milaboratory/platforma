@@ -262,7 +262,7 @@ Note: the MCP server only starts after the app connects to a backend. If the app
 
 ---
 
-### Step 9: Registry search tools
+### Step 9: Registry search tools -- SKIPPED
 
 Tools:
 - `search_blocks` → queries block registries via `ml.blockRegistryProvider`
