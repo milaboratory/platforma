@@ -339,6 +339,12 @@ Type-safe `usePlugin` composable with `PluginHandle` branded type.
 
 The YAML frontmatter lists affected packages with bump type (`patch` / `minor` / `major`). The body is a human-readable description of the change.
 
+### CRITICAL: list every modified package
+
+The changeset must include **every package whose source files changed in the PR** — not just the "primary" package. If a PR adds a new tool but also adds exports to `pl-middle-layer`, both packages need entries in the changeset. Without an entry, the package won't get a version bump and npm consumers will get the old version without the new exports.
+
+**Verification step:** Before creating the changeset, run `git diff --name-only origin/main...HEAD` and check which `package.json` directories have modified files. Each one needs an entry.
+
 ### Package naming
 
 Use the full npm package name (including scope):
@@ -388,7 +394,8 @@ After `pnpm install && pnpm build`, **before committing**, run `git status` and 
 1. **No unstaged changes remain.** Every modified file must be either staged or intentionally excluded. If `pnpm install` modified `pnpm-lock.yaml`, it must be committed.
 2. **`pnpm-lock.yaml` is included** whenever `pnpm-workspace.yaml` changed. CI rejects PRs without matching lock file updates.
 3. **Changeset file is included.** Every PR needs one in `.changeset/`.
-4. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
+4. **Changeset covers all modified packages.** Run `git diff --name-only origin/main...HEAD` and verify every package with changed source files has an entry in the changeset. Missing entries mean no version bump — npm consumers get stale code.
+5. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
 
 ---
 
