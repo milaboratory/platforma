@@ -253,33 +253,28 @@ Tools:
 
 ---
 
-### Step 10: Screenshot + open_block (desktop-specific)
+### Step 10: Screenshot, UI interaction + block navigation (desktop-specific) — DONE
 
-Tools:
-- `open_block` → navigates desktop UI to display specified block
-- `capture_screenshot` → captures currently displayed block's UI as base64 PNG
+Implemented tools:
+- `select_block` → navigates desktop UI to display specified block (sets project route via store)
+- `capture_screenshot` → captures the topmost visible view (modal > blockView > main) as base64 PNG
+- `click` → click at CSS coordinates in the topmost view
+- `type_text` → type text into the focused element
+- `press_key` → press keyboard keys with optional modifiers (shift, ctrl, alt, meta)
+- `scroll` → scroll at a given position
+- `execute_js` → run JavaScript in the topmost view's renderer process
 
-Implementation requires callback interface injected by desktop app:
-```typescript
-interface McpDesktopCallbacks {
-  openBlock(projectId: string, blockId: string): Promise<void>;
-  captureScreenshot(): Promise<Buffer>;
-}
-```
+**Implementation:**
+- `PlMcpServerCallbacks` interface with: `captureScreenshot`, `sendInputEvent`, `executeJavaScript`, `selectBlock`
+- Worker forwards callbacks to main process via `invokeParentMethod`
+- Main process routes through `Windows.getTopmostWebContents()` which checks: top modal → blockView → main webContents
+- `selectBlock` uses `store.commit("setProjectRoute", projectId, { blockId })` — the renderer's reactive route watcher loads the block frontend automatically
+- Screenshot captures the correct view even when block UIs or modals are open
 
-**Desktop-app changes:**
-- Worker implements callbacks via `invokeParentMethod` → main process → `WebContentsView`
-- Main process handles `open-block` message: navigate UI to block
-- Main process handles `capture-screenshot` message: `webContents.capturePage()` → PNG buffer
-- Follows existing `SendPuppetCommand` / `invokeParentMethod` IPC patterns
-
-**Test:** Desktop e2e tests (`packages/e2e/`):
-1. Start app with MCP enabled
-2. Connect MCP client
-3. Add block, configure, run, await done
-4. `open_block` → navigate to block
-5. `capture_screenshot` → verify base64 PNG returned
-6. Error: `capture_screenshot` without `open_block` first
+**Key implementation details:**
+- Electron's `capturePage()` only captures a single `WebContentsView`, not composited child views. The server captures whichever view is topmost.
+- `sendInputEvent` uses CSS-pixel coordinates (not device pixels). Use `execute_js` + `getBoundingClientRect()` to find element positions.
+- Block modals (e.g. file import dialogs) render inside the blockView, not as separate modal WebContentsViews.
 
 ---
 
