@@ -44,7 +44,10 @@ describe("normalizeSelectors", () => {
     const [sel] = normalizeSelectors({
       name: ["foo", { type: "regex", value: "bar.*" as RegExpString }],
     });
-    expect(sel.name).toEqual([{ type: "regex", value: "foo" }, { type: "regex", value: "bar.*" }]);
+    expect(sel.name).toEqual([
+      { type: "regex", value: "foo" },
+      { type: "regex", value: "bar.*" },
+    ]);
   });
 
   test("normalizes single StringMatcher object", () => {
@@ -76,7 +79,10 @@ describe("normalizeSelectors", () => {
       annotations: { label: ["a", { type: "regex", value: "b.*" as RegExpString }] },
     });
     expect(sel.annotations).toEqual({
-      label: [{ type: "regex", value: "a" }, { type: "regex", value: "b.*" }],
+      label: [
+        { type: "regex", value: "a" },
+        { type: "regex", value: "b.*" },
+      ],
     });
   });
 
@@ -118,7 +124,9 @@ describe("matchColumn", () => {
 
     test("regex name match", () => {
       const s = spec({ name: "pl7.app/vdj/sequence" });
-      const sel: ColumnSelector = { name: [{ type: "regex", value: "pl7\\.app/vdj/.*" as RegExpString }] };
+      const sel: ColumnSelector = {
+        name: [{ type: "regex", value: "pl7\\.app/vdj/.*" as RegExpString }],
+      };
       expect(matchColumn(s, sel)).toBe(true);
     });
 
@@ -131,7 +139,10 @@ describe("matchColumn", () => {
     test("OR across name matchers", () => {
       const s = spec({ name: "colB" });
       const sel: ColumnSelector = {
-        name: [{ type: "exact", value: "colA" }, { type: "exact", value: "colB" }],
+        name: [
+          { type: "exact", value: "colA" },
+          { type: "exact", value: "colB" },
+        ],
       };
       expect(matchColumn(s, sel)).toBe(true);
     });
@@ -261,7 +272,10 @@ describe("matchColumn", () => {
     test("exact match — same count and order", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ type: "exact", value: "a1" }] }, { name: [{ type: "exact", value: "a2" }] }],
+        axes: [
+          { name: [{ type: "exact", value: "a1" }] },
+          { name: [{ type: "exact", value: "a2" }] },
+        ],
         partialAxesMatch: false,
       };
       expect(matchColumn(s, sel)).toBe(true);
@@ -270,7 +284,10 @@ describe("matchColumn", () => {
     test("exact match — wrong order fails", () => {
       const s = withAxes([axis("a1"), axis("a2")]);
       const sel: ColumnSelector = {
-        axes: [{ name: [{ type: "exact", value: "a2" }] }, { name: [{ type: "exact", value: "a1" }] }],
+        axes: [
+          { name: [{ type: "exact", value: "a2" }] },
+          { name: [{ type: "exact", value: "a1" }] },
+        ],
         partialAxesMatch: false,
       };
       expect(matchColumn(s, sel)).toBe(false);
@@ -386,7 +403,9 @@ describe("selectorsToPredicate", () => {
   });
 
   test("works with regex in relaxed form", () => {
-    const pred = selectorsToPredicate({ name: { type: "regex", value: "col[12]" as RegExpString } });
+    const pred = selectorsToPredicate({
+      name: { type: "regex", value: "col[12]" as RegExpString },
+    });
     expect(pred(spec({ name: "col1" }))).toBe(true);
     expect(pred(spec({ name: "col2" }))).toBe(true);
     expect(pred(spec({ name: "col3" }))).toBe(false);

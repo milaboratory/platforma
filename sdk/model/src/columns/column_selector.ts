@@ -75,7 +75,9 @@ export type ColumnSelectorInput = RelaxedColumnSelector | RelaxedColumnSelector[
 function normalizeStringMatchers(input: RelaxedStringMatchers): StringMatcher[] {
   if (typeof input === "string") return [{ type: "regex", value: input as RegExpString }];
   if (!Array.isArray(input)) return [input];
-  return input.map((v) => (typeof v === "string" ? { type: "regex" as const, value: v as RegExpString } : v));
+  return input.map((v) =>
+    typeof v === "string" ? { type: "regex" as const, value: v as RegExpString } : v,
+  );
 }
 
 function normalizeRecord(input: RelaxedRecord): Record<string, StringMatcher[]> {
@@ -228,7 +230,9 @@ export function matchColumnSelectors(selectors: ColumnSelector[], spec: PColumnS
  * Convert selector input to a predicate function.
  * Normalizes relaxed form, then returns a function that OR-matches.
  */
-export function selectorsToPredicate(input: ColumnSelectorInput): (spec: PColumnSpec) => boolean {
+export function columnSelectorsToPredicate(
+  input: ColumnSelectorInput,
+): (spec: PColumnSpec) => boolean {
   const selectors = normalizeSelectors(input);
   return (spec) => matchColumnSelectors(selectors, spec);
 }
