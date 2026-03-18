@@ -548,39 +548,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   }
 }
 
-function verifyInlineAndExplicitColumnsSupport(
-  ctx: GlobalCfgRenderCtx,
-  columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
-) {
-  const hasInlineColumns = columns.some(
-    (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
-  );
-  if (hasInlineColumns && ctx.featureFlags?.inlineColumnsSupport !== true)
-    throw Error(`Inline or explicit columns not supported`);
-}
-
-function patchPTableDef(
-  ctx: GlobalCfgRenderCtx,
-  def: PTableDef<PColumn<PColumnDataUniversal>>,
-): PTableDef<PColumn<PColumnDataUniversal>> {
-  if (!ctx.featureFlags?.pTablePartitionFiltersSupport) {
-    // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
-    def = {
-      ...def,
-      partitionFilters: [],
-      filters: [...def.partitionFilters, ...def.filters],
-    };
-  }
-  if (!ctx.featureFlags?.pFrameInSetFilterSupport) {
-    def = {
-      ...def,
-      partitionFilters: patchInSetFilters(def.partitionFilters),
-      filters: patchInSetFilters(def.filters),
-    };
-  }
-  return def;
-}
-
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
 export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
@@ -652,13 +619,35 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   private verifyInlineAndExplicitColumnsSupport(
     columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
   ) {
-    verifyInlineAndExplicitColumnsSupport(this.ctx, columns);
+    const hasInlineColumns = columns.some(
+      (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
+    ); // Updated check for DataInfo
+    const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
+    if (hasInlineColumns && !inlineColumnsSupport)
+      throw Error(`Inline or explicit columns not supported`); // Combined check
+
+    // Removed redundant explicitColumns check
   }
 
   private patchPTableDef(
     def: PTableDef<PColumn<PColumnDataUniversal>>,
   ): PTableDef<PColumn<PColumnDataUniversal>> {
-    return patchPTableDef(this.ctx, def);
+    if (!this.ctx.featureFlags?.pTablePartitionFiltersSupport) {
+      // For old desktop move all partition filters to filters field as it doesn't read partitionFilters field
+      def = {
+        ...def,
+        partitionFilters: [],
+        filters: [...def.partitionFilters, ...def.filters],
+      };
+    }
+    if (!this.ctx.featureFlags?.pFrameInSetFilterSupport) {
+      def = {
+        ...def,
+        partitionFilters: patchInSetFilters(def.partitionFilters),
+        filters: patchInSetFilters(def.filters),
+      };
+    }
+    return def;
   }
 
   // TODO remove all non-PColumn fields
@@ -782,8 +771,8 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  * Render context for plugin output functions.
  * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
  *
- * Extends RenderCtxBase to inherit outputs, prerun, resultPool, and all helper methods.
- * Overrides `data` to read plugin-specific data from blockStorage instead of block data.
+ * Parameterized on the factory-like phantom F so that getPluginData returns
+ * InferFactoryData<F> directly — no casts needed for the data getter.
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
