@@ -420,6 +420,8 @@ For blocks with complex UIs (e.g. MiXCR Clonotyping, Import Sequencing Data):
 
 This hybrid approach (MCP API for project/block lifecycle, UI tools for block configuration) works well because block UIs have unique DOM structures that aren't practical to drive purely through `set_block_data`.
 
+**File imports:** Do not attempt to add files (FASTQ, FASTA, metadata, etc.) programmatically. The file import dialog uses Platforma SDK's `openFileDialog` callback which routes through native OS file pickers or custom upload flows that can't be driven via MCP. Ask the user to add files manually, then continue with block configuration and execution via MCP.
+
 ---
 
 ## Open questions for review
