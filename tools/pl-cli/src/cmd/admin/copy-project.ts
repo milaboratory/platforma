@@ -11,7 +11,7 @@ import {
   getExistingLabelsInTx,
   navigateToUserRoot,
 } from "../../project_ops";
-import { outputJson } from "../../output";
+import { outputJson, outputText } from "../../output";
 
 export default class AdminCopyProject extends PlCommand {
   static override description =
@@ -93,7 +93,7 @@ export default class AdminCopyProject extends PlCommand {
         targetUser,
       });
     } else {
-      console.log(
+      outputText(
         `Copied project from ${flags["source-user"]} to ${targetUser} as "${result.label}" (id: ${newId})`,
       );
     }

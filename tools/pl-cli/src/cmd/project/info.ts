@@ -1,7 +1,7 @@
 import { Args } from "@oclif/core";
 import { PlCommand } from "../../base_command";
 import { resolveProject, getProjectInfo } from "../../project_ops";
-import { formatDate, outputJson } from "../../output";
+import { formatDate, outputJson, outputText } from "../../output";
 
 export default class ProjectInfo extends PlCommand {
   static override description = "Show detailed information about a project.";
@@ -35,18 +35,18 @@ export default class ProjectInfo extends PlCommand {
         lastModified: info.lastModified.toISOString(),
       });
     } else {
-      console.log(`Project: ${info.label}`);
-      console.log(`ID:      ${info.id}`);
-      console.log(`RID:     ${info.rid}`);
-      console.log(`Schema:  ${info.schemaVersion ?? "(unknown)"}`);
-      console.log(`Blocks:  ${info.blockCount}`);
+      outputText(`Project: ${info.label}`);
+      outputText(`ID:      ${info.id}`);
+      outputText(`RID:     ${info.rid}`);
+      outputText(`Schema:  ${info.schemaVersion ?? "(unknown)"}`);
+      outputText(`Blocks:  ${info.blockCount}`);
       if (info.blockIds.length > 0) {
         for (const bid of info.blockIds) {
-          console.log(`  - ${bid}`);
+          outputText(`  - ${bid}`);
         }
       }
-      console.log(`Created:       ${formatDate(info.created)}`);
-      console.log(`Last Modified: ${formatDate(info.lastModified)}`);
+      outputText(`Created:       ${formatDate(info.created)}`);
+      outputText(`Last Modified: ${formatDate(info.lastModified)}`);
     }
   }
 }

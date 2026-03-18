@@ -1,5 +1,10 @@
 export type OutputFormat = "text" | "json";
 
+/** Outputs a line of text to stdout. */
+export function outputText(message: string): void {
+  console.log(message);
+}
+
 /** Outputs data as formatted JSON to stdout. */
 export function outputJson(data: unknown): void {
   console.log(JSON.stringify(data, null, 2));

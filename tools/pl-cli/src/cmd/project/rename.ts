@@ -1,7 +1,7 @@
 import { Args, Flags } from "@oclif/core";
 import { PlCommand } from "../../base_command";
 import { resolveProject, renameProject } from "../../project_ops";
-import { outputJson } from "../../output";
+import { outputJson, outputText } from "../../output";
 
 export default class ProjectRename extends PlCommand {
   static override description = "Rename a project.";
@@ -33,7 +33,7 @@ export default class ProjectRename extends PlCommand {
     if (flags.format === "json") {
       outputJson({ id, rid: String(rid), label: flags.name });
     } else {
-      console.log(`Renamed project to "${flags.name}"`);
+      outputText(`Renamed project to "${flags.name}"`);
     }
   }
 }

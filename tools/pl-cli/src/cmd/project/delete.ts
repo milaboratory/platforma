@@ -1,7 +1,8 @@
 import { Args, Flags } from "@oclif/core";
+import { createInterface } from "node:readline";
 import { PlCommand } from "../../base_command";
 import { resolveProject, deleteProject, getProjectInfo } from "../../project_ops";
-import { outputJson } from "../../output";
+import { outputJson, outputText } from "../../output";
 
 export default class ProjectDelete extends PlCommand {
   static override description = "Delete a project. This permanently destroys all project data.";
@@ -29,15 +30,20 @@ export default class ProjectDelete extends PlCommand {
     const info = await getProjectInfo(pl, projectListRid, id);
 
     if (!flags.force) {
-      const readline = await import("node:readline");
-      const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
-      const answer = await new Promise<string>((resolve) => {
-        rl.question(`Delete project "${info.label}" (${info.blockCount} blocks)? [y/N] `, resolve);
-      });
-      rl.close();
-      if (answer.toLowerCase() !== "y") {
-        console.log("Aborted.");
-        return;
+      const rl = createInterface({ input: process.stdin, output: process.stderr });
+      try {
+        const answer = await new Promise<string>((resolve) => {
+          rl.question(
+            `Delete project "${info.label}" (${info.blockCount} blocks)? [y/N] `,
+            resolve,
+          );
+        });
+        if (answer.toLowerCase() !== "y") {
+          outputText("Aborted.");
+          return;
+        }
+      } finally {
+        rl.close();
       }
     }
 
@@ -46,7 +52,7 @@ export default class ProjectDelete extends PlCommand {
     if (flags.format === "json") {
       outputJson({ deleted: true, id, label: info.label });
     } else {
-      console.log(`Deleted project "${info.label}"`);
+      outputText(`Deleted project "${info.label}"`);
     }
   }
 }

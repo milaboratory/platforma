@@ -9,7 +9,7 @@ import {
   duplicateProject,
   getExistingLabelsInTx,
 } from "../../project_ops";
-import { outputJson } from "../../output";
+import { outputJson, outputText } from "../../output";
 
 export default class ProjectDuplicate extends PlCommand {
   static override description =
@@ -74,7 +74,7 @@ export default class ProjectDuplicate extends PlCommand {
     if (flags.format === "json") {
       outputJson({ id: newId, rid: String(newRid.rid), label: newRid.label });
     } else {
-      console.log(`Duplicated project as "${newRid.label}" (id: ${newId})`);
+      outputText(`Duplicated project as "${newRid.label}" (id: ${newId})`);
     }
   }
 }

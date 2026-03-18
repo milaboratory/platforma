@@ -1,6 +1,6 @@
 import { PlCommand } from "../../base_command";
 import { listProjects } from "../../project_ops";
-import { formatTable, formatDate, outputJson } from "../../output";
+import { formatTable, formatDate, outputJson, outputText } from "../../output";
 
 export default class ProjectList extends PlCommand {
   static override description = "List all projects for the authenticated user.";
@@ -26,11 +26,11 @@ export default class ProjectList extends PlCommand {
       );
     } else {
       if (projects.length === 0) {
-        console.log("No projects found.");
+        outputText("No projects found.");
         return;
       }
 
-      console.log(
+      outputText(
         formatTable(
           ["ID", "LABEL", "CREATED", "LAST MODIFIED"],
           projects.map((p) => [
@@ -41,7 +41,7 @@ export default class ProjectList extends PlCommand {
           ]),
         ),
       );
-      console.log(`\n${projects.length} project(s)`);
+      outputText(`\n${projects.length} project(s)`);
     }
   }
 }

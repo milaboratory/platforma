@@ -18,4 +18,4 @@ export {
   type ProjectEntry,
   type ProjectInfo,
 } from "./project_ops";
-export { type OutputFormat, outputJson, formatTable, formatDate } from "./output";
+export { type OutputFormat, outputText, outputJson, formatTable, formatDate } from "./output";
