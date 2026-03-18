@@ -170,7 +170,7 @@ Tools:
 
 ---
 
-### Step 6: Await + run full pipeline
+### Step 6: Await + run full pipeline — DONE
 
 Tools:
 - `await_block_done` → two-phase wait: first polls `project.overview` until `calculationStatus` reaches `"Done"` or error, then calls `project.getBlockState(blockId).awaitStableValue()` to ensure outputs are fully materialized
@@ -194,7 +194,7 @@ Tools:
 
 ---
 
-### Step 7: Data query tools
+### Step 7: Data query tools — SKIPPED (deferred)
 
 Tools:
 - `get_block_outputs` → rendered output values as JSON. PFrame/PTable handles → column specs + row count
@@ -217,7 +217,7 @@ This requires access to PFrame infrastructure. The `MiddleLayer` provides `drive
 
 ---
 
-### Step 8: Logs tool
+### Step 8: Logs tool — DONE (get_app_log only, get_block_logs deferred)
 
 Tools:
 - `get_block_logs` → reads execution logs for a block
