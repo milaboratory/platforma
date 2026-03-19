@@ -14,7 +14,6 @@ import {
   BLOCK_STORAGE_SCHEMA_VERSION,
   type BlockStorage,
   type MutateStoragePayload,
-  type StorageDebugView,
   type PluginRegistry,
   type VersionedData,
   createBlockStorage,
@@ -28,6 +27,7 @@ import type { PluginHandle } from "./plugin_handle";
 
 import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
+import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
 // =============================================================================
 // Hook interfaces for dependency injection

@@ -39,6 +39,7 @@
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ptabler-expression-js": "workspace:*",
     "canonicalize": "catalog:",
     "es-toolkit": "catalog:",
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pf-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",

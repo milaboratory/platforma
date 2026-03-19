@@ -44,6 +44,13 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
+import type {
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
+  PColumnSpec,
+  SpecFrameHandle,
+} from "@milaboratories/pl-model-common";
+import { SpecDriver } from "./spec_driver";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -57,6 +64,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
+  private readonly specDriver = new SpecDriver();
 
   private readonly meta: Map<string, Block>;
 
@@ -426,6 +434,27 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return key;
   }
 
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
+    const handle = this.specDriver.createSpecFrame(specs);
+    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
+    return handle;
+  }
+
+  public specFrameDiscoverColumns(
+    handle: SpecFrameHandle,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
+    return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
+  }
+
+  public specFrameDispose(handle: SpecFrameHandle): void {
+    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
+  }
+
   /**
    * Transforms input data for PFrame/PTable creation
    * - Converts string handles to accessors
@@ -648,11 +677,11 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       exportCtxFunction("listOutputFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listOutputFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("listDynamicFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listDynamicFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("getKeyValueBase64", (handle, key) => {
@@ -856,6 +885,31 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           ),
           undefined,
         );
+      });
+
+      //
+      // Spec Frames
+      //
+
+      exportCtxFunction("createSpecFrame", (specs) => {
+        return parent.exportSingleValue(
+          this.createSpecFrame(parent.importObjectViaJson(specs) as Record<string, PColumnSpec>),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
+        return parent.exportObjectViaJson(
+          this.specFrameDiscoverColumns(
+            vm.getString(handle) as SpecFrameHandle,
+            parent.importObjectViaJson(request) as DiscoverColumnsRequest,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("specFrameDispose", (handle) => {
+        this.specFrameDispose(vm.getString(handle) as SpecFrameHandle);
       });
 
       //

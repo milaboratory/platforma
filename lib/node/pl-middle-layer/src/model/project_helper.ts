@@ -1,10 +1,4 @@
-import type {
-  ResultOrError,
-  BlockConfig,
-  BlockStorage,
-  PlRef,
-  StorageDebugView,
-} from "@platforma-sdk/model";
+import type { ResultOrError, BlockConfig, BlockStorage, PlRef } from "@platforma-sdk/model";
 import type { StringifiedJson } from "@milaboratories/pl-model-common";
 import {
   extractCodeWithInfo,
@@ -17,6 +11,7 @@ import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { ResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
+import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;

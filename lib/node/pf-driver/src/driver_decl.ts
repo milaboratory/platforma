@@ -14,7 +14,7 @@ import type {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import type { PoolEntry } from "@milaboratories/ts-helpers";
 
 /**

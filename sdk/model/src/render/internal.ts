@@ -1,5 +1,10 @@
 import type { Optional } from "utility-types";
-import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
+import type {
+  Branded,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
+  StringifiedJson,
+} from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -19,6 +24,7 @@ import type {
   ValueOrError,
   DataInfo,
   RangeBytes,
+  PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
 
@@ -156,6 +162,19 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPTableV2(
     def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
   ): PTableHandle;
+
+  //
+  // Spec Frames (synchronous WASM-based PFrame for spec-level operations)
+  //
+
+  createSpecFrame(specs: Record<string, PColumnSpec>): string;
+
+  specFrameDiscoverColumns(
+    handle: string,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse;
+
+  specFrameDispose(handle: string): void;
 
   //
   // Computable

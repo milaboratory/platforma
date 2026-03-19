@@ -1,4 +1,4 @@
-import { PFrameDriverError, type PTableHandle } from "@platforma-sdk/model";
+import { PFrameDriverError, type PTableHandle } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase } from "@milaboratories/ts-helpers";
 import { logPFrames } from "./logging";

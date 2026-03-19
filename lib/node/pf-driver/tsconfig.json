@@ -1,5 +1,5 @@
 {
   "extends": "@milaboratories/ts-configs/tsconfig.node.json",
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../pl-middle-layer/src/js_render/spec_driver.ts"],
   "exclude": ["node_modules", "dist"]
 }

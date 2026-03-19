@@ -33,9 +33,9 @@
   "dependencies": {
     "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pframes-rs-wasm": "catalog:",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "es-toolkit": "catalog:",
     "lru-cache": "catalog:"
   },
