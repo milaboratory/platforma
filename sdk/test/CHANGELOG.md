@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.60.1
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+- Updated dependencies [ccb1a70]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-middle-layer@1.52.0
+  - @milaboratories/pl-tree@1.9.1
+
 ## 1.60.0
 
 ### Minor Changes

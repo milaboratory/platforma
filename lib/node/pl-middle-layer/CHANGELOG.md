@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.52.0
+
+### Minor Changes
+
+- 6078a1d: Add computable and QuickJS performance instrumentation for diagnosing post-sync recalculation bottleneck.
+- ccb1a70: Template cache: cache materialized template resource trees on user root to speed up block addition and reduce transaction conflicts
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-drivers@1.12.1
+  - @milaboratories/pl-tree@1.9.1
+
 ## 1.51.0
 
 ### Minor Changes
