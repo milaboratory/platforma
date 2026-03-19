@@ -5,6 +5,8 @@ export type MlDebugFlags = {
   dumpInitialTreeState: boolean;
   logOutputStatus?: "any" | "unstable-only";
   logOutputRecalculations?: boolean;
+  logProjectOverviewStat: boolean;
+  logJsExecStat: boolean;
 };
 
 let flags: MlDebugFlags | undefined = undefined;
@@ -15,6 +17,8 @@ export function getDebugFlags() {
     logProjectMutationStat: process.env.MI_LOG_PROJECT_MUTATION_STAT !== undefined,
     logTemplateCacheStat: process.env.MI_LOG_TEMPLATE_CACHE_STAT !== undefined,
     logOutputRecalculations: process.env.MI_LOG_OUTPUT_RECALCULATIONS !== undefined,
+    logProjectOverviewStat: process.env.MI_LOG_PROJECT_OVERVIEW_STAT !== undefined,
+    logJsExecStat: process.env.MI_LOG_JS_EXEC_STAT !== undefined,
   };
   if (process.env.MI_LOG_OUTPUT_STATUS)
     flags.logOutputStatus =
