@@ -66,7 +66,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
   private readonly specDriver = new SpecDriver();
 
-  private readonly meta: Map<string, Block>;
+  private _meta: Map<string, Block> | undefined;
+  private get meta(): Map<string, Block> {
+    if (this._meta === undefined) {
+      if (this.computableCtx === undefined)
+        throw new Error("blockMeta can't be resolved in this context");
+      this._meta = this.blockCtx.blockMeta(this.computableCtx);
+    }
+    return this._meta;
+  }
 
   constructor(
     private readonly parent: JsExecutionContext,
@@ -76,7 +84,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
-    this.meta = blockCtx.blockMeta(computableCtx);
   }
 
   public resetComputableCtx() {
@@ -533,11 +540,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           // QuickJS strips all fields from errors apart from 'name' and 'message'.
           // That's why here we need to store them, and rethrow them when we exit
           // from QuickJS code.
+          const t0 = performance.now();
           try {
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
             throw vm.newError(newErr);
+          } finally {
+            parent.stats.ctxMethodCalls++;
+            parent.stats.ctxMethodMs += performance.now() - t0;
           }
         };
 
