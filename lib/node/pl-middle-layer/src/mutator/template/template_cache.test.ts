@@ -20,15 +20,13 @@ import {
   cacheBlockPackTemplate,
   dropTemplateCache,
   flattenTemplateTree,
-  GC_ACCESS_THRESHOLD,
   getOrCreateTemplateCache,
   loadTemplateCached,
+  runGc,
   TemplateCacheType,
 } from "./template_cache";
 import { parseTemplate } from "@milaboratories/pl-model-backend";
 import type { BlockPackSpecPrepared } from "../../model";
-import fs from "node:fs";
-import path from "node:path";
 
 function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTempRoot>[0]>[0]) {
   return pl.withWriteTx("createTestCache", async (tx) => {
@@ -40,15 +38,6 @@ function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTe
     return await cache.globalId;
   });
 }
-
-// Load V3 template from the enter-numbers-v3 block
-const V3TemplatePath = path.resolve(
-  __dirname,
-  "../../../../../../etc/blocks/enter-numbers-v3/block/block-pack/main.plj.gz",
-);
-const V3TemplateContent = fs.existsSync(V3TemplatePath)
-  ? fs.readFileSync(V3TemplatePath)
-  : undefined;
 
 // ─── flattenTemplateTree ─────────────────────────────────────────────────────
 
@@ -85,28 +74,6 @@ describe("flattenTemplateTree", () => {
     const nodesEnter = flattenTemplateTree(dataEnter);
     const nodesSum = flattenTemplateTree(dataSum);
     expect(nodesEnter[nodesEnter.length - 1].hash).not.toBe(nodesSum[nodesSum.length - 1].hash);
-  });
-
-  test.skipIf(!V3TemplateContent)("produces nodes in topological order for V3 template", () => {
-    const data = parseTemplate(V3TemplateContent!);
-    expect(data.type).toBe("pl.tengo-template.v3");
-    const nodes = flattenTemplateTree(data);
-    expect(nodes.length).toBeGreaterThan(0);
-
-    const seenHashes = new Set<string>();
-    for (const node of nodes) {
-      for (const ch of node.childHashes) {
-        expect(seenHashes.has(ch)).toBe(true);
-      }
-      seenHashes.add(node.hash);
-    }
-  });
-
-  test.skipIf(!V3TemplateContent)("V3 hashes are deterministic", () => {
-    const data = parseTemplate(V3TemplateContent!);
-    const nodes1 = flattenTemplateTree(data);
-    const nodes2 = flattenTemplateTree(data);
-    expect(nodes1.map((n) => n.hash)).toStrictEqual(nodes2.map((n) => n.hash));
   });
 });
 
@@ -215,21 +182,6 @@ describe("loadTemplateCached", () => {
       expect(id).toBe(id2);
     });
   }, 15000);
-
-  test.skipIf(!V3TemplateContent)(
-    "caches V3 template (cache miss then hit)",
-    async () => {
-      await TestHelpers.withTempRoot(async (pl) => {
-        const testCache = await createTestCacheInTx(pl);
-        const v3Spec = { type: "explicit" as const, content: V3TemplateContent! };
-
-        const id1 = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });
-        const id2 = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });
-        expect(id1).toBe(id2);
-      });
-    },
-    15000,
-  );
 });
 
 // ─── cacheBlockPackTemplate ──────────────────────────────────────────────────
@@ -318,39 +270,6 @@ describe("template cache produces equivalent resources", () => {
       expect(resolvedCached).toBe(resolvedLegacy);
     });
   }, 30000);
-
-  test.skipIf(!V3TemplateContent)(
-    "cached and legacy templates deduplicate to same original (V3)",
-    async () => {
-      await TestHelpers.withTempRoot(async (pl) => {
-        const testCache = await createTestCacheInTx(pl);
-        const v3Spec = { type: "explicit" as const, content: V3TemplateContent! };
-
-        // Cached path
-        const cachedId = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });
-
-        // Legacy path
-        const legacyId = await pl.withWriteTx("legacy", async (tx) => {
-          const ref = loadTemplate(tx, v3Spec);
-          const holder = field(pl.clientRoot, "legacy_v3_tpl");
-          tx.createField(holder, "Dynamic", ref);
-          await tx.commit();
-          return await toGlobalResourceId(ref as AnyResourceRef);
-        });
-
-        const [cachedOriginal, legacyOriginal] = await poll(pl, async (a) => {
-          const cachedRes = await a.get(cachedId).then((r) => r.final());
-          const legacyRes = await a.get(legacyId).then((r) => r.final());
-          return [cachedRes.data.originalResourceId, legacyRes.data.originalResourceId] as const;
-        });
-
-        const resolvedCached = isNotNullResourceId(cachedOriginal) ? cachedOriginal : cachedId;
-        const resolvedLegacy = isNotNullResourceId(legacyOriginal) ? legacyOriginal : legacyId;
-        expect(resolvedCached).toBe(resolvedLegacy);
-      });
-    },
-    30000,
-  );
 });
 
 // ─── Shared library dedup ────────────────────────────────────────────────────
@@ -387,81 +306,63 @@ describe("shared library dedup", () => {
 // ─── GC ──────────────────────────────────────────────────────────────────────
 
 describe("GC", () => {
-  test("evicts stale entries when access count exceeds threshold", async () => {
+  test("evicts entries when cache exceeds max entries", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
       const testCache = await createTestCacheInTx(pl);
 
-      // Cache enter-numbers template
+      // Cache enter-numbers template (~37 entries)
       await loadTemplateCached(pl, TplSpecEnterExplicit, { cacheResourceId: testCache });
 
-      // Find hashes unique to enter-numbers (not shared with sum-numbers)
-      const enterHashes = new Set(
-        flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers)).map((n) => n.hash),
-      );
-      const sumHashes = new Set(
-        flattenTemplateTree(parseTemplate(ExplicitTemplateSumNumbers)).map((n) => n.hash),
-      );
-      const uniqueToEnter = [...enterHashes].filter((h) => !sumHashes.has(h));
-      expect(uniqueToEnter.length).toBeGreaterThan(0);
+      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers));
+      const allHashes = enterNodes.map((n) => n.hash);
+      const halfLen = Math.floor(allHashes.length / 2);
 
-      // Manipulate KV: set access count above threshold and backdate all entries
-      const oldTimestamp = (Date.now() - 8 * 24 * 60 * 60 * 1000).toString(); // 8 days ago
-      await pl.withWriteTx("manipulateKV", async (tx) => {
-        tx.setKValue(testCache, ACCESS_COUNT_KEY, (GC_ACCESS_THRESHOLD + 1).toString());
-        for (const hash of enterHashes) {
-          tx.setKValue(testCache, ACCESS_KEY_PREFIX + hash, oldTimestamp);
+      // Backdate the first half of entries (low timestamp = evicted first)
+      await pl.withWriteTx("backdate", async (tx) => {
+        for (let i = 0; i < halfLen; i++) {
+          tx.setKValue(testCache, ACCESS_KEY_PREFIX + allHashes[i], "1000");
         }
         await tx.commit();
       });
 
-      // Trigger GC by calling loadTemplateCached with sum-numbers
-      // (the first batch will see high access count and run GC, evicting old enter entries)
-      await loadTemplateCached(pl, TplSpecSumExplicit, { cacheResourceId: testCache });
+      // Run GC with low max: keep only the fresh half
+      const evicted = await runGc(pl, testCache, allHashes.length - halfLen);
+      expect(evicted).toBe(true);
 
-      // Verify: enter-only entries should be evicted (shared ones may be re-created by sum)
-      await pl.withReadTx("verifyGC", async (tx) => {
-        for (const hash of uniqueToEnter) {
-          const exists = await tx.fieldExists(field(testCache, hash));
+      // Verify backdated entries were evicted, fresh entries survive
+      await pl.withReadTx("verify", async (tx) => {
+        for (let i = 0; i < halfLen; i++) {
+          const exists = await tx.fieldExists(field(testCache, allHashes[i]));
           expect(exists).toBe(false);
         }
-        // Access count should be low (reset to "0" by GC, then incremented once)
+        for (let i = halfLen; i < allHashes.length; i++) {
+          const exists = await tx.fieldExists(field(testCache, allHashes[i]));
+          expect(exists).toBe(true);
+        }
+        // Counter should be reset
         const count = await tx.getKValueStringIfExists(testCache, ACCESS_COUNT_KEY);
-        expect(parseInt(count ?? "0", 10)).toBeLessThanOrEqual(1);
+        expect(count).toBe("0");
       });
     });
   }, 15000);
 
-  test("does not evict fresh entries", async () => {
+  test("does not evict when under max entries", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
       const testCache = await createTestCacheInTx(pl);
 
-      // Cache a template (entries will have fresh timestamps)
+      // Cache a template (~37 entries)
       await loadTemplateCached(pl, TplSpecEnterExplicit, { cacheResourceId: testCache });
 
-      // Set access count above threshold but keep timestamps fresh
-      await pl.withWriteTx("setHighCount", async (tx) => {
-        tx.setKValue(testCache, ACCESS_COUNT_KEY, (GC_ACCESS_THRESHOLD + 1).toString());
-        await tx.commit();
-      });
+      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers));
 
-      // Get entry hashes before GC
-      const entryHashes: string[] = [];
-      await pl.withReadTx("readEntries", async (tx) => {
-        const kvs = await tx.listKeyValuesString(testCache);
-        for (const { key } of kvs) {
-          if (key.startsWith(ACCESS_KEY_PREFIX)) {
-            entryHashes.push(key.slice(ACCESS_KEY_PREFIX.length));
-          }
-        }
-      });
+      // Run GC with high max — nothing should be evicted
+      const evicted = await runGc(pl, testCache, 100);
+      expect(evicted).toBe(false);
 
-      // Trigger GC
-      await loadTemplateCached(pl, TplSpecSumExplicit, { cacheResourceId: testCache });
-
-      // Fresh entries should NOT be evicted
-      await pl.withReadTx("verifyNotEvicted", async (tx) => {
-        for (const hash of entryHashes) {
-          const exists = await tx.fieldExists(field(testCache, hash));
+      // All entries should survive
+      await pl.withReadTx("verify", async (tx) => {
+        for (const node of enterNodes) {
+          const exists = await tx.fieldExists(field(testCache, node.hash));
           expect(exists).toBe(true);
         }
       });

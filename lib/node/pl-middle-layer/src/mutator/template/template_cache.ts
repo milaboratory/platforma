@@ -38,8 +38,9 @@ export const TemplateCacheType = resourceType("TemplateCache", "1");
 export const TemplateCacheFieldName = "__templateCache";
 const BATCH_SIZE = 50;
 /** @internal exported for testing */
-export const GC_ACCESS_THRESHOLD = 50;
-const GC_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+export const GC_ACCESS_THRESHOLD = 30;
+/** @internal exported for testing */
+export const GC_MAX_ENTRIES = 3000;
 /** @internal exported for testing */
 export const ACCESS_COUNT_KEY = "_accessCount";
 /** @internal exported for testing */
@@ -459,30 +460,200 @@ export async function dropTemplateCache(pl: PlClient): Promise<void> {
 
 // ─── GC ──────────────────────────────────────────────────────────────────────
 
-/** @returns true if GC ran (counter was reset to 0) */
-async function runGcIfNeeded(tx: PlTransaction, cacheRid: ResourceId): Promise<boolean> {
-  const countStr = await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY);
-  const accessCount = countStr ? parseInt(countStr, 10) : 0;
-  if (accessCount < GC_ACCESS_THRESHOLD) return false;
-
-  const kvs = await tx.listKeyValuesString(cacheRid);
-  const now = Date.now();
-
-  for (const { key, value } of kvs) {
-    if (!key.startsWith(ACCESS_KEY_PREFIX)) continue;
-    const ts = parseInt(value, 10);
-    if (now - ts > GC_MAX_AGE_MS) {
-      const hash = key.slice(ACCESS_KEY_PREFIX.length);
-      tx.removeField(field(cacheRid, hash));
-      tx.deleteKValue(cacheRid, key);
+/**
+ * Run count-based garbage collection on the template cache.
+ * Evicts least-recently-used entries when the cache exceeds maxEntries.
+ * Always resets the access counter to 0.
+ *
+ * @internal exported for testing (maxEntries parameter allows low thresholds in tests)
+ * @returns true if entries were evicted
+ */
+export async function runGc(
+  pl: PlClient,
+  cacheRid: ResourceId,
+  maxEntries: number = GC_MAX_ENTRIES,
+): Promise<boolean> {
+  return await pl.withWriteTx("templateCache:gc", async (tx) => {
+    const kvs = await tx.listKeyValuesString(cacheRid);
+    const entries: { hash: string; timestamp: number }[] = [];
+    for (const { key, value } of kvs) {
+      if (!key.startsWith(ACCESS_KEY_PREFIX)) continue;
+      entries.push({
+        hash: key.slice(ACCESS_KEY_PREFIX.length),
+        timestamp: parseInt(value, 10),
+      });
     }
-  }
 
-  tx.setKValue(cacheRid, ACCESS_COUNT_KEY, "0");
-  return true;
+    // Always reset counter
+    tx.setKValue(cacheRid, ACCESS_COUNT_KEY, "0");
+
+    if (entries.length <= maxEntries) {
+      await tx.commit();
+      return false;
+    }
+
+    // Sort oldest first, evict until under limit
+    entries.sort((a, b) => a.timestamp - b.timestamp);
+    const toEvict = entries.length - maxEntries;
+    for (let i = 0; i < toEvict; i++) {
+      tx.removeField(field(cacheRid, entries[i].hash));
+      tx.deleteKValue(cacheRid, ACCESS_KEY_PREFIX + entries[i].hash);
+    }
+
+    await tx.commit();
+    return true;
+  });
 }
 
 // ─── Batched materialization ─────────────────────────────────────────────────
+
+/** Create a batch of cache nodes in the current transaction. */
+function createBatchNodes(
+  tx: PlTransaction,
+  cacheRid: ResourceId,
+  batch: CacheableNode[],
+  resolvedIds: ReadonlyMap<string, ResourceId>,
+  newRefs: Map<string, ResourceRef>,
+  now: string,
+): void {
+  for (const node of batch) {
+    const childRefs = new Map<string, AnyResourceRef>();
+    for (const ch of node.childHashes) {
+      const resolved = resolvedIds.get(ch) ?? newRefs.get(ch);
+      if (resolved === undefined) {
+        throw new Error(`BUG: child ${ch} not resolved`);
+      }
+      childRefs.set(ch, resolved);
+    }
+    const ref = node.create(tx, childRefs);
+    newRefs.set(node.hash, ref);
+    tx.createField(field(cacheRid, node.hash), "Dynamic", ref);
+    tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + node.hash, now);
+  }
+}
+
+/**
+ * Materialize a template tree via the cache using "probe all + batched creation".
+ *
+ * Phase 1 (single write tx):
+ *   - Check existence of ALL hashes in one roundtrip
+ *   - Happy path: if root cached, update access tracking and return
+ *   - Otherwise: fetch ResourceIds for all cache hits, create first batch of missing nodes
+ *
+ * Phase 2..N (one write tx per batch):
+ *   - Create remaining missing nodes in BATCH_SIZE chunks
+ *
+ * @returns root ResourceId and current access count (for GC decision)
+ */
+async function materialize(
+  pl: PlClient,
+  cacheRid: ResourceId,
+  rootHash: string,
+  nodes: CacheableNode[],
+  stat: TemplateCacheStat,
+): Promise<{ rootId: ResourceId; accessCount: number }> {
+  const allHashes = nodes.map((n) => n.hash);
+  const resolvedIds = new Map<string, ResourceId>();
+
+  // Phase 1: probe all + first batch
+  const phase1 = await pl.withWriteTx("templateCache:materialize", async (tx) => {
+    // 1 roundtrip: check all hashes + read access count
+    const [exists, countStr] = await Promise.all([
+      Promise.all(allHashes.map((h) => tx.fieldExists(field(cacheRid, h)))),
+      tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY),
+    ]);
+
+    const prevCount = countStr ? parseInt(countStr, 10) : 0;
+    const newCount = prevCount + 1;
+    const now = Date.now().toString();
+    const rootIdx = allHashes.length - 1;
+
+    // Happy path: root already cached
+    if (exists[rootIdx]) {
+      const rootFd = await tx.getField(field(cacheRid, rootHash));
+      const rootRid = ensureResourceIdNotNull(rootFd.value);
+      tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + rootHash, now);
+      tx.setKValue(cacheRid, ACCESS_COUNT_KEY, newCount.toString());
+      await tx.commit();
+      stat.happyPath = true;
+      stat.cacheHits = stat.totalNodes;
+      stat.batchCount = 1;
+      return { done: true as const, rootId: rootRid, accessCount: newCount };
+    }
+
+    // Fetch ResourceIds for all cache hits (1 roundtrip)
+    const hitIndices: number[] = [];
+    for (let i = 0; i < allHashes.length; i++) {
+      if (exists[i]) hitIndices.push(i);
+    }
+
+    if (hitIndices.length > 0) {
+      const hitFields = await Promise.all(
+        hitIndices.map((i) => tx.getField(field(cacheRid, allHashes[i]))),
+      );
+      for (let j = 0; j < hitIndices.length; j++) {
+        resolvedIds.set(allHashes[hitIndices[j]], ensureResourceIdNotNull(hitFields[j].value));
+      }
+    }
+    stat.cacheHits = hitIndices.length;
+
+    // Missing nodes (topo order preserved from flatten)
+    const missing = nodes.filter((n) => !resolvedIds.has(n.hash));
+    stat.cacheMisses = missing.length;
+
+    // Create first batch of missing nodes
+    const firstBatch = missing.slice(0, BATCH_SIZE);
+    const newRefs = new Map<string, ResourceRef>();
+    createBatchNodes(tx, cacheRid, firstBatch, resolvedIds, newRefs, now);
+
+    // Update access tracking for cache hits
+    for (const i of hitIndices) {
+      tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + allHashes[i], now);
+    }
+    tx.setKValue(cacheRid, ACCESS_COUNT_KEY, newCount.toString());
+
+    await tx.commit();
+
+    // Resolve new refs to global IDs (after commit)
+    for (const [hash, ref] of newRefs) {
+      resolvedIds.set(hash, await toGlobalResourceId(ref));
+    }
+
+    return {
+      done: false as const,
+      remaining: missing.slice(BATCH_SIZE),
+      accessCount: newCount,
+    };
+  });
+
+  if (phase1.done) {
+    return { rootId: phase1.rootId, accessCount: phase1.accessCount };
+  }
+
+  stat.batchCount = 1;
+
+  // Phase 2+: remaining batches
+  const { remaining } = phase1;
+  for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
+    const batch = remaining.slice(i, i + BATCH_SIZE);
+    stat.batchCount++;
+
+    await pl.withWriteTx("templateCache:create", async (tx) => {
+      const newRefs = new Map<string, ResourceRef>();
+      const now = Date.now().toString();
+      createBatchNodes(tx, cacheRid, batch, resolvedIds, newRefs, now);
+      await tx.commit();
+
+      for (const [hash, ref] of newRefs) {
+        resolvedIds.set(hash, await toGlobalResourceId(ref));
+      }
+    });
+  }
+
+  const rootId = resolvedIds.get(rootHash);
+  if (!rootId) throw new Error("BUG: root hash not resolved after all batches");
+  return { rootId, accessCount: phase1.accessCount };
+}
 
 /**
  * Materialize a template tree via the cache.
@@ -536,23 +707,23 @@ export async function loadTemplateCached(
     const cacheRid = options?.cacheResourceId ?? (await getOrCreateTemplateCache(pl));
     stat.cacheInitMs = performance.now() - tCacheInit;
 
-    // Split into batches
-    const batches: CacheableNode[][] = [];
-    for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
-      batches.push(nodes.slice(i, i + BATCH_SIZE));
-    }
-    stat.batchCount = batches.length;
-
-    // Retry loop: if a batch commit fails because a previously-cached resource
-    // was GC'd between batches, restart the entire materialization from scratch.
+    // Retry loop: if a write tx fails (e.g. concurrent GC invalidated a cached resource),
+    // restart materialization from scratch.
     const MAX_RETRIES = 3;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         const tMat = performance.now();
-        const result = await materializeBatches(pl, cacheRid, rootHash, batches, stat);
+        const result = await materialize(pl, cacheRid, rootHash, nodes, stat);
         stat.materializeMs = performance.now() - tMat;
         stat.retries = attempt;
-        return result;
+
+        // GC in separate tx if access count exceeded threshold
+        if (result.accessCount >= GC_ACCESS_THRESHOLD) {
+          await runGc(pl, cacheRid);
+          stat.gcTriggered = true;
+        }
+
+        return result.rootId;
       } catch (e) {
         if (attempt === MAX_RETRIES - 1) throw e;
         // Retry from scratch — previous batch results may reference GC'd resources
@@ -568,159 +739,6 @@ export async function loadTemplateCached(
       console.log(`[templateCache] ${JSON.stringify(stat)}`);
     }
   }
-}
-
-async function materializeBatches(
-  pl: PlClient,
-  cacheRid: ResourceId,
-  rootHash: string,
-  batches: CacheableNode[][],
-  stat: TemplateCacheStat,
-): Promise<ResourceId> {
-  // Resolved IDs from all batches (global ResourceIds only)
-  const resolvedIds = new Map<string, ResourceId>();
-
-  for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
-    const batch = batches[batchIdx];
-    const isFirstBatch = batchIdx === 0;
-
-    const batchResult = await pl.withWriteTx("templateCache:materialize", async (tx) => {
-      let gcRan = false;
-
-      // ── First batch: happy path + GC ──
-      if (isFirstBatch) {
-        // Happy path: parallel check for root existence + access count (2 ops, 1 roundtrip)
-        // NOTE: getFieldIfExists can't be used in Promise.all within write tx — the NOT_FOUND
-        // error from getField leaks through the shared PromiseTracker to other parallel ops.
-        // fieldExists returns a boolean and never throws NOT_FOUND.
-        const [rootExists, countStr] = await Promise.all([
-          tx.fieldExists(field(cacheRid, rootHash)),
-          tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY),
-        ]);
-
-        if (rootExists) {
-          // Root confirmed to exist — safe to getField (1 more roundtrip)
-          const rootFd = await tx.getField(field(cacheRid, rootHash));
-          const rootRid = ensureResourceIdNotNull(rootFd.value);
-          // Update access tracking (fire-and-forget writes, only commit awaited)
-          const now = Date.now().toString();
-          tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + rootHash, now);
-          const count = countStr ? parseInt(countStr, 10) : 0;
-          tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (count + 1).toString());
-          await tx.commit();
-          stat.happyPath = true;
-          stat.cacheHits = stat.totalNodes;
-          return { done: true as const, rootId: rootRid };
-        }
-
-        // Run GC if threshold exceeded
-        gcRan = await runGcIfNeeded(tx, cacheRid);
-        if (gcRan) stat.gcTriggered = true;
-      }
-
-      // ── Parallel cache checks for all nodes in this batch ──
-      // fieldExists in parallel (1 roundtrip), then getField for hits (1 roundtrip)
-      const existsResults = await Promise.all(
-        batch.map((node) =>
-          resolvedIds.has(node.hash)
-            ? Promise.resolve(false)
-            : tx.fieldExists(field(cacheRid, node.hash)),
-        ),
-      );
-
-      // Resolve existing entries — read values for cache hits in parallel
-      const toCreate: CacheableNode[] = [];
-      const cacheHitHashes: string[] = [];
-      const fieldReads: Promise<void>[] = [];
-      for (let i = 0; i < batch.length; i++) {
-        const node = batch[i];
-        if (resolvedIds.has(node.hash)) continue;
-        if (existsResults[i]) {
-          fieldReads.push(
-            tx.getField(field(cacheRid, node.hash)).then((fd) => {
-              resolvedIds.set(node.hash, ensureResourceIdNotNull(fd.value));
-            }),
-          );
-          cacheHitHashes.push(node.hash);
-          stat.cacheHits++;
-        } else {
-          toCreate.push(node);
-          stat.cacheMisses++;
-        }
-      }
-      await Promise.all(fieldReads);
-
-      // ── Create missing nodes ──
-      const newRefs = new Map<string, ResourceRef>();
-      const now = Date.now().toString();
-      let hasWrites = false;
-
-      for (const node of toCreate) {
-        // Build child refs from resolvedIds + newRefs in this batch
-        const childRefs = new Map<string, AnyResourceRef>();
-        for (const ch of node.childHashes) {
-          const resolved = resolvedIds.get(ch);
-          if (resolved !== undefined) {
-            childRefs.set(ch, resolved);
-          } else {
-            const batchRef = newRefs.get(ch);
-            if (batchRef !== undefined) {
-              childRefs.set(ch, batchRef);
-            } else {
-              throw new Error(`BUG: child ${ch} not resolved and not in current batch`);
-            }
-          }
-        }
-
-        const ref = node.create(tx, childRefs);
-        newRefs.set(node.hash, ref);
-
-        // Add to cache
-        tx.createField(field(cacheRid, node.hash), "Dynamic", ref);
-
-        // Access tracking
-        tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + node.hash, now);
-        hasWrites = true;
-      }
-
-      // Also update access tracking for cache-hit nodes in this batch
-      for (const hitHash of cacheHitHashes) {
-        tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + hitHash, now);
-        hasWrites = true;
-      }
-
-      // Increment global access count (once per loadTemplateCached call, in first batch)
-      if (isFirstBatch) {
-        // If GC just ran, counter was reset to "0" in this tx — use 0 directly
-        // to avoid reading the stale committed value
-        const prevCount = gcRan
-          ? 0
-          : parseInt((await tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY)) ?? "0", 10);
-        tx.setKValue(cacheRid, ACCESS_COUNT_KEY, (prevCount + 1).toString());
-        hasWrites = true;
-      }
-
-      // Commit if we have any pending writes
-      if (hasWrites) {
-        await tx.commit();
-      }
-
-      // Resolve new refs to global IDs (must happen after commit)
-      for (const [hash, ref] of newRefs) {
-        resolvedIds.set(hash, await toGlobalResourceId(ref));
-      }
-
-      return { done: false as const };
-    });
-
-    if (batchResult.done) {
-      return batchResult.rootId;
-    }
-  }
-
-  const rootId = resolvedIds.get(rootHash);
-  if (!rootId) throw new Error("BUG: root hash not resolved after all batches");
-  return rootId;
 }
 
 // ─── Caller helper ───────────────────────────────────────────────────────────
