@@ -533,11 +533,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           // QuickJS strips all fields from errors apart from 'name' and 'message'.
           // That's why here we need to store them, and rethrow them when we exit
           // from QuickJS code.
+          const t0 = performance.now();
           try {
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
             throw vm.newError(newErr);
+          } finally {
+            parent.stats.ctxMethodCalls++;
+            parent.stats.ctxMethodMs += performance.now() - t0;
           }
         };
 

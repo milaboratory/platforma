@@ -606,11 +606,13 @@ export class Computable<T, StableT extends T = T> {
     ops?: Partial<ComputableRenderingOps>,
   ): Computable<T> {
     // adding in defaults and creating final ops for the kernel
-    const { mode, resetValueOnError } = ops ?? {};
+    const { mode, resetValueOnError, postprocessTimeout, onRecalculation } = ops ?? {};
     const renderingOps: CellRenderingOps = {
       ...DefaultRenderingOps,
       ...(mode !== undefined && { mode }),
       ...(resetValueOnError !== undefined && { resetValueOnError }),
+      ...(postprocessTimeout !== undefined && { postprocessTimeout }),
+      ...(onRecalculation !== undefined && { onRecalculation }),
     };
 
     // creating computable instance
