@@ -66,7 +66,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
   private readonly specDriver = new SpecDriver();
 
-  private readonly meta: Map<string, Block>;
+  private _meta: Map<string, Block> | undefined;
+  private get meta(): Map<string, Block> {
+    if (this._meta === undefined) {
+      if (this.computableCtx === undefined)
+        throw new Error("blockMeta can't be resolved in this context");
+      this._meta = this.blockCtx.blockMeta(this.computableCtx);
+    }
+    return this._meta;
+  }
 
   constructor(
     private readonly parent: JsExecutionContext,
@@ -76,7 +84,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
-    this.meta = blockCtx.blockMeta(computableCtx);
   }
 
   public resetComputableCtx() {
