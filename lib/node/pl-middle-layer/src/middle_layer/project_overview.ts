@@ -347,10 +347,11 @@ export function projectOverview(
           }),
         };
       },
-      onRecalculation: (stats) => {
-        if (getDebugFlags().logProjectOverviewStat)
-          console.log(`[projectOverview] ${JSON.stringify(stats)}`);
-      },
+      onRecalculation: getDebugFlags().logProjectOverviewStat
+        ? (stats) => {
+            console.log(`[projectOverview] ${JSON.stringify(stats)}`);
+          }
+        : undefined,
     },
   ).withStableType();
 }
