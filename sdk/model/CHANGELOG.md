@@ -1,5 +1,19 @@
 # @platforma-sdk/model
 
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/helpers@1.14.0
+  - @milaboratories/ptabler-expression-js@1.2.0
+
 ## 1.59.3
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-middle-layer@1.51.0
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-tree@1.9.0
+
 ## 1.59.7
 
 ### Patch Changes

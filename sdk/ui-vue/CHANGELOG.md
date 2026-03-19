@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/uikit@2.11.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.59.4
 
 ### Patch Changes

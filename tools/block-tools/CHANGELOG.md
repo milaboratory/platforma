@@ -1,5 +1,18 @@
 # @platforma-sdk/block-tools
 
+## 2.7.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-model-common@1.27.0
+
 ## 2.6.70
 
 ### Patch Changes

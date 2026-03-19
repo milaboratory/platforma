@@ -1,5 +1,16 @@
 # @milaboratories/pl-local
 
+## 2.16.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-common@1.27.0
+
 ## 2.15.24
 
 ### Patch Changes

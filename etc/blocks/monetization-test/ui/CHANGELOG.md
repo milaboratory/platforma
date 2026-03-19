@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.monetization-test.model@1.1.0
+  - @platforma-sdk/ui-vue@1.60.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.1.205
 
 ### Patch Changes

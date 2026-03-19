@@ -1,5 +1,16 @@
 # @platforma-sdk/bootstrap
 
+## 5.3.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-deployments@2.16.0
+
 ## 5.2.58
 
 ### Patch Changes
