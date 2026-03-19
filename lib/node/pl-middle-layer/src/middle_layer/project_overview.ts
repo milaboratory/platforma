@@ -30,6 +30,7 @@ import type { NavigationStates } from "./navigation_states";
 import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type ResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
+import { getDebugFlags } from "../debug";
 
 type BlockInfo = {
   argsRid?: ResourceId;
@@ -345,6 +346,10 @@ export function projectOverview(
             return bb;
           }),
         };
+      },
+      onRecalculation: (stats) => {
+        if (getDebugFlags().logProjectOverviewStat)
+          console.log(`[projectOverview] ${JSON.stringify(stats)}`);
       },
     },
   ).withStableType();

@@ -135,6 +135,8 @@ export function computableFromRF(
 
       if (Object.keys(toBeResolved).length === 0) {
         const importedResult = rCtx.importObjectUniversal(result);
+        if (getDebugFlags().logJsExecStat)
+          console.log(`[jsExec] ${key}: ${JSON.stringify(rCtx.stats)}`);
         logOutputStatus(
           fh.handle,
           importedResult,
@@ -161,6 +163,8 @@ export function computableFromRF(
 
           // logging
           recalculationCounter++;
+          if (getDebugFlags().logJsExecStat)
+            console.log(`[jsExec] ${key} #${recalculationCounter}: ${JSON.stringify(rCtx.stats)}`);
           logOutputStatus(fh.handle, renderedResult, stable, recalculationCounter, unstableMarker);
 
           return renderedResult;
@@ -208,7 +212,10 @@ export function executeSingleLambda(
     rCtx.evaluateBundle(code.content);
 
     // Running the lambda with arguments (e.g., state for args(), args for enrichmentTargets())
-    return rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
+    const importedResult = rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
+    if (getDebugFlags().logJsExecStat)
+      console.log(`[jsExec] ${fh.handle}: ${JSON.stringify(rCtx.stats)}`);
+    return importedResult;
   } finally {
     scope.dispose();
   }
