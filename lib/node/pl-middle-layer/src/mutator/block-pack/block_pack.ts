@@ -4,6 +4,7 @@ import { loadTemplate } from "../template/template_loading";
 import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from "../../model";
 import type { Signer } from "@milaboratories/ts-helpers";
 import { assertNever } from "@milaboratories/ts-helpers";
+import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
@@ -20,6 +21,8 @@ import canonicalize from "canonicalize";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
 import { z } from "zod";
+
+type PreparedCacheKey = Branded<string, "PreparedCacheKey">;
 
 export const BlockPackCustomType: ResourceType = { name: "BlockPackCustom", version: "1" };
 export const BlockPackTemplateField = "template";
@@ -67,7 +70,9 @@ export class BlockPackPreparer {
   });
 
   /** Cache of prepared block packs for registry specs (immutable by version). */
-  private readonly preparedCache = new LRUCache<string, BlockPackSpecPrepared>({ max: 50 });
+  private readonly preparedCache = new LRUCache<PreparedCacheKey, BlockPackSpecPrepared>({
+    max: 50,
+  });
 
   public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
     switch (spec.type) {
@@ -111,12 +116,12 @@ export class BlockPackPreparer {
   }
 
   /** Returns a stable cache key for registry specs (immutable by version). Dev specs return undefined. */
-  private specKey(spec: BlockPackSpecAny): string | undefined {
+  private specKey(spec: BlockPackSpecAny): PreparedCacheKey | undefined {
     switch (spec.type) {
       case "from-registry-v1":
-        return `v1:${spec.registryUrl}:${spec.id.organization}:${spec.id.name}:${spec.id.version}`;
+        return `v1:${spec.registryUrl}:${spec.id.organization}:${spec.id.name}:${spec.id.version}` as PreparedCacheKey;
       case "from-registry-v2":
-        return `v2:${spec.registryUrl}:${canonicalize(spec.id)}`;
+        return `v2:${spec.registryUrl}:${canonicalize(spec.id)}` as PreparedCacheKey;
       default:
         return undefined; // dev, explicit, prepared — not cacheable
     }
