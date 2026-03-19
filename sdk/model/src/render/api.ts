@@ -3,6 +3,8 @@ import type {
   AnyFunction,
   AxisId,
   DataInfo,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
   Option,
   PColumn,
   PColumnLazy,
@@ -43,8 +45,8 @@ import {
   mapValueInVOE,
   PColumnName,
   readAnnotation,
-  selectorsToPredicate,
   withEnrichments,
+  legacyColumnSelectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -155,7 +157,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const predicate =
       typeof predicateOrSelector === "function"
         ? predicateOrSelector
-        : selectorsToPredicate(predicateOrSelector);
+        : legacyColumnSelectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
@@ -494,7 +496,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<TreeNodeAccessor | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
 
     const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
       if (!isPColumnSpec(spec)) return false;
@@ -707,6 +710,25 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   /** @deprecated scheduled for removal from SDK */
   public getBlockLabel(blockId: string): string {
     return this.ctx.getBlockLabel(blockId);
+  }
+
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): string {
+    return this.ctx.createSpecFrame(specs);
+  }
+
+  public specFrameDiscoverColumns(
+    handle: string,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
+    return this.ctx.specFrameDiscoverColumns(handle, request);
+  }
+
+  public specFrameDispose(handle: string): void {
+    this.ctx.specFrameDispose(handle);
   }
 
   public getCurrentUnstableMarker(): string | undefined {

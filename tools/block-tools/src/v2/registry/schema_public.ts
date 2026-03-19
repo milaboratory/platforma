@@ -105,32 +105,27 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
         .default({}),
     })
     .passthrough();
-  return (
-    universalSchema
-      .transform((o) => {
-        if (o.allVersionsWithChannels) return o;
-        else
-          return {
+  return universalSchema
+    .transform((o) => {
+      if (o.allVersionsWithChannels) return o;
+      else
+        return {
+          ...o,
+          allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
+        };
+    })
+    .transform((o) =>
+      o.latestByChannel[AnyChannel]
+        ? o
+        : {
             ...o,
-            allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
-          };
-      })
-      /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-      // make sure "any" channel set from main body
-      .transform((o: any) =>
-        o.latestByChannel[AnyChannel]
-          ? o
-          : {
-              ...o,
-              latestByChannel: {
-                ...o.latestByChannel,
-                [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! },
-              },
+            latestByChannel: {
+              ...o.latestByChannel,
+              [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! },
             },
-      )
-      /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
-      .pipe(universalSchema.required({ allVersionsWithChannels: true }))
-  );
+          },
+    )
+    .pipe(universalSchema.required({ allVersionsWithChannels: true }));
 }
 export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);
 export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;

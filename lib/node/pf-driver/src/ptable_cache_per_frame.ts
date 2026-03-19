@@ -1,4 +1,4 @@
-import type { PFrameHandle, PTableHandle } from "@platforma-sdk/model";
+import type { PFrameHandle, PTableHandle } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type { PoolEntry } from "@milaboratories/ts-helpers";
 import { LRUCache } from "lru-cache";

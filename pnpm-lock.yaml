@@ -1667,6 +1667,9 @@ importers:
 
   lib/model/common:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pl-error-like':
         specifier: workspace:*
         version: link:../pl-error-like
@@ -1698,12 +1701,12 @@ importers:
 
   lib/model/middle-layer:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../sdk/model
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
@@ -1820,16 +1823,16 @@ importers:
         version: 1.1.14(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.26.1)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../model/middle-layer
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../ts-helpers
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../sdk/model
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
@@ -2200,6 +2203,9 @@ importers:
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.14(encoding@0.1.13)
+      '@milaboratories/pframes-rs-wasm':
+        specifier: 'catalog:'
+        version: 1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -2667,6 +2673,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/model/middle-layer
       '@milaboratories/ptabler-expression-js':
         specifier: workspace:*
         version: link:../../lib/ptabler/js
@@ -2689,6 +2698,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/pf-driver':
+        specifier: workspace:*
+        version: link:../../lib/node/pf-driver
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../tools/ts-builder
@@ -4717,9 +4729,6 @@ packages:
 
   '@milaboratories/pl-model-common@1.26.0':
     resolution: {integrity: sha512-HnbKSMOS2QXvlrDLo8ltC6Q2j9rpiPDsXsBDY+pDxq5Sw3AtSV3EKFqXj6tUAIeWf0WI1Fmat5NFHMiYKg/ejA==}
-
-  '@milaboratories/pl-model-common@1.26.1':
-    resolution: {integrity: sha512-iuXuXxwLDM9oWludojpQFJDgsHRuqhP98VEJIOoJC186TidYcyUIib4AkUjz5sol81fpZLjrtbul7eU4NDDQng==}
 
   '@milaboratories/pl-model-middle-layer@1.13.0':
     resolution: {integrity: sha512-FBgu0rdUoXcDMzjrgLXUdwRJtyv5BKLHgJ2fVwtDapjGCWxmLzeW7QeFo+VpLJPimxnuOXoZBxFcn7p1gfZuLQ==}
@@ -10630,10 +10639,10 @@ snapshots:
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasm@1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@1.26.1)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.14(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pl-model-common': 1.26.1
+      '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
   '@milaboratories/pl-error-like@1.12.9':
@@ -10642,12 +10651,6 @@ snapshots:
       zod: 3.23.8
 
   '@milaboratories/pl-model-common@1.26.0':
-    dependencies:
-      '@milaboratories/pl-error-like': 1.12.9
-      canonicalize: 2.1.0
-      zod: 3.23.8
-
-  '@milaboratories/pl-model-common@1.26.1':
     dependencies:
       '@milaboratories/pl-error-like': 1.12.9
       canonicalize: 2.1.0
