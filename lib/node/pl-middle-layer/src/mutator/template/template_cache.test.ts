@@ -359,12 +359,14 @@ describe("GC", () => {
       const evicted = await runGc(pl, testCache, 100);
       expect(evicted).toBe(false);
 
-      // All entries should survive
+      // All entries should survive, counter should still be reset
       await pl.withReadTx("verify", async (tx) => {
         for (const node of enterNodes) {
           const exists = await tx.fieldExists(field(testCache, node.hash));
           expect(exists).toBe(true);
         }
+        const count = await tx.getKValueStringIfExists(testCache, ACCESS_COUNT_KEY);
+        expect(count).toBe("0");
       });
     });
   }, 15000);
