@@ -1,5 +1,16 @@
 # @platforma-sdk/tengo-builder
 
+## 2.5.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-backend@1.2.0
+
 ## 2.4.30
 
 ### Patch Changes

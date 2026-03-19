@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.14.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
 ## 1.13.7
 
 ### Patch Changes

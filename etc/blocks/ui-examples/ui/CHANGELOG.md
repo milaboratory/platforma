@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.9.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.ui-examples.model@1.5.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.8.37
 
 ### Patch Changes

@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.51.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-deployments@2.16.0
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-drivers@1.12.0
+  - @milaboratories/pf-driver@1.1.0
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-errors@1.2.0
+  - @platforma-sdk/workflow-tengo@5.11.0
+  - @milaboratories/pl-model-backend@1.2.0
+  - @platforma-sdk/block-tools@2.7.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/pl-tree@1.9.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.50.1
 
 ### Patch Changes

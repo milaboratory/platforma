@@ -1,5 +1,19 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.1.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.pool-explorer.workflow@1.2.0
+  - @milaboratories/milaboratories.pool-explorer.model@1.2.0
+  - @milaboratories/milaboratories.pool-explorer.ui@1.2.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.0.443
 
 ### Patch Changes

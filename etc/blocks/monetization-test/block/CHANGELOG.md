@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.3.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.monetization-test.workflow@1.2.0
+  - @milaboratories/milaboratories.monetization-test.model@1.1.0
+  - @milaboratories/milaboratories.monetization-test.ui@1.2.0
+
 ## 1.2.68
 
 ### Patch Changes

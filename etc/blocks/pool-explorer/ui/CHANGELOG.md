@@ -1,5 +1,18 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.pool-explorer.model@1.2.0
+  - @milaboratories/helpers@1.14.0
+  - @platforma-sdk/ui-vue@1.60.0
+
 ## 1.1.307
 
 ### Patch Changes
