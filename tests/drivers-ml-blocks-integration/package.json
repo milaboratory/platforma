@@ -32,6 +32,7 @@
     "@milaboratories/milaboratories.ui-examples": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
