@@ -16,7 +16,11 @@ import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
 } from "./delete_column";
-import type { DiscoverColumnsRequest, DiscoverColumnsResponse } from "./discover_columns";
+import type {
+  DiscoverColumnsRequest,
+  DiscoverColumnsRequestV2,
+  DiscoverColumnsResponse,
+} from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 export interface PFrameWasmAPI {
@@ -84,6 +88,38 @@ export interface PFrameWasm extends Disposable {
    * This method upgrades older query structures that use JoinEntryV4, filters,
    * and sorting into the new unified SpecQuery format with proper filter and
    * sort query nodes.
+   */
+  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
+}
+
+/**
+ * V2 PFrame interface with include/exclude column filtering in discoverColumns.
+ */
+export interface PFrameWasmV2 extends Disposable {
+  /**
+   * Deletes columns from a columns specification.
+   */
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
+
+  /**
+   * Discovers columns compatible with a given axes integration,
+   * with separate include and exclude filters.
+   * Exclude filter is applied after include, removing matching columns from results.
+   */
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
+
+  /**
+   * Finds columns in the PFrame matching the given filter criteria.
+   */
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
+
+  /**
+   * Evaluates a query specification against this PFrame.
+   */
+  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
+
+  /**
+   * Rewrites a legacy query format (V4) to the current SpecQuery format.
    */
   rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
 }

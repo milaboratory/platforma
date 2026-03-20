@@ -62,6 +62,32 @@ export interface DiscoverColumnsRequest {
   constraints: DiscoverColumnsConstraints;
 }
 
+/** V2 request with separate include/exclude filters */
+export interface DiscoverColumnsRequestV2 {
+  /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Exclude columns matching these selectors (OR-ed); applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
+  /** Already integrated axes with qualifications */
+  axes: ColumnAxesWithQualifications[];
+  /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
+  maxHops?: number;
+  /** Constraints controlling axes matching and qualification behavior */
+  constraints: DiscoverColumnsConstraints;
+}
+
+/** Linker step: traversal through a linker column */
+export interface DiscoverColumnsLinkerStep {
+  type: "linker";
+  /** The linker column traversed in this step */
+  linker: PColumnIdAndSpec;
+  /** Axis qualifications produced when matching the linker's many-side axes */
+  qualifications: AxisQualification[];
+}
+
+/** A step traversed during path-based column discovery. Discriminated by `type`. */
+export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep;
+
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {
   /** Qualifications for each query (already-integrated) column set */
@@ -84,6 +110,8 @@ export interface DiscoverColumnsResponseHit {
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches */
+  path?: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */
