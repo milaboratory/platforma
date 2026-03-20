@@ -1,5 +1,11 @@
-import type { PColumnIdAndSpec } from "@milaboratories/pl-model-common";
+import type {
+  DiscoverColumnsLinkerStep,
+  DiscoverColumnsStepInfo,
+  PColumnIdAndSpec,
+} from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
+
+export type { DiscoverColumnsLinkerStep, DiscoverColumnsStepInfo };
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
@@ -62,6 +68,20 @@ export interface DiscoverColumnsRequest {
   constraints: DiscoverColumnsConstraints;
 }
 
+/** V2 request with separate include/exclude filters */
+export interface DiscoverColumnsRequestV2 {
+  /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Exclude columns matching these selectors (OR-ed); applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
+  /** Already integrated axes with qualifications */
+  axes: ColumnAxesWithQualifications[];
+  /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
+  maxHops?: number;
+  /** Constraints controlling axes matching and qualification behavior */
+  constraints: DiscoverColumnsConstraints;
+}
+
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {
   /** Qualifications for each query (already-integrated) column set */
@@ -84,6 +104,8 @@ export interface DiscoverColumnsResponseHit {
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches */
+  path: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */
