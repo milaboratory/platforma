@@ -79,6 +79,11 @@ type PluginChainState = {
   recoverAtIndex?: number;
 };
 
+/** Version → persisted data shape for each migration step (third generic of `PluginModel.define` when `data` is a `PluginDataModel`). */
+export type PluginDataModelVersions<
+  M extends PluginDataModel<PluginData, Record<string, unknown>, unknown>,
+> = M extends PluginDataModel<PluginData, infer Versions, unknown> ? Versions : never;
+
 /**
  * Builder for creating PluginDataModel with type-safe migrations.
  * Mirrors DataModelBuilder — same .from(), .migrate(), .recover(), .init() chain.

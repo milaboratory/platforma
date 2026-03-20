@@ -37,6 +37,7 @@ export {
   PluginInstance,
   PluginModel,
   type PluginFactory,
+  type PluginDataModelVersions,
 } from "./plugin_model";
 export * from "./bconfig";
 export * from "./components";
