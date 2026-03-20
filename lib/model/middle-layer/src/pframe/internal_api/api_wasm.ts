@@ -125,6 +125,39 @@ export interface PFrameWasmV2 extends Disposable {
 }
 
 /**
+ * V2 PFrame API factory with createPFrame returning PFrameWasmV2.
+ */
+export interface PFrameWasmAPIV2 {
+  /**
+   * Creates a new V2 PFrame from a map of column IDs to column specifications.
+   */
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV2;
+
+  /**
+   * Expands an {@link AxesSpec} into {@link AxesId}s with parent information
+   * resolved.
+   */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /**
+   * Collapses {@link AxesId} into {@link AxesSpec}.
+   */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /**
+   * Finds the index of an axis matching the given selector.
+   * Returns -1 if no matching axis is found.
+   */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /**
+   * Finds the flat index of a table column matching the given
+   * selector within a table spec. Returns -1 if not found.
+   */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+}
+
+/**
  * Response from evaluating a query against a PFrame.
  */
 export type EvaluateQueryResponse = {

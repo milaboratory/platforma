@@ -1,5 +1,11 @@
-import type { PColumnIdAndSpec } from "@milaboratories/pl-model-common";
+import type {
+  DiscoverColumnsLinkerStep,
+  DiscoverColumnsStepInfo,
+  PColumnIdAndSpec,
+} from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
+
+export type { DiscoverColumnsLinkerStep, DiscoverColumnsStepInfo };
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
@@ -76,18 +82,6 @@ export interface DiscoverColumnsRequestV2 {
   constraints: DiscoverColumnsConstraints;
 }
 
-/** Linker step: traversal through a linker column */
-export interface DiscoverColumnsLinkerStep {
-  type: "linker";
-  /** The linker column traversed in this step */
-  linker: PColumnIdAndSpec;
-  /** Axis qualifications produced when matching the linker's many-side axes */
-  qualifications: AxisQualification[];
-}
-
-/** A step traversed during path-based column discovery. Discriminated by `type`. */
-export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep;
-
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {
   /** Qualifications for each query (already-integrated) column set */
@@ -111,7 +105,7 @@ export interface DiscoverColumnsResponseHit {
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
   /** Linker steps traversed to reach this hit; empty for direct matches */
-  path?: DiscoverColumnsStepInfo[];
+  path: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */
