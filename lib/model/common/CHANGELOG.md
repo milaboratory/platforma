@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.28.0
+
+### Minor Changes
+
+- e1d62fe: Add V2 discover columns WASM interface: PFrameWasmV2/PFrameWasmAPIV2 with separate include/exclude column filters, maxHops parameter, linker path traversal in response hits, and DiscoverColumnsLinkerStep/StepInfo types
+
 ## 1.27.0
 
 ### Minor Changes
