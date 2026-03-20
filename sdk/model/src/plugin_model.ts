@@ -280,8 +280,8 @@ export class PluginInstance<
 > implements TransferTarget<Id, TransferData> {
   readonly id: Id;
   readonly transferVersion: string;
-  /** @internal */
-  readonly __transferBrand?: TransferData;
+  /** @internal Phantom for type inference of Data/Params/Outputs; never set at runtime. */
+  readonly __instanceTypes?: { data: Data; params: Params; outputs: Outputs };
   private readonly factory: PluginModelFactory<Data, Params, Outputs, any, any>;
   private readonly config: any;
 
