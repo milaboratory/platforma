@@ -340,10 +340,15 @@ export function createAppV3<
         snapshot.value.outputs as Partial<Readonly<Outputs>>,
       )) {
         if (!key.startsWith(prefix)) continue;
-        result[key.slice(prefix.length)] =
-          outputWithStatus.ok && outputWithStatus.value !== undefined
-            ? outputWithStatus.value
-            : undefined;
+        const outputKey = key.slice(prefix.length);
+        if (platforma.blockModelInfo.outputs[key]?.withStatus) {
+          result[outputKey] = outputWithStatus ?? undefined;
+        } else {
+          result[outputKey] =
+            outputWithStatus.ok && outputWithStatus.value !== undefined
+              ? outputWithStatus.value
+              : undefined;
+        }
       }
       return result;
     });
