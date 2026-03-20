@@ -1,5 +1,16 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.15.0
+
+### Minor Changes
+
+- e1d62fe: Add V2 discover columns WASM interface: PFrameWasmV2/PFrameWasmAPIV2 with separate include/exclude column filters, maxHops parameter, linker path traversal in response hits, and DiscoverColumnsLinkerStep/StepInfo types
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+
 ## 1.14.0
 
 ### Minor Changes
