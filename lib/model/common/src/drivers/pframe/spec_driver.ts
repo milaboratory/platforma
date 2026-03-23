@@ -1,11 +1,11 @@
 import type { Branded } from "@milaboratories/helpers";
 import type {
   ValueType,
-  SingleAxisSelector,
   AxisSpec,
   PColumnIdAndSpec,
   PColumnSpec,
-} from "./pframe";
+  SingleAxisSelector,
+} from "./spec";
 
 // --- Discover columns types (duplicated from middle-layer internal_api) ---
 
