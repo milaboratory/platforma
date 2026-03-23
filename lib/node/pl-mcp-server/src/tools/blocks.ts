@@ -88,6 +88,25 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "reorder_blocks",
+    {
+      description:
+        "Reorder blocks in a project. Must provide ALL block IDs in the desired order.",
+      inputSchema: {
+        projectId: z.string().describe("Project ID"),
+        blockIds: z
+          .array(z.string())
+          .describe("All block IDs in the desired order"),
+      },
+    },
+    async ({ projectId, blockIds }) => {
+      const project = await ctx.getOpenedProject(projectId);
+      await project.reorderBlocks(blockIds);
+      return textResult({ ok: true });
+    },
+  );
+
+  server.registerTool(
     "list_available_blocks",
     {
       description:
