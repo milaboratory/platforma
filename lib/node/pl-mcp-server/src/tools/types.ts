@@ -1,6 +1,10 @@
 import type { MiddleLayer, ProjectListEntry } from "@milaboratories/pl-middle-layer";
-import type { AuthorMarker } from "@milaboratories/pl-model-middle-layer";
 import type { PlMcpServerCallbacks } from "../server";
+
+export interface AuthorMarker {
+  authorId: string;
+  localVersion: number;
+}
 
 export interface ToolContext {
   getMl: () => MiddleLayer | undefined;

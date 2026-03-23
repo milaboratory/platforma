@@ -142,7 +142,9 @@ export class PlMcpServer {
             sessionIdGenerator: () => randomUUID(),
           });
 
+          let closed = false;
           transport.onclose = () => {
+            closed = true;
             const sid = transport.sessionId;
             if (sid) this.transports.delete(sid);
           };
@@ -151,8 +153,10 @@ export class PlMcpServer {
           await server.connect(transport);
           await transport.handleRequest(req, res);
 
+          // Store after handleRequest so sessionId is assigned.
+          // Guard against storing an already-closed transport (race condition).
           const sid = transport.sessionId;
-          if (sid) this.transports.set(sid, transport);
+          if (sid && !closed) this.transports.set(sid, transport);
           return;
         }
 
