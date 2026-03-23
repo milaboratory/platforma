@@ -303,7 +303,7 @@ export function isLinkerColumn(column: PColumnSpec): boolean {
  */
 export type AxisSpec = {
   /** Type of the axis value. Should not use non-key types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis */
   readonly name: string;
@@ -706,7 +706,7 @@ export interface PColumnInfo extends PColumnIdAndSpec {
 export interface AxisId {
   /** Type of the axis or column value. For an axis should not use non-key
    * types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis or column */
   readonly name: string;

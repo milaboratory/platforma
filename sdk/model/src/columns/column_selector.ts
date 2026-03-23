@@ -141,8 +141,7 @@ function matchAxisSelector(
   selector: MultiAxisSelector,
 ): boolean {
   if (selector.name !== undefined && !matchStringValue(axis.name, selector.name)) return false;
-  if (selector.type !== undefined && !selector.type.includes(axis.type as AxisValueType))
-    return false;
+  if (selector.type !== undefined && !selector.type.includes(axis.type)) return false;
   if (selector.domain !== undefined && !matchRecordField(axis.domain, selector.domain))
     return false;
   if (
