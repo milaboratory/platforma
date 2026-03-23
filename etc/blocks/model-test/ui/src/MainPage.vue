@@ -44,6 +44,6 @@ async function optionsSearch(s: string | string[], type: "label" | "value") {
       <summary>Output with status</summary>
       <pre>{{ JSON.stringify(app.model.outputs.delayedOutputWithStatus, null, 2) }}</pre>
     </details>
-    <Counter :instance="app.plugins.counter" />
+    <Counter :handle="app.plugins.counter.handle" />
   </PlBlockPage>
 </template>

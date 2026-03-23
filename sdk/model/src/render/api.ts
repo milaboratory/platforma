@@ -819,26 +819,28 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
-  private readonly ctx: GlobalCfgRenderCtx;
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> extends RenderCtxBase<
+  unknown,
+  InferFactoryData<F>
+> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
   constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
-    this.ctx = getCfgRenderCtx();
+    super();
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 
-  private dataCache?: { v: InferFactoryData<F> };
+  private pluginDataCache?: { v: InferFactoryData<F> };
 
   /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
-  public get data(): InferFactoryData<F> {
-    if (this.dataCache === undefined) {
+  public override get data(): InferFactoryData<F> {
+    if (this.pluginDataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+      this.pluginDataCache = { v: getPluginData(parseJson(raw), this.handle) };
     }
-    return this.dataCache.v;
+    return this.pluginDataCache.v;
   }
 
   private paramsCache?: { v: InferFactoryParams<F> };
@@ -854,9 +856,6 @@ export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
     }
     return this.paramsCache.v;
   }
-
-  /** Result pool — same as block, from cfgRenderCtx methods */
-  public readonly resultPool = new ResultPool();
 }
 
 /** @deprecated Use BlockRenderCtx instead */
