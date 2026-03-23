@@ -12,11 +12,7 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
-        lines: z
-          .number()
-          .optional()
-          .default(100)
-          .describe("Number of lines per log (default 100)"),
+        lines: z.number().optional().default(100).describe("Number of lines per log (default 100)"),
         sampleId: z
           .string()
           .optional()
@@ -63,11 +59,7 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     {
       description: "Read recent lines from the application log. Useful for debugging errors.",
       inputSchema: {
-        lines: z
-          .number()
-          .optional()
-          .default(50)
-          .describe("Number of lines to return (default 50)"),
+        lines: z.number().optional().default(50).describe("Number of lines to return (default 50)"),
         search: z.string().optional().describe("Filter lines containing this substring"),
       },
     },

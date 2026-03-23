@@ -56,8 +56,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
   server.registerTool(
     "press_key",
     {
-      description:
-        "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
+      description: "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
       inputSchema: {
         key: z
           .string()

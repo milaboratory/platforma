@@ -44,15 +44,11 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
     },
   );
 
-  server.registerTool(
-    "disconnect",
-    { description: "Disconnect from current server" },
-    async () => {
-      if (!ctx.callbacks.disconnect) {
-        return textResult({ error: "Connection management not available" });
-      }
-      await ctx.callbacks.disconnect();
-      return textResult({ ok: true });
-    },
-  );
+  server.registerTool("disconnect", { description: "Disconnect from current server" }, async () => {
+    if (!ctx.callbacks.disconnect) {
+      return textResult({ error: "Connection management not available" });
+    }
+    await ctx.callbacks.disconnect();
+    return textResult({ ok: true });
+  });
 }

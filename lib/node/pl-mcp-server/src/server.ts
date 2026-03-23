@@ -2,10 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import {
-  type MiddleLayer,
-  resourceIdToString,
-} from "@milaboratories/pl-middle-layer";
+import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
 import type { ToolContext } from "./tools/types";
 import { registerPingTool } from "./tools/ping";
 import { registerConnectionTools } from "./tools/connection";
