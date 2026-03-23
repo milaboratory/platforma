@@ -142,11 +142,10 @@ export class PlMcpServer {
 
           const server = this.createMcpServer();
           await server.connect(transport);
+          await transport.handleRequest(req, res);
 
           const sid = transport.sessionId;
           if (sid) this.transports.set(sid, transport);
-
-          await transport.handleRequest(req, res);
           return;
         }
 
