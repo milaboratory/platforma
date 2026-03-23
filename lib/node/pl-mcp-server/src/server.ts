@@ -972,8 +972,19 @@ export class PlMcpServer {
         const pFrameDriver = this.requireMl().internalDriverKit.pFrameDriver;
         const handle = pTableHandle as PTableHandle;
 
-        const shape = await pFrameDriver.getShape(handle);
-        const spec = await pFrameDriver.getSpec(handle);
+        let shape;
+        try {
+          shape = await pFrameDriver.getShape(handle);
+        } catch (err) {
+          return textResult({ error: `getShape failed: ${err}` });
+        }
+
+        let spec;
+        try {
+          spec = await pFrameDriver.getSpec(handle);
+        } catch (err) {
+          return textResult({ error: `getSpec failed: ${err}` });
+        }
 
         const effectiveLimit = Math.min(limit, 1000);
         const range = { offset, length: effectiveLimit };
@@ -981,9 +992,19 @@ export class PlMcpServer {
         // If no columns specified, get all
         const columnIndices = columns ?? spec.map((_: PTableColumnSpec, i: number) => i);
 
-        const vectors: PTableVector[] = await pFrameDriver.getData(handle, columnIndices, range);
+        let vectors: PTableVector[];
+        try {
+          vectors = await pFrameDriver.getData(handle, columnIndices, range);
+        } catch (err) {
+          return textResult({
+            error: `getData failed: ${err}`,
+            shape,
+            columnIndices,
+            range,
+          });
+        }
 
-        const actualRows = Math.min(effectiveLimit, shape.rows - offset);
+        const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;
         const rows: unknown[][] = [];
         for (let r = 0; r < actualRows; r++) {
           const row: unknown[] = [];
