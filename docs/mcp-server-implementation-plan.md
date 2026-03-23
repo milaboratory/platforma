@@ -318,44 +318,97 @@ Implemented tools:
 
 ## Spec compliance
 
-Comparison against the [Platforma MCP Server spec](https://github.com/milaboratory/text/pull/60) (requirements R1–R31).
+Comparison of the [Platforma MCP Server spec](https://github.com/milaboratory/text/pull/60) (commit `3378092`) against the implementation in `lib/node/pl-mcp-server/` and tests in `tests/mcp-server/`.
+
+---
 
 ### Not implemented
 
-| Req | Tool | Notes |
-|-----|------|-------|
-| R15 | `reorder_blocks` | Not needed for current workflows |
-| R19 | `get_block_outputs` | Step 7 skipped — PFrame output rendering deferred |
-| R20 | `get_block_status` | Not a separate tool; status info is in `get_project_overview` |
-| R22 | `invoke_action` | Deferred — depends on action system readiness |
-| R23 | `AuthorMarker` on mutations | `set_block_data` doesn't pass per-session author markers |
-| R27 | `query_table` | Step 7 skipped — PFrame query deferred |
-| R28 | `list_columns` | Step 7 skipped — PFrame column listing deferred |
-| R31 | `get_block_info` | Step 9 skipped — detailed block info deferred |
-| — | ~~Port auto-increment~~ | ~~Spec says try 4201, 4202... on conflict; we just log error~~ — DONE: tries up to 10 ports |
+| Req | Spec tool | Notes |
+|-----|-----------|-------|
+| R15 | `reorder_blocks` | Not implemented at all |
+| R19 | `get_block_outputs` | Deferred (PFrame output rendering) |
+| R20 | `get_block_status` | No separate tool; status fields are embedded in `get_project_overview` response |
+| R22 | `invoke_action` | Not implemented (action system prototype) |
+| R23 | `AuthorMarker` on mutations | `set_block_data` does not pass per-session `authorId: "mcp-{sessionId}"` or incrementing `localVersion` |
+| R25 | `await_stable` | No separate tool; merged into `await_block_done` as a two-phase wait (see "Implemented differently" below) |
+| R27 | `query_table` | Deferred (PFrame query) |
+| R28 | `list_columns` | Deferred (PFrame column listing) |
+| R31 | `get_block_info` | Deferred (detailed block package info from registry) |
+
+---
 
 ### Implemented differently
 
-| Req | Spec | Implementation |
-|-----|------|----------------|
-| R2 | Secret persisted in app settings | Secret persisted in Platforma data folder (`.mcp-secret` file) — survives app rebuilds |
-| R4 | Server starts when connected to backend | Server starts on app init (after worker spawn), before backend connection; ML is optional and set later |
-| R11 | `add_block` takes `registryId`, `version` | Takes full `spec` object (supports both `from-registry-v2` and `dev-v2`) |
+| Req | Spec says | Implementation does |
+|-----|-----------|---------------------|
+| R4 | Server starts when (a) MCP enabled AND (b) app connects to backend. Stops on disconnect. | Server can start without a MiddleLayer. ML is optional and set later via `setMiddleLayer()`. Tools that need ML check at call time and return an error if not connected. |
+| R11 | `add_block` takes `registryId` (string) + `version` (semver string) | Takes a full `spec` union object: either `{ type: "from-registry-v2", registryUrl, id: { organization, name, version } }` or `{ type: "dev-v2", folder }`. More flexible but different API surface. |
+| R13 | `run_block` uses explicit `addUpstreams` flag in the production graph | `project.runBlock(blockId)` auto-starts stale upstream blocks. No flag exposed to the MCP caller. |
 | R16 | Tool named `open_block` | Named `select_block` |
-| R25 | `await_stable` as separate tool | Merged into `await_block_done` (two-phase wait) — callers rarely need the intermediate state |
-| R26 | `get_logs` with regex filter | Split into `get_block_logs` + `get_app_log`; search is substring, not regex |
-| R29 | Screenshot errors if no block open | Captures topmost view (modal > blockView > main) — works without a block open |
-| R30 | `search_blocks` with `category` filter | Named `list_available_blocks`; simpler — name filter only, no category |
+| R17 | `get_project_overview` returns `subtitle` among block fields | Implementation returns `title` but no `subtitle` field. Returns `inputsValid` which is not in the spec. |
+| R25 | `await_stable` is a separate tool (blocks until computable is stable, returns stable state) | Merged into `await_block_done` as phase 2: after `calculationStatus` reaches Done, it additionally calls `awaitStableValue()` on block state. No way to call `await_stable` independently. |
+| R26 | Single `get_logs` tool with regex `search` filter, returns log text with byte offset for pagination | Split into two tools: `get_block_logs` (reads logs from block outputs, keyed by sample/run ID) + `get_app_log` (reads Electron main process log). Search is substring match, not regex. No byte offset for pagination. `get_block_logs` has a `sampleId` filter parameter not in spec. |
+| R29 | `capture_screenshot` returns error if no block is currently open | Captures the topmost visible view (modal > blockView > main) — works even without a block open. No error when no block is displayed. |
+| R30 | `search_blocks` takes `query` (text) + optional `category`. Returns packages with id, version, title, description, organization. | Named `list_available_blocks`. Takes optional `query` only (case-insensitive substring match on name). No `category` parameter. Delegates to a callback rather than querying registries directly. |
+
+---
 
 ### Implemented beyond spec
 
-| Tool | Description |
-|------|-------------|
-| `click`, `type_text`, `press_key`, `scroll` | UI interaction via Electron sendInputEvent |
-| `execute_js` | Run JavaScript in renderer process |
-| `list_available_blocks` | Registry search (simpler than spec's `search_blocks`) |
-| `list_connections`, `connect_to_server`, `disconnect`, `get_connection_status` | Server connection management |
-| `get_app_log` | Electron main process log reading |
+These tools exist in the implementation but are not mentioned in the spec:
+
+| Tool | Category | Description |
+|------|----------|-------------|
+| `ping` | Infrastructure | Health check, returns `{ status: "ok", connected: boolean }` |
+| `get_connection_status` | Connection | Returns current backend connection status (connected, type, addr, login) |
+| `list_connections` | Connection | Lists saved server connections |
+| `connect_to_server` | Connection | Connect to a Platforma backend server by address + login |
+| `disconnect` | Connection | Disconnect from current backend server |
+| `click` | UI interaction | Click at CSS coordinates in the application window |
+| `type_text` | UI interaction | Type text into the currently focused element |
+| `press_key` | UI interaction | Press keyboard keys with optional modifiers (shift, ctrl, alt, meta) |
+| `scroll` | UI interaction | Scroll at a given position in the window |
+| `execute_js` | UI interaction | Execute JavaScript in the renderer process, return result |
+| `get_app_log` | Logs | Read Electron main process log (split from spec's single `get_logs`) |
+
+The connection management tools (`get_connection_status`, `list_connections`, `connect_to_server`, `disconnect`) enable MCP clients to manage the backend connection lifecycle, which the spec assumes is handled entirely through the Desktop UI.
+
+The UI interaction tools (`click`, `type_text`, `press_key`, `scroll`, `execute_js`) enable AI-driven UI automation — the spec only mentions `capture_screenshot` for visual verification and defers "Block UI interaction via PuppetCommand through MCP" to future work.
+
+---
+
+### Test coverage gaps
+
+Comparing spec acceptance criteria against actual test files in `tests/mcp-server/src/`:
+
+| Spec expectation | Test status |
+|------------------|-------------|
+| Wrong secret → 404 | Covered (`server.test.ts`) |
+| Wrong path → 404 | Covered (`server.test.ts`) |
+| Create, list, open, close, delete project lifecycle | Covered (`projects.test.ts`) |
+| Error: open non-existent project | Not tested |
+| Error: close already-closed project | Not tested |
+| Error: delete while open | Not tested |
+| Add and remove block | Covered (`blocks.test.ts`) |
+| Error: add block to closed project | Not tested |
+| Error: remove non-existent block | Not tested |
+| `get_project_overview` returns block info | Covered (`state.test.ts`) |
+| `set_block_data` + `get_block_state` roundtrip | Covered (`state.test.ts`) |
+| `await_block_done` waits for completion | Covered (`pipeline.test.ts`) |
+| `await_block_done` timeout | Covered (`pipeline.test.ts`) |
+| Full pipeline: add blocks → set data → wire → run → await → verify outputs | Not fully tested (pipeline test runs single block, no wiring between enter-numbers + sum-numbers) |
+| `run_block` + verify status transitions | Not tested (run_block is used in pipeline test but status transitions aren't asserted) |
+| `stop_block` | Not tested |
+| `get_block_logs` | Not tested |
+| `get_app_log` | Not tested |
+| `capture_screenshot` | Not tested (requires desktop-app callbacks) |
+| `select_block` | Not tested (requires desktop-app callbacks) |
+| UI interaction tools (`click`, `type_text`, etc.) | Not tested (require desktop-app callbacks) |
+| Connection tools (`connect_to_server`, etc.) | Not tested (require desktop-app callbacks) |
+| `list_available_blocks` | Not tested (requires desktop-app callback) |
+| Origin header validation → 403 | Not tested |
+| Port auto-increment on EADDRINUSE | Not tested |
 
 ---
 
