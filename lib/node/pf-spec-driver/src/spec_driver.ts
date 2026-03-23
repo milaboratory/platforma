@@ -8,7 +8,6 @@ import type {
   DiscoverColumnsResponse,
 } from "@milaboratories/pl-model-common";
 import { PFrameSpecDriverError } from "@milaboratories/pl-model-common";
-import { randomUUID } from "node:crypto";
 
 /**
  * Manages spec-only PFrame instances (WASM) with handle-based lifecycle.
@@ -22,7 +21,7 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
     // Explicit annotation ensures a WASM version mismatch surfaces at compile time
     // (skipLibCheck won't validate .d.ts in node_modules, but this assignment will)
     const frame: PFrameInternal.PFrameWasmV2 = createPFrame(specs);
-    const handle = randomUUID() as SpecFrameHandle;
+    const handle = crypto.randomUUID() as SpecFrameHandle;
     this.frames.set(handle, frame);
     return handle;
   }
