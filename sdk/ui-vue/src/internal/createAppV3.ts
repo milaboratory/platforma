@@ -403,7 +403,7 @@ export function createAppV3<
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, id]),
+    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
   ) as InferPluginHandles<Plugins>;
 
   const getters = {
