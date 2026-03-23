@@ -45,9 +45,14 @@ import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
 import type {
+  AxesId,
+  AxesSpec,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
   PColumnSpec,
+  PTableColumnId,
+  PTableColumnSpec,
+  SingleAxisSelector,
   SpecFrameHandle,
 } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "./spec_driver";
@@ -460,6 +465,22 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   public disposeSpecFrame(handle: SpecFrameHandle): void {
     this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
+  }
+
+  public expandAxes(spec: AxesSpec): AxesId {
+    return this.specDriver.expandAxes(spec);
+  }
+
+  public collapseAxes(ids: AxesId): AxesSpec {
+    return this.specDriver.collapseAxes(ids);
+  }
+
+  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return this.specDriver.findAxis(spec, selector);
+  }
+
+  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return this.specDriver.findTableColumn(tableSpec, selector);
   }
 
   /**
@@ -921,6 +942,40 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("disposeSpecFrame", (handle) => {
         this.disposeSpecFrame(vm.getString(handle) as SpecFrameHandle);
+      });
+
+      exportCtxFunction("expandAxes", (spec) => {
+        return parent.exportObjectViaJson(
+          this.expandAxes(parent.importObjectViaJson(spec) as AxesSpec),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("collapseAxes", (ids) => {
+        return parent.exportObjectViaJson(
+          this.collapseAxes(parent.importObjectViaJson(ids) as AxesId),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("findAxis", (spec, selector) => {
+        return parent.exportSingleValue(
+          this.findAxis(
+            parent.importObjectViaJson(spec) as AxesSpec,
+            parent.importObjectViaJson(selector) as SingleAxisSelector,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("findTableColumn", (tableSpec, selector) => {
+        return parent.exportSingleValue(
+          this.findTableColumn(
+            parent.importObjectViaJson(tableSpec) as PTableColumnSpec[],
+            parent.importObjectViaJson(selector) as PTableColumnId,
+          ),
+          undefined,
+        );
       });
 
       //

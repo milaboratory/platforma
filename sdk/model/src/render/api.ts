@@ -1,6 +1,8 @@
 import type {
   AnchoredPColumnSelector,
   AnyFunction,
+  AxesId,
+  AxesSpec,
   AxisId,
   DataInfo,
   DiscoverColumnsRequest,
@@ -17,6 +19,8 @@ import type {
   PObjectId,
   PObjectSpec,
   PSpecPredicate,
+  PTableColumnId,
+  PTableColumnSpec,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -25,6 +29,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
+  SingleAxisSelector,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -32,6 +37,7 @@ import {
   AnchoredIdDeriver,
   collectSpecQueryColumns,
   ensurePColumn,
+  getAxisId,
   parseJson,
   extractAllColumns,
   isDataInfo,
@@ -535,7 +541,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     column: PColumnSpec,
     axisIdx: number,
   ): Record<string | number, string> | undefined {
-    const labels = this.findLabels(column.axesSpec[axisIdx]);
+    const labels = this.findLabels(getAxisId(column.axesSpec[axisIdx]));
     if (!labels) return undefined;
     const axisKeys = readAnnotation(column, `pl7.app/axisKeys/${axisIdx}`);
     if (axisKeys !== undefined) {
@@ -729,6 +735,22 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 
   public disposeSpecFrame(handle: string): void {
     this.ctx.disposeSpecFrame(handle);
+  }
+
+  public expandAxes(spec: AxesSpec): AxesId {
+    return this.ctx.expandAxes(spec);
+  }
+
+  public collapseAxes(ids: AxesId): AxesSpec {
+    return this.ctx.collapseAxes(ids);
+  }
+
+  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return this.ctx.findAxis(spec, selector);
+  }
+
+  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return this.ctx.findTableColumn(tableSpec, selector);
   }
 
   public getCurrentUnstableMarker(): string | undefined {
