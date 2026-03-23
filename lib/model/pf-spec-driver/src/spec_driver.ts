@@ -1,8 +1,19 @@
-import { createPFrame } from "@milaboratories/pframes-rs-wasm";
+import {
+  createPFrame,
+  expandAxes,
+  collapseAxes,
+  findAxis,
+  findTableColumn,
+} from "@milaboratories/pframes-rs-wasm";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type {
+  AxesId,
+  AxesSpec,
   PColumnSpec,
   PFrameSpecDriver,
+  PTableColumnId,
+  PTableColumnSpec,
+  SingleAxisSelector,
   SpecFrameHandle,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
@@ -45,6 +56,22 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
       frame[Symbol.dispose]();
       this.frames.delete(handle);
     }
+  }
+
+  expandAxes(spec: AxesSpec): AxesId {
+    return expandAxes(spec);
+  }
+
+  collapseAxes(ids: AxesId): AxesSpec {
+    return collapseAxes(ids);
+  }
+
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return findAxis(spec, selector);
+  }
+
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return findTableColumn(tableSpec, selector);
   }
 
   /** Dispose all managed spec frames. */

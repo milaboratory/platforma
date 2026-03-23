@@ -1,12 +1,15 @@
 import type { Branded } from "@milaboratories/helpers";
 import type {
   AxisSpec,
+  AxesSpec,
+  AxesId,
   PColumnIdAndSpec,
   PColumnSpec,
   SingleAxisSelector,
   AxisValueType,
   ColumnValueType,
 } from "./spec";
+import type { PTableColumnId, PTableColumnSpec } from "./table_common";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -163,4 +166,16 @@ export interface PFrameSpecDriver {
 
   /** Dispose a spec frame, freeing WASM resources. */
   disposeSpecFrame(handle: SpecFrameHandle): void;
+
+  /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /** Collapse resolved AxisId parents back to index-based parentAxes in AxesSpec. */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /** Find the index of an axis matching the given selector. Returns -1 if not found. */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /** Find the flat index of a table column matching the given selector. Returns -1 if not found. */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
 }

@@ -718,13 +718,24 @@ export interface AxisId {
   /** Context domain provides additional axis identity that is matched
    * by kinship rules (subset/superset/overlap) rather than exact equality */
   readonly contextDomain?: Record<string, string>;
+
+  /** Parent axes as resolved AxisId objects (not indices).
+   * Use expandAxes from PFrameSpecDriver to convert index-based parentAxes from AxisSpec. */
+  readonly parentAxes?: AxisId[];
 }
 
 /** Array of axis ids */
 export type AxesId = AxisId[];
 
-/** Extracts axis ids from axis spec */
+/** Extracts axis ids from axis spec.
+ * Throws if the axis has parentAxes — use expandAxes from PFrameSpecDriver instead. */
 export function getAxisId(spec: AxisSpec): AxisId {
+  if (spec.parentAxes && spec.parentAxes.length > 0) {
+    throw new Error(
+      `getAxisId does not support axes with parents (axis "${spec.name}"). ` +
+        `Use expandAxes from PFrameSpecDriver to resolve parent indices to AxisId objects.`,
+    );
+  }
   const { type, name, domain, contextDomain } = spec;
   const result: AxisId = { type, name };
   if (domain && Object.entries(domain).length > 0) {
