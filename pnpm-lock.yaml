@@ -1849,9 +1849,6 @@ importers:
 
   lib/node/pf-driver:
     dependencies:
-      '@milaboratories/pf-spec-driver':
-        specifier: workspace:*
-        version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.15(encoding@0.1.13)
