@@ -49,10 +49,13 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
 
   /** Dispose all managed spec frames. */
   dispose(): void {
-    for (const frame of this.frames.values()) {
-      frame[Symbol.dispose]();
+    try {
+      for (const frame of this.frames.values()) {
+        frame[Symbol.dispose]();
+      }
+    } finally {
+      this.frames.clear();
     }
-    this.frames.clear();
   }
 
   [Symbol.dispose](): void {
