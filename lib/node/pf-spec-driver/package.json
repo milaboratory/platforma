@@ -1,7 +1,7 @@
 {
-  "name": "@milaboratories/pf-driver",
-  "version": "1.1.1",
-  "description": "PFrameDriver implementation abstracted from Middle Layer",
+  "name": "@milaboratories/pf-spec-driver",
+  "version": "1.0.0",
+  "description": "PSpecDriver implementation: spec-only PFrame operations via WASM",
   "keywords": [],
   "license": "UNLICENSED",
   "files": [
@@ -26,28 +26,19 @@
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
-    "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/pf-spec-driver": "workspace:*",
-    "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*",
-    "@milaboratories/ts-helpers": "workspace:*",
-    "es-toolkit": "catalog:",
-    "lru-cache": "catalog:"
+    "@milaboratories/pl-model-middle-layer": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/node": "catalog:",
-    "@vitest/coverage-istanbul": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:"
+    "typescript": "catalog:"
   },
   "engines": {
     "node": ">=22.19.0"

@@ -157,5 +157,5 @@ export interface PSpecDriver {
   ): DiscoverColumnsResponse;
 
   /** Dispose a spec frame, freeing WASM resources. */
-  disposeSpecFrame(handle: SpecFrameHandle): void;
+  specFrameDispose(handle: SpecFrameHandle): void;
 }

@@ -447,7 +447,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
     const handle = this.specDriver.createSpecFrame(specs);
-    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
+    this.computableCtx?.addOnDestroy(() => this.specDriver.specFrameDispose(handle));
     return handle;
   }
 
@@ -459,7 +459,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   }
 
   public specFrameDispose(handle: SpecFrameHandle): void {
-    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
+    this.specDriver.specFrameDispose(handle as SpecFrameHandle);
   }
 
   /**
