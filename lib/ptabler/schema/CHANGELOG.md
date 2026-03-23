@@ -1,5 +1,12 @@
 # @platforma-open/software-ptabler.types
 
+## 1.14.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+
 ## 1.14.1
 
 ### Patch Changes

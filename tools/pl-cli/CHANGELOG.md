@@ -1,5 +1,13 @@
 # @platforma-sdk/pl-cli
 
+## 0.2.6
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-middle-layer@1.53.0
+  - @milaboratories/pl-client@2.18.2
+
 ## 0.2.5
 
 ### Patch Changes

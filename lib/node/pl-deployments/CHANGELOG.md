@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 2.16.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+
 ## 2.16.1
 
 ### Patch Changes

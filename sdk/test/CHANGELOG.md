@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.61.0
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-middle-layer@1.53.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-tree@1.9.3
+
 ## 1.60.2
 
 ### Patch Changes
