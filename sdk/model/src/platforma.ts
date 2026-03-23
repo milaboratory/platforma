@@ -149,6 +149,6 @@ export type InferPluginData<Pl, PluginId extends string> =
  */
 export type InferPluginHandles<T extends Record<string, unknown>> = {
   readonly [K in keyof T]: T[K] extends PluginRecord<infer Data, infer Params, infer Outputs>
-    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
+    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs>> }
     : never;
 };
