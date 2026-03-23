@@ -4,16 +4,19 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { randomUUID } from "node:crypto";
 import {
   type MiddleLayer,
-  type BlockPackSpecAny,
   resourceIdToString,
 } from "@milaboratories/pl-middle-layer";
-import type {
-  PFrameHandle,
-  PTableHandle,
-  PTableColumnSpec,
-  PTableVector,
-} from "@milaboratories/pl-middle-layer";
-import { z } from "zod";
+import type { ToolContext } from "./tools/types";
+import { registerPingTool } from "./tools/ping";
+import { registerConnectionTools } from "./tools/connection";
+import { registerProjectTools } from "./tools/projects";
+import { registerBlockTools } from "./tools/blocks";
+import { registerBlockStateTools } from "./tools/block-state";
+import { registerAwaitTools } from "./tools/await";
+import { registerLogTools } from "./tools/logs";
+import { registerDataQueryTools } from "./tools/data-query";
+import { registerScreenshotTool } from "./tools/screenshot";
+import { registerUIInteractionTools } from "./tools/ui-interaction";
 
 export interface PlMcpServerCallbacks {
   onProjectCreated?: (projectId: string) => void | Promise<void>;
@@ -69,12 +72,6 @@ export interface PlMcpServerOptions {
   callbacks?: PlMcpServerCallbacks;
 }
 
-function textResult(data: unknown) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(data) }],
-  };
-}
-
 export class PlMcpServer {
   private ml: MiddleLayer | undefined;
   private port: number;
@@ -107,55 +104,62 @@ export class PlMcpServer {
     const expectedPath = `/${this.secret}/mcp`;
 
     this.httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-      if (req.headers.origin !== undefined) {
-        try {
-          const origin = new URL(req.headers.origin);
-          if (origin.hostname !== "localhost" && origin.hostname !== "127.0.0.1") {
+      try {
+        if (req.headers.origin !== undefined) {
+          try {
+            const origin = new URL(req.headers.origin);
+            if (origin.hostname !== "localhost" && origin.hostname !== "127.0.0.1") {
+              res.writeHead(403, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Forbidden" }));
+              return;
+            }
+          } catch {
             res.writeHead(403, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "Forbidden" }));
             return;
           }
-        } catch {
-          res.writeHead(403, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Forbidden" }));
+        }
+
+        if (req.url !== expectedPath) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Not Found" }));
           return;
         }
-      }
 
-      if (req.url !== expectedPath) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Not Found" }));
-        return;
-      }
+        const sessionId = req.headers["mcp-session-id"] as string | undefined;
+        if (sessionId && this.transports.has(sessionId)) {
+          await this.transports.get(sessionId)!.handleRequest(req, res);
+          return;
+        }
 
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
-      if (sessionId && this.transports.has(sessionId)) {
-        await this.transports.get(sessionId)!.handleRequest(req, res);
-        return;
-      }
+        if (req.method === "POST") {
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+          });
 
-      if (req.method === "POST") {
-        const transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-        });
+          transport.onclose = () => {
+            const sid = transport.sessionId;
+            if (sid) this.transports.delete(sid);
+          };
 
-        transport.onclose = () => {
+          const server = this.createMcpServer();
+          await server.connect(transport);
+
           const sid = transport.sessionId;
-          if (sid) this.transports.delete(sid);
-        };
+          if (sid) this.transports.set(sid, transport);
 
-        const server = this.createMcpServer();
-        await server.connect(transport);
+          await transport.handleRequest(req, res);
+          return;
+        }
 
-        await transport.handleRequest(req, res);
-
-        const sid = transport.sessionId;
-        if (sid) this.transports.set(sid, transport);
-        return;
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
+      } catch {
+        if (!res.headersSent) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Internal Server Error" }));
+        }
       }
-
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
     });
 
     const maxRetries = 10;
@@ -164,15 +168,16 @@ export class PlMcpServer {
       res: ServerResponse,
     ) => void;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const server = this.httpServer;
       try {
         await new Promise<void>((resolve, reject) => {
-          this.httpServer!.listen(this.port, "127.0.0.1", () => resolve());
-          this.httpServer!.once("error", reject);
+          server.listen(this.port, "127.0.0.1", () => resolve());
+          server.once("error", reject);
         });
         return;
       } catch (err: unknown) {
         if ((err as { code?: string }).code === "EADDRINUSE" && attempt < maxRetries - 1) {
-          this.httpServer!.removeAllListeners();
+          server.removeAllListeners();
           this.httpServer = createServer(requestHandler);
           this.port++;
           continue;
@@ -206,16 +211,23 @@ export class PlMcpServer {
   }
 
   private registerTools(server: McpServer): void {
-    this.registerPingTool(server);
-    this.registerConnectionTools(server);
-    this.registerProjectTools(server);
-    this.registerBlockTools(server);
-    this.registerBlockStateTools(server);
-    this.registerAwaitTools(server);
-    this.registerLogTools(server);
-    this.registerDataQueryTools(server);
-    this.registerScreenshotTool(server);
-    this.registerUIInteractionTools(server);
+    const ctx: ToolContext = {
+      getMl: () => this.ml,
+      requireMl: () => this.requireMl(),
+      resolveProject: (id) => this.resolveProject(id),
+      getOpenedProject: (id) => this.getOpenedProject(id),
+      callbacks: this.callbacks,
+    };
+    registerPingTool(server, ctx);
+    registerConnectionTools(server, ctx);
+    registerProjectTools(server, ctx);
+    registerBlockTools(server, ctx);
+    registerBlockStateTools(server, ctx);
+    registerAwaitTools(server, ctx);
+    registerLogTools(server, ctx);
+    registerDataQueryTools(server, ctx);
+    registerScreenshotTool(server, ctx);
+    registerUIInteractionTools(server, ctx);
   }
 
   /** Throws if MiddleLayer is not available (not connected to a server). */
@@ -239,953 +251,5 @@ export class PlMcpServer {
     const ml = this.requireMl();
     const entry = await this.resolveProject(projectId);
     return ml.getOpenedProject(entry.rid);
-  }
-
-  private registerPingTool(server: McpServer): void {
-    server.registerTool("ping", { description: "Health check" }, async () => {
-      return textResult({ status: "ok", connected: !!this.ml });
-    });
-  }
-
-  private registerConnectionTools(server: McpServer): void {
-    server.registerTool(
-      "get_connection_status",
-      { description: "Get current server connection status" },
-      async () => {
-        if (!this.callbacks.getConnectionStatus) {
-          return textResult({ connected: !!this.ml });
-        }
-        return textResult(await this.callbacks.getConnectionStatus());
-      },
-    );
-
-    server.registerTool(
-      "list_connections",
-      { description: "List saved server connections" },
-      async () => {
-        if (!this.callbacks.listConnections) {
-          return textResult({ error: "Connection management not available" });
-        }
-        return textResult(await this.callbacks.listConnections());
-      },
-    );
-
-    server.registerTool(
-      "connect_to_server",
-      {
-        description: "Connect to a Platforma server. Use list_connections to see saved servers.",
-        inputSchema: {
-          addr: z.string().describe("Server address (e.g. https://pl6.demo2.platforma.bio:6346)"),
-          login: z.string().describe("Username"),
-          password: z.string().optional().describe("Password (uses saved token if omitted)"),
-        },
-      },
-      async ({ addr, login, password }) => {
-        if (!this.callbacks.connectToServer) {
-          return textResult({ error: "Connection management not available" });
-        }
-        return textResult(await this.callbacks.connectToServer(addr, login, password));
-      },
-    );
-
-    server.registerTool(
-      "disconnect",
-      { description: "Disconnect from current server" },
-      async () => {
-        if (!this.callbacks.disconnect) {
-          return textResult({ error: "Connection management not available" });
-        }
-        await this.callbacks.disconnect();
-        return textResult({ ok: true });
-      },
-    );
-  }
-
-  private registerProjectTools(server: McpServer): void {
-    server.registerTool(
-      "list_projects",
-      { description: "List all projects with their IDs, labels, and status" },
-      async () => {
-        const ml = this.requireMl();
-        await ml.projectList.refreshState();
-        const projects = await ml.projectList.awaitStableValue();
-        return textResult(
-          projects.map((p) => ({
-            projectId: resourceIdToString(p.rid),
-            label: p.meta.label,
-            opened: p.opened,
-            created: p.created.toISOString(),
-            lastModified: p.lastModified.toISOString(),
-          })),
-        );
-      },
-    );
-
-    server.registerTool(
-      "create_project",
-      {
-        description: "Create a new project",
-        inputSchema: { label: z.string().describe("Project name") },
-      },
-      async ({ label }) => {
-        const rid = await this.requireMl().createProject({ label });
-        const projectId = resourceIdToString(rid);
-        await this.callbacks.onProjectCreated?.(projectId);
-        return textResult({ projectId });
-      },
-    );
-
-    server.registerTool(
-      "open_project",
-      {
-        description: "Open a project for editing. Required before working with blocks.",
-        inputSchema: {
-          projectId: z.string().describe("Project ID from list_projects or create_project"),
-        },
-      },
-      async ({ projectId }) => {
-        const entry = await this.resolveProject(projectId);
-        await this.requireMl().openProject(entry.rid);
-        await this.callbacks.onProjectOpened?.(projectId);
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "close_project",
-      {
-        description: "Close an opened project, releasing its resources",
-        inputSchema: { projectId: z.string().describe("Project ID") },
-      },
-      async ({ projectId }) => {
-        const entry = await this.resolveProject(projectId);
-        await this.requireMl().closeProject(entry.rid);
-        await this.callbacks.onProjectClosed?.(projectId);
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "delete_project",
-      {
-        description: "Delete a project permanently. The project must be closed first.",
-        inputSchema: { projectId: z.string().describe("Project ID") },
-      },
-      async ({ projectId }) => {
-        const entry = await this.resolveProject(projectId);
-        await this.requireMl().deleteProject(entry.id);
-        await this.callbacks.onProjectDeleted?.(projectId);
-        return textResult({ ok: true });
-      },
-    );
-  }
-
-  private registerBlockTools(server: McpServer): void {
-    server.registerTool(
-      "add_block",
-      {
-        description:
-          "Add a block to an opened project. Spec can be from-registry-v2 (for published blocks) or dev-v2 (for local dev blocks).",
-        inputSchema: {
-          projectId: z.string().describe("Project ID (must be opened)"),
-          label: z.string().describe("Block label"),
-          spec: z
-            .union([
-              z.object({
-                type: z.literal("from-registry-v2"),
-                registryUrl: z.string().describe("Registry URL"),
-                id: z.object({
-                  organization: z.string(),
-                  name: z.string(),
-                  version: z.string(),
-                }),
-              }),
-              z.object({
-                type: z.literal("dev-v2"),
-                folder: z.string().describe("Path to block folder"),
-              }),
-            ])
-            .describe("Block pack specification"),
-        },
-      },
-      async ({ projectId, label, spec }) => {
-        const project = await this.getOpenedProject(projectId);
-        const blockId = await project.addBlock(label, spec as BlockPackSpecAny);
-        return textResult({ blockId });
-      },
-    );
-
-    server.registerTool(
-      "remove_block",
-      {
-        description: "Remove a block from an opened project",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID to remove"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        const project = await this.getOpenedProject(projectId);
-        await project.deleteBlock(blockId);
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "run_block",
-      {
-        description: "Run a block. Stale upstream blocks are started automatically.",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID to run"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        const project = await this.getOpenedProject(projectId);
-        await project.runBlock(blockId);
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "stop_block",
-      {
-        description: "Stop a running block",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID to stop"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        const project = await this.getOpenedProject(projectId);
-        await project.stopBlock(blockId);
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "list_available_blocks",
-      {
-        description:
-          "List available blocks from configured registries. Optional query to filter by name.",
-        inputSchema: {
-          query: z
-            .string()
-            .optional()
-            .describe("Filter blocks by name (case-insensitive substring match)"),
-        },
-      },
-      async ({ query }) => {
-        if (!this.callbacks.listAvailableBlocks) {
-          return textResult({ error: "Block registry not available" });
-        }
-        const blocks = await this.callbacks.listAvailableBlocks(query);
-        return textResult(blocks);
-      },
-    );
-
-    server.registerTool(
-      "select_block",
-      {
-        description: "Navigate the desktop UI to show a specific block's interface",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID to display"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        if (!this.callbacks.selectBlock) {
-          return textResult({ error: "UI navigation not available" });
-        }
-        await this.callbacks.selectBlock(projectId, blockId);
-        return textResult({ ok: true });
-      },
-    );
-  }
-
-  private registerBlockStateTools(server: McpServer): void {
-    server.registerTool(
-      "get_project_overview",
-      {
-        description:
-          "Get project overview with all blocks and their statuses (calculationStatus, canRun, stale, errors, upstreams/downstreams)",
-        inputSchema: {
-          projectId: z.string().describe("Project ID (must be opened)"),
-        },
-      },
-      async ({ projectId }) => {
-        const project = await this.getOpenedProject(projectId);
-        const overview = await project.overview.awaitStableValue();
-        return textResult({
-          label: overview.meta.label,
-          blocks: overview.blocks.map((b) => ({
-            id: b.id,
-            title: b.title ?? b.label,
-            calculationStatus: b.calculationStatus,
-            canRun: b.canRun,
-            stale: b.stale,
-            inputsValid: b.inputsValid,
-            outputErrors: b.outputErrors,
-            upstreams: b.upstreams,
-            downstreams: b.downstreams,
-          })),
-        });
-      },
-    );
-
-    server.registerTool(
-      "get_block_state",
-      {
-        description: "Get the current state/data of a block (its storage and outputs)",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        const project = await this.getOpenedProject(projectId);
-        const state = await project.getBlockState(blockId).awaitStableValue();
-        let data: unknown = undefined;
-        if (state.blockStorage) {
-          try {
-            const parsed =
-              typeof state.blockStorage === "string"
-                ? JSON.parse(state.blockStorage)
-                : state.blockStorage;
-            data = parsed?.__data;
-          } catch {
-            data = undefined;
-          }
-        }
-        return textResult({
-          data,
-          outputs: state.outputs,
-        });
-      },
-    );
-
-    server.registerTool(
-      "set_block_data",
-      {
-        description: "Set the user-facing data of a block (triggers args derivation and staging)",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID"),
-          data: z.record(z.unknown()).describe("Block data object"),
-        },
-      },
-      async ({ projectId, blockId, data }) => {
-        const project = await this.getOpenedProject(projectId);
-        await project.mutateBlockStorage(blockId, {
-          operation: "update-block-data",
-          value: data,
-        });
-        return textResult({ ok: true });
-      },
-    );
-  }
-
-  private registerAwaitTools(server: McpServer): void {
-    server.registerTool(
-      "await_block_done",
-      {
-        description:
-          "Wait for a block to finish computation and outputs to stabilize. Returns block status and data on completion, or timeout info.",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID to wait for"),
-          timeout: z.number().optional().default(120000).describe("Timeout in ms (default 120000)"),
-        },
-      },
-      async ({ projectId, blockId, timeout }) => {
-        const project = await this.getOpenedProject(projectId);
-        const deadline = Date.now() + timeout;
-
-        // Phase 1: poll overview until calculationStatus is Done or error
-        while (Date.now() < deadline) {
-          const overview = await project.overview.awaitStableValue();
-          const block = overview.blocks.find((b) => b.id === blockId);
-          if (!block) return textResult({ error: `Block ${blockId} not found in overview` });
-
-          if (block.calculationStatus === "Done") {
-            // Phase 2: await stable block state
-            try {
-              const state = await project
-                .getBlockState(blockId)
-                .awaitStableValue(AbortSignal.timeout(Math.max(deadline - Date.now(), 1000)));
-              let data: unknown;
-              if (state.blockStorage) {
-                try {
-                  const parsed =
-                    typeof state.blockStorage === "string"
-                      ? JSON.parse(state.blockStorage)
-                      : state.blockStorage;
-                  data = parsed?.__data;
-                } catch {
-                  data = state.blockStorage;
-                }
-              }
-              return textResult({
-                status: "Done",
-                block: {
-                  id: block.id,
-                  title: block.title ?? block.label,
-                  calculationStatus: block.calculationStatus,
-                  canRun: block.canRun,
-                  stale: block.stale,
-                  outputErrors: block.outputErrors,
-                },
-                data,
-                outputs: state.outputs,
-              });
-            } catch {
-              return textResult({
-                timedOut: true,
-                status: "Done",
-                note: "Computation done but outputs did not stabilize in time",
-              });
-            }
-          }
-
-          if (block.calculationStatus === "Limbo") {
-            return textResult({
-              status: "Limbo",
-              error: "Block entered Limbo state (upstream failed or was stopped)",
-            });
-          }
-
-          // Still running — wait for overview to change
-          try {
-            const result = await project.overview.getFullValue();
-            await Promise.race([
-              project.overview.awaitChange(AbortSignal.timeout(5000), result.uTag),
-              new Promise((r) => setTimeout(r, 5000)),
-            ]);
-          } catch {
-            // timeout on awaitChange — just re-poll
-          }
-        }
-
-        // Timed out
-        const overview = await project.overview.awaitStableValue();
-        const block = overview.blocks.find((b) => b.id === blockId);
-        return textResult({
-          timedOut: true,
-          status: block?.calculationStatus ?? "Unknown",
-        });
-      },
-    );
-  }
-
-  private registerLogTools(server: McpServer): void {
-    server.registerTool(
-      "get_block_logs",
-      {
-        description:
-          "Read execution logs for a block. Extracts log handles from block outputs and reads log content. Returns logs keyed by sample/run ID.",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID"),
-          lines: z
-            .number()
-            .optional()
-            .default(100)
-            .describe("Number of lines per log (default 100)"),
-          sampleId: z
-            .string()
-            .optional()
-            .describe("Specific sample/key to read logs for (reads all if omitted)"),
-        },
-      },
-      async ({ projectId, blockId, lines, sampleId }) => {
-        const project = await this.getOpenedProject(projectId);
-        const state = await project.getBlockState(blockId).awaitStableValue();
-        if (!state.outputs) return textResult({ error: "Block has no outputs" });
-
-        // Find log handles in outputs — look for the "logs" output
-        const logsOutput = (state.outputs as Record<string, unknown>)?.["logs"] as
-          | { ok: boolean; value?: { data?: { key: string[]; value: string }[] } }
-          | undefined;
-        if (!logsOutput?.ok || !logsOutput.value?.data) {
-          return textResult({ error: "No log handles found in block outputs" });
-        }
-
-        const logEntries = logsOutput.value.data;
-        const logDriver = this.requireMl().driverKit.logDriver;
-        const results: Record<string, string> = {};
-
-        for (const entry of logEntries) {
-          const key = entry.key.join("/");
-          if (sampleId && !entry.key.includes(sampleId)) continue;
-          const handle = entry.value as `log+ready://log/${string}` | `log+live://log/${string}`;
-          try {
-            const response = await logDriver.lastLines(handle, lines);
-            if (!response.shouldUpdateHandle) {
-              results[key] = new TextDecoder().decode(response.data);
-            }
-          } catch (err) {
-            results[key] = `Error reading log: ${err}`;
-          }
-        }
-
-        return textResult(results);
-      },
-    );
-
-    server.registerTool(
-      "get_app_log",
-      {
-        description: "Read recent lines from the application log. Useful for debugging errors.",
-        inputSchema: {
-          lines: z
-            .number()
-            .optional()
-            .default(50)
-            .describe("Number of lines to return (default 50)"),
-          search: z.string().optional().describe("Filter lines containing this substring"),
-        },
-      },
-      async ({ lines, search }) => {
-        if (!this.callbacks.readAppLog) {
-          return textResult({ error: "App log not available" });
-        }
-        const log = await this.callbacks.readAppLog(lines, search);
-        return textResult({ log });
-      },
-    );
-  }
-
-  /**
-   * Extracts PFrame and PTable handles from block outputs by scanning for
-   * string values matching the handle pattern (64-char hex hash).
-   */
-  private extractHandles(outputs: Record<string, unknown>): {
-    pFrames: { path: string; handle: string }[];
-    pTables: { path: string; handle: string }[];
-  } {
-    const pFrames: { path: string; handle: string }[] = [];
-    const pTables: { path: string; handle: string }[] = [];
-    const hexHashPattern = /^[a-f0-9]{64}$/;
-
-    function walk(obj: unknown, path: string) {
-      if (obj === null || obj === undefined) return;
-      if (typeof obj === "string" && hexHashPattern.test(obj)) {
-        const lowerPath = path.toLowerCase();
-        if (lowerPath.includes("pframe") || lowerPath.endsWith(".pFrame")) {
-          pFrames.push({ path, handle: obj });
-        } else if (lowerPath.includes("table") && lowerPath.includes("handle")) {
-          pTables.push({ path, handle: obj });
-        }
-      }
-      if (typeof obj === "object" && !Array.isArray(obj)) {
-        for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-          walk(value, path ? `${path}.${key}` : key);
-        }
-      }
-      if (Array.isArray(obj)) {
-        obj.forEach((item, i) => walk(item, `${path}[${i}]`));
-      }
-    }
-
-    for (const [key, output] of Object.entries(outputs)) {
-      const out = output as { ok?: boolean; value?: unknown };
-      if (out?.ok && out.value !== undefined && out.value !== null) {
-        walk(out.value, key);
-      }
-    }
-
-    return { pFrames, pTables };
-  }
-
-  /**
-   * Converts PTableVector data to JSON-serializable arrays.
-   * Handles typed arrays (Int32Array, Float64Array, BigInt64Array, etc.)
-   * and marks NA/absent values.
-   */
-  private vectorToJson(vector: PTableVector, rows: number): (string | number | null | "ABSENT")[] {
-    const result: (string | number | null | "ABSENT")[] = [];
-    for (let i = 0; i < rows; i++) {
-      // Check absent
-      const absentByteIndex = Math.floor(i / 8);
-      const absentBitMask = 1 << (7 - (i % 8));
-      if (vector.absent.length > 0 && (vector.absent[absentByteIndex] & absentBitMask) > 0) {
-        result.push("ABSENT");
-        continue;
-      }
-      // Check NA
-      if (vector.isNA) {
-        const naByteIndex = Math.floor(i / 8);
-        const naBitMask = 1 << (7 - (i % 8));
-        if ((vector.isNA[naByteIndex] & naBitMask) > 0) {
-          result.push(null);
-          continue;
-        }
-      }
-      const value = vector.data[i];
-      if (value === null || value === undefined) {
-        result.push(null);
-      } else if (typeof value === "bigint") {
-        result.push(Number(value));
-      } else if (value instanceof Uint8Array) {
-        result.push("[bytes]");
-      } else {
-        result.push(value as string | number);
-      }
-    }
-    return result;
-  }
-
-  private registerDataQueryTools(server: McpServer): void {
-    server.registerTool(
-      "get_block_outputs",
-      {
-        description:
-          "Get block outputs with PFrame/PTable handles and column summaries. Use this to discover available data before querying tables.",
-        inputSchema: {
-          projectId: z.string().describe("Project ID"),
-          blockId: z.string().describe("Block ID"),
-        },
-      },
-      async ({ projectId, blockId }) => {
-        const project = await this.getOpenedProject(projectId);
-        const state = await project.getBlockState(blockId).awaitStableValue();
-        if (!state.outputs) return textResult({ error: "Block has no outputs" });
-
-        const outputs = state.outputs as Record<string, unknown>;
-        const { pFrames, pTables } = this.extractHandles(outputs);
-
-        // For each PFrame, list columns
-        const pFrameDriver = this.requireMl().internalDriverKit.pFrameDriver;
-        const pFrameSummaries = [];
-        for (const pf of pFrames) {
-          try {
-            const columns = await pFrameDriver.listColumns(pf.handle as PFrameHandle);
-            pFrameSummaries.push({
-              path: pf.path,
-              handle: pf.handle,
-              columnCount: columns.length,
-              columns: columns.slice(0, 30).map((c) => ({
-                columnId: c.columnId,
-                name: c.spec.name,
-                valueType: c.spec.valueType,
-                label: c.spec.annotations?.["pl7.app/label"],
-              })),
-            });
-          } catch (err) {
-            pFrameSummaries.push({
-              path: pf.path,
-              handle: pf.handle,
-              error: String(err),
-            });
-          }
-        }
-
-        // For each PTable, get shape and spec
-        const pTableSummaries = [];
-        for (const pt of pTables) {
-          try {
-            const shape = await pFrameDriver.getShape(pt.handle as PTableHandle);
-            const spec = await pFrameDriver.getSpec(pt.handle as PTableHandle);
-            pTableSummaries.push({
-              path: pt.path,
-              handle: pt.handle,
-              rows: shape.rows,
-              columns: spec.map((s: PTableColumnSpec, idx: number) => ({
-                index: idx,
-                type: s.type,
-                name: s.type === "column" ? s.spec.name : s.spec.name,
-                valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
-                label: s.spec.annotations?.["pl7.app/label"],
-              })),
-            });
-          } catch (err) {
-            pTableSummaries.push({
-              path: pt.path,
-              handle: pt.handle,
-              error: String(err),
-            });
-          }
-        }
-
-        return textResult({
-          pFrames: pFrameSummaries,
-          pTables: pTableSummaries,
-        });
-      },
-    );
-
-    server.registerTool(
-      "list_columns",
-      {
-        description:
-          "List all columns in a PFrame with their specs. Use get_block_outputs first to find the PFrame handle.",
-        inputSchema: {
-          pFrameHandle: z
-            .string()
-            .describe("PFrame handle (64-char hex hash from get_block_outputs)"),
-        },
-      },
-      async ({ pFrameHandle }) => {
-        const pFrameDriver = this.requireMl().internalDriverKit.pFrameDriver;
-        const columns = await pFrameDriver.listColumns(pFrameHandle as PFrameHandle);
-        return textResult(
-          columns.map((c) => ({
-            columnId: c.columnId,
-            name: c.spec.name,
-            valueType: c.spec.valueType,
-            label: c.spec.annotations?.["pl7.app/label"],
-            visibility: c.spec.annotations?.["pl7.app/table/visibility"],
-            axes: c.spec.axesSpec.map((a) => ({
-              name: a.name,
-              type: a.type,
-              label: a.annotations?.["pl7.app/label"],
-            })),
-          })),
-        );
-      },
-    );
-
-    server.registerTool(
-      "query_table",
-      {
-        description:
-          "Query data from a PTable. Returns rows as arrays of values. Use get_block_outputs first to find the PTable handle.",
-        inputSchema: {
-          pTableHandle: z
-            .string()
-            .describe("PTable handle (64-char hex hash from get_block_outputs)"),
-          columns: z
-            .array(z.number())
-            .optional()
-            .describe(
-              "Column indices to retrieve (default: all). Use get_block_outputs to see column indices.",
-            ),
-          offset: z.number().optional().default(0).describe("Row offset (default 0)"),
-          limit: z
-            .number()
-            .optional()
-            .default(50)
-            .describe("Number of rows to return (default 50, max 1000)"),
-        },
-      },
-      async ({ pTableHandle, columns, offset, limit }) => {
-        const pFrameDriver = this.requireMl().internalDriverKit.pFrameDriver;
-        const handle = pTableHandle as PTableHandle;
-
-        let shape;
-        try {
-          shape = await pFrameDriver.getShape(handle);
-        } catch (err) {
-          return textResult({ error: `getShape failed: ${err}` });
-        }
-
-        let spec;
-        try {
-          spec = await pFrameDriver.getSpec(handle);
-        } catch (err) {
-          return textResult({ error: `getSpec failed: ${err}` });
-        }
-
-        const effectiveLimit = Math.min(limit, 1000);
-        const range = { offset, length: effectiveLimit };
-
-        // If no columns specified, get all
-        const columnIndices = columns ?? spec.map((_: PTableColumnSpec, i: number) => i);
-
-        let vectors: PTableVector[];
-        try {
-          vectors = await pFrameDriver.getData(handle, columnIndices, range);
-        } catch (err) {
-          return textResult({
-            error: `getData failed: ${err}`,
-            shape,
-            columnIndices,
-            range,
-          });
-        }
-
-        const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;
-        const rows: unknown[][] = [];
-        for (let r = 0; r < actualRows; r++) {
-          const row: unknown[] = [];
-          for (let c = 0; c < vectors.length; c++) {
-            row.push(this.vectorToJson(vectors[c], actualRows)[r]);
-          }
-          rows.push(row);
-        }
-
-        const columnHeaders = columnIndices.map((idx: number) => {
-          const s = spec[idx];
-          return {
-            index: idx,
-            type: s.type,
-            name: s.type === "column" ? s.spec.name : s.spec.name,
-            label: s.spec.annotations?.["pl7.app/label"],
-          };
-        });
-
-        return textResult({
-          totalRows: shape.rows,
-          offset,
-          rowCount: actualRows,
-          columns: columnHeaders,
-          rows,
-        });
-      },
-    );
-  }
-
-  private registerScreenshotTool(server: McpServer): void {
-    server.registerTool(
-      "capture_screenshot",
-      { description: "Capture a screenshot of the current application window" },
-      async () => {
-        if (!this.callbacks.captureScreenshot) {
-          return textResult({ error: "Screenshot not available (no desktop integration)" });
-        }
-        const base64Png = await this.callbacks.captureScreenshot();
-        return {
-          content: [{ type: "image" as const, data: base64Png, mimeType: "image/png" }],
-        };
-      },
-    );
-  }
-
-  private registerUIInteractionTools(server: McpServer): void {
-    server.registerTool(
-      "click",
-      {
-        description:
-          "Click at coordinates (x, y) in the application window. Use capture_screenshot to find element positions.",
-        inputSchema: {
-          x: z.number().describe("X coordinate"),
-          y: z.number().describe("Y coordinate"),
-          doubleClick: z.boolean().optional().describe("Double click"),
-        },
-      },
-      async ({ x, y, doubleClick }) => {
-        if (!this.callbacks.sendInputEvent) {
-          return textResult({ error: "UI interaction not available" });
-        }
-        const clickCount = doubleClick ? 2 : 1;
-        await this.callbacks.sendInputEvent({
-          type: "mouseDown",
-          x,
-          y,
-          button: "left",
-          clickCount,
-        });
-        await this.callbacks.sendInputEvent({ type: "mouseUp", x, y, button: "left", clickCount });
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "type_text",
-      {
-        description: "Type text into the currently focused element",
-        inputSchema: {
-          text: z.string().describe("Text to type"),
-        },
-      },
-      async ({ text }) => {
-        if (!this.callbacks.sendInputEvent) {
-          return textResult({ error: "UI interaction not available" });
-        }
-        for (const char of text) {
-          await this.callbacks.sendInputEvent({ type: "keyDown", keyCode: char });
-          await this.callbacks.sendInputEvent({ type: "char", keyCode: char });
-          await this.callbacks.sendInputEvent({ type: "keyUp", keyCode: char });
-        }
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "press_key",
-      {
-        description:
-          "Press a keyboard key (Enter, Tab, Escape, Backspace, ArrowDown, ArrowUp, etc.)",
-        inputSchema: {
-          key: z
-            .string()
-            .describe("Key name (e.g. 'Enter', 'Tab', 'Escape', 'Backspace', 'ArrowDown')"),
-          modifiers: z
-            .array(z.enum(["shift", "control", "alt", "meta"]))
-            .optional()
-            .describe("Modifier keys to hold"),
-        },
-      },
-      async ({ key, modifiers }) => {
-        if (!this.callbacks.sendInputEvent) {
-          return textResult({ error: "UI interaction not available" });
-        }
-        await this.callbacks.sendInputEvent({
-          type: "keyDown",
-          keyCode: key,
-          ...(modifiers && {
-            shift: modifiers.includes("shift"),
-            control: modifiers.includes("control"),
-            alt: modifiers.includes("alt"),
-            meta: modifiers.includes("meta"),
-          }),
-        });
-        await this.callbacks.sendInputEvent({
-          type: "keyUp",
-          keyCode: key,
-          ...(modifiers && {
-            shift: modifiers.includes("shift"),
-            control: modifiers.includes("control"),
-            alt: modifiers.includes("alt"),
-            meta: modifiers.includes("meta"),
-          }),
-        });
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "scroll",
-      {
-        description: "Scroll the page at a given position",
-        inputSchema: {
-          x: z.number().describe("X coordinate to scroll at"),
-          y: z.number().describe("Y coordinate to scroll at"),
-          deltaX: z.number().optional().default(0).describe("Horizontal scroll amount"),
-          deltaY: z.number().describe("Vertical scroll amount (negative = up, positive = down)"),
-        },
-      },
-      async ({ x, y, deltaX, deltaY }) => {
-        if (!this.callbacks.sendInputEvent) {
-          return textResult({ error: "UI interaction not available" });
-        }
-        await this.callbacks.sendInputEvent({
-          type: "mouseWheel",
-          x,
-          y,
-          deltaX: deltaX ?? 0,
-          deltaY,
-        });
-        return textResult({ ok: true });
-      },
-    );
-
-    server.registerTool(
-      "execute_js",
-      {
-        description:
-          "Execute JavaScript in the renderer process and return the result. Useful for querying DOM, reading text, or complex interactions.",
-        inputSchema: {
-          code: z.string().describe("JavaScript code to execute"),
-        },
-      },
-      async ({ code }) => {
-        if (!this.callbacks.executeJavaScript) {
-          return textResult({ error: "JS execution not available" });
-        }
-        const result = await this.callbacks.executeJavaScript(code);
-        return textResult(result);
-      },
-    );
   }
 }

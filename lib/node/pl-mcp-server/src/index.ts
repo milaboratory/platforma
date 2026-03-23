@@ -1,2 +1,2 @@
-export { PlMcpServer } from "./server.js";
-export type { PlMcpServerOptions, PlMcpServerCallbacks, ServerConnection } from "./server.js";
+export { PlMcpServer } from "./server";
+export type { PlMcpServerOptions, PlMcpServerCallbacks, ServerConnection } from "./server";
