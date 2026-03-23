@@ -1,9 +1,10 @@
 import type {
+  AxisValueType,
+  ColumnValueType,
   MultiAxisSelector,
   MultiColumnSelector,
   PColumnSpec,
   StringMatcher,
-  ValueType,
 } from "@milaboratories/pl-model-common";
 
 export type { StringMatcher } from "@milaboratories/pl-model-common";
@@ -19,7 +20,7 @@ export type RelaxedRecord = Record<string, RelaxedStringMatchers>;
 /** Relaxed axis selector — accepts plain strings where strict requires StringMatcher[]. */
 export interface RelaxedAxisSelector {
   name?: RelaxedStringMatchers;
-  type?: ValueType | ValueType[];
+  type?: AxisValueType | AxisValueType[];
   domain?: RelaxedRecord;
   contextDomain?: RelaxedRecord;
   annotations?: RelaxedRecord;
@@ -28,7 +29,7 @@ export interface RelaxedAxisSelector {
 /** Relaxed column selector — convenient hand-written form. */
 export interface RelaxedColumnSelector {
   name?: RelaxedStringMatchers;
-  type?: ValueType | ValueType[];
+  type?: ColumnValueType | ColumnValueType[];
   domain?: RelaxedRecord;
   contextDomain?: RelaxedRecord;
   annotations?: RelaxedRecord;
@@ -57,7 +58,7 @@ function normalizeRecord(input: RelaxedRecord): Record<string, StringMatcher[]> 
   return result;
 }
 
-function normalizeTypes(input: ValueType | ValueType[]): ValueType[] {
+function normalizeTypes<T>(input: T | T[]): T[] {
   return Array.isArray(input) ? input : [input];
 }
 
@@ -140,7 +141,7 @@ function matchAxisSelector(
   selector: MultiAxisSelector,
 ): boolean {
   if (selector.name !== undefined && !matchStringValue(axis.name, selector.name)) return false;
-  if (selector.type !== undefined && !selector.type.includes(axis.type as ValueType)) return false;
+  if (selector.type !== undefined && !selector.type.includes(axis.type)) return false;
   if (selector.domain !== undefined && !matchRecordField(axis.domain, selector.domain))
     return false;
   if (

@@ -50,6 +50,7 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/pf-driver": "workspace:*",
+    "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",

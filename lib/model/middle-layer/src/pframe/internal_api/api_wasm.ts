@@ -16,81 +16,8 @@ import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
 } from "./delete_column";
-import type {
-  DiscoverColumnsRequest,
-  DiscoverColumnsRequestV2,
-  DiscoverColumnsResponse,
-} from "./discover_columns";
+import type { DiscoverColumnsRequestV2, DiscoverColumnsResponse } from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
-
-export interface PFrameWasmAPI {
-  /**
-   * Creates a new PFrame from a map of column IDs to column specifications.
-   */
-  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasm;
-
-  /**
-   * Expands an {@link AxesSpec} into {@link AxesId}s with parent information
-   * resolved.
-   */
-  expandAxes(spec: AxesSpec): AxesId;
-
-  /**
-   * Collapses {@link AxesId} into {@link AxesSpec}.
-   */
-  collapseAxes(ids: AxesId): AxesSpec;
-
-  /**
-   * Finds the index of an axis matching the given selector.
-   * Returns -1 if no matching axis is found.
-   */
-  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
-
-  /**
-   * Finds the flat index of a table column matching the given
-   * selector within a table spec. Returns -1 if not found.
-   */
-  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
-}
-
-/**
- * A PFrame represents a collection of columns that can be queried and joined.
- */
-export interface PFrameWasm extends Disposable {
-  /**
-   * Deletes columns from a columns specification.
-   */
-  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
-
-  /**
-   * Discovers columns compatible with a given axes integration.
-   * Returns columns that could be integrated with the provided column set,
-   * along with possible mapping variants describing how to integrate them.
-   */
-  discoverColumns(request: DiscoverColumnsRequest): DiscoverColumnsResponse;
-
-  /**
-   * Finds columns in the PFrame matching the given filter criteria.
-   */
-  findColumns(request: FindColumnsRequest): FindColumnsResponse;
-  /**
-   * Evaluates a query specification against this PFrame.
-   *
-   * Takes a SpecQuery (which can represent columns, joins, filters, sorts,
-   * etc.) and returns the resulting table specification along with the data
-   * layer query representation.
-   */
-  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
-
-  /**
-   * Rewrites a legacy query format (V4) to the current SpecQuery format.
-   *
-   * This method upgrades older query structures that use JoinEntryV4, filters,
-   * and sorting into the new unified SpecQuery format with proper filter and
-   * sort query nodes.
-   */
-  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
-}
 
 /**
  * V2 PFrame interface with include/exclude column filtering in discoverColumns.
@@ -176,7 +103,7 @@ export type EvaluateQueryResponse = {
 /**
  * Represents a legacy (V4) query format used before the unified SpecQuery.
  *
- * This type is used with {@link PFrameWasm.rewriteLegacyQuery} to upgrade
+ * This type is used with {@link PFrameWasmV2.rewriteLegacyQuery} to upgrade
  * older query structures to the current {@link SpecQuery} format.
  */
 export type LegacyQuery = {

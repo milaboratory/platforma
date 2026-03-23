@@ -5,43 +5,25 @@ import type {
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
+import { SpecDriver } from "@milaboratories/pf-spec-driver";
 
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
 
-// --- Mock SpecFrameCtx ---
+const drivers: SpecDriver[] = [];
 
 function createSpecFrameCtx() {
-  const frames = new Map<string, Record<string, PColumnSpec>>();
-  let nextId = 0;
-
-  return {
-    createSpecFrame: (specs: Record<string, PColumnSpec>) => {
-      const handle = `frame-${nextId++}`;
-      frames.set(handle, specs);
-      return handle;
-    },
-    specFrameDiscoverColumns: (handle: string, _request: any) => {
-      const specs = frames.get(handle)!;
-      return {
-        hits: Object.entries(specs).map(([columnId, spec]) => ({
-          hit: { columnId: columnId as PObjectId, spec },
-          mappingVariants: [
-            {
-              qualifications: { forQueries: [], forHit: [] },
-              distinctiveQualifications: { forQueries: [], forHit: [] },
-            },
-          ],
-        })),
-      };
-    },
-    specFrameDispose: (handle: string) => {
-      frames.delete(handle);
-    },
-  };
+  const driver = new SpecDriver();
+  drivers.push(driver);
+  return driver;
 }
+
+afterEach(() => {
+  for (const driver of drivers) driver.dispose();
+  drivers.length = 0;
+});
 
 // --- Helpers ---
 
@@ -173,15 +155,16 @@ describe("ColumnCollection.findColumns", () => {
     expect(collection.findColumns()).toHaveLength(2);
   });
 
-  test("exclude throws not implemented", () => {
+  test("exclude filters out matching columns", () => {
     const s1 = createSnapshot("id1", createSpec("col1"));
+    const s2 = createSnapshot("id2", createSpec("col2"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([s1]);
+    builder.addSource([s1, s2]);
 
     const collection = builder.build()!;
-    expect(() => collection.findColumns({ exclude: { name: "col1" } })).toThrow(
-      /not yet implemented/i,
-    );
+    const results = collection.findColumns({ exclude: { name: "col1" } });
+    expect(results).toHaveLength(1);
+    expect(results[0].spec.name).toBe("col2");
   });
 });
 
@@ -377,15 +360,16 @@ describe("AnchoredColumnCollection", () => {
     expect(matches[0].variants).toBeDefined();
   });
 
-  test("findColumns exclude throws not implemented", () => {
-    const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+  test("findColumns exclude filters out matching columns", () => {
+    const snap1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const snap2 = createSnapshot("id2", createSpec("col2", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
+    builder.addSource([snap1, snap2]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
-    expect(() => collection.findColumns({ exclude: { name: "col1" } })).toThrow(
-      /not yet implemented/i,
-    );
+    const results = collection.findColumns({ exclude: { name: "col1" } });
+    expect(results).toHaveLength(1);
+    expect(results[0].column.spec.name).toBe("col2");
   });
 
   test("allowPartialColumnList with anchors tracks completeness", () => {
