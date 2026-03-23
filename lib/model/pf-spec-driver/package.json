@@ -1,27 +1,22 @@
 {
-  "name": "@platforma-sdk/model",
-  "version": "1.60.2",
-  "description": "Platforma.bio SDK / Block Model",
+  "name": "@milaboratories/pf-spec-driver",
+  "version": "1.0.0",
+  "description": "PSpecDriver implementation: spec-only PFrame operations via WASM",
+  "keywords": [],
+  "license": "UNLICENSED",
   "files": [
     "./dist/**/*",
-    "./src/**/*",
-    "README.md"
+    "./src/**/*"
   ],
   "type": "module",
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "sources": "./src/index.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./render/internal": {
-      "types": "./dist/render/internal.d.ts",
-      "sources": "./src/render/internal.ts",
-      "import": "./dist/render/internal.js",
-      "require": "./dist/render/internal.cjs"
     }
   },
   "scripts": {
@@ -36,25 +31,15 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/pl-error-like": "workspace:*",
+    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*",
-    "@milaboratories/ptabler-expression-js": "workspace:*",
-    "canonicalize": "catalog:",
-    "es-toolkit": "catalog:",
-    "fast-json-patch": "catalog:",
-    "utility-types": "catalog:",
-    "zod": "catalog:"
+    "@milaboratories/pl-model-middle-layer": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/pf-driver": "workspace:*",
-    "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
-    "fast-json-patch": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

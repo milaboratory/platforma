@@ -1,6 +1,8 @@
 import type {
   AnchoredPColumnSelector,
   AnyFunction,
+  AxesId,
+  AxesSpec,
   AxisId,
   DataInfo,
   DiscoverColumnsRequest,
@@ -17,6 +19,8 @@ import type {
   PObjectId,
   PObjectSpec,
   PSpecPredicate,
+  PTableColumnId,
+  PTableColumnSpec,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -25,6 +29,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
+  SingleAxisSelector,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -727,8 +732,24 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.specFrameDiscoverColumns(handle, request);
   }
 
-  public specFrameDispose(handle: string): void {
-    this.ctx.specFrameDispose(handle);
+  public disposeSpecFrame(handle: string): void {
+    this.ctx.disposeSpecFrame(handle);
+  }
+
+  public expandAxes(spec: AxesSpec): AxesId {
+    return this.ctx.expandAxes(spec);
+  }
+
+  public collapseAxes(ids: AxesId): AxesSpec {
+    return this.ctx.collapseAxes(ids);
+  }
+
+  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return this.ctx.findAxis(spec, selector);
+  }
+
+  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return this.ctx.findTableColumn(tableSpec, selector);
   }
 
   public getCurrentUnstableMarker(): string | undefined {

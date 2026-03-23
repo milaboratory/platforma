@@ -1,16 +1,26 @@
 import type { Branded } from "@milaboratories/helpers";
 import type {
-  ValueType,
-  SingleAxisSelector,
   AxisSpec,
+  AxesSpec,
+  AxesId,
   PColumnIdAndSpec,
   PColumnSpec,
-} from "./pframe";
-
-// --- Discover columns types (duplicated from middle-layer internal_api) ---
+  SingleAxisSelector,
+  AxisValueType,
+  ColumnValueType,
+} from "./spec";
+import type { PTableColumnId, PTableColumnSpec } from "./table_common";
 
 /** Matches a string value either exactly or by regex pattern */
-export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
+export type StringMatcher =
+  | {
+      type: "exact";
+      value: string;
+    }
+  | {
+      type: "regex";
+      value: string;
+    };
 
 /** Map of key to array of string matchers (OR-ed per key, AND-ed across keys) */
 export type MatcherMap = Record<string, StringMatcher[]>;
@@ -18,7 +28,7 @@ export type MatcherMap = Record<string, StringMatcher[]>;
 /** Selector for matching axes by various criteria */
 export interface MultiAxisSelector {
   /** Match any of the axis types listed here */
-  readonly type?: ValueType[];
+  readonly type?: AxisValueType[];
   /** Match any of the axis names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -33,7 +43,7 @@ export interface MultiAxisSelector {
  * Multiple selectors are OR-ed: a column matches if it satisfies any selector. */
 export interface MultiColumnSelector {
   /** Match any of the value types listed here */
-  readonly type?: ValueType[];
+  readonly type?: ColumnValueType[];
   /** Match any of the names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -78,10 +88,14 @@ export interface DiscoverColumnsConstraints {
 
 /** Request for discovering columns compatible with a given axes integration */
 export interface DiscoverColumnsRequest {
-  /** Column filters (OR-ed); empty array matches all columns */
-  columnFilter?: MultiColumnSelector[];
+  /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Exclude columns matching these selectors (OR-ed); applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
   /** Already integrated axes with qualifications */
   axes: ColumnAxesWithQualifications[];
+  /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
+  maxHops?: number;
   /** Constraints controlling axes matching and qualification behavior */
   constraints: DiscoverColumnsConstraints;
 }
@@ -120,6 +134,8 @@ export interface DiscoverColumnsResponseHit {
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches */
+  path: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */
@@ -127,8 +143,6 @@ export interface DiscoverColumnsResponse {
   /** Columns that could be integrated and possible ways to integrate them */
   hits: DiscoverColumnsResponseHit[];
 }
-
-// --- Spec driver ---
 
 /** Handle to a spec-only PFrame (no data, synchronous operations). */
 export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
@@ -140,7 +154,7 @@ export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
  * operates on column specifications only. All methods are synchronous
  * because the underlying WASM PFrame computes results immediately.
  */
-export interface PSpecDriver {
+export interface PFrameSpecDriver {
   /** Create a spec-only PFrame from column specs. Returns a handle. */
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle;
 
@@ -152,4 +166,16 @@ export interface PSpecDriver {
 
   /** Dispose a spec frame, freeing WASM resources. */
   disposeSpecFrame(handle: SpecFrameHandle): void;
+
+  /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /** Collapse resolved AxisId parents back to index-based parentAxes in AxesSpec. */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /** Find the index of an axis matching the given selector. Returns -1 if not found. */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /** Find the flat index of a table column matching the given selector. Returns -1 if not found. */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
 }
