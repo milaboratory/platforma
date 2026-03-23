@@ -124,8 +124,9 @@ export class PlMcpServer {
         }
 
         const sessionId = req.headers["mcp-session-id"] as string | undefined;
-        if (sessionId && this.transports.has(sessionId)) {
-          await this.transports.get(sessionId)!.handleRequest(req, res);
+        const existingTransport = sessionId ? this.transports.get(sessionId) : undefined;
+        if (existingTransport) {
+          await existingTransport.handleRequest(req, res);
           return;
         }
 
@@ -190,9 +191,10 @@ export class PlMcpServer {
     }
     this.transports.clear();
 
-    if (this.httpServer) {
+    const server = this.httpServer;
+    if (server) {
       await new Promise<void>((resolve, reject) => {
-        this.httpServer!.close((err) => (err ? reject(err) : resolve()));
+        server.close((err) => (err ? reject(err) : resolve()));
       });
       this.httpServer = undefined;
     }
