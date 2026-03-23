@@ -41,13 +41,7 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
     handle: SpecFrameHandle,
     request: DiscoverColumnsRequest,
   ): DiscoverColumnsResponse {
-    return this.getFrame(handle).discoverColumns({
-      includeColumns: request.includeColumns,
-      excludeColumns: request.excludeColumns,
-      axes: request.axes,
-      maxHops: request.maxHops,
-      constraints: request.constraints,
-    });
+    return this.getFrame(handle).discoverColumns(request);
   }
 
   disposeSpecFrame(handle: SpecFrameHandle): void {

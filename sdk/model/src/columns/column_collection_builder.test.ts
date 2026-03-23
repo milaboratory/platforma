@@ -7,14 +7,23 @@ import type {
 import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
 
+const drivers: SpecDriver[] = [];
+
 function createSpecFrameCtx() {
-  return new SpecDriver();
+  const driver = new SpecDriver();
+  drivers.push(driver);
+  return driver;
 }
+
+afterEach(() => {
+  for (const driver of drivers) driver.dispose();
+  drivers.length = 0;
+});
 
 // --- Helpers ---
 

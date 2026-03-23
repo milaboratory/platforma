@@ -37,7 +37,6 @@ import {
   AnchoredIdDeriver,
   collectSpecQueryColumns,
   ensurePColumn,
-  getAxisId,
   parseJson,
   extractAllColumns,
   isDataInfo,
@@ -541,7 +540,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     column: PColumnSpec,
     axisIdx: number,
   ): Record<string | number, string> | undefined {
-    const labels = this.findLabels(getAxisId(column.axesSpec[axisIdx]));
+    const labels = this.findLabels(column.axesSpec[axisIdx]);
     if (!labels) return undefined;
     const axisKeys = readAnnotation(column, `pl7.app/axisKeys/${axisIdx}`);
     if (axisKeys !== undefined) {
