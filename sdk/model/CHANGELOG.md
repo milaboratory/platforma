@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.61.1
+
+### Patch Changes
+
+- 616323d: plugin update
+
 ## 1.61.0
 
 ### Minor Changes

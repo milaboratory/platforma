@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.61.1
+
+### Patch Changes
+
+- 616323d: plugin update
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+  - @milaboratories/uikit@2.11.3
+
 ## 1.61.0
 
 ### Patch Changes
