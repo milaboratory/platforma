@@ -194,7 +194,7 @@ Tools:
 
 ---
 
-### Step 7: Data query tools — SKIPPED (deferred)
+### Step 7: Data query tools — DONE
 
 Tools:
 - `get_block_outputs` → rendered output values as JSON. PFrame/PTable handles → column specs + row count
@@ -262,7 +262,7 @@ Note: the MCP server only starts after the app connects to a backend. If the app
 
 ---
 
-### Step 9: Registry search tools -- SKIPPED
+### Step 9: Registry search tools — PARTIAL (`list_available_blocks` done, `get_block_info` skipped)
 
 Tools:
 - `search_blocks` → queries block registries via `ml.blockRegistryProvider`
@@ -326,14 +326,14 @@ Comparison of the [Platforma MCP Server spec](https://github.com/milaboratory/te
 
 | Req | Spec tool | Notes |
 |-----|-----------|-------|
-| R15 | `reorder_blocks` | Not implemented at all |
-| R19 | `get_block_outputs` | Deferred (PFrame output rendering) |
+| ~~R15~~ | ~~`reorder_blocks`~~ | **DONE** — implemented in `blocks.ts` (commit `d24c1f9`) |
+| ~~R19~~ | ~~`get_block_outputs`~~ | **DONE** — implemented in `data-query.ts` (commit `5c810fc`) |
 | R20 | `get_block_status` | No separate tool; status fields are embedded in `get_project_overview` response |
 | R22 | `invoke_action` | Not implemented (action system prototype) |
 | R23 | `AuthorMarker` on mutations | `set_block_data` does not pass per-session `authorId: "mcp-{sessionId}"` or incrementing `localVersion` |
 | R25 | `await_stable` | No separate tool; merged into `await_block_done` as a two-phase wait (see "Implemented differently" below) |
-| R27 | `query_table` | Deferred (PFrame query) |
-| R28 | `list_columns` | Deferred (PFrame column listing) |
+| ~~R27~~ | ~~`query_table`~~ | **DONE** — implemented in `data-query.ts` (commit `5c810fc`) |
+| ~~R28~~ | ~~`list_columns`~~ | **DONE** — implemented in `data-query.ts` (commit `5c810fc`) |
 | R31 | `get_block_info` | Deferred (detailed block package info from registry) |
 
 ---
@@ -350,6 +350,7 @@ Comparison of the [Platforma MCP Server spec](https://github.com/milaboratory/te
 | R25 | `await_stable` is a separate tool (blocks until computable is stable, returns stable state) | Merged into `await_block_done` as phase 2: after `calculationStatus` reaches Done, it additionally calls `awaitStableValue()` on block state. No way to call `await_stable` independently. |
 | R26 | Single `get_logs` tool with regex `search` filter, returns log text with byte offset for pagination | Split into two tools: `get_block_logs` (reads logs from block outputs, keyed by sample/run ID) + `get_app_log` (reads Electron main process log). Search is substring match, not regex. No byte offset for pagination. `get_block_logs` has a `sampleId` filter parameter not in spec. |
 | R29 | `capture_screenshot` returns error if no block is currently open | Captures the topmost visible view (modal > blockView > main) — works even without a block open. No error when no block is displayed. |
+| R27 | `query_table` supports columns, filters, sorting, offset, limit | Implementation supports `columns`, `offset`, `limit` only. No filters or sorting. Uses `pFrameDriver.getData` directly instead of `pFrameApi`'s `calculateTableData`. |
 | R30 | `search_blocks` takes `query` (text) + optional `category`. Returns packages with id, version, title, description, organization. | Named `list_available_blocks`. Takes optional `query` only (case-insensitive substring match on name). No `category` parameter. Delegates to a callback rather than querying registries directly. |
 
 ---
