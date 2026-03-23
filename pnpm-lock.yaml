@@ -1733,6 +1733,37 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  lib/model/pf-spec-driver:
+    dependencies:
+      '@milaboratories/pframes-rs-wasm':
+        specifier: 'catalog:'
+        version: 1.1.15(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../common
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../middle-layer
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+
   lib/model/pl-error-like:
     dependencies:
       json-stringify-safe:
@@ -1820,7 +1851,7 @@ importers:
     dependencies:
       '@milaboratories/pf-spec-driver':
         specifier: workspace:*
-        version: link:../pf-spec-driver
+        version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.15(encoding@0.1.13)
@@ -1855,37 +1886,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
-
-  lib/node/pf-spec-driver:
-    dependencies:
-      '@milaboratories/pframes-rs-wasm':
-        specifier: 'catalog:'
-        version: 1.1.15(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
-      '@milaboratories/pl-model-common':
-        specifier: workspace:*
-        version: link:../../model/common
-      '@milaboratories/pl-model-middle-layer':
-        specifier: workspace:*
-        version: link:../../model/middle-layer
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../tools/build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../../tools/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../../tools/ts-configs
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
@@ -2236,7 +2236,7 @@ importers:
         version: link:../pf-driver
       '@milaboratories/pf-spec-driver':
         specifier: workspace:*
-        version: link:../pf-spec-driver
+        version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.15(encoding@0.1.13)
@@ -2740,7 +2740,7 @@ importers:
         version: link:../../lib/node/pf-driver
       '@milaboratories/pf-spec-driver':
         specifier: workspace:*
-        version: link:../../lib/node/pf-spec-driver
+        version: link:../../lib/model/pf-spec-driver
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../tools/ts-builder
