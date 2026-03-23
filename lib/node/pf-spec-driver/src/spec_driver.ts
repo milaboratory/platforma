@@ -7,6 +7,7 @@ import type {
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
 } from "@milaboratories/pl-model-common";
+import { PFrameSpecDriverError } from "@milaboratories/pl-model-common";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -61,7 +62,7 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
 
   private getFrame(handle: SpecFrameHandle): PFrameInternal.PFrameWasmV2 {
     const frame = this.frames.get(handle);
-    if (frame === undefined) throw new Error(`No such spec frame: ${handle}`);
+    if (frame === undefined) throw new PFrameSpecDriverError(`No such spec frame: ${handle}`);
     return frame;
   }
 }
