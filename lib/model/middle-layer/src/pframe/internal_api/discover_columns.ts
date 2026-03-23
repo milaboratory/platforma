@@ -1,4 +1,6 @@
 import type {
+  AxisValueType,
+  ColumnValueType,
   DiscoverColumnsLinkerStep,
   DiscoverColumnsStepInfo,
   PColumnIdAndSpec,
@@ -16,7 +18,7 @@ export type MatcherMap = Record<string, StringMatcher[]>;
 /** Selector for matching axes by various criteria */
 export interface MultiAxisSelector {
   /** Match any of the axis types listed here */
-  readonly type?: string[];
+  readonly type?: AxisValueType[];
   /** Match any of the axis names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -31,7 +33,7 @@ export interface MultiAxisSelector {
  * Multiple selectors are OR-ed: a column matches if it satisfies any selector. */
 export interface MultiColumnSelector {
   /** Match any of the value types listed here */
-  readonly type?: string[];
+  readonly type?: ColumnValueType[];
   /** Match any of the names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */

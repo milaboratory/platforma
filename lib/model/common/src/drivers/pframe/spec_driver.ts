@@ -4,10 +4,9 @@ import type {
   PColumnIdAndSpec,
   PColumnSpec,
   SingleAxisSelector,
-  ValueType,
+  AxisValueType,
+  ColumnValueType,
 } from "./spec";
-
-// --- Discover columns types (duplicated from middle-layer internal_api) ---
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -26,7 +25,7 @@ export type MatcherMap = Record<string, StringMatcher[]>;
 /** Selector for matching axes by various criteria */
 export interface MultiAxisSelector {
   /** Match any of the axis types listed here */
-  readonly type?: ValueType[];
+  readonly type?: AxisValueType[];
   /** Match any of the axis names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -41,7 +40,7 @@ export interface MultiAxisSelector {
  * Multiple selectors are OR-ed: a column matches if it satisfies any selector. */
 export interface MultiColumnSelector {
   /** Match any of the value types listed here */
-  readonly type?: ValueType[];
+  readonly type?: ColumnValueType[];
   /** Match any of the names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
