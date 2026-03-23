@@ -1,16 +1,24 @@
 import type { Branded } from "@milaboratories/helpers";
 import type {
-  ValueType,
   AxisSpec,
   PColumnIdAndSpec,
   PColumnSpec,
   SingleAxisSelector,
+  ValueType,
 } from "./spec";
 
 // --- Discover columns types (duplicated from middle-layer internal_api) ---
 
 /** Matches a string value either exactly or by regex pattern */
-export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
+export type StringMatcher =
+  | {
+      type: "exact";
+      value: string;
+    }
+  | {
+      type: "regex";
+      value: string;
+    };
 
 /** Map of key to array of string matchers (OR-ed per key, AND-ed across keys) */
 export type MatcherMap = Record<string, StringMatcher[]>;
@@ -134,8 +142,6 @@ export interface DiscoverColumnsResponse {
   hits: DiscoverColumnsResponseHit[];
 }
 
-// --- Spec driver ---
-
 /** Handle to a spec-only PFrame (no data, synchronous operations). */
 export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
 
@@ -146,7 +152,7 @@ export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
  * operates on column specifications only. All methods are synchronous
  * because the underlying WASM PFrame computes results immediately.
  */
-export interface PSpecDriver {
+export interface PFrameSpecDriver {
   /** Create a spec-only PFrame from column specs. Returns a handle. */
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle;
 

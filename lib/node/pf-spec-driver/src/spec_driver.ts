@@ -2,7 +2,7 @@ import { createPFrame } from "@milaboratories/pframes-rs-wasm";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type {
   PColumnSpec,
-  PSpecDriver,
+  PFrameSpecDriver,
   SpecFrameHandle,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
  *
  * All operations are synchronous — WASM computes results immediately.
  */
-export class SpecDriver implements PSpecDriver {
+export class SpecDriver implements PFrameSpecDriver {
   private readonly frames = new Map<SpecFrameHandle, PFrameInternal.PFrameWasmV2>();
 
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
