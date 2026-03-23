@@ -174,7 +174,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
     request: DiscoverColumnsRequest,
   ): DiscoverColumnsResponse;
 
-  specFrameDispose(handle: string): void;
+  disposeSpecFrame(handle: string): void;
 
   //
   // Computable

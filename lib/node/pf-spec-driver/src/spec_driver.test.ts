@@ -35,6 +35,6 @@ describe("SpecDriver", () => {
     const names = response.hits.map((h) => h.hit.spec.name).sort();
     expect(names).toEqual(["col1", "col2"]);
 
-    driver.specFrameDispose(handle);
+    driver.disposeSpecFrame(handle);
   });
 });

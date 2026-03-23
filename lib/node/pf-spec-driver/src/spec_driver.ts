@@ -39,7 +39,7 @@ export class SpecDriver implements PFrameSpecDriver {
     });
   }
 
-  specFrameDispose(handle: SpecFrameHandle): void {
+  disposeSpecFrame(handle: SpecFrameHandle): void {
     const frame = this.frames.get(handle);
     if (frame) {
       frame[Symbol.dispose]();

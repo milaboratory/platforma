@@ -727,8 +727,8 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.specFrameDiscoverColumns(handle, request);
   }
 
-  public specFrameDispose(handle: string): void {
-    this.ctx.specFrameDispose(handle);
+  public disposeSpecFrame(handle: string): void {
+    this.ctx.disposeSpecFrame(handle);
   }
 
   public getCurrentUnstableMarker(): string | undefined {

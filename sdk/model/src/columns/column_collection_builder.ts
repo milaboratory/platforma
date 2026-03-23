@@ -24,7 +24,7 @@ import type { GlobalCfgRenderCtxMethods } from "../render/internal";
 /** Subset of render context methods needed for spec frame operations. */
 type SpecFrameCtx = Pick<
   GlobalCfgRenderCtxMethods,
-  "createSpecFrame" | "specFrameDiscoverColumns" | "specFrameDispose"
+  "createSpecFrame" | "specFrameDiscoverColumns" | "disposeSpecFrame"
 >;
 
 // --- FindColumnsOptions ---

@@ -447,7 +447,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
     const handle = this.specDriver.createSpecFrame(specs);
-    this.computableCtx?.addOnDestroy(() => this.specDriver.specFrameDispose(handle));
+    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
     return handle;
   }
 
@@ -458,8 +458,8 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
   }
 
-  public specFrameDispose(handle: SpecFrameHandle): void {
-    this.specDriver.specFrameDispose(handle as SpecFrameHandle);
+  public disposeSpecFrame(handle: SpecFrameHandle): void {
+    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
   }
 
   /**
@@ -919,8 +919,8 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         );
       });
 
-      exportCtxFunction("specFrameDispose", (handle) => {
-        this.specFrameDispose(vm.getString(handle) as SpecFrameHandle);
+      exportCtxFunction("disposeSpecFrame", (handle) => {
+        this.disposeSpecFrame(vm.getString(handle) as SpecFrameHandle);
       });
 
       //
