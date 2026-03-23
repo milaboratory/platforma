@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
 ## 1.5.1
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.53.0
+
+### Minor Changes
+
+- cfee265: Drop V1 DiscoverColumnsRequest/PFrameWasm/PFrameWasmAPI, adopt V2 interfaces; update DiscoverColumnsRequest in common with includeColumns/excludeColumns/maxHops fields; extract SpecDriver into @milaboratories/pf-spec-driver package; rename specFrameDispose to disposeSpecFrame for API consistency
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-model-middle-layer@1.16.0
+  - @milaboratories/pf-driver@1.2.0
+  - @milaboratories/pf-spec-driver@1.1.0
+  - @platforma-sdk/model@1.61.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-deployments@2.16.2
+  - @milaboratories/pl-drivers@1.12.3
+  - @platforma-sdk/block-tools@2.7.2
+  - @milaboratories/pl-model-backend@1.2.2
+  - @milaboratories/pl-errors@1.2.2
+  - @milaboratories/pl-tree@1.9.3
+  - @platforma-sdk/workflow-tengo@5.11.0
+
 ## 1.52.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.11.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
 ## 2.11.1
 
 ### Patch Changes
