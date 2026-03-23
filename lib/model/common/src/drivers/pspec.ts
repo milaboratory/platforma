@@ -78,10 +78,14 @@ export interface DiscoverColumnsConstraints {
 
 /** Request for discovering columns compatible with a given axes integration */
 export interface DiscoverColumnsRequest {
-  /** Column filters (OR-ed); empty array matches all columns */
-  columnFilter?: MultiColumnSelector[];
+  /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Exclude columns matching these selectors (OR-ed); applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
   /** Already integrated axes with qualifications */
   axes: ColumnAxesWithQualifications[];
+  /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
+  maxHops?: number;
   /** Constraints controlling axes matching and qualification behavior */
   constraints: DiscoverColumnsConstraints;
 }
@@ -120,6 +124,8 @@ export interface DiscoverColumnsResponseHit {
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches */
+  path: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */

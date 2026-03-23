@@ -58,16 +58,6 @@ export interface DiscoverColumnsConstraints {
   allowHitQualifications: boolean;
 }
 
-/** Request for discovering columns compatible with a given axes integration */
-export interface DiscoverColumnsRequest {
-  /** Column filters (OR-ed); empty array matches all columns */
-  columnFilter?: MultiColumnSelector[];
-  /** Already integrated axes with qualifications */
-  axes: ColumnAxesWithQualifications[];
-  /** Constraints controlling axes matching and qualification behavior */
-  constraints: DiscoverColumnsConstraints;
-}
-
 /** V2 request with separate include/exclude filters */
 export interface DiscoverColumnsRequestV2 {
   /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */

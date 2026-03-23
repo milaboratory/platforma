@@ -2,6 +2,7 @@ import type {
   AxisQualification,
   ColumnAxesWithQualifications,
   DiscoverColumnsConstraints,
+  DiscoverColumnsStepInfo,
   MultiColumnSelector,
   NativePObjectId,
   PColumnSpec,
@@ -79,6 +80,8 @@ export interface ColumnMatch {
   readonly originalId: PObjectId;
   /** Match variants — different paths/qualifications that reach this column. */
   readonly variants: MatchVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches. */
+  readonly path: DiscoverColumnsStepInfo[];
 }
 
 /** Qualifications needed for both query (already-integrated) columns and the hit column. */
@@ -253,23 +256,22 @@ class ColumnCollectionImpl implements ColumnCollection {
   }
 
   findColumns(options?: FindColumnsOptions): ColumnSnapshot<PObjectId>[] {
-    const columnFilter = options?.include ? toMultiColumnSelectors(options.include) : [];
+    const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
+    const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
     const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
-      columnFilter,
+      includeColumns,
+      excludeColumns,
       axes: [],
+      maxHops: 0,
       constraints: PLAIN_CONSTRAINTS,
     });
 
     // Map hits back to snapshots
-    let results = response.hits
+    const results = response.hits
       .map((hit) => this.columns.get(hit.hit.columnId as PObjectId))
       .filter((col): col is ColumnSnapshot<PObjectId> => col !== undefined)
       .map((col) => this.toSnapshot(col));
-
-    if (options?.exclude) {
-      throw new Error("Exclude filter is not yet implemented for plain ColumnCollection");
-    }
 
     return results;
   }
@@ -336,16 +338,19 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[] {
     const mode = options?.mode ?? "enrichment";
     const constraints = matchingModeToConstraints(mode);
-    const columnFilter = options?.include ? toMultiColumnSelectors(options.include) : [];
+    const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
+    const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
     const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
-      columnFilter,
+      includeColumns,
+      excludeColumns,
       constraints,
       axes: this.anchorAxes,
+      maxHops: options?.maxHops ?? 4,
     });
 
     // Map hits back to ColumnMatch entries
-    let results = response.hits
+    const results = response.hits
       .map((hit) => {
         const origId = hit.hit.columnId as PObjectId;
         const col = this.columns.get(origId);
@@ -360,13 +365,10 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
               distinctiveQualifications: v.distinctiveQualifications,
             }),
           ),
+          path: hit.path,
         } satisfies ColumnMatch;
       })
       .filter((m): m is ColumnMatch => m !== undefined);
-
-    if (options?.exclude) {
-      throw new Error("Exclude filter is not yet implemented for AnchoredColumnCollection");
-    }
 
     return results;
   }
