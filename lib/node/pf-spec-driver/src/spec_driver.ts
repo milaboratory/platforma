@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
  *
  * All operations are synchronous — WASM computes results immediately.
  */
-export class SpecDriver implements PFrameSpecDriver {
+export class SpecDriver implements PFrameSpecDriver, Disposable {
   private readonly frames = new Map<SpecFrameHandle, PFrameInternal.PFrameWasmV2>();
 
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
@@ -48,11 +48,15 @@ export class SpecDriver implements PFrameSpecDriver {
   }
 
   /** Dispose all managed spec frames. */
-  disposeAll(): void {
+  dispose(): void {
     for (const frame of this.frames.values()) {
       frame[Symbol.dispose]();
     }
     this.frames.clear();
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   private getFrame(handle: SpecFrameHandle): PFrameInternal.PFrameWasmV2 {

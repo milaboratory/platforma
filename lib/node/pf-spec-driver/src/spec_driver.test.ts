@@ -14,7 +14,7 @@ function createSpec(name: string, axesSpec?: AxisSpec[]): PColumnSpec {
 
 describe("SpecDriver", () => {
   test("discoverColumns returns all columns with no filters", () => {
-    const driver = new SpecDriver();
+    using driver = new SpecDriver();
     const handle = driver.createSpecFrame({
       col1: createSpec("col1"),
       col2: createSpec("col2"),
@@ -34,7 +34,5 @@ describe("SpecDriver", () => {
     expect(response.hits).toHaveLength(2);
     const names = response.hits.map((h) => h.hit.spec.name).sort();
     expect(names).toEqual(["col1", "col2"]);
-
-    driver.disposeSpecFrame(handle);
   });
 });
