@@ -76,10 +76,11 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId, blockId, data }) => {
       const project = await ctx.getOpenedProject(projectId);
-      await project.mutateBlockStorage(blockId, {
-        operation: "update-block-data",
-        value: data,
-      });
+      await project.mutateBlockStorage(
+        blockId,
+        { operation: "update-block-data", value: data },
+        ctx.getAuthorMarker(),
+      );
       return textResult({ ok: true });
     },
   );

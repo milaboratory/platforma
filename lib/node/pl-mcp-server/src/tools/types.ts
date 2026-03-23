@@ -1,4 +1,5 @@
 import type { MiddleLayer, ProjectListEntry } from "@milaboratories/pl-middle-layer";
+import type { AuthorMarker } from "@milaboratories/pl-model-middle-layer";
 import type { PlMcpServerCallbacks } from "../server";
 
 export interface ToolContext {
@@ -7,6 +8,8 @@ export interface ToolContext {
   resolveProject: (projectId: string) => Promise<ProjectListEntry>;
   getOpenedProject: (projectId: string) => Promise<any>;
   callbacks: PlMcpServerCallbacks;
+  /** Returns an AuthorMarker with auto-incrementing localVersion for this MCP session. */
+  getAuthorMarker: () => AuthorMarker;
 }
 
 export function textResult(data: unknown) {

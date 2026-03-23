@@ -49,6 +49,13 @@ export interface PlMcpServerCallbacks {
   }>;
   /** Disconnect from current server. */
   disconnect?: () => Promise<void>;
+  /** Get detailed info about a specific block package. */
+  getBlockInfo?: (
+    registryUrl: string,
+    organization: string,
+    name: string,
+    version: string,
+  ) => Promise<unknown>;
 }
 
 export interface ServerConnection {
@@ -200,21 +207,25 @@ export class PlMcpServer {
   }
 
   private createMcpServer(): McpServer {
+    const sessionId = randomUUID().slice(0, 8);
     const server = new McpServer(
       { name: "platforma", version: "0.1.0" },
       { capabilities: { tools: {} } },
     );
-    this.registerTools(server);
+    this.registerTools(server, sessionId);
     return server;
   }
 
-  private registerTools(server: McpServer): void {
+  private registerTools(server: McpServer, sessionId: string): void {
+    const authorId = `mcp-${sessionId}`;
+    let localVersion = 0;
     const ctx: ToolContext = {
       getMl: () => this.ml,
       requireMl: () => this.requireMl(),
       resolveProject: (id) => this.resolveProject(id),
       getOpenedProject: (id) => this.getOpenedProject(id),
       callbacks: this.callbacks,
+      getAuthorMarker: () => ({ authorId, localVersion: ++localVersion }),
     };
     registerPingTool(server, ctx);
     registerConnectionTools(server, ctx);

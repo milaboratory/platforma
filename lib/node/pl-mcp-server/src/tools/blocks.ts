@@ -34,7 +34,12 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ projectId, label, spec }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const blockId = await project.addBlock(label, spec as BlockPackSpecAny);
+      const blockId = await project.addBlock(
+        label,
+        spec as BlockPackSpecAny,
+        undefined,
+        ctx.getAuthorMarker(),
+      );
       return textResult({ blockId });
     },
   );
@@ -50,7 +55,7 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
-      await project.deleteBlock(blockId);
+      await project.deleteBlock(blockId, ctx.getAuthorMarker());
       return textResult({ ok: true });
     },
   );
@@ -121,6 +126,27 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
       }
       const blocks = await ctx.callbacks.listAvailableBlocks(query);
       return textResult(blocks);
+    },
+  );
+
+  server.registerTool(
+    "get_block_info",
+    {
+      description:
+        "Get detailed info about a specific block package from the registry. Use list_available_blocks first to find the block.",
+      inputSchema: {
+        registryUrl: z.string().describe("Registry URL (from list_available_blocks)"),
+        organization: z.string().describe("Organization name"),
+        name: z.string().describe("Block package name"),
+        version: z.string().describe("Block version"),
+      },
+    },
+    async ({ registryUrl, organization, name, version }) => {
+      if (!ctx.callbacks.getBlockInfo) {
+        return textResult({ error: "Block info not available" });
+      }
+      const info = await ctx.callbacks.getBlockInfo(registryUrl, organization, name, version);
+      return textResult(info);
     },
   );
 
