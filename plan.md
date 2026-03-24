@@ -8,11 +8,11 @@
 // sdk/model/src/services/defs.ts
 // `import type` only — PFrame packages are devDependencies of sdk/model
 
-const Services = defineServices({
+const Services = {
   PFrameSpecV1: service<PFrameSpecDriver, PFrameSpecUiDriver>("pframeSpecV1"),
   PFrameSpecV2: service<PFrameSpecDriverV2, PFrameSpecUiDriverV2>("pframeSpecV2"),
   PFrameV1: service<PFrameModelDriver, PFrameDriver>("pframeV1"),
-});
+};
 // Services.PFrameSpecV1 === "pframeSpecV1" (upper key for access, lower id for runtime)
 ```
 
@@ -111,15 +111,8 @@ function service<Model, Ui>(id: string): ServiceId<ServiceTypesLike<Model, Ui>> 
   return id as ServiceId<ServiceTypesLike<Model, Ui>>;
 }
 
-/** Validates id uniqueness across all entries. */
-function defineServices<T extends Record<string, ServiceId>>(defs: T): T {
-  const ids = Object.values(defs) as string[];
-  const unique = new Set(ids);
-  if (unique.size !== ids.length) {
-    throw new Error("Duplicate service ids detected");
-  }
-  return defs;
-}
+// No defineServices() needed — Services is a plain const.
+// Duplicate check happens in ServiceRegistry.register().
 ```
 
 `Services.PFrameSpecV1` is the string `"pframeSpecV1"` branded
@@ -135,28 +128,24 @@ common package.
 ```typescript
 // lib/model/common/src/services/registry.ts
 
-const RESOLVE = Symbol("ServiceRegistry.resolve");
-
 class ServiceRegistry {
   private factories = new Map<string, () => unknown>();
   private instances = new Map<string, unknown>();
 
-  /** Public — type-safe registration. Factory return type must match Model. */
+  /** Type-safe registration. Factory return type must match Model. */
   register<S extends ServiceTypesLike>(
     id: ServiceId<S>,
     factory: () => InferServiceModel<S>,
   ): this {
+    if (this.factories.has(id)) throw new Error(`Service "${id}" already registered`);
     this.factories.set(id, factory);
     return this;
   }
 
-  /** Public — typed access. Infers return type from ServiceId brand. */
-  get<S extends ServiceTypesLike>(id: ServiceId<S>): InferServiceModel<S> {
-    return this[RESOLVE](id) as InferServiceModel<S>;
-  }
-
-  /** @internal — untyped resolve by raw string. */
-  [RESOLVE](id: string): unknown {
+  /** Typed when called with ServiceId, untyped when called with raw string. */
+  get<S extends ServiceTypesLike>(id: ServiceId<S>): InferServiceModel<S>;
+  get(id: string): unknown;
+  get(id: string): unknown {
     if (!this.instances.has(id)) {
       const factory = this.factories.get(id);
       if (!factory) throw new ServiceNotRegisteredError(id);
@@ -201,8 +190,9 @@ The same pattern on `PluginModelBuilder` — the 6th generic
 public service<const Id extends string, S extends ServiceTypesLike>(
   id: ServiceId<S> & Id,
 ): PluginModelBuilder<Data, Params, Outputs, Config, Versions, RequiredServices & Record<Id, InferServiceModel<S>>>;
-// Implementation
+// Implementation — deduplicates if same service declared twice
 public service(id: ServiceId): PluginModelBuilder {
+  if (this.requiredServices.includes(id as string)) return this;
   return new PluginModelBuilder({
     ...this,
     requiredServices: [...this.requiredServices, id],
@@ -283,9 +273,11 @@ type ServiceInjector = (
   parent: JsExecutionContext,
 ) => void;
 
-const serviceInjectors = new Map<string, ServiceInjector>();
+// Factory — returns an immutable map, no module-level mutable state
+function createServiceInjectors(): ReadonlyMap<string, ServiceInjector> {
+  const map = new Map<string, ServiceInjector>();
 
-serviceInjectors.set("pframeSpecV1", (registerFn, registry, parent) => {
+  map.set(Services.PFrameSpecV1, (registerFn, registry, parent) => {
   const driver = registry.get(Services.PFrameSpecV1);
   registerFn("service:pframeSpecV1:createSpecFrame", (specs) =>
     parent.exportSingleValue(driver.createSpecFrame(parent.importObjectViaJson(specs)), undefined),
@@ -299,7 +291,11 @@ serviceInjectors.set("pframeSpecV1", (registerFn, registry, parent) => {
     ),
   );
   // ... remaining methods
-});
+  });
+
+  // ... additional services registered here
+  return map;
+}
 ```
 
 ```typescript
@@ -308,10 +304,11 @@ serviceInjectors.set("pframeSpecV1", (registerFn, registry, parent) => {
 // Dynamic injection: only export methods for declared services.
 // If any injector fails, the entire block load fails — no partial injection.
 const registerFn = (name: string, fn: VmFunctionImplementation) => {
-  this.serviceFunctions.set(name, fn);
+  serviceFunctions.set(name, fn);
 };
+const injectors = createServiceInjectors();
 for (const serviceId of this.requiredServices) {
-  const injector = serviceInjectors.get(serviceId);
+  const injector = injectors.get(serviceId);
   if (!injector) throw new Error(`No ServiceInjector for "${serviceId}"`);
   try {
     injector(registerFn, this.registry, this.parent);
@@ -355,8 +352,15 @@ class PluginRenderCtx<F extends PluginFactoryLike, S = {}> extends RenderCtxBase
           {
             get:
               (_, method: string) =>
-              (...args: unknown[]) =>
-                ctx.callServiceMethod!(id, method, ...args),
+              (...args: unknown[]) => {
+                if (!ctx.callServiceMethod) {
+                  throw new Error(
+                    `Service "${id}.${method}" called but callServiceMethod is not available. ` +
+                      `Ensure the Desktop version supports services.`,
+                  );
+                }
+                return ctx.callServiceMethod(id, method, ...args);
+              },
           },
         );
       }
@@ -377,16 +381,14 @@ callServiceMethod?(serviceId: string, methodName: string, ...args: unknown[]): u
 ```typescript
 // computable_context.ts — host-side dispatch map + callServiceMethod
 
-// ServiceInjectors register into this map instead of exportCtxFunction.
-// callServiceMethod dispatches to it by "service:{id}:{method}" key.
-private readonly serviceFunctions = new Map<string, VmFunctionImplementation>();
+// In injectCtx() — serviceFunctions is local, captured by callServiceMethod closure
+const serviceFunctions = new Map<string, VmFunctionImplementation>();
 
-// In injectCtx():
 exportCtxFunction("callServiceMethod", (serviceIdHandle, methodHandle, ...argHandles) => {
   const serviceId = parent.vm.getString(serviceIdHandle);
   const method = parent.vm.getString(methodHandle);
   const fnName = `service:${serviceId}:${method}`;
-  const fn = this.serviceFunctions.get(fnName);
+  const fn = serviceFunctions.get(fnName);
   if (!fn) throw new ServiceMethodNotFoundError(serviceId, method);
   return fn(...argHandles);
 });
@@ -443,7 +445,7 @@ function initServices(
 ): Record<string, unknown> {
   const factories: Record<string, () => unknown> = {};
   for (const id of serviceIds) {
-    factories[id] = () => uiRegistry[RESOLVE](id); // WASM instance or IPC proxy
+    factories[id] = () => uiRegistry.get(id); // WASM instance or IPC proxy
   }
   return lazyMap(factories, () => serviceContext.isDisposed);
 }
@@ -496,22 +498,16 @@ Service ids reach the preload via `blockParams.requiredServices`
 (added to `BlockParamsWithApi`). The list is small (single-digit
 service count, short camelCase ids) — URL query params are safe.
 
-### lazyMap
+`lazyMap` is a non-exported helper inlined in `init_services.ts`:
 
 ```typescript
-// lib/model/common/src/services/lazy_map.ts
-// Proxy-based lazy instantiation — 2 traps only
-
-type LazyMap<T extends Record<string, () => unknown>> = {
-  readonly [K in keyof T]: ReturnType<T[K]>;
-};
-
-function lazyMap<T extends Record<string, () => unknown>>(
-  factories: T,
-  isDisposed: () => boolean, // injected by BlockServiceContext
-): LazyMap<T> {
+// Proxy-based lazy instantiation — 2 traps, dispose-aware
+function lazyMap(
+  factories: Record<string, () => unknown>,
+  isDisposed: () => boolean,
+): Record<string, unknown> {
   const cache = new Map<string, unknown>();
-  return new Proxy({} as LazyMap<T>, {
+  return new Proxy({} as Record<string, unknown>, {
     get(_target, key: PropertyKey) {
       if (typeof key !== "string") return undefined;
       if (isDisposed()) throw new ServiceCallAbortedError(key, "access");
@@ -529,10 +525,8 @@ function lazyMap<T extends Record<string, () => unknown>>(
 }
 ```
 
-Services are accessed by known typed keys, not iterated or
-spread — `ownKeys`/`getOwnPropertyDescriptor` traps are not
-needed. Cached instances are freed when the block Ui is
-destroyed.
+Accessed by known typed keys, not iterated or spread. Cached
+instances freed when block Ui is destroyed.
 
 ### Service router
 
@@ -540,12 +534,12 @@ destroyed.
 // platforma-desktop-app/packages/main/src/ipc/serviceRouter.ts
 // One IPC channel per (service, method) — matches createRouter pattern
 
-type ServiceRoute = {
-  instance: unknown;
-  methods: string[]; // explicit list, not runtime discovery
+type ServiceRoute<T> = {
+  instance: T;
+  methods: (keyof T & string)[]; // compile-time checked against instance type
 };
 
-function createServiceRouter(routes: Record<string, ServiceRoute>) {
+function createServiceRouter(routes: Record<string, ServiceRoute<unknown>>) {
   for (const [serviceId, route] of Object.entries(routes)) {
     for (const method of route.methods) {
       ipcMain.handle(`service:call:${serviceId}:${method}`, async (_event, ...args) => {
@@ -561,7 +555,7 @@ function createServiceRouter(routes: Record<string, ServiceRoute>) {
 // Usage
 createServiceRouter({
   [Services.PFrameV1]: {
-    instance: pframeDriver,
+    instance: pframeDriver as PFrameDriver,
     methods: [
       "findColumns",
       "getColumnSpec",
@@ -634,9 +628,10 @@ class BlockServiceContext implements Disposable {
   }
 }
 
-// Hand-written proxy factory — connects to BlockServiceContext
+// Hand-written proxy factory — method names checked at compile time
 function createPFrameDriverProxy(ctx: BlockServiceContext): PFrameDriver {
-  const call = (method: string) => ctx.createProxyCall(Services.PFrameV1, method);
+  const call = <M extends keyof PFrameDriver & string>(method: M) =>
+    ctx.createProxyCall(Services.PFrameV1, method);
   return {
     findColumns: call("findColumns"),
     getColumnSpec: call("getColumnSpec"),
@@ -744,10 +739,9 @@ were never accessed have no instance to leak.
 
 | File                                                                | Change                                                                                                          |
 | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `lib/model/common/src/services/defs.ts` (new)                       | `ServiceId`, `service()`, `defineServices()`                                                                    |
+| `lib/model/common/src/services/defs.ts` (new)                       | `ServiceId`, `ServiceTypesLike`, `InferServiceModel`, `InferServiceUi`, `service()`                             |
 | `lib/model/common/src/services/deprecated.ts` (new)                 | `SupersededServices`, `DeprecatedServices`                                                                      |
 | `lib/model/common/src/services/registry.ts` (new)                   | `ServiceRegistry`                                                                                               |
-| `lib/model/common/src/services/lazy_map.ts` (new)                   | `lazyMap`, `LazyMap<T>`                                                                                         |
 | `lib/model/common/src/services/errors.ts` (new)                     | `ServiceCallAbortedError`, `ServiceNotRegisteredError`, `ServiceMethodNotFoundError`                            |
 | `sdk/model/src/services/defs.ts` (new)                              | `Services` const                                                                                                |
 | `lib/model/common/src/bmodel/block_config.ts`                       | `requiredServices?: ServiceId[]` on `BlockConfigV4Generic`                                                      |
@@ -757,7 +751,7 @@ were never accessed have no instance to leak.
 | `sdk/model/src/plugin_model.ts`                                     | `.service()` with 6th generic `RequiredServices`. Thread through `.output()`/`.outputWithStatus()`.             |
 | `sdk/model/src/render/api.ts`                                       | Add `S` generic + lazy `services` getter with Proxy dispatch to `PluginRenderCtx`                               |
 | `sdk/model/src/render/internal.ts`                                  | `callServiceMethod()` on `GlobalCfgRenderCtxMethods`                                                            |
-| `lib/node/pl-middle-layer/src/js_render/service_injectors.ts` (new) | `ServiceInjector` type + per-service injector functions                                                         |
+| `lib/node/pl-middle-layer/src/js_render/service_injectors.ts` (new) | `ServiceInjector` type + `createServiceInjectors()` factory                                                     |
 | `lib/node/pl-middle-layer/src/js_render/computable_context.ts`      | Accept `requiredServices` + `ServiceRegistry`. Export `callServiceMethod`. Conditional injection via injectors. |
 | `lib/node/pl-middle-layer/src/js_render/context.ts`                 | Thread `requiredServices` from `BlockCodeWithInfo` to `ComputableContextHelper`                                 |
 | `lib/node/pl-middle-layer/src/cfg_render/code.ts`                   | Add `requiredServices` to `BlockCodeWithInfo`, extract in `extractCodeWithInfo()`                               |
@@ -769,7 +763,7 @@ were never accessed have no instance to leak.
 | File                                                                 | Change                                                                                             |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `packages/preload-block/src/services/block_service_context.ts` (new) | `BlockServiceContext` with dispose guard, IPC via `ipcRenderer.invoke` directly                    |
-| `packages/preload-block/src/services/init_services.ts` (new)         | `initServices()` — resolves from Ui registry, wraps in `lazyMap`                                   |
+| `packages/preload-block/src/services/init_services.ts` (new)         | `initServices()` + inlined `lazyMap` helper — resolves from Ui registry                            |
 | `packages/preload-block/src/v3-preload.ts`                           | Create `BlockServiceContext`, `createUiRegistry`, `initServices()`, attach `services` to platforma |
 | `packages/preload-block/src/platforma.ts`                            | Add `requiredServices` to `BlockParamsWithApi` parsing                                             |
 | `packages/main/src/ipc/serviceRouter.ts` (new)                       | `createServiceRouter()` — reuse `createRouter` with service namespace prefix                       |
