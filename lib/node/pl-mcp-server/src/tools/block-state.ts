@@ -15,7 +15,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const overview = await project.overview.awaitStableValue();
+      const overview = await project.overview.getValue();
       return textResult({
         label: overview.meta.label,
         blocks: overview.blocks.map((b: any) => ({
