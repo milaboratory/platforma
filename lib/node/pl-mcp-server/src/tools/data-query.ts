@@ -108,54 +108,74 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       const outputs = state.outputs as Record<string, unknown>;
       const { pFrames, pTables } = extractHandles(outputs);
 
-      // For each PFrame, list columns
+      // Deduplicate by handle, collecting all paths
+      const pFramesByHandle = new Map<string, string[]>();
+      for (const pf of pFrames) {
+        const paths = pFramesByHandle.get(pf.handle) ?? [];
+        paths.push(pf.path);
+        pFramesByHandle.set(pf.handle, paths);
+      }
+      const pTablesByHandle = new Map<string, string[]>();
+      for (const pt of pTables) {
+        const paths = pTablesByHandle.get(pt.handle) ?? [];
+        paths.push(pt.path);
+        pTablesByHandle.set(pt.handle, paths);
+      }
+
+      const MAX_COLUMNS = 30;
+
+      // For each unique PFrame, list columns (summary only)
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const pFrameSummaries = [];
-      for (const pf of pFrames) {
+      for (const [handle, paths] of pFramesByHandle) {
         try {
-          const columns = await pFrameDriver.listColumns(pf.handle as PFrameHandle);
+          const columns = await pFrameDriver.listColumns(handle as PFrameHandle);
+          const mapped = columns.slice(0, MAX_COLUMNS).map((c) => ({
+            name: c.spec.name,
+            valueType: c.spec.valueType,
+            label: c.spec.annotations?.["pl7.app/label"],
+          }));
           pFrameSummaries.push({
-            path: pf.path,
-            handle: pf.handle,
+            paths,
+            handle,
             columnCount: columns.length,
-            columns: columns.slice(0, 30).map((c) => ({
-              columnId: c.columnId,
-              name: c.spec.name,
-              valueType: c.spec.valueType,
-              label: c.spec.annotations?.["pl7.app/label"],
-            })),
+            columns: mapped,
+            ...(columns.length > MAX_COLUMNS ? { truncated: true, showing: MAX_COLUMNS } : {}),
           });
         } catch (err) {
           pFrameSummaries.push({
-            path: pf.path,
-            handle: pf.handle,
+            paths,
+            handle,
             error: String(err),
           });
         }
       }
 
-      // For each PTable, get shape and spec
+      // For each unique PTable, get shape and spec (summary only)
       const pTableSummaries = [];
-      for (const pt of pTables) {
+      for (const [handle, paths] of pTablesByHandle) {
         try {
-          const shape = await pFrameDriver.getShape(pt.handle as PTableHandle);
-          const spec = await pFrameDriver.getSpec(pt.handle as PTableHandle);
+          const shape = await pFrameDriver.getShape(handle as PTableHandle);
+          const spec = await pFrameDriver.getSpec(handle as PTableHandle);
+          const mapped = spec.slice(0, MAX_COLUMNS).map((s: PTableColumnSpec, idx: number) => ({
+            index: idx,
+            type: s.type,
+            name: s.type === "column" ? s.spec.name : s.spec.name,
+            valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
+            label: s.spec.annotations?.["pl7.app/label"],
+          }));
           pTableSummaries.push({
-            path: pt.path,
-            handle: pt.handle,
+            paths,
+            handle,
             rows: shape.rows,
-            columns: spec.map((s: PTableColumnSpec, idx: number) => ({
-              index: idx,
-              type: s.type,
-              name: s.type === "column" ? s.spec.name : s.spec.name,
-              valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
-              label: s.spec.annotations?.["pl7.app/label"],
-            })),
+            columnCount: spec.length,
+            columns: mapped,
+            ...(spec.length > MAX_COLUMNS ? { truncated: true, showing: MAX_COLUMNS } : {}),
           });
         } catch (err) {
           pTableSummaries.push({
-            path: pt.path,
-            handle: pt.handle,
+            paths,
+            handle,
             error: String(err),
           });
         }
