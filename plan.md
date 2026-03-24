@@ -77,7 +77,9 @@ type ServiceRequireFlags = {
 // `import type` only — PFrame packages are devDependencies of sdk/model.
 
 const TypedServices = {
-  PFrameSpec: Services.PFrameSpec as ServiceName<ServiceTypesLike<PFrameSpecDriver, PFrameSpecUiDriver>>,
+  PFrameSpec: Services.PFrameSpec as ServiceName<
+    ServiceTypesLike<PFrameSpecDriver, PFrameSpecUiDriver>
+  >,
   PFrame: Services.PFrame as ServiceName<ServiceTypesLike<PFrameModelDriver, PFrameDriver>>,
 };
 
@@ -85,7 +87,7 @@ const TypedServices = {
 type AllServiceNames = (typeof Services)[keyof typeof Services] & string;
 
 // Record requiring a factory for every service — missing entry is a type error
-type ServiceFactoryRecord = Record<AllServiceNames, () => unknown>;
+type ServiceFactoryRecord = Record<AllServiceNames, () => object>;
 
 // Typed factory — enforces completeness at the signature level.
 function createServiceRegistry(factories: ServiceFactoryRecord): ServiceRegistry {
@@ -252,12 +254,12 @@ function createUiRegistry(options: UiRegistryOptions): ServiceRegistry {
 // lib/model/common/src/services/registry.ts
 
 class ServiceRegistry {
-  private factories = new Map<string, () => unknown>();
-  private instances = new Map<string, unknown>();
+  private factories = new Map<string, () => object>();
+  private instances = new Map<string, object>();
 
   // No typed get() overload — actual typing happens via ResolveModelServices /
   // ResolveUiServices at the call site. Same registry class serves both sides.
-  register(id: ServiceName, factory: () => unknown): this {
+  register(id: ServiceName, factory: () => object): this {
     if (this.factories.has(id)) throw new ServiceAlreadyRegisteredError(id);
     this.factories.set(id, factory);
     return this;
@@ -269,7 +271,7 @@ class ServiceRegistry {
       if (!factory) throw new ServiceNotRegisteredError(id);
       this.instances.set(id, factory());
     }
-    return this.instances.get(id);
+    return this.instances.get(id)!;
   }
 }
 ```
@@ -277,7 +279,8 @@ class ServiceRegistry {
 ### Resolving required services from feature flags
 
 ```typescript
-// sdk/model/src/services/flag_mapping.ts (NOT lib/model/common — needs Services const)
+// lib/model/common/src/services/flag_mapping.ts
+// Services const is in the same package (ids.ts), so no upward dependency.
 
 // Accepts Record<string, unknown> so it works with both BlockCodeKnownFeatureFlags
 // (from middle layer) and Zod-parsed records (from preload).
@@ -602,7 +605,7 @@ export function v3(blockParams: BlockParamsWithApi): PlatformaV3 {
 const app = {
   // ... existing model, outputs, outputErrors ...
   plugins,
-  services: markRaw(platforma.services),  // markRaw prevents Vue reactivity on lazy getters
+  services: markRaw(platforma.services), // markRaw prevents Vue reactivity on lazy getters
 };
 ```
 
@@ -644,7 +647,6 @@ function getMethodNames(instance: object): string[] {
   }
   return [...methods];
 }
-
 ```
 
 ```typescript
@@ -859,46 +861,46 @@ export function isServiceMethodNotFoundError(error: unknown): error is ServiceMe
 
 ### platforma
 
-| File | Change |
-| --- | --- |
-| `lib/model/common/src/services/defs.ts` (new) | `ServiceName`, `ServiceTypesLike`, `InferServiceModel`, `ServiceType`, `service()`, `isNodeService()`, `serviceFnKey()` |
-| `lib/model/common/src/services/ids.ts` (new) | `Services` const, `ServiceRequireFlags` — runtime service IDs + flag type. Safe for `pl-middle-layer` to import. |
-| `sdk/model/src/services/defs.ts` (new) | `TypedServices`, `ServiceFactoryRecord`, `createServiceRegistry()`, `FlagToService`, `ResolveModelServices`, `ResolveUiServices` |
-| `sdk/model/src/services/flag_mapping.ts` (new) | `resolveRequiredServices()` |
-| `lib/model/common/src/services/registry.ts` (new) | `ServiceRegistry` |
-| `lib/model/common/src/errors.ts` | `ServiceError` hierarchy + `is*` guards |
-| `lib/model/common/src/flags/block_flags.ts` | Extend type via `& ServiceRequireFlags`. Update `_AllFlagsAreCovered` assertion. |
-| `lib/model/common/src/flags/flag_utils.ts` | `RuntimeCapabilities` — boolean require flags + service compatibility |
-| `lib/model/common/src/driver_kit.ts` | Remove `pFrameDriver` (phase 5) |
-| `sdk/model/src/block_model.ts` | Service flags in `INITIAL_BLOCK_FEATURE_FLAGS`. Pass resolved service names in `.done()`. |
-| `sdk/model/src/render/api.ts` | `S` generic + `services` getter on `RenderCtxBase`. Remove 7 legacy SpecDriver methods. |
-| `sdk/model/src/columns/column_collection_builder.ts` | Replace `SpecFrameCtx` with service interface. |
-| `sdk/model/src/components/PlDataTable/.../createPlDataTableV3.ts` | Pass `ctx.services.pframeSpec` to `ColumnCollectionBuilder`. |
-| `sdk/model/src/render/internal.ts` | Add `callServiceMethod()` + `getServiceMethods()`. Remove 7 legacy SpecDriver methods. |
-| `lib/node/pl-middle-layer/src/js_render/service_injectors.ts` (new) | `ServiceInjector` type + `SERVICE_INJECTORS` map |
-| `lib/node/pl-middle-layer/src/js_render/computable_context.ts` | Remove unconditional SpecDriver. Add injectors, `callServiceMethod`, `getServiceMethods`. |
-| `lib/node/pl-middle-layer/src/middle_layer/driver_kit.ts` | Create model `ServiceRegistry` |
-| `lib/node/pl-middle-layer/src/middle_layer/middle_layer.ts` | Register service flags via `addSupportedRequirement` loop |
-| `sdk/test/src/test-block.ts` | Same `addSupportedRequirement` loop |
-| `sdk/test/src/with-ml.ts` | Same `addSupportedRequirement` loop |
-| `sdk/model/src/platforma.ts` | `services` on `PlatformaV3` |
-| `sdk/ui-vue/src/internal/createAppV3.ts` | `markRaw(platforma.services)` |
-| `sdk/ui-vue/src/usePlugin.ts` | Pass `platforma.services` through to plugin state |
+| File                                                                | Change                                                                                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/model/common/src/services/defs.ts` (new)                       | `ServiceName`, `ServiceTypesLike`, `InferServiceModel`, `ServiceType`, `service()`, `isNodeService()`, `serviceFnKey()`          |
+| `lib/model/common/src/services/ids.ts` (new)                        | `Services` const, `ServiceRequireFlags` — runtime service IDs + flag type. Safe for `pl-middle-layer` to import.                 |
+| `sdk/model/src/services/defs.ts` (new)                              | `TypedServices`, `ServiceFactoryRecord`, `createServiceRegistry()`, `FlagToService`, `ResolveModelServices`, `ResolveUiServices` |
+| `lib/model/common/src/services/flag_mapping.ts` (new)               | `resolveRequiredServices()`                                                                                                      |
+| `lib/model/common/src/services/registry.ts` (new)                   | `ServiceRegistry`                                                                                                                |
+| `lib/model/common/src/errors.ts`                                    | `ServiceError` hierarchy + `is*` guards                                                                                          |
+| `lib/model/common/src/flags/block_flags.ts`                         | Extend type via `& ServiceRequireFlags`. Update `_AllFlagsAreCovered` assertion.                                                 |
+| `lib/model/common/src/flags/flag_utils.ts`                          | `RuntimeCapabilities` — boolean require flags + service compatibility                                                            |
+| `lib/model/common/src/driver_kit.ts`                                | Remove `pFrameDriver` (phase 5)                                                                                                  |
+| `sdk/model/src/block_model.ts`                                      | Service flags in `INITIAL_BLOCK_FEATURE_FLAGS`. Pass resolved service names in `.done()`.                                        |
+| `sdk/model/src/render/api.ts`                                       | `S` generic + `services` getter on `RenderCtxBase`. Remove 7 legacy SpecDriver methods.                                          |
+| `sdk/model/src/columns/column_collection_builder.ts`                | Replace `SpecFrameCtx` with service interface.                                                                                   |
+| `sdk/model/src/components/PlDataTable/.../createPlDataTableV3.ts`   | Pass `ctx.services.pframeSpec` to `ColumnCollectionBuilder`.                                                                     |
+| `sdk/model/src/render/internal.ts`                                  | Add `callServiceMethod()` + `getServiceMethods()`. Remove 7 legacy SpecDriver methods.                                           |
+| `lib/node/pl-middle-layer/src/js_render/service_injectors.ts` (new) | `ServiceInjector` type + `SERVICE_INJECTORS` map                                                                                 |
+| `lib/node/pl-middle-layer/src/js_render/computable_context.ts`      | Remove unconditional SpecDriver. Add injectors, `callServiceMethod`, `getServiceMethods`.                                        |
+| `lib/node/pl-middle-layer/src/middle_layer/driver_kit.ts`           | Create model `ServiceRegistry`                                                                                                   |
+| `lib/node/pl-middle-layer/src/middle_layer/middle_layer.ts`         | Register service flags via `addSupportedRequirement` loop                                                                        |
+| `sdk/test/src/test-block.ts`                                        | Same `addSupportedRequirement` loop                                                                                              |
+| `sdk/test/src/with-ml.ts`                                           | Same `addSupportedRequirement` loop                                                                                              |
+| `sdk/model/src/platforma.ts`                                        | `services` on `PlatformaV3`                                                                                                      |
+| `sdk/ui-vue/src/internal/createAppV3.ts`                            | `markRaw(platforma.services)`                                                                                                    |
+| `sdk/ui-vue/src/usePlugin.ts`                                       | Pass `platforma.services` through to plugin state                                                                                |
 
 ### platforma-desktop-app
 
-| File | Change |
-| --- | --- |
-| `packages/core/src/args.ts` (new) | `defineArg()`, `setArg()`, `getArg()`, `ServiceInfoArg` |
-| `packages/core/src/ipc_channels.ts` (new) | `serviceIpcChannel()` |
-| `packages/core/src/get_method_names.ts` (new) | `getMethodNames()` — shared by main + worker |
-| `packages/preload-block/src/services/init_services.ts` (new) | `initServices()` with lazy getters |
-| `packages/preload-block/src/services/ipc_proxy.ts` (new) | `createIpcProxy()` |
-| `packages/preload-block/src/v3-preload.ts` | Read `serviceInfo`, `createUiRegistry`, `initServices()`, attach services |
-| `packages/main/src/ipc/serviceRouter.ts` (new) | `createServiceRouter()` — node services only |
-| `packages/main/src/windows.ts` | `activateBlockView` async. Promise-based view cache with rejection eviction. |
-| `packages/main/src/tasks/LoadBlockFrontend.ts` | `await` the now-async `activateBlockView`. |
-| `packages/worker/src/workerApi.ts` | Model `ServiceRegistry`. `getServiceInfo` (node services only). |
+| File                                                         | Change                                                                       |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `packages/core/src/args.ts` (new)                            | `defineArg()`, `setArg()`, `getArg()`, `ServiceInfoArg`                      |
+| `packages/core/src/ipc_channels.ts` (new)                    | `serviceIpcChannel()`                                                        |
+| `packages/core/src/get_method_names.ts` (new)                | `getMethodNames()` — shared by main + worker                                 |
+| `packages/preload-block/src/services/init_services.ts` (new) | `initServices()` with lazy getters                                           |
+| `packages/preload-block/src/services/ipc_proxy.ts` (new)     | `createIpcProxy()`                                                           |
+| `packages/preload-block/src/v3-preload.ts`                   | Read `serviceInfo`, `createUiRegistry`, `initServices()`, attach services    |
+| `packages/main/src/ipc/serviceRouter.ts` (new)               | `createServiceRouter()` — node services only                                 |
+| `packages/main/src/windows.ts`                               | `activateBlockView` async. Promise-based view cache with rejection eviction. |
+| `packages/main/src/tasks/LoadBlockFrontend.ts`               | `await` the now-async `activateBlockView`.                                   |
+| `packages/worker/src/workerApi.ts`                           | Model `ServiceRegistry`. `getServiceInfo` (node services only).              |
 
 ## Backward compatibility
 
