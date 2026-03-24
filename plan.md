@@ -254,8 +254,8 @@ class ServiceRegistry {
   }
 
   get<S extends ServiceTypesLike>(id: ServiceName<S>): InferServiceModel<S>;
-  get(id: string): unknown;
-  get(id: string): unknown {
+  get(id: string): object;
+  get(id: string): object {
     if (!this.instances.has(id)) {
       const factory = this.factories.get(id);
       if (!factory) throw new ServiceNotRegisteredError(id);
@@ -271,10 +271,13 @@ class ServiceRegistry {
 ```typescript
 // sdk/model/src/services/flag_mapping.ts (NOT lib/model/common — needs Services const)
 
-function resolveRequiredServices(flags: BlockCodeKnownFeatureFlags | undefined): ServiceName[] {
+// Accepts Record<string, unknown> so it works with both BlockCodeKnownFeatureFlags
+// (from middle layer) and Zod-parsed records (from preload). The function only
+// reads requires${key} keys and checks === true, so the wider type is safe.
+function resolveRequiredServices(flags: Record<string, unknown> | undefined): ServiceName[] {
   if (!flags) return [];
   return (Object.keys(Services) as (keyof typeof Services)[])
-    .filter((key) => flags[`requires${key}` as keyof BlockCodeKnownFeatureFlags] === true)
+    .filter((key) => flags[`requires${key}`] === true)
     .map((key) => Services[key]);
 }
 ```
@@ -314,13 +317,13 @@ type ServiceInjector = (
 const SERVICE_INJECTORS: ReadonlyMap<string, ServiceInjector> = new Map<string, ServiceInjector>([
   [Services.PFrameSpec, (registerFn, registry, parent) => {
     const driver = registry.get(Services.PFrameSpec);
-    registerFn(serviceFnKey("pframeSpec", "createSpecFrame"), (specs) =>
+    registerFn(serviceFnKey(Services.PFrameSpec, "createSpecFrame"), (specs) =>
       parent.exportSingleValue(
         driver.createSpecFrame(parent.importObjectViaJson(specs)),
         undefined,
       ),
     );
-    registerFn(serviceFnKey("pframeSpec", "discoverColumns"), (handle, request) =>
+    registerFn(serviceFnKey(Services.PFrameSpec, "discoverColumns"), (handle, request) =>
       parent.exportObjectViaJson(
         driver.specFrameDiscoverColumns(
           parent.vm.getString(handle),
