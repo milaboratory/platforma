@@ -38,27 +38,27 @@ const tablePlugin = PluginModel.define({ name, data })
 ### Registering in the app
 
 ```typescript
-// Model side — all model-side factories
+// Model side
 const modelRegistry = new ServiceRegistry({
   [Services.PFrameSpecV1.id]: () => new SpecDriver(),
   [Services.PFrameSpecV2.id]: () => new SpecDriver(),
   [Services.PFrameV1.id]: () => pframeDriver,
 });
 
-// Ui side — all Ui-side factories
+// Ui side
 const uiRegistry = new ServiceRegistry({
-  [Services.PFrameSpecV1.id]: () => new SpecDriver(),        // WASM instance
-  [Services.PFrameSpecV2.id]: () => new SpecDriver(),        // WASM instance
-  [Services.PFrameV1.id]: () => pframeDriverProxy,           // hand-written remote proxy
+  [Services.PFrameSpecV1.id]: () => new SpecDriver(), // WASM instance
+  [Services.PFrameSpecV2.id]: () => new SpecDriver(), // WASM instance
+  [Services.PFrameV1.id]: () => pframeDriverProxy, // hand-written remote proxy
 });
 ```
 
 ## Problem
 
-|Existing driver|Backend|Execution|
-|---|---|---|
-|`PFrameSpecDriver`|WASM (`pframes-rs-wasm`)|Sync — callable from model and Ui directly|
-|`PFrameDriver`|Node.js native addon (`pframes-rs-node`)|Async — Ui calls main process via remote proxy|
+| Existing driver    | Backend                                  | Execution                                      |
+| ------------------ | ---------------------------------------- | ---------------------------------------------- |
+| `PFrameSpecDriver` | WASM (`pframes-rs-wasm`)                 | Sync — callable from model and Ui directly     |
+| `PFrameDriver`     | Node.js native addon (`pframes-rs-node`) | Async — Ui calls main process via remote proxy |
 
 Both are injected unconditionally today. Both will have versioned
 successors. Old versions persist forever — the app bundles all
@@ -67,13 +67,13 @@ migrations needed since these only provide methods.
 
 ## Terminology
 
-|Term|Meaning|
-|---|---|
-|**Service**|Versioned capability defined via `defineService<TModel, TUi>()`. Each service has a unique id and carries model and Ui interfaces as type params.|
-|**Service def**|The `ServiceDef<TModel, TUi>` value — a branded identifier used to declare, register, and look up a service. Created once via `defineService()`.|
-|**Model interface** (`TModel`)|Service surface for block/plugin output lambdas (server-side). May include write operations.|
-|**Ui interface** (`TUi`)|Service surface for Ui components (client-side). Typically read-only. Delivered as a direct WASM instance or a hand-written remote proxy.|
-|**Service registry**|Maps service defs to lazy factories. Two instances: one for model side, one for Ui side.|
+| Term                           | Meaning                                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Service**                    | Versioned capability defined via `defineService<TModel, TUi>()`. Each service has a unique id and carries model and Ui interfaces as type params. |
+| **Service def**                | The `ServiceDef<TModel, TUi>` value — a branded identifier used to declare, register, and look up a service. Created once via `defineService()`.  |
+| **Model interface** (`TModel`) | Service surface for block/plugin output lambdas (server-side). May include write operations.                                                      |
+| **Ui interface** (`TUi`)       | Service surface for Ui components (client-side). Typically read-only. Delivered as a direct WASM instance or a hand-written remote proxy.         |
+| **Service registry**           | Maps service defs to lazy factories. Two instances: one for model side, one for Ui side.                                                          |
 
 ## Current state
 
@@ -98,8 +98,8 @@ Ui side:
 `PluginRenderCtx` (`api.ts:822-880`) has access to neither
 driver. The SpecDriver infrastructure is already plumbed through
 `GlobalCfgRenderCtxMethods` (`internal.ts`) —
-`PluginRenderCtx` does not delegate to it. Phase 1 adds that
-delegation.
+`PluginRenderCtx` does not delegate to it (see migration
+phase 1).
 
 ### Feature flags
 
@@ -147,6 +147,14 @@ function defineService<TModel, TUi>(id: string): ServiceDef<TModel, TUi> {
   _registeredIds.add(id);
   return { id };
 }
+
+/** Test-only. Call in beforeEach when multiple test files share a
+ *  vitest worker. Clears the duplicate-id Set so defineService()
+ *  calls in re-imported modules succeed. vi.resetModules() is NOT
+ *  needed — clearing the Set is sufficient. */
+function __resetServiceDefsForTests(): void {
+  _registeredIds.clear();
+}
 ```
 
 A service def is an identifier carrying `TModel` and `TUi` at
@@ -185,10 +193,7 @@ Plugin services merge into the block's list in `.plugin()`:
 ```typescript
 // block_model.ts — in .plugin(), alongside featureFlags merge at line 476
 this.config.requiredServices = [
-  ...new Set([
-    ...this.config.requiredServices,
-    ...(plugin.requiredServices ?? []),
-  ]),
+  ...new Set([...this.config.requiredServices, ...(plugin.requiredServices ?? [])]),
 ];
 ```
 
@@ -227,9 +232,9 @@ in the block's `requiredServices` list), not at compile time.
 
 On the model side, service methods are exported individually
 into the block execution context as named functions — the same
-pattern used for existing methods like `createSpecFrame` and
-`expandAxes`. `PluginRenderCtx.service()` accesses these
-through the existing render context:
+pattern used for existing SpecDriver methods.
+`PluginRenderCtx.service()` accesses these through the existing
+render context:
 
 ```typescript
 // sdk/model/src/render/api.ts — addition to PluginRenderCtx
@@ -244,12 +249,12 @@ class PluginRenderCtx<F extends PluginFactoryLike> {
 
 Four statuses for service ids stored in the block config:
 
-|Status|Condition|Behavior|
-|---|---|---|
-|Available|Registry has a factory|Block loads normally.|
-|Superseded|Service id is in `SupersededServices`|Block loads normally. Informational warning shown to user.|
-|Deprecated|Service id is in `DeprecatedServices`|Block does not load. Error: "Block `{name}` requires `{id}` which is no longer supported. Use a newer block version."|
-|Unknown|Service id not in any list|Block does not load. Error: "Block `{name}` requires `{id}` which is not recognized. If you are a block developer, check the service id. Otherwise, update Desktop."|
+| Status     | Condition                             | Behavior                                                                                                                                                             |
+| ---------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Available  | Registry has a factory                | Block loads normally.                                                                                                                                                |
+| Superseded | Service id is in `SupersededServices` | Block loads normally. Informational warning shown to user.                                                                                                           |
+| Deprecated | Service id is in `DeprecatedServices` | Block does not load. Error: "Block `{name}` requires `{id}` which is no longer supported. Use a newer block version."                                                |
+| Unknown    | Service id not in any list            | Block does not load. Error: "Block `{name}` requires `{id}` which is not recognized. If you are a block developer, check the service id. Otherwise, update Desktop." |
 
 ```typescript
 // lib/model/common/src/services/deprecated.ts
@@ -277,15 +282,15 @@ Desktop) and typos in the block manifest (developer error).
 ```typescript
 // Model side resolves services for each block
 for (const serviceId of block.requiredServices) {
-  const service = modelRegistry.get(serviceId);
+  const service = modelRegistry.getFactory(serviceId)();
   // Export each method individually into block execution context
 }
 ```
 
 The model registry reads `requiredServices` from the block config
-and resolves each to an instance. Methods are exported
-individually as named functions (not as live objects) because
-the block execution context does not support object references.
+and instantiates each service. Methods are exported individually
+as named functions (not as live objects) because the block
+execution context does not support object references.
 
 ### Ui-side provision
 
@@ -309,18 +314,34 @@ WASM initialization that may never be needed.
 ```typescript
 /** Wraps a record of factories into a Proxy that calls each
  *  factory on first access and caches the result. */
-function lazyMap<T extends Record<string, () => unknown>>(
-  factories: T,
-): LazyMap<T> {
+function lazyMap<T extends Record<string, () => unknown>>(factories: T): LazyMap<T> {
+  const keys = Object.keys(factories);
   const cache = new Map<string, unknown>();
+
+  function resolve(key: string): unknown {
+    if (!cache.has(key)) {
+      const factory = factories[key];
+      if (!factory) return undefined;
+      cache.set(key, factory());
+    }
+    return cache.get(key);
+  }
+
   return new Proxy({} as LazyMap<T>, {
-    get(_target, key: string) {
-      if (!cache.has(key)) {
-        const factory = factories[key];
-        if (!factory) return undefined;
-        cache.set(key, factory());
-      }
-      return cache.get(key);
+    get(_target, key: PropertyKey) {
+      if (typeof key !== "string") return undefined;
+      return resolve(key);
+    },
+    has(_target, key: PropertyKey) {
+      return typeof key === "string" && key in factories;
+    },
+    ownKeys() {
+      return keys;
+    },
+    getOwnPropertyDescriptor(_target, key: PropertyKey) {
+      if (typeof key !== "string" || !(key in factories)) return undefined;
+      // Getter, not value — avoids eager instantiation on spread/serialize
+      return { configurable: true, enumerable: true, get: () => resolve(key) };
     },
   });
 }
@@ -351,19 +372,18 @@ existing `pFrameDriver.ts:22-84` pattern):
 
 interface ServiceRoute {
   instance: unknown;
-  methods: string[];  // explicit list, not runtime discovery
+  methods: string[]; // explicit list, not runtime discovery
 }
 
 function createServiceRouter(routes: Record<string, ServiceRoute>) {
   for (const [serviceId, route] of Object.entries(routes)) {
     for (const method of route.methods) {
-      ipcMain.handle(
-        `service:call:${serviceId}:${method}`,
-        async (_event, ...args) => {
-          const fn = (route.instance as Record<string, Function>)[method];
-          return wrapResult(await fn.apply(route.instance, args));
-        },
-      );
+      ipcMain.handle(`service:call:${serviceId}:${method}`, async (_event, ...args) => {
+        const fn = (route.instance as Record<string, Function>)[method];
+        // wrapResult/unwrapResult: existing ResultOrError<T> IPC envelope
+        // from base/createRouter.ts — serializes errors across the IPC boundary
+        return wrapResult(await fn.apply(route.instance, args));
+      });
     }
   }
 }
@@ -373,9 +393,14 @@ createServiceRouter({
   [Services.PFrameV1.id]: {
     instance: pframeDriver,
     methods: [
-      "findColumns", "getColumnSpec", "listColumns",
-      "calculateTableData", "getUniqueValues",
-      "getShape", "getSpec", "getData",
+      "findColumns",
+      "getColumnSpec",
+      "listColumns",
+      "calculateTableData",
+      "getUniqueValues",
+      "getShape",
+      "getSpec",
+      "getData",
     ],
   },
 });
@@ -388,15 +413,6 @@ individually.
 If a Ui-side proxy is registered for a service that has no
 model-side counterpart, no IPC channels exist for it — calls
 fail immediately instead of hanging.
-
-```typescript
-interface UiServiceAccess<TUi> {
-  /** Available for WASM services (direct instance in renderer) */
-  readonly sync?: TUi;
-  /** Always available (remote proxy for node, async wrapper for WASM) */
-  readonly async: AsyncVersion<TUi>;
-}
-```
 
 ### Lifecycle
 
@@ -418,7 +434,7 @@ interface UiServiceAccess<TUi> {
    └─ Each method exported individually to block execution context
 
 5. Ui loaded
-   └─ Service ids passed to Ui side
+   └─ Service ids sent via IPC after window load
    └─ Ui registry wraps factories in lazyMap (no instantiation yet)
    └─ Exposed to Ui as platforma.services
    └─ Instances created on first access
@@ -435,13 +451,27 @@ class ServiceRegistry {
     this.factories = new Map(Object.entries(factories));
   }
 
+  /** Singleton per id — factory called at most once. */
   get<T>(def: ServiceDef<T, any>): T {
-    // Return existing instance or create via factory
+    let instance = this.instances.get(def.id);
+    if (instance === undefined) {
+      const factory = this.factories.get(def.id);
+      if (!factory) throw new ServiceNotRegisteredError(def.id);
+      instance = factory();
+      this.instances.set(def.id, instance);
+    }
+    return instance as T;
   }
 
-  getFactory(id: string): () => unknown { ... }
-  entries(): IterableIterator<[string, unknown]> { ... }
-  has(id: string): boolean { ... }
+  getFactory(id: string): () => unknown {
+    const factory = this.factories.get(id);
+    if (!factory) throw new ServiceNotRegisteredError(id);
+    return factory;
+  }
+
+  has(id: string): boolean {
+    return this.factories.has(id);
+  }
 }
 ```
 
@@ -464,8 +494,91 @@ block Ui is destroyed. Lazy services that were never accessed
 have no instance to leak.
 
 In-flight IPC calls from an evicted block Ui lose their response
-channel — the remote proxy promise will never resolve. Track
-in-flight calls and reject them on eviction.
+channel — the remote proxy promise will never resolve.
+
+Each block gets a `BlockServiceContext` created during
+`initServices()`. It owns a single `AbortController` and all
+remote proxies for that block. On eviction,
+`BlockServiceContext.dispose()` aborts the controller, which
+rejects every pending proxy promise.
+
+```typescript
+// preload-block/src/services/block_service_context.ts
+
+class BlockServiceContext implements Disposable {
+  private readonly abort = new AbortController();
+
+  /** Creates a proxy method that is abort-aware. */
+  createProxyCall(serviceId: string, method: string) {
+    return (...args: unknown[]): Promise<unknown> => {
+      if (this.abort.signal.aborted) {
+        return Promise.reject(new ServiceCallAbortedError(serviceId, method));
+      }
+      return new Promise((resolve, reject) => {
+        const onAbort = () => reject(new ServiceCallAbortedError(serviceId, method));
+        this.abort.signal.addEventListener("abort", onAbort, { once: true });
+        const cleanup = () => this.abort.signal.removeEventListener("abort", onAbort);
+        ipcRenderer.invoke(`service:call:${serviceId}:${method}`, ...args).then(
+          (v) => {
+            cleanup();
+            resolve(v);
+          },
+          (e) => {
+            cleanup();
+            reject(e);
+          },
+        );
+      });
+    };
+  }
+
+  /** Called by WebContentsMap eviction or block close. */
+  dispose(): void {
+    this.abort.abort();
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose();
+  }
+}
+```
+
+`ServiceCallAbortedError` — defined in
+`lib/model/common/src/services/errors.ts`:
+
+```typescript
+export class ServiceCallAbortedError extends Error {
+  readonly name = "ServiceCallAbortedError";
+  constructor(
+    readonly serviceId: string,
+    readonly method: string,
+  ) {
+    super(`Service call aborted: ${serviceId}.${method}`);
+  }
+}
+```
+
+This error stays in the renderer (does not cross IPC), so it
+does not need `ResultOrError` serialization. Block code can
+catch and distinguish it by `name` or `instanceof`.
+
+Teardown hook — the main process sends `block:dispose` **before**
+`removeAllListeners()` to ensure the preload receives it:
+
+```typescript
+// main/src/windows.ts — in WebContentsMap eviction callback
+blockView.webContents.send("block:dispose"); // must precede removeAllListeners()
+blockView.webContents.removeAllListeners();
+
+// preload-block/src/index.ts — listener via @platforma/ipc
+ipc.on("block:dispose", () => {
+  blockServiceContext.dispose();
+});
+```
+
+After `dispose()`, all subsequent proxy calls reject immediately.
+WASM instances in the lazy map become unreachable and are garbage
+collected with the renderer heap.
 
 ## Plugin-to-plugin access
 
@@ -519,34 +632,35 @@ calls reach the model-side instances.
 
 ### platforma (SDK monorepo)
 
-|File|Change|
-|---|---|
-|`lib/model/common/src/services/defs.ts` (new)|`ServiceDef`, `defineService` with duplicate-id check|
-|`lib/model/common/src/services/deprecated.ts` (new)|`SupersededServices`, `DeprecatedServices` maps|
-|`lib/model/common/src/services/registry.ts` (new)|`ServiceRegistry` class|
-|`lib/model/common/src/services/lazy_map.ts` (new)|`lazyMap` utility — Proxy-based, cache-on-first-access, retry on throw|
-|`sdk/model/src/services/defs.ts` (new)|`Services` const (`import type` only for PFrame interfaces)|
-|`lib/model/common/src/bmodel/block_config.ts`|Add `requiredServices?: string[]` to `BlockConfigV4Generic`|
-|`lib/model/common/src/flags/flag_utils.ts`|`RuntimeCapabilities.checkServiceCompatibility()` — available/superseded/deprecated/unknown|
-|`lib/model/common/src/driver_kit.ts`|Eventually remove `pFrameDriver` (phase 3)|
-|`sdk/model/src/block_model.ts`|Add `.service()` to `BlockModelV3`. Collect service ids. Merge plugin services in `.plugin()` via set-union. Emit `requiredServices` in `.done()`.|
-|`sdk/model/src/plugin_model.ts`|Add `.service()` to `PluginModelBuilder`. Store service ids in plugin metadata.|
-|`sdk/model/src/render/api.ts`|Add `service(def)` method to `PluginRenderCtx` — delegates to render context `getService()`.|
-|`sdk/model/src/render/internal.ts`|Add `getService(id)` to `GlobalCfgRenderCtxMethods`.|
-|`lib/node/pl-middle-layer/src/js_render/computable_context.ts`|Accept `requiredServices`. Resolve from model registry. Export each method individually. Remove unconditional `new SpecDriver()`.|
-|`lib/node/pl-middle-layer/src/cfg_render/`|Extend config extraction to read `requiredServices` and pass to `ComputableContextHelper`.|
-|`lib/node/pl-middle-layer/src/middle_layer/driver_kit.ts`|Create model `ServiceRegistry` during `initDriverKit()`.|
-|`sdk/model/src/platforma.ts`|Add `services` to `PlatformaV3` interface.|
+| File                                                           | Change                                                                                                                                             |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/model/common/src/services/defs.ts` (new)                  | `ServiceDef`, `defineService` with duplicate-id check                                                                                              |
+| `lib/model/common/src/services/deprecated.ts` (new)            | `SupersededServices`, `DeprecatedServices` maps                                                                                                    |
+| `lib/model/common/src/services/registry.ts` (new)              | `ServiceRegistry` class                                                                                                                            |
+| `lib/model/common/src/services/lazy_map.ts` (new)              | `lazyMap` utility — Proxy-based, cache-on-first-access, retry on throw                                                                             |
+| `lib/model/common/src/services/errors.ts` (new)                | `ServiceCallAbortedError`, `ServiceNotRegisteredError`                                                                                             |
+| `sdk/model/src/services/defs.ts` (new)                         | `Services` const (`import type` only for PFrame interfaces)                                                                                        |
+| `lib/model/common/src/bmodel/block_config.ts`                  | Add `requiredServices?: string[]` to `BlockConfigV4Generic`                                                                                        |
+| `lib/model/common/src/flags/flag_utils.ts`                     | `RuntimeCapabilities.checkServiceCompatibility()` — available/superseded/deprecated/unknown                                                        |
+| `lib/model/common/src/driver_kit.ts`                           | Eventually remove `pFrameDriver` (phase 3)                                                                                                         |
+| `sdk/model/src/block_model.ts`                                 | Add `.service()` to `BlockModelV3`. Collect service ids. Merge plugin services in `.plugin()` via set-union. Emit `requiredServices` in `.done()`. |
+| `sdk/model/src/plugin_model.ts`                                | Add `.service()` to `PluginModelBuilder`. Store service ids in plugin metadata.                                                                    |
+| `sdk/model/src/render/api.ts`                                  | Add `service(def)` method to `PluginRenderCtx` — delegates to render context `getService()`.                                                       |
+| `sdk/model/src/render/internal.ts`                             | Add `getService(id)` to `GlobalCfgRenderCtxMethods`.                                                                                               |
+| `lib/node/pl-middle-layer/src/js_render/computable_context.ts` | Accept `requiredServices`. Resolve from model registry. Export each method individually. Remove unconditional `new SpecDriver()`.                  |
+| `lib/node/pl-middle-layer/src/cfg_render/`                     | Extend config extraction to read `requiredServices` and pass to `ComputableContextHelper`.                                                         |
+| `lib/node/pl-middle-layer/src/middle_layer/driver_kit.ts`      | Create model `ServiceRegistry` during `initDriverKit()`.                                                                                           |
+| `sdk/model/src/platforma.ts`                                   | Add `services` to `PlatformaV3` interface.                                                                                                         |
 
 ### platforma-desktop-app
 
-|File|Change|
-|---|---|
-|`packages/preload-block/src/drivers.ts`|Accept service ids. Create Ui registry. Wrap in `lazyMap`. Expose via `platforma.services`.|
-|`packages/preload-block/src/platforma.ts`|Pass service ids to `initServices()`. Include `services` in platforma object exposed to Ui.|
-|`packages/main/src/ipc/serviceRouter.ts` (new)|Service router with explicit method lists per service, following `createRouter` pattern.|
-|`packages/main/src/tasks/LoadBlockFrontend.ts`|Pass `requiredServices` list to block Ui via URL query params.|
-|`packages/worker/src/workerApi.ts`|Create model `ServiceRegistry` during `MiddleLayer.init()`.|
+| File                                           | Change                                                                                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/preload-block/src/drivers.ts`        | Accept service ids. Create Ui registry. Wrap in `lazyMap`. Expose via `platforma.services`.                                    |
+| `packages/preload-block/src/platforma.ts`      | Pass service ids to `initServices()`. Include `services` in platforma object exposed to Ui.                                    |
+| `packages/main/src/ipc/serviceRouter.ts` (new) | Service router with explicit method lists per service, following `createRouter` pattern.                                       |
+| `packages/main/src/tasks/LoadBlockFrontend.ts` | Send `requiredServices` to block Ui via IPC after window load (not URL query params — avoids length limits and history noise). |
+| `packages/worker/src/workerApi.ts`             | Create model `ServiceRegistry` during `MiddleLayer.init()`.                                                                    |
 
 ## Backward compatibility
 
