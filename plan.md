@@ -87,7 +87,7 @@ const TypedServices = {
 type AllServiceNames = (typeof Services)[keyof typeof Services] & string;
 
 // Record requiring a factory for every service — missing entry is a type error
-type ServiceFactoryRecord = Record<AllServiceNames, () => object>;
+type ServiceFactoryRecord = Record<AllServiceNames, () => Record<string, unknown>>;
 
 // Typed factory — enforces completeness at the signature level.
 function createServiceRegistry(factories: ServiceFactoryRecord): ServiceRegistry {
@@ -254,18 +254,18 @@ function createUiRegistry(options: UiRegistryOptions): ServiceRegistry {
 // lib/model/common/src/services/registry.ts
 
 class ServiceRegistry {
-  private factories = new Map<string, () => object>();
-  private instances = new Map<string, object>();
+  private factories = new Map<string, () => Record<string, unknown>>();
+  private instances = new Map<string, Record<string, unknown>>();
 
   // No typed get() overload — actual typing happens via ResolveModelServices /
   // ResolveUiServices at the call site. Same registry class serves both sides.
-  register(id: ServiceName, factory: () => object): this {
+  register(id: ServiceName, factory: () => Record<string, unknown>): this {
     if (this.factories.has(id)) throw new ServiceAlreadyRegisteredError(id);
     this.factories.set(id, factory);
     return this;
   }
 
-  get(id: string): object {
+  get(id: string): Record<string, unknown> {
     if (!this.instances.has(id)) {
       const factory = this.factories.get(id);
       if (!factory) throw new ServiceNotRegisteredError(id);
@@ -633,7 +633,7 @@ app.services.pframeSpec.createSpecFrame(specs); // sync WASM
 ```typescript
 // platforma-desktop-app/packages/core/src/get_method_names.ts
 
-function getMethodNames(instance: object): string[] {
+function getMethodNames(instance: Record<string, unknown>): string[] {
   const methods = new Set<string>();
   let proto: object | null = instance;
   while (proto && proto !== Object.prototype) {
@@ -661,7 +661,7 @@ function createServiceRouter(registry: ServiceRegistry) {
       const instance = registry.get(serviceId as string);
       getMethodNames(instance).forEach((method) =>
         ipcMain.handle(serviceIpcChannel(serviceId as string, method), async (_event, ...args) => {
-          const fn = (instance as Record<string, Function>)[method];
+          const fn = instance[method] as Function;
           return wrapResult(await fn.apply(instance, args));
         }),
       );
