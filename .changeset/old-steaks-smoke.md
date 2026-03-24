@@ -1,6 +1,5 @@
 ---
-"@milaboratories/pl-mcp-server": patch
-"@milaboratories/mcp-server-tests": patch
+"@milaboratories/pl-mcp-server": minor
 ---
 
 MCP server for Platforma Desktop
