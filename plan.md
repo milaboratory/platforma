@@ -114,6 +114,17 @@ type BlockCodeKnownFeatureFlags = {
 `requires*` keys — no base type change needed.
 
 ```typescript
+// AllRequiresFeatureFlags must include service flags — _AllFlagsAreCovered assertion requires it
+export const AllRequiresFeatureFlags = [
+  "requiresUIAPIVersion",
+  "requiresCreatePTable",
+  "requiresModelAPIVersion",
+  // NEW — derived from Services keys
+  ...Object.keys(Services).map((k) => `requires${k}` as const),
+] as const;
+```
+
+```typescript
 // sdk/model/src/block_model.ts — flags hardcoded in SDK, not set by devs
 static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
   supportsLazyState: true,
@@ -190,7 +201,9 @@ function createUiRegistry(serviceMethods: Record<string, string[]>): ServiceRegi
   return new ServiceRegistry()
     .register(Services.PFrameSpecV1, () => new SpecDriver())
     .register(Services.PFrameSpecV2, () => new SpecDriver())
-    .register(Services.PFrameV1, () => createIpcProxy("pframeV1", serviceMethods["pframeV1"] ?? []));
+    .register(Services.PFrameV1, () =>
+      createIpcProxy("pframeV1", serviceMethods["pframeV1"] ?? []),
+    );
 }
 ```
 
@@ -231,17 +244,13 @@ class ServiceRegistry {
 
 ```typescript
 // lib/model/common/src/services/flag_mapping.ts
-// Derives service ids from flag names — no manual map.
-// Convention: flag "requiresPFrameSpecV1" → service id "pframeSpecV1"
+// Uses the Services const directly — no string manipulation, no casing bugs.
 
 function resolveRequiredServices(flags: BlockCodeKnownFeatureFlags | undefined): string[] {
   if (!flags) return [];
-  return Object.entries(flags)
-    .filter(([key, value]) => key.startsWith("requires") && value === true)
-    .map(([key]) => {
-      const stripped = key.slice("requires".length);
-      return stripped[0].toLowerCase() + stripped.slice(1);
-    });
+  return (Object.keys(Services) as (keyof typeof Services)[])
+    .filter((key) => flags[`requires${key}` as keyof BlockCodeKnownFeatureFlags] === true)
+    .map((key) => Services[key] as string);
 }
 ```
 
@@ -436,17 +445,56 @@ function initServices(
 ```
 
 ```typescript
-// 3. packages/preload-block/src/v3-preload.ts
+// packages/core/src/args.ts — typed additionalArguments helpers
+// Each arg declared once with key + schema. No string duplication.
+
+type ArgDef<T> = { readonly key: string; readonly schema: z.ZodType<T> };
+
+function defineArg<T>(key: string, schema: z.ZodType<T>): ArgDef<T> {
+  return { key, schema };
+}
+
+function setArg<T>(args: string[], def: ArgDef<T>, value: T): void {
+  args.push(`${def.key}=${JSON.stringify(value)}`);
+}
+
+function getArg<T>(def: ArgDef<T>): T {
+  const prefix = `${def.key}=`;
+  const raw = process.argv.find((a) => a.startsWith(prefix));
+  return def.schema.parse(raw ? JSON.parse(raw.slice(prefix.length)) : undefined);
+}
+
+// Arg definitions — single source of truth
+const ServiceInfoArg = defineArg("serviceInfo", z.object({
+  featureFlags: z.record(z.union([z.boolean(), z.number()])).optional(),
+  serviceMethods: z.record(z.array(z.string())).default({}),
+}));
+
+// packages/main/src/windows.ts
+// activateBlockView becomes async — getServiceInfo must complete before
+// WebContentsView construction (additionalArguments are immutable after that).
+// Caller in LoadBlockFrontend.execute() is already async.
+async activateBlockView(params: BlockParams): Promise<WebContentsView> {
+  // ... cache check (returns cached view immediately if hit) ...
+  const args: string[] = [];
+  setArg(args, ServiceInfoArg, await this.app.worker.getServiceInfo(params));
+  const blockView = new WebContentsView({
+    webPreferences: { ...webPreferencesForBlock, additionalArguments: args },
+  });
+  // ... attach to window ...
+  return blockView;
+}
+
+// packages/preload-block/src/v3-preload.ts
+// v3() stays synchronous — service info read from process.argv via getJsonArg
 export function v3(blockParams: BlockParamsWithApi): PlatformaV3 {
   const { blobDriver, logDriver, lsDriver, pFrameDriver } = initDrivers(blockParams);
 
-  // blockParams only has projectId, blockId, apiVersion — no flags.
-  // Fetch flags + method lists from the worker before block is shown.
-  const { featureFlags, serviceMethods } = await ipc.v3("getServiceInfo", blockParams);
-  // serviceMethods: Record<string, string[]> e.g. { pframeV1: ["findColumns", "getColumnSpec", ...] }
-  const serviceIds = resolveRequiredServices(featureFlags);
-  const uiRegistry = createUiRegistry(serviceMethods);
-  const services = initServices(serviceIds, uiRegistry, serviceMethods);
+  // Service info injected by main process via webPreferences.additionalArguments.
+  const serviceInfo = getArg(ServiceInfoArg);
+  const serviceIds = resolveRequiredServices(serviceInfo.featureFlags);
+  const uiRegistry = createUiRegistry(serviceInfo.serviceMethods);
+  const services = initServices(serviceIds, uiRegistry, serviceInfo.serviceMethods);
 
   return {
     apiVersion: 3,
@@ -503,7 +551,10 @@ function getMethodNames(instance: object): string[] {
   let proto: object | null = instance;
   while (proto && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
-      if (key !== "constructor" && typeof (instance as Record<string, unknown>)[key] === "function") {
+      if (
+        key !== "constructor" &&
+        typeof (instance as Record<string, unknown>)[key] === "function"
+      ) {
         methods.add(key);
       }
     }
@@ -662,7 +713,8 @@ export function isServiceMethodNotFoundError(error: unknown): error is ServiceMe
    └─ callServiceMethod exported to VM
 
 5. Ui loaded
-   └─ resolveRequiredServices(featureFlags) → same list
+   └─ Service info from process.argv (set by main via additionalArguments)
+   └─ resolveRequiredServices(featureFlags) → service id list
    └─ initServices() builds object with lazy getters from Ui registry
    └─ Attached to platforma.services → createAppV3 → app.services
 ```
@@ -676,14 +728,14 @@ export function isServiceMethodNotFoundError(error: unknown): error is ServiceMe
    `RuntimeCapabilities`. Add service flags to
    `BlockCodeKnownFeatureFlags`. Set initial flags in
    `BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS`. Add
-   `resolveRequiredServices()` + `SERVICE_FLAG_MAP`.
+   `resolveRequiredServices()`.
 3. **Model-side services:** `ServiceRegistry`,
    `createServiceInjectors`, `callServiceMethod` in
    `ComputableContextHelper`. `services` property on
    `PluginRenderCtx`.
-4. **Ui-side services:** `BlockServiceContext`,
-   `initServices`, lazy getters in preload. `services` on
-   `PlatformaV3`. `app.services` in `createAppV3`.
+4. **Ui-side services:** `initServices`, lazy getters in
+   preload. `additionalArguments` for service info. `services`
+   on `PlatformaV3`. `app.services` in `createAppV3`.
 5. **PFrameDriver:** Into registry. Hand-written remote proxy.
    Service router. Remove from unconditional `DriverKit`.
 6. **Table plugin:** Uses `app.services.pframeSpecV1` and
@@ -715,14 +767,16 @@ export function isServiceMethodNotFoundError(error: unknown): error is ServiceMe
 
 ### platforma-desktop-app
 
-| File                                                         | Change                                                                                          |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `packages/preload-block/src/services/init_services.ts` (new) | `initServices()` with lazy getters                                                              |
-| `packages/preload-block/src/services/ipc_proxy.ts` (new)     | `createIpcProxy()` — auto-generates IPC proxy from method list                                  |
-| `packages/preload-block/src/v3-preload.ts`                   | `getServiceInfo` IPC, `createUiRegistry`, `initServices()`, attach `services` to platforma      |
-| `packages/main/src/ipc/serviceRouter.ts` (new)               | `createServiceRouter()` — auto-extracts methods from instances                                  |
-| `packages/worker/src/workerApi.ts`                           | Model `ServiceRegistry` in `MiddleLayer.init()`. `getServiceInfo` handler.                      |
-| `packages/ipc/src/ipc.ts`                                    | Add `v3("getServiceInfo", blockParams)` IPC call                                                |
+| File                                                         | Change                                                                                        |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `packages/core/src/args.ts` (new)                            | `defineArg()`, `setArg()`, `getArg()`, `ServiceInfoArg` — typed `additionalArguments` helpers |
+| `packages/preload-block/src/services/init_services.ts` (new) | `initServices()` with lazy getters                                                            |
+| `packages/preload-block/src/services/ipc_proxy.ts` (new)     | `createIpcProxy()` — auto-generates IPC proxy from method list                                |
+| `packages/preload-block/src/v3-preload.ts`                   | Read `serviceInfo` from `process.argv`, `createUiRegistry`, `initServices()`, attach services |
+| `packages/main/src/ipc/serviceRouter.ts` (new)               | `createServiceRouter()` — auto-extracts methods from instances                                |
+| `packages/main/src/windows.ts`                               | `activateBlockView` becomes async. Pass `serviceInfo` via `additionalArguments`.              |
+| `packages/main/src/tasks/LoadBlockFrontend.ts`               | `await` the now-async `activateBlockView`.                                                    |
+| `packages/worker/src/workerApi.ts`                           | Model `ServiceRegistry` in `MiddleLayer.init()`. `getServiceInfo` worker call.                |
 
 ## Backward compatibility
 
