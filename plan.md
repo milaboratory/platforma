@@ -228,7 +228,7 @@ function createUiRegistry(options: UiRegistryOptions): ServiceRegistry {
   const { serviceMethods } = options;
   return createServiceRegistry({
     [Services.PFrameSpec]: () => new SpecDriver(),
-    [Services.PFrame]: () => createIpcProxy("pframe", serviceMethods),
+    [Services.PFrame]: () => createIpcProxy(Services.PFrame, serviceMethods),
   });
 }
 ```
@@ -428,6 +428,9 @@ class RenderCtxBase<Args = unknown, Data = unknown, S = {}> {
 
 ```typescript
 // sdk/model/src/render/internal.ts
+// These are plain function properties on the context object (set via
+// exportCtxFunction in injectCtx), not class methods — destructuring
+// is safe, no `this` binding is involved.
 callServiceMethod(serviceId: string, methodName: string, ...args: unknown[]): unknown;
 getServiceMethods(serviceId: string): string[];
 ```
@@ -517,10 +520,13 @@ function getArg<T>(def: ArgDef<T>): T {
   return def.schema.parse(raw ? JSON.parse(raw.slice(prefix.length)) : undefined);
 }
 
+// .optional().default() ensures older Desktop builds that don't set serviceInfo
+// in additionalArguments degrade gracefully — v3() gets an empty service set
+// instead of throwing ZodError during the rolling-update window.
 const ServiceInfoArg = defineArg("serviceInfo", z.object({
   featureFlags: z.record(z.union([z.boolean(), z.number()])).optional(),
   serviceMethods: z.record(z.array(z.string())).default({}) as z.ZodType<Record<ServiceName, string[]>>,
-}));
+}).optional().default({ serviceMethods: {} }));
 
 // packages/main/src/windows.ts
 // activateBlockView becomes async — getServiceInfo must complete before
