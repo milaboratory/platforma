@@ -42,7 +42,9 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
         const handle = entry.value as `log+ready://log/${string}` | `log+live://log/${string}`;
         try {
           const response = await logDriver.lastLines(handle, lines);
-          if (!response.shouldUpdateHandle) {
+          if (response.shouldUpdateHandle) {
+            results[key] = "[log handle stale — block may still be running, retry later]";
+          } else {
             results[key] = new TextDecoder().decode(response.data);
           }
         } catch (err) {

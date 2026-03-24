@@ -25,7 +25,7 @@ function extractHandles(outputs: Record<string, unknown>): {
     if (obj === null || obj === undefined) return;
     if (typeof obj === "string" && hexHashPattern.test(obj)) {
       const lowerPath = path.toLowerCase();
-      if (lowerPath.includes("pframe") || lowerPath.endsWith(".pFrame")) {
+      if (lowerPath.includes("pframe")) {
         pFrames.push({ path, handle: obj });
       } else if (lowerPath.includes("table") && lowerPath.includes("handle")) {
         pTables.push({ path, handle: obj });
@@ -259,13 +259,10 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       }
 
       const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;
+      const columnVectors = vectors.map((v) => vectorToJson(v, actualRows));
       const rows: unknown[][] = [];
       for (let r = 0; r < actualRows; r++) {
-        const row: unknown[] = [];
-        for (let c = 0; c < vectors.length; c++) {
-          row.push(vectorToJson(vectors[c], actualRows)[r]);
-        }
-        rows.push(row);
+        rows.push(columnVectors.map((col) => col[r]));
       }
 
       const columnHeaders = columnIndices.map((idx: number) => {
