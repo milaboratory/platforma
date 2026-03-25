@@ -23,57 +23,88 @@ export function textResult(data: unknown) {
 }
 
 const NODE_LIMIT = 10_000;
+const CHARS_PER_TOKEN = 4;
 
 /**
- * Estimate in-memory size of a value by traversal, without serialization.
- * Returns byte estimate, or a string like ">10000 nodes" if the object is too large to traverse.
+ * Estimate the number of LLM tokens needed to represent a value as JSON,
+ * without actually serializing it. Walks the object tree and sums up
+ * the JSON character lengths, then divides by ~4 chars/token.
+ *
+ * Returns token estimate, or a string like ">1234 (truncated at 10000 nodes)"
+ * if the object graph is too large to fully traverse.
  */
-export function estimateSize(value: unknown): number | string {
+export function estimateTokens(value: unknown, nodeLimit = NODE_LIMIT): number | string {
   let nodes = 0;
-  let size = 0;
+  let chars = 0;
 
-  function walk(v: unknown): void {
-    if (++nodes > NODE_LIMIT) return;
-    if (v === null || v === undefined) return;
+  /** Returns true if node limit exceeded. */
+  function walk(v: unknown): boolean {
+    if (++nodes > nodeLimit) return true;
+    if (v === null || v === undefined) {
+      chars += 4; // "null"
+      return false;
+    }
     switch (typeof v) {
       case "string":
-        size += v.length * 2;
-        return;
+        chars += v.length + 2; // content + quotes
+        return false;
       case "number":
-        size += 8;
-        return;
+        chars += String(v).length;
+        return false;
       case "boolean":
-        size += 4;
-        return;
+        chars += v ? 4 : 5; // "true" or "false"
+        return false;
       case "bigint":
-        size += 8;
-        return;
+        chars += String(v).length;
+        return false;
       default:
         break;
     }
     if (v instanceof Uint8Array || ArrayBuffer.isView(v)) {
-      size += (v as Uint8Array).byteLength;
-      return;
+      // serialized as array of numbers
+      const arr = v as Uint8Array;
+      chars += 2 + Math.max(0, arr.length - 1); // [] + commas
+      for (let i = 0; i < arr.length; i++) {
+        chars += String(arr[i]).length;
+      }
+      return false;
     }
     if (Array.isArray(v)) {
-      size += 8;
+      chars += 2; // []
+      if (v.length > 1) chars += v.length - 1; // commas
       for (const item of v) {
-        if (nodes > NODE_LIMIT) return;
-        walk(item);
+        if (walk(item)) return true;
       }
-      return;
+      return false;
     }
     if (typeof v === "object") {
-      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-        if (nodes > NODE_LIMIT) return;
-        size += k.length * 2;
-        walk(val);
+      const entries = Object.entries(v as Record<string, unknown>);
+      chars += 2; // {}
+      if (entries.length > 1) chars += entries.length - 1; // commas
+      for (const [k, val] of entries) {
+        chars += k.length + 3; // "key":
+        if (walk(val)) return true;
       }
     }
+    return false;
   }
 
-  walk(value);
-  return nodes > NODE_LIMIT ? `>${NODE_LIMIT} nodes` : size;
+  const overflow = walk(value);
+  const tokens = Math.ceil(chars / CHARS_PER_TOKEN);
+  return overflow ? `>${tokens} (truncated at ${nodeLimit} nodes)` : tokens;
+}
+
+/** Summarize block outputs as concise key/ok/hasValue/tokensEstimate entries. */
+export function summarizeOutputs(
+  outputs: Record<string, unknown> | undefined,
+): { key: string; ok: boolean; hasValue: boolean; tokensEstimate?: number | string }[] {
+  if (!outputs) return [];
+  return Object.entries(outputs).map(([key, out]) => {
+    const o = out as { ok?: boolean; value?: unknown } | undefined;
+    const hasValue = o?.value != null;
+    const tokensEstimate = hasValue ? estimateTokens(o!.value) : undefined;
+    return { key, ok: o?.ok ?? false, hasValue, tokensEstimate };
+  });
 }
 
 /** Return an MCP error result with an actionable hint for the AI agent. */

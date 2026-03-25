@@ -1,14 +1,15 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, estimateSize, textResult } from "./types";
+import { errorResult, summarizeOutputs, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "await_block_done",
     {
       description:
-        "Wait for a block to finish computation and outputs to stabilize. Returns block status and data on completion, or timeout info.",
+        "Wait for a block to finish computation and outputs to stabilize. Returns block status and data on completion, or timeout info." +
+        "Output contains `sizeEstimate` and `totalSizeEstimate` fields, that contain raw estimation in tokens. Try not to pull big data to not pollute context.",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID to wait for"),
@@ -47,16 +48,9 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
                 data = state.blockStorage;
               }
             }
-            // Return concise output summary to avoid blowing up context
-            const outputs = state.outputs as Record<string, unknown> | undefined;
-            const outputSummary = outputs
-              ? Object.entries(outputs).map(([key, out]) => {
-                  const o = out as { ok?: boolean; value?: unknown } | undefined;
-                  const hasValue = o?.value != null;
-                  const sizeEstimate = hasValue ? estimateSize(o!.value) : undefined;
-                  return { key, ok: o?.ok ?? false, hasValue, sizeEstimate };
-                })
-              : [];
+            const outputSummary = summarizeOutputs(
+              state.outputs as Record<string, unknown> | undefined,
+            );
             return textResult({
               status: "Done",
               block: {

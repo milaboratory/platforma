@@ -25,7 +25,7 @@
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
-    "test": "echo 'Tests in tests/mcp-server/'",
+    "test": "vitest run",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },

@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { estimateSize, textResult } from "./types";
+import { summarizeOutputs, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -38,7 +38,8 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     {
       description:
         "Get block state. Returns block args (data) and a concise output summary by default. " +
-        "Use includeOutputs=true to get full output values (can be large).",
+        "Use includeOutputs=true to get full output values (can be large)." +
+        "Output contains `sizeEstimate` and `totalSizeEstimate` fields, that contain raw estimation in tokens. Try not to pull big data to not pollute context.",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
@@ -69,17 +70,10 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
       if (includeOutputs) {
         return textResult({ data, outputs: state.outputs });
       }
-      // Concise summary: output keys with readiness flags and estimated size
-      const outputs = state.outputs as Record<string, unknown> | undefined;
-      const outputSummary = outputs
-        ? Object.entries(outputs).map(([key, out]) => {
-            const o = out as { ok?: boolean; value?: unknown } | undefined;
-            const hasValue = o?.value != null;
-            const sizeEstimate = hasValue ? estimateSize(o!.value) : undefined;
-            return { key, ok: o?.ok ?? false, hasValue, sizeEstimate };
-          })
-        : [];
-      return textResult({ data, outputs: outputSummary });
+      return textResult({
+        data,
+        outputs: summarizeOutputs(state.outputs as Record<string, unknown> | undefined),
+      });
     },
   );
 
