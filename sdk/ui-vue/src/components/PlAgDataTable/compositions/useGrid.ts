@@ -119,7 +119,7 @@ export function useGrid({
       });
     },
     onSelectionChanged: (event) => {
-      if (selection.value) {
+      if (!isNil(selection.value)) {
         const state = event.api.getServerSideSelectionState();
         const selectedKeys =
           state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson)) ?? [];
