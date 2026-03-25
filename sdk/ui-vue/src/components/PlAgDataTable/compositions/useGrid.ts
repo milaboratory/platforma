@@ -7,7 +7,7 @@ import {
   ManagedGridOptionKey,
   ManagedGridOptions,
 } from "ag-grid-enterprise";
-import { shallowRef } from "vue";
+import { type Ref, shallowRef } from "vue";
 import { autoSizeRowNumberColumn } from "../sources/row-number";
 import {
   PlAgDataTableV2Row,
@@ -27,7 +27,7 @@ export function useGrid({
   notReadyText,
   cellRendererSelector,
 }: {
-  selection?: PlSelectionModel;
+  selection: Ref<PlSelectionModel | undefined>;
   noRowsText?: string;
   loadingText?: string;
   runningText?: string;
@@ -38,9 +38,9 @@ export function useGrid({
   const gridOptions = shallowRef<GridOptions<PlAgDataTableV2Row>>({
     animateRows: false,
     suppressColumnMoveAnimation: true,
-    cellSelection: isNil(selection),
+    cellSelection: isNil(selection.value),
     autoSizeStrategy: { type: "fitCellContents" },
-    rowSelection: selection
+    rowSelection: selection.value
       ? {
           mode: "multiRow",
           selectAll: "all",
@@ -119,12 +119,12 @@ export function useGrid({
       });
     },
     onSelectionChanged: (event) => {
-      if (!isNil(selection)) {
+      if (selection.value) {
         const state = event.api.getServerSideSelectionState();
         const selectedKeys =
           state?.toggledNodes?.map((nodeId) => parseJson(nodeId as PlTableRowIdJson)) ?? [];
-        if (!isJsonEqual(selection.selectedKeys, selectedKeys)) {
-          selection = { ...selection, selectedKeys };
+        if (!isJsonEqual(selection.value.selectedKeys, selectedKeys)) {
+          selection.value = { ...selection.value, selectedKeys };
         }
       }
     },
