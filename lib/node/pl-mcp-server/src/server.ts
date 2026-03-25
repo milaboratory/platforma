@@ -212,10 +212,7 @@ export class PlMcpServer {
 
   private createMcpServer(): McpServer {
     const sessionId = randomUUID().slice(0, 8);
-    const server = new McpServer(
-      { name: "platforma", version: "0.1.0" },
-      { capabilities: { tools: {} } },
-    );
+    const server = new McpServer({ name: "pl", version: "0.1.0" }, { capabilities: { tools: {} } });
     this.registerTools(server, sessionId);
     return server;
   }
