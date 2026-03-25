@@ -19,13 +19,7 @@ import { createColumnSnapshot } from "./column_snapshot";
 import type { ColumnSnapshotProvider, ColumnSource } from "./column_snapshot_provider";
 import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot_provider";
 
-import type { GlobalCfgRenderCtxMethods } from "../render/internal";
-
-/** Subset of render context methods needed for spec frame operations. */
-type SpecFrameCtx = Pick<
-  GlobalCfgRenderCtxMethods,
-  "createSpecFrame" | "specFrameDiscoverColumns" | "disposeSpecFrame"
->;
+import type { PFrameSpecDriver, SpecFrameHandle } from "@milaboratories/pl-model-common";
 
 // --- FindColumnsOptions ---
 
@@ -122,7 +116,7 @@ export interface AnchoredBuildOptions extends BuildOptions {
 export class ColumnCollectionBuilder {
   private readonly providers: ColumnSnapshotProvider[] = [];
 
-  constructor(private readonly specFrameCtx: SpecFrameCtx) {}
+  constructor(private readonly specDriver: PFrameSpecDriver) {}
 
   /**
    * Register a column source. Sources added first take precedence for dedup.
@@ -178,14 +172,14 @@ export class ColumnCollectionBuilder {
       const anchorSpecs = resolveAnchorSpecs(options.anchors, columnMap);
       const idDeriver = new AnchoredIdDeriver(anchorSpecs);
 
-      return new AnchoredColumnCollectionImpl(this.specFrameCtx, {
+      return new AnchoredColumnCollectionImpl(this.specDriver, {
         columns: columnMap,
         idDeriver,
         anchorSpecs,
         columnListComplete: allowPartial ? allComplete : false,
       });
     } else {
-      return new ColumnCollectionImpl(this.specFrameCtx, {
+      return new ColumnCollectionImpl(this.specDriver, {
         columns: columnMap,
         columnListComplete: allowPartial ? allComplete : false,
       });
@@ -232,16 +226,16 @@ interface ColumnCollectionImplOptions {
 
 class ColumnCollectionImpl implements ColumnCollection {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
-  private readonly specFrameHandle: string;
+  private readonly specFrameHandle: SpecFrameHandle;
   public readonly columnListComplete: boolean;
 
   constructor(
-    private readonly ctx: SpecFrameCtx,
+    private readonly specDriver: PFrameSpecDriver,
     options: ColumnCollectionImplOptions,
   ) {
     this.columns = options.columns;
     this.columnListComplete = options.columnListComplete ?? false;
-    this.specFrameHandle = this.ctx.createSpecFrame(
+    this.specFrameHandle = this.specDriver.createSpecFrame(
       Array.from(this.columns.entries()).reduce(
         (acc, [id, col]) => ((acc[id] = col.spec), acc),
         {} as Record<string, PColumnSpec>,
@@ -259,7 +253,7 @@ class ColumnCollectionImpl implements ColumnCollection {
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.specFrameDiscoverColumns(this.specFrameHandle, {
       includeColumns,
       excludeColumns,
       axes: [],
@@ -291,14 +285,14 @@ interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOption
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly idDeriver: AnchoredIdDeriver;
-  private readonly specFrameHandle: string;
+  private readonly specFrameHandle: SpecFrameHandle;
   private readonly anchorAxes: ColumnAxesWithQualifications[];
   /** Reverse lookup: SUniversalPColumnId → PObjectId */
   private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
   public readonly columnListComplete: boolean;
 
   constructor(
-    private readonly ctx: SpecFrameCtx,
+    private readonly specDriver: PFrameSpecDriver,
     options: AnchoredColumnCollectionImplOptions,
   ) {
     this.columns = options.columns;
@@ -306,7 +300,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
     this.columnListComplete = options.columnListComplete ?? false;
 
     // Create spec frame from all collected columns
-    this.specFrameHandle = this.ctx.createSpecFrame(
+    this.specFrameHandle = this.specDriver.createSpecFrame(
       Array.from(this.columns.entries()).reduce(
         (acc, [id, col]) => ((acc[id] = col.spec), acc),
         {} as Record<string, PColumnSpec>,
@@ -341,7 +335,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.ctx.specFrameDiscoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.specFrameDiscoverColumns(this.specFrameHandle, {
       includeColumns,
       excludeColumns,
       constraints,

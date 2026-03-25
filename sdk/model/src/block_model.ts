@@ -6,6 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
+import { resolveRequiredServices } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
@@ -128,13 +129,14 @@ export class BlockModelV3<
     private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers>,
   ) {}
 
-  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS = {
     supportsLazyState: true,
     supportsPframeQueryRanking: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
-  };
+    requiresPFrameSpec: true,
+  } satisfies BlockCodeKnownFeatureFlags;
 
   /**
    * Creates a new BlockModelV3 builder with the specified data model.
@@ -505,6 +507,8 @@ export class BlockModelV3<
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
+    const blockServiceNames = resolveRequiredServices(this.config.featureFlags);
+
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
@@ -544,7 +548,7 @@ export class BlockModelV3<
       // Wrap plugin param lambdas: close over BlockRenderCtx creation
       const wrappedInputs: Record<string, () => unknown> = {};
       for (const [paramKey, paramFn] of Object.entries(inputs)) {
-        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx());
+        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx(blockServiceNames));
       }
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
@@ -554,7 +558,7 @@ export class BlockModelV3<
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
-          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
+          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs, blockServiceNames)),
           withStatus: outputFlags[outputKey]?.withStatus,
         });
       }

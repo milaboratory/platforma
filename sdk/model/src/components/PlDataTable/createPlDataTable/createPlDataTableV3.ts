@@ -41,6 +41,7 @@ import type { PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSource, MatchingMode } from "../../../columns";
+import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { isColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
@@ -184,8 +185,8 @@ export type createPlDataTableOptionsV3 = {
 //   | { annotation: Record<string, string> }
 //   | { ids: Set<string> };
 
-export function createPlDataTableV3<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function createPlDataTableV3<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
   const providers = options.source
@@ -195,7 +196,7 @@ export function createPlDataTableV3<A, U>(
   if (providers.length === 0) return undefined;
 
   // Step 1: Build collection from sources
-  const builder = new ColumnCollectionBuilder(ctx).addSources(providers);
+  const builder = new ColumnCollectionBuilder(ctx.services.pframeSpec).addSources(providers);
   const anchors = options.columns.anchors;
   const collection = isNil(anchors) ? builder.build() : builder.build({ anchors });
 

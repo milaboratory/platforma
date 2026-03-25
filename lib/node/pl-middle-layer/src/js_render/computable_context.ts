@@ -56,6 +56,15 @@ import type {
   SpecFrameHandle,
 } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "./spec_driver";
+import {
+  resolveRequiredServices,
+  serviceFnKey,
+  Services,
+  ModelServiceRegistry,
+  ServiceInjectionError,
+  ServiceMethodNotFoundError,
+} from "@milaboratories/pl-model-common";
+import { getServiceInjectors } from "./service_injectors";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -79,6 +88,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       this._meta = this.blockCtx.blockMeta(this.computableCtx);
     }
     return this._meta;
+  }
+
+  public get registry(): ModelServiceRegistry {
+    return this.env.serviceRegistry;
   }
 
   constructor(
@@ -889,94 +902,48 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       //
-      // PFrames / PTables
+      // Services
       //
 
-      exportCtxFunction("createPFrame", (def) => {
-        return parent.exportSingleValue(
-          this.createPFrame(
-            parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
+      const requiredServiceNames = new Set(resolveRequiredServices(this.featureFlags) as string[]);
+      const serviceFunctions = new Map<string, VmFunctionImplementation<QuickJSHandle>>();
+      const injectors = getServiceInjectors();
+
+      for (const [key, serviceId] of Object.entries(Services)) {
+        if (!requiredServiceNames.has(serviceId)) continue;
+        const injector = injectors[key as keyof typeof injectors];
+        try {
+          const methods = injector({ host: this, vm: parent });
+          for (const [method, fn] of Object.entries(methods)) {
+            serviceFunctions.set(serviceFnKey(serviceId, method), fn);
+          }
+        } catch (e) {
+          throw new ServiceInjectionError(`Failed to inject service "${serviceId}"`, { cause: e });
+        }
+      }
+
+      exportCtxFunction("getServiceMethods", (serviceIdHandle) => {
+        const serviceId = vm.getString(serviceIdHandle);
+        const pfx = serviceFnKey(serviceId);
+        const methods = [...serviceFunctions.keys()]
+          .filter((k) => k.startsWith(pfx))
+          .map((k) => k.slice(pfx.length));
+        return parent.exportObjectViaJson(methods, undefined);
       });
 
-      exportCtxFunction("createPTable", (def) => {
-        return parent.exportSingleValue(
-          this.createPTable(
-            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("createPTableV2", (def) => {
-        return parent.exportSingleValue(
-          this.createPTableV2(
-            parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
-          ),
-          undefined,
-        );
-      });
-
-      //
-      // Spec Frames
-      //
-
-      exportCtxFunction("createSpecFrame", (specs) => {
-        return parent.exportSingleValue(
-          this.createSpecFrame(parent.importObjectViaJson(specs) as Record<string, PColumnSpec>),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
-        return parent.exportObjectViaJson(
-          this.specFrameDiscoverColumns(
-            vm.getString(handle) as SpecFrameHandle,
-            parent.importObjectViaJson(request) as DiscoverColumnsRequest,
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("disposeSpecFrame", (handle) => {
-        this.disposeSpecFrame(vm.getString(handle) as SpecFrameHandle);
-      });
-
-      exportCtxFunction("expandAxes", (spec) => {
-        return parent.exportObjectViaJson(
-          this.expandAxes(parent.importObjectViaJson(spec) as AxesSpec),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("collapseAxes", (ids) => {
-        return parent.exportObjectViaJson(
-          this.collapseAxes(parent.importObjectViaJson(ids) as AxesId),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("findAxis", (spec, selector) => {
-        return parent.exportSingleValue(
-          this.findAxis(
-            parent.importObjectViaJson(spec) as AxesSpec,
-            parent.importObjectViaJson(selector) as SingleAxisSelector,
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("findTableColumn", (tableSpec, selector) => {
-        return parent.exportSingleValue(
-          this.findTableColumn(
-            parent.importObjectViaJson(tableSpec) as PTableColumnSpec[],
-            parent.importObjectViaJson(selector) as PTableColumnId,
-          ),
-          undefined,
-        );
-      });
+      exportCtxFunction(
+        "callServiceMethod",
+        function (this: QuickJSHandle, serviceIdHandle, methodHandle, ...argHandles) {
+          const serviceId = vm.getString(serviceIdHandle);
+          const method = vm.getString(methodHandle);
+          const fn = serviceFunctions.get(serviceFnKey(serviceId, method));
+          if (!fn)
+            throw new ServiceMethodNotFoundError(
+              `Method "${method}" not found on service "${serviceId}"`,
+            );
+          return fn.call(this, ...argHandles);
+        },
+      );
 
       //
       // Computable

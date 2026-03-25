@@ -219,6 +219,10 @@ export const GlobalCfgRenderCtxFeatureFlags = {
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
+  // Service dispatch — plain function properties on the context object
+  // (set via exportCtxFunction in injectCtx), not class methods — destructuring is safe.
+  callServiceMethod(serviceId: string, methodName: string, ...args: unknown[]): unknown;
+  getServiceMethods(serviceId: string): string[];
   //
   // State: Args, UI State, Active Args
   //

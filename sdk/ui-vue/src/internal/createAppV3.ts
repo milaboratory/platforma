@@ -23,7 +23,7 @@ import {
   pluginOutputPrefix,
 } from "@platforma-sdk/model";
 import type { Ref } from "vue";
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
 import { parseQuery } from "../urls";
 import { ensureOutputHasStableFlag, MultiError } from "../utils";
@@ -412,6 +412,7 @@ export function createAppV3<
     closedRef,
     snapshot,
     plugins,
+    services: markRaw(platforma.services), // markRaw prevents Vue reactivity on lazy getters
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() =>

@@ -32,6 +32,8 @@ import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
 import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
 import { RuntimeCapabilities } from "@platforma-sdk/model";
+import { ModelServiceRegistry, Services } from "@milaboratories/pl-model-common";
+import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
 import { V2RegistryProvider } from "../block_registry";
 import type { Dispatcher } from "undici";
@@ -54,6 +56,7 @@ export interface MiddleLayerEnvironment {
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
+  readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
 }
 
@@ -113,6 +116,11 @@ export class MiddleLayer {
   /** Returns extended API driver kit used internally by middle layer. */
   public get internalDriverKit(): MiddleLayerDriverKit {
     return this.env.driverKit;
+  }
+
+  /** Returns the service registry for service introspection. */
+  public get serviceRegistry(): ModelServiceRegistry {
+    return this.env.serviceRegistry;
   }
 
   //
@@ -335,7 +343,16 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
+    // Register service flags as supported requirements
+    for (const key of Object.keys(Services)) {
+      runtimeCapabilities.addSupportedRequirement(`requires${key}` as SupportedRequirement, true);
+    }
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
+
+    const serviceRegistry = new ModelServiceRegistry(Services, {
+      PFrameSpec: () => new SpecDriver(),
+      PFrame: null,
+    });
 
     const env: MiddleLayerEnvironment = {
       pl,
@@ -354,6 +371,7 @@ export class MiddleLayer {
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
       runtimeCapabilities,
+      serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
       dispose: async () => {
