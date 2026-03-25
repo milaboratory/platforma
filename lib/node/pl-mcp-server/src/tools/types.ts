@@ -21,3 +21,12 @@ export function textResult(data: unknown) {
     content: [{ type: "text" as const, text: JSON.stringify(data) }],
   };
 }
+
+/** Return an MCP error result with an actionable hint for the AI agent. */
+export function errorResult(message: string, hint?: string) {
+  const text = hint ? `${message}\n\nHint: ${hint}` : message;
+  return {
+    content: [{ type: "text" as const, text }],
+    isError: true,
+  };
+}

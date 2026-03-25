@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { errorResult, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -23,7 +23,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
       while (Date.now() < deadline) {
         const overview = await project.overview.awaitStableValue();
         const block = overview.blocks.find((b: any) => b.id === blockId);
-        if (!block) return textResult({ error: `Block ${blockId} not found in overview` });
+        if (!block) return errorResult(`Block ${blockId} not found in project ${projectId}.`, "Use get_project_overview to list all block IDs in this project.");
 
         if (block.calculationStatus === "Done") {
           // Phase 2: await stable block state
@@ -72,15 +72,12 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
           });
         }
 
-        // Still running — wait for overview to change
+        // Still running — wait up to 5s for overview to change, then re-poll
         try {
           const result = await project.overview.getFullValue();
-          await Promise.race([
-            project.overview.awaitChange(AbortSignal.timeout(5000), result.uTag),
-            new Promise((r) => setTimeout(r, 5000)),
-          ]);
+          await project.overview.awaitChange(AbortSignal.timeout(5000), result.uTag);
         } catch {
-          // timeout on awaitChange — just re-poll
+          // timeout or abort — just re-poll
         }
       }
 

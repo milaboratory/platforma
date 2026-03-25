@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { errorResult, textResult } from "./types";
 
 export function registerLogTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -22,14 +22,14 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     async ({ projectId, blockId, lines, sampleId }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
-      if (!state.outputs) return textResult({ error: "Block has no outputs" });
+      if (!state.outputs) return errorResult("Block has no outputs yet.", "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.");
 
       // Find log handles in outputs — look for the "logs" output
       const logsOutput = (state.outputs as Record<string, unknown>)?.["logs"] as
         | { ok: boolean; value?: { data?: { key: string[]; value: string }[] } }
         | undefined;
       if (!logsOutput?.ok || !logsOutput.value?.data) {
-        return textResult({ error: "No log handles found in block outputs" });
+        return errorResult("No log handles found in block outputs.", "This block may not produce logs, or it hasn't run yet. Use get_block_outputs to inspect available output types.");
       }
 
       const logEntries = logsOutput.value.data;
@@ -67,7 +67,7 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ lines, search }) => {
       if (!ctx.callbacks.readAppLog) {
-        return textResult({ error: "App log not available" });
+        return errorResult("App log reading is not available.", "This feature requires the desktop app integration.");
       }
       const log = await ctx.callbacks.readAppLog(lines, search);
       return textResult({ log });

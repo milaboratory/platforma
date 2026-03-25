@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { BlockPackSpecAny } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { errorResult, textResult } from "./types";
 
 export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -122,7 +122,7 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ query }) => {
       if (!ctx.callbacks.listAvailableBlocks) {
-        return textResult({ error: "Block registry not available" });
+        return errorResult("Block registry is not available.", "This usually means the desktop app encounters a problem connecting block registry. Check Settings > Override Main Registry find which registry really in use and check connection.");
       }
       const blocks = await ctx.callbacks.listAvailableBlocks(query);
       return textResult(blocks);
@@ -143,7 +143,7 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ registryUrl, organization, name, version }) => {
       if (!ctx.callbacks.getBlockInfo) {
-        return textResult({ error: "Block info not available" });
+        return errorResult("Block info is not available in this environment.", "Maybe the name of the block was written incerrectly. Use list_available_blocks to browse blocks instead. Or ask user to check \"Additional Registries\" in Settings panel");
       }
       const info = await ctx.callbacks.getBlockInfo(registryUrl, organization, name, version);
       return textResult(info);
@@ -161,7 +161,7 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ projectId, blockId }) => {
       if (!ctx.callbacks.selectBlock) {
-        return textResult({ error: "UI navigation not available" });
+        return errorResult("Failed to select the block.", "This feature requires server connected and open project. Use get_connection_status and list_projects to check. If there are no connection, use list_connections and ask user which should be used.");
       }
       await ctx.callbacks.selectBlock(projectId, blockId);
       return textResult({ ok: true });

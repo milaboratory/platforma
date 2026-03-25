@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { errorResult, textResult } from "./types";
 
 export function registerUIInteractionTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -17,7 +17,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     },
     async ({ x, y, doubleClick }) => {
       if (!ctx.callbacks.sendInputEvent) {
-        return textResult({ error: "UI interaction not available" });
+        return errorResult("UI interaction is not available.", "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log");
       }
       const clickCount = doubleClick ? 2 : 1;
       await ctx.callbacks.sendInputEvent({
@@ -42,7 +42,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     },
     async ({ text }) => {
       if (!ctx.callbacks.sendInputEvent) {
-        return textResult({ error: "UI interaction not available" });
+        return errorResult("UI interaction is not available.", "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log");
       }
       for (const char of text) {
         await ctx.callbacks.sendInputEvent({ type: "keyDown", keyCode: char });
@@ -69,7 +69,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     },
     async ({ key, modifiers }) => {
       if (!ctx.callbacks.sendInputEvent) {
-        return textResult({ error: "UI interaction not available" });
+        return errorResult("UI interaction is not available.", "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log");
       }
       await ctx.callbacks.sendInputEvent({
         type: "keyDown",
@@ -108,7 +108,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     },
     async ({ x, y, deltaX, deltaY }) => {
       if (!ctx.callbacks.sendInputEvent) {
-        return textResult({ error: "UI interaction not available" });
+        return errorResult("UI interaction is not available.", "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log");
       }
       await ctx.callbacks.sendInputEvent({
         type: "mouseWheel",
@@ -132,7 +132,7 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     },
     async ({ code }) => {
       if (!ctx.callbacks.executeJavaScript) {
-        return textResult({ error: "JS execution not available" });
+        return errorResult("JS execution is not available.", "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log");
       }
       const result = await ctx.callbacks.executeJavaScript(code);
       return textResult(result);

@@ -7,7 +7,7 @@ import type {
 } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { errorResult, textResult } from "./types";
 
 /**
  * Extracts PFrame and PTable handles from block outputs by scanning for
@@ -103,7 +103,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
-      if (!state.outputs) return textResult({ error: "Block has no outputs" });
+      if (!state.outputs) return errorResult("Block has no outputs yet.", "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.");
 
       const outputs = state.outputs as Record<string, unknown>;
       const { pFrames, pTables } = extractHandles(outputs);
