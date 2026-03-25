@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.61.2
+
+### Patch Changes
+
+- d81fbb7: Fix user selection for the table
+
 ## 1.61.1
 
 ### Patch Changes
