@@ -175,14 +175,16 @@ type _AllFlagsAreCovered = Assert<
 
 ```typescript
 // sdk/model/src/block_model.ts — flags hardcoded in SDK, not set by devs
-static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+// `satisfies` (not `:`) preserves literal types — ResolveModelServices
+// needs { requiresPFrameSpec: true } not { requiresPFrameSpec?: boolean }.
+static readonly INITIAL_BLOCK_FEATURE_FLAGS = {
   supportsLazyState: true,
   supportsPframeQueryRanking: true,
   requiresUIAPIVersion: 3,
   requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
   requiresCreatePTable: 2,
   requiresPFrameSpec: true,  // SDK v3 always requires PFrameSpec
-};
+} satisfies BlockCodeKnownFeatureFlags;
 ```
 
 ### Model-side access
@@ -340,9 +342,11 @@ const SERVICE_INJECTORS: ReadonlyMap<string, ServiceInjector> = new Map<string, 
         ),
       ),
     );
-    // Must register ALL methods used by ColumnCollectionBuilder and callers:
+    // ... 5 more methods omitted — full list:
     // createSpecFrame, specFrameDiscoverColumns, disposeSpecFrame,
     // expandAxes, collapseAxes, findAxis, findTableColumn
+    // All must be registered or ColumnCollectionBuilder will throw
+    // ServiceMethodNotFoundError at runtime.
   });
 
   // ... additional service entries
@@ -654,6 +658,11 @@ function getMethodNames(instance: Record<string, unknown>): string[] {
 
 // Only node services get IPC handlers. WASM services are instantiated
 // directly in the renderer and never proxied over IPC.
+//
+// Eager instantiation is intentional: registry.get() triggers the factory
+// on first call, so all node services are created at app startup. This is
+// acceptable because (a) getMethodNames needs a live instance for method
+// discovery, and (b) node services are always needed once any V3 block loads.
 function createServiceRouter(registry: ServiceRegistry) {
   Object.values(Services)
     .filter(isNodeService)
@@ -758,7 +767,10 @@ export class ServiceError extends Error {
 }
 
 export function isServiceError(error: unknown): error is ServiceError {
-  return error instanceof Error && error.name.startsWith("ServiceError");
+  return (
+    error instanceof Error &&
+    (error.name === "ServiceError" || error.name.startsWith("ServiceError."))
+  );
 }
 
 export class ServiceInvalidIdError extends ServiceError {
