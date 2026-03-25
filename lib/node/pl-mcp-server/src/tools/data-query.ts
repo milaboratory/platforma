@@ -103,7 +103,11 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
-      if (!state.outputs) return errorResult("Block has no outputs yet.", "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.");
+      if (!state.outputs)
+        return errorResult(
+          "Block has no outputs yet.",
+          "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.",
+        );
 
       const outputs = state.outputs as Record<string, unknown>;
       const { pFrames, pTables } = extractHandles(outputs);

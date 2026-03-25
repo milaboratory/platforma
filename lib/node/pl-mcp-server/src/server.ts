@@ -91,11 +91,6 @@ export class PlMcpServer {
     this.callbacks = options.callbacks ?? {};
   }
 
-  /** Set or update the MiddleLayer instance (e.g. after connecting to a server). */
-  setMiddleLayer(ml: MiddleLayer | undefined) {
-    this.ml = ml;
-  }
-
   get url(): string {
     return `http://127.0.0.1:${this.port}/${this.secret}/mcp`;
   }

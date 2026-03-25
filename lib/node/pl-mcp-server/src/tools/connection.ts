@@ -20,7 +20,10 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
     { description: "List saved server connections" },
     async () => {
       if (!ctx.callbacks.listConnections) {
-        return errorResult("Connection management is not available.", "The desktop app integration may not support this feature.");
+        return errorResult(
+          "Connection management is not available.",
+          "The desktop app integration may not support this feature.",
+        );
       }
       return textResult(await ctx.callbacks.listConnections());
     },
@@ -38,7 +41,10 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ addr, login, password }) => {
       if (!ctx.callbacks.connectToServer) {
-        return errorResult("Failed to connect to Platforma Server.", "Check that provided URL is available and accepts connecitons.");
+        return errorResult(
+          "Failed to connect to Platforma Server.",
+          "Check that provided URL is available and accepts connecitons.",
+        );
       }
       return textResult(await ctx.callbacks.connectToServer(addr, login, password));
     },
@@ -46,7 +52,10 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
 
   server.registerTool("disconnect", { description: "Disconnect from current server" }, async () => {
     if (!ctx.callbacks.disconnect) {
-      return errorResult("Failed to disconnect.", "More likely it's because connection is already closed. Could check it with 'get_connection_status' tool.");
+      return errorResult(
+        "Failed to disconnect.",
+        "More likely it's because connection is already closed. Could check it with 'get_connection_status' tool.",
+      );
     }
     await ctx.callbacks.disconnect();
     return textResult({ ok: true });

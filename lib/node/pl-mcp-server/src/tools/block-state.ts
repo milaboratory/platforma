@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { textResult } from "./types";
+import { estimateSize, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -36,13 +36,22 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
   server.registerTool(
     "get_block_state",
     {
-      description: "Get the current state/data of a block (its storage and outputs)",
+      description:
+        "Get block state. Returns block args (data) and a concise output summary by default. " +
+        "Use includeOutputs=true to get full output values (can be large).",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
+        includeOutputs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            "Include full output values (can be very large). Default: false (returns output keys and readiness only).",
+          ),
       },
     },
-    async ({ projectId, blockId }) => {
+    async ({ projectId, blockId, includeOutputs }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
       let data: unknown = undefined;
@@ -57,10 +66,20 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           data = undefined;
         }
       }
-      return textResult({
-        data,
-        outputs: state.outputs,
-      });
+      if (includeOutputs) {
+        return textResult({ data, outputs: state.outputs });
+      }
+      // Concise summary: output keys with readiness flags and estimated size
+      const outputs = state.outputs as Record<string, unknown> | undefined;
+      const outputSummary = outputs
+        ? Object.entries(outputs).map(([key, out]) => {
+            const o = out as { ok?: boolean; value?: unknown } | undefined;
+            const hasValue = o?.value != null;
+            const sizeEstimate = hasValue ? estimateSize(o!.value) : undefined;
+            return { key, ok: o?.ok ?? false, hasValue, sizeEstimate };
+          })
+        : [];
+      return textResult({ data, outputs: outputSummary });
     },
   );
 

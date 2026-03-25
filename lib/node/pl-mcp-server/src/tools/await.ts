@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, textResult } from "./types";
+import { errorResult, estimateSize, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -23,7 +23,11 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
       while (Date.now() < deadline) {
         const overview = await project.overview.awaitStableValue();
         const block = overview.blocks.find((b: any) => b.id === blockId);
-        if (!block) return errorResult(`Block ${blockId} not found in project ${projectId}.`, "Use get_project_overview to list all block IDs in this project.");
+        if (!block)
+          return errorResult(
+            `Block ${blockId} not found in project ${projectId}.`,
+            "Use get_project_overview to list all block IDs in this project.",
+          );
 
         if (block.calculationStatus === "Done") {
           // Phase 2: await stable block state
@@ -43,6 +47,16 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
                 data = state.blockStorage;
               }
             }
+            // Return concise output summary to avoid blowing up context
+            const outputs = state.outputs as Record<string, unknown> | undefined;
+            const outputSummary = outputs
+              ? Object.entries(outputs).map(([key, out]) => {
+                  const o = out as { ok?: boolean; value?: unknown } | undefined;
+                  const hasValue = o?.value != null;
+                  const sizeEstimate = hasValue ? estimateSize(o!.value) : undefined;
+                  return { key, ok: o?.ok ?? false, hasValue, sizeEstimate };
+                })
+              : [];
             return textResult({
               status: "Done",
               block: {
@@ -54,7 +68,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
                 outputErrors: block.outputErrors,
               },
               data,
-              outputs: state.outputs,
+              outputs: outputSummary,
             });
           } catch {
             return textResult({
