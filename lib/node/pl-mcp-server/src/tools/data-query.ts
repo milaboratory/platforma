@@ -7,7 +7,7 @@ import type {
 } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, safeEval, textResult } from "./types";
+import { errorResult, safeEval, textResult, withTimeout } from "./types";
 
 /**
  * Extracts PFrame and PTable handles from block outputs by scanning for
@@ -107,7 +107,11 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     },
     async ({ projectId, blockId, maxColumns }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state = await project.getBlockState(blockId).awaitStableValue();
+      const state: any = await withTimeout(
+        project.getBlockState(blockId).getValue(),
+        15_000,
+        "getBlockState",
+      );
       if (!state.outputs)
         return errorResult(
           "Block has no outputs yet.",

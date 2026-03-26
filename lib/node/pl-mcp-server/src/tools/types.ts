@@ -123,6 +123,29 @@ export function safeEval(
   });
 }
 
+const DEFAULT_STATE_TIMEOUT = 15_000;
+
+/** Race a promise against a timeout. Rejects with a descriptive error on timeout. */
+export function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number = DEFAULT_STATE_TIMEOUT,
+  label = "Operation",
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 /** Return an MCP error result with an actionable hint for the AI agent. */
 export function errorResult(message: string, hint?: string) {
   const text = hint ? `${message}\n\nHint: ${hint}` : message;
