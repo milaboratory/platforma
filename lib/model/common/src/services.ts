@@ -106,8 +106,9 @@ export class ModelServiceRegistry<
     super(serviceMap, factories);
   }
 
-  get<S extends ServiceTypesLike>(id: ServiceName<S>): InferServiceModel<S>;
-  get(id: ServiceName): Record<string, Function>;
+  get<S extends ServiceTypesLike>(
+    id: ServiceName<S>,
+  ): [unknown] extends [InferServiceModel<S>] ? Record<string, Function> : InferServiceModel<S>;
   get(id: ServiceName): Record<string, Function> {
     return this.getById(id);
   }
@@ -120,8 +121,9 @@ export class UiServiceRegistry<
     super(serviceMap, factories);
   }
 
-  get<S extends ServiceTypesLike>(id: ServiceName<S>): InferServiceUi<S>;
-  get(id: ServiceName): Record<string, Function>;
+  get<S extends ServiceTypesLike>(
+    id: ServiceName<S>,
+  ): [unknown] extends [InferServiceUi<S>] ? Record<string, Function> : InferServiceUi<S>;
   get(id: ServiceName): Record<string, Function> {
     return this.getById(id);
   }
@@ -163,7 +165,7 @@ export function isKnownServiceName(name: string): name is KnownServiceName {
 
 /** Introspect method names on an instance (including prototype chain).
  *  Uses Object.getOwnPropertyDescriptor to avoid triggering getters. */
-export function getMethodNames(instance: Record<string, unknown>): string[] {
+export function getMethodNames(instance: Record<string, Function>): string[] {
   const methods = new Set<string>();
   let proto: object | null = instance;
   while (proto && proto !== Object.prototype) {
