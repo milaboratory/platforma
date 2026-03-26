@@ -7,7 +7,7 @@ import type {
 } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, textResult } from "./types";
+import { errorResult, safeEval, textResult } from "./types";
 
 /**
  * Extracts PFrame and PTable handles from block outputs by scanning for
@@ -98,9 +98,14 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
+        maxColumns: z
+          .number()
+          .optional()
+          .default(30)
+          .describe("Max columns to return per PFrame/PTable summary (default 30)."),
       },
     },
-    async ({ projectId, blockId }) => {
+    async ({ projectId, blockId, maxColumns }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
       if (!state.outputs)
@@ -126,7 +131,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
         pTablesByHandle.set(pt.handle, paths);
       }
 
-      const MAX_COLUMNS = 30;
+      const MAX_COLUMNS = maxColumns;
 
       // For each unique PFrame, list columns (summary only)
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
@@ -227,7 +232,8 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     "query_table",
     {
       description:
-        "Query data from a PTable. Returns rows as arrays of values. Use get_block_outputs first to find the PTable handle.",
+        "Query data from a PTable. Returns rows as arrays of values. Use get_block_outputs first to find the PTable handle. " +
+        "Use `transform` to process results server-side and return only what you need.",
       inputSchema: {
         pTableHandle: z
           .string()
@@ -243,10 +249,28 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           .number()
           .optional()
           .default(50)
-          .describe("Number of rows to return (default 50, max 1000)"),
+          .describe("Number of rows to return (default 50)."),
+        maxLimit: z
+          .number()
+          .optional()
+          .default(1000)
+          .describe("Upper bound for limit (default 1000). Increase for large exports."),
+        transform: z
+          .string()
+          .optional()
+          .describe(
+            "JS expression evaluated server-side against query results. " +
+            "Available variables: `rows` (array of row arrays), `columns` (column headers), `totalRows`, `offset`, `rowCount`. " +
+            "Example: `rows.map(r => r[0])` — extract first column only.",
+          ),
+        transformTimeout: z
+          .number()
+          .optional()
+          .default(5000)
+          .describe("Timeout in ms for transform evaluation (default 5000)."),
       },
     },
-    async ({ pTableHandle, columns, offset, limit }) => {
+    async ({ pTableHandle, columns, offset, limit, maxLimit, transform, transformTimeout }) => {
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const handle = pTableHandle as PTableHandle;
 
@@ -264,7 +288,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
         return textResult({ error: `getSpec failed: ${err}` });
       }
 
-      const effectiveLimit = Math.min(limit, 1000);
+      const effectiveLimit = Math.min(limit, maxLimit);
       const range = { offset, length: effectiveLimit };
 
       // If no columns specified, get all
@@ -298,6 +322,24 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           label: s.spec.annotations?.["pl7.app/label"],
         };
       });
+
+      if (transform) {
+        try {
+          const result = safeEval(transform, {
+            rows,
+            columns: columnHeaders,
+            totalRows: shape.rows,
+            offset,
+            rowCount: actualRows,
+          }, transformTimeout);
+          return textResult(result);
+        } catch (e: unknown) {
+          return errorResult(
+            `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
+            "Check your JS expression syntax. Available variables: rows, columns, totalRows, offset, rowCount.",
+          );
+        }
+      }
 
       return textResult({
         totalRows: shape.rows,

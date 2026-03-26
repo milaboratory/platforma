@@ -80,16 +80,14 @@ test("await_block_done timeout", { timeout: 30_000 }, async () => {
       }),
     ) as { blockId: string };
 
-    // Don't run the block — await should time out on NotCalculated
-    const result = parseResult(
-      await client.callTool({
-        name: "await_block_done",
-        arguments: { projectId, blockId, timeout: 3000 },
-      }),
-    ) as { timedOut: boolean; status: string };
-
-    expect(result.timedOut).toBe(true);
-    expect(result.status).toBe("NotCalculated");
+    // Don't run the block — await should return error immediately for NotCalculated
+    const rawResult = await client.callTool({
+      name: "await_block_done",
+      arguments: { projectId, blockId, timeout: 3000 },
+    });
+    const r = rawResult as { content?: { type: string; text: string }[]; isError?: boolean };
+    expect(r.isError).toBe(true);
+    expect(r.content?.[0]?.text).toContain("not been started");
 
     await client.callTool({ name: "close_project", arguments: { projectId } });
     await client.callTool({ name: "delete_project", arguments: { projectId } });

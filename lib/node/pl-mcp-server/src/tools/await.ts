@@ -34,9 +34,8 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
       const project = await ctx.getOpenedProject(projectId);
       const deadline = Date.now() + timeout;
 
-      // Phase 1: poll overview until calculationStatus is Done or error
       while (Date.now() < deadline) {
-        const overview = await project.overview.awaitStableValue();
+        const overview = await project.overview.getValue();
         const block = overview.blocks.find((b: any) => b.id === blockId);
         if (!block)
           return errorResult(
@@ -44,66 +43,92 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
             "Use get_project_overview to list all block IDs in this project.",
           );
 
-        if (block.calculationStatus === "Done") {
-          // Phase 2: await stable block state
-          try {
-            const state = await project
-              .getBlockState(blockId)
-              .awaitStableValue(AbortSignal.timeout(Math.max(deadline - Date.now(), 1000)));
-            let data: unknown;
-            if (state.blockStorage) {
-              try {
-                const parsed =
-                  typeof state.blockStorage === "string"
-                    ? JSON.parse(state.blockStorage)
-                    : state.blockStorage;
-                data = parsed?.__data;
-              } catch {
-                data = state.blockStorage;
-              }
-            }
-            const blockInfo = {
-              id: block.id,
-              title: block.title ?? block.label,
-              calculationStatus: block.calculationStatus,
-              canRun: block.canRun,
-              stale: block.stale,
-              outputErrors: block.outputErrors,
-            };
-            if (transform) {
-              try {
-                const result = safeEval(transform, {
-                  data,
-                  outputs: state.outputs,
-                  block: blockInfo,
-                }, transformTimeout);
-                return textResult({ status: "Done", block: blockInfo, result });
-              } catch (e: unknown) {
-                return errorResult(
-                  `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
-                  "Check your JS expression syntax. Available variables: data, outputs, block.",
-                );
-              }
-            }
-            return textResult({
-              status: "Done",
-              block: blockInfo,
-              data,
-              outputs: summarizeOutputs(state.outputs as Record<string, unknown> | undefined),
-            });
-          } catch {
-            return textResult({
-              timedOut: true,
-              status: "Done",
-              note: "Computation done but outputs did not stabilize in time",
-            });
-          }
+        // Terminal error states — return immediately
+        if (block.calculationStatus === "Limbo") {
+          return errorResult(
+            "Block entered Limbo state (upstream failed or was stopped).",
+            "Check upstream blocks with get_project_overview. Fix or re-run the failed upstream, then retry.",
+          );
         }
 
-        if (block.calculationStatus === "Limbo") {
+        if (block.calculationStatus === "NotCalculated") {
+          return errorResult(
+            "Block has not been started.",
+            "Use run_block to start it first, then call await_block_done.",
+          );
+        }
+
+        if (block.calculationStatus === "ErrorsDetected") {
+          return errorResult(
+            "Block finished with errors.",
+            "Use get_block_logs to inspect error details.",
+          );
+        }
+
+        if (block.calculationStatus === "Done") {
+          // Await stable block state with remaining time budget
+          const remaining = Math.max(deadline - Date.now(), 1000);
+          let state;
+          try {
+            state = await project
+              .getBlockState(blockId)
+              .awaitStableValue(AbortSignal.timeout(remaining));
+          } catch (e: unknown) {
+            if (e instanceof DOMException && e.name === "TimeoutError") {
+              return textResult({
+                timedOut: true,
+                status: "Done",
+                note: "Computation done but outputs did not stabilize in time. Retry with a longer timeout.",
+              });
+            }
+            return errorResult(
+              `Failed to get block state: ${e instanceof Error ? e.message : String(e)}`,
+            );
+          }
+
+          let data: unknown;
+          if (state.blockStorage) {
+            try {
+              const parsed =
+                typeof state.blockStorage === "string"
+                  ? JSON.parse(state.blockStorage)
+                  : state.blockStorage;
+              data = parsed?.__data;
+            } catch {
+              data = state.blockStorage;
+            }
+          }
+
+          const blockInfo = {
+            id: block.id,
+            title: block.title ?? block.label,
+            calculationStatus: block.calculationStatus,
+            canRun: block.canRun,
+            stale: block.stale,
+            outputErrors: block.outputErrors,
+          };
+
+          if (transform) {
+            try {
+              const result = safeEval(transform, {
+                data,
+                outputs: state.outputs,
+                block: blockInfo,
+              }, transformTimeout);
+              return textResult({ status: "Done", block: blockInfo, result });
+            } catch (e: unknown) {
+              return errorResult(
+                `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
+                "Check your JS expression syntax. Available variables: data, outputs, block.",
+              );
+            }
+          }
+
           return textResult({
-            status: "Limbo",
-            error: "Block entered Limbo state (upstream failed or was stopped)",
+            status: "Done",
+            block: blockInfo,
+            data,
+            outputs: summarizeOutputs(state.outputs as Record<string, unknown> | undefined),
           });
         }
 
@@ -116,12 +141,13 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
         }
       }
 
-      // Timed out
-      const overview = await project.overview.awaitStableValue();
+      // Timed out while running
+      const overview = await project.overview.getValue();
       const block = overview.blocks.find((b: any) => b.id === blockId);
       return textResult({
         timedOut: true,
         status: block?.calculationStatus ?? "Unknown",
+        hint: "The block is still running. Call await_block_done again with a longer timeout.",
       });
     },
   );
