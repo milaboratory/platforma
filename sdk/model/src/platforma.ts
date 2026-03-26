@@ -7,9 +7,9 @@ import type {
   BlockStateV3,
   DriverKit,
   OutputWithStatus,
-  ServiceName,
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./version";
+import type { ServiceDispatch } from "./service_types";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
@@ -60,8 +60,8 @@ export interface PlatformaV3<
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 3;
-  /** Services loaded by preload, always set by preload ({} if no services). */
-  readonly services: Record<ServiceName, unknown>;
+  /** Service dispatch — lists available services, their methods, and invokes them. */
+  readonly serviceDispatch: ServiceDispatch;
   /** @internal Type brand for plugin type inference. Not used at runtime. */
   readonly __pluginsBrand?: Plugins;
 }

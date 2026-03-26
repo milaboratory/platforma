@@ -2793,6 +2793,12 @@ importers:
 
   sdk/ui-vue:
     dependencies:
+      '@milaboratories/pf-spec-driver':
+        specifier: workspace:*
+        version: link:../../lib/model/pf-spec-driver
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../lib/model/common
       '@milaboratories/uikit':
         specifier: workspace:*
         version: link:../../lib/ui/uikit

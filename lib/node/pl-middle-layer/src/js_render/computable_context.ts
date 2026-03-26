@@ -922,6 +922,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         }
       }
 
+      exportCtxFunction("getServiceNames", () => {
+        return parent.exportObjectViaJson([...requiredServiceNames]);
+      });
+
       exportCtxFunction("getServiceMethods", (serviceIdHandle) => {
         const serviceId = vm.getString(serviceIdHandle);
         const pfx = serviceFnKey(serviceId);

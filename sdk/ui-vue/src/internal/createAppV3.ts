@@ -21,7 +21,11 @@ import {
   getPluginData,
   isPluginOutputKey,
   pluginOutputPrefix,
+  createNodeServiceProxy,
+  buildServices,
 } from "@platforma-sdk/model";
+import { Services, UiServiceRegistry } from "@milaboratories/pl-model-common";
+import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { Ref } from "vue";
 import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
@@ -408,11 +412,18 @@ export function createAppV3<
     platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
   ) as InferPluginHandles<Plugins>;
 
+  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
+  const uiRegistry = new UiServiceRegistry(Services, {
+    PFrameSpec: () => new SpecDriver(),
+    PFrame: () => proxy(Services.PFrame),
+  });
+  const services = buildServices(platforma.serviceDispatch, uiRegistry);
+
   const getters = {
     closedRef,
     snapshot,
     plugins,
-    services: markRaw(platforma.services), // markRaw prevents Vue reactivity on lazy getters
+    services: markRaw(services),
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() =>

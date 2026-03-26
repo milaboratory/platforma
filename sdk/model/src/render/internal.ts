@@ -32,6 +32,7 @@ import type {
   PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
+import type { ServiceDispatch } from "../service_types";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -218,11 +219,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pFrameInSetFilterSupport: true as const,
 };
 
-export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
-  // Service dispatch — plain function properties on the context object
-  // (set via exportCtxFunction in injectCtx), not class methods — destructuring is safe.
-  callServiceMethod(serviceId: string, methodName: string, ...args: unknown[]): unknown;
-  getServiceMethods(serviceId: string): string[];
+export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
   //
   // State: Args, UI State, Active Args
   //

@@ -23,6 +23,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
+  ServiceName,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -552,10 +553,10 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
 export abstract class RenderCtxBase<Args = unknown, Data = unknown, S = {}> {
   protected readonly ctx: GlobalCfgRenderCtx;
-  private readonly requiredServiceNames: string[];
+  private readonly requiredServiceNames: ServiceName[];
   private cachedServices?: S;
 
-  constructor(requiredServiceNames: string[] = []) {
+  constructor(requiredServiceNames: ServiceName[] = []) {
     this.ctx = getCfgRenderCtx();
     this.requiredServiceNames = requiredServiceNames;
   }
@@ -816,7 +817,7 @@ export class PluginRenderCtx<
   constructor(
     handle: PluginHandle<F>,
     wrappedInputs: Record<string, () => unknown>,
-    requiredServiceNames: string[] = [],
+    requiredServiceNames: ServiceName[] = [],
   ) {
     super(requiredServiceNames);
     this.handle = handle;
