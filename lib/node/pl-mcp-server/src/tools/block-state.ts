@@ -52,8 +52,8 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           .optional()
           .describe(
             "JS expression evaluated server-side against full block state. " +
-            "Available variables: `data` (block args), `outputs` (raw outputs object). " +
-            "Omit for default concise summary.",
+              "Available variables: `data` (block args), `outputs` (raw outputs object). " +
+              "Omit for default concise summary.",
           ),
         transformTimeout: z
           .number()

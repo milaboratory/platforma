@@ -112,7 +112,11 @@ export function summarizeOutputs(
  * Evaluate a JS expression in a sandboxed VM context.
  * The expression has access to the provided variables.
  */
-export function safeEval(expression: string, context: Record<string, unknown>, timeout: number): unknown {
+export function safeEval(
+  expression: string,
+  context: Record<string, unknown>,
+  timeout: number,
+): unknown {
   return runInNewContext(`(${expression})`, context, {
     timeout,
     filename: "transform",

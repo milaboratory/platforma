@@ -20,8 +20,8 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
           .optional()
           .describe(
             "JS expression evaluated server-side when block completes. " +
-            "Available variables: `data` (block args), `outputs` (raw outputs), `block` (status info). " +
-            "Omit for default concise summary.",
+              "Available variables: `data` (block args), `outputs` (raw outputs), `block` (status info). " +
+              "Omit for default concise summary.",
           ),
         transformTimeout: z
           .number()
@@ -110,11 +110,15 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
 
           if (transform) {
             try {
-              const result = safeEval(transform, {
-                data,
-                outputs: state.outputs,
-                block: blockInfo,
-              }, transformTimeout);
+              const result = safeEval(
+                transform,
+                {
+                  data,
+                  outputs: state.outputs,
+                  block: blockInfo,
+                },
+                transformTimeout,
+              );
               return textResult({ status: "Done", block: blockInfo, result });
             } catch (e: unknown) {
               return errorResult(

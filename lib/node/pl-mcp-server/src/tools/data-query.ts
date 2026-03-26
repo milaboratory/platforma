@@ -245,11 +245,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
             "Column indices to retrieve (default: all). Use get_block_outputs to see column indices.",
           ),
         offset: z.number().optional().default(0).describe("Row offset (default 0)"),
-        limit: z
-          .number()
-          .optional()
-          .default(50)
-          .describe("Number of rows to return (default 50)."),
+        limit: z.number().optional().default(50).describe("Number of rows to return (default 50)."),
         maxLimit: z
           .number()
           .optional()
@@ -260,8 +256,8 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           .optional()
           .describe(
             "JS expression evaluated server-side against query results. " +
-            "Available variables: `rows` (array of row arrays), `columns` (column headers), `totalRows`, `offset`, `rowCount`. " +
-            "Example: `rows.map(r => r[0])` — extract first column only.",
+              "Available variables: `rows` (array of row arrays), `columns` (column headers), `totalRows`, `offset`, `rowCount`. " +
+              "Example: `rows.map(r => r[0])` — extract first column only.",
           ),
         transformTimeout: z
           .number()
@@ -325,13 +321,17 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
 
       if (transform) {
         try {
-          const result = safeEval(transform, {
-            rows,
-            columns: columnHeaders,
-            totalRows: shape.rows,
-            offset,
-            rowCount: actualRows,
-          }, transformTimeout);
+          const result = safeEval(
+            transform,
+            {
+              rows,
+              columns: columnHeaders,
+              totalRows: shape.rows,
+              offset,
+              rowCount: actualRows,
+            },
+            transformTimeout,
+          );
           return textResult(result);
         } catch (e: unknown) {
           return errorResult(
