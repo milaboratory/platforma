@@ -1,52 +1,42 @@
 import type {
-  Branded,
   ServiceTypesLike,
   InferServiceUi,
   ServiceName,
-  Services,
+  ServiceNameLiterals,
+  ModelServiceDrivers,
+  UiServiceDrivers,
 } from "@milaboratories/pl-model-common";
 import { UiServiceRegistry } from "@milaboratories/pl-model-common";
 
-type FlagToService<Flag extends string> = Flag extends `requires${infer K}`
-  ? K extends keyof typeof Services
-    ? (typeof Services)[K]
+export type { ModelServiceDrivers, UiServiceDrivers };
+
+// Flag name → service name literal: "requiresPFrameSpec" → "pframeSpec"
+type FlagToName<Flag extends string> = Flag extends `requires${infer K}`
+  ? K extends keyof ServiceNameLiterals
+    ? ServiceNameLiterals[K]
     : never
   : never;
 
-type InferServiceModel<S extends ServiceTypesLike> =
-  S extends ServiceTypesLike<infer M, unknown> ? M : unknown;
-
-type ServiceBrand<T> = T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
-
-type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
-  k: infer I,
-) => void
-  ? I
-  : never;
+// Extract all required service name literals from feature flags
+type RequiredServiceNames<Flags> = {
+  [K in keyof Flags & `requires${string}`]: Flags[K] extends true ? FlagToName<K & string> : never;
+}[keyof Flags & `requires${string}`];
 
 // Resolve typed services from feature flags
 // { requiresPFrameSpec: true } -> { pframeSpec: PFrameSpecDriver }
-export type ResolveModelServices<Flags> = UnionToIntersection<
-  {
-    [K in keyof Flags & `requires${string}`]: Flags[K] extends true
-      ? Record<
-          FlagToService<K & string> & string,
-          InferServiceModel<ServiceBrand<FlagToService<K & string>>>
-        >
-      : never;
-  }[keyof Flags & `requires${string}`]
+export type ResolveModelServices<Flags> = Pick<
+  ModelServiceDrivers,
+  RequiredServiceNames<Flags> & keyof ModelServiceDrivers
 >;
 
-export type ResolveUiServices<Flags> = UnionToIntersection<
-  {
-    [K in keyof Flags & `requires${string}`]: Flags[K] extends true
-      ? Record<
-          FlagToService<K & string> & string,
-          InferServiceUi<ServiceBrand<FlagToService<K & string>>>
-        >
-      : never;
-  }[keyof Flags & `requires${string}`]
+export type ResolveUiServices<Flags> = Pick<
+  UiServiceDrivers,
+  RequiredServiceNames<Flags> & keyof UiServiceDrivers
 >;
+
+// Model services resolved from BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS.
+// All V3 blocks get at least these services in their render context.
+export type BlockDefaultModelServices = ResolveModelServices<{ readonly requiresPFrameSpec: true }>;
 
 // Service dispatch interface shared by the model render context (sync, QuickJS VM)
 // and the UI renderer (async, IPC via contextBridge).
