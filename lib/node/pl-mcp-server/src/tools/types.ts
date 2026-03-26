@@ -1,3 +1,4 @@
+import { runInNewContext } from "node:vm";
 import type { MiddleLayer, ProjectListEntry } from "@milaboratories/pl-middle-layer";
 import type { PlMcpServerCallbacks } from "../server";
 
@@ -104,6 +105,17 @@ export function summarizeOutputs(
     const hasValue = o?.value != null;
     const tokensEstimate = hasValue ? estimateTokens(o!.value) : undefined;
     return { key, ok: o?.ok ?? false, hasValue, tokensEstimate };
+  });
+}
+
+/**
+ * Evaluate a JS expression in a sandboxed VM context.
+ * The expression has access to the provided variables.
+ */
+export function safeEval(expression: string, context: Record<string, unknown>, timeout: number): unknown {
+  return runInNewContext(`(${expression})`, context, {
+    timeout,
+    filename: "transform",
   });
 }
 

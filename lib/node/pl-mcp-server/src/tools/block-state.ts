@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { summarizeOutputs, textResult } from "./types";
+import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -37,22 +37,32 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     "get_block_state",
     {
       description:
-        "Get block state. Returns block args (data) and a concise output summary by default. " +
-        "Use includeOutputs=true to get full output values (can be large)." +
-        "Output contains `sizeEstimate` and `totalSizeEstimate` fields, that contain raw estimation in tokens. Try not to pull big data to not pollute context.",
+        "Get block state. Returns block args (data) and a concise output summary with token estimates by default. " +
+        "Use `transform` to extract specific data server-side without loading full outputs into context.\n\n" +
+        "Default: returns `{ data, outputs: [{ key, ok, hasValue, tokensEstimate }] }`\n\n" +
+        "Transform examples:\n" +
+        "- `outputs.logs?.value` — get one specific output value\n" +
+        "- `data` — get only block args\n" +
+        "- `({ preset: outputs.preset?.value, qc: outputs.qc?.value })` — get specific outputs",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
-        includeOutputs: z
-          .boolean()
+        transform: z
+          .string()
           .optional()
-          .default(false)
           .describe(
-            "Include full output values (can be very large). Default: false (returns output keys and readiness only).",
+            "JS expression evaluated server-side against full block state. " +
+            "Available variables: `data` (block args), `outputs` (raw outputs object). " +
+            "Omit for default concise summary.",
           ),
+        transformTimeout: z
+          .number()
+          .optional()
+          .default(5000)
+          .describe("Timeout in ms for transform evaluation (default 5000)."),
       },
     },
-    async ({ projectId, blockId, includeOutputs }) => {
+    async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).awaitStableValue();
       let data: unknown = undefined;
@@ -67,8 +77,16 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           data = undefined;
         }
       }
-      if (includeOutputs) {
-        return textResult({ data, outputs: state.outputs });
+      if (transform) {
+        try {
+          const result = safeEval(transform, { data, outputs: state.outputs }, transformTimeout);
+          return textResult(result);
+        } catch (e: unknown) {
+          return errorResult(
+            `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
+            "Check your JS expression syntax. Available variables: data, outputs.",
+          );
+        }
       }
       return textResult({
         data,

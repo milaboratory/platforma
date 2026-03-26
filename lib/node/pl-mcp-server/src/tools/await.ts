@@ -1,22 +1,36 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, summarizeOutputs, textResult } from "./types";
+import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "await_block_done",
     {
       description:
-        "Wait for a block to finish computation and outputs to stabilize. Returns block status and data on completion, or timeout info." +
-        "Output contains `sizeEstimate` and `totalSizeEstimate` fields, that contain raw estimation in tokens. Try not to pull big data to not pollute context.",
+        "Wait for a block to finish computation and outputs to stabilize. " +
+        "Returns block status, data, and concise output summary with token estimates. " +
+        "Use `transform` to extract specific data server-side on completion.",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID to wait for"),
         timeout: z.number().optional().default(120000).describe("Timeout in ms (default 120000)"),
+        transform: z
+          .string()
+          .optional()
+          .describe(
+            "JS expression evaluated server-side when block completes. " +
+            "Available variables: `data` (block args), `outputs` (raw outputs), `block` (status info). " +
+            "Omit for default concise summary.",
+          ),
+        transformTimeout: z
+          .number()
+          .optional()
+          .default(5000)
+          .describe("Timeout in ms for transform evaluation (default 5000)."),
       },
     },
-    async ({ projectId, blockId, timeout }) => {
+    async ({ projectId, blockId, timeout, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
       const deadline = Date.now() + timeout;
 
@@ -48,21 +62,34 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
                 data = state.blockStorage;
               }
             }
-            const outputSummary = summarizeOutputs(
-              state.outputs as Record<string, unknown> | undefined,
-            );
+            const blockInfo = {
+              id: block.id,
+              title: block.title ?? block.label,
+              calculationStatus: block.calculationStatus,
+              canRun: block.canRun,
+              stale: block.stale,
+              outputErrors: block.outputErrors,
+            };
+            if (transform) {
+              try {
+                const result = safeEval(transform, {
+                  data,
+                  outputs: state.outputs,
+                  block: blockInfo,
+                }, transformTimeout);
+                return textResult({ status: "Done", block: blockInfo, result });
+              } catch (e: unknown) {
+                return errorResult(
+                  `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
+                  "Check your JS expression syntax. Available variables: data, outputs, block.",
+                );
+              }
+            }
             return textResult({
               status: "Done",
-              block: {
-                id: block.id,
-                title: block.title ?? block.label,
-                calculationStatus: block.calculationStatus,
-                canRun: block.canRun,
-                stale: block.stale,
-                outputErrors: block.outputErrors,
-              },
+              block: blockInfo,
               data,
-              outputs: outputSummary,
+              outputs: summarizeOutputs(state.outputs as Record<string, unknown> | undefined),
             });
           } catch {
             return textResult({
