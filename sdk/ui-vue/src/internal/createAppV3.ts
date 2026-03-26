@@ -332,6 +332,13 @@ export function createAppV3<
     },
   };
 
+  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
+  const uiRegistry = new UiServiceRegistry(Services, {
+    PFrameSpec: () => new SpecDriver(),
+    PFrame: () => proxy(Services.PFrame),
+  });
+  const services = buildServices(platforma.serviceDispatch, uiRegistry);
+
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
@@ -391,6 +398,7 @@ export function createAppV3<
 
     return {
       model: pluginModel,
+      services: markRaw(services),
       ignoreUpdates,
     };
   };
@@ -411,13 +419,6 @@ export function createAppV3<
   const plugins = Object.fromEntries(
     platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
   ) as InferPluginHandles<Plugins>;
-
-  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
-  const uiRegistry = new UiServiceRegistry(Services, {
-    PFrameSpec: () => new SpecDriver(),
-    PFrame: () => proxy(Services.PFrame),
-  });
-  const services = buildServices(platforma.serviceDispatch, uiRegistry);
 
   const getters = {
     closedRef,

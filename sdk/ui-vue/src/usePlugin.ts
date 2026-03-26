@@ -18,6 +18,7 @@ export interface PluginState<Data = unknown, Outputs = unknown> {
       ? { [K in keyof Outputs]?: Error }
       : Record<string, Error | undefined>;
   }>;
+  readonly services: Record<string, unknown>;
 }
 
 /** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
