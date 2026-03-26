@@ -151,7 +151,13 @@ export type InferPluginData<Pl, PluginId extends string> =
  * because PluginRecord doesn't carry Config (lost after factory.create()).
  */
 export type InferPluginHandles<T extends Record<string, unknown>> = {
-  readonly [K in keyof T]: T[K] extends PluginRecord<infer Data, infer Params, infer Outputs>
-    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs>> }
+  readonly [K in keyof T]: T[K] extends PluginRecord<
+    infer Data,
+    infer Params,
+    infer Outputs,
+    infer ModelServices,
+    infer UiServices
+  >
+    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices>> }
     : never;
 };

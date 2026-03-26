@@ -1,6 +1,6 @@
 import type { QuickJSHandle, VmFunctionImplementation } from "quickjs-emscripten";
 import type { Branded, InferServiceModel, ServiceTypesLike } from "@milaboratories/pl-model-common";
-import { Services } from "@milaboratories/pl-model-common";
+import { Services, ServiceNotRegisteredError } from "@milaboratories/pl-model-common";
 import type {
   AxesId,
   AxesSpec,
@@ -50,6 +50,10 @@ export function getServiceInjectors(): ServiceInjectorMap {
   return {
     PFrameSpec: ({ host, vm }: ServiceInjectorContext) => {
       const driver = host.registry.get(Services.PFrameSpec);
+      if (!driver)
+        throw new ServiceNotRegisteredError(
+          `Service "${Services.PFrameSpec}" has no factory in ModelServiceRegistry. Provide a non-null factory.`,
+        );
 
       return {
         createSpecFrame: (specs: QuickJSHandle) =>

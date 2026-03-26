@@ -12,6 +12,7 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
+  InferFactoryUiServices,
   PluginFactoryLike,
 } from "@platforma-sdk/model";
 import {
@@ -39,10 +40,11 @@ import type { PluginState, PluginAccess } from "../usePlugin";
 export const patchPoolingDelay = 150;
 
 /** Internal per-plugin state with reconciliation support. */
-interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<
-  Data,
-  Outputs
-> {
+interface InternalPluginState<
+  Data = unknown,
+  Outputs = unknown,
+  Services = Record<string, unknown>,
+> extends PluginState<Data, Outputs, Services> {
   readonly ignoreUpdates: (fn: () => void) => void;
 }
 
@@ -408,11 +410,19 @@ export function createAppV3<
     getOrCreatePluginState<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
       const existing = pluginStates.get(handle);
       if (existing) {
-        return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+        return existing as unknown as PluginState<
+          InferFactoryData<F>,
+          InferFactoryOutputs<F>,
+          InferFactoryUiServices<F>
+        >;
       }
       const state = createPluginState(handle);
       pluginStates.set(handle, state);
-      return state;
+      return state as unknown as PluginState<
+        InferFactoryData<F>,
+        InferFactoryOutputs<F>,
+        InferFactoryUiServices<F>
+      >;
     },
   };
 

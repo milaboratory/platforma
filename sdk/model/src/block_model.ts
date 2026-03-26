@@ -88,8 +88,10 @@ export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
+  ModelServices = unknown,
+  UiServices = unknown,
 > = {
-  readonly model: PluginModel<Data, Params, Outputs>;
+  readonly model: PluginModel<Data, Params, Outputs, ModelServices, UiServices>;
   readonly inputs: ParamsInputErased;
 };
 
@@ -420,6 +422,8 @@ export class BlockModelV3<
     PParams extends PluginParams,
     POutputs extends PluginOutputs,
     PTransferData,
+    PluginModelServices,
+    PluginUiServices,
   >(
     instance: PluginInstanceClass<
       PluginId &
@@ -434,7 +438,9 @@ export class BlockModelV3<
       PData,
       PParams,
       POutputs,
-      PTransferData
+      PTransferData,
+      PluginModelServices,
+      PluginUiServices
     >,
     params?: ParamsInput<PParams, Args, Data>,
   ): BlockModelV3<
@@ -442,7 +448,15 @@ export class BlockModelV3<
     OutputsCfg,
     Data,
     Href,
-    Plugins & { [K in PluginId]: PluginRecord<PData, PParams, POutputs> },
+    Plugins & {
+      [K in PluginId]: PluginRecord<
+        PData,
+        PParams,
+        POutputs,
+        PluginModelServices,
+        PluginUiServices
+      >;
+    },
     Omit<Transfers, PluginId>
   >;
   public plugin(

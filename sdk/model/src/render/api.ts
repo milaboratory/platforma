@@ -55,8 +55,10 @@ import type {
   PluginHandle,
   PluginFactoryLike,
   InferFactoryData,
+  InferFactoryModelServices,
   InferFactoryParams,
 } from "../plugin_handle";
+import type { BlockDefaultModelServices } from "../service_types";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -551,36 +553,36 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args = unknown, Data = unknown, S = {}> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown, ModelServices = {}> {
   protected readonly ctx: GlobalCfgRenderCtx;
   private readonly requiredServiceNames: ServiceName[];
-  private cachedServices?: S;
+  private cachedServices?: ModelServices;
 
   constructor(requiredServiceNames: ServiceName[] = []) {
     this.ctx = getCfgRenderCtx();
     this.requiredServiceNames = requiredServiceNames;
   }
 
-  get services(): S {
-    if (!this.cachedServices) {
-      const { callServiceMethod, getServiceMethods } = this.ctx;
-      this.cachedServices = Object.freeze(
-        Object.fromEntries(
-          this.requiredServiceNames.map((id) => [
-            id,
-            Object.freeze(
-              Object.fromEntries(
-                (getServiceMethods(id) as string[]).map((method) => [
-                  method,
-                  (...args: unknown[]) => callServiceMethod(id, method, ...args),
-                ]),
-              ),
+  get services(): ModelServices {
+    if (this.cachedServices) return this.cachedServices;
+    const { callServiceMethod, getServiceMethods } = this.ctx;
+    const services = Object.freeze(
+      Object.fromEntries(
+        this.requiredServiceNames.map((id) => [
+          id,
+          Object.freeze(
+            Object.fromEntries(
+              (getServiceMethods(id) as string[]).map((method) => [
+                method,
+                (...args: unknown[]) => callServiceMethod(id, method, ...args),
+              ]),
             ),
-          ]),
-        ),
-      ) as S;
-    }
-    return this.cachedServices;
+          ),
+        ]),
+      ),
+    ) as ModelServices;
+    this.cachedServices = services;
+    return services;
   }
 
   private dataCache?: { v: Data };
@@ -754,11 +756,11 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown, S = {}> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class BlockRenderCtx<Args = unknown, Data = unknown, S = {}> extends RenderCtxBase<
-  Args,
-  Data,
-  S
-> {
+export class BlockRenderCtx<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = BlockDefaultModelServices,
+> extends RenderCtxBase<Args, Data, ModelServices> {
   private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this.argsCache === undefined) {
@@ -809,8 +811,8 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  */
 export class PluginRenderCtx<
   F extends PluginFactoryLike = PluginFactoryLike,
-  S = {},
-> extends RenderCtxBase<unknown, InferFactoryData<F>, S> {
+  ModelServices = InferFactoryModelServices<F>,
+> extends RenderCtxBase<unknown, InferFactoryData<F>, ModelServices> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 

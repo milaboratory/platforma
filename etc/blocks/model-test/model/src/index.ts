@@ -43,15 +43,19 @@ type CounterPluginParams = {
   title: string;
 };
 
+type CounterPluginConfig = {
+  defaultCount: number;
+};
+
 const counterDataModelChain = new DataModelBuilder().from<CounterPluginData>("v1");
 
-export const counterPlugin = PluginModel.define<
-  CounterPluginData,
-  CounterPluginParams,
-  { defaultCount: number }
->({
+export const counterPlugin = PluginModel.define({
   name: "counterPlugin" as PluginName,
-  data: (config) => {
+  featureFlags: {
+    requiresPFrameSpec: true,
+    requiresPFrame: true,
+  },
+  data: (config?: CounterPluginConfig) => {
     const defaultCount = config?.defaultCount ?? 0;
     return counterDataModelChain.init(() => ({
       count: defaultCount,
@@ -59,6 +63,7 @@ export const counterPlugin = PluginModel.define<
     }));
   },
 })
+  .params<CounterPluginParams>()
   .output("displayText", (ctx) => {
     return `${ctx.params.title}: Count is ${ctx.data.count}`;
   })
@@ -67,6 +72,15 @@ export const counterPlugin = PluginModel.define<
   })
   .output("isEven", (ctx) => {
     return ctx.data.count % 2 === 0;
+  })
+  .output("specFrameTest", (ctx) => {
+    const handle = ctx.services.pframeSpec.createSpecFrame({});
+    ctx.services.pframeSpec.disposeSpecFrame(handle);
+    return `specFrame: created and disposed`;
+  })
+  .output("pframeTest", (ctx) => {
+    const handle = ctx.services.pframe.createPFrame([]);
+    return `pframe: created handle ${handle}`;
   })
   .build();
 

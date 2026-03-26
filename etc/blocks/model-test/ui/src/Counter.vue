@@ -8,6 +8,22 @@ const props = defineProps<{
 
 const plugin = usePlugin(props.handle);
 
+try {
+  const handle = plugin.services.pframeSpec.createSpecFrame({});
+  console.log("[service-test] pframeSpec.createSpecFrame({}) =", handle);
+  plugin.services.pframeSpec.disposeSpecFrame(handle);
+  console.log("[service-test] pframeSpec.disposeSpecFrame: ok");
+} catch (e) {
+  console.error("[service-test] pframeSpec error:", e);
+}
+
+plugin.services.pframe
+  .listColumns("dummy-handle" as any)
+  .then((r: unknown) => console.log("[service-test] pframe.listColumns result:", r))
+  .catch((e: unknown) =>
+    console.warn("[service-test] pframe.listColumns (expected error for dummy handle):", e),
+  );
+
 function increment() {
   plugin.model.data.count += 1;
   plugin.model.data.lastIncrement = new Date().toISOString();
@@ -26,6 +42,8 @@ function decrement() {
     <p v-if="plugin.model.data.lastIncrement">
       Last changed: {{ plugin.model.data.lastIncrement }}
     </p>
+    <p style="color: blue">Model specFrame: {{ plugin.model.outputs.specFrameTest }}</p>
+    <p style="color: green">Model pframe: {{ plugin.model.outputs.pframeTest }}</p>
     <div style="display: flex; gap: 8px">
       <button @click="decrement">-</button>
       <button @click="increment">+</button>
