@@ -19,14 +19,14 @@ test("check successful transaction", async () => {
         enableFormattedErrors: false,
       },
     },
-    false
+    false,
   );
   const commitResp = await tx.send(
     {
       oneofKind: "txCommit",
       txCommit: {},
     },
-    false
+    false,
   );
 
   expect(openResp.txOpen.tx?.isValid).toBeTruthy();
@@ -48,7 +48,7 @@ test("transaction timeout test", async () => {
           enableFormattedErrors: false,
         },
       },
-      false
+      false,
     );
     expect(response.txOpen.tx?.isValid).toBeTruthy();
     await tx.await();
@@ -69,7 +69,7 @@ test("check timeout error type (passive)", async () => {
           enableFormattedErrors: false,
         },
       },
-      false
+      false,
     );
     expect(response.txOpen.tx?.isValid).toBeTruthy();
     await tx.await();
@@ -92,7 +92,7 @@ test("check timeout error type (active)", async () => {
           enableFormattedErrors: false,
         },
       },
-      false
+      false,
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
@@ -118,7 +118,7 @@ test("check timeout error type (active)", async () => {
           colorProof: new Uint8Array(0),
         },
       },
-      false
+      false,
     );
     const id = (await createResponse).resourceCreateValue.resourceId;
 
@@ -132,7 +132,7 @@ test("check timeout error type (active)", async () => {
             resourceSignature: new Uint8Array(0),
           },
         },
-        false
+        false,
       );
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);
@@ -156,7 +156,7 @@ test("check is abort error (active)", async () => {
           enableFormattedErrors: false,
         },
       },
-      false
+      false,
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
@@ -182,7 +182,7 @@ test("check is abort error (active)", async () => {
           colorProof: new Uint8Array(0),
         },
       },
-      false
+      false,
     );
     const id = (await createResponse).resourceCreateValue.resourceId;
 
@@ -196,7 +196,7 @@ test("check is abort error (active)", async () => {
             resourceSignature: new Uint8Array(0),
           },
         },
-        false
+        false,
       );
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);
