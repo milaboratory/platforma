@@ -522,12 +522,18 @@ export class PlTransaction {
   }
 
   public removeResource(rId: ResourceId): void {
-    this.sendVoidAsync({ oneofKind: "resourceRemove", resourceRemove: { resourceId: rId, resourceSignature: new Uint8Array(0) } });
+    this.sendVoidAsync({
+      oneofKind: "resourceRemove",
+      resourceRemove: { resourceId: rId, resourceSignature: new Uint8Array(0) },
+    });
   }
 
   public resourceExists(rId: ResourceId): Promise<boolean> {
     return this.sendSingleAndParse(
-      { oneofKind: "resourceExists", resourceExists: { resourceId: rId, resourceSignature: new Uint8Array(0) } },
+      {
+        oneofKind: "resourceExists",
+        resourceExists: { resourceId: rId, resourceSignature: new Uint8Array(0) },
+      },
       (r) => r.resourceExists.exists,
     );
   }
@@ -585,7 +591,11 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceGet",
-          resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields, resourceSignature: new Uint8Array(0) },
+          resourceGet: {
+            resourceId: toResourceId(rId),
+            loadFields: loadFields,
+            resourceSignature: new Uint8Array(0),
+          },
         },
         (r) => protoToResource(notEmpty(r.resourceGet.resource)),
       );
@@ -693,7 +703,12 @@ export class PlTransaction {
   public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
     this.sendVoidAsync({
       oneofKind: "resourceSetError",
-      resourceSetError: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0), errorResourceId: toResourceId(ref), errorResourceSignature: new Uint8Array(0) },
+      resourceSetError: {
+        resourceId: toResourceId(rId),
+        resourceSignature: new Uint8Array(0),
+        errorResourceId: toResourceId(ref),
+        errorResourceSignature: new Uint8Array(0),
+      },
     });
   }
 
@@ -747,7 +762,11 @@ export class PlTransaction {
     this._stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
-      fieldSetError: { field: toFieldId(fId), errorResourceId: toResourceId(ref), errorResourceSignature: new Uint8Array(0) },
+      fieldSetError: {
+        field: toFieldId(fId),
+        errorResourceId: toResourceId(ref),
+        errorResourceSignature: new Uint8Array(0),
+      },
     });
   }
 
@@ -780,7 +799,12 @@ export class PlTransaction {
       const result = await this.sendMultiAndParse(
         {
           oneofKind: "resourceKeyValueList",
-          resourceKeyValueList: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0), startFrom: "", limit: 0 },
+          resourceKeyValueList: {
+            resourceId: toResourceId(rId),
+            resourceSignature: new Uint8Array(0),
+            startFrom: "",
+            limit: 0,
+          },
         },
         (r) => r.map((e) => e.resourceKeyValueList.record!),
       );
@@ -842,7 +866,11 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGet",
-          resourceKeyValueGet: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0), key },
+          resourceKeyValueGet: {
+            resourceId: toResourceId(rId),
+            resourceSignature: new Uint8Array(0),
+            key,
+          },
         },
         (r) => r.resourceKeyValueGet.value,
       );
@@ -870,7 +898,11 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGetIfExists",
-          resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0), key },
+          resourceKeyValueGetIfExists: {
+            resourceId: toResourceId(rId),
+            resourceSignature: new Uint8Array(0),
+            key,
+          },
         },
         (r) =>
           r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
