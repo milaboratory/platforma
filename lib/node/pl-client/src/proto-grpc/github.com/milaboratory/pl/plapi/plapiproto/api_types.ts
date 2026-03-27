@@ -33,9 +33,13 @@ export interface Tx {
  */
 export interface Resource {
     /**
-     * @generated from protobuf field: uint64 id = 2
+     * @generated from protobuf field: uint64 resource_id = 2
      */
-    id: bigint;
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 18
+     */
+    resourceSignature: Uint8Array;
     /**
      * @generated from protobuf field: bytes canonical_id = 17
      */
@@ -154,6 +158,13 @@ export interface Field {
      */
     value: bigint;
     /**
+     * Signature for value resource ID, inheriting the parent resource's color.
+     * Populated server-side when the parent resource has a known color in the current TX.
+     *
+     * @generated from protobuf field: bytes value_signature = 10
+     */
+    valueSignature: Uint8Array;
+    /**
      * If the value was empty, assigned or finally resolved.
      *
      * @generated from protobuf field: MiLaboratories.PL.API.Field.ValueStatus value_status = 7
@@ -172,6 +183,12 @@ export interface Field {
      * @generated from protobuf field: uint64 error = 6
      */
     error: bigint;
+    /**
+     * Signature for error resource ID, inheriting the parent resource's color.
+     *
+     * @generated from protobuf field: bytes error_signature = 11
+     */
+    errorSignature: Uint8Array;
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.Field.ValueStatus
@@ -301,6 +318,10 @@ export interface Notification_Events {
      * @generated from protobuf field: bool dynamic_changed = 10
      */
     dynamicChanged: boolean;
+    /**
+     * @generated from protobuf field: bool resource_recovered = 17
+     */
+    resourceRecovered: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.Notification.FieldChange
@@ -372,6 +393,67 @@ export interface ResourceSchema {
      * @generated from protobuf field: repeated MiLaboratories.PL.API.FieldSchema fields = 2
      */
     fields: FieldSchema[];
+    /**
+     * Access restriction flags for non-controller roles
+     *
+     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceSchema.AccessFlags access_flags = 3
+     */
+    accessFlags?: ResourceSchema_AccessFlags;
+    /**
+     * @generated from protobuf field: bool free_inputs = 4
+     */
+    freeInputs: boolean; // if true, skip automatic input locking on creation
+    /**
+     * @generated from protobuf field: bool free_outputs = 5
+     */
+    freeOutputs: boolean; // if true, skip automatic output locking on creation
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceSchema.AccessFlags
+ */
+export interface ResourceSchema_AccessFlags {
+    /**
+     * Deny-list approach: default = allowed (true)
+     * Controllers set these to false to restrict non-controller roles (role='u', role='w')
+     *
+     * @generated from protobuf field: optional bool create_resource = 1
+     */
+    createResource?: boolean; // default: true (creation allowed)
+    /**
+     * IMPORTANT: read_fields=false with write_fields=true is a forbidden combination
+     *
+     * @generated from protobuf field: optional bool read_fields = 2
+     */
+    readFields?: boolean; // default: true (reads allowed)
+    /**
+     * @generated from protobuf field: optional bool write_fields = 3
+     */
+    writeFields?: boolean; // default: true (writes allowed)
+    /**
+     * IMPORTANT: read_kv=false with write_kv=true is a forbidden combination
+     *
+     * @generated from protobuf field: optional bool read_kv = 4
+     */
+    readKv?: boolean; // if unset, falls back to read_fields
+    /**
+     * @generated from protobuf field: optional bool write_kv = 5
+     */
+    writeKv?: boolean; // if unset, falls back to write_fields
+    /**
+     * Per-field-type overrides (map: field_type → bool)
+     * When defined for a field type, overrides resource-level flags
+     *
+     * @generated from protobuf field: map<uint32, bool> read_by_field_type = 6
+     */
+    readByFieldType: {
+        [key: number]: boolean;
+    };
+    /**
+     * @generated from protobuf field: map<uint32, bool> write_by_field_type = 7
+     */
+    writeByFieldType: {
+        [key: number]: boolean;
+    };
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.FieldSchema
@@ -466,7 +548,8 @@ export const Tx = new Tx$Type();
 class Resource$Type extends MessageType<Resource> {
     constructor() {
         super("MiLaboratories.PL.API.Resource", [
-            { no: 2, name: "id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 18, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 17, name: "canonical_id", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "kind", kind: "enum", T: () => ["MiLaboratories.PL.API.Resource.Kind", Resource_Kind, "KIND_"] },
             { no: 4, name: "type", kind: "message", T: () => ResourceType },
@@ -486,7 +569,8 @@ class Resource$Type extends MessageType<Resource> {
     }
     create(value?: PartialMessage<Resource>): Resource {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.id = 0n;
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.canonicalId = new Uint8Array(0);
         message.kind = 0;
         message.data = new Uint8Array(0);
@@ -507,8 +591,11 @@ class Resource$Type extends MessageType<Resource> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* uint64 id */ 2:
-                    message.id = reader.uint64().toBigInt();
+                case /* uint64 resource_id */ 2:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 18:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* bytes canonical_id */ 17:
                     message.canonicalId = reader.bytes();
@@ -567,9 +654,9 @@ class Resource$Type extends MessageType<Resource> {
         return message;
     }
     internalBinaryWrite(message: Resource, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* uint64 id = 2; */
-        if (message.id !== 0n)
-            writer.tag(2, WireType.Varint).uint64(message.id);
+        /* uint64 resource_id = 2; */
+        if (message.resourceId !== 0n)
+            writer.tag(2, WireType.Varint).uint64(message.resourceId);
         /* MiLaboratories.PL.API.Resource.Kind kind = 3; */
         if (message.kind !== 0)
             writer.tag(3, WireType.Varint).int32(message.kind);
@@ -615,6 +702,9 @@ class Resource$Type extends MessageType<Resource> {
         /* bytes canonical_id = 17; */
         if (message.canonicalId.length)
             writer.tag(17, WireType.LengthDelimited).bytes(message.canonicalId);
+        /* bytes resource_signature = 18; */
+        if (message.resourceSignature.length)
+            writer.tag(18, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -680,18 +770,22 @@ class Field$Type extends MessageType<Field> {
             { no: 2, name: "type", kind: "enum", T: () => ["MiLaboratories.PL.Base.FieldType", FieldType] },
             { no: 3, name: "features", kind: "message", T: () => Resource_Features },
             { no: 5, name: "value", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 10, name: "value_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 7, name: "value_status", kind: "enum", T: () => ["MiLaboratories.PL.API.Field.ValueStatus", Field_ValueStatus] },
             { no: 8, name: "value_is_final", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 6, name: "error", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 6, name: "error", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 11, name: "error_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<Field>): Field {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.type = 0;
         message.value = 0n;
+        message.valueSignature = new Uint8Array(0);
         message.valueStatus = 0;
         message.valueIsFinal = false;
         message.error = 0n;
+        message.errorSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<Field>(this, message, value);
         return message;
@@ -713,6 +807,9 @@ class Field$Type extends MessageType<Field> {
                 case /* uint64 value */ 5:
                     message.value = reader.uint64().toBigInt();
                     break;
+                case /* bytes value_signature */ 10:
+                    message.valueSignature = reader.bytes();
+                    break;
                 case /* MiLaboratories.PL.API.Field.ValueStatus value_status */ 7:
                     message.valueStatus = reader.int32();
                     break;
@@ -721,6 +818,9 @@ class Field$Type extends MessageType<Field> {
                     break;
                 case /* uint64 error */ 6:
                     message.error = reader.uint64().toBigInt();
+                    break;
+                case /* bytes error_signature */ 11:
+                    message.errorSignature = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -755,6 +855,12 @@ class Field$Type extends MessageType<Field> {
         /* bool value_is_final = 8; */
         if (message.valueIsFinal !== false)
             writer.tag(8, WireType.Varint).bool(message.valueIsFinal);
+        /* bytes value_signature = 10; */
+        if (message.valueSignature.length)
+            writer.tag(10, WireType.LengthDelimited).bytes(message.valueSignature);
+        /* bytes error_signature = 11; */
+        if (message.errorSignature.length)
+            writer.tag(11, WireType.LengthDelimited).bytes(message.errorSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -910,7 +1016,8 @@ class Notification_Events$Type extends MessageType<Notification_Events> {
             { no: 8, name: "output_set", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 9, name: "all_outputs_set", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 14, name: "generic_otw_set", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 10, name: "dynamic_changed", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 10, name: "dynamic_changed", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 17, name: "resource_recovered", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<Notification_Events>): Notification_Events {
@@ -930,6 +1037,7 @@ class Notification_Events$Type extends MessageType<Notification_Events> {
         message.allOutputsSet = false;
         message.genericOtwSet = false;
         message.dynamicChanged = false;
+        message.resourceRecovered = false;
         if (value !== undefined)
             reflectionMergePartial<Notification_Events>(this, message, value);
         return message;
@@ -983,6 +1091,9 @@ class Notification_Events$Type extends MessageType<Notification_Events> {
                     break;
                 case /* bool dynamic_changed */ 10:
                     message.dynamicChanged = reader.bool();
+                    break;
+                case /* bool resource_recovered */ 17:
+                    message.resourceRecovered = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1041,6 +1152,9 @@ class Notification_Events$Type extends MessageType<Notification_Events> {
         /* bool field_got_error = 16; */
         if (message.fieldGotError !== false)
             writer.tag(16, WireType.Varint).bool(message.fieldGotError);
+        /* bool resource_recovered = 17; */
+        if (message.resourceRecovered !== false)
+            writer.tag(17, WireType.Varint).bool(message.resourceRecovered);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1298,12 +1412,17 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
     constructor() {
         super("MiLaboratories.PL.API.ResourceSchema", [
             { no: 1, name: "type", kind: "message", T: () => ResourceType },
-            { no: 2, name: "fields", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => FieldSchema }
+            { no: 2, name: "fields", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => FieldSchema },
+            { no: 3, name: "access_flags", kind: "message", T: () => ResourceSchema_AccessFlags },
+            { no: 4, name: "free_inputs", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "free_outputs", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceSchema>): ResourceSchema {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.fields = [];
+        message.freeInputs = false;
+        message.freeOutputs = false;
         if (value !== undefined)
             reflectionMergePartial<ResourceSchema>(this, message, value);
         return message;
@@ -1318,6 +1437,15 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
                     break;
                 case /* repeated MiLaboratories.PL.API.FieldSchema fields */ 2:
                     message.fields.push(FieldSchema.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* optional MiLaboratories.PL.API.ResourceSchema.AccessFlags access_flags */ 3:
+                    message.accessFlags = ResourceSchema_AccessFlags.internalBinaryRead(reader, reader.uint32(), options, message.accessFlags);
+                    break;
+                case /* bool free_inputs */ 4:
+                    message.freeInputs = reader.bool();
+                    break;
+                case /* bool free_outputs */ 5:
+                    message.freeOutputs = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1337,6 +1465,15 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
         /* repeated MiLaboratories.PL.API.FieldSchema fields = 2; */
         for (let i = 0; i < message.fields.length; i++)
             FieldSchema.internalBinaryWrite(message.fields[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* optional MiLaboratories.PL.API.ResourceSchema.AccessFlags access_flags = 3; */
+        if (message.accessFlags)
+            ResourceSchema_AccessFlags.internalBinaryWrite(message.accessFlags, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+        /* bool free_inputs = 4; */
+        if (message.freeInputs !== false)
+            writer.tag(4, WireType.Varint).bool(message.freeInputs);
+        /* bool free_outputs = 5; */
+        if (message.freeOutputs !== false)
+            writer.tag(5, WireType.Varint).bool(message.freeOutputs);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1347,6 +1484,128 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
  * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceSchema
  */
 export const ResourceSchema = new ResourceSchema$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceSchema_AccessFlags$Type extends MessageType<ResourceSchema_AccessFlags> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceSchema.AccessFlags", [
+            { no: 1, name: "create_resource", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 2, name: "read_fields", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 3, name: "write_fields", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 4, name: "read_kv", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "write_kv", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 6, name: "read_by_field_type", kind: "map", K: 13 /*ScalarType.UINT32*/, V: { kind: "scalar", T: 8 /*ScalarType.BOOL*/ } },
+            { no: 7, name: "write_by_field_type", kind: "map", K: 13 /*ScalarType.UINT32*/, V: { kind: "scalar", T: 8 /*ScalarType.BOOL*/ } }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceSchema_AccessFlags>): ResourceSchema_AccessFlags {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.readByFieldType = {};
+        message.writeByFieldType = {};
+        if (value !== undefined)
+            reflectionMergePartial<ResourceSchema_AccessFlags>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceSchema_AccessFlags): ResourceSchema_AccessFlags {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* optional bool create_resource */ 1:
+                    message.createResource = reader.bool();
+                    break;
+                case /* optional bool read_fields */ 2:
+                    message.readFields = reader.bool();
+                    break;
+                case /* optional bool write_fields */ 3:
+                    message.writeFields = reader.bool();
+                    break;
+                case /* optional bool read_kv */ 4:
+                    message.readKv = reader.bool();
+                    break;
+                case /* optional bool write_kv */ 5:
+                    message.writeKv = reader.bool();
+                    break;
+                case /* map<uint32, bool> read_by_field_type */ 6:
+                    this.binaryReadMap6(message.readByFieldType, reader, options);
+                    break;
+                case /* map<uint32, bool> write_by_field_type */ 7:
+                    this.binaryReadMap7(message.writeByFieldType, reader, options);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    private binaryReadMap6(map: ResourceSchema_AccessFlags["readByFieldType"], reader: IBinaryReader, options: BinaryReadOptions): void {
+        let len = reader.uint32(), end = reader.pos + len, key: keyof ResourceSchema_AccessFlags["readByFieldType"] | undefined, val: ResourceSchema_AccessFlags["readByFieldType"][any] | undefined;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case 1:
+                    key = reader.uint32();
+                    break;
+                case 2:
+                    val = reader.bool();
+                    break;
+                default: throw new globalThis.Error("unknown map entry field for MiLaboratories.PL.API.ResourceSchema.AccessFlags.read_by_field_type");
+            }
+        }
+        map[key ?? 0] = val ?? false;
+    }
+    private binaryReadMap7(map: ResourceSchema_AccessFlags["writeByFieldType"], reader: IBinaryReader, options: BinaryReadOptions): void {
+        let len = reader.uint32(), end = reader.pos + len, key: keyof ResourceSchema_AccessFlags["writeByFieldType"] | undefined, val: ResourceSchema_AccessFlags["writeByFieldType"][any] | undefined;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case 1:
+                    key = reader.uint32();
+                    break;
+                case 2:
+                    val = reader.bool();
+                    break;
+                default: throw new globalThis.Error("unknown map entry field for MiLaboratories.PL.API.ResourceSchema.AccessFlags.write_by_field_type");
+            }
+        }
+        map[key ?? 0] = val ?? false;
+    }
+    internalBinaryWrite(message: ResourceSchema_AccessFlags, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional bool create_resource = 1; */
+        if (message.createResource !== undefined)
+            writer.tag(1, WireType.Varint).bool(message.createResource);
+        /* optional bool read_fields = 2; */
+        if (message.readFields !== undefined)
+            writer.tag(2, WireType.Varint).bool(message.readFields);
+        /* optional bool write_fields = 3; */
+        if (message.writeFields !== undefined)
+            writer.tag(3, WireType.Varint).bool(message.writeFields);
+        /* optional bool read_kv = 4; */
+        if (message.readKv !== undefined)
+            writer.tag(4, WireType.Varint).bool(message.readKv);
+        /* optional bool write_kv = 5; */
+        if (message.writeKv !== undefined)
+            writer.tag(5, WireType.Varint).bool(message.writeKv);
+        /* map<uint32, bool> read_by_field_type = 6; */
+        for (let k of globalThis.Object.keys(message.readByFieldType))
+            writer.tag(6, WireType.LengthDelimited).fork().tag(1, WireType.Varint).uint32(parseInt(k)).tag(2, WireType.Varint).bool(message.readByFieldType[k as any]).join();
+        /* map<uint32, bool> write_by_field_type = 7; */
+        for (let k of globalThis.Object.keys(message.writeByFieldType))
+            writer.tag(7, WireType.LengthDelimited).fork().tag(1, WireType.Varint).uint32(parseInt(k)).tag(2, WireType.Varint).bool(message.writeByFieldType[k as any]).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceSchema.AccessFlags
+ */
+export const ResourceSchema_AccessFlags = new ResourceSchema_AccessFlags$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class FieldSchema$Type extends MessageType<FieldSchema> {
     constructor() {
