@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.61.3
+
+### Patch Changes
+
+- 0e682a8: fix for outputWithStatus in plugin
+
 ## 1.61.2
 
 ### Patch Changes
