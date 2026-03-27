@@ -30,11 +30,27 @@ The desktop app uses multiple `WebContentsView` layers inside a single `BrowserW
 
 Screenshots use **device pixels** (Retina 2x). Input events (`sendInputEvent`) use **CSS pixels**.
 
-- macOS Retina: device pixels = CSS pixels * 2
-- To convert screenshot coordinates to click coordinates: **divide by `devicePixelRatio`**
-- Get the ratio: `execute_js` with `window.devicePixelRatio`
+- macOS Retina: device pixels = CSS pixels × 2
+- To convert screenshot coordinates to click coordinates: **divide by `devicePixelRatio`** (typically 2)
+- Get the ratio: `execute_js` with `window.devicePixelRatio`, or check screenshot dimensions (2880×1800 = 2x of 1440×900)
 
-**Preferred method:** Use `execute_js` with `getBoundingClientRect()` to get CSS-pixel coordinates directly, avoiding manual conversion. This only works for elements in the webContents that `execute_js` targets (currently `getTopmostWebContents()`).
+### How to find click coordinates from screenshots
+
+1. **Take a screenshot** with `capture_screenshot` (use `savePath` to save to disk)
+2. **Identify the target element** in the screenshot image
+3. **Estimate device-pixel coordinates** of the element's center in the image
+4. **Divide by DPR** (typically 2) to get CSS-pixel coordinates for `click`
+
+Example: if a button center is at (200, 1460) in the screenshot image → click at CSS (100, 730).
+
+### Practical tips
+
+- Screenshot images are 2880×1800 pixels for a 1440×900 CSS-pixel window (DPR=2)
+- When eyeballing coordinates, err toward the center of the target element
+- The sidebar is 280 CSS pixels wide; its center is at x≈140
+- The title bar is 40 CSS pixels tall
+- If a click misses, adjust by ±10 CSS pixels and retry
+- `execute_js` with `getBoundingClientRect()` gives exact CSS coordinates, but only works for elements in the topmost WebContents (block view when a block is selected, main window otherwise)
 
 ## Screenshot capture
 
@@ -43,6 +59,8 @@ Screenshots use **device pixels** (Retina 2x). Input events (`sendInputEvent`) u
 - `savePath` parameter: optional, saves PNG to disk in addition to returning inline
 - `desktopCapturer` requires **Screen Recording** permission in macOS System Settings > Privacy & Security
 - Without permission: falls back to single-WebContents capture (may miss overlays)
+- `desktopCapturer` can be **intermittent** — it may work for some captures and fail for others within the same session. If a screenshot shows only the block view (no sidebar/title bar), retry — the next capture may succeed
+- When the screenshot shows only the block view content (no sidebar), you can still click sidebar elements by calculating coordinates from the known layout (sidebar=280px, title bar=40px)
 
 ## Click routing
 
@@ -124,20 +142,48 @@ tail -5 /tmp/platforma-app.log
 ## Common test workflow
 
 ```
-1. capture_screenshot          → see current state
-2. click at (x, y)            → interact with UI
-3. capture_screenshot          → verify result
-4. Save with savePath param   → persist to disk for comparison
+1. capture_screenshot (savePath)  → see current state, get device-pixel coordinates
+2. Divide coordinates by DPR (2) → convert to CSS pixels
+3. click at (cssX, cssY)         → interact with UI
+4. sleep 1-2s                    → wait for UI to react
+5. capture_screenshot (savePath)  → verify result
 ```
+
+### Window layout reference
+
+```
+┌──────────────────────────────────────────────┐
+│  Title bar (y: 0–40 CSS)                     │
+├───────────┬──────────────────────────────────┤
+│  Sidebar  │  Block view                      │
+│  (x: 0–   │  (x: 280–1440, y: 40–900 CSS)   │
+│   280 CSS)│                                  │
+│           │                                  │
+│  Block    │                                  │
+│  list     │                                  │
+│           │                                  │
+│ ┌───────┐ │                                  │
+│ │+ Add  │ │                                  │
+│ │ Block │ │                                  │
+│ └───────┘ │                                  │
+└───────────┴──────────────────────────────────┘
+```
+
+- Sidebar width: **280 CSS pixels** (can be hidden via toggle in title bar)
+- Title bar height: **40 CSS pixels**
+- Block view: fills remaining space (typically 1160×860 CSS pixels)
+- "Add Block" button: sidebar footer, approximately x≈100, y≈730–740 CSS (varies with block count)
 
 ## Troubleshooting
 
 | Problem | Cause | Fix |
 |---------|-------|-----|
-| Screenshot shows only block panel | Using `webContents.capturePage()` on block view | Use `desktopCapturer` (needs Screen Recording permission) |
-| Screenshot is empty (0 bytes) | `desktopCapturer` failed, no fallback | Grant Screen Recording permission, or ensure fallback to `capturePage()` |
-| Click doesn't hit sidebar | Input routed to block view webContents | Use `resolveWebContentsForEvent()` which checks bounds |
-| `execute_js` can't find element | Element is in main window, not block view | Use click with coordinates instead |
+| Screenshot shows only block panel | `desktopCapturer` failed, fell back to `capturePage()` on block view | Grant Screen Recording permission, or retry — `desktopCapturer` is intermittent |
+| Screenshot is empty (0 bytes) | Block view not fully loaded yet | Wait 2-3 seconds and retry |
+| Click doesn't hit target | Wrong coordinate conversion | Verify: screenshot pixel ÷ 2 = CSS pixel. Check screenshot dimensions with `sips -g pixelWidth -g pixelHeight` |
+| Click hits wrong element | Coordinate slightly off | Adjust by ±10 CSS pixels. Use `savePath` to save screenshot and measure precisely |
+| `execute_js` can't find element | Element is in main window, not block view | Use coordinate-based click instead. `execute_js` targets topmost WebContents only |
+| Sidebar click ignored | Sidebar may be hidden (`margin-left: -280px`) | Toggle sidebar via title bar icon at approximately CSS (67, 9) |
 | `pnpm install` doesn't update tgz | Cached resolution | Remove `node_modules/.pnpm/@milaboratories+pl-mcp-server*` then reinstall |
 | App crashes after `pnpm install --force` | Lockfile changed, dependency version mismatch | Restore lockfile with `git checkout pnpm-lock.yaml`, then `pnpm install` |
 | MCP tools unavailable after restart | Server not reconnected | Run `/mcp` in Claude Code to reconnect |
