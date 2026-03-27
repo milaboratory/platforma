@@ -1,12 +1,26 @@
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult } from "./types";
 
 export function registerScreenshotTool(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "capture_screenshot",
-    { description: "Capture a screenshot of the current application window" },
-    async () => {
+    {
+      description:
+        "Capture a screenshot of the current application window. Optionally save to a file.",
+      inputSchema: {
+        savePath: z
+          .string()
+          .optional()
+          .describe(
+            "Absolute file path to save the screenshot as PNG. If omitted, returns the image inline only.",
+          ),
+      },
+    },
+    async ({ savePath }: { savePath?: string }) => {
       if (!ctx.callbacks.captureScreenshot) {
         return errorResult(
           "Screenshot capture is not available.",
@@ -14,6 +28,18 @@ export function registerScreenshotTool(server: McpServer, ctx: ToolContext): voi
         );
       }
       const base64Png = await ctx.callbacks.captureScreenshot();
+
+      if (savePath) {
+        const absPath = resolve(savePath);
+        await writeFile(absPath, Buffer.from(base64Png, "base64"));
+        return {
+          content: [
+            { type: "image" as const, data: base64Png, mimeType: "image/png" },
+            { type: "text" as const, text: `Screenshot saved to ${absPath}` },
+          ],
+        };
+      }
+
       return {
         content: [{ type: "image" as const, data: base64Png, mimeType: "image/png" }],
       };
