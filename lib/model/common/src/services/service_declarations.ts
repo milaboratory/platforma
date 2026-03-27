@@ -1,12 +1,18 @@
 /**
  * Service declarations — add new services here.
  *
- * Other files that need updating for a new service:
- * - lib/node/pl-middle-layer/src/js_render/service_injectors.ts (VM bridge)
- * - lib/node/pl-middle-layer/src/middle_layer/middle_layer.ts (ModelServiceRegistry factory)
- * - sdk/ui-vue/src/internal/createAppV3.ts (UiServiceRegistry factory)
- * - sdk/model/src/services/block_service_flags.ts (if default-required by all blocks)
- * - platforma-desktop-app/packages/worker/src/uiServiceInjectors.ts (IPC bridge, node services only)
+ * After adding a service, fix type errors in these files:
+ *
+ * Model side:
+ * - lib/node/pl-middle-layer/src/js_render/service_injectors.ts — VM bridge for workflow scripts
+ * - lib/node/pl-middle-layer/src/middle_layer/middle_layer.ts — ModelServiceRegistry factory
+ *
+ * UI side:
+ * - lib/model/common/src/services/service_injector_factory.ts — driver method wrappers (node services only)
+ * - sdk/ui-vue/src/internal/createAppV3.ts — UiServiceRegistry factory
+ *
+ * Optional:
+ * - sdk/model/src/services/block_service_flags.ts — only if default-required by all blocks
  */
 
 import type { PFrameDriver, PFrameModelDriver } from "../drivers/pframe/driver";
