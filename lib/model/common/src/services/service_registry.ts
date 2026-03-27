@@ -36,13 +36,12 @@ class ServiceRegistryBase {
         `Service "${serviceId}" is not registered in ${this.registryName}. Add it to the factory map.`,
       );
     }
-    let instance = this.instances.get(serviceId);
-    if (instance) return instance;
+    if (this.instances.has(serviceId)) return this.instances.get(serviceId)!;
 
     const factory = this.factories.get(serviceId);
     if (!factory) return null;
 
-    instance = factory();
+    const instance = factory();
     this.instances.set(serviceId, instance);
     return instance;
   }

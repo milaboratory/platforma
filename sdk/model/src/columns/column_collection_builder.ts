@@ -224,7 +224,7 @@ interface ColumnCollectionImplOptions {
   readonly columnListComplete?: boolean;
 }
 
-class ColumnCollectionImpl implements ColumnCollection {
+class ColumnCollectionImpl implements ColumnCollection, Disposable {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly specFrameHandle: SpecFrameHandle;
   public readonly columnListComplete: boolean;
@@ -241,6 +241,10 @@ class ColumnCollectionImpl implements ColumnCollection {
         {} as Record<string, PColumnSpec>,
       ),
     );
+  }
+
+  [Symbol.dispose](): void {
+    this.specDriver.disposeSpecFrame(this.specFrameHandle);
   }
 
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
@@ -282,7 +286,7 @@ interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOption
   readonly anchorSpecs: Record<string, PColumnSpec>;
 }
 
-class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
+class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposable {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly idDeriver: AnchoredIdDeriver;
   private readonly specFrameHandle: SpecFrameHandle;
@@ -319,6 +323,10 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection {
         ([id, col]) => [this.idDeriver.deriveS(col.spec), id] as const,
       ),
     );
+  }
+
+  [Symbol.dispose](): void {
+    this.specDriver.disposeSpecFrame(this.specFrameHandle);
   }
 
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId> {

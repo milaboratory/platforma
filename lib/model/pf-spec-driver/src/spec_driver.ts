@@ -31,7 +31,13 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
     const supportedValueTypes = new Set<string>(Object.values(ValueType));
     const filtered = Object.fromEntries(
-      Object.entries(specs).filter(([, spec]) => supportedValueTypes.has(spec.valueType)),
+      Object.entries(specs).filter(([id, spec]) => {
+        if (supportedValueTypes.has(spec.valueType)) return true;
+        console.warn(
+          `SpecDriver.createSpecFrame: dropping column "${id}" with unsupported valueType "${spec.valueType}"`,
+        );
+        return false;
+      }),
     );
 
     const frame: PFrameInternal.PFrameWasmV2 = createPFrame(filtered);

@@ -570,16 +570,16 @@ export abstract class RenderCtxBase<
 
   get services(): ModelServices {
     if (this.cachedServices) return this.cachedServices;
-    const { callServiceMethod, getServiceMethods } = this.ctx;
+    const ctx = this.ctx;
     const services = Object.freeze(
       Object.fromEntries(
         this.requiredServiceNames.map((id) => [
           id,
           Object.freeze(
             Object.fromEntries(
-              (getServiceMethods(id) as string[]).map((method) => [
+              (ctx.getServiceMethods(id) as string[]).map((method) => [
                 method,
-                (...args: unknown[]) => callServiceMethod(id, method, ...args),
+                (...args: unknown[]) => ctx.callServiceMethod(id, method, ...args),
               ]),
             ),
           ),
