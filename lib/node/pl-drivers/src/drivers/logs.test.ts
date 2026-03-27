@@ -50,7 +50,7 @@ test("should get all logs", async () => {
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
-    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 1; echo 2"]);
+    await createRunCommandWithStdoutStream(client, "sh", ["-c", "echo 1; sleep 1; echo 2"]);
 
     const c = Computable.make((ctx) => {
       const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
@@ -109,7 +109,7 @@ test("should get last line with a prefix", async () => {
 
     expect(await c.getValue()).toBeUndefined();
 
-    await createRunCommandWithStdoutStream(client, "bash", [
+    await createRunCommandWithStdoutStream(client, "sh", [
       "-c",
       "echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4",
     ]);
@@ -162,7 +162,7 @@ test("should get log smart object and get log lines from that", async () => {
       return logs.getLogHandle(streamManager, ctx);
     });
 
-    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 1; echo 2"]);
+    await createRunCommandWithStdoutStream(client, "sh", ["-c", "echo 1; sleep 1; echo 2"]);
 
     let handle = await c.getValue();
 
@@ -266,6 +266,7 @@ function createRunCommand(
     redirectStdout: "logs.txt",
     redirectStderr: "logs.txt",
     envs: [],
+    dockerImageTag: "busybox",
   };
 
   const runCmdId = tx.createEphemeral({ name: "RunCommand/executor", version: "2" });
