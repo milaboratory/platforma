@@ -20,6 +20,8 @@ import type { LocksAPI_Lease_Update_Response } from "./api";
 import type { LocksAPI_Lease_Update_Request } from "./api";
 import type { LocksAPI_Lease_Create_Response } from "./api";
 import type { LocksAPI_Lease_Create_Request } from "./api";
+import type { LocksAPI_LockFieldValues_Create_Response } from "./api";
+import type { LocksAPI_LockFieldValues_Create_Request } from "./api";
 import type { ControllerAPI_ClearFeatures_Response } from "./api";
 import type { ControllerAPI_ClearFeatures_Request } from "./api";
 import type { ControllerAPI_SetFeatures_Response } from "./api";
@@ -148,10 +150,33 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: ControllerClearFeatures
      */
     controllerClearFeatures(input: ControllerAPI_ClearFeatures_Request, options?: RpcOptions): UnaryCall<ControllerAPI_ClearFeatures_Request, ControllerAPI_ClearFeatures_Response>;
+    // 
+    // Locks
+    // 
+
     /**
+     * LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
+     *   - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     *   - list resource's fields, take fields with names set in request
+     *   - get resolved values of listed fields (IDs of 'ON' resources).
+     *   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
      *
-     * Locks
+     * Lock logic constraints:
+     *   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+     *     succeeds, while other fails with error (no long waiting)
+     *   - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
+     *     resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
+     *   - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before
+     *     being lockable. Attempt to lock resource that is not became original will fail.
+     *   - Locking is one-way operation: it cannot be 'released' or 'revoked'.
      *
+     * @generated from protobuf rpc: LockFieldValues
+     */
+    lockFieldValues(input: LocksAPI_LockFieldValues_Create_Request, options?: RpcOptions): UnaryCall<LocksAPI_LockFieldValues_Create_Request, LocksAPI_LockFieldValues_Create_Response>;
+    /**
+     * LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
+     * Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     * To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
      *
      * @generated from protobuf rpc: LeaseResource
      */
@@ -344,29 +369,55 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         const method = this.methods[17], opt = this._transport.mergeOptions(options);
         return stackIntercept<ControllerAPI_ClearFeatures_Request, ControllerAPI_ClearFeatures_Response>("unary", this._transport, method, opt, input);
     }
+    // 
+    // Locks
+    // 
+
     /**
+     * LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
+     *   - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     *   - list resource's fields, take fields with names set in request
+     *   - get resolved values of listed fields (IDs of 'ON' resources).
+     *   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
      *
-     * Locks
+     * Lock logic constraints:
+     *   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+     *     succeeds, while other fails with error (no long waiting)
+     *   - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
+     *     resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
+     *   - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before
+     *     being lockable. Attempt to lock resource that is not became original will fail.
+     *   - Locking is one-way operation: it cannot be 'released' or 'revoked'.
      *
+     * @generated from protobuf rpc: LockFieldValues
+     */
+    lockFieldValues(input: LocksAPI_LockFieldValues_Create_Request, options?: RpcOptions): UnaryCall<LocksAPI_LockFieldValues_Create_Request, LocksAPI_LockFieldValues_Create_Response> {
+        const method = this.methods[18], opt = this._transport.mergeOptions(options);
+        return stackIntercept<LocksAPI_LockFieldValues_Create_Request, LocksAPI_LockFieldValues_Create_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
+     * Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     * To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
      *
      * @generated from protobuf rpc: LeaseResource
      */
     leaseResource(input: LocksAPI_Lease_Create_Request, options?: RpcOptions): UnaryCall<LocksAPI_Lease_Create_Request, LocksAPI_Lease_Create_Response> {
-        const method = this.methods[18], opt = this._transport.mergeOptions(options);
+        const method = this.methods[19], opt = this._transport.mergeOptions(options);
         return stackIntercept<LocksAPI_Lease_Create_Request, LocksAPI_Lease_Create_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: UpdateLease
      */
     updateLease(input: LocksAPI_Lease_Update_Request, options?: RpcOptions): UnaryCall<LocksAPI_Lease_Update_Request, LocksAPI_Lease_Update_Response> {
-        const method = this.methods[19], opt = this._transport.mergeOptions(options);
+        const method = this.methods[20], opt = this._transport.mergeOptions(options);
         return stackIntercept<LocksAPI_Lease_Update_Request, LocksAPI_Lease_Update_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: ReleaseLease
      */
     releaseLease(input: LocksAPI_Lease_Release_Request, options?: RpcOptions): UnaryCall<LocksAPI_Lease_Release_Request, LocksAPI_Lease_Release_Response> {
-        const method = this.methods[20], opt = this._transport.mergeOptions(options);
+        const method = this.methods[21], opt = this._transport.mergeOptions(options);
         return stackIntercept<LocksAPI_Lease_Release_Request, LocksAPI_Lease_Release_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -377,14 +428,14 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: AuthMethods
      */
     authMethods(input: AuthAPI_ListMethods_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListMethods_Request, AuthAPI_ListMethods_Response> {
-        const method = this.methods[21], opt = this._transport.mergeOptions(options);
+        const method = this.methods[22], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_ListMethods_Request, AuthAPI_ListMethods_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: GetJWTToken
      */
     getJWTToken(input: AuthAPI_GetJWTToken_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetJWTToken_Request, AuthAPI_GetJWTToken_Response> {
-        const method = this.methods[22], opt = this._transport.mergeOptions(options);
+        const method = this.methods[23], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_GetJWTToken_Request, AuthAPI_GetJWTToken_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -395,7 +446,7 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: ListResourceTypes
      */
     listResourceTypes(input: MiscAPI_ListResourceTypes_Request, options?: RpcOptions): UnaryCall<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response> {
-        const method = this.methods[23], opt = this._transport.mergeOptions(options);
+        const method = this.methods[24], opt = this._transport.mergeOptions(options);
         return stackIntercept<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -406,14 +457,14 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
-        const method = this.methods[24], opt = this._transport.mergeOptions(options);
+        const method = this.methods[25], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
-        const method = this.methods[25], opt = this._transport.mergeOptions(options);
+        const method = this.methods[26], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
     }
 }

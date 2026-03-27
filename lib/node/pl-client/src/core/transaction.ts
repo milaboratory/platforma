@@ -518,7 +518,7 @@ export class PlTransaction {
   }
 
   public removeResource(rId: ResourceId): void {
-    this.sendVoidAsync({ oneofKind: "resourceRemove", resourceRemove: { id: rId } });
+    this.sendVoidAsync({ oneofKind: "resourceRemove", resourceRemove: { resourceId: rId } });
   }
 
   public resourceExists(rId: ResourceId): Promise<boolean> {
@@ -743,7 +743,7 @@ export class PlTransaction {
     this._stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
-      fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) },
+      fieldSetError: { field: toFieldId(fId), errorResourceId: toResourceId(ref) },
     });
   }
 

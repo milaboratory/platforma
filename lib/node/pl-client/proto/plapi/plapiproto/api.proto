@@ -8,6 +8,7 @@ import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
 
@@ -130,21 +131,46 @@ service Platform {
   //
   // Locks
   //
+
+  // LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
+  //   - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+  //   - list resource's fields, take fields with names set in request
+  //   - get resolved values of listed fields (IDs of 'ON' resources).
+  //   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
+  //
+  // Lock logic constraints:
+  //   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+  //     succeeds, while other fails with error (no long waiting)
+  //   - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
+  //     resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
+  //   - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before 
+  //     being lockable. Attempt to lock resource that is not became original will fail.
+  //   - Locking is one-way operation: it cannot be 'released' or 'revoked'.
+  rpc LockFieldValues(LocksAPI.LockFieldValues.Create.Request) returns (LocksAPI.LockFieldValues.Create.Response) {
+    option (google.api.http) = {
+      post: "/v1/locks/lock/create"
+      body: "*"
+    };
+  }
+
+  // LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
+  // Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+  // To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
   rpc LeaseResource(LocksAPI.Lease.Create.Request) returns (LocksAPI.Lease.Create.Response) {
     option (google.api.http) = {
-      post: "/v1/locks/lease"
+      post: "/v1/locks/lease/create"
       body: "*"
     };
   }
   rpc UpdateLease(LocksAPI.Lease.Update.Request) returns (LocksAPI.Lease.Update.Response) {
     option (google.api.http) = {
-      put: "/v1/locks/lease"
+      post: "/v1/locks/lease/update"
       body: "*"
     };
   }
   rpc ReleaseLease(LocksAPI.Lease.Release.Request) returns (LocksAPI.Lease.Release.Response) {
     option (google.api.http) = {
-      delete: "/v1/locks/lease"
+      post: "/v1/locks/lease/release"
       body: "*"
     };
   }
@@ -385,10 +411,12 @@ message TxAPI {
       ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists = 255; // get a bool from a controller's key-value store, return false if key is not found.
 
       CacheAPI.SetToField.Request cache_set_to_field = 300; // store the topology info and results of the field.
-      CacheAPI.DeleteExpiredRecords.Request cache_delete_expired_records = 301; // iterate through all records and delete expired.
+      Util.Deprecated cache_delete_expired_records = 301 [deprecated = true];
 
       ControllerAPI.SetFeatures.Request controller_features_set = 350; // replace list of resource features, provided by controller.
       ControllerAPI.ClearFeatures.Request controller_features_clear = 351; // clear list of resource features, provided by controller.
+
+      SetDefaultColor.Request set_default_color = 400; // set default color for resource creation
     }
   }
 
@@ -482,10 +510,12 @@ message TxAPI {
       ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists = 255;
 
       CacheAPI.SetToField.Response cache_set_to_field = 300;
-      CacheAPI.DeleteExpiredRecords.Response cache_delete_expired_records = 301;
+      Util.Deprecated cache_delete_expired_records = 301 [deprecated = true];
 
       ControllerAPI.SetFeatures.Response controller_features_set = 350;
       ControllerAPI.ClearFeatures.Response controller_features_clear = 351;
+
+      SetDefaultColor.Response set_default_color = 400;
     }
 
     google.rpc.Status error = 3;
@@ -533,6 +563,13 @@ message TxAPI {
 
     message Response {}
   }
+
+  message SetDefaultColor {
+    message Request {
+      bytes color_proof = 1;
+    }
+    message Response {}
+  }
 }
 
 message ResourceAPI {
@@ -542,10 +579,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
+      bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
   message CreateEphemeral {
@@ -554,10 +593,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
+      bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
 
@@ -581,10 +622,12 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
+      bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
 
@@ -596,6 +639,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
 
@@ -607,10 +651,13 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
+
+      bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
 
@@ -630,6 +677,7 @@ message ResourceAPI {
   message LockInputs {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -638,6 +686,7 @@ message ResourceAPI {
   message LockOutputs {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -646,6 +695,7 @@ message ResourceAPI {
   message Exists {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
 
     message Response {
@@ -656,7 +706,10 @@ message ResourceAPI {
   message SetError {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       uint64 error_resource_id = 2;
+      bytes error_resource_signature = 4;
     }
     message Response {}
   }
@@ -664,6 +717,8 @@ message ResourceAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       bool load_fields = 2;
     }
 
@@ -708,6 +763,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
   }
 
@@ -716,7 +772,8 @@ message ResourceAPI {
   // Remove any resource, that has garbage collection disabled
   message Remove {
     message Request {
-      uint64 id = 1;
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -739,6 +796,7 @@ message ResourceAPI {
 
       message Response {
         uint64 resource_id = 1;
+        bytes resource_signature = 2;
       }
     }
 
@@ -764,6 +822,7 @@ message ResourceAPI {
   message Tree {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
 
       // Limit maximum depth the tree is traversed.
       // The resource <resource_id> is considered on depth = 0, the values of its fiels
@@ -783,6 +842,7 @@ message ResourceAPI {
   message TreeSize {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
     message Response {
       // size of all tree resources in bytes
@@ -829,7 +889,8 @@ message FieldAPI {
   message SetError {
     message Request {
       Base.FieldRef field = 1;
-      uint64 err_resource_id = 2;
+      uint64 error_resource_id = 2;
+      bytes error_resource_signature = 3;
     }
 
     message Response {}
@@ -862,6 +923,7 @@ message FieldAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 4;
 
       // Start the listing from given position, returning first field with
       // name >= start_from.
@@ -1115,6 +1177,7 @@ message ResourceKVAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 4;
 
       // Start the listing from given position, returning first item with
       // key >= start_from.
@@ -1148,6 +1211,8 @@ message ResourceKVAPI {
   message Set {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 4;
+
       string key = 2;
       bytes value = 3;
     }
@@ -1158,6 +1223,8 @@ message ResourceKVAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1169,6 +1236,8 @@ message ResourceKVAPI {
   message GetIfExists {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1181,6 +1250,8 @@ message ResourceKVAPI {
   message Delete {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1190,6 +1261,8 @@ message ResourceKVAPI {
   message SetFlag {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 4;
+
       string key = 2;
       bool value = 3;
     }
@@ -1200,6 +1273,8 @@ message ResourceKVAPI {
   message GetFlag {
     message Request {
       uint64 resource_id = 1;
+      bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1286,17 +1361,45 @@ message CacheAPI {
     message Response {}
   }
 
-  message DeleteExpiredRecords {
-    message Request {}
-    message Response {}
-  }
 }
 
 message LocksAPI {
+  message LockFieldValues {
+    message Create {
+      message Request {
+        uint64 resource_id = 1; // resource ID that will own the lock
+        repeated string lock_references_of = 2; // list of fields, which values should be locked
+        string comment = 3; // comment to show for other lockers on lock conflict. Truncated to 1024 bytes.
+      }
+
+      message Response {
+        // true when lock was acquired (new, or already owned by the owner)
+        // Client MUST pay attention to this flag, as it shows if lock was successfull.
+        bool acquired = 1;
+
+        // Info about why lock was not acquired.
+        // Limited number of conflicts is reported: i.e. if lock operation failed for 20 fields, only first 10 are listed here.
+        // The number '10' is not a fixed contract for external clients. It is just 'somehow truncated'.
+        repeated LockInfo conflicting_locks = 2;
+        bool conflicts_list_truncated = 3; // true if there were more conflicts than reported
+
+        message LockInfo {
+          uint64 target_id = 1; // ID of resource that failed to be locked
+          string field_name = 2; // what field was referencing this <target_id>
+
+          uint64 locked_by = 3; // Who is owning the lock for <target_id>
+          google.protobuf.Timestamp locked_at = 4; // when the lock was obtained
+          string comment = 5; // comment from the locker holding the lock
+        }
+      }
+    }
+  }
+
   message Lease {
     message Create {
       message Request {
         uint64 resource_id = 1;
+        bytes resource_signature = 5;
 
         google.protobuf.Duration timeout = 3;
         string name = 4;
@@ -1309,8 +1412,9 @@ message LocksAPI {
     message Update {
       message Request {
         uint64 resource_id = 1;
-        bytes lease_id = 2;
+        bytes resource_signature = 5;
 
+        bytes lease_id = 2;
         google.protobuf.Duration timeout = 3;
         string name = 4;
       }
@@ -1320,6 +1424,8 @@ message LocksAPI {
     message Release {
       message Request {
         uint64 resource_id = 1;
+        bytes resource_signature = 3;
+
         bytes lease_id = 2;
       }
       message Response {}
@@ -1343,12 +1449,21 @@ message AuthAPI {
   }
 
   message GetJWTToken {
+    enum Role {
+      ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role
+      USER = 1;
+      CONTROLLER = 2;
+      WORKFLOW = 3;
+    }
+
     message Request {
       google.protobuf.Duration expiration = 1;
+      optional Role requested_role = 2;
     }
 
     message Response {
       string token = 1;
+      bytes session_id = 2;
     }
   }
 }
@@ -1403,4 +1518,8 @@ message MaintenanceAPI {
       bytes response_body = 3;
     }
   }
+}
+
+message Util {
+  message Deprecated {}
 }
