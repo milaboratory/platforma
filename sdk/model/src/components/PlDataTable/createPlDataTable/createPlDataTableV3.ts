@@ -198,7 +198,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   // Step 1: Build collection from sources
   const builder = new ColumnCollectionBuilder(ctx.services.pframeSpec).addSources(providers);
   const anchors = options.columns.anchors;
-  const collection = isNil(anchors) ? builder.build() : builder.build({ anchors });
+  using collection = isNil(anchors) ? builder.build() : builder.build({ anchors });
 
   if (!collection) return undefined;
 

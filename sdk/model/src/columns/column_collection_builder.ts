@@ -34,7 +34,9 @@ export interface FindColumnsOptions {
 // --- ColumnCollection ---
 
 /** Plain collection — no axis context, selector-based filtering only. */
-export interface ColumnCollection {
+export interface ColumnCollection extends Disposable {
+  /** Release the underlying spec frame WASM resource. */
+  dispose(): void;
   /** Point lookup by provider-native ID. */
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId>;
 
@@ -47,7 +49,9 @@ export interface ColumnCollection {
 // --- AnchoredColumnCollection ---
 
 /** Axis-aware column collection with anchored identity derivation. */
-export interface AnchoredColumnCollection {
+export interface AnchoredColumnCollection extends Disposable {
+  /** Release the underlying spec frame WASM resource. */
+  dispose(): void;
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
 
@@ -243,8 +247,12 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
     );
   }
 
-  [Symbol.dispose](): void {
+  dispose(): void {
     this.specDriver.disposeSpecFrame(this.specFrameHandle);
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
@@ -325,8 +333,12 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     );
   }
 
-  [Symbol.dispose](): void {
+  dispose(): void {
     this.specDriver.disposeSpecFrame(this.specFrameHandle);
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId> {
