@@ -58,7 +58,8 @@ import type {
   InferFactoryModelServices,
   InferFactoryParams,
 } from "../plugin_handle";
-import type { BlockDefaultModelServices } from "../service_types";
+import type { BlockDefaultModelServices } from "../services/service_resolve";
+import type { ModelServices as AllModelServices } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -553,7 +554,11 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args = unknown, Data = unknown, ModelServices = {}> {
+export abstract class RenderCtxBase<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = Partial<AllModelServices>,
+> {
   protected readonly ctx: GlobalCfgRenderCtx;
   private readonly requiredServiceNames: ServiceName[];
   private cachedServices?: ModelServices;

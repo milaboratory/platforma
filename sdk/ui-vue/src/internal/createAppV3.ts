@@ -25,8 +25,8 @@ import {
   createNodeServiceProxy,
   buildServices,
 } from "@platforma-sdk/model";
-import { Services, UiServiceRegistry } from "@milaboratories/pl-model-common";
-import { SpecDriver } from "@milaboratories/pf-spec-driver";
+import { type UiServices as AllUiServices } from "@milaboratories/pl-model-common";
+import { createUiServiceRegistry } from "./service_factories";
 import type { Ref } from "vue";
 import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
@@ -81,9 +81,10 @@ export function createAppV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
 >(
   state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
-  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins>>,
+  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins, UiServices>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -335,11 +336,8 @@ export function createAppV3<
   };
 
   const proxy = createNodeServiceProxy(platforma.serviceDispatch);
-  const uiRegistry = new UiServiceRegistry(Services, {
-    PFrameSpec: () => new SpecDriver(),
-    PFrame: () => proxy(Services.PFrame),
-  });
-  const services = buildServices(platforma.serviceDispatch, uiRegistry);
+  const uiRegistry = createUiServiceRegistry(proxy);
+  const services = buildServices<UiServices>(platforma.serviceDispatch, uiRegistry);
 
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(
@@ -458,4 +456,5 @@ export type BaseAppV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
-> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins>>["app"];
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
+> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins, UiServices>>["app"];

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { usePlugin, type InferPluginHandle } from "@platforma-sdk/ui-vue";
 import type { CounterPlugin } from "@milaboratories/milaboratories.test-block-model.model";
 
@@ -8,21 +9,26 @@ const props = defineProps<{
 
 const plugin = usePlugin(props.handle);
 
+// Plugin UI service test: pframeSpec (sync WASM)
+const pluginSpecResult = ref("pending...");
 try {
   const handle = plugin.services.pframeSpec.createSpecFrame({});
-  console.log("[service-test] pframeSpec.createSpecFrame({}) =", handle);
   plugin.services.pframeSpec.disposeSpecFrame(handle);
-  console.log("[service-test] pframeSpec.disposeSpecFrame: ok");
+  pluginSpecResult.value = `ok (handle: ${handle})`;
 } catch (e) {
-  console.error("[service-test] pframeSpec error:", e);
+  pluginSpecResult.value = `error: ${e}`;
 }
 
+// Plugin UI service test: pframe (async node)
+const pluginPframeResult = ref("pending...");
 plugin.services.pframe
   .listColumns("dummy-handle" as any)
-  .then((r: unknown) => console.log("[service-test] pframe.listColumns result:", r))
-  .catch((e: unknown) =>
-    console.warn("[service-test] pframe.listColumns (expected error for dummy handle):", e),
-  );
+  .then((r) => {
+    pluginPframeResult.value = `ok (${r.length} columns)`;
+  })
+  .catch(() => {
+    pluginPframeResult.value = "error (expected for dummy handle)";
+  });
 
 function increment() {
   plugin.model.data.count += 1;
@@ -44,6 +50,8 @@ function decrement() {
     </p>
     <p style="color: blue">Model specFrame: {{ plugin.model.outputs.specFrameTest }}</p>
     <p style="color: green">Model pframe: {{ plugin.model.outputs.pframeTest }}</p>
+    <p style="color: teal">UI pframeSpec: {{ pluginSpecResult }}</p>
+    <p style="color: orange">UI pframe: {{ pluginPframeResult }}</p>
     <div style="display: flex; gap: 8px">
       <button @click="decrement">-</button>
       <button @click="increment">+</button>

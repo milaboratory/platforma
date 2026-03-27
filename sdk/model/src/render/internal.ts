@@ -1,15 +1,5 @@
 import type { Optional } from "utility-types";
-import type {
-  AxesId,
-  AxesSpec,
-  Branded,
-  DiscoverColumnsRequest,
-  DiscoverColumnsResponse,
-  PTableColumnId,
-  PTableColumnSpec,
-  SingleAxisSelector,
-  StringifiedJson,
-} from "@milaboratories/pl-model-common";
+import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -29,10 +19,9 @@ import type {
   ValueOrError,
   DataInfo,
   RangeBytes,
-  PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
-import type { ServiceDispatch } from "../service_types";
+import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -168,31 +157,6 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPTableV2(
     def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
   ): PTableHandle;
-
-  //
-  // Spec Frames (synchronous WASM-based PFrame for spec-level operations)
-  //
-
-  createSpecFrame(specs: Record<string, PColumnSpec>): string;
-
-  specFrameDiscoverColumns(
-    handle: string,
-    request: DiscoverColumnsRequest,
-  ): DiscoverColumnsResponse;
-
-  disposeSpecFrame(handle: string): void;
-
-  /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
-  expandAxes(spec: AxesSpec): AxesId;
-
-  /** Collapse resolved AxisId parents back to index-based parentAxes in AxesSpec. */
-  collapseAxes(ids: AxesId): AxesSpec;
-
-  /** Find the index of an axis matching the given selector. Returns -1 if not found. */
-  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
-
-  /** Find the flat index of a table column matching the given selector. Returns -1 if not found. */
-  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
 
   //
   // Computable

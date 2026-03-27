@@ -32,8 +32,11 @@ import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
 import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
 import { RuntimeCapabilities } from "@platforma-sdk/model";
-import { ModelServiceRegistry, Services } from "@milaboratories/pl-model-common";
-import { SpecDriver } from "@milaboratories/pf-spec-driver";
+import {
+  type ModelServiceRegistry,
+  registerServiceCapabilities,
+} from "@milaboratories/pl-model-common";
+import { createModelServiceRegistry } from "../service_factories";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
 import { V2RegistryProvider } from "../block_registry";
 import type { Dispatcher } from "undici";
@@ -343,16 +346,12 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
-    // Register service flags as supported requirements
-    for (const key of Object.keys(Services)) {
-      runtimeCapabilities.addSupportedRequirement(`requires${key}` as SupportedRequirement, true);
-    }
+    registerServiceCapabilities((flag, value) =>
+      runtimeCapabilities.addSupportedRequirement(flag, value),
+    );
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
-    const serviceRegistry = new ModelServiceRegistry(Services, {
-      PFrameSpec: () => new SpecDriver(),
-      PFrame: null,
-    });
+    const serviceRegistry = createModelServiceRegistry();
 
     const env: MiddleLayerEnvironment = {
       pl,

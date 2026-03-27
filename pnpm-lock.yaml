@@ -750,6 +750,9 @@ importers:
       '@milaboratories/milaboratories.test-block-model.model':
         specifier: workspace:*
         version: link:../model
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
       this-block:
         specifier: workspace:@milaboratories/milaboratories.test-block-model@*
         version: link:../block
@@ -2768,6 +2771,9 @@ importers:
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../../lib/node/pl-tree
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../model
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.0.18(vitest@4.0.18(@types/node@24.5.2)(happy-dom@15.11.7)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))

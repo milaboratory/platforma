@@ -9,7 +9,7 @@ import type {
   OutputWithStatus,
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./version";
-import type { ServiceDispatch } from "./service_types";
+import type { ServiceDispatch, UiServices as AllUiServices } from "@milaboratories/pl-model-common";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
@@ -55,6 +55,7 @@ export interface PlatformaV3<
   >,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
 >
   extends BlockApiV3<Data, Args, Outputs, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
@@ -64,6 +65,8 @@ export interface PlatformaV3<
   readonly serviceDispatch: ServiceDispatch;
   /** @internal Type brand for plugin type inference. Not used at runtime. */
   readonly __pluginsBrand?: Plugins;
+  /** @internal Type brand for UI service type inference. Not used at runtime. */
+  readonly __uiServicesBrand?: UiServices;
 }
 
 export type Platforma<

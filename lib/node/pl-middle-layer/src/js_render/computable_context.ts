@@ -44,18 +44,7 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
-import type {
-  AxesId,
-  AxesSpec,
-  DiscoverColumnsRequest,
-  DiscoverColumnsResponse,
-  PColumnSpec,
-  PTableColumnId,
-  PTableColumnSpec,
-  SingleAxisSelector,
-  SpecFrameHandle,
-} from "@milaboratories/pl-model-common";
-import { SpecDriver } from "./spec_driver";
+import type {} from "@milaboratories/pl-model-common";
 import {
   resolveRequiredServices,
   serviceFnKey,
@@ -78,8 +67,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
-  private readonly specDriver = new SpecDriver();
-
   private _meta: Map<string, Block> | undefined;
   private get meta(): Map<string, Block> {
     if (this._meta === undefined) {
@@ -457,43 +444,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     );
     this.computableCtx.addOnDestroy(unref);
     return key;
-  }
-
-  //
-  // Spec Frames
-  //
-
-  public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
-    const handle = this.specDriver.createSpecFrame(specs);
-    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
-    return handle;
-  }
-
-  public specFrameDiscoverColumns(
-    handle: SpecFrameHandle,
-    request: DiscoverColumnsRequest,
-  ): DiscoverColumnsResponse {
-    return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
-  }
-
-  public disposeSpecFrame(handle: SpecFrameHandle): void {
-    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
-  }
-
-  public expandAxes(spec: AxesSpec): AxesId {
-    return this.specDriver.expandAxes(spec);
-  }
-
-  public collapseAxes(ids: AxesId): AxesSpec {
-    return this.specDriver.collapseAxes(ids);
-  }
-
-  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
-    return this.specDriver.findAxis(spec, selector);
-  }
-
-  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
-    return this.specDriver.findTableColumn(tableSpec, selector);
   }
 
   /**
@@ -897,6 +847,33 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("createPFrame", (def) => {
+        return parent.exportSingleValue(
+          this.createPFrame(
+            parent.importObjectViaJson(def) as PFrameDef<PColumn<string | PColumnValues>>,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("createPTable", (def) => {
+        return parent.exportSingleValue(
+          this.createPTable(
+            parent.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("createPTableV2", (def) => {
+        return parent.exportSingleValue(
+          this.createPTableV2(
+            parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
+          ),
           undefined,
         );
       });

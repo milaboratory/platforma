@@ -2,6 +2,9 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PluginModel,
+  createPlDataTable,
+  createPlDataTableStateV2,
+  type PlDataTableStateV2,
   type PluginName,
   type InferHrefType,
   type InferOutputsType,
@@ -18,6 +21,7 @@ export type BlockData = {
   badgeArg: string;
   tagToWorkflow: string;
   tagArgs: string[];
+  tableState: PlDataTableStateV2;
 };
 
 const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
@@ -26,6 +30,7 @@ const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => (
   badgeArg: "The badge",
   tagToWorkflow: "workflow-tag",
   tagArgs: [],
+  tableState: createPlDataTableStateV2(),
 }));
 
 export type BlockArgs = BlockData;
@@ -130,6 +135,19 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .outputWithStatus("delayedOutputWithStatus", (ctx) =>
     ctx.outputs?.resolve("delayedContent")?.getDataAsString(),
   )
+
+  .output("blockSpecFrameTest", (ctx) => {
+    const handle = ctx.services.pframeSpec.createSpecFrame({});
+    ctx.services.pframeSpec.disposeSpecFrame(handle);
+    return `blockSpecFrame: created and disposed`;
+  })
+
+  .outputWithStatus("blockTableTest", (ctx) => {
+    return createPlDataTable(ctx, {
+      columns: {},
+      state: ctx.data.tableState,
+    });
+  })
 
   .done();
 

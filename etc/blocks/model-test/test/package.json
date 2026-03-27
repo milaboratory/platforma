@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
     "this-block": "workspace:@milaboratories/milaboratories.test-block-model@*"
   },
   "devDependencies": {

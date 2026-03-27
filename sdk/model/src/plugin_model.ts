@@ -8,7 +8,7 @@
  */
 
 import type { BlockCodeKnownFeatureFlags, OutputWithStatus } from "@milaboratories/pl-model-common";
-import type { ResolveModelServices, ResolveUiServices } from "./service_types";
+import type { ResolveModelServices, ResolveUiServices } from "./services/service_resolve";
 import {
   type DataModel,
   DataModelBuilder,

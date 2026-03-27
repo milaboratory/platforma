@@ -18,7 +18,7 @@ import type {
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
 } from "@milaboratories/pl-model-common";
-import { PFrameSpecDriverError } from "@milaboratories/pl-model-common";
+import { PFrameSpecDriverError, ValueType } from "@milaboratories/pl-model-common";
 
 /**
  * Manages spec-only PFrame instances (WASM) with handle-based lifecycle.
@@ -29,9 +29,12 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   private readonly frames = new Map<SpecFrameHandle, PFrameInternal.PFrameWasmV2>();
 
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
-    // Explicit annotation ensures a WASM version mismatch surfaces at compile time
-    // (skipLibCheck won't validate .d.ts in node_modules, but this assignment will)
-    const frame: PFrameInternal.PFrameWasmV2 = createPFrame(specs);
+    const supportedValueTypes = new Set<string>(Object.values(ValueType));
+    const filtered = Object.fromEntries(
+      Object.entries(specs).filter(([, spec]) => supportedValueTypes.has(spec.valueType)),
+    );
+
+    const frame: PFrameInternal.PFrameWasmV2 = createPFrame(filtered);
     const handle = crypto.randomUUID() as SpecFrameHandle;
     this.frames.set(handle, frame);
     return handle;
