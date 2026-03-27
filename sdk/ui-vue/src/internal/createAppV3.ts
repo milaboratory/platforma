@@ -342,7 +342,9 @@ export function createAppV3<
         if (!key.startsWith(prefix)) continue;
         const outputKey = key.slice(prefix.length);
         if (platforma.blockModelInfo.outputs[key]?.withStatus) {
-          result[outputKey] = outputWithStatus ?? undefined;
+          result[outputKey] = outputWithStatus
+            ? ensureOutputHasStableFlag(outputWithStatus)
+            : undefined;
         } else {
           result[outputKey] =
             outputWithStatus.ok && outputWithStatus.value !== undefined
