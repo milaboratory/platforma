@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.12.4
+
+### Patch Changes
+
+- e34a693: Treat S3 ExpiredToken as retryable error during multipart upload instead of permanently aborting
+
 ## 1.12.3
 
 ### Patch Changes
