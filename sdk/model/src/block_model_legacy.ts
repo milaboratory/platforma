@@ -455,6 +455,7 @@ export class BlockModel<
           ),
           pluginIds: [],
           featureFlags: this.config.featureFlags,
+          pluginPublicData: {},
         },
       };
     }

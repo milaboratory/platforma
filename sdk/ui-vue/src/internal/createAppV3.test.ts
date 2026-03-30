@@ -194,6 +194,7 @@ const defaultBlockModelInfo = (pluginIds: PluginHandle[] = []): BlockModelInfo =
   },
   pluginIds,
   featureFlags: {},
+  pluginPublicData: {},
 });
 
 function createDefaultState(plugins?: Record<string, unknown>) {
@@ -294,6 +295,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicData: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -333,6 +335,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicData: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -500,6 +503,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicData: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -542,6 +546,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicData: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -588,6 +593,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicData: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);

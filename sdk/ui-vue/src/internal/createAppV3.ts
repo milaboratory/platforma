@@ -12,6 +12,7 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
+  InferFactoryPublicData,
   PluginFactoryLike,
 } from "@platforma-sdk/model";
 import {
@@ -35,10 +36,11 @@ import type { PluginState, PluginAccess } from "../usePlugin";
 export const patchPoolingDelay = 150;
 
 /** Internal per-plugin state with reconciliation support. */
-interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<
-  Data,
-  Outputs
-> {
+interface InternalPluginState<
+  Data = unknown,
+  Outputs = unknown,
+  PublicData extends Record<string, unknown> = Record<string, unknown>,
+> extends PluginState<Data, Outputs, PublicData> {
   readonly ignoreUpdates: (fn: () => void) => void;
 }
 
@@ -331,7 +333,11 @@ export function createAppV3<
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
-  ): InternalPluginState<InferFactoryData<F>, InferFactoryOutputs<F>> => {
+  ): InternalPluginState<
+    InferFactoryData<F>,
+    InferFactoryOutputs<F>,
+    InferFactoryPublicData<F>
+  > => {
     const prefix = pluginOutputPrefix(handle);
 
     const pluginOutputs = computed(() => {
@@ -385,8 +391,40 @@ export function createAppV3<
       { deep: true },
     );
 
+    const rawDef = platforma.blockModelInfo.pluginPublicData[handle as string] ?? {};
+    const publicData = reactive(
+      Object.fromEntries(
+        Object.entries(rawDef).map(([key, fieldDef]) => {
+          const isLens = typeof fieldDef === "object";
+          const getter = isLens
+            ? (fieldDef as { get: (d: unknown) => unknown }).get
+            : (fieldDef as (d: unknown) => unknown);
+          const setter = isLens
+            ? (fieldDef as { set?: (d: unknown, v: unknown) => void }).set
+            : undefined;
+          const ref = setter
+            ? computed({
+                get: () => {
+                  const data = pluginModel.data;
+                  return data != null ? getter(data) : undefined;
+                },
+                set: (v: unknown) => {
+                  const data = pluginModel.data;
+                  if (data != null) setter(data, v);
+                },
+              })
+            : computed(() => {
+                const data = pluginModel.data;
+                return data != null ? getter(data) : undefined;
+              });
+          return [key, ref];
+        }),
+      ),
+    ) as InferFactoryPublicData<F>;
+
     return {
       model: pluginModel,
+      publicData,
       ignoreUpdates,
     };
   };
@@ -396,7 +434,11 @@ export function createAppV3<
     getOrCreatePluginState<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
       const existing = pluginStates.get(handle);
       if (existing) {
-        return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+        return existing as unknown as PluginState<
+          InferFactoryData<F>,
+          InferFactoryOutputs<F>,
+          InferFactoryPublicData<F>
+        >;
       }
       const state = createPluginState(handle);
       pluginStates.set(handle, state);
@@ -405,7 +447,10 @@ export function createAppV3<
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
+    platforma.blockModelInfo.pluginIds.map((id) => {
+      const { publicData } = pluginAccess.getOrCreatePluginState(id as PluginHandle);
+      return [id, { handle: id as PluginHandle, publicData }];
+    }),
   ) as InferPluginHandles<Plugins>;
 
   const getters = {
