@@ -40,7 +40,7 @@ wf.body(func(args) {
 			column: "score",
 			id: "score",
 			spec: {
-				name: "score",
+				name: "mock_score",
 				valueType: "Int"
 			}
 		}],

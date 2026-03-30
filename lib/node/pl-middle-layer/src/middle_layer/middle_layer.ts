@@ -351,7 +351,7 @@ export class MiddleLayer {
     );
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
 
-    const serviceRegistry = createModelServiceRegistry();
+    const serviceRegistry = createModelServiceRegistry({ logger });
 
     const env: MiddleLayerEnvironment = {
       pl,

@@ -11,8 +11,10 @@ import type {
   PTableColumnId,
   PTableColumnSpec,
   SingleAxisSelector,
+  DeleteColumnRequest,
   DiscoverColumnsRequest,
   PFrameDef,
+  SpecQuery,
   PTableDef,
   PTableDefV2,
   SpecFrameHandle,
@@ -61,11 +63,27 @@ export function getServiceInjectors(): ServiceInjectorMap {
             driver.createSpecFrame(vm.importObjectViaJson(specs) as Record<string, PColumnSpec>),
           ),
 
-        specFrameDiscoverColumns: (handle: QuickJSHandle, request: QuickJSHandle) =>
+        discoverColumns: (handle: QuickJSHandle, request: QuickJSHandle) =>
           vm.exportObjectViaJson(
-            driver.specFrameDiscoverColumns(
+            driver.discoverColumns(
               vm.vm.getString(handle) as SpecFrameHandle,
               vm.importObjectViaJson(request) as DiscoverColumnsRequest,
+            ),
+          ),
+
+        deleteColumn: (handle: QuickJSHandle, request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.deleteColumn(
+              vm.vm.getString(handle) as SpecFrameHandle,
+              vm.importObjectViaJson(request) as DeleteColumnRequest,
+            ),
+          ),
+
+        evaluateQuery: (handle: QuickJSHandle, request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.evaluateQuery(
+              vm.vm.getString(handle) as SpecFrameHandle,
+              vm.importObjectViaJson(request) as SpecQuery,
             ),
           ),
 

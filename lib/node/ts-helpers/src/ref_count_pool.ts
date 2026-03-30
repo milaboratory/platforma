@@ -19,6 +19,34 @@ export interface PoolEntry<K extends string = string, R extends {} = {}> extends
   readonly unref: UnrefFn;
 }
 
+/**
+ * Wraps a PoolEntry for use with `using`. Auto-calls `unref()` at end of scope
+ * unless `keep()` is called to transfer ownership to the caller.
+ */
+export class PoolEntryGuard<K extends string = string, R extends {} = {}> implements Disposable {
+  private kept = false;
+
+  constructor(readonly entry: PoolEntry<K, R>) {}
+
+  get key(): K {
+    return this.entry.key;
+  }
+
+  get resource(): R {
+    return this.entry.resource;
+  }
+
+  /** Disarm the guard — caller takes ownership of the entry. */
+  keep(): PoolEntry<K, R> {
+    this.kept = true;
+    return this.entry;
+  }
+
+  [Symbol.dispose](): void {
+    if (!this.kept) this.entry.unref();
+  }
+}
+
 type RefCountEnvelope<R> = {
   refCount: number;
   readonly resource: R;
@@ -35,11 +63,9 @@ export interface RefCountPool<P, K extends string, R extends {}> {
   getByKey(key: K): R;
 }
 
-export abstract class RefCountPoolBase<P, K extends string, R extends {}> implements RefCountPool<
-  P,
-  K,
-  R
-> {
+export abstract class RefCountPoolBase<P, K extends string, R extends {}>
+  implements RefCountPool<P, K, R>, AsyncDisposable
+{
   private readonly resources = new Map<K, RefCountEnvelope<R>>();
   private readonly disposeQueue = Promise.resolve();
 
@@ -93,4 +119,20 @@ export abstract class RefCountPoolBase<P, K extends string, R extends {}> implem
   }
 
   public abstract getByKey(key: K): R;
+
+  public async dispose(): Promise<void> {
+    void (await Promise.allSettled(
+      this.resources.values().map((resource) => {
+        if (isDisposable(resource)) {
+          return this.disposeQueue.then(() => resource[Symbol.dispose]());
+        } else if (isAsyncDisposable(resource)) {
+          return this.disposeQueue.then(() => resource[Symbol.asyncDispose]());
+        }
+      }),
+    ));
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    return await this.dispose();
+  }
 }

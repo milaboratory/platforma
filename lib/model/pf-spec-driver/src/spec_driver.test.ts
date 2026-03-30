@@ -20,7 +20,7 @@ describe("SpecDriver", () => {
       col2: createSpec("col2"),
     });
 
-    const response = driver.specFrameDiscoverColumns(handle, {
+    const response = driver.discoverColumns(handle, {
       axes: [],
       maxHops: 0,
       constraints: {

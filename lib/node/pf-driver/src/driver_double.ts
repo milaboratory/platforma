@@ -118,6 +118,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
+    await this.pool[Symbol.asyncDispose]();
   }
 }
 

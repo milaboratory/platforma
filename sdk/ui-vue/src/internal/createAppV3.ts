@@ -336,7 +336,7 @@ export function createAppV3<
   };
 
   const proxy = createNodeServiceProxy(platforma.serviceDispatch);
-  const uiRegistry = createUiServiceRegistry(proxy);
+  const uiRegistry = createUiServiceRegistry({ proxy });
   const services = buildServices<UiServices>(platforma.serviceDispatch, uiRegistry);
 
   /** Creates a lazily-cached per-plugin reactive state. */

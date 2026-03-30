@@ -265,7 +265,7 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.specDriver.specFrameDiscoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.discoverColumns(this.specFrameHandle, {
       includeColumns,
       excludeColumns,
       axes: [],
@@ -355,7 +355,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.specDriver.specFrameDiscoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.discoverColumns(this.specFrameHandle, {
       includeColumns,
       excludeColumns,
       constraints,

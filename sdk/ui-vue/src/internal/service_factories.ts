@@ -11,9 +11,13 @@ import { Services, UiServiceRegistry } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { NodeServiceProxy } from "@platforma-sdk/model";
 
-export function createUiServiceRegistry(proxy: NodeServiceProxy) {
+export type UiServiceOptions = {
+  proxy: NodeServiceProxy;
+};
+
+export function createUiServiceRegistry(options: UiServiceOptions) {
   return new UiServiceRegistry(Services, {
     PFrameSpec: () => new SpecDriver(),
-    PFrame: () => proxy(Services.PFrame),
+    PFrame: () => options.proxy(Services.PFrame),
   });
 }

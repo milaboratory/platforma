@@ -34,7 +34,11 @@ import {
   sortPTableDef,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { ConcurrencyLimitingExecutor, type PoolEntry } from "@milaboratories/ts-helpers";
+import {
+  ConcurrencyLimitingExecutor,
+  PoolEntryGuard,
+  type PoolEntry,
+} from "@milaboratories/ts-helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
 import type { AbstractInternalPFrameDriver } from "./driver_decl";
@@ -58,9 +62,8 @@ import {
 } from "./ptable_cache_plain";
 import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
-export interface LocalBlobProvider<
-  TreeEntry extends JsonSerializable,
-> extends PoolLocalBlobProvider<TreeEntry> {}
+export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
+  extends PoolLocalBlobProvider<TreeEntry>, AsyncDisposable {}
 
 export interface RemoteBlobProvider<TreeEntry extends JsonSerializable>
   extends PoolRemoteBlobProvider<TreeEntry>, AsyncDisposable {}
@@ -149,7 +152,13 @@ export class AbstractPFrameDriver<
   }
 
   async dispose(): Promise<void> {
-    return await this.remoteBlobProvider[Symbol.asyncDispose]();
+    void (await Promise.allSettled([
+      this.pTables[Symbol.asyncDispose](),
+      this.pTableDefs[Symbol.asyncDispose](),
+      this.pFrames[Symbol.asyncDispose](),
+      this.localBlobProvider[Symbol.asyncDispose](),
+      this.remoteBlobProvider[Symbol.asyncDispose](),
+    ]));
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -173,7 +182,7 @@ export class AbstractPFrameDriver<
   }
 
   public createPTable(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    const pFrameEntry = this.createPFrame(extractAllColumns(rawDef.src));
+    using pFrameGuard = new PoolEntryGuard(this.createPFrame(extractAllColumns(rawDef.src)));
     const sortedDef = sortPTableDef(
       migrateTableFilter(
         mapPTableDef(rawDef, (c) => c.id),
@@ -183,15 +192,16 @@ export class AbstractPFrameDriver<
     const pTableEntry = this.pTableDefs.acquire({
       type: "v1",
       def: sortedDef,
-      pFrameHandle: pFrameEntry.key,
+      pFrameHandle: pFrameGuard.key,
     });
     if (logPFrames()) {
       this.logger(
         "info",
-        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableEntry.key})`,
       );
     }
 
+    const pFrameEntry = pFrameGuard.keep();
     const unref = () => {
       pTableEntry.unref();
       pFrameEntry.unref();
@@ -211,14 +221,14 @@ export class AbstractPFrameDriver<
       {} as Record<string, PColumnSpec>,
     );
 
-    const pFrameEntry = this.createPFrame(columns);
+    using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
     const specFrame = createSpecFrame(columnsMap);
     const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
     const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
 
     const pTableEntry = this.pTableDefs.acquire({
       type: "v2",
-      pFrameHandle: pFrameEntry.key,
+      pFrameHandle: pFrameGuard.key,
       def: {
         tableSpec,
         dataQuery,
@@ -227,10 +237,11 @@ export class AbstractPFrameDriver<
     if (logPFrames()) {
       this.logger(
         "info",
-        `Create PTable call (pFrameHandle = ${pFrameEntry.key}; pTableHandle = ${pTableEntry.key})`,
+        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableEntry.key})`,
       );
     }
 
+    const pFrameEntry = pFrameGuard.keep();
     const unref = () => {
       pTableEntry.unref();
       pFrameEntry.unref();
@@ -316,39 +327,36 @@ export class AbstractPFrameDriver<
       );
     }
 
-    const table = this.pTables.acquire({
-      type: "v1",
-      pFrameHandle: handle,
-      def: sortPTableDef(migrateTableFilter(request, this.logger)),
-    });
-    const { pTablePromise, disposeSignal } = table.resource;
+    using tableGuard = new PoolEntryGuard(
+      this.pTables.acquire({
+        type: "v1",
+        pFrameHandle: handle,
+        def: sortPTableDef(migrateTableFilter(request, this.logger)),
+      }),
+    );
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
     const pTable = await pTablePromise;
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
-      try {
-        // TODO: throw error when more then 150k rows is requested
-        // after pf-plots migration to stream API
+      // TODO: throw error when more then 150k rows is requested
+      // after pf-plots migration to stream API
 
-        const spec = pTable.getSpec();
-        const data = await pTable.getData([...spec.keys()], {
-          range,
-          signal: combinedSignal,
-        });
+      const spec = pTable.getSpec();
+      const data = await pTable.getData([...spec.keys()], {
+        range,
+        signal: combinedSignal,
+      });
 
-        const overallSize = await pTable.getFootprint({
-          signal: combinedSignal,
-        });
-        this.pTableCachePerFrame.cache(table, overallSize);
+      const overallSize = await pTable.getFootprint({
+        signal: combinedSignal,
+      });
+      this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
 
-        return spec.map((spec, i) => ({
-          spec: spec,
-          data: data[i],
-        }));
-      } catch (err: unknown) {
-        table.unref();
-        throw err;
-      }
+      return spec.map((spec, i) => ({
+        spec: spec,
+        data: data[i],
+      }));
     });
   }
 
@@ -397,9 +405,9 @@ export class AbstractPFrameDriver<
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
-    const table = this.pTables.acquire(def);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
 
-    const { pTablePromise, disposeSignal } = table.resource;
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
     const pTable = await pTablePromise;
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
@@ -415,7 +423,7 @@ export class AbstractPFrameDriver<
       return { shape, overallSize };
     });
 
-    this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
+    this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return shape;
   }
 
@@ -426,9 +434,9 @@ export class AbstractPFrameDriver<
     signal?: AbortSignal,
   ): Promise<PTableVector[]> {
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
-    const table = this.pTables.acquire(def);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
 
-    const { pTablePromise, disposeSignal } = table.resource;
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
     const pTable = await pTablePromise;
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
@@ -445,7 +453,7 @@ export class AbstractPFrameDriver<
       return { data, overallSize };
     });
 
-    this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
+    this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return data;
   }
 }
