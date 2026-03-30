@@ -13,7 +13,7 @@ Add block-level services infrastructure (PFrameSpec, PFrame)
 - Introduce `Services` registry in pl-model-common with service definitions, feature flags, and typed driver interfaces
 - Add `PFrameSpec` service: synchronous WASM-based spec operations (createSpecFrame, discoverColumns, evaluateQuery, disposeSpecFrame)
 - Wire services through block model, plugin model, and UI layers with compile-time `RequireServices` constraints
-- Add `ColumnCollection` with `dispose()` for deterministic spec frame cleanup
+- Add `ColumnCollection` with `dispose()` for deterministic spec frame cleanup. **Breaking:** `ColumnCollection` and `AnchoredColumnCollection` now extend `Disposable` — custom implementations must add a `dispose()` method
 - Add `createPlDataTable` v3 API using `ColumnCollectionBuilder` with include/exclude column selectors
 - Move pf-spec-driver logging before WASM calls for better crash diagnostics
 - Fix outputWithStatus in plugin model

@@ -41,6 +41,14 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
 
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
     const supportedValueTypes = new Set(Object.values(ValueType));
+    const unsupported = Object.entries(specs).filter(
+      ([, spec]) => !supportedValueTypes.has(spec.valueType),
+    );
+    if (unsupported.length > 0) {
+      this.logger.warn(
+        `createSpecFrame: dropping ${unsupported.length} spec(s) with unsupported valueType: ${unsupported.map(([id, s]) => `${id}:${s.valueType}`).join(", ")}`,
+      );
+    }
     const filtered = Object.fromEntries(
       Object.entries(specs).filter(([, spec]) => supportedValueTypes.has(spec.valueType)),
     );

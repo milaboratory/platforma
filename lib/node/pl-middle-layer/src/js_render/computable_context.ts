@@ -44,7 +44,6 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
-import type {} from "@milaboratories/pl-model-common";
 import {
   resolveRequiredServices,
   serviceFnKey,

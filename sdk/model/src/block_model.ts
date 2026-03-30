@@ -142,6 +142,9 @@ export class BlockModelV3<
     ...BLOCK_SERVICE_FLAGS,
   } satisfies BlockCodeKnownFeatureFlags;
 
+  /** @deprecated Use FEATURE_FLAGS */
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS = BlockModelV3.FEATURE_FLAGS;
+
   /**
    * Creates a new BlockModelV3 builder with the specified data model.
    *
