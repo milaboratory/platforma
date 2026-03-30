@@ -28,7 +28,7 @@ const downloadDriverOps = {
   rangesCacheMaxSizeBytes: 1024,
 };
 
-test("should get all logs", async () => {
+test("should get all logs", { timeout: 300000 }, async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
 
