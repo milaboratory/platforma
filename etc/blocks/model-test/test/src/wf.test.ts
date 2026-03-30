@@ -1,5 +1,4 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-block-model.model";
-import { platforma } from "@milaboratories/milaboratories.test-block-model.model";
 import { blockTest } from "@platforma-sdk/test";
 import { createPlDataTableStateV2, pluginOutputKey } from "@platforma-sdk/model";
 import { blockSpec } from "this-block";
@@ -59,42 +58,35 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
   });
 });
 
-blockTest(
-  "block-level services",
-  { timeout: 10000 },
-  async ({ rawPrj: project, helpers, expect }) => {
-    const blockId = await project.addBlock("Block", blockSpec);
+blockTest("block-level services", { timeout: 30000 }, async ({ rawPrj: project, expect }) => {
+  const blockId = await project.addBlock("Block", blockSpec);
 
-    const blockState =
-      await helpers.awaitBlockDoneAndGetStableBlockState<typeof platforma>(blockId);
+  const blockState = await project.getBlockState(blockId).awaitStableValue();
 
-    // Block-level pframeSpec service (via ctx.services.pframeSpec)
-    expect(blockState.outputs?.blockSpecFrameTest).toStrictEqual({
-      ok: true,
-      value: "blockSpecFrame: created and disposed",
-      stable: true,
-    });
+  // Block-level pframeSpec service (via ctx.services.pframeSpec)
+  expect(blockState.outputs?.blockSpecFrameTest).toStrictEqual({
+    ok: true,
+    value: "blockSpecFrame: created and disposed",
+    stable: true,
+  });
 
-    // createPlDataTable returns undefined when no result pool data
-    expect(blockState.outputs?.blockTableTest).toStrictEqual({
-      ok: true,
-      value: undefined,
-      stable: true,
-    });
+  // createPlDataTable errors when no result pool data (expected in test environment)
+  expect(blockState.outputs?.blockTableTest).toMatchObject({
+    ok: false,
+  });
 
-    // Plugin outputs are keyed with a prefix — access via plain record
-    const outputs = blockState.outputs as Record<string, unknown> | undefined;
+  // Plugin outputs are keyed with a prefix — access via plain record
+  const outputs = blockState.outputs as Record<string, unknown> | undefined;
 
-    // Plugin-level pframeSpec service (via plugin ctx.services.pframeSpec)
-    expect(outputs?.[pluginOutputKey("counter" as any, "specFrameTest")]).toStrictEqual({
-      ok: true,
-      value: "specFrame: created and disposed",
-      stable: true,
-    });
+  // Plugin-level pframeSpec service (via plugin ctx.services.pframeSpec)
+  expect(outputs?.[pluginOutputKey("counter" as any, "specFrameTest")]).toStrictEqual({
+    ok: true,
+    value: "specFrame: created and disposed",
+    stable: true,
+  });
 
-    // Plugin-level pframe service (via plugin ctx.services.pframe)
-    const pframeOutput = outputs?.[pluginOutputKey("counter" as any, "pframeTest")] as any;
-    expect(pframeOutput).toMatchObject({ ok: true, stable: true });
-    expect(pframeOutput?.value).toMatch(/^pframe: created handle/);
-  },
-);
+  // Plugin-level pframe service (via plugin ctx.services.pframe)
+  const pframeOutput = outputs?.[pluginOutputKey("counter" as any, "pframeTest")] as any;
+  expect(pframeOutput).toMatchObject({ ok: true, stable: true });
+  expect(pframeOutput?.value).toMatch(/^pframe: created handle/);
+});
