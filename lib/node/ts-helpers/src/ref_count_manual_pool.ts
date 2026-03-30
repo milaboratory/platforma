@@ -71,8 +71,9 @@ export abstract class RefCountManualPoolBase<P, K extends string, R extends {}>
   public abstract getByKey(key: K): R;
 
   public dispose(): void {
-    for (const resource of this.resources.values()) {
+    for (const envelope of this.resources.values()) {
       try {
+        const resource = envelope.resource;
         if (isDisposable(resource)) {
           resource[Symbol.dispose]();
         }

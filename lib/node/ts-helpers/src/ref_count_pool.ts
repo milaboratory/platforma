@@ -122,7 +122,8 @@ export abstract class RefCountPoolBase<P, K extends string, R extends {}>
 
   public async dispose(): Promise<void> {
     void (await Promise.allSettled(
-      this.resources.values().map((resource) => {
+      this.resources.values().map((envelope) => {
+        const resource = envelope.resource;
         if (isDisposable(resource)) {
           return this.disposeQueue.then(() => resource[Symbol.dispose]());
         } else if (isAsyncDisposable(resource)) {
