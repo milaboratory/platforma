@@ -397,31 +397,26 @@ export class AbstractPFrameDriver<
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
-    const table = this.pTables.acquire(def);
+    using table = this.pTables.acquire(def);
 
-    try {
-      const { pTablePromise, disposeSignal } = table.resource;
-      const pTable = await pTablePromise;
+    const { pTablePromise, disposeSignal } = table.resource;
+    const pTable = await pTablePromise;
 
-      const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
-      const { shape, overallSize } = await this.tableConcurrencyLimiter.run(async () => {
-        const shape = await pTable.getShape({
-          signal: combinedSignal,
-        });
-
-        const overallSize = await pTable.getFootprint({
-          signal: combinedSignal,
-        });
-
-        return { shape, overallSize };
+    const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
+    const { shape, overallSize } = await this.tableConcurrencyLimiter.run(async () => {
+      const shape = await pTable.getShape({
+        signal: combinedSignal,
       });
 
-      this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
-      return shape;
-    } catch (err: unknown) {
-      table.unref();
-      throw err;
-    }
+      const overallSize = await pTable.getFootprint({
+        signal: combinedSignal,
+      });
+
+      return { shape, overallSize };
+    });
+
+    this.pTableCachePlain.cache(this.pTables.acquire(def), overallSize, defDisposeSignal);
+    return shape;
   }
 
   public async getData(
@@ -431,32 +426,27 @@ export class AbstractPFrameDriver<
     signal?: AbortSignal,
   ): Promise<PTableVector[]> {
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
-    const table = this.pTables.acquire(def);
+    using table = this.pTables.acquire(def);
 
-    try {
-      const { pTablePromise, disposeSignal } = table.resource;
-      const pTable = await pTablePromise;
+    const { pTablePromise, disposeSignal } = table.resource;
+    const pTable = await pTablePromise;
 
-      const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
-      const { data, overallSize } = await this.tableConcurrencyLimiter.run(async () => {
-        const data = await pTable.getData(columnIndices, {
-          range,
-          signal: combinedSignal,
-        });
-
-        const overallSize = await pTable.getFootprint({
-          signal: combinedSignal,
-        });
-
-        return { data, overallSize };
+    const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
+    const { data, overallSize } = await this.tableConcurrencyLimiter.run(async () => {
+      const data = await pTable.getData(columnIndices, {
+        range,
+        signal: combinedSignal,
       });
 
-      this.pTableCachePlain.cache(table, overallSize, defDisposeSignal);
-      return data;
-    } catch (err: unknown) {
-      table.unref();
-      throw err;
-    }
+      const overallSize = await pTable.getFootprint({
+        signal: combinedSignal,
+      });
+
+      return { data, overallSize };
+    });
+
+    this.pTableCachePlain.cache(this.pTables.acquire(def), overallSize, defDisposeSignal);
+    return data;
   }
 }
 
