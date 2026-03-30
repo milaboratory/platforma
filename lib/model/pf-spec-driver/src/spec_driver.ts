@@ -45,12 +45,10 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
       Object.entries(specs).filter(([, spec]) => supportedValueTypes.has(spec.valueType)),
     );
     try {
-      const handle = this.frames.acquire(filtered).key;
       if (logPFrames()) {
-        this.logger.info(
-          `createSpecFrame: handle = ${handle}, ${Object.keys(filtered).length} columns`,
-        );
+        this.logger.info(`createSpecFrame: ${Object.keys(filtered).length} columns`);
       }
+      const handle = this.frames.acquire(filtered).key;
       return handle;
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`createSpecFrame failed`);
@@ -65,12 +63,12 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   ): DiscoverColumnsResponse {
     const pframe = this.frames.getByKey(handle);
     try {
-      const result = pframe.discoverColumns(request);
       if (logPFrames()) {
         this.logger.info(
           `discoverColumns: handle = ${handle}, request: ${JSON.stringify(request)}`,
         );
       }
+      const result = pframe.discoverColumns(request);
       return result;
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`discoverColumns failed`);
@@ -86,12 +84,12 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   deleteColumn(handle: SpecFrameHandle, request: DeleteColumnRequest): DeleteColumnResponse {
     const pframe = this.frames.getByKey(handle);
     try {
-      const result = {
-        axes: pframe.deleteColumns({ columns: request.axes, delete: request.delete }).columns,
-      };
       if (logPFrames()) {
         this.logger.info(`deleteColumn: handle = ${handle}, request: ${JSON.stringify(request)}`);
       }
+      const result = {
+        axes: pframe.deleteColumns({ columns: request.axes, delete: request.delete }).columns,
+      };
       return result;
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`deleteColumn failed`);
@@ -107,10 +105,10 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse {
     const pframe = this.frames.getByKey(handle);
     try {
-      const result = pframe.evaluateQuery(request);
       if (logPFrames()) {
         this.logger.info(`evaluateQuery: handle = ${handle}, request: ${JSON.stringify(request)}`);
       }
+      const result = pframe.evaluateQuery(request);
       return result;
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`evaluateQuery failed`);
@@ -125,10 +123,10 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
 
   disposeSpecFrame(handle: SpecFrameHandle): void {
     try {
-      this.frames.release(handle);
       if (logPFrames()) {
         this.logger.info(`disposeSpecFrame: handle = ${handle}`);
       }
+      this.frames.release(handle);
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`disposeSpecFrame failed`);
       error.cause = new Error(`handle: ${handle}, ` + `error:\n${ensureError(err)}`);
