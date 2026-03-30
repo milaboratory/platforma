@@ -319,10 +319,10 @@ async function checkExpectedMTime(path: string, expectedMTimeUnix: bigint) {
 /** S3 error codes that indicate expired/invalid temporary credentials.
  * These are transient: a retry with a fresh presigned URL will succeed
  * once the backend refreshes its STS credentials. */
-const transientS3ErrorCodes = ["ExpiredToken", "RequestExpired", "TokenRefreshRequired"];
+const TRANSIENT_S3_ERROR_CODES = ["ExpiredToken", "RequestExpired", "TokenRefreshRequired"];
 
 function isTransientS3Error(body: string): boolean {
-  return transientS3ErrorCodes.some((code) => body.includes(`<Code>${code}</Code>`));
+  return TRANSIENT_S3_ERROR_CODES.some((code) => body.includes(`<Code>${code}</Code>`));
 }
 
 function checkStatusCodeOk(
