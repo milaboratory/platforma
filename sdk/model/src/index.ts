@@ -31,6 +31,8 @@ export {
   type PluginParams,
   type PluginOutputs,
   type PluginConfig,
+  type PublicFieldDef,
+  type PublicDataDef,
   PluginDataModel,
   PluginDataModelBuilder,
   PluginInstance,

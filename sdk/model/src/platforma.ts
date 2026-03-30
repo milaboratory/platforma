@@ -12,6 +12,7 @@ import type { SdkInfo } from "./version";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
+import type { PublicDataDef } from "./plugin_model";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -89,6 +90,7 @@ export type BlockModelInfo = {
   >;
   pluginIds: PluginHandle[];
   featureFlags: BlockCodeKnownFeatureFlags;
+  pluginPublicData: Record<string, PublicDataDef<unknown>>;
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -136,19 +138,28 @@ export type InferPluginNames<Pl> =
 export type InferPluginData<Pl, PluginId extends string> =
   Pl extends PlatformaV3<unknown, unknown, BlockOutputsBase, `/${string}`, infer P>
     ? PluginId extends keyof P
-      ? P[PluginId] extends PluginRecord<infer D, any, any>
+      ? P[PluginId] extends PluginRecord<infer D, any, any, any>
         ? D
         : never
       : never
     : never;
 
 /**
- * Map each plugin instance to a type-safe opaque handle branded with normalized phantom.
- * Uses the same brand structure as InferPluginHandle — only data/params/outputs, no config —
- * because PluginRecord doesn't carry Config (lost after factory.create()).
+ * Map each plugin instance to a type-safe opaque handle and publicData branded with
+ * normalized phantom. Uses the same brand structure as InferPluginHandle —
+ * only data/params/outputs/publicData, no config — because PluginRecord doesn't carry Config
+ * (lost after factory.create()).
  */
 export type InferPluginHandles<T extends Record<string, unknown>> = {
-  readonly [K in keyof T]: T[K] extends PluginRecord<infer Data, infer Params, infer Outputs>
-    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs>> }
+  readonly [K in keyof T]: T[K] extends PluginRecord<
+    infer Data,
+    infer Params,
+    infer Outputs,
+    infer PublicData
+  >
+    ? {
+        handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs, PublicData>>;
+        readonly publicData: PublicData;
+      }
     : never;
 };
