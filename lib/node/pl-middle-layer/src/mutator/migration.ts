@@ -1,3 +1,4 @@
+import { UiError } from "@milaboratories/pl-model-common";
 import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
 import type { ProjectField, ProjectStructure } from "../model/project_model";
 import {
@@ -44,7 +45,9 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
     }
 
     if (schemaVersion !== SchemaVersionCurrent) {
-      throw new Error(`Unknown project schema version: ${schemaVersion}`);
+      throw new UiError(
+        `This project was created with a newer version of Platforma. Please update to the latest version to open it.`,
+      );
     }
 
     tx.setKValue(rid, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));
