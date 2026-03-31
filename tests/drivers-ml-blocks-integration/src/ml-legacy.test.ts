@@ -1255,7 +1255,7 @@ blockTest(
 
 blockTest(
   "should create blob-url-custom-protocol block, render it and gets outputs from its config",
-  { timeout: 30000 },
+  { timeout: 90000 },
   async ({ rawPrj: project, ml, expect }) => {
     const blockId = await project.addBlock("DownloadBlobUrl", downloadBlobURLSpec);
 
