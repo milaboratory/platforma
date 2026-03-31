@@ -1,5 +1,5 @@
 import type { QuickJSHandle, VmFunctionImplementation } from "quickjs-emscripten";
-import type { Branded, InferServiceModel, ServiceTypesLike } from "@milaboratories/pl-model-common";
+import type { InferServiceModel, ServiceBrand } from "@milaboratories/pl-model-common";
 import { Services, ServiceNotRegisteredError } from "@milaboratories/pl-model-common";
 import type {
   AxesId,
@@ -35,9 +35,6 @@ export type ServiceInjectorContext = {
 export type ServiceInjector<Methods extends string = string> = (
   ctx: ServiceInjectorContext,
 ) => Record<Methods, VmMethod>;
-
-// Extract the model interface from a branded ServiceName
-type ServiceBrand<T> = T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
 
 // Type-safe injector for a specific service — must return all methods from the model interface.
 type ServiceInjectorFor<S extends keyof typeof Services> = ServiceInjector<

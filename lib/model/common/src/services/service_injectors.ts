@@ -5,21 +5,13 @@
  * that's the only file to edit when adding a new node service.
  */
 
-import type {
-  InferServiceKind,
-  InferServiceUi,
-  ServiceName,
-  ServiceTypesLike,
-} from "./service_types";
-import type { Branded } from "../branding";
+import type { InferServiceKind, InferServiceUi, ServiceBrand, ServiceName } from "./service_types";
 import type { DriverKit } from "../driver_kit";
 import { Services } from "./service_declarations";
 import { getMethodNames, resolveRequiredServices } from "./service_capabilities";
 import { createUiServiceInjectors } from "./service_injector_factory";
 
 export { createUiServiceInjectors } from "./service_injector_factory";
-
-type ServiceBrand<T> = T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
 
 type NodeServiceKeys = {
   [K in keyof typeof Services]: InferServiceKind<ServiceBrand<(typeof Services)[K]>> extends "node"

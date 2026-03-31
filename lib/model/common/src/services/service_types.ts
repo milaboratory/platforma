@@ -1,5 +1,6 @@
 import type { Branded } from "../branding";
 import { ServiceAlreadyRegisteredError, ServiceInvalidIdError } from "../errors";
+import type { Services } from "./service_declarations";
 
 export type ServiceTypesLike<
   Model = unknown,
@@ -55,7 +56,8 @@ export function serviceFnKey(serviceId: string, method = ""): string {
   return `service:${serviceId}:${method}`;
 }
 
-type ServiceBrand<T> = T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
+export type ServiceBrand<T> =
+  T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
 
 export type ModelServiceFactoryMap<SMap extends Record<string, ServiceName>> = {
   [K in keyof SMap]: (() => InferServiceModel<ServiceBrand<SMap[K]>>) | null;
@@ -75,20 +77,18 @@ export interface ServiceDispatch {
 // Auto-derived types from the Services const in service_declarations.ts.
 // Adding a service to Services automatically updates all of these.
 
-type SMap = typeof import("./service_declarations").Services;
+type SMap = typeof Services;
 
 type ExtractServiceName<T> = T extends Branded<infer N extends string, any> ? N : never;
-type ExtractServiceBrand<T> =
-  T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
 
 /** Model-side service interfaces keyed by service name literal. */
 export type ModelServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceModel<ExtractServiceBrand<SMap[K]>>;
+  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceModel<ServiceBrand<SMap[K]>>;
 };
 
 /** UI-side service interfaces keyed by service name literal. */
 export type UiServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceUi<ExtractServiceBrand<SMap[K]>>;
+  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceUi<ServiceBrand<SMap[K]>>;
 };
 
 /** Map from Services keys to their unbranded string name literals. */
