@@ -4,7 +4,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig(
   createVitestConfig({
     test: {
-      testTimeout: 300_000,
+      testTimeout: 90_000,
+      reporters: ["default", "github-actions"], // or just ["github-actions"]
       coverage: {
         exclude: ["src/proto", "**/*.js"],
       },
