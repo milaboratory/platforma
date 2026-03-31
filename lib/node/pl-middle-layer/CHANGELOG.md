@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.53.3
+
+### Patch Changes
+
+- 0da8bdc: Fix unhelpful "Unknown error" when opening a project from a newer Platforma version
+
 ## 1.53.2
 
 ### Patch Changes
