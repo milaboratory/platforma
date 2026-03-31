@@ -18,3 +18,4 @@ Add block-level services infrastructure (PFrameSpec, PFrame)
 - Move pf-spec-driver logging before WASM calls for better crash diagnostics
 - Fix outputWithStatus in plugin model
 - Fix table row selection not propagating to selection model
+- Fix linker columns with `pl7.app/parents` annotation failing WASM validation ("must have exactly 2 connected components") by resolving annotation-based parents to numeric `parentAxes` before passing specs to Rust/WASM engine

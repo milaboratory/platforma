@@ -32,6 +32,7 @@ import {
   collectSpecQueryColumns,
   sortSpecQuery,
   sortPTableDef,
+  resolveAnnotationParents,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -171,8 +172,9 @@ export class AbstractPFrameDriver<
 
   public createPFrame(def: PFrameDef<PColumn<PColumnData>>): PoolEntry<PFrameHandle> {
     const ValueTypes = new Set(Object.values(ValueType));
-
-    const supportedColumns = def.filter((column) => ValueTypes.has(column.spec.valueType));
+    const supportedColumns = def
+      .filter((column) => ValueTypes.has(column.spec.valueType))
+      .map((c) => ({ ...c, spec: resolveAnnotationParents(c.spec) }));
     const uniqueColumns = uniqueBy(supportedColumns, (column) => column.id);
     const columns = uniqueColumns.map((c) =>
       mapPObjectData(c, (d) => this.resolveDataInfo(c.spec, d)),
@@ -222,7 +224,13 @@ export class AbstractPFrameDriver<
     );
 
     using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
-    const specFrame = createSpecFrame(columnsMap);
+    const ValueTypes = new Set(Object.values(ValueType));
+    const specColumnsMap = Object.fromEntries(
+      Object.entries(columnsMap)
+        .filter(([, spec]) => ValueTypes.has(spec.valueType))
+        .map(([id, spec]) => [id, resolveAnnotationParents(spec)]),
+    );
+    const specFrame = createSpecFrame(specColumnsMap);
     const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
     const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
 

@@ -20,7 +20,12 @@ import type {
   EvaluateQueryResponse,
   SpecQuery,
 } from "@milaboratories/pl-model-common";
-import { PFrameSpecDriverError, ValueType, ensureError } from "@milaboratories/pl-model-common";
+import {
+  PFrameSpecDriverError,
+  ValueType,
+  ensureError,
+  resolveAnnotationParents,
+} from "@milaboratories/pl-model-common";
 import { type MiLogger, ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { PFramePool } from "./pframe_pool";
 import { logPFrames } from "./logging";
@@ -40,17 +45,11 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
   }
 
   createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
-    const supportedValueTypes = new Set(Object.values(ValueType));
-    const unsupported = Object.entries(specs).filter(
-      ([, spec]) => !supportedValueTypes.has(spec.valueType),
-    );
-    if (unsupported.length > 0) {
-      this.logger.warn(
-        `createSpecFrame: dropping ${unsupported.length} spec(s) with unsupported valueType: ${unsupported.map(([id, s]) => `${id}:${s.valueType}`).join(", ")}`,
-      );
-    }
+    const ValueTypes = new Set(Object.values(ValueType));
     const filtered = Object.fromEntries(
-      Object.entries(specs).filter(([, spec]) => supportedValueTypes.has(spec.valueType)),
+      Object.entries(specs)
+        .filter(([, spec]) => ValueTypes.has(spec.valueType))
+        .map(([id, spec]) => [id, resolveAnnotationParents(spec)]),
     );
     try {
       if (logPFrames()) {

@@ -543,6 +543,22 @@ export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpe
   });
 }
 
+/**
+ * Resolve annotation-based parents (`pl7.app/parents`) to numeric `parentAxes`
+ * on a column spec. Returns the spec unchanged if all axes already use numeric
+ * indices or have no parent annotations.
+ */
+export function resolveAnnotationParents(spec: PColumnSpec): PColumnSpec {
+  const hasAnnotationParents = spec.axesSpec.some(
+    (axis) => !!readAnnotationJson(axis, Annotation.Parents),
+  );
+  if (!hasAnnotationParents) return spec;
+
+  const normalized = getNormalizedAxesList(spec.axesSpec);
+  const denormalized = getDenormalizedAxesList(normalized);
+  return { ...spec, axesSpec: denormalized };
+}
+
 /** Common type representing spec for all the axes in a column */
 export type AxesSpec = AxisSpec[];
 
