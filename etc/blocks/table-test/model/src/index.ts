@@ -1,8 +1,8 @@
 import {
   BlockModelV3,
   DataModelBuilder,
+  createPlDataTable,
   createPlDataTableStateV2,
-  createPlDataTableV2,
   type InferHrefType,
   type InferOutputsType,
   type PlDataTableStateV2,
@@ -36,13 +36,10 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .title((ctx) => ctx.args?.label || "Table Test")
 
   .outputWithStatus("table", (ctx) => {
-    const pf = ctx.outputs?.resolve("tableFrame");
-    if (!pf) return undefined;
-
-    const columns = pf.getPColumns();
-    if (!columns || columns.length === 0) return undefined;
-
-    return createPlDataTableV2(ctx, columns, ctx.data.tableState);
+    return createPlDataTable(ctx, {
+      columns: {}, // equal to all columns
+      state: ctx.data.tableState,
+    });
   })
 
   .done();

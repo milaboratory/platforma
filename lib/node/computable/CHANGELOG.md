@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.9.0
+
+### Minor Changes
+
+- 6078a1d: Add computable and QuickJS performance instrumentation for diagnosing post-sync recalculation bottleneck.
+
 ## 2.8.6
 
 ### Patch Changes

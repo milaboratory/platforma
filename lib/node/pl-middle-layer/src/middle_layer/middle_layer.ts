@@ -1,7 +1,13 @@
 import type { PlClient, ResourceId } from "@milaboratories/pl-client";
-import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import {
+  field,
+  isNotNullResourceId,
+  isNullResourceId,
+  toGlobalResourceId,
+} from "@milaboratories/pl-client";
 import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
-import { createProject, withProjectAuthored } from "../mutator/project";
+import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
+import { ProjectMetaKey } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
@@ -152,6 +158,47 @@ export class MiddleLayer {
       await tx.commit();
     });
     await this.projectListTree.refreshState();
+  }
+
+  /**
+   * Duplicates an existing project and adds the copy to this user's project list.
+   *
+   * @param sourceRid - resource id of the project to duplicate
+   * @param rename - optional function that receives the source label and all existing
+   *   project labels (read within the same transaction), and returns the label for the copy
+   * @param id - optional id for the new project list entry (defaults to random UUID)
+   */
+  public async duplicateProject(
+    sourceRid: ResourceId,
+    rename?: (previousLabel: string, existingLabels: string[]) => string,
+    id: string = randomUUID(),
+  ): Promise<ResourceId> {
+    const resource = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
+      // Read source project meta
+      const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
+
+      // Read all existing project labels from the project list (parallel reads)
+      const projectListData = await tx.getResourceData(this.projectListResourceId, true);
+      const projectRids = projectListData.fields.map((f) => f.value).filter(isNotNullResourceId);
+      const existingLabels = (
+        await Promise.all(
+          projectRids.map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+        )
+      ).map((m) => m.label);
+
+      // Compute new label
+      const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
+
+      // Create the duplicate
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+
+      // Attach to project list
+      tx.createField(field(this.projectListResourceId, id), "Dynamic", newPrj);
+      await tx.commit();
+      return await toGlobalResourceId(newPrj);
+    });
+    await this.projectListTree.refreshState();
+    return resource;
   }
 
   //

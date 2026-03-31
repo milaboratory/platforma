@@ -1,5 +1,78 @@
 # @platforma-sdk/test
 
+## 1.61.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.53.2
+
+## 1.61.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.53.1
+
+## 1.61.0
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-middle-layer@1.53.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-tree@1.9.3
+
+## 1.60.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.1
+- @milaboratories/pl-middle-layer@1.52.1
+- @milaboratories/pl-tree@1.9.2
+
+## 1.60.1
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+- Updated dependencies [ccb1a70]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-middle-layer@1.52.0
+  - @milaboratories/pl-tree@1.9.1
+
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-middle-layer@1.51.0
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-tree@1.9.0
+
+## 1.59.7
+
+### Patch Changes
+
+- Updated dependencies [5b83cd7]
+  - @milaboratories/pl-middle-layer@1.50.1
+
+## 1.59.6
+
+### Patch Changes
+
+- Updated dependencies [220275d]
+  - @milaboratories/pl-middle-layer@1.50.0
+
+## 1.59.5
+
+### Patch Changes
+
+- Updated dependencies [e2f2809]
+  - @milaboratories/pl-middle-layer@1.49.0
+
 ## 1.59.3
 
 ### Patch Changes

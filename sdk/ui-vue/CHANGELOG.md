@@ -1,5 +1,53 @@
 # @platforma-sdk/ui-vue
 
+## 1.61.3
+
+### Patch Changes
+
+- 0e682a8: fix for outputWithStatus in plugin
+
+## 1.61.2
+
+### Patch Changes
+
+- d81fbb7: Fix user selection for the table
+
+## 1.61.1
+
+### Patch Changes
+
+- 616323d: plugin update
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+  - @milaboratories/uikit@2.11.3
+
+## 1.61.0
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+  - @milaboratories/uikit@2.11.2
+
+## 1.60.2
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+- @milaboratories/uikit@2.11.1
+
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/uikit@2.11.0
+  - @platforma-sdk/model@1.60.0
+
 ## 1.59.4
 
 ### Patch Changes

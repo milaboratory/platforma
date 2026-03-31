@@ -18,7 +18,11 @@ import {
   Pl,
   PlClient,
 } from "@milaboratories/pl-client";
-import { createRenderHeavyBlock, createBContextFromUpstreams } from "./template/render_block";
+import {
+  createRenderHeavyBlock,
+  createBContextFromUpstreams,
+  createBContextEnd,
+} from "./template/render_block";
 import type {
   Block,
   ProjectStructure,
@@ -32,12 +36,14 @@ import {
   projectFieldName,
   SchemaVersionCurrent,
   SchemaVersionKey,
+  SchemaVersionV3,
   ProjectResourceType,
   InitialBlockStructure,
   InitialProjectRenderingState,
   ProjectMetaKey,
   InitialBlockMeta,
   blockArgsAuthorKey,
+  BlockArgsAuthorKeyPrefix,
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
   ProjectStructureAuthorKey,
@@ -297,6 +303,9 @@ export type ClearState = {
 };
 
 export class ProjectMutator {
+  /** Max number of blocks to render staging for in a single background refresh pass. */
+  private static readonly STAGING_REFRESH_MAX_BATCH = 10;
+
   private globalModCount = 0;
   private fieldsChanged: boolean = false;
 
@@ -377,6 +386,18 @@ export class ProjectMutator {
         this.setBlockFieldObj(blockInfo.id, "blockSettings", initialBlockSettings);
       }
     });
+
+    // Migration: build production context chain if not present,
+    // and reset all stagings so they re-render using the new chain
+    const needsChainBuild = [...this.blockInfos.values()].some(
+      (info) => info.fields.prodChainCtx === undefined,
+    );
+    if (needsChainBuild && this.blockInfos.size > 0) {
+      this.rebuildProdChain(0);
+      this.blockInfos.forEach((blockInfo) => {
+        this.resetStaging(blockInfo.id);
+      });
+    }
 
     // Validate after fixes
     this.blockInfos.forEach((info) => info.check());
@@ -847,8 +868,18 @@ export class ProjectMutator {
       }
     }
 
-    // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse("downstream", changedArgs, ({ id }) => this.resetStaging(id));
+    // Render staging inline for blocks with changed prerunArgs — no downstream cascade.
+    // Each block's staging uses only the pre-built production context chain (prodChainCtx),
+    // which doesn't change on arg edits, so downstream blocks are unaffected.
+    for (const blockId of changedArgs) {
+      try {
+        this.renderStagingFor(blockId);
+      } catch (e) {
+        this.projectHelper.logger.error(
+          new Error(`[setStates] inline staging render failed for ${blockId}`, { cause: e }),
+        );
+      }
+    }
 
     if (somethingChanged) this.updateLastModified();
   }
@@ -869,22 +900,67 @@ export class ProjectMutator {
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
 
-  private createStagingCtx(upstream: Set<string>): AnyRef {
-    const upstreamContexts: AnyRef[] = [];
-    upstream.forEach((id) => {
-      const info = this.getBlockInfo(id);
-      if (info.fields["stagingCtx"]?.ref !== undefined) {
-        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["stagingCtx"].ref));
-      } else if (info.fields.currentPrerunArgs !== undefined) {
-        // Upstream has currentPrerunArgs but no staging — this is an inconsistency
-        throw new Error(`Upstream ${id} staging is not rendered but has currentPrerunArgs set.`);
+  /**
+   * Rebuilds the production context chain from `fromBlockIndex` to the end.
+   * Each block gets a `prodChainCtx` field containing the accumulated production
+   * contexts from all blocks above it in project order.
+   *
+   * Construction rule for block at position K:
+   * - If block K-1 has prodCtx: chainNode[K] = BContext(chainNode[K-1], K-1.prodCtx)
+   * - If block K-1 has no prodCtx: chainNode[K] = chainNode[K-1] (passthrough)
+   * - Block 0: chainNode[0] = BContextEnd
+   */
+  private rebuildProdChain(fromBlockIndex: number = 0): void {
+    const blocks = [...allBlocks(this.struct)];
+    if (fromBlockIndex >= blocks.length) return;
+
+    // Get the inner chain context ref of the block before fromBlockIndex
+    let prevChainCtx: AnyRef | undefined;
+    if (fromBlockIndex > 0) {
+      const prevHolder = this.getBlockInfo(blocks[fromBlockIndex - 1].id).fields.prodChainCtx?.ref;
+      if (prevHolder === undefined) {
+        throw new Error(
+          `rebuildProdChain(${fromBlockIndex}): block ${blocks[fromBlockIndex - 1].id} at position ${fromBlockIndex - 1} has no prodChainCtx — chain must be built from 0 first`,
+        );
       }
-      // Blocks without currentPrerunArgs (e.g. block model doesn't define prerunArgs, or args
-      // derivation failed) never get stagingCtx. Use prodCtx if available.
-      if (info.fields["prodCtx"]?.ref !== undefined)
-        upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields["prodCtx"].ref));
-    });
-    return createBContextFromUpstreams(this.tx, upstreamContexts);
+      prevChainCtx = Pl.unwrapHolder(this.tx, prevHolder);
+    }
+
+    for (let i = fromBlockIndex; i < blocks.length; i++) {
+      const blockId = blocks[i].id;
+
+      let newChainCtx: AnyRef;
+
+      if (i === 0) {
+        // First block: nothing above
+        newChainCtx = createBContextEnd(this.tx);
+      } else {
+        const prevBlockId = blocks[i - 1].id;
+        const prevInfo = this.getBlockInfo(prevBlockId);
+        const prevProdCtxHolder = prevInfo.fields.prodCtx?.ref;
+
+        if (prevProdCtxHolder !== undefined) {
+          // Block above has production: accumulate into chain
+          const upstreams: AnyRef[] = [];
+          upstreams.push(prevChainCtx!);
+          upstreams.push(Pl.unwrapHolder(this.tx, prevProdCtxHolder));
+          newChainCtx = createBContextFromUpstreams(this.tx, upstreams);
+        } else {
+          // Passthrough: reuse inner context from previous block
+          newChainCtx = prevChainCtx!;
+        }
+      }
+
+      // Store chain node (wrapped in holder)
+      this.setBlockField(
+        blockId,
+        "prodChainCtx",
+        Pl.wrapInEphHolder(this.tx, newChainCtx),
+        "NotReady",
+      );
+
+      prevChainCtx = newChainCtx;
+    }
   }
 
   private exportCtx(ctx: AnyRef): AnyRef {
@@ -898,10 +974,7 @@ export class ProjectMutator {
   private renderStagingFor(blockId: string) {
     const info = this.getBlockInfo(blockId);
 
-    // Check BEFORE resetStaging: if currentPrerunArgs is not set (e.g. prerunArgs() returned undefined
-    // because inputs aren't ready, or args derivation failed), skip without clearing existing staging.
-    // Otherwise resetStaging would delete stagingCtx, and downstream blocks that reference this block
-    // as an upstream would fail in createStagingCtx.
+    // Skip if currentPrerunArgs is not set (prerunArgs() returned undefined or args derivation failed)
     const prerunArgsRef = info.fields.currentPrerunArgs?.ref;
     if (prerunArgsRef === undefined) {
       return;
@@ -909,7 +982,14 @@ export class ProjectMutator {
 
     this.resetStaging(blockId);
 
-    const ctx = this.createStagingCtx(this.getStagingGraph().nodes.get(blockId)!.upstream);
+    // Use the pre-built production context chain node
+    const chainCtxHolder = info.fields.prodChainCtx?.ref;
+    if (chainCtxHolder === undefined) {
+      throw new Error(
+        `[renderStagingFor] block ${blockId} has no prodChainCtx — chain must be built before staging render`,
+      );
+    }
+    const ctx = Pl.unwrapHolder(this.tx, chainCtxHolder);
 
     if (this.getBlock(blockId).renderingMode !== "Heavy") throw new Error("not supported yet");
 
@@ -1173,6 +1253,19 @@ export class ProjectMutator {
     this.pendingProductionGraph = undefined;
     this.actualProductionGraph = undefined;
 
+    // Rebuild production chain — structure (and thus block order) may have changed.
+    // Find the first position that changed to avoid rebuilding the entire chain.
+    const newBlocks = [...allBlocks(newStructure)];
+    const oldBlocks = [...currentStagingGraph.nodes.keys()];
+    const n = Math.min(newBlocks.length, oldBlocks.length);
+    let firstChangedIdx = 0;
+    while (firstChangedIdx < n && newBlocks[firstChangedIdx].id === oldBlocks[firstChangedIdx]) {
+      firstChangedIdx++;
+    }
+    if (firstChangedIdx < newBlocks.length) {
+      this.rebuildProdChain(firstChangedIdx);
+    }
+
     this.updateLastModified();
   }
 
@@ -1355,9 +1448,6 @@ export class ProjectMutator {
       }
 
       this.blocksWithChangedInputs.add(blockId);
-
-      // resetting staging outputs for all downstream blocks
-      this.getStagingGraph().traverse("downstream", [blockId], ({ id }) => this.resetStaging(id));
     }
 
     // also reset or limbo all downstream productions
@@ -1365,6 +1455,17 @@ export class ProjectMutator {
       this.getActualProductionGraph().traverse("downstream", [blockId], ({ id }) =>
         this.resetOrLimboProduction(id),
       );
+
+    // Rebuild chain from this block onward (production may have been reset/limboed)
+    // and reset staging for the migrated block + everything below
+    const blocksList = [...allBlocks(this.struct)];
+    const blockIdx = blocksList.findIndex((b) => b.id === blockId);
+    if (blockIdx >= 0) {
+      this.rebuildProdChain(blockIdx + 1);
+      for (let i = blockIdx; i < blocksList.length; i++) {
+        this.resetStaging(blocksList[i].id);
+      }
+    }
 
     this.updateLastModified();
   }
@@ -1423,11 +1524,20 @@ export class ProjectMutator {
       this.resetOrLimboProduction(node.id);
     });
 
-    // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse("downstream", renderedArray, ({ id }) => {
-      // don't reset staging of the first rendered block
-      if (renderedArray[0] !== id) this.resetStaging(id);
-    });
+    // Rebuild production chain and reset downstream staging
+    if (rendered.size > 0) {
+      const blocksList = [...allBlocks(this.struct)];
+      const firstRenderedIdx = blocksList.findIndex((b) => rendered.has(b.id));
+      if (firstRenderedIdx >= 0) {
+        // Chain from firstRenderedIdx+1 onward changes (rendered blocks have new prodCtx)
+        this.rebuildProdChain(firstRenderedIdx + 1);
+        // Reset staging for all blocks after the first rendered block
+        // (their chain node changed; the first rendered block's chain is unaffected)
+        for (let i = firstRenderedIdx + 1; i < blocksList.length; i++) {
+          this.resetStaging(blocksList[i].id);
+        }
+      }
+    }
 
     if (rendered.size > 0) this.updateLastModified();
 
@@ -1469,54 +1579,39 @@ export class ProjectMutator {
     for (const blockId of activeProdGraph.traverseIdsExcludingRoots("downstream", ...stopped))
       this.resetOrLimboProduction(blockId);
 
-    // reset staging outputs for all downstream blocks
-    this.getStagingGraph().traverse("downstream", stopped, ({ id }) => this.resetStaging(id));
-  }
-
-  private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {
-    const lags = new Map<string, number>();
-    const stagingGraph = this.getStagingGraph();
-    stagingGraph.nodes.forEach((node) => {
-      const info = this.getBlockInfo(node.id);
-      // Use requireStagingRendering to check both: staging exists AND prerunArgs hasn't changed
-      const requiresRendering = info.requireStagingRendering;
-      let lag = requiresRendering ? 1 : 0;
-      node.upstream.forEach((upstream) => {
-        const upstreamLag = lags.get(upstream)!;
-        if (upstreamLag === 0) return;
-        lag = Math.max(upstreamLag + 1, lag);
-      });
-      if (!requiresRendering && info.stagingRendered) {
-        // console.log(`[traverseWithStagingLag] SKIP staging for ${node.id} - prerunArgs unchanged`);
+    // Rebuild chain and reset staging for stopped blocks and everything below
+    if (stopped.length > 0) {
+      const blocksList = [...allBlocks(this.struct)];
+      const stoppedSet = new Set(stopped);
+      const firstStoppedIdx = blocksList.findIndex((b) => stoppedSet.has(b.id));
+      if (firstStoppedIdx >= 0) {
+        // Stopped blocks lost prodCtx — chain below them changes
+        this.rebuildProdChain(firstStoppedIdx + 1);
+        for (let i = firstStoppedIdx; i < blocksList.length; i++) {
+          this.resetStaging(blocksList[i].id);
+        }
       }
-      cb(node.id, lag);
-      lags.set(node.id, lag);
-    });
+    }
   }
 
-  /** @param stagingRenderingRate rate in blocks per second */
-  private refreshStagings(stagingRenderingRate?: number) {
-    const elapsed = Date.now() - this.renderingState.stagingRefreshTimestamp;
-    const lagThreshold =
-      stagingRenderingRate === undefined
-        ? undefined
-        : 1 + Math.max(0, (elapsed * stagingRenderingRate) / 1000);
+  /** Renders staging for blocks that need it (have currentPrerunArgs but no staging). */
+  private refreshStagings() {
+    const maxBatch = ProjectMutator.STAGING_REFRESH_MAX_BATCH;
     let rendered = 0;
-    this.traverseWithStagingLag((blockId, lag) => {
-      if (lag === 0)
-        // meaning staging already rendered
-        return;
-      if (lagThreshold === undefined || lag <= lagThreshold) {
+    for (const block of allBlocks(this.struct)) {
+      if (rendered >= maxBatch) break;
+      const info = this.getBlockInfo(block.id);
+      if (info.requireStagingRendering) {
         try {
-          this.renderStagingFor(blockId);
+          this.renderStagingFor(block.id);
           rendered++;
         } catch (e) {
           this.projectHelper.logger.error(
-            new Error(`[refreshStagings] renderStagingFor failed for ${blockId}`, { cause: e }),
+            new Error(`[refreshStagings] renderStagingFor failed for ${block.id}`, { cause: e }),
           );
         }
       }
-    });
+    }
     if (rendered > 0) this.resetStagingRefreshTimestamp();
   }
 
@@ -1535,9 +1630,9 @@ export class ProjectMutator {
   // Maintenance
   //
 
-  /** @param stagingRenderingRate rate in blocks per second */
-  public doRefresh(stagingRenderingRate?: number) {
-    this.refreshStagings(stagingRenderingRate);
+  /** Background maintenance: render pending stagings + GC of Previous fields. */
+  public doRefresh() {
+    this.refreshStagings();
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.prodCtx?.status === "Ready" &&
@@ -1820,6 +1915,83 @@ export async function createProject(
     Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec)),
   );
   return prj;
+}
+
+/**
+ * Duplicates an existing project resource within a transaction.
+ * Creates a new project resource with all dynamic fields (block data) copied by reference
+ * and all KV metadata copied with appropriate adjustments.
+ *
+ * The returned resource is NOT attached to any project list — the caller is responsible
+ * for placing it where needed. This enables cross-user duplication.
+ *
+ * @param tx - active write transaction
+ * @param sourceRid - resource id of the project to duplicate
+ * @param options.label - optional label override for the new project; if omitted, copies the source label
+ */
+export async function duplicateProject(
+  tx: PlTransaction,
+  sourceRid: ResourceId,
+  options?: { label?: string },
+): Promise<AnyResourceRef> {
+  // Read source resource data (with fields) and all KV pairs
+  const sourceDataP = tx.getResourceData(sourceRid, true);
+  const sourceKVsP = tx.listKeyValuesString(sourceRid);
+
+  const sourceData = await sourceDataP;
+  const sourceKVs = await sourceKVsP;
+
+  // Validate schema version (accept current and previous version that can be migrated on open)
+  const schemaKV = sourceKVs.find((kv) => kv.key === SchemaVersionKey);
+  const schema = schemaKV ? JSON.parse(schemaKV.value) : undefined;
+  if (schema !== SchemaVersionCurrent && schema !== SchemaVersionV3) {
+    throw new UiError(
+      `Cannot duplicate project with schema version ${schema ?? "unknown"}. ` +
+        `Only schema versions ${SchemaVersionV3} and ${SchemaVersionCurrent} are supported. ` +
+        `Try opening the project first to trigger migration.`,
+    );
+  }
+
+  // Create new project resource
+  const newPrj = tx.createEphemeral(ProjectResourceType);
+  tx.lock(newPrj);
+
+  // Copy KV pairs with adjustments
+  const ts = String(Date.now());
+  const kvSkipPrefixes = [BlockArgsAuthorKeyPrefix];
+  const kvSkipKeys = new Set([
+    ProjectCreatedTimestamp,
+    ProjectLastModifiedTimestamp,
+    ProjectStructureAuthorKey,
+  ]);
+
+  for (const { key, value } of sourceKVs) {
+    // Skip author markers
+    if (kvSkipKeys.has(key)) continue;
+    if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
+
+    if (key === ProjectMetaKey && options?.label !== undefined) {
+      // Override label
+      const meta: ProjectMeta = JSON.parse(value);
+      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
+    } else {
+      // Copy as-is
+      tx.setKValue(newPrj, key, value);
+    }
+  }
+
+  // Set fresh timestamps
+  tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
+  tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
+
+  // Copy all dynamic fields by sharing references
+  for (const f of sourceData.fields) {
+    if (isNotNullResourceId(f.value)) {
+      tx.createField(field(newPrj, f.name), "Dynamic", f.value);
+    }
+  }
+
+  return newPrj;
 }
 
 export async function withProject<T>(

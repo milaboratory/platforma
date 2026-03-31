@@ -1,8 +1,12 @@
 import type {
   AnchoredPColumnSelector,
   AnyFunction,
+  AxesId,
+  AxesSpec,
   AxisId,
   DataInfo,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
   Option,
   PColumn,
   PColumnLazy,
@@ -15,6 +19,8 @@ import type {
   PObjectId,
   PObjectSpec,
   PSpecPredicate,
+  PTableColumnId,
+  PTableColumnSpec,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -23,6 +29,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
+  SingleAxisSelector,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -43,8 +50,8 @@ import {
   mapValueInVOE,
   PColumnName,
   readAnnotation,
-  selectorsToPredicate,
   withEnrichments,
+  legacyColumnSelectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -155,7 +162,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const predicate =
       typeof predicateOrSelector === "function"
         ? predicateOrSelector
-        : selectorsToPredicate(predicateOrSelector);
+        : legacyColumnSelectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
@@ -494,7 +501,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<TreeNodeAccessor | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
 
     const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
       if (!isPColumnSpec(spec)) return false;
@@ -709,6 +717,41 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.getBlockLabel(blockId);
   }
 
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): string {
+    return this.ctx.createSpecFrame(specs);
+  }
+
+  public specFrameDiscoverColumns(
+    handle: string,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
+    return this.ctx.specFrameDiscoverColumns(handle, request);
+  }
+
+  public disposeSpecFrame(handle: string): void {
+    this.ctx.disposeSpecFrame(handle);
+  }
+
+  public expandAxes(spec: AxesSpec): AxesId {
+    return this.ctx.expandAxes(spec);
+  }
+
+  public collapseAxes(ids: AxesId): AxesSpec {
+    return this.ctx.collapseAxes(ids);
+  }
+
+  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return this.ctx.findAxis(spec, selector);
+  }
+
+  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return this.ctx.findTableColumn(tableSpec, selector);
+  }
+
   public getCurrentUnstableMarker(): string | undefined {
     return this.ctx.getCurrentUnstableMarker();
   }
@@ -776,26 +819,28 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
-  private readonly ctx: GlobalCfgRenderCtx;
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> extends RenderCtxBase<
+  unknown,
+  InferFactoryData<F>
+> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
   constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
-    this.ctx = getCfgRenderCtx();
+    super();
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 
-  private dataCache?: { v: InferFactoryData<F> };
+  private pluginDataCache?: { v: InferFactoryData<F> };
 
   /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
-  public get data(): InferFactoryData<F> {
-    if (this.dataCache === undefined) {
+  public override get data(): InferFactoryData<F> {
+    if (this.pluginDataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+      this.pluginDataCache = { v: getPluginData(parseJson(raw), this.handle) };
     }
-    return this.dataCache.v;
+    return this.pluginDataCache.v;
   }
 
   private paramsCache?: { v: InferFactoryParams<F> };
@@ -811,9 +856,6 @@ export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
     }
     return this.paramsCache.v;
   }
-
-  /** Result pool — same as block, from cfgRenderCtx methods */
-  public readonly resultPool = new ResultPool();
 }
 
 /** @deprecated Use BlockRenderCtx instead */

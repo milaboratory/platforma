@@ -1,5 +1,125 @@
 # @milaboratories/pl-middle-layer
 
+## 1.53.2
+
+### Patch Changes
+
+- Updated dependencies [e34a693]
+  - @milaboratories/pl-drivers@1.12.4
+
+## 1.53.1
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 1.53.0
+
+### Minor Changes
+
+- cfee265: Drop V1 DiscoverColumnsRequest/PFrameWasm/PFrameWasmAPI, adopt V2 interfaces; update DiscoverColumnsRequest in common with includeColumns/excludeColumns/maxHops fields; extract SpecDriver into @milaboratories/pf-spec-driver package; rename specFrameDispose to disposeSpecFrame for API consistency
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-model-middle-layer@1.16.0
+  - @milaboratories/pf-driver@1.2.0
+  - @milaboratories/pf-spec-driver@1.1.0
+  - @platforma-sdk/model@1.61.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-deployments@2.16.2
+  - @milaboratories/pl-drivers@1.12.3
+  - @platforma-sdk/block-tools@2.7.2
+  - @milaboratories/pl-model-backend@1.2.2
+  - @milaboratories/pl-errors@1.2.2
+  - @milaboratories/pl-tree@1.9.3
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.52.1
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+  - @milaboratories/pl-model-middle-layer@1.15.0
+  - @milaboratories/pf-driver@1.1.1
+  - @milaboratories/pl-client@2.18.1
+  - @milaboratories/pl-deployments@2.16.1
+  - @milaboratories/pl-drivers@1.12.2
+  - @platforma-sdk/model@1.60.2
+  - @platforma-sdk/block-tools@2.7.1
+  - @milaboratories/pl-model-backend@1.2.1
+  - @milaboratories/pl-errors@1.2.1
+  - @milaboratories/pl-tree@1.9.2
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.52.0
+
+### Minor Changes
+
+- 6078a1d: Add computable and QuickJS performance instrumentation for diagnosing post-sync recalculation bottleneck.
+- ccb1a70: Template cache: cache materialized template resource trees on user root to speed up block addition and reduce transaction conflicts
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-drivers@1.12.1
+  - @milaboratories/pl-tree@1.9.1
+
+## 1.51.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-deployments@2.16.0
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-drivers@1.12.0
+  - @milaboratories/pf-driver@1.1.0
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-errors@1.2.0
+  - @platforma-sdk/workflow-tengo@5.11.0
+  - @milaboratories/pl-model-backend@1.2.0
+  - @platforma-sdk/block-tools@2.7.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/pl-tree@1.9.0
+  - @platforma-sdk/model@1.60.0
+
+## 1.50.1
+
+### Patch Changes
+
+- 5b83cd7: Export project model constants and duplicateProject for external consumers
+
+  Added public exports:
+
+  - `ProjectMetaKey`, `ProjectCreatedTimestamp`, `ProjectLastModifiedTimestamp`, `SchemaVersionKey`, `SchemaVersionCurrent`, `ProjectStructureKey`, `ProjectResourceType`, `BlockArgsAuthorKeyPrefix`, `ProjectStructureAuthorKey` from model
+  - `ProjectsField` from middle_layer
+  - `duplicateProject` from mutator/project
+
+## 1.50.0
+
+### Minor Changes
+
+- 220275d: Replace staging cascade with production context chain.
+
+  Arg changes now render staging inline for the changed block only (O(1) instead of O(N) cascade).
+  A pre-built chain of BContext resources accumulates production contexts from all blocks above each position.
+  Background refresh simplified from 700ms lag-based rendering to 2s simple iteration.
+  Schema bumped to v4 to prevent older clients from operating on migrated projects.
+
+## 1.49.0
+
+### Minor Changes
+
+- e2f2809: Add project duplication: `duplicateProject` function in mutator and `duplicateProject` method on MiddleLayer class
+
 ## 1.48.28
 
 ### Patch Changes

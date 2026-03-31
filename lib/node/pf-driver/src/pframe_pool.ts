@@ -8,7 +8,7 @@ import {
   type JsonSerializable,
   type PColumn,
   type PFrameHandle,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";

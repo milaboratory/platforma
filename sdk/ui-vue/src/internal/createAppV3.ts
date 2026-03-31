@@ -340,10 +340,17 @@ export function createAppV3<
         snapshot.value.outputs as Partial<Readonly<Outputs>>,
       )) {
         if (!key.startsWith(prefix)) continue;
-        result[key.slice(prefix.length)] =
-          outputWithStatus.ok && outputWithStatus.value !== undefined
-            ? outputWithStatus.value
+        const outputKey = key.slice(prefix.length);
+        if (platforma.blockModelInfo.outputs[key]?.withStatus) {
+          result[outputKey] = outputWithStatus
+            ? ensureOutputHasStableFlag(outputWithStatus)
             : undefined;
+        } else {
+          result[outputKey] =
+            outputWithStatus.ok && outputWithStatus.value !== undefined
+              ? outputWithStatus.value
+              : undefined;
+        }
       }
       return result;
     });
@@ -398,7 +405,7 @@ export function createAppV3<
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, id]),
+    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
   ) as InferPluginHandles<Plugins>;
 
   const getters = {

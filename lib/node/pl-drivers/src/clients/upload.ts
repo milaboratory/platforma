@@ -316,6 +316,15 @@ async function checkExpectedMTime(path: string, expectedMTimeUnix: bigint) {
   }
 }
 
+/** S3 error codes that indicate expired/invalid temporary credentials.
+ * These are transient: a retry with a fresh presigned URL will succeed
+ * once the backend refreshes its STS credentials. */
+const TRANSIENT_S3_ERROR_CODES = ["ExpiredToken", "RequestExpired", "TokenRefreshRequired"];
+
+function isTransientS3Error(body: string): boolean {
+  return TRANSIENT_S3_ERROR_CODES.some((code) => body.includes(`<Code>${code}</Code>`));
+}
+
 function checkStatusCodeOk(
   statusCode: number,
   body: string,
@@ -323,6 +332,12 @@ function checkStatusCodeOk(
   info: UploadAPI_GetPartURL_Response,
 ) {
   if (statusCode == 400) {
+    if (isTransientS3Error(body)) {
+      throw new NetworkError(
+        `transient S3 credential error, status code: ${statusCode},` +
+          ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,
+      );
+    }
     throw new BadRequestError(
       `response is not ok, status code: ${statusCode},` +
         ` body: ${body}, headers: ${JSON.stringify(headers)}, url: ${info.uploadUrl}`,

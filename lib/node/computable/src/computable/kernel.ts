@@ -80,6 +80,22 @@ export type CellRenderingMode =
    *  is set. */
   | "StableOnlyRetentive";
 
+/** Timing stats collected during a single computable recalculation cycle. */
+export type RecalculationStats = {
+  /** Time spent in renderSelfState — the kernel callback execution (ms) */
+  syncMs: number;
+  /** Time spent in calculateValue — children resolution + postprocessValue (ms) */
+  asyncMs: number;
+  /** Breakdown of asyncMs: time in Promise.all(children) (ms) */
+  childrenMs: number;
+  /** Breakdown of asyncMs: time in fillCellValue / postprocessValue (ms) */
+  postprocessMs: number;
+  /** Number of children states */
+  childCount: number;
+  /** Whether the result is stable (all dependencies resolved) */
+  stable: boolean;
+};
+
 export interface CellRenderingOps {
   /** See description for {@link CellRenderingMode}. Default value is 'Live'. */
   mode: CellRenderingMode;
@@ -88,6 +104,8 @@ export interface CellRenderingOps {
   /** Computable postporcess (async) part is meant to be quick, and internally guarded by the timeout.
    * Timeout is in milliseconds. Default value is 5000. */
   postprocessTimeout: number;
+  /** Fired after each full recalculation (sync + async). Only opt-in — zero overhead for computables without this callback. */
+  onRecalculation?: (stats: RecalculationStats) => void;
 }
 
 /** Extended by kernel intermediate returned value, and adds recover method. */

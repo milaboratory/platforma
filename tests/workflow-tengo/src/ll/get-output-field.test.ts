@@ -123,7 +123,7 @@ tplTest.concurrent.for([
       );
       tx.lock(resourceWithField);
       tx.setField(targetInput!, resourceWithField);
-      tx.commit();
+      await tx.commit();
     });
 
     // Check that we get the actual field value when it exists

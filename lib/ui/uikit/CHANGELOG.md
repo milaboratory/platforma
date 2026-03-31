@@ -1,5 +1,37 @@
 # @milaboratories/uikit
 
+## 2.11.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 2.11.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
+## 2.11.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+
+## 2.11.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/helpers@1.14.0
+  - @platforma-sdk/model@1.60.0
+
 ## 2.10.46
 
 ### Patch Changes

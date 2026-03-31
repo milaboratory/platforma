@@ -549,11 +549,13 @@ export class BlockModelV3<
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
+      const { outputFlags } = model;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
           lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
+          withStatus: outputFlags[outputKey]?.withStatus,
         });
       }
     }

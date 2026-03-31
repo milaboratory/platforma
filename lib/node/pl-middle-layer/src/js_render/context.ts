@@ -39,6 +39,26 @@ export type ComputableEnv = {
   computableCtx: ComputableCtx;
 };
 
+/** Execution stats accumulated during the lifetime of a JsExecutionContext. */
+export type JsExecStats = {
+  bundleEvalMs: number;
+  bundleBytes: number;
+
+  callbackMs: number;
+  callbackCount: number;
+
+  serInMs: number;
+  serInBytes: number;
+  serInCalls: number;
+
+  serOutMs: number;
+  serOutBytes: number;
+  serOutCalls: number;
+
+  ctxMethodCalls: number;
+  ctxMethodMs: number;
+};
+
 export class JsExecutionContext {
   private readonly callbackRegistry: QuickJSHandle;
   private readonly fnJSONStringify: QuickJSHandle;
@@ -47,6 +67,21 @@ export class JsExecutionContext {
   public readonly errorRepo = new ErrorRepository();
 
   public readonly computableHelper: ComputableContextHelper | undefined;
+
+  public readonly stats: JsExecStats = {
+    bundleEvalMs: 0,
+    bundleBytes: 0,
+    callbackMs: 0,
+    callbackCount: 0,
+    serInMs: 0,
+    serInBytes: 0,
+    serInCalls: 0,
+    serOutMs: 0,
+    serOutBytes: 0,
+    serOutCalls: 0,
+    ctxMethodCalls: 0,
+    ctxMethodMs: 0,
+  };
 
   /**
    * Creates a new JS execution context.
@@ -111,6 +146,7 @@ export class JsExecutionContext {
   // }
 
   public evaluateBundle(code: string) {
+    const t0 = performance.now();
     try {
       this.deadlineSetter({
         currentExecutionTarget: "evaluateBundle",
@@ -122,10 +158,13 @@ export class JsExecutionContext {
       throw err;
     } finally {
       this.deadlineSetter(undefined);
+      this.stats.bundleEvalMs += performance.now() - t0;
+      this.stats.bundleBytes += code.length;
     }
   }
 
   public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
+    const t0 = performance.now();
     try {
       this.deadlineSetter({ currentExecutionTarget: cbName, deadline: Date.now() + 10000 });
       return Scope.withScope((localScope) => {
@@ -150,6 +189,8 @@ export class JsExecutionContext {
       throw original;
     } finally {
       this.deadlineSetter(undefined);
+      this.stats.callbackMs += performance.now() - t0;
+      this.stats.callbackCount++;
     }
   }
 
@@ -210,11 +251,16 @@ export class JsExecutionContext {
   }
 
   public exportObjectViaJson(obj: unknown, scope: Scope | undefined): QuickJSHandle {
+    const t0 = performance.now();
+    const json = JSON.stringify(obj);
+    this.stats.serInBytes += json.length;
+    this.stats.serInCalls++;
     const result = this.vm
-      .newString(JSON.stringify(obj))
-      .consume((json) =>
-        this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, json)),
+      .newString(json)
+      .consume((jsonHandle) =>
+        this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, jsonHandle)),
       );
+    this.stats.serInMs += performance.now() - t0;
     return scope !== undefined ? scope.manage(result) : result;
   }
 
@@ -233,13 +279,20 @@ export class JsExecutionContext {
   }
 
   public importObjectViaJson(handle: QuickJSHandle): unknown {
+    const t0 = performance.now();
     const text = this.vm
       .unwrapResult(this.vm.callFunction(this.fnJSONStringify, this.vm.undefined, handle))
       .consume((strHandle) => this.vm.getString(strHandle));
-    if (text === "undefined")
+    this.stats.serOutBytes += text.length;
+    this.stats.serOutCalls++;
+    if (text === "undefined") {
       // special case with futures
+      this.stats.serOutMs += performance.now() - t0;
       return undefined;
-    return JSON.parse(text);
+    }
+    const result = JSON.parse(text);
+    this.stats.serOutMs += performance.now() - t0;
+    return result;
   }
 
   private injectCtx() {

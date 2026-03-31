@@ -3,10 +3,10 @@ import { usePlugin, type InferPluginHandle } from "@platforma-sdk/ui-vue";
 import type { CounterPlugin } from "@milaboratories/milaboratories.test-block-model.model";
 
 const props = defineProps<{
-  instance: InferPluginHandle<CounterPlugin>;
+  handle: InferPluginHandle<CounterPlugin>;
 }>();
 
-const plugin = usePlugin(props.instance);
+const plugin = usePlugin(props.handle);
 
 function increment() {
   plugin.model.data.count += 1;

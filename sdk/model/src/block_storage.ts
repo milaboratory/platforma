@@ -218,17 +218,6 @@ export function updateStorageData<TValue = unknown>(
   }
 }
 
-/**
- * Storage debug view returned by __pl_storage_debugView callback.
- * Used by developer tools to display block storage info.
- */
-export interface StorageDebugView {
-  /** Current data version key */
-  dataVersion: string;
-  /** Raw data payload stored in BlockStorage */
-  data: unknown;
-}
-
 // =============================================================================
 // Atomic Migration
 // =============================================================================

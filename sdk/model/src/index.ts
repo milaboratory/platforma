@@ -14,7 +14,6 @@ export {
   deriveDataFromStorage,
   type MutateStoragePayload,
   updateStorageData,
-  type StorageDebugView,
   type MigrationSuccess,
   type MigrationFailure,
   type MigrationResult,
@@ -37,11 +36,14 @@ export {
   PluginInstance,
   PluginModel,
   type PluginFactory,
+  type PluginDataModelVersions,
 } from "./plugin_model";
 export * from "./bconfig";
 export * from "./components";
 export * from "./config";
 export * from "./pframe";
+export * from "./labels";
+export * from "./columns";
 export * from "./platforma";
 export * from "./ref_util";
 export * from "./render";

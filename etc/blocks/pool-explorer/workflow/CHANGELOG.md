@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer.workflow
 
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/workflow-tengo@5.11.0
+
 ## 1.1.120
 
 ### Patch Changes
