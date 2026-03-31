@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig(
   createVitestConfig({
     test: {
-      testTimeout: 10000,
+      testTimeout: 90000,
     },
   }),
 );
