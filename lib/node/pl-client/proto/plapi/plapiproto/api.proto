@@ -190,6 +190,24 @@ service Platform {
     };
   }
 
+  rpc GrantAccess(AuthAPI.GrantAccess.Request) returns (AuthAPI.GrantAccess.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/grant-access"
+      body: "*"
+    };
+  }
+
+  rpc RevokeGrant(AuthAPI.RevokeGrant.Request) returns (AuthAPI.RevokeGrant.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/revoke-grant"
+      body: "*"
+    };
+  }
+
+  rpc ListGrants(AuthAPI.ListGrants.Request) returns (stream AuthAPI.ListGrants.Response) {}
+
+  rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
+
   //
   // Other stuff
   //
@@ -1466,6 +1484,93 @@ message AuthAPI {
       bytes session_id = 2;
     }
   }
+
+  message GrantAccess {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string target_user = 3;        // user login to grant access to
+      Grant.Permissions permissions = 4;   // access level to grant
+    }
+
+    message Response {}
+  }
+
+  message RevokeGrant {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string target_user = 3; // user login whose grant to revoke
+    }
+
+    message Response {}
+  }
+
+  message ListGrants {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+
+    message Response {
+      Grant grant = 1; // one per stream message
+    }
+  }
+
+  message Grant {
+    // Permissions describes access level for a grant.
+    message Permissions {
+      bool writable = 1; // write access = ability to modify resource tree + share access
+    }
+
+    string user = 1;
+    uint64 resource_id = 2;
+    Permissions permissions = 3; // access level from grant table
+    string granted_by = 4;      // login of the user who created this grant
+    int64 granted_at = 5;       // unix timestamp in milliseconds
+  }
+
+  message ListUserResources {
+    message Request {
+      // User login to list resources for.
+      // Is ignored for regular user role: it can list only its own resources.
+      string login = 1;
+
+      // Start listing shared resources from given resource ID.
+      // User root is returned only on the first page (when start_from == 0).
+      uint64 start_from = 2;
+
+      // Non-zero value limits total resource count to at most <limit>.
+      // limit = 1 with start_from = 0 returns solely user's root
+      // limit = 2 with non-zero start_from returns 2 shared resources.
+      // Zero returns all resources.
+      uint32 limit = 3;
+    }
+
+    // Multi-message: first message contains UserRoot (only when start_from == 0),
+    message Response {
+      oneof entry {
+        UserRoot user_root = 1;
+        SharedResource shared_resource = 2;
+      }
+
+      // Set only on the last message when limit > 0 and more items exist.
+      // Use as 'start_from' in the next request to continue listing.
+      uint64 next_resource_id = 3;
+    }
+
+    message UserRoot {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+
+    message SharedResource {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      Base.ResourceType resource_type = 3;
+      Grant.Permissions permissions = 4;
+    }
+  }
 }
 
 message MiscAPI {
@@ -1492,7 +1597,6 @@ message MaintenanceAPI {
       string core_version = 1;
       string core_full_version = 2;
 
-      string server_info = 3;
       Compression compression = 4;
 
       // instanceID is a unique ID that changes when we reset DB state.
@@ -1504,6 +1608,8 @@ message MaintenanceAPI {
       string platform = 6; // <os>-<arch>
       string os = 7; // linux / windows / macosx
       string arch = 8; // x64 / aarch64
+
+      // next free: 9
     }
   }
 

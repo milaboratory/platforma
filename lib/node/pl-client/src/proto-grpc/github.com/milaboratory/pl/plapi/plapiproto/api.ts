@@ -3280,6 +3280,226 @@ export enum AuthAPI_GetJWTToken_Role {
     WORKFLOW = 3
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess
+ */
+export interface AuthAPI_GrantAccess {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Request
+ */
+export interface AuthAPI_GrantAccess_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: string target_user = 3
+     */
+    targetUser: string; // user login to grant access to
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4
+     */
+    permissions?: AuthAPI_Grant_Permissions; // access level to grant
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Response
+ */
+export interface AuthAPI_GrantAccess_Response {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant
+ */
+export interface AuthAPI_RevokeGrant {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant.Request
+ */
+export interface AuthAPI_RevokeGrant_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: string target_user = 3
+     */
+    targetUser: string; // user login whose grant to revoke
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant.Response
+ */
+export interface AuthAPI_RevokeGrant_Response {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants
+ */
+export interface AuthAPI_ListGrants {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.Request
+ */
+export interface AuthAPI_ListGrants_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.Response
+ */
+export interface AuthAPI_ListGrants_Response {
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant grant = 1
+     */
+    grant?: AuthAPI_Grant; // one per stream message
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.Grant
+ */
+export interface AuthAPI_Grant {
+    /**
+     * @generated from protobuf field: string user = 1
+     */
+    user: string;
+    /**
+     * @generated from protobuf field: uint64 resource_id = 2
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 3
+     */
+    permissions?: AuthAPI_Grant_Permissions; // access level from grant table
+    /**
+     * @generated from protobuf field: string granted_by = 4
+     */
+    grantedBy: string; // login of the user who created this grant
+    /**
+     * @generated from protobuf field: int64 granted_at = 5
+     */
+    grantedAt: bigint; // unix timestamp in milliseconds
+}
+/**
+ * Permissions describes access level for a grant.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.Grant.Permissions
+ */
+export interface AuthAPI_Grant_Permissions {
+    /**
+     * @generated from protobuf field: bool writable = 1
+     */
+    writable: boolean; // write access = ability to modify resource tree + share access
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources
+ */
+export interface AuthAPI_ListUserResources {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.Request
+ */
+export interface AuthAPI_ListUserResources_Request {
+    /**
+     * User login to list resources for.
+     * Is ignored for regular user role: it can list only its own resources.
+     *
+     * @generated from protobuf field: string login = 1
+     */
+    login: string;
+    /**
+     * Start listing shared resources from given resource ID.
+     * User root is returned only on the first page (when start_from == 0).
+     *
+     * @generated from protobuf field: uint64 start_from = 2
+     */
+    startFrom: bigint;
+    /**
+     * Non-zero value limits total resource count to at most <limit>.
+     * limit = 1 with start_from = 0 returns solely user's root
+     * limit = 2 with non-zero start_from returns 2 shared resources.
+     * Zero returns all resources.
+     *
+     * @generated from protobuf field: uint32 limit = 3
+     */
+    limit: number;
+}
+/**
+ * Multi-message: first message contains UserRoot (only when start_from == 0),
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.Response
+ */
+export interface AuthAPI_ListUserResources_Response {
+    /**
+     * @generated from protobuf oneof: entry
+     */
+    entry: {
+        oneofKind: "userRoot";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot user_root = 1
+         */
+        userRoot: AuthAPI_ListUserResources_UserRoot;
+    } | {
+        oneofKind: "sharedResource";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource = 2
+         */
+        sharedResource: AuthAPI_ListUserResources_SharedResource;
+    } | {
+        oneofKind: undefined;
+    };
+    /**
+     * Set only on the last message when limit > 0 and more items exist.
+     * Use as 'start_from' in the next request to continue listing.
+     *
+     * @generated from protobuf field: uint64 next_resource_id = 3
+     */
+    nextResourceId: bigint;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot
+ */
+export interface AuthAPI_ListUserResources_UserRoot {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource
+ */
+export interface AuthAPI_ListUserResources_SharedResource {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.Base.ResourceType resource_type = 3
+     */
+    resourceType?: ResourceType;
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4
+     */
+    permissions?: AuthAPI_Grant_Permissions;
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.MiscAPI
  */
 export interface MiscAPI {
@@ -3332,10 +3552,6 @@ export interface MaintenanceAPI_Ping_Response {
      * @generated from protobuf field: string core_full_version = 2
      */
     coreFullVersion: string;
-    /**
-     * @generated from protobuf field: string server_info = 3
-     */
-    serverInfo: string;
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression = 4
      */
@@ -16272,6 +16488,848 @@ class AuthAPI_GetJWTToken_Response$Type extends MessageType<AuthAPI_GetJWTToken_
  */
 export const AuthAPI_GetJWTToken_Response = new AuthAPI_GetJWTToken_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_GrantAccess$Type extends MessageType<AuthAPI_GrantAccess> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.GrantAccess", []);
+    }
+    create(value?: PartialMessage<AuthAPI_GrantAccess>): AuthAPI_GrantAccess {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_GrantAccess>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_GrantAccess): AuthAPI_GrantAccess {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_GrantAccess, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess
+ */
+export const AuthAPI_GrantAccess = new AuthAPI_GrantAccess$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_GrantAccess_Request$Type extends MessageType<AuthAPI_GrantAccess_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.GrantAccess.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "target_user", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "permissions", kind: "message", T: () => AuthAPI_Grant_Permissions }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_GrantAccess_Request>): AuthAPI_GrantAccess_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.targetUser = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_GrantAccess_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_GrantAccess_Request): AuthAPI_GrantAccess_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* string target_user */ 3:
+                    message.targetUser = reader.string();
+                    break;
+                case /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions */ 4:
+                    message.permissions = AuthAPI_Grant_Permissions.internalBinaryRead(reader, reader.uint32(), options, message.permissions);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_GrantAccess_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* string target_user = 3; */
+        if (message.targetUser !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.targetUser);
+        /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4; */
+        if (message.permissions)
+            AuthAPI_Grant_Permissions.internalBinaryWrite(message.permissions, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Request
+ */
+export const AuthAPI_GrantAccess_Request = new AuthAPI_GrantAccess_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_GrantAccess_Response$Type extends MessageType<AuthAPI_GrantAccess_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.GrantAccess.Response", []);
+    }
+    create(value?: PartialMessage<AuthAPI_GrantAccess_Response>): AuthAPI_GrantAccess_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_GrantAccess_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_GrantAccess_Response): AuthAPI_GrantAccess_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_GrantAccess_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Response
+ */
+export const AuthAPI_GrantAccess_Response = new AuthAPI_GrantAccess_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_RevokeGrant$Type extends MessageType<AuthAPI_RevokeGrant> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.RevokeGrant", []);
+    }
+    create(value?: PartialMessage<AuthAPI_RevokeGrant>): AuthAPI_RevokeGrant {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_RevokeGrant>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_RevokeGrant): AuthAPI_RevokeGrant {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_RevokeGrant, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant
+ */
+export const AuthAPI_RevokeGrant = new AuthAPI_RevokeGrant$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_RevokeGrant_Request$Type extends MessageType<AuthAPI_RevokeGrant_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.RevokeGrant.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "target_user", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_RevokeGrant_Request>): AuthAPI_RevokeGrant_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.targetUser = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_RevokeGrant_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_RevokeGrant_Request): AuthAPI_RevokeGrant_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* string target_user */ 3:
+                    message.targetUser = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_RevokeGrant_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* string target_user = 3; */
+        if (message.targetUser !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.targetUser);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant.Request
+ */
+export const AuthAPI_RevokeGrant_Request = new AuthAPI_RevokeGrant_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_RevokeGrant_Response$Type extends MessageType<AuthAPI_RevokeGrant_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.RevokeGrant.Response", []);
+    }
+    create(value?: PartialMessage<AuthAPI_RevokeGrant_Response>): AuthAPI_RevokeGrant_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_RevokeGrant_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_RevokeGrant_Response): AuthAPI_RevokeGrant_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_RevokeGrant_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.RevokeGrant.Response
+ */
+export const AuthAPI_RevokeGrant_Response = new AuthAPI_RevokeGrant_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListGrants$Type extends MessageType<AuthAPI_ListGrants> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListGrants", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListGrants>): AuthAPI_ListGrants {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListGrants>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListGrants): AuthAPI_ListGrants {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListGrants, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants
+ */
+export const AuthAPI_ListGrants = new AuthAPI_ListGrants$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListGrants_Request$Type extends MessageType<AuthAPI_ListGrants_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListGrants.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListGrants_Request>): AuthAPI_ListGrants_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListGrants_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListGrants_Request): AuthAPI_ListGrants_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListGrants_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.Request
+ */
+export const AuthAPI_ListGrants_Request = new AuthAPI_ListGrants_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListGrants_Response$Type extends MessageType<AuthAPI_ListGrants_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListGrants.Response", [
+            { no: 1, name: "grant", kind: "message", T: () => AuthAPI_Grant }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListGrants_Response>): AuthAPI_ListGrants_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListGrants_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListGrants_Response): AuthAPI_ListGrants_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* MiLaboratories.PL.API.AuthAPI.Grant grant */ 1:
+                    message.grant = AuthAPI_Grant.internalBinaryRead(reader, reader.uint32(), options, message.grant);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListGrants_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* MiLaboratories.PL.API.AuthAPI.Grant grant = 1; */
+        if (message.grant)
+            AuthAPI_Grant.internalBinaryWrite(message.grant, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.Response
+ */
+export const AuthAPI_ListGrants_Response = new AuthAPI_ListGrants_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_Grant$Type extends MessageType<AuthAPI_Grant> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.Grant", [
+            { no: 1, name: "user", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "permissions", kind: "message", T: () => AuthAPI_Grant_Permissions },
+            { no: 4, name: "granted_by", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 5, name: "granted_at", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_Grant>): AuthAPI_Grant {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.user = "";
+        message.resourceId = 0n;
+        message.grantedBy = "";
+        message.grantedAt = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_Grant>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_Grant): AuthAPI_Grant {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string user */ 1:
+                    message.user = reader.string();
+                    break;
+                case /* uint64 resource_id */ 2:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions */ 3:
+                    message.permissions = AuthAPI_Grant_Permissions.internalBinaryRead(reader, reader.uint32(), options, message.permissions);
+                    break;
+                case /* string granted_by */ 4:
+                    message.grantedBy = reader.string();
+                    break;
+                case /* int64 granted_at */ 5:
+                    message.grantedAt = reader.int64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_Grant, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string user = 1; */
+        if (message.user !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.user);
+        /* uint64 resource_id = 2; */
+        if (message.resourceId !== 0n)
+            writer.tag(2, WireType.Varint).uint64(message.resourceId);
+        /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 3; */
+        if (message.permissions)
+            AuthAPI_Grant_Permissions.internalBinaryWrite(message.permissions, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+        /* string granted_by = 4; */
+        if (message.grantedBy !== "")
+            writer.tag(4, WireType.LengthDelimited).string(message.grantedBy);
+        /* int64 granted_at = 5; */
+        if (message.grantedAt !== 0n)
+            writer.tag(5, WireType.Varint).int64(message.grantedAt);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.Grant
+ */
+export const AuthAPI_Grant = new AuthAPI_Grant$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_Grant_Permissions$Type extends MessageType<AuthAPI_Grant_Permissions> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.Grant.Permissions", [
+            { no: 1, name: "writable", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_Grant_Permissions>): AuthAPI_Grant_Permissions {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.writable = false;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_Grant_Permissions>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_Grant_Permissions): AuthAPI_Grant_Permissions {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* bool writable */ 1:
+                    message.writable = reader.bool();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_Grant_Permissions, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* bool writable = 1; */
+        if (message.writable !== false)
+            writer.tag(1, WireType.Varint).bool(message.writable);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.Grant.Permissions
+ */
+export const AuthAPI_Grant_Permissions = new AuthAPI_Grant_Permissions$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources$Type extends MessageType<AuthAPI_ListUserResources> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources>): AuthAPI_ListUserResources {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources): AuthAPI_ListUserResources {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources
+ */
+export const AuthAPI_ListUserResources = new AuthAPI_ListUserResources$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_Request$Type extends MessageType<AuthAPI_ListUserResources_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.Request", [
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "start_from", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_Request>): AuthAPI_ListUserResources_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.login = "";
+        message.startFrom = 0n;
+        message.limit = 0;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_Request): AuthAPI_ListUserResources_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string login */ 1:
+                    message.login = reader.string();
+                    break;
+                case /* uint64 start_from */ 2:
+                    message.startFrom = reader.uint64().toBigInt();
+                    break;
+                case /* uint32 limit */ 3:
+                    message.limit = reader.uint32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string login = 1; */
+        if (message.login !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.login);
+        /* uint64 start_from = 2; */
+        if (message.startFrom !== 0n)
+            writer.tag(2, WireType.Varint).uint64(message.startFrom);
+        /* uint32 limit = 3; */
+        if (message.limit !== 0)
+            writer.tag(3, WireType.Varint).uint32(message.limit);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.Request
+ */
+export const AuthAPI_ListUserResources_Request = new AuthAPI_ListUserResources_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_Response$Type extends MessageType<AuthAPI_ListUserResources_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.Response", [
+            { no: 1, name: "user_root", kind: "message", oneof: "entry", T: () => AuthAPI_ListUserResources_UserRoot },
+            { no: 2, name: "shared_resource", kind: "message", oneof: "entry", T: () => AuthAPI_ListUserResources_SharedResource },
+            { no: 3, name: "next_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_Response>): AuthAPI_ListUserResources_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.entry = { oneofKind: undefined };
+        message.nextResourceId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_Response): AuthAPI_ListUserResources_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot user_root */ 1:
+                    message.entry = {
+                        oneofKind: "userRoot",
+                        userRoot: AuthAPI_ListUserResources_UserRoot.internalBinaryRead(reader, reader.uint32(), options, (message.entry as any).userRoot)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource */ 2:
+                    message.entry = {
+                        oneofKind: "sharedResource",
+                        sharedResource: AuthAPI_ListUserResources_SharedResource.internalBinaryRead(reader, reader.uint32(), options, (message.entry as any).sharedResource)
+                    };
+                    break;
+                case /* uint64 next_resource_id */ 3:
+                    message.nextResourceId = reader.uint64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot user_root = 1; */
+        if (message.entry.oneofKind === "userRoot")
+            AuthAPI_ListUserResources_UserRoot.internalBinaryWrite(message.entry.userRoot, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource = 2; */
+        if (message.entry.oneofKind === "sharedResource")
+            AuthAPI_ListUserResources_SharedResource.internalBinaryWrite(message.entry.sharedResource, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* uint64 next_resource_id = 3; */
+        if (message.nextResourceId !== 0n)
+            writer.tag(3, WireType.Varint).uint64(message.nextResourceId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.Response
+ */
+export const AuthAPI_ListUserResources_Response = new AuthAPI_ListUserResources_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_UserRoot$Type extends MessageType<AuthAPI_ListUserResources_UserRoot> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_UserRoot>): AuthAPI_ListUserResources_UserRoot {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_UserRoot>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_UserRoot): AuthAPI_ListUserResources_UserRoot {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_UserRoot, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot
+ */
+export const AuthAPI_ListUserResources_UserRoot = new AuthAPI_ListUserResources_UserRoot$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_ListUserResources_SharedResource> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_type", kind: "message", T: () => ResourceType },
+            { no: 4, name: "permissions", kind: "message", T: () => AuthAPI_Grant_Permissions }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_SharedResource>): AuthAPI_ListUserResources_SharedResource {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_SharedResource>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_SharedResource): AuthAPI_ListUserResources_SharedResource {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* MiLaboratories.PL.Base.ResourceType resource_type */ 3:
+                    message.resourceType = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.resourceType);
+                    break;
+                case /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions */ 4:
+                    message.permissions = AuthAPI_Grant_Permissions.internalBinaryRead(reader, reader.uint32(), options, message.permissions);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_SharedResource, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* MiLaboratories.PL.Base.ResourceType resource_type = 3; */
+        if (message.resourceType)
+            ResourceType.internalBinaryWrite(message.resourceType, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4; */
+        if (message.permissions)
+            AuthAPI_Grant_Permissions.internalBinaryWrite(message.permissions, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource
+ */
+export const AuthAPI_ListUserResources_SharedResource = new AuthAPI_ListUserResources_SharedResource$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class MiscAPI$Type extends MessageType<MiscAPI> {
     constructor() {
         super("MiLaboratories.PL.API.MiscAPI", []);
@@ -16552,7 +17610,6 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         super("MiLaboratories.PL.API.MaintenanceAPI.Ping.Response", [
             { no: 1, name: "core_version", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "core_full_version", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "server_info", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "compression", kind: "enum", T: () => ["MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression", MaintenanceAPI_Ping_Response_Compression] },
             { no: 5, name: "instance_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "platform", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
@@ -16564,7 +17621,6 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         const message = globalThis.Object.create((this.messagePrototype!));
         message.coreVersion = "";
         message.coreFullVersion = "";
-        message.serverInfo = "";
         message.compression = 0;
         message.instanceId = "";
         message.platform = "";
@@ -16584,9 +17640,6 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                     break;
                 case /* string core_full_version */ 2:
                     message.coreFullVersion = reader.string();
-                    break;
-                case /* string server_info */ 3:
-                    message.serverInfo = reader.string();
                     break;
                 case /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression */ 4:
                     message.compression = reader.int32();
@@ -16621,9 +17674,6 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* string core_full_version = 2; */
         if (message.coreFullVersion !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.coreFullVersion);
-        /* string server_info = 3; */
-        if (message.serverInfo !== "")
-            writer.tag(3, WireType.LengthDelimited).string(message.serverInfo);
         /* MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression compression = 4; */
         if (message.compression !== 0)
             writer.tag(4, WireType.Varint).int32(message.compression);
@@ -16892,6 +17942,10 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "ReleaseLease", options: { "google.api.http": { post: "/v1/locks/lease/release", body: "*" } }, I: LocksAPI_Lease_Release_Request, O: LocksAPI_Lease_Release_Response },
     { name: "AuthMethods", options: { "google.api.http": { get: "/v1/auth/methods" } }, I: AuthAPI_ListMethods_Request, O: AuthAPI_ListMethods_Response },
     { name: "GetJWTToken", options: { "google.api.http": { post: "/v1/auth/jwt-token", body: "*" } }, I: AuthAPI_GetJWTToken_Request, O: AuthAPI_GetJWTToken_Response },
+    { name: "GrantAccess", options: { "google.api.http": { post: "/v1/auth/grant-access", body: "*" } }, I: AuthAPI_GrantAccess_Request, O: AuthAPI_GrantAccess_Response },
+    { name: "RevokeGrant", options: { "google.api.http": { post: "/v1/auth/revoke-grant", body: "*" } }, I: AuthAPI_RevokeGrant_Request, O: AuthAPI_RevokeGrant_Response },
+    { name: "ListGrants", serverStreaming: true, options: {}, I: AuthAPI_ListGrants_Request, O: AuthAPI_ListGrants_Response },
+    { name: "ListUserResources", serverStreaming: true, options: {}, I: AuthAPI_ListUserResources_Request, O: AuthAPI_ListUserResources_Response },
     { name: "ListResourceTypes", options: { "google.api.http": { get: "/v1/resource-types" } }, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
     { name: "Ping", options: { "google.api.http": { get: "/v1/ping" } }, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
     { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }
