@@ -374,6 +374,7 @@ export class MiddleLayer {
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
       dispose: async () => {
+        await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();
       },

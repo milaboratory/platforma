@@ -13,6 +13,7 @@ import type {
   PTableColumnSpec,
   SingleAxisSelector,
   SpecFrameHandle,
+  PoolEntry,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
   DeleteColumnRequest,
@@ -35,7 +36,7 @@ import { logPFrames } from "./logging";
  *
  * All operations are synchronous — WASM computes results immediately.
  */
-export class SpecDriver implements PFrameSpecDriver, Disposable {
+export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
   private readonly logger: MiLogger;
   private readonly frames: PFramePool;
 
@@ -44,7 +45,7 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
     this.frames = new PFramePool(this.logger);
   }
 
-  createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
+  createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle> {
     const ValueTypes = new Set(Object.values(ValueType));
     const filtered = Object.fromEntries(
       Object.entries(specs)
@@ -55,8 +56,7 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
       if (logPFrames()) {
         this.logger.info(`createSpecFrame: ${Object.keys(filtered).length} columns`);
       }
-      const handle = this.frames.acquire(filtered).key;
-      return handle;
+      return this.frames.acquire(filtered);
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`createSpecFrame failed`);
       error.cause = ensureError(err);
@@ -128,19 +128,6 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
     }
   }
 
-  disposeSpecFrame(handle: SpecFrameHandle): void {
-    try {
-      if (logPFrames()) {
-        this.logger.info(`disposeSpecFrame: handle = ${handle}`);
-      }
-      this.frames.release(handle);
-    } catch (err: unknown) {
-      const error = new PFrameSpecDriverError(`disposeSpecFrame failed`);
-      error.cause = new Error(`handle: ${handle}, ` + `error:\n${ensureError(err)}`);
-      throw error;
-    }
-  }
-
   expandAxes(spec: AxesSpec): AxesId {
     try {
       return expandAxes(spec);
@@ -187,11 +174,11 @@ export class SpecDriver implements PFrameSpecDriver, Disposable {
     }
   }
 
-  dispose(): void {
-    this.frames.dispose();
+  async dispose(): Promise<void> {
+    await this.frames.dispose();
   }
 
-  [Symbol.dispose](): void {
-    this.dispose();
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 }

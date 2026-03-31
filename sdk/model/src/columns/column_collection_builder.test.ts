@@ -20,8 +20,8 @@ function createSpecFrameCtx() {
   return driver;
 }
 
-afterEach(() => {
-  for (const driver of drivers) driver.dispose();
+afterEach(async () => {
+  for (const driver of drivers) await driver.dispose();
   drivers.length = 0;
 });
 

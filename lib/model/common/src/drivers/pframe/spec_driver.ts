@@ -1,4 +1,5 @@
 import type { Branded } from "@milaboratories/helpers";
+import type { PoolEntry } from "../../pool_entry";
 import type {
   AxisSpec,
   AxesSpec,
@@ -183,8 +184,8 @@ export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
  * because the underlying WASM PFrame computes results immediately.
  */
 export interface PFrameSpecDriver {
-  /** Create a spec-only PFrame from column specs. Returns a handle. */
-  createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle;
+  /** Create a spec-only PFrame from column specs. Returns a pool entry with handle and unref. */
+  createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle>;
 
   /** Discover columns compatible with given axes integration. */
   discoverColumns(
@@ -197,9 +198,6 @@ export interface PFrameSpecDriver {
 
   /** Evaluates a query specification against this PFrame */
   evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse;
-
-  /** Dispose a spec frame, freeing WASM resources. */
-  disposeSpecFrame(handle: SpecFrameHandle): void;
 
   /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
   expandAxes(spec: AxesSpec): AxesId;

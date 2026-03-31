@@ -7,12 +7,12 @@ import Counter from "./Counter.vue";
 
 const app = useApp();
 
-// Block-level UI service test: createSpecFrame + disposeSpecFrame (sync WASM)
+// Block-level UI service test: createSpecFrame + unref (sync WASM)
 const blockSpecResult = ref("pending...");
 try {
-  const handle = app.services.pframeSpec.createSpecFrame({});
-  app.services.pframeSpec.disposeSpecFrame(handle);
-  blockSpecResult.value = `ok (handle: ${handle})`;
+  const entry = app.services.pframeSpec.createSpecFrame({});
+  entry.unref();
+  blockSpecResult.value = `ok (handle: ${entry.key})`;
 } catch (e) {
   blockSpecResult.value = `error: ${e}`;
 }

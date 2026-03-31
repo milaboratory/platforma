@@ -19,6 +19,7 @@ import type {
   PTableDefV2,
   SpecFrameHandle,
 } from "@milaboratories/pl-model-common";
+import { PoolEntryGuard } from "@milaboratories/pl-model-common";
 import type { JsExecutionContext } from "./context";
 import type { ComputableContextHelper } from "./computable_context";
 
@@ -58,10 +59,22 @@ export function getServiceInjectors(): ServiceInjectorMap {
         );
 
       return {
-        createSpecFrame: (specs: QuickJSHandle) =>
-          vm.exportSingleValue(
+        createSpecFrame: (specs: QuickJSHandle) => {
+          using guard = new PoolEntryGuard(
             driver.createSpecFrame(vm.importObjectViaJson(specs) as Record<string, PColumnSpec>),
-          ),
+          );
+          host.addOnDestroy(guard.entry.unref);
+          const entry = guard.keep();
+          // TODO: add [Symbol.dispose] once QuickJS supports ES2024 explicit resource management
+          const obj = vm.vm.newObject();
+          vm.vm.newString(entry.key).consume((k) => vm.vm.setProp(obj, "key", k));
+          vm.vm
+            .newFunction("unref", () => {
+              entry.unref();
+            })
+            .consume((fn) => vm.vm.setProp(obj, "unref", fn));
+          return obj;
+        },
 
         discoverColumns: (handle: QuickJSHandle, request: QuickJSHandle) =>
           vm.exportObjectViaJson(
@@ -86,10 +99,6 @@ export function getServiceInjectors(): ServiceInjectorMap {
               vm.importObjectViaJson(request) as SpecQuery,
             ),
           ),
-
-        disposeSpecFrame: (handle: QuickJSHandle) => {
-          driver.disposeSpecFrame(vm.vm.getString(handle) as SpecFrameHandle);
-        },
 
         expandAxes: (spec: QuickJSHandle) =>
           vm.exportObjectViaJson(driver.expandAxes(vm.importObjectViaJson(spec) as AxesSpec)),

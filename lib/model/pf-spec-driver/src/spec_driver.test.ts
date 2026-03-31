@@ -18,9 +18,9 @@ function createSpec(
 }
 
 describe("SpecDriver", () => {
-  test("discoverColumns returns all columns with no filters", () => {
-    using driver = new SpecDriver();
-    const handle = driver.createSpecFrame({
+  test("discoverColumns returns all columns with no filters", async () => {
+    await using driver = new SpecDriver();
+    const { key: handle } = driver.createSpecFrame({
       col1: createSpec("col1"),
       col2: createSpec("col2"),
     });
@@ -41,8 +41,8 @@ describe("SpecDriver", () => {
     expect(names).toEqual(["col1", "col2"]);
   });
 
-  test("createSpecFrame converts pl7.app/parents annotation to numeric parentAxes", () => {
-    using driver = new SpecDriver();
+  test("createSpecFrame converts pl7.app/parents annotation to numeric parentAxes", async () => {
+    await using driver = new SpecDriver();
     const linkerAxes: AxisSpec[] = [
       { name: "pl7.app/sampleId", type: "String" },
       {
@@ -62,8 +62,8 @@ describe("SpecDriver", () => {
     expect(() => driver.createSpecFrame({ linker: linkerSpec })).not.toThrow();
   });
 
-  test("createSpecFrame works with numeric parentAxes (no annotation)", () => {
-    using driver = new SpecDriver();
+  test("createSpecFrame works with numeric parentAxes (no annotation)", async () => {
+    await using driver = new SpecDriver();
     const linkerAxes: AxisSpec[] = [
       { name: "pl7.app/sampleId", type: "String" },
       {
@@ -81,8 +81,8 @@ describe("SpecDriver", () => {
     expect(() => driver.createSpecFrame({ linker: linkerSpec })).not.toThrow();
   });
 
-  test("createSpecFrame preserves non-parent annotations after conversion", () => {
-    using driver = new SpecDriver();
+  test("createSpecFrame preserves non-parent annotations after conversion", async () => {
+    await using driver = new SpecDriver();
     const axes: AxisSpec[] = [
       { name: "sample", type: "String" },
       {
@@ -97,7 +97,7 @@ describe("SpecDriver", () => {
     ];
     const spec = createSpec("data-col", axes);
 
-    const handle = driver.createSpecFrame({ col: spec });
+    const { key: handle } = driver.createSpecFrame({ col: spec });
     expect(handle).toBeDefined();
 
     const response = driver.discoverColumns(handle, {

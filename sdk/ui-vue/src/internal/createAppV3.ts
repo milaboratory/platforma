@@ -230,12 +230,11 @@ export function createAppV3<
   (async () => {
     window.addEventListener("beforeunload", () => {
       closedRef.value = true;
-      platforma
-        .dispose()
-        .then(unwrapResult)
-        .catch((err) => {
+      Promise.allSettled([uiRegistry.dispose(), platforma.dispose().then(unwrapResult)]).catch(
+        (err) => {
           error("error in dispose", err);
-        });
+        },
+      );
     });
 
     while (!closedRef.value) {

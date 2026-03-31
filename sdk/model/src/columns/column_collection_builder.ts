@@ -19,7 +19,7 @@ import { createColumnSnapshot } from "./column_snapshot";
 import type { ColumnSnapshotProvider, ColumnSource } from "./column_snapshot_provider";
 import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot_provider";
 
-import type { PFrameSpecDriver, SpecFrameHandle } from "@milaboratories/pl-model-common";
+import type { PFrameSpecDriver, PoolEntry, SpecFrameHandle } from "@milaboratories/pl-model-common";
 
 // --- FindColumnsOptions ---
 
@@ -230,7 +230,7 @@ interface ColumnCollectionImplOptions {
 
 class ColumnCollectionImpl implements ColumnCollection, Disposable {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
-  private readonly specFrameHandle: SpecFrameHandle;
+  private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
   public readonly columnListComplete: boolean;
 
   constructor(
@@ -239,16 +239,13 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
   ) {
     this.columns = options.columns;
     this.columnListComplete = options.columnListComplete ?? false;
-    this.specFrameHandle = this.specDriver.createSpecFrame(
-      Array.from(this.columns.entries()).reduce(
-        (acc, [id, col]) => ((acc[id] = col.spec), acc),
-        {} as Record<string, PColumnSpec>,
-      ),
+    this.specFrameEntry = this.specDriver.createSpecFrame(
+      Object.fromEntries(this.columns.entries().map(([id, col]) => [id, col.spec])),
     );
   }
 
   dispose(): void {
-    this.specDriver.disposeSpecFrame(this.specFrameHandle);
+    this.specFrameEntry.unref();
   }
 
   [Symbol.dispose](): void {
@@ -265,7 +262,7 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.specDriver.discoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.discoverColumns(this.specFrameEntry.key, {
       includeColumns,
       excludeColumns,
       axes: [],
@@ -297,7 +294,7 @@ interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOption
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposable {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly idDeriver: AnchoredIdDeriver;
-  private readonly specFrameHandle: SpecFrameHandle;
+  private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
   private readonly anchorAxes: ColumnAxesWithQualifications[];
   /** Reverse lookup: SUniversalPColumnId → PObjectId */
   private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
@@ -312,11 +309,8 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     this.columnListComplete = options.columnListComplete ?? false;
 
     // Create spec frame from all collected columns
-    this.specFrameHandle = this.specDriver.createSpecFrame(
-      Array.from(this.columns.entries()).reduce(
-        (acc, [id, col]) => ((acc[id] = col.spec), acc),
-        {} as Record<string, PColumnSpec>,
-      ),
+    this.specFrameEntry = this.specDriver.createSpecFrame(
+      Object.fromEntries(this.columns.entries().map(([id, col]) => [id, col.spec])),
     );
 
     // Build anchor axes for discovery requests
@@ -334,7 +328,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
   }
 
   dispose(): void {
-    this.specDriver.disposeSpecFrame(this.specFrameHandle);
+    this.specFrameEntry.unref();
   }
 
   [Symbol.dispose](): void {
@@ -355,7 +349,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     const includeColumns = options?.include ? toMultiColumnSelectors(options.include) : undefined;
     const excludeColumns = options?.exclude ? toMultiColumnSelectors(options.exclude) : undefined;
 
-    const response = this.specDriver.discoverColumns(this.specFrameHandle, {
+    const response = this.specDriver.discoverColumns(this.specFrameEntry.key, {
       includeColumns,
       excludeColumns,
       constraints,

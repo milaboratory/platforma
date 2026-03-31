@@ -6,19 +6,17 @@ import {
   canonicalizeJson,
 } from "@milaboratories/pl-model-common";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { MiLogger, RefCountManualPoolBase } from "@milaboratories/ts-helpers";
+import { MiLogger, RefCountPoolBase } from "@milaboratories/ts-helpers";
 import { logPFrames } from "./logging";
 import { createPFrame } from "@milaboratories/pframes-rs-wasm";
 import { blake3 } from "@noble/hashes/blake3.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 
-export class PFramePool extends RefCountManualPoolBase<
+export class PFramePool extends RefCountPoolBase<
   Record<string, PColumnSpec>,
   SpecFrameHandle,
   PFrameInternal.PFrameWasmV2
 > {
-  private readonly frames = new Map<SpecFrameHandle, PFrameInternal.PFrameWasmV2>();
-
   constructor(private readonly logger: MiLogger) {
     super();
   }

@@ -70,7 +70,7 @@ blockTest(
     // Block-level pframeSpec service (via ctx.services.pframeSpec)
     expect(blockState.outputs?.blockSpecFrameTest).toStrictEqual({
       ok: true,
-      value: "blockSpecFrame: created and disposed",
+      value: "blockSpecFrame: created (auto-disposed)",
       stable: true,
     });
 
@@ -86,7 +86,7 @@ blockTest(
     // Plugin-level pframeSpec service (via plugin ctx.services.pframeSpec)
     expect(outputs?.[pluginOutputKey("counter" as any, "specFrameTest")]).toStrictEqual({
       ok: true,
-      value: "specFrame: created and disposed",
+      value: "specFrame: created and manually disposed",
       stable: true,
     });
 

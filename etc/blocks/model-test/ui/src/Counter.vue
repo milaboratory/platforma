@@ -12,9 +12,9 @@ const plugin = usePlugin(props.handle);
 // Plugin UI service test: pframeSpec (sync WASM)
 const pluginSpecResult = ref("pending...");
 try {
-  const handle = plugin.services.pframeSpec.createSpecFrame({});
-  plugin.services.pframeSpec.disposeSpecFrame(handle);
-  pluginSpecResult.value = `ok (handle: ${handle})`;
+  const entry = plugin.services.pframeSpec.createSpecFrame({});
+  entry.unref();
+  pluginSpecResult.value = `ok (handle: ${entry.key})`;
 } catch (e) {
   pluginSpecResult.value = `error: ${e}`;
 }

@@ -79,9 +79,9 @@ export const counterPlugin = PluginModel.define({
     return ctx.data.count % 2 === 0;
   })
   .output("specFrameTest", (ctx) => {
-    const handle = ctx.services.pframeSpec.createSpecFrame({});
-    ctx.services.pframeSpec.disposeSpecFrame(handle);
-    return `specFrame: created and disposed`;
+    const entry = ctx.services.pframeSpec.createSpecFrame({});
+    entry.unref();
+    return `specFrame: created and manually disposed`;
   })
   .output("pframeTest", (ctx) => {
     const handle = ctx.services.pframe.createPFrame([]);
@@ -137,9 +137,8 @@ export const platforma = BlockModelV3.create(blockDataModel)
   )
 
   .output("blockSpecFrameTest", (ctx) => {
-    const handle = ctx.services.pframeSpec.createSpecFrame({});
-    ctx.services.pframeSpec.disposeSpecFrame(handle);
-    return `blockSpecFrame: created and disposed`;
+    ctx.services.pframeSpec.createSpecFrame({});
+    return `blockSpecFrame: created (auto-disposed)`;
   })
 
   .outputWithStatus("blockTableTest", (ctx) => {

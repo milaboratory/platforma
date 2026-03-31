@@ -30,6 +30,17 @@ class ServiceRegistryBase {
     }
   }
 
+  async dispose(): Promise<void> {
+    for (const instance of this.instances.values()) {
+      if (Symbol.asyncDispose in instance) {
+        await (instance as AsyncDisposable)[Symbol.asyncDispose]();
+      } else if (Symbol.dispose in instance) {
+        (instance as Disposable)[Symbol.dispose]();
+      }
+    }
+    this.instances.clear();
+  }
+
   protected getById(serviceId: ServiceName): Record<string, Function> | null {
     if (!this.knownServices.has(serviceId)) {
       throw new ServiceNotRegisteredError(
