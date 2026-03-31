@@ -240,7 +240,7 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
     this.columns = options.columns;
     this.columnListComplete = options.columnListComplete ?? false;
     this.specFrameEntry = this.specDriver.createSpecFrame(
-      Object.fromEntries(this.columns.entries().map(([id, col]) => [id, col.spec])),
+      Object.fromEntries(Array.from(this.columns.entries(), ([id, col]) => [id, col.spec])),
     );
   }
 
@@ -310,7 +310,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
 
     // Create spec frame from all collected columns
     this.specFrameEntry = this.specDriver.createSpecFrame(
-      Object.fromEntries(this.columns.entries().map(([id, col]) => [id, col.spec])),
+      Object.fromEntries(Array.from(this.columns.entries(), ([id, col]) => [id, col.spec])),
     );
 
     // Build anchor axes for discovery requests
