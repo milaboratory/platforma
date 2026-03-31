@@ -45,6 +45,49 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "update_block",
+    {
+      description:
+        "Update an existing block's pack (reload from registry or dev folder). Use after rebuilding a dev block to pick up changes without removing/re-adding it.",
+      inputSchema: {
+        projectId: z.string().describe("Project ID (must be opened)"),
+        blockId: z.string().describe("Block ID to update"),
+        spec: z
+          .union([
+            z.object({
+              type: z.literal("from-registry-v2"),
+              registryUrl: z.string().describe("Registry URL"),
+              id: z.object({
+                organization: z.string(),
+                name: z.string(),
+                version: z.string(),
+              }),
+            }),
+            z.object({
+              type: z.literal("dev-v2"),
+              folder: z.string().describe("Path to block folder"),
+            }),
+          ])
+          .describe("Block pack specification"),
+        resetArgs: z
+          .boolean()
+          .optional()
+          .describe("Reset block arguments to initial values (default: false)"),
+      },
+    },
+    async ({ projectId, blockId, spec, resetArgs }) => {
+      const project = await ctx.getOpenedProject(projectId);
+      await project.updateBlockPack(
+        blockId,
+        spec as BlockPackSpecAny,
+        resetArgs ?? false,
+        ctx.getAuthorMarker(),
+      );
+      return textResult({ ok: true });
+    },
+  );
+
+  server.registerTool(
     "remove_block",
     {
       description: "Remove a block from an opened project",
