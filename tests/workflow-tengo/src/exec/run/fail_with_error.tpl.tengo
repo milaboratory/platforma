@@ -1,0 +1,24 @@
+/** Runs a command that exits with non-zero code and writes to stderr */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+fmt := import("fmt")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		name(inputs.commandName).
+		cpu(1).ram("50Mi").
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg(fmt.sprintf("echo %q >&2; exit %s", inputs.errorMessage, inputs.exitCode)).
+		inLightQueue().
+		saveStdoutContent().
+		run()
+
+	return {
+		main: run.getStdoutContent()
+	}
+})

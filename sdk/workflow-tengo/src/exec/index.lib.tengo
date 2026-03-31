@@ -52,6 +52,7 @@ builder := func() {
 	cpuRequest := undefined
 	ramRequest := undefined
 
+	commandName := ""
 	cache := 0
 	inputCache := 0
 	nErrorLines := 200
@@ -578,6 +579,17 @@ builder := func() {
 		},
 
 		/**
+		 * Sets a human-readable name for this command.
+		 * Shown in error messages when the command fails.
+		 *
+		 * @param n: string - the command name.
+		 */
+		name: func(n) {
+			commandName = n
+			return self
+		},
+
+		/**
 		 * Sets the number of error lines to be captured.
 		 *
 		 * @param lines: number - the number of error lines.
@@ -973,6 +985,7 @@ builder := func() {
 				"incomplete command: cmd() or software() must be provided to exec.builder")
 
 			runOptions := {
+				name: commandName,
 				cmd: cmd,
 				args: args,
 				envs: envs,
