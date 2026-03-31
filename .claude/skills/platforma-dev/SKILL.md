@@ -526,3 +526,14 @@ cd /path/to/platforma
 # All tests:
 pnpm test:local
 ```
+
+### Running integration tests over specific instance of backend
+
+```bash
+PL_ADDRESS='http://<address>:6345/' \
+  PL_TEST_USER='user-name' \
+  PL_TEST_PASSWORD='password' \
+  pnpm test --filter="..." ...
+```
+User/password could be ommited if backend is started in anonymous mode (`--no-auth`)
+When backend uses 'token' auth mode, user is always `default`, password is `<token>`
