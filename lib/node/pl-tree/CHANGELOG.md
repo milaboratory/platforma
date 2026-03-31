@@ -1,5 +1,38 @@
 # @milaboratories/pl-tree
 
+## 1.9.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.2
+- @milaboratories/pl-errors@1.2.2
+
+## 1.9.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.1
+- @milaboratories/pl-errors@1.2.1
+
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+  - @milaboratories/computable@2.9.0
+
+## 1.9.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-errors@1.2.0
+
 ## 1.8.52
 
 ### Patch Changes

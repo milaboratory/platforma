@@ -1,5 +1,51 @@
 # @milaboratories/pl-drivers
 
+## 1.12.4
+
+### Patch Changes
+
+- e34a693: Treat S3 ExpiredToken as retryable error during multipart upload instead of permanently aborting
+
+## 1.12.3
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-tree@1.9.3
+
+## 1.12.2
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+  - @milaboratories/pl-client@2.18.1
+  - @milaboratories/pl-tree@1.9.2
+
+## 1.12.1
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-tree@1.9.1
+
+## 1.12.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/pl-tree@1.9.0
+  - @milaboratories/helpers@1.14.0
+
 ## 1.11.66
 
 ### Patch Changes

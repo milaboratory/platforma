@@ -1,5 +1,28 @@
 # @milaboratories/pl-model-common
 
+## 1.29.0
+
+### Minor Changes
+
+- cfee265: Drop V1 DiscoverColumnsRequest/PFrameWasm/PFrameWasmAPI, adopt V2 interfaces; update DiscoverColumnsRequest in common with includeColumns/excludeColumns/maxHops fields; extract SpecDriver into @milaboratories/pf-spec-driver package; rename specFrameDispose to disposeSpecFrame for API consistency
+
+## 1.28.0
+
+### Minor Changes
+
+- e1d62fe: Add V2 discover columns WASM interface: PFrameWasmV2/PFrameWasmAPIV2 with separate include/exclude column filters, maxHops parameter, linker path traversal in response hits, and DiscoverColumnsLinkerStep/StepInfo types
+
+## 1.27.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/helpers@1.14.0
+
 ## 1.26.1
 
 ### Patch Changes

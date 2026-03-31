@@ -32,7 +32,7 @@ import {
   collectSpecQueryColumns,
   sortSpecQuery,
   sortPTableDef,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { ConcurrencyLimitingExecutor, type PoolEntry } from "@milaboratories/ts-helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";

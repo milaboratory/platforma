@@ -119,7 +119,7 @@ const emit = defineEmits<{
 
 const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
 const { gridApi, gridOptions } = useGrid({
-  selection: selection.value,
+  selection,
   noRowsText: props.noRowsText,
   runningText: props.runningText,
   loadingText: props.loadingText,

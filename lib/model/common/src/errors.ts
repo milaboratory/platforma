@@ -44,6 +44,14 @@ export function isPFrameDriverError(error: unknown): error is PFrameDriverError 
   return error instanceof Error && error.name === "PFrameError.Driver";
 }
 
+export class PFrameSpecDriverError extends PFrameError {
+  name = "PFrameError.SpecDriver";
+}
+
+export function isPFrameSpecDriverError(error: unknown): error is PFrameSpecDriverError {
+  return error instanceof Error && error.name === "PFrameError.SpecDriver";
+}
+
 function stringifyValue(value: unknown): string {
   if (typeof value === "string") {
     return `String value was thrown: ${value}`;

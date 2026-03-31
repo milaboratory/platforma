@@ -1,5 +1,16 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.11.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-open/milaboratories.software-ptabler@1.15.0
+
 ## 5.10.1
 
 ### Patch Changes

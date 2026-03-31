@@ -1,5 +1,16 @@
 # @milaboratories/test-helpers
 
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/helpers@1.14.0
+
 ## 1.1.10
 
 ### Patch Changes

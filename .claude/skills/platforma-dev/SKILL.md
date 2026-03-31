@@ -320,6 +320,46 @@ pnpm test:local
 
 ---
 
+## Committing and pushing in the platforma monorepo
+
+The platforma monorepo has **husky git hooks** that run full-monorepo checks. These are slow but mandatory.
+
+### Hooks
+
+| Hook | Runs | Time (cached) | Time (cold) |
+|:-----|:-----|:--------------|:------------|
+| **pre-commit** | `pnpm fmt` (turbo fmt across all packages) | ~1-2s | ~2-3 min |
+| **pre-push** | `pnpm check` (turbo check: tsc + oxlint + oxfmt) | ~5-10s | ~3-5 min |
+
+Both hooks skip in CI (`[ -n "$CI" ] && exit 0`).
+
+### Efficient commit workflow
+
+**Before committing**, do these steps to ensure hooks pass on the first try:
+
+1. **If you added/changed dependencies in any `package.json`:** Run `pnpm install` from the monorepo root. This updates `pnpm-lock.yaml`. **Stage the lockfile** — the pre-push `tsc` check will fail if a new dependency isn't installed.
+
+2. **Format and lint changed packages first:**
+   ```bash
+   pnpm -C <package-path> fmt    # e.g., pnpm -C lib/node/pl-middle-layer fmt
+   ```
+   This runs oxlint (with `--deny-warnings --fix`) and oxfmt. Fix any lint errors it reports (unused imports, etc.) before committing. The pre-commit hook runs the same check — doing it first avoids a wasted 2-minute turbo run that fails at the end.
+
+3. **Stage all files** including any formatting changes and `pnpm-lock.yaml`.
+
+4. **Commit.** The pre-commit hook runs `pnpm fmt` across all packages. With step 2 done, changed packages are turbo-cached and this takes ~1-2s. Use a long timeout (600s) since cold runs can take minutes.
+
+5. **Push.** The pre-push hook runs `pnpm check` (tsc + lint + format check). With everything formatted and type-checked, this is mostly cache hits. Use a long timeout (600s).
+
+### Common pitfalls
+
+- **Adding a dependency without `pnpm install`:** The pre-push `tsc` check will fail with `Cannot find module 'X'`. Always run `pnpm install` after editing any `package.json`.
+- **Unused imports:** oxlint with `--deny-warnings` treats unused imports as errors. The pre-commit hook will fail. Run `pnpm -C <pkg> fmt` first — it auto-fixes unused imports.
+- **Timeout:** Both hooks run turbo across 100+ packages. Use `timeout: 600000` (10 min) for commit and push bash commands from Claude Code.
+- **Pre-commit re-stages files:** The hook runs `pnpm fmt` then `xargs git add` on originally-staged files. If formatting changes a file, it gets re-staged automatically.
+
+---
+
 ## Changesets and PRs
 
 Every PR to the platforma monorepo **must** include a changeset. Without it, no version bump or release happens.
@@ -338,6 +378,12 @@ Type-safe `usePlugin` composable with `PluginHandle` branded type.
 ```
 
 The YAML frontmatter lists affected packages with bump type (`patch` / `minor` / `major`). The body is a human-readable description of the change.
+
+### CRITICAL: list every modified package
+
+The changeset must include **every package whose source files changed in the PR** — not just the "primary" package. If a PR adds a new tool but also adds exports to `pl-middle-layer`, both packages need entries in the changeset. Without an entry, the package won't get a version bump and npm consumers will get the old version without the new exports.
+
+**Verification step:** Before creating the changeset, run `git diff --name-only origin/main...HEAD` and check which `package.json` directories have modified files. Each one needs an entry.
 
 ### Package naming
 
@@ -388,7 +434,8 @@ After `pnpm install && pnpm build`, **before committing**, run `git status` and 
 1. **No unstaged changes remain.** Every modified file must be either staged or intentionally excluded. If `pnpm install` modified `pnpm-lock.yaml`, it must be committed.
 2. **`pnpm-lock.yaml` is included** whenever `pnpm-workspace.yaml` changed. CI rejects PRs without matching lock file updates.
 3. **Changeset file is included.** Every PR needs one in `.changeset/`.
-4. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
+4. **Changeset covers all modified packages.** Run `git diff --name-only origin/main...HEAD` and verify every package with changed source files has an entry in the changeset. Missing entries mean no version bump — npm consumers get stale code.
+5. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
 
 ---
 
@@ -479,3 +526,14 @@ cd /path/to/platforma
 # All tests:
 pnpm test:local
 ```
+
+### Running integration tests over specific instance of backend
+
+```bash
+PL_ADDRESS='http://<address>:6345/' \
+  PL_TEST_USER='user-name' \
+  PL_TEST_PASSWORD='password' \
+  pnpm test --filter="..." ...
+```
+User/password could be ommited if backend is started in anonymous mode (`--no-auth`)
+When backend uses 'token' auth mode, user is always `default`, password is `<token>`

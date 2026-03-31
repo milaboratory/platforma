@@ -47,6 +47,7 @@ import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
 import { projectOverviewLight } from "./project_overview_light";
 import { applyProjectMigrations } from "../mutator/migration";
+import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
@@ -131,7 +132,7 @@ export class Project {
           this.env.pl,
           this.rid,
           (prj) => {
-            prj.doRefresh(this.env.ops.stagingRenderingRate);
+            prj.doRefresh();
           },
           { name: "doRefresh", lockId: this.projectLockId },
         );
@@ -210,18 +211,20 @@ export class Project {
     blockId: string = randomUUID(),
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
-    const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
+    const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
+    // Pre-materialize template via cache (separate transaction(s))
+    const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp);
 
     // Build NewBlockSpec based on model API version
     const newBlockSpec =
       blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
-        ? { storageMode: "fromModel" as const, blockPack: preparedBp }
+        ? { storageMode: "fromModel" as const, blockPack: cachedBp }
         : {
             storageMode: "legacy" as const,
-            blockPack: preparedBp,
+            blockPack: cachedBp,
             legacyState: canonicalize({
               args: blockCfg.initialArgs,
               uiState: blockCfg.initialUiState,
@@ -301,11 +304,12 @@ export class Project {
     author?: AuthorMarker,
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = extractConfig(
-      await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec),
-    );
+    const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+
+    // Pre-materialize template via cache (separate transaction(s))
+    const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp);
 
     // resetState signals to mutator to reset storage
     // For v2+ blocks: mutator gets initial storage directly via getInitialStorageInVM
@@ -323,7 +327,7 @@ export class Project {
       this.env.pl,
       this.rid,
       author,
-      (mut) => mut.migrateBlockPack(blockId, preparedBp, resetState),
+      (mut) => mut.migrateBlockPack(blockId, cachedBp, resetState),
       { name: "updateBlockPack", lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();

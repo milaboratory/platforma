@@ -22,6 +22,7 @@ packages:
   - lib/node/node-streams
   - lib/node/computable
   - lib/node/pf-driver
+  - lib/model/pf-spec-driver
   - lib/node/pl-client
   - lib/node/pl-tree
   - lib/node/pl-drivers
@@ -47,6 +48,7 @@ packages:
   - tools/package-builder
   - tools/ts-builder
   - tools/r-builder
+  - tools/pl-cli
   - tools/pl-bootstrap
   - tools/eslint-config
   - tools/blocks-deps-updater
@@ -239,7 +241,7 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.14
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.15
   "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0

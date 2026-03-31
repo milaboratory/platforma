@@ -44,6 +44,18 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
+import type {
+  AxesId,
+  AxesSpec,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
+  PColumnSpec,
+  PTableColumnId,
+  PTableColumnSpec,
+  SingleAxisSelector,
+  SpecFrameHandle,
+} from "@milaboratories/pl-model-common";
+import { SpecDriver } from "./spec_driver";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -57,8 +69,17 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
+  private readonly specDriver = new SpecDriver();
 
-  private readonly meta: Map<string, Block>;
+  private _meta: Map<string, Block> | undefined;
+  private get meta(): Map<string, Block> {
+    if (this._meta === undefined) {
+      if (this.computableCtx === undefined)
+        throw new Error("blockMeta can't be resolved in this context");
+      this._meta = this.blockCtx.blockMeta(this.computableCtx);
+    }
+    return this._meta;
+  }
 
   constructor(
     private readonly parent: JsExecutionContext,
@@ -68,7 +89,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     computableCtx: ComputableCtx,
   ) {
     this.computableCtx = computableCtx;
-    this.meta = blockCtx.blockMeta(computableCtx);
   }
 
   public resetComputableCtx() {
@@ -426,6 +446,43 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return key;
   }
 
+  //
+  // Spec Frames
+  //
+
+  public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
+    const handle = this.specDriver.createSpecFrame(specs);
+    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
+    return handle;
+  }
+
+  public specFrameDiscoverColumns(
+    handle: SpecFrameHandle,
+    request: DiscoverColumnsRequest,
+  ): DiscoverColumnsResponse {
+    return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
+  }
+
+  public disposeSpecFrame(handle: SpecFrameHandle): void {
+    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
+  }
+
+  public expandAxes(spec: AxesSpec): AxesId {
+    return this.specDriver.expandAxes(spec);
+  }
+
+  public collapseAxes(ids: AxesId): AxesSpec {
+    return this.specDriver.collapseAxes(ids);
+  }
+
+  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    return this.specDriver.findAxis(spec, selector);
+  }
+
+  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    return this.specDriver.findTableColumn(tableSpec, selector);
+  }
+
   /**
    * Transforms input data for PFrame/PTable creation
    * - Converts string handles to accessors
@@ -504,11 +561,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           // QuickJS strips all fields from errors apart from 'name' and 'message'.
           // That's why here we need to store them, and rethrow them when we exit
           // from QuickJS code.
+          const t0 = performance.now();
           try {
             return (fn as any)(...args);
           } catch (e: unknown) {
             const newErr = parent.errorRepo.setAndRecreateForQuickJS(e);
             throw vm.newError(newErr);
+          } finally {
+            parent.stats.ctxMethodCalls++;
+            parent.stats.ctxMethodMs += performance.now() - t0;
           }
         };
 
@@ -648,11 +709,11 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       exportCtxFunction("listOutputFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listOutputFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("listDynamicFields", (handle) => {
-        return parent.exportObjectViaJson(this.listInputFields(vm.getString(handle)), undefined);
+        return parent.exportObjectViaJson(this.listDynamicFields(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("getKeyValueBase64", (handle, key) => {
@@ -853,6 +914,65 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         return parent.exportSingleValue(
           this.createPTableV2(
             parent.importObjectViaJson(def) as PTableDefV2<PColumn<string | PColumnValues>>,
+          ),
+          undefined,
+        );
+      });
+
+      //
+      // Spec Frames
+      //
+
+      exportCtxFunction("createSpecFrame", (specs) => {
+        return parent.exportSingleValue(
+          this.createSpecFrame(parent.importObjectViaJson(specs) as Record<string, PColumnSpec>),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
+        return parent.exportObjectViaJson(
+          this.specFrameDiscoverColumns(
+            vm.getString(handle) as SpecFrameHandle,
+            parent.importObjectViaJson(request) as DiscoverColumnsRequest,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("disposeSpecFrame", (handle) => {
+        this.disposeSpecFrame(vm.getString(handle) as SpecFrameHandle);
+      });
+
+      exportCtxFunction("expandAxes", (spec) => {
+        return parent.exportObjectViaJson(
+          this.expandAxes(parent.importObjectViaJson(spec) as AxesSpec),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("collapseAxes", (ids) => {
+        return parent.exportObjectViaJson(
+          this.collapseAxes(parent.importObjectViaJson(ids) as AxesId),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("findAxis", (spec, selector) => {
+        return parent.exportSingleValue(
+          this.findAxis(
+            parent.importObjectViaJson(spec) as AxesSpec,
+            parent.importObjectViaJson(selector) as SingleAxisSelector,
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("findTableColumn", (tableSpec, selector) => {
+        return parent.exportSingleValue(
+          this.findTableColumn(
+            parent.importObjectViaJson(tableSpec) as PTableColumnSpec[],
+            parent.importObjectViaJson(selector) as PTableColumnId,
           ),
           undefined,
         );

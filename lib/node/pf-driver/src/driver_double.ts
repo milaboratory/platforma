@@ -4,7 +4,7 @@ import {
   type Branded,
   type PColumnSpec,
   type PColumnValues,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
 import { HttpHelpers } from "@milaboratories/pframes-rs-node";

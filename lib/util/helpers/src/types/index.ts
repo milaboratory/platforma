@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+export * from "./brand";
+
 export type Nil = null | undefined;
 
 export type Primitive = Nil | string | number | boolean | bigint;
@@ -10,6 +11,8 @@ export type AnyAsyncFunction = (...args: any[]) => Promise<any>;
 export type PlainObject<V = unknown> = Record<string | symbol, V>;
 
 export type Optional<T> = T | undefined;
+
+export type ValueOf<T> = T[keyof T];
 
 export type OneOrMany<T> = T | T[];
 
@@ -92,10 +95,6 @@ export type Unionize<T extends Record<string, unknown>> = {
 export type Objectify<U extends { key: string; value: unknown }> = {
   [T in U as T["key"]]: T["value"];
 };
-
-declare const __brand: unique symbol;
-
-export type Branded<T, B> = T & { readonly [__brand]: B };
 
 export type Undef<T> = T | undefined;
 

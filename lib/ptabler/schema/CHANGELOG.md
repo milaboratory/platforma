@@ -1,5 +1,30 @@
 # @platforma-open/software-ptabler.types
 
+## 1.14.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+
+## 1.14.1
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+
+## 1.14.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-common@1.27.0
+
 ## 1.13.20
 
 ### Patch Changes

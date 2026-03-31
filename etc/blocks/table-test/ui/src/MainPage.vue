@@ -11,7 +11,7 @@ const tableSettings = usePlDataTableSettingsV2({
 
 <template>
   <PlBlockPage>
-    <template #title>Table Test</template>
+    <template #title>Table Test, Don't forget to run the block =)</template>
     <PlAgDataTableV2 v-model="app.model.data.tableState" :settings="tableSettings" />
   </PlBlockPage>
 </template>

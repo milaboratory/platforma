@@ -7,7 +7,7 @@
  * @module plugin_model
  */
 
-import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
+import type { BlockCodeKnownFeatureFlags, OutputWithStatus } from "@milaboratories/pl-model-common";
 import {
   type DataModel,
   DataModelBuilder,
@@ -78,6 +78,11 @@ type PluginChainState = {
   recoverFn?: (version: string, data: unknown) => unknown;
   recoverAtIndex?: number;
 };
+
+/** Version → persisted data shape for each migration step (third generic of `PluginModel.define` when `data` is a `PluginDataModel`). */
+export type PluginDataModelVersions<
+  M extends PluginDataModel<PluginData, Record<string, unknown>, unknown>,
+> = M extends PluginDataModel<PluginData, infer Versions, unknown> ? Versions : never;
 
 /**
  * Builder for creating PluginDataModel with type-safe migrations.
@@ -280,8 +285,8 @@ export class PluginInstance<
 > implements TransferTarget<Id, TransferData> {
   readonly id: Id;
   readonly transferVersion: string;
-  /** @internal */
-  readonly __transferBrand?: TransferData;
+  /** @internal Phantom for type inference of Data/Params/Outputs; never set at runtime. */
+  readonly __instanceTypes?: { data: Data; params: Params; outputs: Outputs };
   private readonly factory: PluginModelFactory<Data, Params, Outputs, any, any>;
   private readonly config: any;
 
@@ -336,6 +341,8 @@ export class PluginModel<
   readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
   };
+  /** Per-output flags (e.g. withStatus) */
+  readonly outputFlags: Record<string, { withStatus: boolean }>;
   /** Feature flags declared by this plugin */
   readonly featureFlags?: BlockCodeKnownFeatureFlags;
   /** Create fresh default data. Config (if any) is captured at creation time. */
@@ -347,12 +354,14 @@ export class PluginModel<
     outputs: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
   }) {
     this.name = options.name;
     this.dataModel = options.dataModel;
     this.outputs = options.outputs;
+    this.outputFlags = options.outputFlags;
     this.featureFlags = options.featureFlags;
     this.getDefaultData = options.getDefaultData;
   }
@@ -372,6 +381,7 @@ export class PluginModel<
     outputs: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
   }): PluginModel<Data, Params, Outputs> {
@@ -485,6 +495,7 @@ class PluginModelFactory<
   readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
   };
+  private readonly outputFlags: Record<string, { withStatus: boolean }>;
   private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
   private constructor(options: {
@@ -494,12 +505,14 @@ class PluginModelFactory<
     outputs: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
     this.name = options.name;
     this.dataFn = options.dataFn;
     this.getDefaultDataFn = options.getDefaultDataFn;
     this.outputs = options.outputs;
+    this.outputFlags = options.outputFlags;
     this.featureFlags = options.featureFlags;
   }
 
@@ -517,6 +530,7 @@ class PluginModelFactory<
     outputs: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModelFactory<Data, Params, Outputs, Config, Versions> {
     return new PluginModelFactory(options);
@@ -544,6 +558,7 @@ class PluginModelFactory<
       name: this.name,
       dataModel,
       outputs: this.outputs,
+      outputFlags: this.outputFlags,
       featureFlags: this.featureFlags,
       getDefaultData: getDefaultDataFn
         ? () => getDefaultDataFn(config)
@@ -584,6 +599,7 @@ class PluginModelBuilder<
   private readonly outputs: {
     [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
   };
+  private readonly outputFlags: Record<string, { withStatus: boolean }>;
   private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
   private constructor(options: {
@@ -593,6 +609,7 @@ class PluginModelBuilder<
     outputs?: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags?: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
     this.name = options.name;
@@ -603,6 +620,7 @@ class PluginModelBuilder<
       ({} as {
         [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
       });
+    this.outputFlags = options.outputFlags ?? {};
     this.featureFlags = options.featureFlags;
   }
 
@@ -620,6 +638,7 @@ class PluginModelBuilder<
     outputs?: {
       [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
     };
+    outputFlags?: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModelBuilder<Data, Params, Outputs, Config, Versions> {
     return new PluginModelBuilder(options);
@@ -653,6 +672,57 @@ class PluginModelBuilder<
           ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>,
         ) => (Outputs & { [P in Key]: T })[K];
       },
+      outputFlags: { ...this.outputFlags, [key]: { withStatus: false } },
+    });
+  }
+
+  /**
+   * Adds an output wrapped with status information to the plugin.
+   *
+   * The UI receives the full {@link OutputWithStatus} object instead of an unwrapped value,
+   * allowing it to distinguish between pending, success, and error states.
+   *
+   * @param key - Output name
+   * @param fn - Function that computes the output value from plugin context
+   * @returns PluginModel with the new status-wrapped output added
+   *
+   * @example
+   * .outputWithStatus('table', (ctx) => {
+   *   const pCols = ctx.params.pFrame?.getPColumns();
+   *   if (pCols === undefined) return undefined;
+   *   return createPlDataTableV2(ctx, pCols, ctx.data.tableState);
+   * })
+   */
+  outputWithStatus<const Key extends string, T>(
+    key: Key,
+    fn: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => T,
+  ): PluginModelBuilder<
+    Data,
+    Params,
+    Outputs & { [K in Key]: OutputWithStatus<T> },
+    Config,
+    Versions
+  > {
+    return new PluginModelBuilder<
+      Data,
+      Params,
+      Outputs & { [K in Key]: OutputWithStatus<T> },
+      Config,
+      Versions
+    >({
+      name: this.name,
+      dataFn: this.dataFn,
+      getDefaultDataFn: this.getDefaultDataFn,
+      featureFlags: this.featureFlags,
+      outputs: {
+        ...this.outputs,
+        [key]: fn,
+      } as {
+        [K in keyof (Outputs & { [P in Key]: OutputWithStatus<T> })]: (
+          ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>,
+        ) => (Outputs & { [P in Key]: OutputWithStatus<T> })[K];
+      },
+      outputFlags: { ...this.outputFlags, [key]: { withStatus: true } },
     });
   }
 
@@ -675,6 +745,7 @@ class PluginModelBuilder<
       dataFn: this.dataFn,
       getDefaultDataFn: this.getDefaultDataFn,
       outputs: this.outputs,
+      outputFlags: this.outputFlags,
       featureFlags: this.featureFlags,
     });
   }

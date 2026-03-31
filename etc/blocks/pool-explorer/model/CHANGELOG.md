@@ -1,5 +1,36 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
+## 1.2.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/model@1.60.0
+
 ## 1.1.33
 
 ### Patch Changes

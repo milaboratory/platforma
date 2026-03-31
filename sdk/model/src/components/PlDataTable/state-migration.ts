@@ -9,7 +9,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { canonicalizeJson } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
-import type { PlDataTableFilterState, PlTableFilter } from "./v4";
+import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
   PlDataTableFiltersWithMeta,
   PlDataTableGridStateCore,
@@ -17,7 +17,7 @@ import type {
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
   PTableParamsV2,
-} from "./v5";
+} from "./typesV5";
 
 /**
  * PlDataTableV2 persisted state

@@ -1,5 +1,47 @@
 # @platforma-sdk/model
 
+## 1.61.1
+
+### Patch Changes
+
+- 616323d: plugin update
+
+## 1.61.0
+
+### Minor Changes
+
+- cfee265: Drop V1 DiscoverColumnsRequest/PFrameWasm/PFrameWasmAPI, adopt V2 interfaces; update DiscoverColumnsRequest in common with includeColumns/excludeColumns/maxHops fields; extract SpecDriver into @milaboratories/pf-spec-driver package; rename specFrameDispose to disposeSpecFrame for API consistency
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-model-middle-layer@1.16.0
+  - @milaboratories/ptabler-expression-js@1.2.2
+
+## 1.60.2
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+  - @milaboratories/pl-model-middle-layer@1.15.0
+  - @milaboratories/ptabler-expression-js@1.2.1
+
+## 1.60.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/helpers@1.14.0
+  - @milaboratories/ptabler-expression-js@1.2.0
+
 ## 1.59.3
 
 ### Patch Changes
