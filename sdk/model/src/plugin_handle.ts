@@ -23,11 +23,13 @@ export interface PluginFactoryLike<
   Data extends Record<string, unknown> = Record<string, unknown>,
   Params extends undefined | Record<string, unknown> = undefined | Record<string, unknown>,
   Outputs extends Record<string, unknown> = Record<string, unknown>,
+  PublicData extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly __types?: {
     data: Data;
     params: Params;
     outputs: Outputs;
+    publicData: PublicData;
   };
 }
 
@@ -46,14 +48,19 @@ export type InferFactoryOutputs<F extends PluginFactoryLike> = NonNullable<
   F extends PluginFactoryLike<any, any, infer O> ? O : Record<string, unknown>
 >;
 
+/** Extract the PublicData type from a PluginFactoryLike phantom. */
+export type InferFactoryPublicData<F extends PluginFactoryLike> = NonNullable<
+  F extends PluginFactoryLike<any, any, any, infer PD> ? PD : Record<string, unknown>
+>;
+
 /**
  * Derive a typed PluginHandle from a PluginFactory type.
- * Normalizes the brand to only data/params/outputs (strips config) so handles
+ * Normalizes the brand to only data/params/outputs/publicData (strips config) so handles
  * from InferPluginHandles match handles from InferPluginHandle.
  */
 export type InferPluginHandle<F extends PluginFactoryLike> = NonNullable<
-  F extends PluginFactoryLike<infer Data, infer Params, infer Outputs>
-    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
+  F extends PluginFactoryLike<infer Data, infer Params, infer Outputs, infer PublicData>
+    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs, PublicData>>
     : PluginHandle
 >;
 
