@@ -48,7 +48,7 @@ export const SERVICE_FEATURE_FLAGS: { readonly [K in keyof ServiceRequireFlags]-
 
 /** Introspect method names on an instance (including prototype chain).
  *  Uses Object.getOwnPropertyDescriptor to avoid triggering getters. */
-export function getMethodNames(instance: Record<string, Function>): string[] {
+export function getMethodNames<T extends object>(instance: T): string[] {
   const methods = new Set<string>();
   let proto: object | null = instance;
   while (proto && proto !== Object.prototype) {

@@ -52,7 +52,7 @@ type ServiceInjectorMap = { [K in keyof typeof Services]: ServiceInjectorFor<K> 
 export function getServiceInjectors(): ServiceInjectorMap {
   return {
     PFrameSpec: ({ host, vm }: ServiceInjectorContext) => {
-      const driver = host.registry.get(Services.PFrameSpec);
+      const driver = host.serviceRegistry.get(Services.PFrameSpec);
       if (!driver)
         throw new ServiceNotRegisteredError(
           `Service "${Services.PFrameSpec}" has no factory in ModelServiceRegistry. Provide a non-null factory.`,

@@ -20,7 +20,6 @@ import { createUiServiceInjectors } from "./service_injector_factory";
 export { createUiServiceInjectors } from "./service_injector_factory";
 
 type ServiceBrand<T> = T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
-type Indexable<T> = { [K in keyof T]: T[K] };
 
 type NodeServiceKeys = {
   [K in keyof typeof Services]: InferServiceKind<ServiceBrand<(typeof Services)[K]>> extends "node"
@@ -30,7 +29,7 @@ type NodeServiceKeys = {
 
 /** Auto-derived map of node service keys to their UI-side driver interfaces. */
 export type UiServiceInjectorMap = {
-  [K in NodeServiceKeys]: Indexable<InferServiceUi<ServiceBrand<(typeof Services)[K]>>>;
+  [K in NodeServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
 };
 
 let cachedKit: DriverKit | undefined;
@@ -48,7 +47,7 @@ function getOrCreateInjectors(driverKit: DriverKit): UiServiceInjectorMap {
 export function resolveUiInjector(
   driverKit: DriverKit,
   serviceId: ServiceName,
-): Record<string, Function> | null {
+): UiServiceInjectorMap[keyof UiServiceInjectorMap] | null {
   const injectors = getOrCreateInjectors(driverKit);
   const key = Object.keys(Services).find(
     (k) => Services[k as keyof typeof Services] === serviceId,
@@ -70,9 +69,9 @@ export const SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> = (() => {
   const injectors = createUiServiceInjectors(stubKit);
   const result: Record<string, string[]> = {};
   for (const key of Object.keys(Services) as (keyof typeof Services)[]) {
-    const serviceId = Services[key] as unknown as string;
+    const serviceId = Services[key];
     const injector = injectors[key as NodeServiceKeys];
-    result[serviceId] = injector ? getMethodNames(injector as Record<string, Function>) : [];
+    result[serviceId] = injector ? getMethodNames(injector) : [];
   }
   return result;
 })();

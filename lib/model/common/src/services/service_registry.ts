@@ -3,8 +3,11 @@ import type {
   InferServiceModel,
   InferServiceUi,
   ServiceName,
+  ModelServiceFactoryMap,
+  UiServiceFactoryMap,
 } from "./service_types";
 import { ServiceNotRegisteredError } from "../errors";
+import type { Services } from "./service_declarations";
 
 type RegistryName = "ModelServiceRegistry" | "UiServiceRegistry";
 type ServiceFactory = () => Record<string, Function>;
@@ -59,9 +62,9 @@ class ServiceRegistryBase {
 }
 
 export class ModelServiceRegistry<
-  SMap extends Record<string, ServiceName> = typeof import("./service_declarations").Services,
+  SMap extends Record<string, ServiceName> = typeof Services,
 > extends ServiceRegistryBase {
-  constructor(serviceMap: SMap, factories: import("./service_types").ModelServiceFactoryMap<SMap>) {
+  constructor(serviceMap: SMap, factories: ModelServiceFactoryMap<SMap>) {
     super("ModelServiceRegistry", serviceMap, factories);
   }
 
@@ -76,9 +79,9 @@ export class ModelServiceRegistry<
 }
 
 export class UiServiceRegistry<
-  SMap extends Record<string, ServiceName> = typeof import("./service_declarations").Services,
+  SMap extends Record<string, ServiceName> = typeof Services,
 > extends ServiceRegistryBase {
-  constructor(serviceMap: SMap, factories: import("./service_types").UiServiceFactoryMap<SMap>) {
+  constructor(serviceMap: SMap, factories: UiServiceFactoryMap<SMap>) {
     super("UiServiceRegistry", serviceMap, factories);
   }
 

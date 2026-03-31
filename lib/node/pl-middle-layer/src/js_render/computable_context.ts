@@ -75,7 +75,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this._meta;
   }
 
-  public get registry(): ModelServiceRegistry {
+  public get serviceRegistry(): ModelServiceRegistry {
     return this.env.serviceRegistry;
   }
 
