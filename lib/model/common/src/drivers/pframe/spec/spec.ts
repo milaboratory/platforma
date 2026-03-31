@@ -508,8 +508,6 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
       modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined)
         ? []
         : (parents as AxisSpecNormalized[]);
-
-      delete modifiedAxis.annotations?.[Annotation.Parents];
     }
   });
 

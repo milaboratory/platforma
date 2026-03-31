@@ -115,7 +115,7 @@ describe("SpecDriver", () => {
     const cellAxis = hitAxes.find((a: AxisSpec) => a.name === "cell");
     expect(cellAxis).toBeDefined();
     expect(cellAxis!.annotations?.["pl7.app/label"]).toBe("Cell");
-    expect(cellAxis!.annotations?.["pl7.app/parents"]).toBeUndefined();
+    expect(cellAxis!.annotations?.["pl7.app/parents"]).toBe('["sample"]');
     expect(cellAxis!.parentAxes).toEqual([0]);
   });
 });
