@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 5.3.3
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.16.3
+
 ## 5.3.2
 
 ### Patch Changes

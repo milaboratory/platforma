@@ -1,5 +1,13 @@
 # @milaboratories/pl-errors
 
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/ts-helpers@1.8.0
+  - @milaboratories/pl-client@2.18.3
+
 ## 1.2.2
 
 ### Patch Changes
