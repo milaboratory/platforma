@@ -2,6 +2,9 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PluginModel,
+  createPlDataTable,
+  createPlDataTableStateV2,
+  type PlDataTableStateV2,
   type PluginName,
   type InferHrefType,
   type InferOutputsType,
@@ -18,6 +21,7 @@ export type BlockData = {
   badgeArg: string;
   tagToWorkflow: string;
   tagArgs: string[];
+  tableState: PlDataTableStateV2;
 };
 
 const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
@@ -26,6 +30,7 @@ const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => (
   badgeArg: "The badge",
   tagToWorkflow: "workflow-tag",
   tagArgs: [],
+  tableState: createPlDataTableStateV2(),
 }));
 
 export type BlockArgs = BlockData;
@@ -43,15 +48,19 @@ type CounterPluginParams = {
   title: string;
 };
 
+type CounterPluginConfig = {
+  defaultCount: number;
+};
+
 const counterDataModelChain = new DataModelBuilder().from<CounterPluginData>("v1");
 
-export const counterPlugin = PluginModel.define<
-  CounterPluginData,
-  CounterPluginParams,
-  { defaultCount: number }
->({
+export const counterPlugin = PluginModel.define({
   name: "counterPlugin" as PluginName,
-  data: (config) => {
+  featureFlags: {
+    requiresPFrameSpec: true,
+    requiresPFrame: true,
+  },
+  data: (config?: CounterPluginConfig) => {
     const defaultCount = config?.defaultCount ?? 0;
     return counterDataModelChain.init(() => ({
       count: defaultCount,
@@ -59,6 +68,7 @@ export const counterPlugin = PluginModel.define<
     }));
   },
 })
+  .params<CounterPluginParams>()
   .output("displayText", (ctx) => {
     return `${ctx.params.title}: Count is ${ctx.data.count}`;
   })
@@ -67,6 +77,15 @@ export const counterPlugin = PluginModel.define<
   })
   .output("isEven", (ctx) => {
     return ctx.data.count % 2 === 0;
+  })
+  .output("specFrameTest", (ctx) => {
+    const entry = ctx.services.pframeSpec.createSpecFrame({});
+    entry.unref();
+    return `specFrame: created and manually disposed`;
+  })
+  .output("pframeTest", (ctx) => {
+    const handle = ctx.services.pframe.createPFrame([]);
+    return `pframe: created handle ${handle}`;
   })
   .build();
 
@@ -116,6 +135,20 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .outputWithStatus("delayedOutputWithStatus", (ctx) =>
     ctx.outputs?.resolve("delayedContent")?.getDataAsString(),
   )
+
+  .output("blockSpecFrameTest", (ctx) => {
+    ctx.services.pframeSpec.createSpecFrame({});
+    return `blockSpecFrame: created (auto-disposed)`;
+  })
+
+  .outputWithStatus("blockTableTest", (ctx) => {
+    return createPlDataTable(ctx, {
+      columns: {
+        include: [{ name: [{ type: "exact", value: "mock_score" }] }],
+      },
+      state: ctx.data.tableState,
+    });
+  })
 
   .done();
 

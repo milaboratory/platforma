@@ -20,8 +20,8 @@ function createSpecFrameCtx() {
   return driver;
 }
 
-afterEach(() => {
-  for (const driver of drivers) driver.dispose();
+afterEach(async () => {
+  for (const driver of drivers) await driver.dispose();
   drivers.length = 0;
 });
 
@@ -165,6 +165,27 @@ describe("ColumnCollection.findColumns", () => {
     const results = collection.findColumns({ exclude: { name: "col1" } });
     expect(results).toHaveLength(1);
     expect(results[0].spec.name).toBe("col2");
+  });
+
+  test("include filters by exact name among disjoint-axis columns", () => {
+    const vdjAxis = sampleAxis("pl7.app/vdj/clonotypeKey");
+    const itemAxis = sampleAxis("item");
+
+    const vdjColumns = Array.from({ length: 10 }, (_, i) =>
+      createSnapshot(`vdj${i}`, createSpec(`pl7.app/vdj/col${i}`, { axesSpec: [vdjAxis] })),
+    );
+    const mockScore = createSnapshot("mock", createSpec("mock_score", { axesSpec: [itemAxis] }));
+
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([...vdjColumns, mockScore]);
+
+    const collection = builder.build()!;
+    const results = collection.findColumns({
+      include: [{ name: [{ type: "exact", value: "mock_score" }] }],
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].spec.name).toBe("mock_score");
   });
 });
 

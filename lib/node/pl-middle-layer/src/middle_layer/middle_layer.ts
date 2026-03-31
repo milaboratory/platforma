@@ -32,6 +32,11 @@ import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
 import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
 import { RuntimeCapabilities } from "@platforma-sdk/model";
+import {
+  type ModelServiceRegistry,
+  registerServiceCapabilities,
+} from "@milaboratories/pl-model-common";
+import { createModelServiceRegistry } from "../service_factories";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
 import { V2RegistryProvider } from "../block_registry";
 import type { Dispatcher } from "undici";
@@ -54,6 +59,7 @@ export interface MiddleLayerEnvironment {
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
+  readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
 }
 
@@ -113,6 +119,11 @@ export class MiddleLayer {
   /** Returns extended API driver kit used internally by middle layer. */
   public get internalDriverKit(): MiddleLayerDriverKit {
     return this.env.driverKit;
+  }
+
+  /** Returns the service registry for service introspection. */
+  public get serviceRegistry(): ModelServiceRegistry {
+    return this.env.serviceRegistry;
   }
 
   //
@@ -335,7 +346,12 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
+    registerServiceCapabilities((flag, value) =>
+      runtimeCapabilities.addSupportedRequirement(flag, value),
+    );
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
+
+    const serviceRegistry = createModelServiceRegistry({ logger });
 
     const env: MiddleLayerEnvironment = {
       pl,
@@ -354,9 +370,11 @@ export class MiddleLayer {
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
       runtimeCapabilities,
+      serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
       dispose: async () => {
+        await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();
       },

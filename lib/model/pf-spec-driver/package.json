@@ -33,7 +33,9 @@
   "dependencies": {
     "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*"
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@noble/hashes": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

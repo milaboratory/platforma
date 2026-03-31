@@ -1,4 +1,5 @@
 import type { Branded } from "@milaboratories/helpers";
+import type { PoolEntry } from "../../pool_entry";
 import type {
   AxisSpec,
   AxesSpec,
@@ -10,6 +11,7 @@ import type {
   ColumnValueType,
 } from "./spec";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
+import { DataQuery, SpecQuery } from "./query";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -144,6 +146,33 @@ export interface DiscoverColumnsResponse {
   hits: DiscoverColumnsResponseHit[];
 }
 
+/** Request for deleting an entry from a given axes integration */
+export interface DeleteColumnRequest {
+  /** Already integrated axes with qualifications */
+  axes: ColumnAxesWithQualifications[];
+  /** Zero based index of the entry to be deleted */
+  delete: number;
+}
+
+/** Response from delete column */
+export interface DeleteColumnResponse {
+  axes: ColumnAxesWithQualifications[];
+}
+
+/** Response from evaluating a query against a PFrame. */
+export type EvaluateQueryResponse = {
+  /**
+   * The table specification describing the structure of the query result,
+   * including all axes and columns that will be present in the output.
+   */
+  tableSpec: PTableColumnSpec[];
+  /**
+   * The data layer query representation with numeric indices,
+   * suitable for execution by the data processing engine.
+   */
+  dataQuery: DataQuery;
+};
+
 /** Handle to a spec-only PFrame (no data, synchronous operations). */
 export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
 
@@ -155,17 +184,20 @@ export type SpecFrameHandle = Branded<string, "SpecFrameHandle">;
  * because the underlying WASM PFrame computes results immediately.
  */
 export interface PFrameSpecDriver {
-  /** Create a spec-only PFrame from column specs. Returns a handle. */
-  createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle;
+  /** Create a spec-only PFrame from column specs. Returns a pool entry with handle and unref. */
+  createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle>;
 
   /** Discover columns compatible with given axes integration. */
-  specFrameDiscoverColumns(
+  discoverColumns(
     handle: SpecFrameHandle,
     request: DiscoverColumnsRequest,
   ): DiscoverColumnsResponse;
 
-  /** Dispose a spec frame, freeing WASM resources. */
-  disposeSpecFrame(handle: SpecFrameHandle): void;
+  /** Delete an entry from a given axes integration */
+  deleteColumn(handle: SpecFrameHandle, request: DeleteColumnRequest): DeleteColumnResponse;
+
+  /** Evaluates a query specification against this PFrame */
+  evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse;
 
   /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
   expandAxes(spec: AxesSpec): AxesId;

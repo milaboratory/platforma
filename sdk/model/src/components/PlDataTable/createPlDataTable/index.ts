@@ -1,3 +1,4 @@
+import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type { PlDataTableModel } from "../typesV5";
 import { createPlDataTableOptionsV2, createPlDataTableV2 } from "./createPlDataTableV2";
@@ -8,12 +9,12 @@ export function createPlDataTable<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: { version: "v2" } & createPlDataTableOptionsV2,
 ): ReturnType<typeof createPlDataTableV2>;
-export function createPlDataTable<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function createPlDataTable<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   options: { version?: "v3" } & createPlDataTableOptionsV3,
 ): ReturnType<typeof createPlDataTableV3>;
-export function createPlDataTable<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function createPlDataTable<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   options:
     | ({ version: "v2" } & createPlDataTableOptionsV2)
     | ({ version?: "v3" } & createPlDataTableOptionsV3),

@@ -219,7 +219,6 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
             type: "Ok",
             size: blob.size,
             range: translatedRange,
-            // eslint-disable-next-line n/no-unsupported-features/node-builtins
             data: Readable.fromWeb(data),
           });
         },
@@ -268,6 +267,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
+    await this.pool[Symbol.asyncDispose]();
   }
 }
 

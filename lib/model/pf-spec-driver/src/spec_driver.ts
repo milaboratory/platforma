@@ -1,11 +1,9 @@
 import {
-  createPFrame,
   expandAxes,
   collapseAxes,
   findAxis,
   findTableColumn,
 } from "@milaboratories/pframes-rs-wasm";
-import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import type {
   AxesId,
   AxesSpec,
@@ -15,77 +13,172 @@ import type {
   PTableColumnSpec,
   SingleAxisSelector,
   SpecFrameHandle,
+  PoolEntry,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
+  DeleteColumnRequest,
+  DeleteColumnResponse,
+  EvaluateQueryResponse,
+  SpecQuery,
 } from "@milaboratories/pl-model-common";
-import { PFrameSpecDriverError } from "@milaboratories/pl-model-common";
+import {
+  PFrameSpecDriverError,
+  ValueType,
+  ensureError,
+  resolveAnnotationParents,
+} from "@milaboratories/pl-model-common";
+import { type MiLogger, ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import { PFramePool } from "./pframe_pool";
+import { logPFrames } from "./logging";
 
 /**
  * Manages spec-only PFrame instances (WASM) with handle-based lifecycle.
  *
  * All operations are synchronous — WASM computes results immediately.
  */
-export class SpecDriver implements PFrameSpecDriver, Disposable {
-  private readonly frames = new Map<SpecFrameHandle, PFrameInternal.PFrameWasmV2>();
+export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
+  private readonly logger: MiLogger;
+  private readonly frames: PFramePool;
 
-  createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
-    // Explicit annotation ensures a WASM version mismatch surfaces at compile time
-    // (skipLibCheck won't validate .d.ts in node_modules, but this assignment will)
-    const frame: PFrameInternal.PFrameWasmV2 = createPFrame(specs);
-    const handle = crypto.randomUUID() as SpecFrameHandle;
-    this.frames.set(handle, frame);
-    return handle;
+  public constructor(options?: { logger?: MiLogger }) {
+    this.logger = options?.logger ?? new ConsoleLoggerAdapter();
+    this.frames = new PFramePool(this.logger);
   }
 
-  specFrameDiscoverColumns(
+  createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle> {
+    const ValueTypes = new Set(Object.values(ValueType));
+    const filtered = Object.fromEntries(
+      Object.entries(specs)
+        .filter(([, spec]) => ValueTypes.has(spec.valueType))
+        .map(([id, spec]) => [id, resolveAnnotationParents(spec)]),
+    );
+    try {
+      if (logPFrames()) {
+        this.logger.info(`createSpecFrame: ${Object.keys(filtered).length} columns`);
+      }
+      return this.frames.acquire(filtered);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`createSpecFrame failed`);
+      error.cause = ensureError(err);
+      throw error;
+    }
+  }
+
+  discoverColumns(
     handle: SpecFrameHandle,
     request: DiscoverColumnsRequest,
   ): DiscoverColumnsResponse {
-    return this.getFrame(handle).discoverColumns(request);
+    const pframe = this.frames.getByKey(handle);
+    try {
+      if (logPFrames()) {
+        this.logger.info(
+          `discoverColumns: handle = ${handle}, request: ${JSON.stringify(request)}`,
+        );
+      }
+      const result = pframe.discoverColumns(request);
+      return result;
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`discoverColumns failed`);
+      error.cause = new Error(
+        `handle: ${handle}, ` +
+          `request: ${JSON.stringify(request)}, ` +
+          `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
   }
 
-  disposeSpecFrame(handle: SpecFrameHandle): void {
-    const frame = this.frames.get(handle);
-    if (frame) {
-      frame[Symbol.dispose]();
-      this.frames.delete(handle);
+  deleteColumn(handle: SpecFrameHandle, request: DeleteColumnRequest): DeleteColumnResponse {
+    const pframe = this.frames.getByKey(handle);
+    try {
+      if (logPFrames()) {
+        this.logger.info(`deleteColumn: handle = ${handle}, request: ${JSON.stringify(request)}`);
+      }
+      const result = {
+        axes: pframe.deleteColumns({ columns: request.axes, delete: request.delete }).columns,
+      };
+      return result;
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`deleteColumn failed`);
+      error.cause = new Error(
+        `handle: ${handle}, ` +
+          `request: ${JSON.stringify(request)}, ` +
+          `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
+  }
+
+  evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse {
+    const pframe = this.frames.getByKey(handle);
+    try {
+      if (logPFrames()) {
+        this.logger.info(`evaluateQuery: handle = ${handle}, request: ${JSON.stringify(request)}`);
+      }
+      const result = pframe.evaluateQuery(request);
+      return result;
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`evaluateQuery failed`);
+      error.cause = new Error(
+        `handle: ${handle}, ` +
+          `request: ${JSON.stringify(request)}, ` +
+          `error:\n${ensureError(err)}`,
+      );
+      throw error;
     }
   }
 
   expandAxes(spec: AxesSpec): AxesId {
-    return expandAxes(spec);
-  }
-
-  collapseAxes(ids: AxesId): AxesSpec {
-    return collapseAxes(ids);
-  }
-
-  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
-    return findAxis(spec, selector);
-  }
-
-  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
-    return findTableColumn(tableSpec, selector);
-  }
-
-  /** Dispose all managed spec frames. */
-  dispose(): void {
     try {
-      for (const frame of this.frames.values()) {
-        frame[Symbol.dispose]();
-      }
-    } finally {
-      this.frames.clear();
+      return expandAxes(spec);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`expandAxes failed`);
+      error.cause = new Error(`spec: ${JSON.stringify(spec)}, ` + `error:\n${ensureError(err)}`);
+      throw error;
     }
   }
 
-  [Symbol.dispose](): void {
-    this.dispose();
+  collapseAxes(ids: AxesId): AxesSpec {
+    try {
+      return collapseAxes(ids);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`collapseAxes failed`);
+      error.cause = new Error(`ids: ${JSON.stringify(ids)}, ` + `error:\n${ensureError(err)}`);
+      throw error;
+    }
   }
 
-  private getFrame(handle: SpecFrameHandle): PFrameInternal.PFrameWasmV2 {
-    const frame = this.frames.get(handle);
-    if (frame === undefined) throw new PFrameSpecDriverError(`No such spec frame: ${handle}`);
-    return frame;
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
+    try {
+      return findAxis(spec, selector);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`findAxis failed`);
+      error.cause = new Error(
+        `spec: ${JSON.stringify(spec)}, ` +
+          `selector: ${JSON.stringify(selector)}, ` +
+          `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
+  }
+
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
+    try {
+      return findTableColumn(tableSpec, selector);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`findTableColumn failed`);
+      error.cause = new Error(
+        `selector: ${JSON.stringify(selector)}, ` + `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
+  }
+
+  async dispose(): Promise<void> {
+    await this.frames.dispose();
+  }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 }

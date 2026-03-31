@@ -18,7 +18,6 @@ export * from "./ref_count_pool";
 export * from "./errors";
 
 export function assertNever(x: never): never {
-  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
   throw new Error("Unexpected object: " + x);
 }
 

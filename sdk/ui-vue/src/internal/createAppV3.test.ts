@@ -165,6 +165,11 @@ function createMockApiV3<
     async dispose(): Promise<ResultOrError<void>> {
       return { value: undefined };
     },
+    serviceDispatch: {
+      getServiceNames: () => [],
+      getServiceMethods: () => [],
+      callServiceMethod: () => undefined,
+    },
     //
     blobDriver: undefined as any,
     //
