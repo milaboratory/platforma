@@ -70,7 +70,6 @@ test("inline column support", async ({ expect }) => {
         type: "String",
         data: ["axis1"],
         isNA: new Uint8Array(),
-        absent: new Uint8Array(),
       },
     },
     {
@@ -93,7 +92,6 @@ test("inline column support", async ({ expect }) => {
         type: "Int",
         data: new Int32Array([1]),
         isNA: new Uint8Array(),
-        absent: new Uint8Array(),
       },
     },
   ] satisfies CalculateTableDataResponse);
@@ -135,7 +133,6 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
         .map((d) =>
           [...d.data.keys()].map((i) =>
             pTableValue(d, i, {
-              absent: "|~|",
               na: null,
             }),
           ),

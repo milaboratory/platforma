@@ -3,7 +3,6 @@ import type {
   PTableColumnId,
   PTableColumnSpecColumn,
   PTableValue,
-  PTableValueAxis,
 } from "@platforma-sdk/model";
 import {
   canonicalizeJson,
@@ -63,10 +62,11 @@ function columns2rows(
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey: PTableValueAxis[] = axes.map((iAxis) => {
+    const axesKey: PTableKey = axes.map((iAxis) => {
       const value = pTableValue(columns[resultMapping[iAxis]], iRow);
-      if (!isPTableValueAxis(value))
+      if (!(isPTableValueAxis(value) || value === null)) {
         throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
+      }
       return value;
     });
     const id = canonicalizeJson<PlTableRowId>(axesKey);
