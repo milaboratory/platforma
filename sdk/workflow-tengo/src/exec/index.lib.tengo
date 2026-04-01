@@ -51,6 +51,8 @@ builder := func() {
 	queue := execConstants.HEAVY_QUEUE
 	cpuRequest := undefined
 	ramRequest := undefined
+	gpuCount := 0
+	gpuType := ""
 
 	cache := 0
 	inputCache := 0
@@ -431,6 +433,29 @@ builder := func() {
 		 */
 		ram: func(amount) {
 			self.mem(amount)
+			return self
+		},
+
+		/**
+		 * Requests GPU resources from the underlying executor.
+		 *
+		 * @param count: number - number of GPU devices to request (must be > 0).
+		 * @param ...type: string - optional GPU type identifier (e.g., "nvidia-tesla-a100", "a100").
+		 *                          Interpretation is platform-specific.
+		 *
+		 * @return builder
+		 */
+		gpu: func(count, ...type) {
+			validation.assertType(count, "number", "exec.builder.gpu: count must be a number")
+			ll.assert(count > 0, "exec.builder.gpu: count must be greater than 0")
+			ll.assert(len(type) <= 1, "exec.builder.gpu: at most one type argument expected")
+			gpuCount = count
+			if len(type) == 1 {
+				validation.assertType(type[0], "string", "exec.builder.gpu: type must be a string")
+				gpuType = type[0]
+			} else {
+				gpuType = ""
+			}
 			return self
 		},
 
@@ -1005,12 +1030,19 @@ builder := func() {
 			if (is_int(ramRequest)) {
 				ramRequest = string(ramRequest) + "b"
 			}
+			quotaData := {
+				queue: queue,
+				cpu: cpuRequest,
+				ram: ramRequest
+			}
+			if gpuCount > 0 {
+				quotaData.gpu = gpuCount
+				if gpuType != "" {
+					quotaData.gpuType = gpuType
+				}
+			}
 			metaExecInputs := {
-				quota: smart.createJsonResource({
-					queue: queue,
-					cpu: cpuRequest,
-					ram: ramRequest
-				})
+				quota: smart.createJsonResource(quotaData)
 			}
 
 			// We add monetization only if it's enabled
