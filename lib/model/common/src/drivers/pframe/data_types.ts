@@ -108,27 +108,8 @@ export type PTableValueBranded<
   DataType extends ValueTypeSupported = ValueTypeSupported,
 > = NA | PTableValueDataBranded<DataType>;
 
-export type PTableValueAxis<DataType extends ValueTypeSupported = ValueTypeSupported> = PTableValue<
-  never,
-  DataType
->;
-
-export function isPTableValueAxis<NA, DataType extends ValueTypeSupported>(
-  value: PTableValue<NA, DataType>,
-  isNA: (value: PTableValue<NA, DataType>) => value is NA,
-): value is PTableValueAxis<DataType>;
-export function isPTableValueAxis<DataType extends ValueTypeSupported>(
-  value: PTableValue<PTableNA, DataType>,
-): value is PTableValueAxis<DataType>;
-export function isPTableValueAxis<
-  NA = PTableNA,
-  DataType extends ValueTypeSupported = ValueTypeSupported,
->(
-  value: PTableValue<NA, DataType>,
-  isNA?: (value: PTableValue<NA, DataType>) => value is NA,
-): value is PTableValueAxis<DataType> {
-  return !(isNA ? isNA(value) : isPTableNA(value));
-}
+export type PTableValueAxis<DataType extends ValueTypeSupported = ValueTypeSupported> =
+  PTableValueData<DataType>;
 
 function pTableValueImpl<FillNA = PTableNA, DataType extends ValueType = ValueTypeSupported>(
   column: PTableVectorTyped<ValueType>,

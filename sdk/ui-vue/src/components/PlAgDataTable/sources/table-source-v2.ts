@@ -21,7 +21,6 @@ import {
   isLabelColumn as isLabelColumnSpec,
   isColumnHidden,
   matchAxisId,
-  isPTableValueAxis,
   readAnnotation,
   Annotation,
   ValueType,
@@ -62,13 +61,9 @@ function columns2rows(
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey: PTableKey = axes.map((iAxis) => {
-      const value = pTableValue(columns[resultMapping[iAxis]], iRow);
-      if (!(isPTableValueAxis(value) || value === null)) {
-        throw new Error(`axis value is not a PTableValueAxis: ${JSON.stringify(value)}`);
-      }
-      return value;
-    });
+    const axesKey: PTableKey = axes.map((iAxis) =>
+      pTableValue(columns[resultMapping[iAxis]], iRow),
+    );
     const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row: PlAgDataTableV2Row = { id, axesKey };
     fields.forEach((field, iCol) => {
