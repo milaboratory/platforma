@@ -1,5 +1,11 @@
 # @milaboratories/pf-spec-driver
 
+## 1.2.1
+
+### Patch Changes
+
+- e44b64c: PFrames update
+
 ## 1.2.0
 
 ### Minor Changes
