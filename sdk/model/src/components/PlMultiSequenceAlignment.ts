@@ -8,7 +8,6 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   Annotation,
-  isPTableAbsent,
   PColumnName,
   stringifyJson,
   uniquePlId,
@@ -56,7 +55,7 @@ export function createRowSelectionColumn({
     return;
   }
   const data: PColumnValues = selection.selectedKeys
-    .filter((r): r is PColumnKey => r.every((v) => !isPTableAbsent(v)))
+    .filter((r): r is PColumnKey => r.every((v) => v !== null))
     .map((r) => ({ key: r, val: 1 }));
   if (!data.length) {
     return;
