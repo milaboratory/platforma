@@ -70,6 +70,7 @@ test("inline column support", async ({ expect }) => {
         type: "String",
         data: ["axis1"],
         isNA: new Uint8Array(),
+        absent: new Uint8Array(),
       },
     },
     {
@@ -92,6 +93,7 @@ test("inline column support", async ({ expect }) => {
         type: "Int",
         data: new Int32Array([1]),
         isNA: new Uint8Array(),
+        absent: new Uint8Array(),
       },
     },
   ] satisfies CalculateTableDataResponse);

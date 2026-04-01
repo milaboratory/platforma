@@ -35,6 +35,9 @@ export type PTableVectorTyped<DataType extends ValueType> = {
    * In old desktop versions NA values are encoded as magic values in data array.
    * */
   readonly isNA?: Uint8Array;
+
+  /** @deprecated Always empty. Kept for backwards compatibility with old blocks. */
+  readonly absent?: Uint8Array;
 };
 /** Table column data */
 export type PTableVector = PTableVectorTyped<ValueType>;
