@@ -1,10 +1,10 @@
-import { isAsyncDisposable, isDisposable } from "./obj";
+import { isAsyncDisposable, isDisposable } from "./disposable";
 
 /**
  * Function associated with particular entry from the RefCountResourcePool.
  *
  * Calling the function will release the reference acquired when object was
- * retieved from the pool.
+ * received from the pool.
  */
 export type UnrefFn = () => void;
 
@@ -122,7 +122,7 @@ export abstract class RefCountPoolBase<P, K extends string, R extends {}>
 
   public async dispose(): Promise<void> {
     void (await Promise.allSettled(
-      this.resources.values().map((envelope) => {
+      Array.from(this.resources.values()).map((envelope) => {
         const resource = envelope.resource;
         if (isDisposable(resource)) {
           return this.disposeQueue.then(() => resource[Symbol.dispose]());

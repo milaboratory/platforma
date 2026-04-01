@@ -1741,6 +1741,9 @@ importers:
 
   lib/model/pf-spec-driver:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
         version: 1.1.17(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
@@ -1750,9 +1753,6 @@ importers:
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../middle-layer
-      '@milaboratories/ts-helpers':
-        specifier: workspace:*
-        version: link:../../node/ts-helpers
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.0.1
@@ -1861,6 +1861,9 @@ importers:
 
   lib/node/pf-driver:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
         version: 1.1.17(encoding@0.1.13)
@@ -2240,6 +2243,9 @@ importers:
       '@milaboratories/computable':
         specifier: workspace:*
         version: link:../computable
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       '@milaboratories/pf-driver':
         specifier: workspace:*
         version: link:../pf-driver
@@ -2410,6 +2416,9 @@ importers:
 
   lib/node/ts-helpers:
     dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../util/helpers
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0

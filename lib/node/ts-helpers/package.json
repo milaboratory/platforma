@@ -29,6 +29,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:"
   },
