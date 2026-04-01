@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.63.0
+
+### Minor Changes
+
+- 5becf87: Remove PTableAbsent concept — absent values are now null (same as NA)
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @milaboratories/pl-model-common@1.31.0
+  - @platforma-sdk/model@1.63.0
+  - @milaboratories/pf-spec-driver@1.2.2
+  - @milaboratories/uikit@2.11.5
+
 ## 1.62.1
 
 ### Patch Changes

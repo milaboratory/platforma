@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.31.0
+
+### Minor Changes
+
+- 5becf87: Remove PTableAbsent concept — absent values are now null (same as NA)
+
 ## 1.30.0
 
 ### Minor Changes
