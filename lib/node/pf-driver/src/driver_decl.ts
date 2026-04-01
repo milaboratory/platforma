@@ -15,7 +15,7 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
 } from "@milaboratories/pl-model-common";
-import type { PoolEntry } from "@milaboratories/ts-helpers";
+import type { PoolEntry } from "@milaboratories/helpers";
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle

@@ -27,7 +27,7 @@ import {
   ensureError,
   resolveAnnotationParents,
 } from "@milaboratories/pl-model-common";
-import { type MiLogger, ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import { type MiLogger, ConsoleLoggerAdapter } from "@milaboratories/helpers";
 import { PFramePool } from "./pframe_pool";
 import { logPFrames } from "./logging";
 

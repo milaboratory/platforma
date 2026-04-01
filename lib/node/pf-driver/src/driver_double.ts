@@ -6,7 +6,7 @@ import {
   type PColumnValues,
 } from "@milaboratories/pl-model-common";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { HttpHelpers } from "@milaboratories/pframes-rs-node";
 import fs from "node:fs";
 import path from "node:path";
