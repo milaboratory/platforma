@@ -37,9 +37,9 @@ export interface Resource {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 18
+     * @generated from protobuf field: optional bytes resource_signature = 18
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: bytes canonical_id = 17
      */
@@ -161,9 +161,9 @@ export interface Field {
      * Signature for value resource ID, inheriting the parent resource's color.
      * Populated server-side when the parent resource has a known color in the current TX.
      *
-     * @generated from protobuf field: bytes value_signature = 10
+     * @generated from protobuf field: optional bytes value_signature = 10
      */
-    valueSignature: Uint8Array;
+    valueSignature?: Uint8Array;
     /**
      * If the value was empty, assigned or finally resolved.
      *
@@ -186,9 +186,9 @@ export interface Field {
     /**
      * Signature for error resource ID, inheriting the parent resource's color.
      *
-     * @generated from protobuf field: bytes error_signature = 11
+     * @generated from protobuf field: optional bytes error_signature = 11
      */
-    errorSignature: Uint8Array;
+    errorSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.Field.ValueStatus
@@ -549,7 +549,7 @@ class Resource$Type extends MessageType<Resource> {
     constructor() {
         super("MiLaboratories.PL.API.Resource", [
             { no: 2, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 18, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 18, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 17, name: "canonical_id", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "kind", kind: "enum", T: () => ["MiLaboratories.PL.API.Resource.Kind", Resource_Kind, "KIND_"] },
             { no: 4, name: "type", kind: "message", T: () => ResourceType },
@@ -570,7 +570,6 @@ class Resource$Type extends MessageType<Resource> {
     create(value?: PartialMessage<Resource>): Resource {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.canonicalId = new Uint8Array(0);
         message.kind = 0;
         message.data = new Uint8Array(0);
@@ -594,7 +593,7 @@ class Resource$Type extends MessageType<Resource> {
                 case /* uint64 resource_id */ 2:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 18:
+                case /* optional bytes resource_signature */ 18:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* bytes canonical_id */ 17:
@@ -702,8 +701,8 @@ class Resource$Type extends MessageType<Resource> {
         /* bytes canonical_id = 17; */
         if (message.canonicalId.length)
             writer.tag(17, WireType.LengthDelimited).bytes(message.canonicalId);
-        /* bytes resource_signature = 18; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 18; */
+        if (message.resourceSignature !== undefined)
             writer.tag(18, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -770,22 +769,20 @@ class Field$Type extends MessageType<Field> {
             { no: 2, name: "type", kind: "enum", T: () => ["MiLaboratories.PL.Base.FieldType", FieldType] },
             { no: 3, name: "features", kind: "message", T: () => Resource_Features },
             { no: 5, name: "value", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 10, name: "value_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 10, name: "value_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 7, name: "value_status", kind: "enum", T: () => ["MiLaboratories.PL.API.Field.ValueStatus", Field_ValueStatus] },
             { no: 8, name: "value_is_final", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 6, name: "error", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 11, name: "error_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 11, name: "error_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<Field>): Field {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.type = 0;
         message.value = 0n;
-        message.valueSignature = new Uint8Array(0);
         message.valueStatus = 0;
         message.valueIsFinal = false;
         message.error = 0n;
-        message.errorSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<Field>(this, message, value);
         return message;
@@ -807,7 +804,7 @@ class Field$Type extends MessageType<Field> {
                 case /* uint64 value */ 5:
                     message.value = reader.uint64().toBigInt();
                     break;
-                case /* bytes value_signature */ 10:
+                case /* optional bytes value_signature */ 10:
                     message.valueSignature = reader.bytes();
                     break;
                 case /* MiLaboratories.PL.API.Field.ValueStatus value_status */ 7:
@@ -819,7 +816,7 @@ class Field$Type extends MessageType<Field> {
                 case /* uint64 error */ 6:
                     message.error = reader.uint64().toBigInt();
                     break;
-                case /* bytes error_signature */ 11:
+                case /* optional bytes error_signature */ 11:
                     message.errorSignature = reader.bytes();
                     break;
                 default:
@@ -855,11 +852,11 @@ class Field$Type extends MessageType<Field> {
         /* bool value_is_final = 8; */
         if (message.valueIsFinal !== false)
             writer.tag(8, WireType.Varint).bool(message.valueIsFinal);
-        /* bytes value_signature = 10; */
-        if (message.valueSignature.length)
+        /* optional bytes value_signature = 10; */
+        if (message.valueSignature !== undefined)
             writer.tag(10, WireType.LengthDelimited).bytes(message.valueSignature);
-        /* bytes error_signature = 11; */
-        if (message.errorSignature.length)
+        /* optional bytes error_signature = 11; */
+        if (message.errorSignature !== undefined)
             writer.tag(11, WireType.LengthDelimited).bytes(message.errorSignature);
         let u = options.writeUnknownFields;
         if (u !== false)

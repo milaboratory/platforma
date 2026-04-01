@@ -21,7 +21,7 @@ message Resource {
   }
 
   uint64 resource_id = 2;
-  bytes resource_signature = 18;
+  optional bytes resource_signature = 18;
   bytes canonical_id = 17; // could be empty, it depends on resource lifecycle state
   Kind kind = 3;
   Base.ResourceType type = 4;
@@ -65,7 +65,7 @@ message Field {
   uint64 value = 5;
   // Signature for value resource ID, inheriting the parent resource's color.
   // Populated server-side when the parent resource has a known color in the current TX.
-  bytes value_signature = 10;
+  optional bytes value_signature = 10;
 
   enum ValueStatus {
     INVALID = 0;
@@ -84,7 +84,7 @@ message Field {
   // Is intended to report problems _from_ platform to client.
   uint64 error = 6;
   // Signature for error resource ID, inheriting the parent resource's color.
-  bytes error_signature = 11;
+  optional bytes error_signature = 11;
 }
 
 message Notification {
