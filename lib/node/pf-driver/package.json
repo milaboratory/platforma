@@ -31,6 +31,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",

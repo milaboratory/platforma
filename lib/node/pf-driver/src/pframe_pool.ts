@@ -10,7 +10,7 @@ import {
   type PFrameHandle,
 } from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { mapValues } from "es-toolkit";
 import { logPFrames } from "./logging";

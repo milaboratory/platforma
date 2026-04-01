@@ -35,11 +35,8 @@ import {
   resolveAnnotationParents,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import {
-  ConcurrencyLimitingExecutor,
-  PoolEntryGuard,
-  type PoolEntry,
-} from "@milaboratories/ts-helpers";
+import { ConcurrencyLimitingExecutor } from "@milaboratories/ts-helpers";
+import { PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
 import type { AbstractInternalPFrameDriver } from "./driver_decl";

@@ -6,7 +6,7 @@ import {
   canonicalizeJson,
 } from "@milaboratories/pl-model-common";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { MiLogger, RefCountPoolBase } from "@milaboratories/ts-helpers";
+import { MiLogger, RefCountPoolBase } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import { createPFrame } from "@milaboratories/pframes-rs-wasm";
 import { blake3 } from "@noble/hashes/blake3.js";
