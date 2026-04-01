@@ -1,6 +1,5 @@
 import {
   Annotation,
-  isPTableAbsent,
   PTableNA,
   readAnnotation,
   ValueType,
@@ -20,7 +19,7 @@ export function formatSpecialValues(
     return "undefined";
   } else if (isPTableHidden(value)) {
     return "loading...";
-  } else if (isPTableAbsent(value) || value === PTableNA) {
+  } else if (value === PTableNA) {
     return "";
   } else {
     return undefined;

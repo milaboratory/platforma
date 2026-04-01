@@ -110,7 +110,7 @@ tplTest.concurrent("pt write frame test", async ({ helper, expect, driverKit }) 
   const pTableData = pTable.map((col) => {
     const rows: string[] = [];
     for (let i = 0; i < col.data.data.length; i++) {
-      rows.push(pTableValue(col.data, i, { absent: "", na: "" })?.toString() ?? "");
+      rows.push(pTableValue(col.data, i, { na: "" })?.toString() ?? "");
     }
     return rows;
   });
