@@ -1,5 +1,16 @@
 # @milaboratories/pf-driver
 
+## 1.3.3
+
+### Patch Changes
+
+- 6dc9e0d: Move browser-safe types (MiLogger, RefCountPoolBase, isDisposable) from ts-helpers to helpers to fix Vite browser bundling error in ui-vue
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+
 ## 1.3.2
 
 ### Patch Changes

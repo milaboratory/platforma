@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.54.3
+
+### Patch Changes
+
+- 6dc9e0d: Move browser-safe types (MiLogger, RefCountPoolBase, isDisposable) from ts-helpers to helpers to fix Vite browser bundling error in ui-vue
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pf-spec-driver@1.2.3
+  - @milaboratories/pf-driver@1.3.3
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/pl-drivers@1.12.7
+  - @platforma-sdk/model@1.63.1
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pl-client@2.18.5
+  - @milaboratories/pl-deployments@2.16.5
+  - @milaboratories/pl-errors@1.2.5
+  - @milaboratories/pl-tree@1.9.6
+  - @platforma-sdk/block-tools@2.7.5
+  - @milaboratories/pl-model-backend@1.2.5
+  - @platforma-sdk/workflow-tengo@5.11.0
+
 ## 1.54.2
 
 ### Patch Changes

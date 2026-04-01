@@ -1,5 +1,12 @@
 # @milaboratories/test-helpers
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+
 ## 1.2.0
 
 ### Minor Changes
