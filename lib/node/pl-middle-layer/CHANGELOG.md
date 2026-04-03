@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.54.4
+
+### Patch Changes
+
+- 9f5e086: Fix broken project duplication: ensure field group consistency for prodUiCtx/stagingUiCtx
+
 ## 1.54.3
 
 ### Patch Changes
