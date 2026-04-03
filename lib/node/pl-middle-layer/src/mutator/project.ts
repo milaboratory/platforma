@@ -136,21 +136,35 @@ class BlockInfo {
 
     if ((this.fields.prodOutput === undefined) !== (this.fields.prodCtx === undefined))
       throw new Error("inconsistent prod fields");
+    if ((this.fields.prodOutput === undefined) !== (this.fields.prodUiCtx === undefined))
+      throw new Error("inconsistent prod fields (prodUiCtx)");
 
     if ((this.fields.stagingOutput === undefined) !== (this.fields.stagingCtx === undefined))
       throw new Error("inconsistent stage fields");
+    if ((this.fields.stagingOutput === undefined) !== (this.fields.stagingUiCtx === undefined))
+      throw new Error("inconsistent stage fields (stagingUiCtx)");
 
     if (
       (this.fields.prodOutputPrevious === undefined) !==
       (this.fields.prodCtxPrevious === undefined)
     )
       throw new Error("inconsistent prod cache fields");
+    if (
+      (this.fields.prodOutputPrevious === undefined) !==
+      (this.fields.prodUiCtxPrevious === undefined)
+    )
+      throw new Error("inconsistent prod cache fields (prodUiCtxPrevious)");
 
     if (
       (this.fields.stagingOutputPrevious === undefined) !==
       (this.fields.stagingCtxPrevious === undefined)
     )
       throw new Error("inconsistent stage cache fields");
+    if (
+      (this.fields.stagingOutputPrevious === undefined) !==
+      (this.fields.stagingUiCtxPrevious === undefined)
+    )
+      throw new Error("inconsistent stage cache fields (stagingUiCtxPrevious)");
 
     if (this.fields.blockPack === undefined) throw new Error("no block pack field");
 
@@ -337,19 +351,28 @@ export class ProjectMutator {
   ) {}
 
   private fixProblemsAndMigrate() {
-    // Fix inconsistent production fields
+    // Fix inconsistent production fields.
+    // All four fields (prodArgs, prodOutput, prodCtx, prodUiCtx) must be present together.
+    // prodUiCtx can be missing after project duplication: prodCtx uses a holder wrapper
+    // (always non-null), but prodUiCtx is a raw FieldRef that may still be NullResourceId
+    // at snapshot time and thus not copied.
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.prodArgs === undefined ||
         blockInfo.fields.prodOutput === undefined ||
-        blockInfo.fields.prodCtx === undefined
+        blockInfo.fields.prodCtx === undefined ||
+        blockInfo.fields.prodUiCtx === undefined
       )
         this.deleteBlockFields(blockInfo.id, "prodArgs", "prodOutput", "prodCtx", "prodUiCtx");
     });
 
-    // Fix inconsistent staging fields
+    // Fix inconsistent staging fields (same FieldRef issue for stagingUiCtx)
     this.blockInfos.forEach((blockInfo) => {
-      if (blockInfo.fields.stagingOutput === undefined || blockInfo.fields.stagingCtx === undefined)
+      if (
+        blockInfo.fields.stagingOutput === undefined ||
+        blockInfo.fields.stagingCtx === undefined ||
+        blockInfo.fields.stagingUiCtx === undefined
+      )
         this.deleteBlockFields(blockInfo.id, "stagingOutput", "stagingCtx", "stagingUiCtx");
     });
 
@@ -357,7 +380,8 @@ export class ProjectMutator {
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.prodOutputPrevious === undefined ||
-        blockInfo.fields.prodCtxPrevious === undefined
+        blockInfo.fields.prodCtxPrevious === undefined ||
+        blockInfo.fields.prodUiCtxPrevious === undefined
       )
         this.deleteBlockFields(
           blockInfo.id,
@@ -367,7 +391,8 @@ export class ProjectMutator {
         );
       if (
         blockInfo.fields.stagingOutputPrevious === undefined ||
-        blockInfo.fields.stagingCtxPrevious === undefined
+        blockInfo.fields.stagingCtxPrevious === undefined ||
+        blockInfo.fields.stagingUiCtxPrevious === undefined
       )
         this.deleteBlockFields(
           blockInfo.id,
@@ -1984,11 +2009,16 @@ export async function duplicateProject(
   tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
   tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
 
-  // Copy all dynamic fields by sharing references
+  // Copy only persistent block fields (FieldsToDuplicate).
+  // Transient fields (prodChainCtx, staging*, *Previous) are rebuilt on project open
+  // by fixProblemsAndMigrate(). Copying them is both unnecessary and dangerous:
+  // some fields use raw FieldRefs (not holder-wrapped) whose values may be NullResourceId
+  // at snapshot time, leading to partially copied field groups and broken project state.
   for (const f of sourceData.fields) {
-    if (isNotNullResourceId(f.value)) {
-      tx.createField(field(newPrj, f.name), "Dynamic", f.value);
-    }
+    if (isNullResourceId(f.value)) continue;
+    const parsed = parseProjectField(f.name);
+    if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
+    tx.createField(field(newPrj, f.name), "Dynamic", f.value);
   }
 
   return newPrj;
