@@ -118,7 +118,7 @@ function cached<ModId, T>(modIdCb: () => ModId, valueCb: () => T): () => T {
       lastModId = currentModId;
       value = valueCb();
     }
-    return valueCb();
+    return value!;
   };
 }
 
