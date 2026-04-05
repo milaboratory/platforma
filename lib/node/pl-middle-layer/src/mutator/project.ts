@@ -246,7 +246,7 @@ class BlockInfo {
   }
 
   get productionHasErrors(): boolean {
-    return this.fields.prodUiCtx?.status === "Error";
+    return this.fields.prodUiCtx?.status === "Error" || this.fields.prodOutput?.status === "Error";
   }
 
   private readonly productionStaleC: () => boolean = cached(
@@ -642,14 +642,14 @@ export class ProjectMutator {
 
   private resetProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
-    if (
-      fields.prodOutput?.status === "Ready" &&
-      fields.prodCtx?.status === "Ready" &&
-      fields.prodUiCtx?.status === "Ready"
-    ) {
-      this.setBlockFieldObj(blockId, "prodOutputPrevious", fields.prodOutput);
-      this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx);
-      this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx);
+    const outputDone =
+      fields.prodOutput?.status === "Ready" || fields.prodOutput?.status === "Error";
+    const ctxDone = fields.prodCtx?.status === "Ready" || fields.prodCtx?.status === "Error";
+    const uiCtxDone = fields.prodUiCtx?.status === "Ready" || fields.prodUiCtx?.status === "Error";
+    if (outputDone && ctxDone && uiCtxDone) {
+      this.setBlockFieldObj(blockId, "prodOutputPrevious", fields.prodOutput!);
+      this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx!);
+      this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx!);
     }
     this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
   }
