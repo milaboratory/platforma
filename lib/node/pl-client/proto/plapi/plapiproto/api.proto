@@ -584,7 +584,7 @@ message TxAPI {
 
   message SetDefaultColor {
     message Request {
-      bytes color_proof = 1;
+      optional bytes color_proof = 1;
     }
     message Response {}
   }
@@ -597,12 +597,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
-      bytes color_proof = 5;
+      optional bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
   message CreateEphemeral {
@@ -611,12 +611,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
-      bytes color_proof = 5;
+      optional bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -640,12 +640,12 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
-      bytes color_proof = 8;
+      optional bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -657,7 +657,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -670,12 +670,12 @@ message ResourceAPI {
 
       bool error_if_exists = 7;
 
-      bytes color_proof = 8;
+      optional bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -695,7 +695,7 @@ message ResourceAPI {
   message LockInputs {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -704,7 +704,7 @@ message ResourceAPI {
   message LockOutputs {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -713,7 +713,7 @@ message ResourceAPI {
   message Exists {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {
@@ -724,10 +724,10 @@ message ResourceAPI {
   message SetError {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       uint64 error_resource_id = 2;
-      bytes error_resource_signature = 4;
+      optional bytes error_resource_signature = 4;
     }
     message Response {}
   }
@@ -735,7 +735,7 @@ message ResourceAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       bool load_fields = 2;
     }
@@ -781,7 +781,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -791,7 +791,7 @@ message ResourceAPI {
   message Remove {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -801,7 +801,7 @@ message ResourceAPI {
     message Set {
       message Request {
         uint64 resource_id = 1;
-        bytes resource_signature = 3;
+        optional bytes resource_signature = 3;
         string name = 2;
       }
 
@@ -815,7 +815,7 @@ message ResourceAPI {
 
       message Response {
         uint64 resource_id = 1;
-        bytes resource_signature = 2;
+        optional bytes resource_signature = 2;
       }
     }
 
@@ -841,7 +841,7 @@ message ResourceAPI {
   message Tree {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       // Limit the maximum depth the tree is traversed.
       // The resource <resource_id> is considered at depth = 0, the values of its fields
@@ -861,7 +861,7 @@ message ResourceAPI {
   message TreeSize {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
     message Response {
       // size of all tree resources in bytes
@@ -909,7 +909,7 @@ message FieldAPI {
     message Request {
       Base.FieldRef field = 1;
       uint64 error_resource_id = 2;
-      bytes error_resource_signature = 3;
+      optional bytes error_resource_signature = 3;
     }
 
     message Response {}
@@ -942,7 +942,7 @@ message FieldAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 4;
+      optional bytes resource_signature = 4;
 
       // Start the listing from given position, returning first field with
       // name >= start_from.
@@ -1196,7 +1196,7 @@ message ResourceKVAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 4;
+      optional bytes resource_signature = 4;
 
       // Start the listing from given position, returning first item with
       // key >= start_from.
@@ -1230,7 +1230,7 @@ message ResourceKVAPI {
   message Set {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 4;
+      optional bytes resource_signature = 4;
 
       string key = 2;
       bytes value = 3;
@@ -1242,7 +1242,7 @@ message ResourceKVAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1255,7 +1255,7 @@ message ResourceKVAPI {
   message GetIfExists {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1269,7 +1269,7 @@ message ResourceKVAPI {
   message Delete {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1280,7 +1280,7 @@ message ResourceKVAPI {
   message SetFlag {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 4;
+      optional bytes resource_signature = 4;
 
       string key = 2;
       bool value = 3;
@@ -1292,7 +1292,7 @@ message ResourceKVAPI {
   message GetFlag {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1418,7 +1418,7 @@ message LocksAPI {
     message Create {
       message Request {
         uint64 resource_id = 1;
-        bytes resource_signature = 5;
+        optional bytes resource_signature = 5;
 
         google.protobuf.Duration timeout = 3;
         string name = 4;
@@ -1431,7 +1431,7 @@ message LocksAPI {
     message Update {
       message Request {
         uint64 resource_id = 1;
-        bytes resource_signature = 5;
+        optional bytes resource_signature = 5;
 
         bytes lease_id = 2;
         google.protobuf.Duration timeout = 3;
@@ -1443,7 +1443,7 @@ message LocksAPI {
     message Release {
       message Request {
         uint64 resource_id = 1;
-        bytes resource_signature = 3;
+        optional bytes resource_signature = 3;
 
         bytes lease_id = 2;
       }
@@ -1489,7 +1489,7 @@ message AuthAPI {
   message GrantAccess {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
       string target_user = 3;        // user login to grant access to
       Grant.Permissions permissions = 4;   // access level to grant
     }
@@ -1500,7 +1500,7 @@ message AuthAPI {
   message RevokeGrant {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
       string target_user = 3; // user login whose grant to revoke
     }
 
@@ -1510,7 +1510,7 @@ message AuthAPI {
   message ListGrants {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {
@@ -1562,12 +1562,12 @@ message AuthAPI {
 
     message UserRoot {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message SharedResource {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
       Base.ResourceType resource_type = 3;
       Grant.Permissions permissions = 4;
     }

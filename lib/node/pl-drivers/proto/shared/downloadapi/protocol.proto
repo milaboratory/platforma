@@ -23,7 +23,7 @@ message DownloadAPI {
     message Request {
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
 
       // Pass `true` here if the blob will be downloaded from the internal network,
       // e.g. controllers could use this if they are trying to download something from the internal network.
