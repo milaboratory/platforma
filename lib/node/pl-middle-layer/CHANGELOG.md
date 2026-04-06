@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.54.5
+
+### Patch Changes
+
+- f1089db: Fix "Run" button doing nothing on errored blocks; preserve errored outputs during re-run
+
 ## 1.54.4
 
 ### Patch Changes
