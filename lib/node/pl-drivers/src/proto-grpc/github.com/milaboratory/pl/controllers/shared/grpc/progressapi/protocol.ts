@@ -58,9 +58,9 @@ export interface ProgressAPI_GetStatus_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Response
@@ -85,9 +85,9 @@ export interface ProgressAPI_RealtimeStatus_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: google.protobuf.Duration update_interval = 2
      */
@@ -262,13 +262,12 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
     constructor() {
         super("MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ProgressAPI_GetStatus_Request>): ProgressAPI_GetStatus_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ProgressAPI_GetStatus_Request>(this, message, value);
         return message;
@@ -281,7 +280,7 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -299,8 +298,8 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -401,14 +400,13 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
     constructor() {
         super("MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "update_interval", kind: "message", T: () => Duration }
         ]);
     }
     create(value?: PartialMessage<ProgressAPI_RealtimeStatus_Request>): ProgressAPI_RealtimeStatus_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ProgressAPI_RealtimeStatus_Request>(this, message, value);
         return message;
@@ -421,7 +419,7 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* google.protobuf.Duration update_interval */ 2:
@@ -445,8 +443,8 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
         /* google.protobuf.Duration update_interval = 2; */
         if (message.updateInterval)
             Duration.internalBinaryWrite(message.updateInterval, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)

@@ -1067,9 +1067,9 @@ export interface TxAPI_SetDefaultColor {
  */
 export interface TxAPI_SetDefaultColor_Request {
     /**
-     * @generated from protobuf field: bytes color_proof = 1
+     * @generated from protobuf field: optional bytes color_proof = 1
      */
-    colorProof: Uint8Array;
+    colorProof?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.TxAPI.SetDefaultColor.Response
@@ -1103,9 +1103,9 @@ export interface ResourceAPI_CreateStruct_Request {
      */
     data?: Uint8Array;
     /**
-     * @generated from protobuf field: bytes color_proof = 5
+     * @generated from protobuf field: optional bytes color_proof = 5
      */
-    colorProof: Uint8Array;
+    colorProof?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateStruct.Response
@@ -1116,9 +1116,9 @@ export interface ResourceAPI_CreateStruct_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateEphemeral
@@ -1142,9 +1142,9 @@ export interface ResourceAPI_CreateEphemeral_Request {
      */
     data?: Uint8Array;
     /**
-     * @generated from protobuf field: bytes color_proof = 5
+     * @generated from protobuf field: optional bytes color_proof = 5
      */
-    colorProof: Uint8Array;
+    colorProof?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateEphemeral.Response
@@ -1155,9 +1155,9 @@ export interface ResourceAPI_CreateEphemeral_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateChild
@@ -1216,9 +1216,9 @@ export interface ResourceAPI_CreateValue_Request {
      */
     errorIfExists: boolean;
     /**
-     * @generated from protobuf field: bytes color_proof = 8
+     * @generated from protobuf field: optional bytes color_proof = 8
      */
-    colorProof: Uint8Array;
+    colorProof?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateValue.Response
@@ -1229,9 +1229,9 @@ export interface ResourceAPI_CreateValue_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.GetValueID
@@ -1260,9 +1260,9 @@ export interface ResourceAPI_GetValueID_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateSingleton
@@ -1290,9 +1290,9 @@ export interface ResourceAPI_CreateSingleton_Request {
      */
     errorIfExists: boolean;
     /**
-     * @generated from protobuf field: bytes color_proof = 8
+     * @generated from protobuf field: optional bytes color_proof = 8
      */
-    colorProof: Uint8Array;
+    colorProof?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateSingleton.Response
@@ -1303,9 +1303,9 @@ export interface ResourceAPI_CreateSingleton_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.GetSingleton
@@ -1352,9 +1352,9 @@ export interface ResourceAPI_LockInputs_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LockInputs.Response
@@ -1375,9 +1375,9 @@ export interface ResourceAPI_LockOutputs_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LockOutputs.Response
@@ -1398,9 +1398,9 @@ export interface ResourceAPI_Exists_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Exists.Response
@@ -1425,17 +1425,17 @@ export interface ResourceAPI_SetError_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: uint64 error_resource_id = 2
      */
     errorResourceId: bigint;
     /**
-     * @generated from protobuf field: bytes error_resource_signature = 4
+     * @generated from protobuf field: optional bytes error_resource_signature = 4
      */
-    errorResourceSignature: Uint8Array;
+    errorResourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.SetError.Response
@@ -1456,9 +1456,9 @@ export interface ResourceAPI_Get_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: bool load_fields = 2
      */
@@ -1557,9 +1557,9 @@ export interface ResourceAPI_CreateRoot_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 // FIXME: add CreateResource method to API
 
@@ -1579,9 +1579,9 @@ export interface ResourceAPI_Remove_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Remove.Response
@@ -1607,9 +1607,9 @@ export interface ResourceAPI_Name_Set_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string name = 2
      */
@@ -1643,9 +1643,9 @@ export interface ResourceAPI_Name_Get_Response {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Name.Exists
@@ -1703,9 +1703,9 @@ export interface ResourceAPI_Tree_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * Limit the maximum depth the tree is traversed.
      * The resource <resource_id> is considered at depth = 0, the values of its fields
@@ -1743,9 +1743,9 @@ export interface ResourceAPI_TreeSize_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.TreeSize.Response
@@ -1861,9 +1861,9 @@ export interface FieldAPI_SetError_Request {
      */
     errorResourceId: bigint;
     /**
-     * @generated from protobuf field: bytes error_resource_signature = 3
+     * @generated from protobuf field: optional bytes error_resource_signature = 3
      */
-    errorResourceSignature: Uint8Array;
+    errorResourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.FieldAPI.SetError.Response
@@ -1945,9 +1945,9 @@ export interface FieldAPI_List_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 4
+     * @generated from protobuf field: optional bytes resource_signature = 4
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * Start the listing from given position, returning first field with
      * name >= start_from.
@@ -2560,9 +2560,9 @@ export interface ResourceKVAPI_List_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 4
+     * @generated from protobuf field: optional bytes resource_signature = 4
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * Start the listing from given position, returning first item with
      * key >= start_from.
@@ -2628,9 +2628,9 @@ export interface ResourceKVAPI_Set_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 4
+     * @generated from protobuf field: optional bytes resource_signature = 4
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -2659,9 +2659,9 @@ export interface ResourceKVAPI_Get_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -2690,9 +2690,9 @@ export interface ResourceKVAPI_GetIfExists_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -2725,9 +2725,9 @@ export interface ResourceKVAPI_Delete_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -2752,9 +2752,9 @@ export interface ResourceKVAPI_SetFlag_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 4
+     * @generated from protobuf field: optional bytes resource_signature = 4
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -2783,9 +2783,9 @@ export interface ResourceKVAPI_GetFlag_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string key = 2
      */
@@ -3103,9 +3103,9 @@ export interface LocksAPI_Lease_Create_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 5
+     * @generated from protobuf field: optional bytes resource_signature = 5
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: google.protobuf.Duration timeout = 3
      */
@@ -3138,9 +3138,9 @@ export interface LocksAPI_Lease_Update_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 5
+     * @generated from protobuf field: optional bytes resource_signature = 5
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: bytes lease_id = 2
      */
@@ -3173,9 +3173,9 @@ export interface LocksAPI_Lease_Release_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: bytes lease_id = 2
      */
@@ -3297,9 +3297,9 @@ export interface AuthAPI_GrantAccess_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string target_user = 3
      */
@@ -3328,9 +3328,9 @@ export interface AuthAPI_RevokeGrant_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: string target_user = 3
      */
@@ -3355,9 +3355,9 @@ export interface AuthAPI_ListGrants_Request {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.Response
@@ -3478,9 +3478,9 @@ export interface AuthAPI_ListUserResources_UserRoot {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource
@@ -3491,9 +3491,9 @@ export interface AuthAPI_ListUserResources_SharedResource {
      */
     resourceId: bigint;
     /**
-     * @generated from protobuf field: bytes resource_signature = 2
+     * @generated from protobuf field: optional bytes resource_signature = 2
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: MiLaboratories.PL.Base.ResourceType resource_type = 3
      */
@@ -5688,12 +5688,11 @@ export const TxAPI_SetDefaultColor = new TxAPI_SetDefaultColor$Type();
 class TxAPI_SetDefaultColor_Request$Type extends MessageType<TxAPI_SetDefaultColor_Request> {
     constructor() {
         super("MiLaboratories.PL.API.TxAPI.SetDefaultColor.Request", [
-            { no: 1, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 1, name: "color_proof", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<TxAPI_SetDefaultColor_Request>): TxAPI_SetDefaultColor_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<TxAPI_SetDefaultColor_Request>(this, message, value);
         return message;
@@ -5703,7 +5702,7 @@ class TxAPI_SetDefaultColor_Request$Type extends MessageType<TxAPI_SetDefaultCol
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* bytes color_proof */ 1:
+                case /* optional bytes color_proof */ 1:
                     message.colorProof = reader.bytes();
                     break;
                 default:
@@ -5718,8 +5717,8 @@ class TxAPI_SetDefaultColor_Request$Type extends MessageType<TxAPI_SetDefaultCol
         return message;
     }
     internalBinaryWrite(message: TxAPI_SetDefaultColor_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* bytes color_proof = 1; */
-        if (message.colorProof.length)
+        /* optional bytes color_proof = 1; */
+        if (message.colorProof !== undefined)
             writer.tag(1, WireType.LengthDelimited).bytes(message.colorProof);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -5852,13 +5851,12 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
             { no: 2, name: "id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
-            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 5, name: "color_proof", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateStruct_Request>): ResourceAPI_CreateStruct_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateStruct_Request>(this, message, value);
         return message;
@@ -5877,7 +5875,7 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
                 case /* optional bytes data */ 4:
                     message.data = reader.bytes();
                     break;
-                case /* bytes color_proof */ 5:
+                case /* optional bytes color_proof */ 5:
                     message.colorProof = reader.bytes();
                     break;
                 default:
@@ -5901,8 +5899,8 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
         /* optional bytes data = 4; */
         if (message.data !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.data);
-        /* bytes color_proof = 5; */
-        if (message.colorProof.length)
+        /* optional bytes color_proof = 5; */
+        if (message.colorProof !== undefined)
             writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -5919,13 +5917,12 @@ class ResourceAPI_CreateStruct_Response$Type extends MessageType<ResourceAPI_Cre
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.CreateStruct.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateStruct_Response>): ResourceAPI_CreateStruct_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateStruct_Response>(this, message, value);
         return message;
@@ -5938,7 +5935,7 @@ class ResourceAPI_CreateStruct_Response$Type extends MessageType<ResourceAPI_Cre
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -5956,8 +5953,8 @@ class ResourceAPI_CreateStruct_Response$Type extends MessageType<ResourceAPI_Cre
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6014,13 +6011,12 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
             { no: 2, name: "id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
-            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 5, name: "color_proof", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateEphemeral_Request>): ResourceAPI_CreateEphemeral_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateEphemeral_Request>(this, message, value);
         return message;
@@ -6039,7 +6035,7 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
                 case /* optional bytes data */ 4:
                     message.data = reader.bytes();
                     break;
-                case /* bytes color_proof */ 5:
+                case /* optional bytes color_proof */ 5:
                     message.colorProof = reader.bytes();
                     break;
                 default:
@@ -6063,8 +6059,8 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
         /* optional bytes data = 4; */
         if (message.data !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.data);
-        /* bytes color_proof = 5; */
-        if (message.colorProof.length)
+        /* optional bytes color_proof = 5; */
+        if (message.colorProof !== undefined)
             writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6081,13 +6077,12 @@ class ResourceAPI_CreateEphemeral_Response$Type extends MessageType<ResourceAPI_
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.CreateEphemeral.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateEphemeral_Response>): ResourceAPI_CreateEphemeral_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateEphemeral_Response>(this, message, value);
         return message;
@@ -6100,7 +6095,7 @@ class ResourceAPI_CreateEphemeral_Response$Type extends MessageType<ResourceAPI_
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -6118,8 +6113,8 @@ class ResourceAPI_CreateEphemeral_Response$Type extends MessageType<ResourceAPI_
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6323,7 +6318,7 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 6, name: "data", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 7, name: "error_if_exists", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 8, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 8, name: "color_proof", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateValue_Request>): ResourceAPI_CreateValue_Request {
@@ -6331,7 +6326,6 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateValue_Request>(this, message, value);
         return message;
@@ -6353,7 +6347,7 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
                 case /* bool error_if_exists */ 7:
                     message.errorIfExists = reader.bool();
                     break;
-                case /* bytes color_proof */ 8:
+                case /* optional bytes color_proof */ 8:
                     message.colorProof = reader.bytes();
                     break;
                 default:
@@ -6380,8 +6374,8 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         /* bool error_if_exists = 7; */
         if (message.errorIfExists !== false)
             writer.tag(7, WireType.Varint).bool(message.errorIfExists);
-        /* bytes color_proof = 8; */
-        if (message.colorProof.length)
+        /* optional bytes color_proof = 8; */
+        if (message.colorProof !== undefined)
             writer.tag(8, WireType.LengthDelimited).bytes(message.colorProof);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6398,13 +6392,12 @@ class ResourceAPI_CreateValue_Response$Type extends MessageType<ResourceAPI_Crea
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.CreateValue.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateValue_Response>): ResourceAPI_CreateValue_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateValue_Response>(this, message, value);
         return message;
@@ -6417,7 +6410,7 @@ class ResourceAPI_CreateValue_Response$Type extends MessageType<ResourceAPI_Crea
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -6435,8 +6428,8 @@ class ResourceAPI_CreateValue_Response$Type extends MessageType<ResourceAPI_Crea
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6545,13 +6538,12 @@ class ResourceAPI_GetValueID_Response$Type extends MessageType<ResourceAPI_GetVa
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.GetValueID.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_GetValueID_Response>): ResourceAPI_GetValueID_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_GetValueID_Response>(this, message, value);
         return message;
@@ -6564,7 +6556,7 @@ class ResourceAPI_GetValueID_Response$Type extends MessageType<ResourceAPI_GetVa
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -6582,8 +6574,8 @@ class ResourceAPI_GetValueID_Response$Type extends MessageType<ResourceAPI_GetVa
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6641,7 +6633,7 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 6, name: "data", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 7, name: "error_if_exists", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 8, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 8, name: "color_proof", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateSingleton_Request>): ResourceAPI_CreateSingleton_Request {
@@ -6649,7 +6641,6 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateSingleton_Request>(this, message, value);
         return message;
@@ -6671,7 +6662,7 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
                 case /* bool error_if_exists */ 7:
                     message.errorIfExists = reader.bool();
                     break;
-                case /* bytes color_proof */ 8:
+                case /* optional bytes color_proof */ 8:
                     message.colorProof = reader.bytes();
                     break;
                 default:
@@ -6698,8 +6689,8 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         /* bool error_if_exists = 7; */
         if (message.errorIfExists !== false)
             writer.tag(7, WireType.Varint).bool(message.errorIfExists);
-        /* bytes color_proof = 8; */
-        if (message.colorProof.length)
+        /* optional bytes color_proof = 8; */
+        if (message.colorProof !== undefined)
             writer.tag(8, WireType.LengthDelimited).bytes(message.colorProof);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6716,13 +6707,12 @@ class ResourceAPI_CreateSingleton_Response$Type extends MessageType<ResourceAPI_
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.CreateSingleton.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateSingleton_Response>): ResourceAPI_CreateSingleton_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateSingleton_Response>(this, message, value);
         return message;
@@ -6735,7 +6725,7 @@ class ResourceAPI_CreateSingleton_Response$Type extends MessageType<ResourceAPI_
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -6753,8 +6743,8 @@ class ResourceAPI_CreateSingleton_Response$Type extends MessageType<ResourceAPI_
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -6955,13 +6945,12 @@ class ResourceAPI_LockInputs_Request$Type extends MessageType<ResourceAPI_LockIn
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.LockInputs.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_LockInputs_Request>): ResourceAPI_LockInputs_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_LockInputs_Request>(this, message, value);
         return message;
@@ -6974,7 +6963,7 @@ class ResourceAPI_LockInputs_Request$Type extends MessageType<ResourceAPI_LockIn
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -6992,8 +6981,8 @@ class ResourceAPI_LockInputs_Request$Type extends MessageType<ResourceAPI_LockIn
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7086,13 +7075,12 @@ class ResourceAPI_LockOutputs_Request$Type extends MessageType<ResourceAPI_LockO
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.LockOutputs.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_LockOutputs_Request>): ResourceAPI_LockOutputs_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_LockOutputs_Request>(this, message, value);
         return message;
@@ -7105,7 +7093,7 @@ class ResourceAPI_LockOutputs_Request$Type extends MessageType<ResourceAPI_LockO
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -7123,8 +7111,8 @@ class ResourceAPI_LockOutputs_Request$Type extends MessageType<ResourceAPI_LockO
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7217,13 +7205,12 @@ class ResourceAPI_Exists_Request$Type extends MessageType<ResourceAPI_Exists_Req
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Exists.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Exists_Request>): ResourceAPI_Exists_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Exists_Request>(this, message, value);
         return message;
@@ -7236,7 +7223,7 @@ class ResourceAPI_Exists_Request$Type extends MessageType<ResourceAPI_Exists_Req
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -7254,8 +7241,8 @@ class ResourceAPI_Exists_Request$Type extends MessageType<ResourceAPI_Exists_Req
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7357,17 +7344,15 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.SetError.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "error_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "error_resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 4, name: "error_resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_SetError_Request>): ResourceAPI_SetError_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.errorResourceId = 0n;
-        message.errorResourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_SetError_Request>(this, message, value);
         return message;
@@ -7380,13 +7365,13 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* uint64 error_resource_id */ 2:
                     message.errorResourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes error_resource_signature */ 4:
+                case /* optional bytes error_resource_signature */ 4:
                     message.errorResourceSignature = reader.bytes();
                     break;
                 default:
@@ -7407,11 +7392,11 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
         /* uint64 error_resource_id = 2; */
         if (message.errorResourceId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.errorResourceId);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
-        /* bytes error_resource_signature = 4; */
-        if (message.errorResourceSignature.length)
+        /* optional bytes error_resource_signature = 4; */
+        if (message.errorResourceSignature !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.errorResourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7504,14 +7489,13 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Get.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "load_fields", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Get_Request>): ResourceAPI_Get_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.loadFields = false;
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Get_Request>(this, message, value);
@@ -7525,7 +7509,7 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* bool load_fields */ 2:
@@ -7549,8 +7533,8 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         /* bool load_fields = 2; */
         if (message.loadFields !== false)
             writer.tag(2, WireType.Varint).bool(message.loadFields);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7905,13 +7889,12 @@ class ResourceAPI_CreateRoot_Response$Type extends MessageType<ResourceAPI_Creat
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.CreateRoot.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateRoot_Response>): ResourceAPI_CreateRoot_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateRoot_Response>(this, message, value);
         return message;
@@ -7924,7 +7907,7 @@ class ResourceAPI_CreateRoot_Response$Type extends MessageType<ResourceAPI_Creat
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -7942,8 +7925,8 @@ class ResourceAPI_CreateRoot_Response$Type extends MessageType<ResourceAPI_Creat
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -7998,13 +7981,12 @@ class ResourceAPI_Remove_Request$Type extends MessageType<ResourceAPI_Remove_Req
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Remove.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Remove_Request>): ResourceAPI_Remove_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Remove_Request>(this, message, value);
         return message;
@@ -8017,7 +7999,7 @@ class ResourceAPI_Remove_Request$Type extends MessageType<ResourceAPI_Remove_Req
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -8035,8 +8017,8 @@ class ResourceAPI_Remove_Request$Type extends MessageType<ResourceAPI_Remove_Req
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -8167,14 +8149,13 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Name.Set.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Name_Set_Request>): ResourceAPI_Name_Set_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.name = "";
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Name_Set_Request>(this, message, value);
@@ -8188,7 +8169,7 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string name */ 2:
@@ -8212,8 +8193,8 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
         /* string name = 2; */
         if (message.name !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.name);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -8353,13 +8334,12 @@ class ResourceAPI_Name_Get_Response$Type extends MessageType<ResourceAPI_Name_Ge
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Name.Get.Response", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Name_Get_Response>): ResourceAPI_Name_Get_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Name_Get_Response>(this, message, value);
         return message;
@@ -8372,7 +8352,7 @@ class ResourceAPI_Name_Get_Response$Type extends MessageType<ResourceAPI_Name_Ge
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -8390,8 +8370,8 @@ class ResourceAPI_Name_Get_Response$Type extends MessageType<ResourceAPI_Name_Ge
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -8701,14 +8681,13 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.Tree.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "max_depth", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Tree_Request>): ResourceAPI_Tree_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Tree_Request>(this, message, value);
         return message;
@@ -8721,7 +8700,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* optional uint32 max_depth */ 2:
@@ -8745,8 +8724,8 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* optional uint32 max_depth = 2; */
         if (message.maxDepth !== undefined)
             writer.tag(2, WireType.Varint).uint32(message.maxDepth);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -8847,13 +8826,12 @@ class ResourceAPI_TreeSize_Request$Type extends MessageType<ResourceAPI_TreeSize
     constructor() {
         super("MiLaboratories.PL.API.ResourceAPI.TreeSize.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_TreeSize_Request>): ResourceAPI_TreeSize_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_TreeSize_Request>(this, message, value);
         return message;
@@ -8866,7 +8844,7 @@ class ResourceAPI_TreeSize_Request$Type extends MessageType<ResourceAPI_TreeSize
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -8884,8 +8862,8 @@ class ResourceAPI_TreeSize_Request$Type extends MessageType<ResourceAPI_TreeSize
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -9432,13 +9410,12 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
         super("MiLaboratories.PL.API.FieldAPI.SetError.Request", [
             { no: 1, name: "field", kind: "message", T: () => FieldRef },
             { no: 2, name: "error_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "error_resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 3, name: "error_resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<FieldAPI_SetError_Request>): FieldAPI_SetError_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.errorResourceId = 0n;
-        message.errorResourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<FieldAPI_SetError_Request>(this, message, value);
         return message;
@@ -9454,7 +9431,7 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
                 case /* uint64 error_resource_id */ 2:
                     message.errorResourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes error_resource_signature */ 3:
+                case /* optional bytes error_resource_signature */ 3:
                     message.errorResourceSignature = reader.bytes();
                     break;
                 default:
@@ -9475,8 +9452,8 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
         /* uint64 error_resource_id = 2; */
         if (message.errorResourceId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.errorResourceId);
-        /* bytes error_resource_signature = 3; */
-        if (message.errorResourceSignature.length)
+        /* optional bytes error_resource_signature = 3; */
+        if (message.errorResourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.errorResourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -9943,7 +9920,7 @@ class FieldAPI_List_Request$Type extends MessageType<FieldAPI_List_Request> {
     constructor() {
         super("MiLaboratories.PL.API.FieldAPI.List.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "start_from", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
         ]);
@@ -9951,7 +9928,6 @@ class FieldAPI_List_Request$Type extends MessageType<FieldAPI_List_Request> {
     create(value?: PartialMessage<FieldAPI_List_Request>): FieldAPI_List_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.startFrom = "";
         message.limit = 0;
         if (value !== undefined)
@@ -9966,7 +9942,7 @@ class FieldAPI_List_Request$Type extends MessageType<FieldAPI_List_Request> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 4:
+                case /* optional bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string start_from */ 2:
@@ -9996,8 +9972,8 @@ class FieldAPI_List_Request$Type extends MessageType<FieldAPI_List_Request> {
         /* uint32 limit = 3; */
         if (message.limit !== 0)
             writer.tag(3, WireType.Varint).uint32(message.limit);
-        /* bytes resource_signature = 4; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13190,7 +13166,7 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.List.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "start_from", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
         ]);
@@ -13198,7 +13174,6 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
     create(value?: PartialMessage<ResourceKVAPI_List_Request>): ResourceKVAPI_List_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.startFrom = "";
         message.limit = 0;
         if (value !== undefined)
@@ -13213,7 +13188,7 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 4:
+                case /* optional bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string start_from */ 2:
@@ -13243,8 +13218,8 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         /* uint32 limit = 3; */
         if (message.limit !== 0)
             writer.tag(3, WireType.Varint).uint32(message.limit);
-        /* bytes resource_signature = 4; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13408,7 +13383,7 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.Set.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "value", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
@@ -13416,7 +13391,6 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
     create(value?: PartialMessage<ResourceKVAPI_Set_Request>): ResourceKVAPI_Set_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         message.value = new Uint8Array(0);
         if (value !== undefined)
@@ -13431,7 +13405,7 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 4:
+                case /* optional bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -13461,8 +13435,8 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
         /* bytes value = 3; */
         if (message.value.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.value);
-        /* bytes resource_signature = 4; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13555,14 +13529,13 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.Get.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_Get_Request>): ResourceKVAPI_Get_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_Get_Request>(this, message, value);
@@ -13576,7 +13549,7 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -13600,8 +13573,8 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13703,14 +13676,13 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.GetIfExists.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_GetIfExists_Request>): ResourceKVAPI_GetIfExists_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_GetIfExists_Request>(this, message, value);
@@ -13724,7 +13696,7 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -13748,8 +13720,8 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13859,14 +13831,13 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.Delete.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_Delete_Request>): ResourceKVAPI_Delete_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_Delete_Request>(this, message, value);
@@ -13880,7 +13851,7 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -13904,8 +13875,8 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -13998,7 +13969,7 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.SetFlag.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 3, name: "value", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
@@ -14006,7 +13977,6 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
     create(value?: PartialMessage<ResourceKVAPI_SetFlag_Request>): ResourceKVAPI_SetFlag_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         message.value = false;
         if (value !== undefined)
@@ -14021,7 +13991,7 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 4:
+                case /* optional bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -14051,8 +14021,8 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
         /* bool value = 3; */
         if (message.value !== false)
             writer.tag(3, WireType.Varint).bool(message.value);
-        /* bytes resource_signature = 4; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -14145,14 +14115,13 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
     constructor() {
         super("MiLaboratories.PL.API.ResourceKVAPI.GetFlag.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_GetFlag_Request>): ResourceKVAPI_GetFlag_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.key = "";
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_GetFlag_Request>(this, message, value);
@@ -14166,7 +14135,7 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string key */ 2:
@@ -14190,8 +14159,8 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -15708,7 +15677,7 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
     constructor() {
         super("MiLaboratories.PL.API.LocksAPI.Lease.Create.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 5, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "timeout", kind: "message", T: () => Duration },
             { no: 4, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
@@ -15716,7 +15685,6 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
     create(value?: PartialMessage<LocksAPI_Lease_Create_Request>): LocksAPI_Lease_Create_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.name = "";
         if (value !== undefined)
             reflectionMergePartial<LocksAPI_Lease_Create_Request>(this, message, value);
@@ -15730,7 +15698,7 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 5:
+                case /* optional bytes resource_signature */ 5:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* google.protobuf.Duration timeout */ 3:
@@ -15760,8 +15728,8 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
         /* string name = 4; */
         if (message.name !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.name);
-        /* bytes resource_signature = 5; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 5; */
+        if (message.resourceSignature !== undefined)
             writer.tag(5, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -15863,7 +15831,7 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
     constructor() {
         super("MiLaboratories.PL.API.LocksAPI.Lease.Update.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 5, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "lease_id", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "timeout", kind: "message", T: () => Duration },
             { no: 4, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
@@ -15872,7 +15840,6 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
     create(value?: PartialMessage<LocksAPI_Lease_Update_Request>): LocksAPI_Lease_Update_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.leaseId = new Uint8Array(0);
         message.name = "";
         if (value !== undefined)
@@ -15887,7 +15854,7 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 5:
+                case /* optional bytes resource_signature */ 5:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* bytes lease_id */ 2:
@@ -15923,8 +15890,8 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
         /* string name = 4; */
         if (message.name !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.name);
-        /* bytes resource_signature = 5; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 5; */
+        if (message.resourceSignature !== undefined)
             writer.tag(5, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -16017,14 +15984,13 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
     constructor() {
         super("MiLaboratories.PL.API.LocksAPI.Lease.Release.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "lease_id", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<LocksAPI_Lease_Release_Request>): LocksAPI_Lease_Release_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.leaseId = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<LocksAPI_Lease_Release_Request>(this, message, value);
@@ -16038,7 +16004,7 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* bytes lease_id */ 2:
@@ -16062,8 +16028,8 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
         /* bytes lease_id = 2; */
         if (message.leaseId.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.leaseId);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -16542,7 +16508,7 @@ class AuthAPI_GrantAccess_Request$Type extends MessageType<AuthAPI_GrantAccess_R
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.GrantAccess.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "target_user", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "permissions", kind: "message", T: () => AuthAPI_Grant_Permissions }
         ]);
@@ -16550,7 +16516,6 @@ class AuthAPI_GrantAccess_Request$Type extends MessageType<AuthAPI_GrantAccess_R
     create(value?: PartialMessage<AuthAPI_GrantAccess_Request>): AuthAPI_GrantAccess_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.targetUser = "";
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_GrantAccess_Request>(this, message, value);
@@ -16564,7 +16529,7 @@ class AuthAPI_GrantAccess_Request$Type extends MessageType<AuthAPI_GrantAccess_R
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string target_user */ 3:
@@ -16588,8 +16553,8 @@ class AuthAPI_GrantAccess_Request$Type extends MessageType<AuthAPI_GrantAccess_R
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* string target_user = 3; */
         if (message.targetUser !== "")
@@ -16688,14 +16653,13 @@ class AuthAPI_RevokeGrant_Request$Type extends MessageType<AuthAPI_RevokeGrant_R
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.RevokeGrant.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "target_user", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_RevokeGrant_Request>): AuthAPI_RevokeGrant_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.targetUser = "";
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_RevokeGrant_Request>(this, message, value);
@@ -16709,7 +16673,7 @@ class AuthAPI_RevokeGrant_Request$Type extends MessageType<AuthAPI_RevokeGrant_R
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string target_user */ 3:
@@ -16730,8 +16694,8 @@ class AuthAPI_RevokeGrant_Request$Type extends MessageType<AuthAPI_RevokeGrant_R
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* string target_user = 3; */
         if (message.targetUser !== "")
@@ -16827,13 +16791,12 @@ class AuthAPI_ListGrants_Request$Type extends MessageType<AuthAPI_ListGrants_Req
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.ListGrants.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_ListGrants_Request>): AuthAPI_ListGrants_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListGrants_Request>(this, message, value);
         return message;
@@ -16846,7 +16809,7 @@ class AuthAPI_ListGrants_Request$Type extends MessageType<AuthAPI_ListGrants_Req
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -16864,8 +16827,8 @@ class AuthAPI_ListGrants_Request$Type extends MessageType<AuthAPI_ListGrants_Req
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -17222,13 +17185,12 @@ class AuthAPI_ListUserResources_UserRoot$Type extends MessageType<AuthAPI_ListUs
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.ListUserResources.UserRoot", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_ListUserResources_UserRoot>): AuthAPI_ListUserResources_UserRoot {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListUserResources_UserRoot>(this, message, value);
         return message;
@@ -17241,7 +17203,7 @@ class AuthAPI_ListUserResources_UserRoot$Type extends MessageType<AuthAPI_ListUs
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -17259,8 +17221,8 @@ class AuthAPI_ListUserResources_UserRoot$Type extends MessageType<AuthAPI_ListUs
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -17277,7 +17239,7 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "resource_type", kind: "message", T: () => ResourceType },
             { no: 4, name: "permissions", kind: "message", T: () => AuthAPI_Grant_Permissions }
         ]);
@@ -17285,7 +17247,6 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
     create(value?: PartialMessage<AuthAPI_ListUserResources_SharedResource>): AuthAPI_ListUserResources_SharedResource {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListUserResources_SharedResource>(this, message, value);
         return message;
@@ -17298,7 +17259,7 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 2:
+                case /* optional bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* MiLaboratories.PL.Base.ResourceType resource_type */ 3:
@@ -17322,8 +17283,8 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* bytes resource_signature = 2; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* MiLaboratories.PL.Base.ResourceType resource_type = 3; */
         if (message.resourceType)
