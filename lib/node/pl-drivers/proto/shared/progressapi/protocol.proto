@@ -40,7 +40,7 @@ message ProgressAPI {
   message GetStatus {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 2;
+      optional bytes resource_signature = 2;
     }
 
     message Response {
@@ -51,7 +51,7 @@ message ProgressAPI {
   message RealtimeStatus {
     message Request {
       uint64 resource_id = 1;
-      bytes resource_signature = 3;
+      optional bytes resource_signature = 3;
       google.protobuf.Duration update_interval = 2;
     }
 

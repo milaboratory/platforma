@@ -32,9 +32,9 @@ export interface DownloadAPI_GetDownloadURL_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: bytes resource_signature = 3
+     * @generated from protobuf field: optional bytes resource_signature = 3
      */
-    resourceSignature: Uint8Array;
+    resourceSignature?: Uint8Array;
     /**
      * Pass `true` here if the blob will be downloaded from the internal network,
      * e.g. controllers could use this if they are trying to download something from the internal network.
@@ -151,14 +151,13 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
     constructor() {
         super("MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "is_internal_use", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<DownloadAPI_GetDownloadURL_Request>): DownloadAPI_GetDownloadURL_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
-        message.resourceSignature = new Uint8Array(0);
         message.isInternalUse = false;
         if (value !== undefined)
             reflectionMergePartial<DownloadAPI_GetDownloadURL_Request>(this, message, value);
@@ -172,7 +171,7 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes resource_signature */ 3:
+                case /* optional bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* bool is_internal_use */ 2:
@@ -196,8 +195,8 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
         /* bool is_internal_use = 2; */
         if (message.isInternalUse !== false)
             writer.tag(2, WireType.Varint).bool(message.isInternalUse);
-        /* bytes resource_signature = 3; */
-        if (message.resourceSignature.length)
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
