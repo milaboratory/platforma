@@ -115,7 +115,6 @@ test("check timeout error type (active)", async () => {
           type: { name: "TestValue", version: "1" },
           data: rData,
           errorIfExists: false,
-          colorProof: new Uint8Array(0),
         },
       },
       false,
@@ -126,11 +125,7 @@ test("check timeout error type (active)", async () => {
       const vr = await tx.send(
         {
           oneofKind: "resourceGet",
-          resourceGet: {
-            resourceId: id,
-            loadFields: false,
-            resourceSignature: new Uint8Array(0),
-          },
+          resourceGet: { resourceId: id, loadFields: false },
         },
         false,
       );
@@ -179,7 +174,6 @@ test("check is abort error (active)", async () => {
           type: { name: "TestValue", version: "1" },
           data: rData,
           errorIfExists: false,
-          colorProof: new Uint8Array(0),
         },
       },
       false,
@@ -190,11 +184,7 @@ test("check is abort error (active)", async () => {
       const vr = await tx.send(
         {
           oneofKind: "resourceGet",
-          resourceGet: {
-            resourceId: id,
-            loadFields: false,
-            resourceSignature: new Uint8Array(0),
-          },
+          resourceGet: { resourceId: id, loadFields: false },
         },
         false,
       );
