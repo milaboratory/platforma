@@ -246,7 +246,11 @@ class BlockInfo {
   }
 
   get productionHasErrors(): boolean {
-    return this.fields.prodUiCtx?.status === "Error";
+    return (
+      this.fields.prodUiCtx?.status === "Error" ||
+      this.fields.prodOutput?.status === "Error" ||
+      this.fields.prodCtx?.status === "Error"
+    );
   }
 
   private readonly productionStaleC: () => boolean = cached(
@@ -627,14 +631,15 @@ export class ProjectMutator {
 
   private resetStaging(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
-    if (
-      fields.stagingOutput?.status === "Ready" &&
-      fields.stagingCtx?.status === "Ready" &&
-      fields.stagingUiCtx?.status === "Ready"
-    ) {
-      this.setBlockFieldObj(blockId, "stagingOutputPrevious", fields.stagingOutput);
-      this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx);
-      this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx);
+    const outputDone =
+      fields.stagingOutput?.status === "Ready" || fields.stagingOutput?.status === "Error";
+    const ctxDone = fields.stagingCtx?.status === "Ready" || fields.stagingCtx?.status === "Error";
+    const uiCtxDone =
+      fields.stagingUiCtx?.status === "Ready" || fields.stagingUiCtx?.status === "Error";
+    if (outputDone && ctxDone && uiCtxDone) {
+      this.setBlockFieldObj(blockId, "stagingOutputPrevious", fields.stagingOutput!);
+      this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx!);
+      this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx!);
     }
     if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
@@ -642,14 +647,14 @@ export class ProjectMutator {
 
   private resetProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
-    if (
-      fields.prodOutput?.status === "Ready" &&
-      fields.prodCtx?.status === "Ready" &&
-      fields.prodUiCtx?.status === "Ready"
-    ) {
-      this.setBlockFieldObj(blockId, "prodOutputPrevious", fields.prodOutput);
-      this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx);
-      this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx);
+    const outputDone =
+      fields.prodOutput?.status === "Ready" || fields.prodOutput?.status === "Error";
+    const ctxDone = fields.prodCtx?.status === "Ready" || fields.prodCtx?.status === "Error";
+    const uiCtxDone = fields.prodUiCtx?.status === "Ready" || fields.prodUiCtx?.status === "Error";
+    if (outputDone && ctxDone && uiCtxDone) {
+      this.setBlockFieldObj(blockId, "prodOutputPrevious", fields.prodOutput!);
+      this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx!);
+      this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx!);
     }
     this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
   }
