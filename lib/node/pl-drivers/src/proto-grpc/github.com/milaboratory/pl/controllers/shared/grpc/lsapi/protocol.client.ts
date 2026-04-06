@@ -11,10 +11,10 @@ import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
  *
- * LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
- * This API allows clients to know, whan items are available in storages, that
- * the contorllers can access, providing clients with the ability to start indexation
- * on, say, existing sequence files from the corporate storage.
+ * LS provides access to lists of blobs (files, S3 objects and so on) in some storage.
+ * This API allows clients to know what items are available in storages that
+ * the controllers can access, providing clients with the ability to start indexing,
+ * say, existing sequence files from the corporate storage.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.LS
@@ -27,10 +27,10 @@ export interface ILSClient {
 }
 /**
  *
- * LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
- * This API allows clients to know, whan items are available in storages, that
- * the contorllers can access, providing clients with the ability to start indexation
- * on, say, existing sequence files from the corporate storage.
+ * LS provides access to lists of blobs (files, S3 objects and so on) in some storage.
+ * This API allows clients to know what items are available in storages that
+ * the controllers can access, providing clients with the ability to start indexing,
+ * say, existing sequence files from the corporate storage.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.LS
