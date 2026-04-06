@@ -43,7 +43,7 @@ export interface Resource {
     /**
      * @generated from protobuf field: bytes canonical_id = 17
      */
-    canonicalId: Uint8Array; // could be empty, it depends on resource lifecycle state
+    canonicalId: Uint8Array; // could be empty; it depends on the resource lifecycle state
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.Resource.Kind kind = 3
      */
@@ -148,10 +148,10 @@ export interface Field {
      */
     features?: Resource_Features;
     /**
-     * _resolved_ value of field or _assigned_ if the field was assigned to a resource.
-     * If field refers to another field, it will get
-     * value only when this chain of references ends up with direct resource
-     * reference. At that moment all fields in the chain will get their values
+     * _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
+     * If a field refers to another field, it will get
+     * a value only when this chain of references ends up with a direct resource
+     * reference. At that moment, all fields in the chain will get their values
      * resolved and will start to refer to the same resource directly.
      *
      * @generated from protobuf field: uint64 value = 5
@@ -165,7 +165,7 @@ export interface Field {
      */
     valueSignature: Uint8Array;
     /**
-     * If the value was empty, assigned or finally resolved.
+     * Whether the value is empty, assigned, or finally resolved.
      *
      * @generated from protobuf field: MiLaboratories.PL.API.Field.ValueStatus value_status = 7
      */
@@ -177,8 +177,8 @@ export interface Field {
      */
     valueIsFinal: boolean;
     /**
-     * Resource error resource id if any.
-     * Is intended to report problems _from_ platform to client.
+     * Error resource ID, if any.
+     * Is intended to report problems _from_ the platform to the client.
      *
      * @generated from protobuf field: uint64 error = 6
      */

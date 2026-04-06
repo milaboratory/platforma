@@ -11,7 +11,7 @@ import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
  *
- * Download provides access to any data, that can be downloaded via network.
+ * Download provides access to any data that can be downloaded over the network.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Download
@@ -24,7 +24,7 @@ export interface IDownloadClient {
 }
 /**
  *
- * Download provides access to any data, that can be downloaded via network.
+ * Download provides access to any data that can be downloaded over the network.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Download

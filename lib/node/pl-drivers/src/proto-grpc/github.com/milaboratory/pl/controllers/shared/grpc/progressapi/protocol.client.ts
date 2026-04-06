@@ -14,7 +14,7 @@ import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
  *
- * Progress provides access to progress of any long-running process associated with resource.
+ * Progress provides access to the progress of any long-running process associated with a resource.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Progress
@@ -31,7 +31,7 @@ export interface IProgressClient {
 }
 /**
  *
- * Progress provides access to progress of any long-running process associated with resource.
+ * Progress provides access to the progress of any long-running process associated with a resource.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Progress
