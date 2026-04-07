@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, textResult, withTimeout } from "./types";
+import { errorResult, textResult } from "./types";
 
 export function registerLogTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -21,11 +21,7 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ projectId, blockId, lines, sampleId }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state: any = await withTimeout(
-        project.getBlockState(blockId).getValue(),
-        15_000,
-        "getBlockState",
-      );
+      const state: any = await project.getBlockState(blockId).getValue();
       if (!state.outputs)
         return errorResult(
           "Block has no outputs yet.",

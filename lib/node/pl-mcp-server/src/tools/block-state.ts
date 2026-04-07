@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, safeEval, summarizeOutputs, textResult, withTimeout } from "./types";
+import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -64,11 +64,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state: any = await withTimeout(
-        project.getBlockState(blockId).getValue(),
-        15_000,
-        "getBlockState",
-      );
+      const state: any = await project.getBlockState(blockId).getValue();
       let data: unknown = undefined;
       if (state.blockStorage) {
         try {
