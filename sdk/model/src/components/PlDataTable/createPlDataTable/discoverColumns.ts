@@ -4,6 +4,8 @@ import type {
   PColumnSpecId,
   PlRef,
   PObjectId,
+  RequireServices,
+  Services,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { canonicalizeJson, getPColumnSpecId, isPlRef } from "@milaboratories/pl-model-common";
@@ -31,8 +33,8 @@ export type DiscoveredColumnOptions = {
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverColumns<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function discoverColumns<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   options: DiscoveredColumnOptions,
 ): DiscoveredColumn<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec

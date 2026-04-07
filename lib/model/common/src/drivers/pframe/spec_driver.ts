@@ -104,13 +104,16 @@ export interface DiscoverColumnsRequest {
 
 /** Linker step: traversal through a linker column */
 /** A step traversed during path-based column discovery. Discriminated by `type`. */
-export interface DiscoverColumnsStepInfo {
+export interface DiscoverColumnsLinkerStep {
   type: "linker";
   /** The linker column traversed in this step */
   linker: PColumnIdAndSpec;
   /** Axis qualifications produced when matching the linker's many-side axes */
   qualifications: AxisQualification[];
 }
+
+/** A step traversed during path-based column discovery. Discriminated by `type`. */
+export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep;
 
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {
