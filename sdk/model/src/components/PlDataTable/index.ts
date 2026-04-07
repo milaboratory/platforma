@@ -32,7 +32,7 @@ export {
 } from "./createPlDataTable/utils";
 
 export type {
-  ColumnsDisplayOptions as ColumnDisplayConfig,
+  ColumnsDisplayOptions,
   ColumnOrderRule,
   ColumnVisibilityRule,
   ColumnMatcher,
