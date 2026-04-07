@@ -582,10 +582,12 @@ builder := func() {
 		 * Sets a human-readable name for this command.
 		 * Shown in error messages when the command fails.
 		 *
-		 * @param n: string - the command name.
+		 * @param name: string - the command name.
 		 */
-		name: func(n) {
-			commandName = n
+		name: func(name) {
+			validation.assertType(name, "string", "exec.builder.name: name must be a string")
+
+			commandName = name
 			return self
 		},
 
@@ -985,7 +987,6 @@ builder := func() {
 				"incomplete command: cmd() or software() must be provided to exec.builder")
 
 			runOptions := {
-				name: commandName,
 				cmd: cmd,
 				args: args,
 				envs: envs,
@@ -1031,6 +1032,12 @@ builder := func() {
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
 				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
+			}
+
+			// We add name only when it is explicitly set
+			// to not break deduplication of exec's created before this feature existed.
+			if commandName != "" {
+				pureExecInputs.runOptions.name = commandName
 			}
 
 			// We add new argsTyped and envsTyped only when they were added

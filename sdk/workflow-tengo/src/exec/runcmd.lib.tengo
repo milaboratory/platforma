@@ -146,13 +146,13 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
-		 * @param commandName: string | { type: ArgType, value: string } - the name of the command.
+		 * @param cmd: string | { type: ArgType, value: string } - the name of the command.
 		 */
-		cmd: func(commandName) {
-			if ll.isMap(commandName) {
-				self.cmdTyped(commandName.type, commandName.value)
+		cmd: func(cmd) {
+			if ll.isMap(cmd) {
+				self.cmdTyped(cmd.type, cmd.value)
 			} else {
-				state.options.cmd = simpleArg(commandName)
+				state.options.cmd = simpleArg(cmd)
 			}
 			return returnSelfFn()
 		},
@@ -561,6 +561,8 @@ builder := func(workdir, ...initialState) {
 		 * @param name: string - the command name.
 		 */
 		name: func(name) {
+			validation.assertType(name, "string", "runcmd.builder.name: name must be a string")
+
 			commandName = name
 			return self
 		},
