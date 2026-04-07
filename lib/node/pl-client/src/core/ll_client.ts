@@ -25,7 +25,6 @@ import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
 import type * as grpcTypes from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { AuthAPI_GetJWTToken_Role } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import {
   type PlApiPaths,
   type PlRestClientType,
