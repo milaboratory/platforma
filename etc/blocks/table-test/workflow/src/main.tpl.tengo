@@ -27,20 +27,36 @@ wf.body(func(args) {
 		"Delta\tG2\t1\n" +
 		"Epsilon\tG1\t1\n"
 
+	// --- Second-hop linked data: columns on "region" axis ---
+	regionTsv := "region\tregionName\tpopulation\n" +
+		"R1\tNorth\t1000\n" +
+		"R2\tSouth\t2000\n"
+
+	// --- Second linker: maps "group" -> "region" ---
+	linker2Tsv := "group\tregion\tlink2\n" +
+		"G1\tR1\t1\n" +
+		"G2\tR2\t1\n"
+
 	e := exec.builder().
 		cpu(1).ram("50Mi").
 		cmd("env").
 		writeFile("main.tsv", mainTsv).
 		writeFile("group.tsv", groupTsv).
 		writeFile("linker.tsv", linkerTsv).
+		writeFile("region.tsv", regionTsv).
+		writeFile("linker2.tsv", linker2Tsv).
 		saveFile("main.tsv").
 		saveFile("group.tsv").
 		saveFile("linker.tsv").
+		saveFile("region.tsv").
+		saveFile("linker2.tsv").
 		run()
 
 	mainFile := e.getFile("main.tsv")
 	groupFile := e.getFile("group.tsv")
 	linkerFile := e.getFile("linker.tsv")
+	regionFile := e.getFile("region.tsv")
+	linker2File := e.getFile("linker2.tsv")
 
 	nameAxisSpec := {
 		name: "name",
@@ -55,6 +71,14 @@ wf.body(func(args) {
 		type: "String",
 		annotations: {
 			"pl7.app/label": "Group"
+		}
+	}
+
+	regionAxisSpec := {
+		name: "region",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Region"
 		}
 	}
 
@@ -162,10 +186,66 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
+	regionSpec := {
+		axes: [{
+			column: "region",
+			spec: regionAxisSpec
+		}],
+		columns: [{
+			column: "regionName",
+			id: "regionName",
+			spec: {
+				name: "regionName",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Region Name"
+				}
+			}
+		}, {
+			column: "population",
+			id: "population",
+			spec: {
+				name: "population",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/label": "Population"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	linker2Spec := {
+		axes: [{
+			column: "region",
+			spec: regionAxisSpec
+		}, {
+			column: "group",
+			spec: groupAxisSpec
+		}],
+		columns: [{
+			column: "link2",
+			id: "linker_group_region",
+			spec: {
+				name: "linker_group_region",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/linkLabel": "Group-Region Linker",
+					"pl7.app/isLinkerColumn": "true"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
 	importOps := { inputCache: times.second, splitDataAndSpec: true }
 	mainPf := xsv.importFile(mainFile, "tsv", mainSpec, importOps)
 	groupPf := xsv.importFile(groupFile, "tsv", groupSpec, importOps)
 	linkerPf := xsv.importFile(linkerFile, "tsv", linkerSpec, importOps)
+	regionPf := xsv.importFile(regionFile, "tsv", regionSpec, importOps)
+	linker2Pf := xsv.importFile(linker2File, "tsv", linker2Spec, importOps)
 
 	// Merge all into a single pframe
 	pf := pframes.pFrameBuilder()
@@ -176,6 +256,12 @@ wf.body(func(args) {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in linkerPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in regionPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in linker2Pf {
 		pf.add(k, v.spec, v.data)
 	}
 
