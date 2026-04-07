@@ -471,7 +471,13 @@ export class LLPlClient implements WireClientProviderFactory {
       const meta: Record<string, string> = {};
       if (options?.authorization) meta.authorization = options.authorization;
       return (
-        await cl.getJWTToken({ expiration: { seconds: ttlSeconds, nanos: 0 }, requestedRole: AuthAPI_GetJWTToken_Role.USER }, { meta }).response
+        await cl.getJWTToken(
+          {
+            expiration: { seconds: ttlSeconds, nanos: 0 },
+            requestedRole: AuthAPI_GetJWTToken_Role.USER,
+          },
+          { meta },
+        ).response
       ).token;
     } else {
       const headers: Record<string, string> = {};
