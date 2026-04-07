@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.9.7
+
+### Patch Changes
+
+- Updated dependencies [de415f7]
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-errors@1.2.6
+
 ## 1.9.6
 
 ### Patch Changes
