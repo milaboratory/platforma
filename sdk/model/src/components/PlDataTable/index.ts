@@ -28,6 +28,7 @@ export { createPlDataTableV3 } from "./createPlDataTable/createPlDataTableV3";
 export {
   isColumnHidden,
   isColumnOptional,
+  getOrderPriority,
   getEffectiveVisibility,
 } from "./createPlDataTable/utils";
 
