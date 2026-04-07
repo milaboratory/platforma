@@ -74,12 +74,6 @@ jobs:
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
-      - name: Rebuild from Turbo cache
-        env:
-          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ci:build
-
       - name: Login to ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
