@@ -21,7 +21,9 @@ create := func(workdir, req) {
 	validation.assertType(req, {
 		"queue": "string",
 		"cpu,?": "number",
-		"ram,?": ["or", "number", "string"]
+		"ram,?": ["or", "number", "string"],
+		"gpu,?": "number",
+		"gpuType,?": "string"
 	}, "request must be a valid request")
 
 	reqMap := { queue: req.queue }
@@ -30,6 +32,12 @@ create := func(workdir, req) {
 	}
 	if !is_undefined(req.ram) {
 		reqMap.ram = req.ram
+	}
+	if !is_undefined(req.gpu) && req.gpu > 0 {
+		reqMap.gpu = req.gpu
+		if !is_undefined(req.gpuType) && req.gpuType != "" {
+			reqMap.gpuType = req.gpuType
+		}
 	}
 
 	delayedComputeAllocation := render.createEphemeral(tpl, {
