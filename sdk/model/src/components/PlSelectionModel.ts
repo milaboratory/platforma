@@ -1,7 +1,7 @@
 import type { AxesSpec, PTableValueAxis } from "@milaboratories/pl-model-common";
 
 /** Key is a set of all axes values, which means it is unique across rows */
-export type PTableKey = PTableValueAxis[];
+export type PTableKey = (PTableValueAxis | null)[];
 
 /**
  * Information on selected rows.

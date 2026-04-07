@@ -5,6 +5,7 @@ import type {
   PlatformaV1,
   PlatformaV2,
   BlockCodeKnownFeatureFlags,
+  UiServices as AllUiServices,
 } from "@platforma-sdk/model";
 import {
   getPlatformaApiVersion,
@@ -166,15 +167,16 @@ export function defineAppV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
   Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
 >(
-  platforma: PlatformaV3<Data, Args, Outputs, Href, Plugins> & {
+  platforma: PlatformaV3<Data, Args, Outputs, Href, Plugins, UiServices> & {
     blockModelInfo: BlockModelInfo;
   },
-  extendApp: (app: BaseAppV3<Data, Args, Outputs, Href, Plugins>) => Extend,
+  extendApp: (app: BaseAppV3<Data, Args, Outputs, Href, Plugins, UiServices>) => Extend,
   settings: AppSettings = {},
-): SdkPluginV3<Data, Args, Outputs, Href, Plugins, Extend> {
-  let app: AppV3<Data, Args, Outputs, Href, Plugins, Extend> | undefined = undefined;
+): SdkPluginV3<Data, Args, Outputs, Href, Plugins, Extend, UiServices> {
+  let app: AppV3<Data, Args, Outputs, Href, Plugins, Extend, UiServices> | undefined = undefined;
 
   // Captured during install() so V3 can provide plugin data access after async load
   let vueAppInstance: VueApp | undefined;
@@ -191,11 +193,14 @@ export function defineAppV3<
     await platforma.loadBlockState().then((stateOrError) => {
       const state = unwrapResult(stateOrError);
       plugin.loaded = true;
-      const { app: baseApp, pluginAccess } = createAppV3<Data, Args, Outputs, Href, Plugins>(
-        state,
-        platforma,
-        settings,
-      );
+      const { app: baseApp, pluginAccess } = createAppV3<
+        Data,
+        Args,
+        Outputs,
+        Href,
+        Plugins,
+        UiServices
+      >(state, platforma, settings);
 
       if (!vueAppInstance) {
         throw new Error(
@@ -218,7 +223,7 @@ export function defineAppV3<
         getRoute(href: Href): Component | undefined {
           return routes[href];
         },
-      } as AppV3<Data, Args, Outputs, Href, Plugins, Extend>);
+      } as AppV3<Data, Args, Outputs, Href, Plugins, Extend, UiServices>);
     });
   };
 
@@ -234,7 +239,8 @@ export function defineAppV3<
         Outputs,
         PageHref,
         Plugins,
-        Extend
+        Extend,
+        UiServices
       >;
     },
     install(app: VueApp) {
@@ -247,7 +253,7 @@ export function defineAppV3<
     },
   });
 
-  return plugin as SdkPluginV3<Data, Args, Outputs, Href, Plugins, Extend>;
+  return plugin as SdkPluginV3<Data, Args, Outputs, Href, Plugins, Extend, UiServices>;
 }
 
 export type AppV1<
@@ -275,7 +281,8 @@ export type AppV3<
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = BaseAppV3<Data, Args, Outputs, Href, Plugins> &
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
+> = BaseAppV3<Data, Args, Outputs, Href, Plugins, UiServices> &
   Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
 
 // ---------------------------------------------------------------------------
@@ -319,12 +326,21 @@ export type SdkPluginV3<
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
   Local extends ExtendSettings<Href> = ExtendSettings<Href>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
 > = {
   apiVersion: 3;
   featureFlags: BlockCodeKnownFeatureFlags;
   loaded: boolean;
   error: unknown;
-  useApp<PageHref extends Href = Href>(): AppV3<Data, Args, Outputs, PageHref, Plugins, Local>;
+  useApp<PageHref extends Href = Href>(): AppV3<
+    Data,
+    Args,
+    Outputs,
+    PageHref,
+    Plugins,
+    Local,
+    UiServices
+  >;
   install(app: VueApp): void;
 };
 
