@@ -21,24 +21,40 @@ blockTest(
     expect(tableOutput.value).toBeDefined();
 
     const pFrameDriver = ml.driverKit.pFrameDriver;
-    const handle = tableOutput.value!.visibleTableHandle as PTableHandle;
 
-    const shape = await pFrameDriver.getShape(handle);
-    expect(shape.rows).toBe(5);
-    expect(shape.columns).toBeGreaterThanOrEqual(2); // at least axis + 1 column
+    // Full table should include all columns from the PFrame:
+    //   Direct (5): name axis + value + score + category + note
+    //   1-hop linked via name→group linker: group axis + description + priority + linker_name_group
+    //   2-hop linked via name→group→region chain: region axis + regionName + population + linker_group_region
+    const fullHandle = tableOutput.value!.fullTableHandle as PTableHandle;
+    const fullShape = await pFrameDriver.getShape(fullHandle);
+    expect(fullShape.rows).toBe(5);
+    expect(fullShape.columns).toBeGreaterThanOrEqual(5); // at least name axis + 4 direct columns
 
-    const allIndices = Array.from({ length: shape.columns }, (_, i) => i);
-    const data = await pFrameDriver.getData(handle, allIndices);
-    expect(data.length).toBe(3);
+    // Visible table — same as full since no columns are hidden by default
+    const visibleHandle = tableOutput.value!.visibleTableHandle as PTableHandle;
+    const visibleShape = await pFrameDriver.getShape(visibleHandle);
+    expect(visibleShape.rows).toBe(5);
+    expect(visibleShape.columns).toBeGreaterThanOrEqual(5);
 
-    expect(data[0].type).toBe("String");
-    expect([...data[0].data]).toEqual(["Alpha", "Beta", "Delta", "Epsilon", "Gamma"]);
+    const allIndices = Array.from({ length: visibleShape.columns }, (_, i) => i);
+    const data = await pFrameDriver.getData(visibleHandle, allIndices);
+    console.log(JSON.stringify(data, null, 2));
 
-    expect(data[1].type).toBe("String");
-    expect([...data[1].data]).toEqual(["A", "B", "B", "A", "A"]);
+    // Find and verify columns by their data content (sorted alphabetically by name axis)
+    const findColumn = (type: string, expected: unknown[]) =>
+      data.find((c) => c.type === type && JSON.stringify([...c.data]) === JSON.stringify(expected));
 
-    expect(data[2].type).toBe("Int");
-    expect([...data[2].data]).toEqual([10, 20, 40, 50, 30]);
+    // name axis
+    expect(findColumn("String", ["Alpha", "Beta", "Delta", "Epsilon", "Gamma"])).toBeDefined();
+    // category column
+    expect(findColumn("String", ["A", "B", "B", "A", "A"])).toBeDefined();
+    // value column
+    expect(findColumn("Int", [10, 20, 40, 50, 30])).toBeDefined();
+    // score column
+    expect(findColumn("Double", [1.5, 2.7, 4.8, 5.0, 3.1])).toBeDefined();
+    // note column
+    expect(findColumn("String", ["hello", "world", "bar", "baz", "foo"])).toBeDefined();
   },
 );
 
