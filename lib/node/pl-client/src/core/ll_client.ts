@@ -25,6 +25,7 @@ import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
 import type * as grpcTypes from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import { AuthAPI_GetJWTToken_Role } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import {
   type PlApiPaths,
   type PlRestClientType,
@@ -470,13 +471,19 @@ export class LLPlClient implements WireClientProviderFactory {
       const meta: Record<string, string> = {};
       if (options?.authorization) meta.authorization = options.authorization;
       return (
-        await cl.getJWTToken({ expiration: { seconds: ttlSeconds, nanos: 0 } }, { meta }).response
+        await cl.getJWTToken(
+          {
+            expiration: { seconds: ttlSeconds, nanos: 0 },
+            requestedRole: AuthAPI_GetJWTToken_Role.USER,
+          },
+          { meta },
+        ).response
       ).token;
     } else {
       const headers: Record<string, string> = {};
       if (options?.authorization) headers.authorization = options.authorization;
       const resp = cl.POST("/v1/auth/jwt-token", {
-        body: { expiration: `${ttlSeconds}s` },
+        body: { expiration: `${ttlSeconds}s`, requestedRole: AuthAPI_GetJWTToken_Role.USER },
         headers,
       });
       return notEmpty((await resp).data, "REST: empty response for JWT token request").token;

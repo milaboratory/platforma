@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
   title: Download API
-  description: Download provides access to any data, that can be downloaded via network.
+  description: Download provides access to any data that can be downloaded over the network.
   version: 0.0.1
 paths:
   /v1/get-download-url:
@@ -45,12 +45,16 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          description: Signature proving the caller is authorized to access this resource.
+          format: bytes
         isInternalUse:
           type: boolean
           description: |-
-            Pass `true` here if the blob will be downloaded from internal network,
-             e.g. controllers could use this if they are trying to download something from internal network.
-             For backward compatibility, by default pl treats all requests as from external network.
+            Pass `true` here if the blob will be downloaded from the internal network,
+             e.g. controllers could use this if they are trying to download something from the internal network.
+             For backward compatibility, by default pl treats all requests as from the external network.
     GetDownloadURL_Response:
       type: object
       properties:
