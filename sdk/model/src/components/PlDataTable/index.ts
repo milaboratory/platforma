@@ -24,8 +24,18 @@ export {
 export { createPlDataTableSheet } from "./createPlDataTableSheet";
 export { createPlDataTable } from "./createPlDataTable";
 export { createPlDataTableV2 } from "./createPlDataTable/createPlDataTableV2";
+export { createPlDataTableV3 } from "./createPlDataTable/createPlDataTableV3";
 export {
   isColumnHidden,
   isColumnOptional,
-  createPlDataTableV3,
+  getEffectiveVisibility,
+} from "./createPlDataTable/utils";
+
+export type {
+  ColumnsDisplayOptions as ColumnDisplayConfig,
+  ColumnOrderRule,
+  ColumnVisibilityRule,
+  ColumnMatcher,
+  ColumnsSelectorConfig,
+  createPlDataTableOptionsV3,
 } from "./createPlDataTable/createPlDataTableV3";

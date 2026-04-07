@@ -1,380 +1,405 @@
 import type {
   AxisId,
   CanonicalizedJson,
-  DataInfo,
+  DiscoverColumnsStepInfo,
   PColumn,
-  PColumnIdAndSpec,
-  PColumnValues,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
   PTableColumnIdColumn,
-  PTableDefV2,
   PTableSorting,
-  SpecQuery,
-  SingleAxisSelector,
-  SpecQueryExpression,
-  SpecQueryJoinEntry,
   PColumnSpec,
-  PlRef,
   MultiColumnSelector,
+  SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import {
-  Annotation,
   canonicalizeJson,
   getAxisId,
   getColumnIdAndSpec,
-  isLinkerColumn,
-  readAnnotation,
-  isBooleanExpression,
   parseJson,
   uniqueBy,
 } from "@milaboratories/pl-model-common";
-import { filterSpecToSpecQueryExpr } from "../../../filters";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
-import type { RenderCtxBase, TreeNodeAccessor, PColumnDataUniversal } from "../../../render";
-import { allPColumnsReady } from "../../../render";
-import { isFunction, isNil } from "es-toolkit";
+import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
-import { distillFilterSpec } from "../../../filters/distill";
 import type { PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnSource, MatchingMode } from "../../../columns";
+import type { ColumnSnapshot, MatchingMode } from "../../../columns";
 import { Services, type RequireServices } from "@milaboratories/pl-model-common";
-import { ColumnCollectionBuilder } from "../../../columns";
-import { isColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
-import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
+import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
+import {
+  deriveAllLabels,
+  isColumnHidden,
+  isColumnOptional,
+  withLabelAnnotations,
+  withTableVisualAnnotations,
+} from "./utils";
+import { createPTableDefV3 } from "./createPTableDefV3";
+import { discoverColumns, type DiscoveredColumnOptions } from "./discoverColumns";
+import { isNil, type Nil } from "@milaboratories/helpers";
 
-/** Convert a PTableColumnId to a SpecQueryExpression reference. */
-export function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
-  if (col.type === "axis") {
-    return { type: "axisRef", value: col.id as SingleAxisSelector };
-  }
-  return { type: "columnRef", value: col.id };
-}
+export type createPlDataTableOptionsV3 = DiscoveredColumnOptions & {
+  filters?: PlDataTableFilters;
+  sorting?: PTableSorting[];
+  coreJoinType?: "inner" | "full";
 
-/** Wrap a SpecQuery as a SpecQueryJoinEntry with empty qualifications. */
-export function joinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
-  return { entry: input, qualifications: [] };
-}
-
-export function createPTableDef(params: {
-  columns: PColumn<PColumnDataUniversal>[];
-  labelColumns: PColumn<PColumnDataUniversal>[];
-  coreJoinType: "inner" | "full";
-  filters: null | PlDataTableFilters;
-  sorting: PTableSorting[];
-  coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
-}): PTableDefV2<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> {
-  let coreColumns = params.columns;
-  const secondaryColumns: typeof params.columns = [];
-
-  if (isFunction(params.coreColumnPredicate)) {
-    coreColumns = [];
-    for (const c of params.columns)
-      if (params.coreColumnPredicate(getColumnIdAndSpec(c))) coreColumns.push(c);
-      else secondaryColumns.push(c);
-  }
-
-  secondaryColumns.push(...params.labelColumns);
-
-  // Build SpecQuery directly from columns
-  const coreJoinQuery: SpecQuery<
-    PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>
-  > = {
-    type: params.coreJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: coreColumns.map((c) => joinEntry({ type: "column", column: c })),
-  };
-
-  let query: SpecQuery<PColumn<TreeNodeAccessor | PColumnValues | DataInfo<TreeNodeAccessor>>> = {
-    type: "outerJoin",
-    primary: joinEntry(coreJoinQuery),
-    secondary: secondaryColumns.map((c) => joinEntry({ type: "column", column: c })),
-  };
-
-  // Apply filters
-  if (params.filters !== null) {
-    const nonEmpty = distillFilterSpec(params.filters);
-
-    if (!isNil(nonEmpty)) {
-      const pridicate = filterSpecToSpecQueryExpr(nonEmpty);
-      if (!isBooleanExpression(pridicate)) {
-        throw new Error(
-          `Filter conversion produced a non-boolean expression (got type "${pridicate.type}"), expected a boolean predicate for query filtering`,
-        );
-      }
-      query = {
-        type: "filter",
-        input: query,
-        predicate: pridicate,
-      };
-    }
-  }
-
-  // Apply sorting
-  if (params.sorting.length > 0) {
-    query = {
-      type: "sort",
-      input: query,
-      sortBy: params.sorting.map((s) => ({
-        expression: columnIdToExpr(s.column),
-        ascending: s.ascending,
-        nullsFirst: !s.naAndAbsentAreLeastValues,
-      })),
-    };
-  }
-
-  return { query };
-}
-
-/** Check if column should be omitted from the table */
-export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
-  return readAnnotation(spec, Annotation.Table.Visibility) === "hidden";
-}
-
-/** Check if column is hidden by default */
-export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
-  return readAnnotation(spec, Annotation.Table.Visibility) === "optional";
-}
+  tableState?: PlDataTableStateV2;
+  labelsOptions?: DeriveLabelsOptions;
+  columnsDisplayOptions?: ColumnsDisplayOptions;
+};
 
 /** Structured source config — selectors/anchors instead of raw ColumnSource. */
-type ColumnsSelectorConfig = {
+export type ColumnsSelectorConfig = {
   include?: MultiColumnSelector | MultiColumnSelector[];
   exclude?: MultiColumnSelector | MultiColumnSelector[];
-  anchors?: Record<string, PlRef | PObjectId | PColumnSpec>;
   mode?: MatchingMode;
   maxHops?: number;
 };
 
-export type createPlDataTableOptionsV3 = {
-  source?: ColumnSource | ColumnSource[];
-  columns: ColumnsSelectorConfig;
-
-  // Existing from V2
-  filters?: PlDataTableFilters;
-  sorting?: PTableSorting[];
-  coreJoinType?: "inner" | "full";
-  coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
-
-  state?: PlDataTableStateV2;
+export type ColumnsDisplayOptions = {
+  /** Column ordering rules. Higher priority = further left. First matching rule wins. */
+  ordering?: ColumnOrderRule[];
+  /** Column visibility rules. First matching rule wins. Unmatched columns use default visibility. */
+  visibility?: ColumnVisibilityRule[];
 };
 
-// interface ColumnDisplayConfig {
-//   /** Column ordering rules. Higher priority = further left. First matching rule wins. */
-//   ordering?: ColumnOrderRule[];
-//   /** Column visibility rules. First matching rule wins. Unmatched columns use default visibility. */
-//   visibility?: ColumnVisibilityRule[];
-// }
+export type ColumnOrderRule = {
+  match: ColumnMatcher;
+  /** Higher number = further left in table */
+  priority: number;
+};
 
-// interface ColumnOrderRule {
-//   match: ColumnMatcher;
-//   /** Higher number = further left in table */
-//   priority: number;
-// }
+export type ColumnVisibilityRule = {
+  match: ColumnMatcher;
+  visibility: "default" | "optional" | "hidden";
+};
 
-// interface ColumnVisibilityRule {
-//   match: ColumnMatcher;
-//   visibility: "default" | "optional" | "hidden";
-// }
+export type ColumnMatcher = (spec: PColumnSpec) => boolean;
 
-// type ColumnMatcher =
-//   | ((spec: PColumnSpec) => boolean)
-//   | { name: string | string[] }
-//   | { annotation: Record<string, string> }
-//   | { ids: Set<string> };
+// Main Function
 
 export function createPlDataTableV3<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
   ctx: RenderCtxBase<A, U, S>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
-  const providers = options.source
-    ? normalizeSourceList(options.source).filter(isColumnSnapshotProvider)
-    : collectCtxColumnSnapshotProviders(ctx);
+  const state = upgradePlDataTableStateV2(options.tableState);
+  const coreJoinType = options.coreJoinType ?? "full";
 
-  if (providers.length === 0) return undefined;
+  const discovered = discoverColumns(ctx, options);
+  if (discovered === undefined || discovered.length === 0) return undefined;
 
-  // Step 1: Build collection from sources
-  const builder = new ColumnCollectionBuilder(ctx.services.pframeSpec).addSources(providers);
-  const anchors = options.columns.anchors;
-  const collection = isNil(anchors) ? builder.build() : builder.build({ anchors });
+  const splited = splitDiscoveredColumns(discovered);
+  const resolved = resolveDiscoveredColumns(splited, discovered);
 
-  if (!collection) return undefined;
-  try {
-    // Step 2: Get data columns, excluding annotation-hidden ones
-    const findOptions = options.columns
-      ? {
-          include: options.columns.include,
-          exclude: options.columns.exclude,
-          mode: options.columns.mode,
-          maxHops: options.columns.maxHops,
-        }
-      : undefined;
-    const findResult = collection.findColumns(findOptions);
-    const snapshots = findResult.map((v) => ("column" in v ? v.column : v));
-    const dataSnapshots = snapshots.filter((s) => !isColumnHidden(s.spec));
-    if (dataSnapshots.length === 0) return undefined;
+  const labelColumns = getMatchingLabelColumns(
+    resolved.all.map(getColumnIdAndSpec),
+    getAllLabelColumns(ctx.resultPool) ?? [],
+  );
 
-    // Convert snapshots to PColumn<PColumnDataUniversal>[]
-    const columns: PColumn<PColumnDataUniversal>[] = [];
-    for (const snap of dataSnapshots) {
-      if (!snap.data) return undefined;
-      const data = snap.data.get();
-      if (data === undefined) return undefined;
-      columns.push({ id: snap.id, spec: snap.spec, data });
-    }
+  const derivedLabels = deriveAllLabels({
+    columns: discovered,
+    labelColumns,
+    deriveLabelsOptions: {
+      includeNativeLabel: true,
+      ...options.labelsOptions,
+    },
+  });
 
-    // Step 3: Normalize table state
-    const tableStateNormalized = upgradePlDataTableStateV2(options.state);
+  const annotated = annotateColumnGroups(
+    resolved,
+    labelColumns,
+    derivedLabels,
+    options.columnsDisplayOptions,
+  );
 
-    // Step 4: Get label columns from result pool and match to data columns
-    const allLabelColumns = getAllLabelColumns(ctx.resultPool);
-    if (!allLabelColumns) return undefined;
+  const columnIsAvailable = createColumnValidationById([
+    ...annotated.direct,
+    ...annotated.linked,
+    ...annotated.labels,
+    ...annotated.linkers,
+  ]);
 
-    const fullLabelColumns = getMatchingLabelColumns(
-      columns.map(getColumnIdAndSpec),
-      allLabelColumns,
+  const filters = mergeFilters(state.pTableParams.filters, options.filters);
+  validateFilters(filters, columnIsAvailable);
+
+  const sorting = resolveSorting(state.pTableParams.sorting, options.sorting);
+  validateSorting(sorting, columnIsAvailable);
+
+  const anchorColumnIds = new Set<PObjectId>(
+    discovered.filter((dc) => dc.isAnchor).map((dc) => dc.id),
+  );
+  const coreColumns = annotated.direct.filter((c) => anchorColumnIds.has(c.id));
+  const nonCoreDirectColumns = annotated.direct.filter((c) => !anchorColumnIds.has(c.id));
+
+  const fullDef = createPTableDefV3({
+    coreColumns,
+    secondaryColumns: [
+      ...nonCoreDirectColumns,
+      ...annotated.linked,
+      ...annotated.linkers,
+      ...annotated.labels,
+    ],
+    coreJoinType,
+    filters,
+    sorting,
+  });
+
+  const fullHandle = ctx.createPTableV2(fullDef);
+  const pframeHandle = ctx.createPFrame([
+    ...annotated.direct,
+    ...annotated.linked,
+    ...annotated.labels,
+    ...annotated.linkers,
+  ]);
+  if (!fullHandle || !pframeHandle) return undefined;
+
+  const hidden = computeHiddenColumns(
+    state.pTableParams.hiddenColIds,
+    [...annotated.direct, ...annotated.linked],
+    sorting,
+    filters,
+  );
+
+  const visible = buildVisibleColumns(annotated, hidden, labelColumns);
+  const visibleNonCoreDirect = nonCoreDirectColumns.filter((c) => !hidden.has(c.id));
+
+  const visibleDef = createPTableDefV3({
+    coreColumns,
+    secondaryColumns: [
+      ...visibleNonCoreDirect,
+      ...visible.linked,
+      ...annotated.linkers,
+      ...visible.labels,
+    ],
+    coreJoinType,
+    filters,
+    sorting,
+  });
+  const visibleHandle = ctx.createPTableV2(visibleDef);
+  if (!visibleHandle) return undefined;
+
+  return {
+    sourceId: state.pTableParams.sourceId,
+    fullTableHandle: fullHandle,
+    fullPframeHandle: pframeHandle,
+    visibleTableHandle: visibleHandle,
+  } satisfies PlDataTableModel;
+}
+
+// Helpers
+
+/** A linker step with its resolved column data. */
+export type ResolvedLinkerStep = {
+  readonly info: DiscoverColumnsStepInfo;
+  readonly column: ColumnSnapshot<PObjectId>;
+};
+
+/** A single column discovered from sources — normalized from raw ColumnSnapshot/ColumnMatch. */
+export type DiscoveredColumn<Id extends PObjectId | SUniversalPColumnId> = ColumnSnapshot<Id> & {
+  readonly isAnchor: boolean;
+  readonly linkerPath: ResolvedLinkerStep[];
+};
+
+type TableColumn = PColumn<undefined | PColumnDataUniversal>;
+
+type SplitDiscoveredColumns = {
+  readonly direct: DiscoveredColumn<SUniversalPColumnId>[];
+  readonly linked: DiscoveredColumn<SUniversalPColumnId>[];
+};
+
+type ResolvedColumns = {
+  readonly all: TableColumn[];
+  readonly direct: TableColumn[];
+  readonly linked: TableColumn[];
+  readonly linkers: TableColumn[];
+};
+
+type AnnotatedColumnGroups = {
+  readonly direct: TableColumn[];
+  readonly linked: TableColumn[];
+  readonly labels: TableColumn[];
+  readonly linkers: TableColumn[];
+};
+
+type VisibleColumns = {
+  readonly all: TableColumn[];
+  readonly direct: TableColumn[];
+  readonly linked: TableColumn[];
+  readonly labels: PColumn<PColumnDataUniversal>[];
+};
+
+/** Split discovered columns into direct (no linker path) and linked (with linker path). */
+function splitDiscoveredColumns(
+  columns: DiscoveredColumn<SUniversalPColumnId>[],
+): SplitDiscoveredColumns {
+  return {
+    direct: columns.filter((dc) => dc.linkerPath.length === 0),
+    linked: columns.filter((dc) => dc.linkerPath.length > 0),
+  };
+}
+
+/** Resolve DiscoveredColumn snapshots into PColumn objects with lazily-evaluated data. */
+function resolveDiscoveredColumns(
+  split: SplitDiscoveredColumns,
+  allDiscovered: DiscoveredColumn<SUniversalPColumnId>[],
+): ResolvedColumns {
+  const linkers = uniqueBy(
+    allDiscovered.flatMap((dc) => dc.linkerPath.map((s) => s.column)),
+    (c) => c.id,
+  ).map(resolveSnapshot);
+
+  return {
+    all: allDiscovered.map(resolveSnapshot),
+    direct: split.direct.map(resolveSnapshot),
+    linked: split.linked.map(resolveSnapshot),
+    linkers,
+  };
+}
+
+/** Annotate all column groups with derived labels and display options. */
+function annotateColumnGroups(
+  resolved: ResolvedColumns,
+  labelColumns: PColumn<PColumnDataUniversal>[],
+  derivedLabels: Record<string, string>,
+  displayOptions: ColumnsDisplayOptions | undefined,
+): AnnotatedColumnGroups {
+  const direct = withTableVisualAnnotations(
+    displayOptions,
+    withLabelAnnotations(derivedLabels, resolved.direct),
+  );
+  const linked = withTableVisualAnnotations(
+    displayOptions,
+    withLabelAnnotations(derivedLabels, resolved.linked),
+  );
+  const labels = withLabelAnnotations(derivedLabels, labelColumns);
+  const linkers = withLabelAnnotations(derivedLabels, resolved.linkers);
+
+  return {
+    direct,
+    linked,
+    labels,
+    linkers,
+  };
+}
+
+/** Build an index of all valid column IDs (axes + columns) for filter/sorting validation. */
+function createColumnValidationById(fullColumns: TableColumn[]) {
+  const axisIds = uniqueBy(
+    fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a))),
+    (a) => canonicalizeJson<AxisId>(a),
+  );
+
+  const allIds: PTableColumnId[] = [
+    ...axisIds.map((a) => ({ type: "axis", id: a }) satisfies PTableColumnIdAxis),
+    ...fullColumns.map((c) => ({ type: "column", id: c.id }) satisfies PTableColumnIdColumn),
+  ];
+
+  const validIdSet = new Set(allIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
+
+  return (id: string): boolean => validIdSet.has(id as CanonicalizedJson<PTableColumnId>);
+}
+
+/** Merge filters from table state and options into a single filter spec. */
+function mergeFilters(
+  stateFilters: PlDataTableFilters | null,
+  optionsFilters: PlDataTableFilters | null | undefined,
+): Nil | PlDataTableFilters {
+  const normalized = optionsFilters ?? null;
+  return stateFilters !== null && normalized !== null
+    ? { type: "and", filters: [stateFilters, normalized] }
+    : (stateFilters ?? normalized);
+}
+
+/** Validate that all column references in filters exist in the table. */
+function validateFilters(
+  filters: Nil | PlDataTableFilters,
+  isValidColumnId: (id: string) => boolean,
+): void {
+  if (filters == null) return;
+  const filterColumns = collectFilterSpecColumns(filters);
+  const firstInvalid = filterColumns.find((col) => !isValidColumnId(col));
+  if (firstInvalid !== undefined) {
+    throw new Error(
+      `Invalid filter column ${firstInvalid}: column reference does not match the table columns`,
     );
-
-    const fullColumns = [...columns, ...fullLabelColumns];
-
-    // Step 5: Build column ID set for filter/sorting validation
-    const fullColumnsAxes = uniqueBy(
-      fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a))),
-      (a) => canonicalizeJson<AxisId>(a),
-    );
-    const fullColumnsIds: PTableColumnId[] = [
-      ...fullColumnsAxes.map((a) => ({ type: "axis", id: a }) satisfies PTableColumnIdAxis),
-      ...fullColumns.map((c) => ({ type: "column", id: c.id }) satisfies PTableColumnIdColumn),
-    ];
-    const fullColumnsIdsSet = new Set(
-      fullColumnsIds.map((c) => canonicalizeJson<PTableColumnId>(c)),
-    );
-    const isValidColumnId = (id: string): boolean =>
-      fullColumnsIdsSet.has(id as CanonicalizedJson<PTableColumnId>);
-
-    // Step 6: Filtering validation
-    const stateFilters = tableStateNormalized.pTableParams.filters;
-    const opsFilters = options?.filters ?? null;
-    const filters: null | PlDataTableFilters =
-      stateFilters != null && opsFilters != null
-        ? { type: "and", filters: [stateFilters, opsFilters] }
-        : (stateFilters ?? opsFilters);
-    const filterColumns = filters ? collectFilterSpecColumns(filters) : [];
-    const firstInvalidFilterColumn = filterColumns.find((col) => !isValidColumnId(col));
-    if (firstInvalidFilterColumn)
-      throw new Error(
-        `Invalid filter column ${firstInvalidFilterColumn}: column reference does not match the table columns`,
-      );
-
-    // Step 7: Sorting validation
-    const userSorting = tableStateNormalized.pTableParams.sorting;
-    const sorting = (isEmpty(userSorting) ? options?.sorting : userSorting) ?? [];
-    const firstInvalidSortingColumn = sorting.find(
-      (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
-    );
-    if (firstInvalidSortingColumn)
-      throw new Error(
-        `Invalid sorting column ${JSON.stringify(firstInvalidSortingColumn.column)}: column reference does not match the table columns`,
-      );
-
-    // Step 8: Build full table definition and handles
-    const coreJoinType = options?.coreJoinType ?? "full";
-    const fullDef = createPTableDef({
-      columns,
-      labelColumns: fullLabelColumns,
-      coreJoinType,
-      filters,
-      sorting,
-      coreColumnPredicate: options?.coreColumnPredicate,
-    });
-
-    const fullHandle = ctx.createPTableV2(fullDef);
-    const pframeHandle = ctx.createPFrame(fullColumns);
-    if (!fullHandle || !pframeHandle) return undefined;
-
-    // Step 9: Determine hidden columns
-    const hiddenColumns = new Set<PObjectId>(
-      ((): PObjectId[] => {
-        // Inner join works as a filter — all columns must be present
-        if (coreJoinType === "inner") return [];
-
-        const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-        if (hiddenColIds) return hiddenColIds;
-
-        return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
-      })(),
-    );
-
-    // Preserve linker columns
-    columns.filter((c) => isLinkerColumn(c.spec)).forEach((c) => hiddenColumns.delete(c.id));
-
-    // Preserve core columns as they change the shape of join
-    const coreColumnPredicate = options?.coreColumnPredicate;
-    if (coreColumnPredicate) {
-      const coreColumns = columns.flatMap((c) =>
-        coreColumnPredicate(getColumnIdAndSpec(c)) ? [c.id] : [],
-      );
-      coreColumns.forEach((c) => hiddenColumns.delete(c));
-    }
-
-    // Preserve sorted columns from being hidden
-    sorting
-      .map((s) => s.column)
-      .filter((c): c is PTableColumnIdColumn => c.type === "column")
-      .forEach((c) => hiddenColumns.delete(c.id));
-
-    // Preserve filter columns from being hidden
-    if (filters) {
-      collectFilterSpecColumns(filters)
-        .flatMap((c) => {
-          const obj = parseJson(c);
-          return obj.type === "column" ? [obj.id] : [];
-        })
-        .forEach((c) => hiddenColumns.delete(c));
-    }
-
-    // Step 10: Build visible table definition
-    const visibleColumns = columns.filter((c) => !hiddenColumns.has(c.id));
-    const visibleLabelColumns = getMatchingLabelColumns(
-      visibleColumns.map(getColumnIdAndSpec),
-      allLabelColumns,
-    );
-
-    if (!allPColumnsReady([...visibleColumns, ...visibleLabelColumns])) return undefined;
-
-    const visibleDef = createPTableDef({
-      columns: visibleColumns,
-      labelColumns: visibleLabelColumns,
-      coreJoinType,
-      filters,
-      sorting,
-      coreColumnPredicate,
-    });
-    const visibleHandle = ctx.createPTableV2(visibleDef);
-
-    if (!visibleHandle) return undefined;
-
-    return {
-      sourceId: tableStateNormalized.pTableParams.sourceId,
-      fullTableHandle: fullHandle,
-      fullPframeHandle: pframeHandle,
-      visibleTableHandle: visibleHandle,
-    } satisfies PlDataTableModel;
-  } finally {
-    collection.dispose();
   }
 }
 
-/** Normalize raw ColumnSource | ColumnSource[] into a flat list of sources. */
-function normalizeSourceList(source: ColumnSource | ColumnSource[]): ColumnSource[] {
-  if (
-    Array.isArray(source) &&
-    source.length > 0 &&
-    (Array.isArray(source[0]) || isColumnSnapshotProvider(source[0]))
-  ) {
-    return source as ColumnSource[];
+/** Pick user sorting from state if non-empty, otherwise fall back to options default. */
+function resolveSorting(
+  userSorting: PTableSorting[],
+  defaultSorting: Nil | PTableSorting[],
+): PTableSorting[] {
+  return (isEmpty(userSorting) ? defaultSorting : userSorting) ?? [];
+}
+
+/** Validate that all column references in sorting exist in the table. */
+function validateSorting(sorting: PTableSorting[], isValidColumnId: (id: string) => boolean): void {
+  const firstInvalid = sorting.find(
+    (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
+  );
+  if (firstInvalid !== undefined) {
+    throw new Error(
+      `Invalid sorting column ${JSON.stringify(firstInvalid.column)}: column reference does not match the table columns`,
+    );
   }
-  return [source as ColumnSource];
+}
+
+/** Determine which columns should be hidden based on state or optional-column defaults. */
+function computeHiddenColumns(
+  hiddenColIds: PObjectId[] | null,
+  dataColumns: TableColumn[],
+  sorting: Nil | PTableSorting[],
+  filters: Nil | PlDataTableFilters,
+): Set<PObjectId> {
+  const alwaysHidden = dataColumns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
+  const optionalHidden =
+    hiddenColIds ??
+    // UI will hide all optional columns by default
+    dataColumns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
+  const initial = [...alwaysHidden, ...optionalHidden];
+  const preserved = collectPreservedColumnIds(sorting, filters);
+  return new Set(initial.filter((id) => !preserved.has(id)));
+}
+
+/** Collect IDs of columns that must remain visible (sorted, filtered). */
+function collectPreservedColumnIds(
+  sorting: Nil | PTableSorting[],
+  filters: Nil | PlDataTableFilters,
+): Set<PObjectId> {
+  const sortedIds = (sorting ?? [])
+    .map((s) => s.column)
+    .filter((c): c is PTableColumnIdColumn => c.type === "column")
+    .map((c) => c.id);
+
+  const filterIds = !isNil(filters)
+    ? collectFilterSpecColumns(filters).flatMap((c) => {
+        const obj = parseJson(c);
+        return obj.type === "column" ? [obj.id] : [];
+      })
+    : [];
+
+  return new Set<PObjectId>([...sortedIds, ...filterIds]);
+}
+
+/** Filter annotated columns to only visible ones, re-matching label columns for the visible subset. */
+function buildVisibleColumns(
+  annotated: AnnotatedColumnGroups,
+  hiddenColumns: Set<PObjectId>,
+  originalLabelColumns: PColumn<PColumnDataUniversal>[],
+): VisibleColumns {
+  const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.id));
+  const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.id));
+  const all = [...direct, ...linked];
+  const labels = getMatchingLabelColumns(all.map(getColumnIdAndSpec), originalLabelColumns);
+  return { direct, linked, all, labels };
+}
+
+/** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */
+function resolveSnapshot(
+  snap: ColumnSnapshot<PObjectId>,
+): PColumn<undefined | PColumnDataUniversal> {
+  return { id: snap.id, spec: snap.spec, data: snap.data?.get() };
 }

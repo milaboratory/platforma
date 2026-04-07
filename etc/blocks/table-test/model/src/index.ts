@@ -28,17 +28,64 @@ export const platforma = BlockModelV3.create(blockDataModel)
       {
         type: "link",
         href: "/",
-        label: "Main",
+        label: "Table V3",
+      },
+      {
+        type: "link",
+        href: "/v2",
+        label: "Table V2",
       },
     ];
   })
 
   .title((ctx) => ctx.args?.label || "Table Test")
 
-  .outputWithStatus("table", (ctx) => {
+  .outputWithStatus("tableV3", (ctx) => {
     return createPlDataTable(ctx, {
-      columns: {}, // equal to all columns
-      state: ctx.data.tableState,
+      tableState: ctx.data.tableState,
+
+      anchors: {
+        main: {
+          kind: "PColumn",
+          name: "value",
+          valueType: "Int",
+          axesSpec: [{ type: "String", name: "name" }],
+        },
+      },
+      columnsSelector: {
+        mode: "related",
+        maxHops: 4,
+      },
+      labelsOptions: {
+        // Custom linker label formatter to verify linker path labels in the UI.
+        // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
+        linkerLabelFormatter: (linkerLabels) => `[${linkerLabels.join(" > ")}]`,
+      },
+      columnsDisplayOptions: {
+        ordering: [
+          // "category" leftmost (highest priority)
+          { match: (spec) => spec.name === "category", priority: 20 },
+          // Then "value"
+          { match: (spec) => spec.name === "value", priority: 10 },
+          // Unmatched columns (score, note) get default priority 0
+        ],
+        visibility: [
+          // "note" hidden by default (user can re-enable in UI)
+          { match: (spec) => spec.name === "note", visibility: "hidden" },
+          // "score" optional — hidden by default but toggleable
+          { match: (spec) => spec.name === "score", visibility: "optional" },
+        ],
+      },
+    });
+  })
+
+  .outputWithStatus("tableV2", (ctx) => {
+    const columns = ctx.outputs?.resolve("tableFrame")?.getPColumns();
+    if (!columns) return undefined;
+    return createPlDataTable(ctx, {
+      version: "v2",
+      columns,
+      tableState: ctx.data.tableState,
     });
   })
 

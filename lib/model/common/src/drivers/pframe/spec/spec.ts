@@ -145,6 +145,7 @@ export const Annotation = {
   IsScore: "pl7.app/isScore",
   IsSubset: "pl7.app/isSubset",
   Label: "pl7.app/label",
+  LinkLabel: "pl7.app/linkLabel",
   Max: "pl7.app/max",
   Min: "pl7.app/min",
   MultipliesBy: "pl7.app/multipliesBy",

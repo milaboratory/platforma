@@ -6,32 +6,62 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 
 wf.body(func(args) {
-	tsvContent := "name\tvalue\tcategory\n" +
-		"Alpha\t10\tA\n" +
-		"Beta\t20\tB\n" +
-		"Gamma\t30\tA\n" +
-		"Delta\t40\tB\n" +
-		"Epsilon\t50\tA\n"
+	// --- Main data: columns on "name" axis ---
+	mainTsv := "name\tvalue\tscore\tcategory\tnote\n" +
+		"Alpha\t10\t1.5\tA\thello\n" +
+		"Beta\t20\t2.7\tB\tworld\n" +
+		"Gamma\t30\t3.1\tA\tfoo\n" +
+		"Delta\t40\t4.8\tB\tbar\n" +
+		"Epsilon\t50\t5.0\tA\tbaz\n"
+
+	// --- Linked data: columns on "group" axis ---
+	groupTsv := "group\tdescription\tpriority\n" +
+		"G1\tFirst group\t1\n" +
+		"G2\tSecond group\t2\n"
+
+	// --- Linker: maps "name" -> "group" ---
+	linkerTsv := "name\tgroup\tlink\n" +
+		"Alpha\tG1\t1\n" +
+		"Beta\tG1\t1\n" +
+		"Gamma\tG2\t1\n" +
+		"Delta\tG2\t1\n" +
+		"Epsilon\tG1\t1\n"
 
 	e := exec.builder().
 		cpu(1).ram("50Mi").
 		cmd("env").
-		writeFile("data.tsv", tsvContent).
-		saveFile("data.tsv").
+		writeFile("main.tsv", mainTsv).
+		writeFile("group.tsv", groupTsv).
+		writeFile("linker.tsv", linkerTsv).
+		saveFile("main.tsv").
+		saveFile("group.tsv").
+		saveFile("linker.tsv").
 		run()
 
-	tsvFile := e.getFile("data.tsv")
+	mainFile := e.getFile("main.tsv")
+	groupFile := e.getFile("group.tsv")
+	linkerFile := e.getFile("linker.tsv")
 
-	spec := {
+	nameAxisSpec := {
+		name: "name",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Name"
+		}
+	}
+
+	groupAxisSpec := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group"
+		}
+	}
+
+	mainSpec := {
 		axes: [{
 			column: "name",
-			spec: {
-				name: "name",
-				type: "String",
-				annotations: {
-					"pl7.app/label": "Name"
-				}
-			}
+			spec: nameAxisSpec
 		}],
 		columns: [{
 			column: "value",
@@ -44,6 +74,16 @@ wf.body(func(args) {
 				}
 			}
 		}, {
+			column: "score",
+			id: "score",
+			spec: {
+				name: "score",
+				valueType: "Double",
+				annotations: {
+					"pl7.app/label": "Score"
+				}
+			}
+		}, {
 			column: "category",
 			id: "category",
 			spec: {
@@ -53,16 +93,95 @@ wf.body(func(args) {
 					"pl7.app/label": "Category"
 				}
 			}
+		}, {
+			column: "note",
+			id: "note",
+			spec: {
+				name: "note",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Note"
+				}
+			}
 		}],
 		storageFormat: "Binary",
 		partitionKeyLength: 0
 	}
 
-	pf := xsv.importFile(tsvFile, "tsv", spec, { inputCache: times.second })
+	groupSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}],
+		columns: [{
+			column: "description",
+			id: "description",
+			spec: {
+				name: "description",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Description"
+				}
+			}
+		}, {
+			column: "priority",
+			id: "priority",
+			spec: {
+				name: "priority",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/label": "Priority"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	linkerSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}, {
+			column: "name",
+			spec: nameAxisSpec
+		}],
+		columns: [{
+			column: "link",
+			id: "linker_name_group",
+			spec: {
+				name: "linker_name_group",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/linkLabel": "Name-Group Linker",
+					"pl7.app/isLinkerColumn": "true"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	importOps := { inputCache: times.second, splitDataAndSpec: true }
+	mainPf := xsv.importFile(mainFile, "tsv", mainSpec, importOps)
+	groupPf := xsv.importFile(groupFile, "tsv", groupSpec, importOps)
+	linkerPf := xsv.importFile(linkerFile, "tsv", linkerSpec, importOps)
+
+	// Merge all into a single pframe
+	pf := pframes.pFrameBuilder()
+	for k, v in mainPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in groupPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in linkerPf {
+		pf.add(k, v.spec, v.data)
+	}
 
 	return {
 		outputs: {
-			tableFrame: pframes.exportFrame(pf)
+			tableFrame: pframes.exportFrame(pf.build())
 		},
 		exports: {}
 	}

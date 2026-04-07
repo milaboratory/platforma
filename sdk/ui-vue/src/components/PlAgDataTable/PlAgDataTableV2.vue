@@ -234,10 +234,11 @@ function normalizeColumnVisibility(
 function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
   const cols = api.getAllGridColumns();
   if (!cols) return [];
+
   return cols
     .filter((col) => {
       const spec = col.getColDef().context as PTableColumnSpec | undefined;
-      return spec && isColumnOptional(spec.spec);
+      return spec !== undefined && spec.type === "column" && isColumnOptional(spec.spec);
     })
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }

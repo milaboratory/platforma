@@ -6,11 +6,10 @@ import type {
   MultiColumnSelector,
   NativePObjectId,
   PColumnSpec,
-  PlRef,
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { AnchoredIdDeriver, deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
+import { AnchoredIdDeriver, deriveNativeId } from "@milaboratories/pl-model-common";
 import type { ColumnSelectorInput } from "./column_selector";
 import { normalizeSelectors } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
@@ -20,6 +19,7 @@ import type { ColumnSnapshotProvider, ColumnSource } from "./column_snapshot_pro
 import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot_provider";
 
 import type { PFrameSpecDriver, PoolEntry, SpecFrameHandle } from "@milaboratories/pl-model-common";
+import { throwError } from "@milaboratories/helpers";
 
 // --- FindColumnsOptions ---
 
@@ -54,6 +54,9 @@ export interface AnchoredColumnCollection extends Disposable {
   dispose(): void;
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
+
+  /** Point lookup by provider-native (original) ID. */
+  getColumnByOriginalId(id: PObjectId): undefined | ColumnSnapshot<PObjectId>;
 
   /** Axis-aware column discovery. */
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[];
@@ -104,8 +107,11 @@ export interface BuildOptions {
   allowPartialColumnList?: true;
 }
 
+export type NecessaryColumnSpec = Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">;
+export type AnchorRef = PObjectId | PColumnSpec;
+
 export interface AnchoredBuildOptions extends BuildOptions {
-  anchors: Record<string, PlRef | PObjectId | PColumnSpec>;
+  anchors: Record<string, AnchorRef>;
 }
 
 // --- ColumnCollectionBuilder ---
@@ -288,7 +294,7 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
 
 interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOptions {
   readonly idDeriver: AnchoredIdDeriver;
-  readonly anchorSpecs: Record<string, PColumnSpec>;
+  readonly anchorSpecs: Record<string, NecessaryColumnSpec>;
 }
 
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposable {
@@ -296,7 +302,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
   private readonly idDeriver: AnchoredIdDeriver;
   private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
   private readonly anchorAxes: ColumnAxesWithQualifications[];
-  /** Reverse lookup: SUniversalPColumnId → PObjectId */
   private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
   public readonly columnListComplete: boolean;
 
@@ -343,6 +348,12 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     return this.toSnapshot(id, col);
   }
 
+  getColumnByOriginalId(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
+    const col = this.columns.get(id);
+    if (col === undefined) return undefined;
+    return remapSnapshot(col.id, col);
+  }
+
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[] {
     const mode = options?.mode ?? "enrichment";
     const constraints = matchingModeToConstraints(mode);
@@ -353,30 +364,27 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       includeColumns,
       excludeColumns,
       constraints,
-      axes: this.anchorAxes,
       maxHops: options?.maxHops ?? 4,
+      axes: this.anchorAxes,
     });
 
-    // Map hits back to ColumnMatch entries
-    const results = response.hits
-      .map((hit) => {
-        const origId = hit.hit.columnId as PObjectId;
-        const col = this.columns.get(origId);
-        if (!col) return undefined;
-        const universalId = this.idDeriver.deriveS(col.spec);
-        return {
-          column: this.toSnapshot(universalId, col),
-          originalId: origId,
-          variants: hit.mappingVariants.map(
-            (v): MatchVariant => ({
-              qualifications: v.qualifications,
-              distinctiveQualifications: v.distinctiveQualifications,
-            }),
-          ),
-          path: hit.path,
-        } satisfies ColumnMatch;
-      })
-      .filter((m): m is ColumnMatch => m !== undefined);
+    // Map every WASM discovery hit to a ColumnMatch.
+    // The same physical column may appear multiple times when reachable through
+    // different linker paths — each hit becomes a separate ColumnMatch so that
+    // the caller can expand them into distinct table columns.
+    const results: ColumnMatch[] = [];
+    for (const hit of response.hits) {
+      const origId = hit.hit.columnId as PObjectId;
+      const col =
+        this.columns.get(origId) ?? throwError(`Column with id ${origId} not found in collection`);
+      const universalId = this.idDeriver.deriveS(col.spec);
+      results.push({
+        path: hit.path,
+        column: this.toSnapshot(universalId, col),
+        variants: hit.mappingVariants,
+        originalId: origId,
+      });
+    }
 
     return results;
   }
@@ -410,26 +418,18 @@ function toMultiColumnSelectors(input: ColumnSelectorInput): MultiColumnSelector
  * Resolve each anchor value to a PColumnSpec.
  * - PColumnSpec: used directly
  * - PObjectId (string): looked up in the collected column map
- * - PlRef: not supported at this level — caller must resolve before building
  */
 function resolveAnchorSpecs(
-  anchors: Record<string, PlRef | PObjectId | PColumnSpec>,
+  anchors: Record<string, AnchorRef>,
   columnMap: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-): Record<string, PColumnSpec> {
-  const result: Record<string, PColumnSpec> = {};
+): Record<string, NecessaryColumnSpec> {
+  const result: Record<string, NecessaryColumnSpec> = {};
   for (const [key, anchor] of Object.entries(anchors)) {
     if (typeof anchor === "string") {
-      // PObjectId — look up in collected columns
-      const col = columnMap.get(anchor as PObjectId);
-      if (!col) throw new Error(`Anchor "${key}": column with id "${anchor}" not found in sources`);
-      result[key] = col.spec;
-    } else if (isPlRef(anchor)) {
-      throw new Error(
-        `Anchor "${key}": PlRef anchors must be resolved to PColumnSpec before building. ` +
-          `Use the column's spec directly or pass its PObjectId.`,
-      );
+      result[key] =
+        columnMap.get(anchor as PObjectId)?.spec ??
+        throwError(`Anchor "${key}": column with id "${anchor}" not found in sources`);
     } else {
-      // PColumnSpec
       result[key] = anchor;
     }
   }

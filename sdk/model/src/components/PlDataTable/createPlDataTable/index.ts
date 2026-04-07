@@ -26,3 +26,5 @@ export function createPlDataTable<A, U, S extends RequireServices<typeof Service
     return createPlDataTableV3(ctx, options);
   }
 }
+
+export { discoverColumns } from "./discoverColumns";

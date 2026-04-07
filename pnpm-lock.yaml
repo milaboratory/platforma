@@ -22,11 +22,19 @@ catalogs:
       specifier: ~1.13.4
       version: 1.13.4
     '@milaboratories/pframes-rs-node':
+<<<<<<< HEAD
       specifier: 1.1.17
       version: 1.1.17
     '@milaboratories/pframes-rs-wasm':
       specifier: 1.1.17
       version: 1.1.17
+=======
+      specifier: 1.1.16
+      version: 1.1.16
+    '@milaboratories/pframes-rs-wasm':
+      specifier: 1.1.16
+      version: 1.1.16
+>>>>>>> e4db60cdf (createPlDataTableV3)
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -1746,7 +1754,11 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
+<<<<<<< HEAD
         version: 1.1.17(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+=======
+        version: 1.1.16(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+>>>>>>> e4db60cdf (createPlDataTableV3)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
@@ -1866,10 +1878,17 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
+<<<<<<< HEAD
         version: 1.1.17(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
         version: 1.1.17(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+=======
+        version: 1.1.16(encoding@0.1.13)
+      '@milaboratories/pframes-rs-wasm':
+        specifier: 'catalog:'
+        version: 1.1.16(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+>>>>>>> e4db60cdf (createPlDataTableV3)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -2254,10 +2273,17 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
+<<<<<<< HEAD
         version: 1.1.17(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
         version: 1.1.17(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+=======
+        version: 1.1.16(encoding@0.1.13)
+      '@milaboratories/pframes-rs-wasm':
+        specifier: 'catalog:'
+        version: 1.1.16(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+>>>>>>> e4db60cdf (createPlDataTableV3)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -4780,6 +4806,7 @@ packages:
     resolution: {integrity: sha512-lKzbuUJHBiGEVxqS9+EaYkuMAQt0iAohQUiIviu+2rNZHrTIvJGLBIiLBHC7fmjJM45xCKzyLG6c0tPjDUi2kQ==}
     engines: {node: '>=22'}
 
+<<<<<<< HEAD
   '@milaboratories/pframes-rs-node@1.1.17':
     resolution: {integrity: sha512-9IPnBjIgOsEyusuvQ1ge8rxXP1cey+5miT96RSdTvJniW1vkKJvP+U9Rqaw0gDXt1JT17jZ1eCxzZlB+5ZRv4A==}
 
@@ -4789,6 +4816,17 @@ packages:
 
   '@milaboratories/pframes-rs-wasm@1.1.17':
     resolution: {integrity: sha512-/4UVIp6ZxfZlMPTozf74Sw4/3O2XxRf+NYWG1Y4SR1YZj61coq69iDe2h/i6/jrFUNfu1jf6ITeH9V3X3Zf2fA==}
+=======
+  '@milaboratories/pframes-rs-node@1.1.16':
+    resolution: {integrity: sha512-bCHGYSc+ib3VSZWMsseSWjIshaPOtcS8QKInZHHWs9m0gKFHyqel7UMARxZaBMsT56cAscc3pq9cxUAhF0z1nA==}
+
+  '@milaboratories/pframes-rs-serv@1.1.16':
+    resolution: {integrity: sha512-2rmMaJhsGslfqUBf/C7+RYYFDJHcegrOgIAU6dTJn+Xe+H5G+RSlCLd1uDDpiVbjfFo/u1C+QKvhhu0f+FrVcQ==}
+    hasBin: true
+
+  '@milaboratories/pframes-rs-wasm@1.1.16':
+    resolution: {integrity: sha512-FxGAdPFILVK5/uBJnDVgW4yi+63R7689I8T9K0onC7bY59dLuABNUpmG6wqi2JvmHlhLWuNJMKsJmL637dU7Ew==}
+>>>>>>> e4db60cdf (createPlDataTableV3)
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': 1.28.0
@@ -10685,18 +10723,30 @@ snapshots:
 
   '@milaboratories/helpers@1.14.0': {}
 
+<<<<<<< HEAD
   '@milaboratories/pframes-rs-node@1.1.17(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.13.5
       '@milaboratories/pframes-rs-serv': 1.1.17
+=======
+  '@milaboratories/pframes-rs-node@1.1.16(encoding@0.1.13)':
+    dependencies:
+      '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
+      '@milaboratories/helpers': 1.13.5
+      '@milaboratories/pframes-rs-serv': 1.1.16
+>>>>>>> e4db60cdf (createPlDataTableV3)
       '@milaboratories/pl-model-common': 1.28.0
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
+<<<<<<< HEAD
   '@milaboratories/pframes-rs-serv@1.1.17':
+=======
+  '@milaboratories/pframes-rs-serv@1.1.16':
+>>>>>>> e4db60cdf (createPlDataTableV3)
     dependencies:
       '@milaboratories/helpers': 1.13.5
       '@milaboratories/pl-model-common': 1.28.0
@@ -10704,7 +10754,11 @@ snapshots:
       commander: 14.0.3
       selfsigned: 5.5.0
 
+<<<<<<< HEAD
   '@milaboratories/pframes-rs-wasm@1.1.17(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+=======
+  '@milaboratories/pframes-rs-wasm@1.1.16(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+>>>>>>> e4db60cdf (createPlDataTableV3)
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
       '@milaboratories/pl-model-common': link:lib/model/common

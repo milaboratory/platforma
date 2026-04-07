@@ -7,7 +7,6 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
-  isColumnOptional,
   pTableValue,
   type PFrameDriver,
   type PlDataTableSheet,
@@ -20,11 +19,12 @@ import {
   type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
   isColumnHidden,
+  isColumnOptional,
   matchAxisId,
   readAnnotation,
+  readAnnotationJson,
   Annotation,
   ValueType,
-  readAnnotationJson,
   getPTableColumnId,
 } from "@platforma-sdk/model";
 import type {
@@ -47,6 +47,7 @@ import { getColumnRenderingSpec } from "./value-rendering";
 import type { Ref } from "vue";
 import { isJsonEqual } from "@milaboratories/helpers";
 import type { DeferredCircular } from "./focus-row";
+import { isNil } from "es-toolkit";
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === "column" && isLabelColumnSpec(column.spec);
@@ -160,15 +161,17 @@ export async function calculateGridOptions({
     .map(([i]) => i)
     .toArray();
 
-  // order columns by priority
+  // order columns: axes first, then by OrderPriority annotation (higher = further left)
   indices.sort((a, b) => {
     if (specs[a].type !== specs[b].type) return specs[a].type === "axis" ? -1 : 1;
-
-    const aPriority = readAnnotationJson(specs[a].spec, Annotation.Table.OrderPriority);
-    const bPriority = readAnnotationJson(specs[b].spec, Annotation.Table.OrderPriority);
-
-    if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
-    if (bPriority === undefined) return -1;
+    const aPriority =
+      specs[a].type === "column"
+        ? (readAnnotationJson(specs[a].spec, Annotation.Table.OrderPriority) ?? 0)
+        : 0;
+    const bPriority =
+      specs[b].type === "column"
+        ? (readAnnotationJson(specs[b].spec, Annotation.Table.OrderPriority) ?? 0)
+        : 0;
     return bPriority - aPriority;
   });
 
@@ -185,6 +188,18 @@ export async function calculateGridOptions({
     }
     return i;
   });
+  // When no saved state, compute default hidden columns from annotations
+  if (isNil(hiddenColIds)) {
+    hiddenColIds = fields.reduce<PlTableColumnIdJson[]>((acc, field, i) => {
+      const spec = specs[field];
+      if (spec.type === "column" && isColumnOptional(spec.spec)) {
+        const labeledSpec = specs[indices[i]];
+        acc.push(canonicalizeJson<PlTableColumnId>({ source: spec, labeled: labeledSpec }));
+      }
+      return acc;
+    }, []);
+  }
+
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
     ...fields.map((field, index) =>
@@ -324,16 +339,17 @@ export function makeColDef(
       cellStyle.fontFamily = columnRenderingSpec.fontFamily;
     }
   }
+  const headerName =
+    readAnnotation(spec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`;
+
   return {
     colId,
     mainMenuItems: defaultMainMenuItems,
     context: spec,
     field: `${iCol}`,
-    headerName:
-      readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ??
-      `Unlabeled ${spec.type} ${iCol}`,
+    headerName,
     lockPosition: spec.type === "axis",
-    hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec),
+    hide: hiddenColIds !== undefined && hiddenColIds.includes(colId),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId

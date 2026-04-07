@@ -25,8 +25,12 @@ import type { PlDataTableStateV2 } from "../state-migration";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
-import { createPTableDef, isColumnOptional } from "./createPlDataTableV3";
+import { createPTableDefV2 } from "./createPTableDefV2";
+import { isColumnOptional } from "./utils";
 
+/**
+ * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
+ */
 export type createPlDataTableOptionsV2 = {
   columns: PColumn<PColumnDataUniversal>[];
   tableState?: PlDataTableStateV2;
@@ -36,6 +40,7 @@ export type createPlDataTableOptionsV2 = {
 /**
  * Create p-table spec and handle given ui table state
  *
+ * @deprecated This version of createPlDataTable is deprecated and will be removed in future. Please migrate to v3 by switching to the new options format and providing necessary information for column discovery and display configuration. See createPlDataTableOptionsV3 for details.
  * @param ctx context
  * @param columns column list
  * @param tableState table ui state
@@ -110,7 +115,7 @@ export function createPlDataTableV2<A, U>(
     );
 
   const coreJoinType = options?.coreJoinType ?? "full";
-  const fullDef = createPTableDef({
+  const fullDef = createPTableDefV2({
     columns,
     labelColumns: fullLabelColumns,
     coreJoinType,
@@ -172,7 +177,7 @@ export function createPlDataTableV2<A, U>(
   // if at least one column is not yet computed, we can't show the table
   if (!allPColumnsReady([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
-  const visibleDef = createPTableDef({
+  const visibleDef = createPTableDefV2({
     columns: visibleColumns,
     labelColumns: visibleLabelColumns,
     coreJoinType,

@@ -20,6 +20,6 @@ export function deriveLabels<T>(
   options: DeriveLabelsOptions = {},
 ): WithLabel<T>[] {
   const specs = values.map(getSpec);
-  const labeled = deriveDistinctLabels(specs, options);
-  return labeled.map((l, i) => ({ value: values[i], label: l.label }));
+  const labels = deriveDistinctLabels(specs, options);
+  return labels.map((label, i) => ({ value: values[i], label }));
 }
