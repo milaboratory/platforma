@@ -200,7 +200,7 @@ export class JsExecutionContext {
 
   public exportSingleValue(
     obj: boolean | number | string | null | ArrayBuffer | undefined,
-    scope: Scope | undefined,
+    scope?: Scope,
   ): QuickJSHandle {
     const result = this.tryExportSingleValue(obj, scope);
     if (result === undefined) {
@@ -211,7 +211,7 @@ export class JsExecutionContext {
     return result;
   }
 
-  public tryExportSingleValue(obj: unknown, scope: Scope | undefined): QuickJSHandle | undefined {
+  public tryExportSingleValue(obj: unknown, scope?: Scope): QuickJSHandle | undefined {
     let handle: QuickJSHandle;
     let manage = false;
     switch (typeof obj) {
@@ -244,13 +244,13 @@ export class JsExecutionContext {
     return manage && scope != undefined ? scope.manage(handle) : handle;
   }
 
-  public exportObjectUniversal(obj: unknown, scope: Scope | undefined): QuickJSHandle {
+  public exportObjectUniversal(obj: unknown, scope?: Scope): QuickJSHandle {
     const simpleHandle = this.tryExportSingleValue(obj, scope);
     if (simpleHandle !== undefined) return simpleHandle;
     return this.exportObjectViaJson(obj, scope);
   }
 
-  public exportObjectViaJson(obj: unknown, scope: Scope | undefined): QuickJSHandle {
+  public exportObjectViaJson(obj: unknown, scope?: Scope): QuickJSHandle {
     const t0 = performance.now();
     const json = JSON.stringify(obj);
     this.stats.serInBytes += json.length;

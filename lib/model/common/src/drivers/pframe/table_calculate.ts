@@ -85,8 +85,7 @@ export interface InnerJoin<Col> {
 /**
  * Defines a join request tree node that will output all records present at
  * least in one of the child nodes ({@link entries}), values for those PColumns
- * that lacks corresponding combinations of axis values will be marked as absent,
- * see {@link PTableVector.absent}.
+ * that lack corresponding combinations of axis values will be null.
  * */
 export interface FullJoin<Col> {
   /** Node type discriminator */
@@ -100,8 +99,8 @@ export interface FullJoin<Col> {
  * Defines a join request tree node that will output all records present in
  * {@link primary} child node, and records from the {@link secondary} nodes will
  * be added to the output only if present, values for those PColumns from the
- * {@link secondary} list, that lacks corresponding combinations of axis values
- * will be marked as absent, see {@link PTableVector.absent}.
+ * {@link secondary} list, that lack corresponding combinations of axis values
+ * will be null.
  *
  * This node can be thought as a chain of SQL LEFT JOIN operations starting from
  * the {@link primary} node and adding {@link secondary} nodes one by one.
