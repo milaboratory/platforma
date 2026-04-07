@@ -62,7 +62,11 @@ function vectorToJson(vector: PTableVector, rows: number): (string | number | nu
     // Check absent
     const absentByteIndex = Math.floor(i / 8);
     const absentBitMask = 1 << (7 - (i % 8));
-    if (vector.absent.length > 0 && (vector.absent[absentByteIndex] & absentBitMask) > 0) {
+    if (
+      vector.absent &&
+      vector.absent.length > 0 &&
+      (vector.absent[absentByteIndex] & absentBitMask) > 0
+    ) {
       result.push("ABSENT");
       continue;
     }
@@ -107,7 +111,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     },
     async ({ projectId, blockId, maxColumns }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state: any = await project.getBlockState(blockId).getValue();
+      const state = await project.getBlockState(blockId).getValue();
       if (!state.outputs)
         return errorResult(
           "Block has no outputs yet.",

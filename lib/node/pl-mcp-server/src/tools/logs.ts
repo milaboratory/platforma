@@ -21,7 +21,7 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     },
     async ({ projectId, blockId, lines, sampleId }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state: any = await project.getBlockState(blockId).getValue();
+      const state = await project.getBlockState(blockId).getValue();
       if (!state.outputs)
         return errorResult(
           "Block has no outputs yet.",

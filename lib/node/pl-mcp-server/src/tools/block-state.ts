@@ -16,9 +16,10 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     async ({ projectId }) => {
       const project = await ctx.getOpenedProject(projectId);
       const overview = await project.overview.getValue();
+      if (!overview) return errorResult("Project overview not available yet.");
       return textResult({
         label: overview.meta.label,
-        blocks: overview.blocks.map((b: any) => ({
+        blocks: overview.blocks.map((b) => ({
           id: b.id,
           title: b.title ?? b.label,
           calculationStatus: b.calculationStatus,
@@ -64,15 +65,15 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state: any = await project.getBlockState(blockId).getValue();
+      const state = await project.getBlockState(blockId).getValue();
       let data: unknown = undefined;
       if (state.blockStorage) {
         try {
           const parsed =
             typeof state.blockStorage === "string"
-              ? JSON.parse(state.blockStorage)
+              ? JSON.parse(state.blockStorage as string)
               : state.blockStorage;
-          data = parsed?.__data;
+          data = (parsed as Record<string, unknown>)?.__data;
         } catch {
           data = undefined;
         }

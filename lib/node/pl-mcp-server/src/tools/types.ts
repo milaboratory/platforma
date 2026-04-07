@@ -1,5 +1,5 @@
 import { runInNewContext } from "node:vm";
-import type { MiddleLayer, ProjectListEntry } from "@milaboratories/pl-middle-layer";
+import type { MiddleLayer, Project, ProjectListEntry } from "@milaboratories/pl-middle-layer";
 import type { PlMcpServerCallbacks } from "../server";
 
 export interface AuthorMarker {
@@ -11,7 +11,7 @@ export interface ToolContext {
   getMl: () => MiddleLayer | undefined;
   requireMl: () => MiddleLayer;
   resolveProject: (projectId: string) => Promise<ProjectListEntry>;
-  getOpenedProject: (projectId: string) => Promise<any>;
+  getOpenedProject: (projectId: string) => Promise<Project>;
   callbacks: PlMcpServerCallbacks;
   /** Returns an AuthorMarker with auto-incrementing localVersion for this MCP session. */
   getAuthorMarker: () => AuthorMarker;

@@ -36,7 +36,8 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
 
       while (Date.now() < deadline) {
         const overview = await project.overview.getValue();
-        const block = overview.blocks.find((b: any) => b.id === blockId);
+        if (!overview) continue;
+        const block = overview.blocks.find((b) => b.id === blockId);
         if (!block)
           return errorResult(
             `Block ${blockId} not found in project ${projectId}.`,
@@ -55,13 +56,6 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
           return errorResult(
             "Block has not been started.",
             "Use run_block to start it first, then call await_block_done.",
-          );
-        }
-
-        if (block.calculationStatus === "ErrorsDetected") {
-          return errorResult(
-            "Block finished with errors.",
-            "Use get_block_logs to inspect error details.",
           );
         }
 
@@ -91,9 +85,9 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
             try {
               const parsed =
                 typeof state.blockStorage === "string"
-                  ? JSON.parse(state.blockStorage)
+                  ? JSON.parse(state.blockStorage as string)
                   : state.blockStorage;
-              data = parsed?.__data;
+              data = (parsed as Record<string, unknown>)?.__data;
             } catch {
               data = state.blockStorage;
             }
@@ -147,7 +141,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
 
       // Timed out while running
       const overview = await project.overview.getValue();
-      const block = overview.blocks.find((b: any) => b.id === blockId);
+      const block = overview?.blocks.find((b) => b.id === blockId);
       return textResult({
         timedOut: true,
         status: block?.calculationStatus ?? "Unknown",
