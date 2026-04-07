@@ -1,6 +1,6 @@
-import vue from '@vitejs/plugin-vue';
-import { mergeConfig, type ViteUserConfig } from 'vitest/config';
-import { createVitestConfig } from './createVitestConfig';
+import vue from "@vitejs/plugin-vue";
+import { mergeConfig, type ViteUserConfig } from "vitest/config";
+import { createVitestConfig } from "./createVitestConfig";
 
 export const createVitestVueConfig = (overrides: ViteUserConfig = {}): ViteUserConfig => {
   return createVitestConfig(
