@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.7.3",
+  "version": "1.8.1",
   "description": "Useful helpers for our TS projects",
   "files": [
     "./dist/**/*",
@@ -29,6 +29,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:"
   },

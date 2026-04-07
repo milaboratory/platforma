@@ -57,6 +57,10 @@ export interface ProgressAPI_GetStatus_Request {
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
+    /**
+     * @generated from protobuf field: optional bytes resource_signature = 2
+     */
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Response
@@ -80,6 +84,10 @@ export interface ProgressAPI_RealtimeStatus_Request {
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
+    /**
+     * @generated from protobuf field: optional bytes resource_signature = 3
+     */
+    resourceSignature?: Uint8Array;
     /**
      * @generated from protobuf field: google.protobuf.Duration update_interval = 2
      */
@@ -253,7 +261,8 @@ export const ProgressAPI_GetStatus = new ProgressAPI_GetStatus$Type();
 class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStatus_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.ProgressAPI.GetStatus.Request", [
-            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ProgressAPI_GetStatus_Request>): ProgressAPI_GetStatus_Request {
@@ -271,6 +280,9 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
+                case /* optional bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -286,6 +298,9 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -385,6 +400,7 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
     constructor() {
         super("MiLaboratories.Controller.Shared.ProgressAPI.RealtimeStatus.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "update_interval", kind: "message", T: () => Duration }
         ]);
     }
@@ -402,6 +418,9 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 3:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* google.protobuf.Duration update_interval */ 2:
                     message.updateInterval = Duration.internalBinaryRead(reader, reader.uint32(), options, message.updateInterval);
@@ -424,6 +443,9 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
         /* google.protobuf.Duration update_interval = 2; */
         if (message.updateInterval)
             Duration.internalBinaryWrite(message.updateInterval, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

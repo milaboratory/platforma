@@ -524,7 +524,7 @@ export class PlTransaction {
   public removeResource(rId: ResourceId): void {
     this.sendVoidAsync({
       oneofKind: "resourceRemove",
-      resourceRemove: { resourceId: rId, resourceSignature: new Uint8Array(0) },
+      resourceRemove: { resourceId: rId },
     });
   }
 
@@ -532,7 +532,7 @@ export class PlTransaction {
     return this.sendSingleAndParse(
       {
         oneofKind: "resourceExists",
-        resourceExists: { resourceId: rId, resourceSignature: new Uint8Array(0) },
+        resourceExists: { resourceId: rId },
       },
       (r) => r.resourceExists.exists,
     );
@@ -594,7 +594,6 @@ export class PlTransaction {
           resourceGet: {
             resourceId: toResourceId(rId),
             loadFields: loadFields,
-            resourceSignature: new Uint8Array(0),
           },
         },
         (r) => protoToResource(notEmpty(r.resourceGet.resource)),
@@ -705,9 +704,7 @@ export class PlTransaction {
       oneofKind: "resourceSetError",
       resourceSetError: {
         resourceId: toResourceId(rId),
-        resourceSignature: new Uint8Array(0),
         errorResourceId: toResourceId(ref),
-        errorResourceSignature: new Uint8Array(0),
       },
     });
   }
@@ -765,7 +762,6 @@ export class PlTransaction {
       fieldSetError: {
         field: toFieldId(fId),
         errorResourceId: toResourceId(ref),
-        errorResourceSignature: new Uint8Array(0),
       },
     });
   }
@@ -801,7 +797,6 @@ export class PlTransaction {
           oneofKind: "resourceKeyValueList",
           resourceKeyValueList: {
             resourceId: toResourceId(rId),
-            resourceSignature: new Uint8Array(0),
             startFrom: "",
             limit: 0,
           },
@@ -868,7 +863,6 @@ export class PlTransaction {
           oneofKind: "resourceKeyValueGet",
           resourceKeyValueGet: {
             resourceId: toResourceId(rId),
-            resourceSignature: new Uint8Array(0),
             key,
           },
         },
@@ -900,7 +894,6 @@ export class PlTransaction {
           oneofKind: "resourceKeyValueGetIfExists",
           resourceKeyValueGetIfExists: {
             resourceId: toResourceId(rId),
-            resourceSignature: new Uint8Array(0),
             key,
           },
         },

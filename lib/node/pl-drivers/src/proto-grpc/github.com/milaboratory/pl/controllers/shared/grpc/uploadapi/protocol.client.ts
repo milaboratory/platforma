@@ -4,6 +4,8 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { Upload } from "./protocol";
+import type { UploadAPI_Reset_Response } from "./protocol";
+import type { UploadAPI_Reset_Request } from "./protocol";
 import type { UploadAPI_Finalize_Response } from "./protocol";
 import type { UploadAPI_Finalize_Request } from "./protocol";
 import type { UploadAPI_UpdateProgress_Response } from "./protocol";
@@ -17,7 +19,7 @@ import type { UnaryCall } from "@protobuf-ts/runtime-rpc";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 /**
  *
- * Upload provides access to data upload feature, allowing clients to uplad data to Platforma.
+ * Upload provides access to the data upload feature, allowing clients to upload data to Platforma.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Upload
@@ -25,7 +27,7 @@ import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 export interface IUploadClient {
     /**
      *
-     * Init upload, making controller to do all required preparation steps.
+     * Initialize the upload, making the controller do all required preparation steps.
      *
      *
      * @generated from protobuf rpc: Init
@@ -33,7 +35,7 @@ export interface IUploadClient {
     init(input: UploadAPI_Init_Request, options?: RpcOptions): UnaryCall<UploadAPI_Init_Request, UploadAPI_Init_Response>;
     /**
      *
-     * GetPartURL provides URL for uploading chunk of the data.
+     * GetPartURL provides a URL for uploading a chunk of the data.
      * Clients are expected to put their data directly to the given location.
      *
      *
@@ -42,7 +44,7 @@ export interface IUploadClient {
     getPartURL(input: UploadAPI_GetPartURL_Request, options?: RpcOptions): UnaryCall<UploadAPI_GetPartURL_Request, UploadAPI_GetPartURL_Response>;
     /**
      *
-     * UpdateProgress of the upload, so other clients can see how it is going.
+     * Update the progress of the upload, so other clients can see how it is going.
      *
      *
      * @generated from protobuf rpc: UpdateProgress
@@ -50,18 +52,29 @@ export interface IUploadClient {
     updateProgress(input: UploadAPI_UpdateProgress_Request, options?: RpcOptions): UnaryCall<UploadAPI_UpdateProgress_Request, UploadAPI_UpdateProgress_Response>;
     /**
      *
-     * Finalize informs Controller that the upload process is done.
-     * Returns an error, if the total size of all uploaded chunks is not equal to
-     * size of the upload given in Init.
+     * Finalize informs the Controller that the upload process is done.
+     * Returns an error if the total size of all uploaded chunks is not equal to
+     * the size of the upload given in Init.
      *
      *
      * @generated from protobuf rpc: Finalize
      */
     finalize(input: UploadAPI_Finalize_Request, options?: RpcOptions): UnaryCall<UploadAPI_Finalize_Request, UploadAPI_Finalize_Response>;
+    /**
+     *
+     * Reset the current upload progress (remove uploaded parts and so on) to start over.
+     * This is useful when a checksum mismatch is detected by the client during upload
+     * and the data requires a full re-upload.
+     * The server never resets the upload on its own; it is always the client's initiative.
+     *
+     *
+     * @generated from protobuf rpc: Reset
+     */
+    reset(input: UploadAPI_Reset_Request, options?: RpcOptions): UnaryCall<UploadAPI_Reset_Request, UploadAPI_Reset_Response>;
 }
 /**
  *
- * Upload provides access to data upload feature, allowing clients to uplad data to Platforma.
+ * Upload provides access to the data upload feature, allowing clients to upload data to Platforma.
  *
  *
  * @generated from protobuf service MiLaboratories.Controller.Shared.Upload
@@ -74,7 +87,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
     }
     /**
      *
-     * Init upload, making controller to do all required preparation steps.
+     * Initialize the upload, making the controller do all required preparation steps.
      *
      *
      * @generated from protobuf rpc: Init
@@ -85,7 +98,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
     }
     /**
      *
-     * GetPartURL provides URL for uploading chunk of the data.
+     * GetPartURL provides a URL for uploading a chunk of the data.
      * Clients are expected to put their data directly to the given location.
      *
      *
@@ -97,7 +110,7 @@ export class UploadClient implements IUploadClient, ServiceInfo {
     }
     /**
      *
-     * UpdateProgress of the upload, so other clients can see how it is going.
+     * Update the progress of the upload, so other clients can see how it is going.
      *
      *
      * @generated from protobuf rpc: UpdateProgress
@@ -108,9 +121,9 @@ export class UploadClient implements IUploadClient, ServiceInfo {
     }
     /**
      *
-     * Finalize informs Controller that the upload process is done.
-     * Returns an error, if the total size of all uploaded chunks is not equal to
-     * size of the upload given in Init.
+     * Finalize informs the Controller that the upload process is done.
+     * Returns an error if the total size of all uploaded chunks is not equal to
+     * the size of the upload given in Init.
      *
      *
      * @generated from protobuf rpc: Finalize
@@ -118,5 +131,19 @@ export class UploadClient implements IUploadClient, ServiceInfo {
     finalize(input: UploadAPI_Finalize_Request, options?: RpcOptions): UnaryCall<UploadAPI_Finalize_Request, UploadAPI_Finalize_Response> {
         const method = this.methods[3], opt = this._transport.mergeOptions(options);
         return stackIntercept<UploadAPI_Finalize_Request, UploadAPI_Finalize_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
+     *
+     * Reset the current upload progress (remove uploaded parts and so on) to start over.
+     * This is useful when a checksum mismatch is detected by the client during upload
+     * and the data requires a full re-upload.
+     * The server never resets the upload on its own; it is always the client's initiative.
+     *
+     *
+     * @generated from protobuf rpc: Reset
+     */
+    reset(input: UploadAPI_Reset_Request, options?: RpcOptions): UnaryCall<UploadAPI_Reset_Request, UploadAPI_Reset_Response> {
+        const method = this.methods[4], opt = this._transport.mergeOptions(options);
+        return stackIntercept<UploadAPI_Reset_Request, UploadAPI_Reset_Response>("unary", this._transport, method, opt, input);
     }
 }

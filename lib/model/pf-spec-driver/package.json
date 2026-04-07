@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-spec-driver",
-  "version": "1.1.0",
+  "version": "1.2.3",
   "description": "PSpecDriver implementation: spec-only PFrame operations via WASM",
   "keywords": [],
   "license": "UNLICENSED",
@@ -31,9 +31,11 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*"
+    "@milaboratories/pl-model-middle-layer": "workspace:*",
+    "@noble/hashes": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

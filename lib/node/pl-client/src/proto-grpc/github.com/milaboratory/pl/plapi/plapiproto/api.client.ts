@@ -164,28 +164,28 @@ export interface IPlatformClient {
     // 
 
     /**
-     * LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
-     *   - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     * LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+     *   - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
      *   - list resource's fields, take fields with names set in request
      *   - get resolved values of listed fields (IDs of 'ON' resources).
      *   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
      *
      * Lock logic constraints:
      *   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
-     *     succeeds, while other fails with error (no long waiting)
-     *   - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
-     *     resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
-     *   - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before
-     *     being lockable. Attempt to lock resource that is not became original will fail.
-     *   - Locking is one-way operation: it cannot be 'released' or 'revoked'.
+     *     succeeds, while the other fails with an error (no long waiting)
+     *   - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+     *     the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+     *   - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+     *     being lockable. An attempt to lock a resource that has not become original will fail.
+     *   - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
      *
      * @generated from protobuf rpc: LockFieldValues
      */
     lockFieldValues(input: LocksAPI_LockFieldValues_Create_Request, options?: RpcOptions): UnaryCall<LocksAPI_LockFieldValues_Create_Request, LocksAPI_LockFieldValues_Create_Response>;
     /**
-     * LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
-     * Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
-     * To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
+     * LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+     * Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     * To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
      *
      * @generated from protobuf rpc: LeaseResource
      */
@@ -399,20 +399,20 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
     // 
 
     /**
-     * LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
-     *   - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     * LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+     *   - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
      *   - list resource's fields, take fields with names set in request
      *   - get resolved values of listed fields (IDs of 'ON' resources).
      *   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
      *
      * Lock logic constraints:
      *   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
-     *     succeeds, while other fails with error (no long waiting)
-     *   - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
-     *     resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
-     *   - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before
-     *     being lockable. Attempt to lock resource that is not became original will fail.
-     *   - Locking is one-way operation: it cannot be 'released' or 'revoked'.
+     *     succeeds, while the other fails with an error (no long waiting)
+     *   - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+     *     the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+     *   - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+     *     being lockable. An attempt to lock a resource that has not become original will fail.
+     *   - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
      *
      * @generated from protobuf rpc: LockFieldValues
      */
@@ -421,9 +421,9 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         return stackIntercept<LocksAPI_LockFieldValues_Create_Request, LocksAPI_LockFieldValues_Create_Response>("unary", this._transport, method, opt, input);
     }
     /**
-     * LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
-     * Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
-     * To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
+     * LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+     * Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     * To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
      *
      * @generated from protobuf rpc: LeaseResource
      */

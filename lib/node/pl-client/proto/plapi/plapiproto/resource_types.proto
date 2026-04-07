@@ -69,7 +69,7 @@ message NotificationFilter {
     optional bool generic_otw_set = 15;
     optional bool dynamic_changed = 11;
 
-    // next free 19;
+    // next free: 19;
   }
 
   message Payload {

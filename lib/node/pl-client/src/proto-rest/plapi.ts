@@ -272,9 +272,9 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * @description LeaseResource creates a lease for a resource. Lease is temporary lock that needs periodic renewal to stay actual.
-     *      Leases are separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
-     *      To keep the lease active, client needs lease ID that is generated when lease is created and used for lease updates.
+     * @description LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+     *      Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     *      To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
      */
     post: operations["Platform_LeaseResource"];
     delete?: never;
@@ -325,20 +325,20 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * @description LockFieldValues gets resource and obtains a lock on all resolved values of listed fields:
-     *        - get resource that will take lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     * @description LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+     *        - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
      *        - list resource's fields, take fields with names set in request
      *        - get resolved values of listed fields (IDs of 'ON' resources).
      *        - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
      *
      *      Lock logic constraints:
      *        - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
-     *          succeeds, while other fails with error (no long waiting)
-     *        - Only resolved reference can be locked: to obtain a lock for particular field's value, backend needs to know
-     *          resource ID this field points to. Unless all listed field references are resolved to final ID, lock will fail.
-     *        - Only original resource can be locked: if resource is 'pure' (supports deduplication), it has to pass it before
-     *          being lockable. Attempt to lock resource that is not became original will fail.
-     *        - Locking is one-way operation: it cannot be 'released' or 'revoked'.
+     *          succeeds, while the other fails with an error (no long waiting)
+     *        - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+     *          the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+     *        - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+     *          being lockable. An attempt to lock a resource that has not become original will fail.
+     *        - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
      */
     post: operations["Platform_LockFieldValues"];
     delete?: never;
@@ -498,10 +498,10 @@ export interface components {
       type: number;
       features: components["schemas"]["Resource_Features"];
       /**
-       * @description _resolved_ value of field or _assigned_ if the field was assigned to a resource.
-       *      If field refers to another field, it will get
-       *      value only when this chain of references ends up with direct resource
-       *      reference. At that moment all fields in the chain will get their values
+       * @description _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
+       *      If a field refers to another field, it will get
+       *      a value only when this chain of references ends up with a direct resource
+       *      reference. At that moment, all fields in the chain will get their values
        *      resolved and will start to refer to the same resource directly.
        */
       value: string;
@@ -513,14 +513,14 @@ export interface components {
       valueSignature: string;
       /**
        * Format: enum
-       * @description If the value was empty, assigned or finally resolved.
+       * @description Whether the value is empty, assigned, or finally resolved.
        */
       valueStatus: number;
       /** @description If the value is in its final state (ready, duplicate or error) */
       valueIsFinal: boolean;
       /**
-       * @description Resource error resource id if any.
-       *      Is intended to report problems _from_ platform to client.
+       * @description Error resource ID, if any.
+       *      Is intended to report problems _from_ the platform to the client.
        */
       error: string;
       /**
