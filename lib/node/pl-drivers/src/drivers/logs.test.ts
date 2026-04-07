@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { Computable } from "@milaboratories/computable";
 import type {
   AnyFieldRef,
@@ -28,7 +28,11 @@ const downloadDriverOps = {
   rangesCacheMaxSizeBytes: 1024,
 };
 
-test("should get all logs", { timeout: 300000 }, async () => {
+vi.setConfig({
+  testTimeout: 60000,
+});
+
+test("should get all logs", async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
 
