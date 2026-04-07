@@ -14,7 +14,7 @@ permissions:
   issues: read
 
 env:
-  BODY_LIMIT: '1048576000'
+  BODY_LIMIT: "1048576000"
 
 jobs:
   # ──────────────────────────────────────────────
@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Enable pnpm
         run: corepack enable pnpm
@@ -102,6 +102,9 @@ jobs:
           turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Run changeset version
+        run: pnpm run version-packages
 
       - name: Build for publish (full, non-local)
         env:

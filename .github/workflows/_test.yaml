@@ -4,7 +4,7 @@ on:
   workflow_call: {}
 
 env:
-  BODY_LIMIT: '1048576000'
+  BODY_LIMIT: "1048576000"
 
 jobs:
   test:
@@ -42,7 +42,7 @@ jobs:
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PL_DOCKER_REGISTRY_PUSH_TO: 'quay.io/milaboratories/pl-containers'
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
         run: pnpm run ci:build:local
 
       - name: Check test cache (dry-run)
@@ -58,7 +58,7 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          mask-password: 'true'
+          mask-password: "true"
 
       - name: Start Platforma Docker
         if: steps.dry-run.outputs.skip != 'true'
@@ -72,7 +72,7 @@ jobs:
       - name: Run tests
         if: steps.dry-run.outputs.skip != 'true'
         env:
-          PL_ADDRESS: 'http://127.0.0.1:6345'
+          PL_ADDRESS: "http://127.0.0.1:6345"
           PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
           PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
@@ -85,5 +85,5 @@ jobs:
         if: always()
         uses: milaboratory/github-ci/actions/node/upload-coverage@v4
         with:
-          test-coverage-reports: '**/coverage/lcov.info'
-          test-results-reports: '**/test-report.junit.xml'
+          test-coverage-reports: "**/coverage/lcov.info"
+          test-results-reports: "**/test-report.junit.xml"

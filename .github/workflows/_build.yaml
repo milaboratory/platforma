@@ -4,7 +4,7 @@ on:
   workflow_call: {}
 
 env:
-  BODY_LIMIT: '1048576000'
+  BODY_LIMIT: "1048576000"
 
 jobs:
   build:
@@ -40,16 +40,9 @@ jobs:
             fi
           fi
 
-      - name: Run changeset version
-        if: >-
-          (github.event_name == 'push' && github.ref_name == 'main')
-          || github.event_name == 'pull_request'
-          || github.event_name == 'merge_group'
-        run: pnpm run version-packages
-
       - name: Build
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PL_DOCKER_REGISTRY_PUSH_TO: 'quay.io/milaboratories/pl-containers'
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
         run: pnpm run ci:build:local
