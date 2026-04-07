@@ -2,10 +2,11 @@ import type {
   CanonicalizedJson,
   PColumnSpec,
   PColumnSpecId,
+  PlRef,
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, getPColumnSpecId } from "@milaboratories/pl-model-common";
+import { canonicalizeJson, getPColumnSpecId, isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
@@ -25,7 +26,7 @@ import type {
 
 export type DiscoveredColumnOptions = {
   sources?: ColumnSource | ColumnSource[];
-  anchors: Record<string, PObjectId | PColumnSpec>;
+  anchors: Record<string, PObjectId | PColumnSpec | PlRef>;
   columnsSelector: ColumnsSelectorConfig;
 };
 
@@ -34,28 +35,34 @@ export function discoverColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: DiscoveredColumnOptions,
 ): DiscoveredColumn<SUniversalPColumnId>[] | undefined {
-  // 1. Resolve providers
-  const providers = resolveProviders(ctx, options.sources);
+  // Resolve PlRef anchors to PColumnSpec
+  const resolvedAnchors = resolveAnchors(ctx, options.anchors);
+  if (resolvedAnchors === undefined) return undefined;
+  const resolvedOptions = { ...options, anchors: resolvedAnchors };
+
+  // Resolve providers
+  const providers = resolveProviders(ctx, resolvedOptions.sources);
   if (providers.length === 0) return undefined;
 
-  // 2. Build collection (anchored or plain)
-  const builder = new ColumnCollectionBuilder(
-    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for column discovery."),
-  ).addSources(providers);
-  const collection = builder.build(options);
+  // Build collection (anchored or plain)
+  const pframeSpec =
+    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for column discovery.");
+  const collection = new ColumnCollectionBuilder(pframeSpec)
+    .addSources(providers)
+    .build(resolvedOptions);
   if (collection === undefined) return undefined;
 
   try {
-    // 3. Find columns matching the selector
-    const matched = collection.findColumns(options.columnsSelector ?? undefined);
+    // Find columns matching the selector
+    const matched = collection.findColumns(resolvedOptions.columnsSelector ?? undefined);
 
-    // 4. Resolve linker snapshots
+    // Resolve linker snapshots
     const resolvedLinkers = resolveLinkerSnapshots(collection, matched);
 
-    // 5. Build anchor spec ID set
-    const anchorSpecIdSet = buildAnchorSpecIdSet(collection, options.anchors);
+    // Build anchor spec ID set
+    const anchorSpecIdSet = buildAnchorSpecIdSet(collection, resolvedOptions.anchors);
 
-    // 6. Normalize into DiscoveredColumn[]
+    // Normalize into DiscoveredColumn[]
     return mapToDiscoveredColumns(matched, resolvedLinkers, anchorSpecIdSet);
   } finally {
     collection.dispose();
@@ -63,6 +70,26 @@ export function discoverColumns<A, U>(
 }
 
 // --- Pure helper functions ---
+
+/** Resolve PlRef values in anchors to PColumnSpec via the result pool. */
+function resolveAnchors<A, U>(
+  ctx: RenderCtxBase<A, U>,
+  anchors: Record<string, PObjectId | PColumnSpec | PlRef>,
+): Record<string, PObjectId | PColumnSpec> | undefined {
+  const result: Record<string, PObjectId | PColumnSpec> = {};
+  for (const [key, value] of Object.entries(anchors)) {
+    if (isPlRef(value)) {
+      result[key] =
+        ctx.resultPool.getPColumnSpecByRef(value) ??
+        throwError(
+          `Anchor ${key} with ref ${JSON.stringify(value)} could not be resolved to a PColumnSpec`,
+        );
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 /** Resolve column snapshot providers from explicit sources or context. */
 function resolveProviders<A, U>(
