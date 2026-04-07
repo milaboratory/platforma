@@ -71,10 +71,9 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
 
 /** Convert a PTableColumnId to a SpecQueryExpression reference. */
 function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
-  if (col.type === "axis") {
-    return { type: "axisRef", value: col.id as SingleAxisSelector };
-  }
-  return { type: "columnRef", value: col.id };
+  return col.type === "axis"
+    ? { type: "axisRef", value: col.id as SingleAxisSelector }
+    : { type: "columnRef", value: col.id };
 }
 
 function toJoinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
