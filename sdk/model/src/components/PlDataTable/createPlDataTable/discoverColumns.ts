@@ -15,7 +15,7 @@ import type {
   ColumnMatch,
 } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
-import { isColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
+import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type {
@@ -97,20 +97,13 @@ function resolveProviders<A, U>(
   sources: ColumnSource | ColumnSource[] | undefined,
 ) {
   return sources
-    ? normalizeSourceList(sources).filter(isColumnSnapshotProvider)
+    ? normalizeSourceList(sources).map(toColumnSnapshotProvider)
     : collectCtxColumnSnapshotProviders(ctx);
 }
 
 /** Normalize raw ColumnSource | ColumnSource[] into a flat list of sources. */
 function normalizeSourceList(source: ColumnSource | ColumnSource[]): ColumnSource[] {
-  if (
-    Array.isArray(source) &&
-    source.length > 0 &&
-    (Array.isArray(source[0]) || isColumnSnapshotProvider(source[0]))
-  ) {
-    return source as ColumnSource[];
-  }
-  return [source as ColumnSource];
+  return Array.isArray(source) ? (source as ColumnSource[]) : [source as ColumnSource];
 }
 
 /** Pre-resolve linker column snapshots (deduped) for all matched columns. */
