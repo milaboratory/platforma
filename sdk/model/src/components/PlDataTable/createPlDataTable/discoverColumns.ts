@@ -39,7 +39,9 @@ export function discoverColumns<A, U>(
   if (providers.length === 0) return undefined;
 
   // 2. Build collection (anchored or plain)
-  const builder = new ColumnCollectionBuilder(ctx.services.specDriver).addSources(providers);
+  const builder = new ColumnCollectionBuilder(
+    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for column discovery."),
+  ).addSources(providers);
   const collection = builder.build(options);
   if (collection === undefined) return undefined;
 

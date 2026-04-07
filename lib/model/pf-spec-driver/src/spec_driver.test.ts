@@ -133,7 +133,7 @@ describe("SpecDriver", () => {
       annotations: { "pl7.app/label": "Group" },
     } as AxisSpec;
 
-    const handle = driver.createSpecFrame({
+    const { key: handle } = driver.createSpecFrame({
       note: {
         kind: "PColumn",
         name: "note",
