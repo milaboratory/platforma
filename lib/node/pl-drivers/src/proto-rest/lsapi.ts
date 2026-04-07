@@ -4,150 +4,150 @@
  */
 
 export interface paths {
-    "/v1/list": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["LS_List"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/list": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    post: operations["LS_List"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        List_Request: {
-            /** @description resource_id of 'LS/<Storage>' resource */
-            resourceId: string;
-            /**
-             * Format: bytes
-             * @description Signature proving the caller is authorized to access this resource.
-             */
-            resourceSignature: string;
-            /**
-             * @description Location to list, relative to the storage root. Only items that have <full_name> starting
-             *      with <location> are included in the list response.
-             */
-            location: string;
-        };
-        List_Response: {
-            /**
-             * @description List of the full (relative to storage root) names of items from storage.
-             *      E.g., for 'fs' storage each name will consist of names of all directories, where the
-             *      item is located, and the item name itself.
-             *      The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
-             */
-            items: components["schemas"]["LsAPI_ListItem"][];
-            /**
-             * @description The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
-             *      to extract directory names.
-             */
-            delimiter: string;
-        };
-        LsAPI_ListItem: {
-            /** @description Name of the item in storage, without any prefixes. */
-            name: string;
-            /**
-             * @description Size of the item in bytes.
-             *      Is always zero for directories (is_dir = true).
-             */
-            size: string;
-            /** @description is_dir is true for an item that can have subitems. */
-            isDir: boolean;
-            /**
-             * @description full_name is the full name of the item, relative to the storage root.
-             *      It is <directory> + <name>.
-             *      The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
-             */
-            fullName: string;
-            /**
-             * @description The directory the item is located in. The value here is always a prefix of name:
-             *      name.HasPrefix(directory) is always true.
-             */
-            directory: string;
-            /**
-             * Format: date-time
-             * @description last_modified keeps the item's last modification timestamp.
-             */
-            lastModified: string;
-            /**
-             * @description Version of item in storage.
-             *      When the storage supports versioning or provides checksums for the data stored,
-             *      the <version> field keeps that data.
-             *      If not, it keeps any simple combination of item attributes that helps to
-             *      detect if the contents of the item have changed, e.g. <size>+<mtime>.
-             *      Anyway, the client should not try to interpret this field, but should provide it to the Platform
-             *      in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
-             */
-            version: string;
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
+  schemas: {
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    List_Request: {
+      /** @description resource_id of 'LS/<Storage>' resource */
+      resourceId: string;
+      /**
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description Location to list, relative to the storage root. Only items that have <full_name> starting
+       *      with <location> are included in the list response.
+       */
+      location: string;
+    };
+    List_Response: {
+      /**
+       * @description List of the full (relative to storage root) names of items from storage.
+       *      E.g., for 'fs' storage each name will consist of names of all directories, where the
+       *      item is located, and the item name itself.
+       *      The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
+       */
+      items: components["schemas"]["LsAPI_ListItem"][];
+      /**
+       * @description The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
+       *      to extract directory names.
+       */
+      delimiter: string;
+    };
+    LsAPI_ListItem: {
+      /** @description Name of the item in storage, without any prefixes. */
+      name: string;
+      /**
+       * @description Size of the item in bytes.
+       *      Is always zero for directories (is_dir = true).
+       */
+      size: string;
+      /** @description is_dir is true for an item that can have subitems. */
+      isDir: boolean;
+      /**
+       * @description full_name is the full name of the item, relative to the storage root.
+       *      It is <directory> + <name>.
+       *      The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
+       */
+      fullName: string;
+      /**
+       * @description The directory the item is located in. The value here is always a prefix of name:
+       *      name.HasPrefix(directory) is always true.
+       */
+      directory: string;
+      /**
+       * Format: date-time
+       * @description last_modified keeps the item's last modification timestamp.
+       */
+      lastModified: string;
+      /**
+       * @description Version of item in storage.
+       *      When the storage supports versioning or provides checksums for the data stored,
+       *      the <version> field keeps that data.
+       *      If not, it keeps any simple combination of item attributes that helps to
+       *      detect if the contents of the item have changed, e.g. <size>+<mtime>.
+       *      Anyway, the client should not try to interpret this field, but should provide it to the Platform
+       *      in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
+       */
+      version: string;
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    LS_List: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["List_Request"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["List_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  LS_List: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["List_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["List_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

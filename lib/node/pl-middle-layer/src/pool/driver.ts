@@ -12,12 +12,8 @@ import {
   type PColumnDataUniversal,
 } from "@platforma-sdk/model";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import {
-  emptyDir,
-  RefCountPoolBase,
-  type PoolEntry,
-  type MiLogger,
-} from "@milaboratories/ts-helpers";
+import { emptyDir } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase, type PoolEntry, type MiLogger } from "@milaboratories/helpers";
 import type { DownloadDriver } from "@milaboratories/pl-drivers";
 import {
   isPlTreeNodeAccessor,
@@ -219,7 +215,6 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
             type: "Ok",
             size: blob.size,
             range: translatedRange,
-            // eslint-disable-next-line n/no-unsupported-features/node-builtins
             data: Readable.fromWeb(data),
           });
         },
@@ -268,6 +263,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
+    await this.pool[Symbol.asyncDispose]();
   }
 }
 

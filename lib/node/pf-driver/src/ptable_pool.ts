@@ -10,7 +10,7 @@ import {
   type PObjectId,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import type { PFramePool } from "./pframe_pool";
 import {

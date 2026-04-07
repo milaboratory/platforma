@@ -1,5 +1,6 @@
 import type { PlClient } from "@milaboratories/pl-client";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
+import { registerServiceCapabilities } from "@platforma-sdk/model";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
@@ -22,6 +23,7 @@ export async function withMl(
     ml.addRuntimeCapability("requiresUIAPIVersion", 1);
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
+    registerServiceCapabilities((flag, value) => ml.addRuntimeCapability(flag, value));
     try {
       await cb(ml, workFolder);
     } finally {
@@ -50,6 +52,7 @@ export async function withMlAndProxy(
       ml.addRuntimeCapability("requiresUIAPIVersion", 1);
       ml.addRuntimeCapability("requiresUIAPIVersion", 2);
       ml.addRuntimeCapability("requiresUIAPIVersion", 3);
+      registerServiceCapabilities((flag, value) => ml.addRuntimeCapability(flag, value));
       try {
         await cb(ml, workFolder, proxy);
       } finally {

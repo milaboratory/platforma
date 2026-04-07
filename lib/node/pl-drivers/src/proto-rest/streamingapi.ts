@@ -4,320 +4,320 @@
  */
 
 export interface paths {
-    "/v1/last-lines": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description LastLines provides a single message with the last lines from the data source.
-         *      When a search pattern is specified, the last lines matching the given pattern are returned.
-         *      The lines are returned in reverse order, as the server reads the data source from the end.
-         *      Consider it equivalent to 'tac <file> | grep <search> | head -n <line_count>'
-         *      The <new_offset> returned in the response points to the _beginning_ of the last
-         *      line found, so the client can continue reading the file backwards in subsequent calls.
-         *      This means that the use of this <new_offset> in ReadText() will return the last line
-         *      returned in the LastLines() response.
-         */
-        post: operations["Streaming_LastLines"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/v1/last-lines": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/read/binary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description ReadBinary allows reading a remote item in chunks using a stream-like API.
-         *      The client receives a single response for each call and has to send new calls
-         *      to the server to get fresh data from the remote item.
-         *      Each response (each chunk from the server) contains no more than 3.9MiB of data.
-         */
-        post: operations["Streaming_ReadBinary"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * @description LastLines provides a single message with the last lines from the data source.
+     *      When a search pattern is specified, the last lines matching the given pattern are returned.
+     *      The lines are returned in reverse order, as the server reads the data source from the end.
+     *      Consider it equivalent to 'tac <file> | grep <search> | head -n <line_count>'
+     *      The <new_offset> returned in the response points to the _beginning_ of the last
+     *      line found, so the client can continue reading the file backwards in subsequent calls.
+     *      This means that the use of this <new_offset> in ReadText() will return the last line
+     *      returned in the LastLines() response.
+     */
+    post: operations["Streaming_LastLines"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/read/binary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/v1/read/text": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description ReadText allows reading a remote item in chunks using a stream-like API.
-         *      The client receives a single response for each call and has to send new calls
-         *      to the server to get fresh data from the remote item.
-         *      Each response (each chunk from the server) contains no more than 3.9MiB of data.
-         */
-        post: operations["Streaming_ReadText"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /**
+     * @description ReadBinary allows reading a remote item in chunks using a stream-like API.
+     *      The client receives a single response for each call and has to send new calls
+     *      to the server to get fresh data from the remote item.
+     *      Each response (each chunk from the server) contains no more than 3.9MiB of data.
+     */
+    post: operations["Streaming_ReadBinary"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/read/text": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /**
+     * @description ReadText allows reading a remote item in chunks using a stream-like API.
+     *      The client receives a single response for each call and has to send new calls
+     *      to the server to get fresh data from the remote item.
+     *      Each response (each chunk from the server) contains no more than 3.9MiB of data.
+     */
+    post: operations["Streaming_ReadText"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-        GoogleProtobufAny: {
-            /** @description The type of the serialized message. */
-            "@type": string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-        Status: {
-            /**
-             * Format: int32
-             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-             */
-            code: number;
-            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-            message: string;
-            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-            details: components["schemas"]["GoogleProtobufAny"][];
-        };
-        StreamingAPI_LastLines: {
-            /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
-            resourceId: string;
-            /**
-             * Format: bytes
-             * @description Signature proving the caller is authorized to access this resource.
-             */
-            resourceSignature: string;
-            /**
-             * @description <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
-             *      This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
-             *      By default, LastLines starts reading the data source from the very last byte available in the data stream
-             *      at the moment of the call, but the client can set the server to start from an earlier position.
-             */
-            offset: string;
-            /**
-             * Format: int32
-             * @description <line_count> makes the streamer return up to <line_count> lines to the client.
-             *      Default value: 1
-             */
-            lineCount: number;
-            /**
-             * @description <search> is a substring for the line search pattern.
-             *      This option makes the controller send to the client only lines that
-             *      have the given substring.
-             */
-            search: string;
-            /**
-             * @description <search_re> is a regular expression for the line search pattern.
-             *      This option makes the controller send to the client only lines that
-             *      match the given regular expression.
-             */
-            searchRe: string;
-        };
-        StreamingAPI_ReadBinary: {
-            /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
-            resourceId: string;
-            /**
-             * Format: bytes
-             * @description Signature proving the caller is authorized to access this resource.
-             */
-            resourceSignature: string;
-            /** @description <offset> makes the streamer perform a seek operation to the given offset before sending the data. */
-            offset: string;
-            /**
-             * Format: uint32
-             * @description <chunk_size> limits the maximum size of <data> for response message in stream.
-             *
-             *      Default value: 32 768 (32 KiB)
-             *      Max value: 3900 * 1024 (3.9 MiB)
-             */
-            chunkSize: number;
-        };
-        StreamingAPI_ReadText: {
-            /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
-            resourceId: string;
-            /**
-             * Format: bytes
-             * @description Signature proving the caller is authorized to access this resource.
-             */
-            resourceSignature: string;
-            /**
-             * @description <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
-             *      This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
-             *      The client can just use the <new_offset> value of the last response from the server to continue streaming after reconnection.
-             */
-            offset: string;
-            /**
-             * @description <read_limit> allows the client to limit total data sent from the server.
-             *      Measured in lines of text.
-             *      E.g. to read top 1000 lines from stream source, use <read_limit> = 1000.
-             *      When both <read_limit> and <search>/<search_re> are set, the <read_limit> is applied first.
-             *      This is equivalent to 'head -n <read_limit> | grep <search>'.
-             *      At most 3.9 MiB (3900 KiB) of data is returned in a single read regardless of the <read_limit> option
-             *      Only full lines of text are returned except for the last line from the completed source
-             *      (the one that is not expected to have new data, like a blob in storage)
-             */
-            readLimit: string;
-            /**
-             * @description <search> is a substring for the line search pattern.
-             *      This option makes the controller send to the client only lines that
-             *      have the given substring.
-             */
-            search: string;
-            /**
-             * @description <search_re> is a regular expression for the line search pattern.
-             *      This option makes the controller send to the client only lines that
-             *      match the given regular expression.
-             */
-            searchRe: string;
-        };
-        StreamingAPI_Response: {
-            /**
-             * Format: bytes
-             * @description data chunk from the item, starting from the <new_offset> of the previous message in the same stream.
-             */
-            data: string;
-            /**
-             * @description <size> is the actual size of the streamed item at the moment of this message.
-             *      This might not be the final amount of streamed data, as the stream source can be updated
-             *      by another independent process (e.g., data is written to a log file).
-             *      This field in combination with <new_offset> shows how far the client is from the end
-             *      of the data right now.
-             */
-            size: string;
-            /**
-             * @description <new_offset> is the new offset in bytes from the start of the streamed item,
-             *      including the size of <data> in the current response.
-             *      A call to the Stream RPC with <offset> = <new_offset> will continue
-             *      streaming from the place of the last received message
-             *      (e.g. <offset> = <new_offset> - 1 will repeat the last byte of
-             *      previously received <data>)
-             */
-            newOffset: string;
-        };
+  schemas: {
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+    StreamingAPI_LastLines: {
+      /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
+      resourceId: string;
+      /**
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
+       *      This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
+       *      By default, LastLines starts reading the data source from the very last byte available in the data stream
+       *      at the moment of the call, but the client can set the server to start from an earlier position.
+       */
+      offset: string;
+      /**
+       * Format: int32
+       * @description <line_count> makes the streamer return up to <line_count> lines to the client.
+       *      Default value: 1
+       */
+      lineCount: number;
+      /**
+       * @description <search> is a substring for the line search pattern.
+       *      This option makes the controller send to the client only lines that
+       *      have the given substring.
+       */
+      search: string;
+      /**
+       * @description <search_re> is a regular expression for the line search pattern.
+       *      This option makes the controller send to the client only lines that
+       *      match the given regular expression.
+       */
+      searchRe: string;
+    };
+    StreamingAPI_ReadBinary: {
+      /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
+      resourceId: string;
+      /**
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /** @description <offset> makes the streamer perform a seek operation to the given offset before sending the data. */
+      offset: string;
+      /**
+       * Format: uint32
+       * @description <chunk_size> limits the maximum size of <data> for response message in stream.
+       *
+       *      Default value: 32 768 (32 KiB)
+       *      Max value: 3900 * 1024 (3.9 MiB)
+       */
+      chunkSize: number;
+    };
+    StreamingAPI_ReadText: {
+      /** @description <resource_id> of Stream resource that keeps info on item to be streamed. */
+      resourceId: string;
+      /**
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
+       *      This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
+       *      The client can just use the <new_offset> value of the last response from the server to continue streaming after reconnection.
+       */
+      offset: string;
+      /**
+       * @description <read_limit> allows the client to limit total data sent from the server.
+       *      Measured in lines of text.
+       *      E.g. to read top 1000 lines from stream source, use <read_limit> = 1000.
+       *      When both <read_limit> and <search>/<search_re> are set, the <read_limit> is applied first.
+       *      This is equivalent to 'head -n <read_limit> | grep <search>'.
+       *      At most 3.9 MiB (3900 KiB) of data is returned in a single read regardless of the <read_limit> option
+       *      Only full lines of text are returned except for the last line from the completed source
+       *      (the one that is not expected to have new data, like a blob in storage)
+       */
+      readLimit: string;
+      /**
+       * @description <search> is a substring for the line search pattern.
+       *      This option makes the controller send to the client only lines that
+       *      have the given substring.
+       */
+      search: string;
+      /**
+       * @description <search_re> is a regular expression for the line search pattern.
+       *      This option makes the controller send to the client only lines that
+       *      match the given regular expression.
+       */
+      searchRe: string;
+    };
+    StreamingAPI_Response: {
+      /**
+       * Format: bytes
+       * @description data chunk from the item, starting from the <new_offset> of the previous message in the same stream.
+       */
+      data: string;
+      /**
+       * @description <size> is the actual size of the streamed item at the moment of this message.
+       *      This might not be the final amount of streamed data, as the stream source can be updated
+       *      by another independent process (e.g., data is written to a log file).
+       *      This field in combination with <new_offset> shows how far the client is from the end
+       *      of the data right now.
+       */
+      size: string;
+      /**
+       * @description <new_offset> is the new offset in bytes from the start of the streamed item,
+       *      including the size of <data> in the current response.
+       *      A call to the Stream RPC with <offset> = <new_offset> will continue
+       *      streaming from the place of the last received message
+       *      (e.g. <offset> = <new_offset> - 1 will repeat the last byte of
+       *      previously received <data>)
+       */
+      newOffset: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    Streaming_LastLines: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StreamingAPI_LastLines"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StreamingAPI_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+  Streaming_LastLines: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    Streaming_ReadBinary: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StreamingAPI_ReadBinary"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StreamingAPI_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StreamingAPI_LastLines"];
+      };
     };
-    Streaming_ReadText: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StreamingAPI_ReadText"];
-            };
+        content: {
+          "application/json": components["schemas"]["StreamingAPI_Response"];
         };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StreamingAPI_Response"];
-                };
-            };
-            /** @description Default error response */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Status"];
-                };
-            };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
     };
+  };
+  Streaming_ReadBinary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StreamingAPI_ReadBinary"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StreamingAPI_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Streaming_ReadText: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StreamingAPI_ReadText"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StreamingAPI_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
 }

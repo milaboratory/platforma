@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/test",
-  "version": "1.61.4",
+  "version": "1.63.4",
   "description": "Typescript Block Test Helpers",
   "license": "UNLICENSED",
   "files": [
@@ -32,6 +32,7 @@
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-tree": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
     "vitest": "catalog:"
   },

@@ -34,6 +34,7 @@ import {
   mapValueInVOE,
 } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
+import { PoolEntryGuard } from "@milaboratories/pl-model-common";
 import { randomUUID } from "node:crypto";
 import type { Optional } from "utility-types";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
@@ -44,18 +45,15 @@ import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
-import type {
-  AxesId,
-  AxesSpec,
-  DiscoverColumnsRequest,
-  DiscoverColumnsResponse,
-  PColumnSpec,
-  PTableColumnId,
-  PTableColumnSpec,
-  SingleAxisSelector,
-  SpecFrameHandle,
+import {
+  resolveRequiredServices,
+  serviceFnKey,
+  Services,
+  ModelServiceRegistry,
+  ServiceInjectionError,
+  ServiceMethodNotFoundError,
 } from "@milaboratories/pl-model-common";
-import { SpecDriver } from "./spec_driver";
+import { getServiceInjectors } from "./service_injectors";
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
   return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
@@ -69,16 +67,16 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
-  private readonly specDriver = new SpecDriver();
-
   private _meta: Map<string, Block> | undefined;
   private get meta(): Map<string, Block> {
     if (this._meta === undefined) {
-      if (this.computableCtx === undefined)
-        throw new Error("blockMeta can't be resolved in this context");
-      this._meta = this.blockCtx.blockMeta(this.computableCtx);
+      this._meta = this.blockCtx.blockMeta(this.requireComputableCtx);
     }
     return this._meta;
+  }
+
+  public get serviceRegistry(): ModelServiceRegistry {
+    return this.env.serviceRegistry;
   }
 
   constructor(
@@ -96,21 +94,29 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     this.accessors.clear();
   }
 
+  private get requireComputableCtx(): ComputableCtx {
+    if (this.computableCtx === undefined)
+      throw new Error("computableCtx not available (called from future mapper?)");
+    return this.computableCtx;
+  }
+
+  public addOnDestroy(callback: () => void): void {
+    this.requireComputableCtx.addOnDestroy(callback);
+  }
+
   //
   // Methods for injected ctx object
   //
 
   getAccessorHandleByName(name: string): string | undefined {
-    if (this.computableCtx === undefined)
-      throw new Error("Accessors can't be used in this context");
+    const cCtx = this.requireComputableCtx;
     const wellKnownAccessor = (name: string, ctxKey: "staging" | "prod"): string | undefined => {
       if (!this.accessors.has(name)) {
         const lambda = this.blockCtx[ctxKey];
         if (lambda === undefined) throw new Error("Staging context not available");
-        const entry = lambda(this.computableCtx!);
+        const entry = lambda(cCtx);
         if (!entry) this.accessors.set(name, undefined);
-        else
-          this.accessors.set(name, this.computableCtx!.accessor(entry).node({ ignoreError: true }));
+        else this.accessors.set(name, cCtx.accessor(entry).node({ ignoreError: true }));
       }
       return this.accessors.get(name) ? name : undefined;
     };
@@ -336,14 +342,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   private _resultPool: ResultPool | undefined = undefined;
   private get resultPool(): ResultPool {
     if (this._resultPool === undefined) {
-      if (this.computableCtx === undefined)
-        throw new Error(
-          "can't use result pool in this context (most porbably called from the future mapper)",
-        );
       this._resultPool = notEmpty(
         this.blockCtx.getResultsPool,
         "getResultsPool",
-      )(this.computableCtx);
+      )(this.requireComputableCtx);
     }
     return this._resultPool;
   }
@@ -355,7 +357,9 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   public getDataFromResultPool(): ResultCollection<PObject<string>> {
     const collection = this.resultPool.getData();
     if (collection.instabilityMarker !== undefined)
-      this.computableCtx!.markUnstable(`incomplete_result_pool:${collection.instabilityMarker}`);
+      this.requireComputableCtx.markUnstable(
+        `incomplete_result_pool:${collection.instabilityMarker}`,
+      );
     return {
       isComplete: collection.isComplete,
       entries: collection.entries.map((e) => ({
@@ -370,7 +374,9 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   > {
     const collection = this.resultPool.getDataWithErrors();
     if (collection.instabilityMarker !== undefined)
-      this.computableCtx!.markUnstable(`incomplete_result_pool:${collection.instabilityMarker}`);
+      this.requireComputableCtx.markUnstable(
+        `incomplete_result_pool:${collection.instabilityMarker}`,
+      );
     return {
       isComplete: collection.isComplete,
       entries: collection.entries.map((e) => ({
@@ -387,7 +393,9 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
     const specs = this.resultPool.getSpecs();
     if (specs.instabilityMarker !== undefined)
-      this.computableCtx!.markUnstable(`specs_from_pool_incomplete:${specs.instabilityMarker}`);
+      this.requireComputableCtx.markUnstable(
+        `specs_from_pool_incomplete:${specs.instabilityMarker}`,
+      );
     return specs;
   }
 
@@ -408,79 +416,37 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   public createPFrame(
     def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PFrameHandle {
-    if (this.computableCtx === undefined)
-      throw new Error(
-        "can't instantiate PFrames from this context (most porbably called from the future mapper)",
-      );
-    const { key, unref } = this.env.driverKit.pFrameDriver.createPFrame(
-      def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+    using guard = new PoolEntryGuard(
+      this.env.driverKit.pFrameDriver.createPFrame(
+        def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+      ),
     );
-    this.computableCtx.addOnDestroy(unref);
-    return key;
+    this.requireComputableCtx.addOnDestroy(guard.entry.unref);
+    return guard.keep().key;
   }
 
   public createPTable(
     def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
-    if (this.computableCtx === undefined)
-      throw new Error(
-        "can't instantiate PTable from this context (most porbably called from the future mapper)",
-      );
-    const { key, unref } = this.env.driverKit.pFrameDriver.createPTable(
-      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+    using guard = new PoolEntryGuard(
+      this.env.driverKit.pFrameDriver.createPTable(
+        mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+      ),
     );
-    this.computableCtx.addOnDestroy(unref);
-    return key;
+    this.requireComputableCtx.addOnDestroy(guard.entry.unref);
+    return guard.keep().key;
   }
+
   public createPTableV2(
     def: PTableDefV2<PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
-    if (this.computableCtx === undefined)
-      throw new Error(
-        "can't instantiate PTable from this context (most porbably called from the future mapper)",
-      );
-    const { key, unref } = this.env.driverKit.pFrameDriver.createPTableV2(
-      mapPTableDefV2(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+    using guard = new PoolEntryGuard(
+      this.env.driverKit.pFrameDriver.createPTableV2(
+        mapPTableDefV2(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+      ),
     );
-    this.computableCtx.addOnDestroy(unref);
-    return key;
-  }
-
-  //
-  // Spec Frames
-  //
-
-  public createSpecFrame(specs: Record<string, PColumnSpec>): SpecFrameHandle {
-    const handle = this.specDriver.createSpecFrame(specs);
-    this.computableCtx?.addOnDestroy(() => this.specDriver.disposeSpecFrame(handle));
-    return handle;
-  }
-
-  public specFrameDiscoverColumns(
-    handle: SpecFrameHandle,
-    request: DiscoverColumnsRequest,
-  ): DiscoverColumnsResponse {
-    return this.specDriver.specFrameDiscoverColumns(handle as SpecFrameHandle, request);
-  }
-
-  public disposeSpecFrame(handle: SpecFrameHandle): void {
-    this.specDriver.disposeSpecFrame(handle as SpecFrameHandle);
-  }
-
-  public expandAxes(spec: AxesSpec): AxesId {
-    return this.specDriver.expandAxes(spec);
-  }
-
-  public collapseAxes(ids: AxesId): AxesSpec {
-    return this.specDriver.collapseAxes(ids);
-  }
-
-  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
-    return this.specDriver.findAxis(spec, selector);
-  }
-
-  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
-    return this.specDriver.findTableColumn(tableSpec, selector);
+    this.requireComputableCtx.addOnDestroy(guard.entry.unref);
+    return guard.keep().key;
   }
 
   /**
@@ -597,49 +563,32 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       if (checkBlockFlag(this.featureFlags, "supportsLazyState")) {
         // injecting lazy state functions
         exportCtxFunction("args", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.args outside the future lambda. Can't be directly used in this context.`,
-            );
-          const args = this.blockCtx.args(this.computableCtx);
+          const cCtx = this.requireComputableCtx;
+          const args = this.blockCtx.args(cCtx);
           return args === undefined ? vm.undefined : vm.newString(args);
         });
         exportCtxFunction("blockStorage", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.blockStorage outside the future lambda. Can't be directly used in this context.`,
-            );
-          return vm.newString(this.blockCtx.blockStorage(this.computableCtx) ?? "{}");
+          return vm.newString(this.blockCtx.blockStorage(this.requireComputableCtx) ?? "{}");
         });
         exportCtxFunction("data", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.data outside the future lambda. Can't be directly used in this context.`,
-            );
-          return vm.newString(this.blockCtx.data(this.computableCtx) ?? "{}");
+          return vm.newString(this.blockCtx.data(this.requireComputableCtx) ?? "{}");
         });
         exportCtxFunction("activeArgs", () => {
-          if (this.computableCtx === undefined)
-            throw new Error(
-              `Add dummy call to ctx.activeArgs outside the future lambda. Can't be directly used in this context.`,
-            );
-          const res = this.blockCtx.activeArgs(this.computableCtx);
+          const cCtx = this.requireComputableCtx;
+          const res = this.blockCtx.activeArgs(cCtx);
           return res === undefined ? vm.undefined : vm.newString(res);
         });
         // For v1/v2 blocks, also inject uiState (extracted from state.uiState)
         if (isLegacyBlock) {
           exportCtxFunction("uiState", () => {
-            if (this.computableCtx === undefined)
-              throw new Error(
-                `Add dummy call to ctx.uiState outside the future lambda. Can't be directly used in this context.`,
-              );
-            return vm.newString(extractUiState(this.blockCtx.data(this.computableCtx)));
+            return vm.newString(extractUiState(this.blockCtx.data(this.requireComputableCtx)));
           });
         }
       } else {
-        const args = this.blockCtx.args(this.computableCtx!);
-        const activeArgs = this.blockCtx.activeArgs(this.computableCtx!);
-        const data = this.blockCtx.data(this.computableCtx!);
+        const cCtx = this.requireComputableCtx;
+        const args = this.blockCtx.args(cCtx);
+        const activeArgs = this.blockCtx.activeArgs(cCtx);
+        const data = this.blockCtx.data(cCtx);
         if (args !== undefined) {
           vm.setProp(configCtx, "args", localScope.manage(vm.newString(args)));
         }
@@ -888,10 +837,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         );
       });
 
-      //
-      // PFrames / PTables
-      //
-
       exportCtxFunction("createPFrame", (def) => {
         return parent.exportSingleValue(
           this.createPFrame(
@@ -920,63 +865,52 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       //
-      // Spec Frames
+      // Services
       //
 
-      exportCtxFunction("createSpecFrame", (specs) => {
-        return parent.exportSingleValue(
-          this.createSpecFrame(parent.importObjectViaJson(specs) as Record<string, PColumnSpec>),
-          undefined,
-        );
+      const requiredServiceNames = new Set(resolveRequiredServices(this.featureFlags) as string[]);
+      const serviceFunctions = new Map<string, VmFunctionImplementation<QuickJSHandle>>();
+      const injectors = getServiceInjectors();
+
+      for (const [key, serviceId] of Object.entries(Services)) {
+        if (!requiredServiceNames.has(serviceId)) continue;
+        const injector = injectors[key as keyof typeof injectors];
+        try {
+          const methods = injector({ host: this, vm: parent });
+          for (const [method, fn] of Object.entries(methods)) {
+            serviceFunctions.set(serviceFnKey(serviceId, method), fn);
+          }
+        } catch (e) {
+          throw new ServiceInjectionError(`Failed to inject service "${serviceId}"`, { cause: e });
+        }
+      }
+
+      exportCtxFunction("getServiceNames", () => {
+        return parent.exportObjectViaJson([...requiredServiceNames]);
       });
 
-      exportCtxFunction("specFrameDiscoverColumns", (handle, request) => {
-        return parent.exportObjectViaJson(
-          this.specFrameDiscoverColumns(
-            vm.getString(handle) as SpecFrameHandle,
-            parent.importObjectViaJson(request) as DiscoverColumnsRequest,
-          ),
-          undefined,
-        );
+      exportCtxFunction("getServiceMethods", (serviceIdHandle) => {
+        const serviceId = vm.getString(serviceIdHandle);
+        const pfx = serviceFnKey(serviceId);
+        const methods = [...serviceFunctions.keys()]
+          .filter((k) => k.startsWith(pfx))
+          .map((k) => k.slice(pfx.length));
+        return parent.exportObjectViaJson(methods, undefined);
       });
 
-      exportCtxFunction("disposeSpecFrame", (handle) => {
-        this.disposeSpecFrame(vm.getString(handle) as SpecFrameHandle);
-      });
-
-      exportCtxFunction("expandAxes", (spec) => {
-        return parent.exportObjectViaJson(
-          this.expandAxes(parent.importObjectViaJson(spec) as AxesSpec),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("collapseAxes", (ids) => {
-        return parent.exportObjectViaJson(
-          this.collapseAxes(parent.importObjectViaJson(ids) as AxesId),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("findAxis", (spec, selector) => {
-        return parent.exportSingleValue(
-          this.findAxis(
-            parent.importObjectViaJson(spec) as AxesSpec,
-            parent.importObjectViaJson(selector) as SingleAxisSelector,
-          ),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("findTableColumn", (tableSpec, selector) => {
-        return parent.exportSingleValue(
-          this.findTableColumn(
-            parent.importObjectViaJson(tableSpec) as PTableColumnSpec[],
-            parent.importObjectViaJson(selector) as PTableColumnId,
-          ),
-          undefined,
-        );
-      });
+      exportCtxFunction(
+        "callServiceMethod",
+        function (this: QuickJSHandle, serviceIdHandle, methodHandle, ...argHandles) {
+          const serviceId = vm.getString(serviceIdHandle);
+          const method = vm.getString(methodHandle);
+          const fn = serviceFunctions.get(serviceFnKey(serviceId, method));
+          if (!fn)
+            throw new ServiceMethodNotFoundError(
+              `Method "${method}" not found on service "${serviceId}"`,
+            );
+          return fn.call(this, ...argHandles);
+        },
+      );
 
       //
       // Computable

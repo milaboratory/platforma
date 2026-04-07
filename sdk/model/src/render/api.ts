@@ -1,12 +1,8 @@
 import type {
   AnchoredPColumnSelector,
   AnyFunction,
-  AxesId,
-  AxesSpec,
   AxisId,
   DataInfo,
-  DiscoverColumnsRequest,
-  DiscoverColumnsResponse,
   Option,
   PColumn,
   PColumnLazy,
@@ -19,8 +15,6 @@ import type {
   PObjectId,
   PObjectSpec,
   PSpecPredicate,
-  PTableColumnId,
-  PTableColumnSpec,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -29,7 +23,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
-  SingleAxisSelector,
+  ServiceName,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -61,8 +55,11 @@ import type {
   PluginHandle,
   PluginFactoryLike,
   InferFactoryData,
+  InferFactoryModelServices,
   InferFactoryParams,
 } from "../plugin_handle";
+import type { BlockDefaultModelServices } from "../services/service_resolve";
+import type { ModelServices as AllModelServices } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -557,11 +554,40 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
+export abstract class RenderCtxBase<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = Partial<AllModelServices>,
+> {
   protected readonly ctx: GlobalCfgRenderCtx;
+  private readonly requiredServiceNames: ServiceName[];
+  private cachedServices?: ModelServices;
 
-  constructor() {
+  constructor(requiredServiceNames: ServiceName[] = []) {
     this.ctx = getCfgRenderCtx();
+    this.requiredServiceNames = requiredServiceNames;
+  }
+
+  get services(): ModelServices {
+    if (this.cachedServices) return this.cachedServices;
+    const ctx = this.ctx;
+    const services = Object.freeze(
+      Object.fromEntries(
+        this.requiredServiceNames.map((id) => [
+          id,
+          Object.freeze(
+            Object.fromEntries(
+              (ctx.getServiceMethods(id) as string[]).map((method) => [
+                method,
+                (...args: unknown[]) => ctx.callServiceMethod(id, method, ...args),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    ) as ModelServices;
+    this.cachedServices = services;
+    return services;
   }
 
   private dataCache?: { v: Data };
@@ -717,41 +743,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.getBlockLabel(blockId);
   }
 
-  //
-  // Spec Frames
-  //
-
-  public createSpecFrame(specs: Record<string, PColumnSpec>): string {
-    return this.ctx.createSpecFrame(specs);
-  }
-
-  public specFrameDiscoverColumns(
-    handle: string,
-    request: DiscoverColumnsRequest,
-  ): DiscoverColumnsResponse {
-    return this.ctx.specFrameDiscoverColumns(handle, request);
-  }
-
-  public disposeSpecFrame(handle: string): void {
-    this.ctx.disposeSpecFrame(handle);
-  }
-
-  public expandAxes(spec: AxesSpec): AxesId {
-    return this.ctx.expandAxes(spec);
-  }
-
-  public collapseAxes(ids: AxesId): AxesSpec {
-    return this.ctx.collapseAxes(ids);
-  }
-
-  public findAxis(spec: AxesSpec, selector: SingleAxisSelector): number {
-    return this.ctx.findAxis(spec, selector);
-  }
-
-  public findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number {
-    return this.ctx.findTableColumn(tableSpec, selector);
-  }
-
   public getCurrentUnstableMarker(): string | undefined {
     return this.ctx.getCurrentUnstableMarker();
   }
@@ -770,7 +761,11 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+export class BlockRenderCtx<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = BlockDefaultModelServices,
+> extends RenderCtxBase<Args, Data, ModelServices> {
   private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this.argsCache === undefined) {
@@ -819,15 +814,19 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> extends RenderCtxBase<
-  unknown,
-  InferFactoryData<F>
-> {
+export class PluginRenderCtx<
+  F extends PluginFactoryLike = PluginFactoryLike,
+  ModelServices = InferFactoryModelServices<F>,
+> extends RenderCtxBase<unknown, InferFactoryData<F>, ModelServices> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
-    super();
+  constructor(
+    handle: PluginHandle<F>,
+    wrappedInputs: Record<string, () => unknown>,
+    requiredServiceNames: ServiceName[] = [],
+  ) {
+    super(requiredServiceNames);
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }

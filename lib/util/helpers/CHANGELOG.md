@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.14.1
+
+### Patch Changes
+
+- 6dc9e0d: Move browser-safe types (MiLogger, RefCountPoolBase, isDisposable) from ts-helpers to helpers to fix Vite browser bundling error in ui-vue
+
 ## 1.14.0
 
 ### Minor Changes

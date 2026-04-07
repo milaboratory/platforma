@@ -80,17 +80,13 @@ const UNIQUE_VALUES_LIMIT = 1000000;
 const sortValuesPredicate = (a: { label: string }, b: { label: string }) =>
   a.label.localeCompare(b.label, "en", { numeric: true });
 
-function convertColumnData(
-  type: ValueType,
-  response: PTableVector,
-  absentValue: number | null = null,
-): PValue[] {
+function convertColumnData(type: ValueType, response: PTableVector): PValue[] {
   if (type === "String") {
     return response.data as PValue[];
   }
   const res: PValue[] = new Array(response.data.length);
   for (let i = 0; i < response.data.length; i++) {
-    res[i] = pTableValue(response, i, { absent: absentValue, na: null }) as PValue;
+    res[i] = pTableValue(response, i) as PValue;
   }
   return res;
 }

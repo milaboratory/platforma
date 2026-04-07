@@ -1,10 +1,24 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
 import { PlAutocompleteMulti } from "@platforma-sdk/ui-vue";
 import { useApp } from "./app";
 import Counter from "./Counter.vue";
 
 const app = useApp();
+
+// Block-level UI service test: createSpecFrame + unref (sync WASM)
+const blockSpecResult = ref("pending...");
+try {
+  const entry = app.services.pframeSpec.createSpecFrame({});
+  entry.unref();
+  blockSpecResult.value = `ok (handle: ${entry.key})`;
+} catch (e) {
+  blockSpecResult.value = `error: ${e}`;
+}
+
+// @ts-expect-error pframe is NOT available at block level (only via plugins)
+void app.services.pframe;
 
 async function optionsSearch(s: string | string[], type: "label" | "value") {
   if (type === "value" && Array.isArray(s)) {
@@ -43,6 +57,18 @@ async function optionsSearch(s: string | string[], type: "label" | "value") {
     <details open>
       <summary>Output with status</summary>
       <pre>{{ JSON.stringify(app.model.outputs.delayedOutputWithStatus, null, 2) }}</pre>
+    </details>
+    <details open>
+      <summary>Block specFrame test (model output)</summary>
+      <pre>{{ app.model.outputs.blockSpecFrameTest }}</pre>
+    </details>
+    <details open>
+      <summary>Block table test (createPlDataTable)</summary>
+      <pre>{{ JSON.stringify(app.model.outputs.blockTableTest, null, 2) }}</pre>
+    </details>
+    <details open>
+      <summary>Block UI pframeSpec service</summary>
+      <pre>{{ blockSpecResult }}</pre>
     </details>
     <Counter :handle="app.plugins.counter.handle" />
   </PlBlockPage>

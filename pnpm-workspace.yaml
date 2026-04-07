@@ -241,7 +241,7 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.15
+  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.17
   "@milaboratories/pframes-rs-wasm": *pframes-rs
 
   "quickjs-emscripten": 0.31.0
@@ -274,6 +274,8 @@ catalog:
   "@types/sortablejs": ^1.15.6
 
   "@zip.js/zip.js": ^2.8.2
+
+  "@noble/hashes": ^2.0.1
 
   # SW
 
