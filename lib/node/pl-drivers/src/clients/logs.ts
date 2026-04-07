@@ -57,6 +57,7 @@ export class ClientLogs {
       await client.POST("/v1/last-lines", {
         body: {
           resourceId: rId.toString(),
+          resourceSignature: "",
           lineCount: lineCount,
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
@@ -103,6 +104,7 @@ export class ClientLogs {
       await client.POST("/v1/read/text", {
         body: {
           resourceId: rId.toString(),
+          resourceSignature: "",
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
