@@ -18,6 +18,7 @@ import {
   type PlTableColumnId,
   type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
+  isLinkerColumn as isLinkerColumnSpec,
   isColumnHidden,
   isColumnOptional,
   matchAxisId,
@@ -155,7 +156,7 @@ export async function calculateGridOptions({
             }
             return false;
           }
-          return !isColumnHidden(spec.spec);
+          return !isColumnHidden(spec.spec) && !isLinkerColumnSpec(spec.spec);
       }
     })
     .map(([i]) => i)
