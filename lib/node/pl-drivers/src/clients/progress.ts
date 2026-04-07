@@ -62,7 +62,7 @@ export class ClientProgress {
     } else {
       const resp = (
         await client.POST("/v1/get-progress", {
-          body: { resourceId: id.toString() },
+          body: { resourceId: id.toString(), resourceSignature: "" },
           headers: { ...createRTypeRoutingHeader(type) },
         })
       ).data!.report;

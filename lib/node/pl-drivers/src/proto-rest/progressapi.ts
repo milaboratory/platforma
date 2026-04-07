@@ -42,6 +42,8 @@ export interface components {
   schemas: {
     GetStatus_Request: {
       resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
     };
     GetStatus_Response: {
       report: components["schemas"]["ProgressAPI_Report"];
@@ -64,6 +66,8 @@ export interface components {
     };
     RealtimeStatus_Request: {
       resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
       updateInterval: string;
     };
     RealtimeStatus_Response: {

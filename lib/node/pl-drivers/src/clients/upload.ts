@@ -96,6 +96,7 @@ export class ClientUpload {
       await client.POST("/v1/upload/init", {
         body: {
           resourceId: id.toString(),
+          resourceSignature: "",
         },
         headers: { ...createRTypeRoutingHeader(type) },
       })
@@ -140,6 +141,7 @@ export class ClientUpload {
         await client.POST("/v1/upload/get-part-url", {
           body: {
             resourceId: id.toString(),
+            resourceSignature: "",
             partNumber: partNumber.toString(),
             uploadedPartSize: "0",
             isInternalUse: false,
@@ -217,11 +219,21 @@ export class ClientUpload {
     const client = this.wire.get();
 
     if (client instanceof UploadClient) {
-      await client.finalize({ resourceId: info.id }, addRTypeToMetadata(info.type, options));
+      await client.finalize(
+        {
+          resourceId: info.id,
+          checksumAlgorithm: UploadAPI_ChecksumAlgorithm.UNSPECIFIED,
+          checksum: new Uint8Array(0),
+        },
+        addRTypeToMetadata(info.type, options),
+      );
     } else {
       await client.POST("/v1/upload/finalize", {
         body: {
           resourceId: info.id.toString(),
+          resourceSignature: "",
+          checksumAlgorithm: 0,
+          checksum: "",
         },
         headers: { ...createRTypeRoutingHeader(info.type) },
       });
@@ -262,6 +274,7 @@ export class ClientUpload {
     await client.POST("/v1/upload/update-progress", {
       body: {
         resourceId: id.toString(),
+        resourceSignature: "",
         bytesProcessed: bytesProcessed.toString(),
       },
       headers: { ...createRTypeRoutingHeader(type) },

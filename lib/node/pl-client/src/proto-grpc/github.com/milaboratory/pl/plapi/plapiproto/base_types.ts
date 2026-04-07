@@ -32,6 +32,10 @@ export interface FieldRef {
      */
     resourceId: bigint;
     /**
+     * @generated from protobuf field: optional bytes resource_signature = 4
+     */
+    resourceSignature?: Uint8Array;
+    /**
      * @generated from protobuf field: string field_name = 3
      */
     fieldName: string;
@@ -129,6 +133,7 @@ class FieldRef$Type extends MessageType<FieldRef> {
     constructor() {
         super("MiLaboratories.PL.Base.FieldRef", [
             { no: 2, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 3, name: "field_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
@@ -147,6 +152,9 @@ class FieldRef$Type extends MessageType<FieldRef> {
             switch (fieldNo) {
                 case /* uint64 resource_id */ 2:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 4:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* string field_name */ 3:
                     message.fieldName = reader.string();
@@ -169,6 +177,9 @@ class FieldRef$Type extends MessageType<FieldRef> {
         /* string field_name = 3; */
         if (message.fieldName !== "")
             writer.tag(3, WireType.LengthDelimited).string(message.fieldName);
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

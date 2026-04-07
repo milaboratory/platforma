@@ -26,11 +26,17 @@ export interface UploadAPI_Init {
  */
 export interface UploadAPI_Init_Request {
     /**
-     * Id of upload resource
+     * ID of the upload resource
      *
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
+    /**
+     * Signature proving the caller is authorized to access this resource.
+     *
+     * @generated from protobuf field: optional bytes resource_signature = 2
+     */
+    resourceSignature?: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Init.Response
@@ -38,11 +44,11 @@ export interface UploadAPI_Init_Request {
 export interface UploadAPI_Init_Response {
     /**
      * Number of parts in this upload.
-     * For parallel upload support, client can generate any number of part upload URLs
-     * at the moment and upload them in parallel.
+     * For parallel upload support, the client can generate any number of part upload URLs
+     * at once and upload them in parallel.
      * <parts_count> keeps the number of chunks supported by this upload.
      * The parts count is calculated from the planned size of the upload, controller
-     * configuration and underlying storage restrictions.
+     * configuration, and underlying storage restrictions.
      *
      * @generated from protobuf field: uint64 parts_count = 1
      */
@@ -52,22 +58,23 @@ export interface UploadAPI_Init_Response {
      */
     partSize: bigint;
     /**
-     * Checksum algorithm to use for the part upload.
+     * Checksum algorithm to use for each part upload and final verification.
      *
      * @generated from protobuf field: MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm checksum_algorithm = 4
      */
     checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
     /**
-     * Header name to use for the checksum.
+     * Header name to use for the checksum in each part upload request.
+     * A non-empty value combined with checksum_algorithm enables each part upload verification.
      *
      * @generated from protobuf field: string checksum_header = 5
      */
     checksumHeader: string;
     /**
-     * List of IDs of parts that were already uploaded by client.
-     * Helps client to recover upload and skip already done parts
+     * List of IDs of parts that were already uploaded by the client.
+     * Helps the client recover the upload and skip already uploaded parts
      * after being interrupted in the middle of the upload
-     * (say, because of the restart).
+     * (say, because of a restart).
      * Parts enumeration starts from 1.
      *
      * @generated from protobuf field: repeated uint64 uploaded_parts = 2
@@ -84,21 +91,27 @@ export interface UploadAPI_UpdateProgress {
  */
 export interface UploadAPI_UpdateProgress_Request {
     /**
-     * Id of upload resource
+     * ID of the upload resource
      *
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
     /**
-     * Amount of bytes, uploaded since the earlier call to UpdateProgress.
-     * This value is just blindly added to the 'bytes_processed' of progress report,
-     * so other clients can see the upload progress.
-     * If client uploads the data in several streams (several chunks in parallel), it
-     * can safely send progress updates individually for each of the streams, just counting
-     * bytes uploaded by particular stream.
+     * Signature proving the caller is authorized to access this resource.
      *
-     * Negative value can be used to report about upload retry: when upload was interrupted,
-     * part of the uploaded data is lost and require re-upload.
+     * @generated from protobuf field: optional bytes resource_signature = 3
+     */
+    resourceSignature?: Uint8Array;
+    /**
+     * Number of bytes uploaded since the earlier call to UpdateProgress.
+     * This value is just blindly added to the 'bytes_processed' of the progress report,
+     * so other clients can see the upload progress.
+     * If the client uploads the data in several streams (several chunks in parallel), it
+     * can safely send progress updates individually for each of the streams, just counting
+     * bytes uploaded by a particular stream.
+     *
+     * A negative value can be used to report an upload retry: when the upload was interrupted,
+     * part of the uploaded data is lost and requires a re-upload.
      *
      * @generated from protobuf field: int64 bytes_processed = 2
      */
@@ -119,15 +132,21 @@ export interface UploadAPI_GetPartURL {
  */
 export interface UploadAPI_GetPartURL_Request {
     /**
-     * Id of upload resource
+     * ID of the upload resource
      *
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
     /**
-     * Part to be uploaded. It is responsibility of the Client to watch after already uploaded parts:
-     * - client can request an URL for the same part twice (request -> request) without errors;
-     * - client can request an URL for alrady uploaded part (request -> upload -> request) without errors.
+     * Signature proving the caller is authorized to access this resource.
+     *
+     * @generated from protobuf field: optional bytes resource_signature = 6
+     */
+    resourceSignature?: Uint8Array;
+    /**
+     * Part to be uploaded. It is the responsibility of the client to keep track of already uploaded parts:
+     * - client can request a URL for the same part twice (request -> request) without errors;
+     * - client can request a URL for an already uploaded part (request -> upload -> request) without errors.
      *
      * Parts enumeration starts from 1.
      *
@@ -135,24 +154,24 @@ export interface UploadAPI_GetPartURL_Request {
      */
     partNumber: bigint;
     /**
-     * Size of the part uploaded by client earlier. Allows controller to count upload progress
-     * based on client's input.
-     * Client is free to never sent this value (send zeroes in each request).
+     * Size of the part uploaded by the client earlier. Allows the controller to count upload progress
+     * based on the client's input.
+     * The client is free to never send this value (send zeroes in each request).
      *
      * @generated from protobuf field: uint64 uploaded_part_size = 3
      */
     uploadedPartSize: bigint;
     /**
-     * Do we need to presign URL for internal use.
-     * Controllers could use this if they are trying to download something from internal network.
-     * For backward compatibility, by default pl backend will presign external urls.
+     * Whether to presign the URL for internal use.
+     * Controllers could use this if they are trying to upload something from the internal network.
+     * For backward compatibility, by default the pl backend will presign external URLs.
      *
      * @generated from protobuf field: bool is_internal_use = 4
      */
     isInternalUse: boolean;
     /**
-     * Checksum is not used for now, but it is here for case
-     * where signing checksum header is required.
+     * Checksum is not used for now, but it is here for the case
+     * where signing the checksum header is required.
      *
      * @generated from protobuf field: string part_checksum = 5
      */
@@ -163,11 +182,11 @@ export interface UploadAPI_GetPartURL_Request {
  */
 export interface UploadAPI_GetPartURL_HTTPHeader {
     /**
-     * @generated from protobuf field: string Name = 1
+     * @generated from protobuf field: string name = 1
      */
     name: string;
     /**
-     * @generated from protobuf field: string Value = 2
+     * @generated from protobuf field: string value = 2
      */
     value: string;
 }
@@ -188,9 +207,9 @@ export interface UploadAPI_GetPartURL_Response {
      */
     method: string;
     /**
-     * List of headers with their values, MANDATORY to be sent by the client for the upload.
-     * The destination service (the one, that will handle upload request for specific part)
-     * may reject the request if it would not keep the given headers.
+     * List of headers with their values that MUST be sent by the client for the upload.
+     * The destination service (the one that will handle the upload request for a specific part)
+     * may reject the request if it does not include the given headers.
      *
      * @generated from protobuf field: repeated MiLaboratories.Controller.Shared.UploadAPI.GetPartURL.HTTPHeader headers = 3
      */
@@ -198,7 +217,7 @@ export interface UploadAPI_GetPartURL_Response {
     /**
      * The number of the _first_ byte in the chunk.
      * Absolute position from the start of the file ( file.seek(<chunk_start>, SEEK_START) ).
-     * The client is expected to send [<chunk_start>; <chunk_end>) range.
+     * The client is expected to send the [<chunk_start>; <chunk_end>) range.
      *
      * @generated from protobuf field: uint64 chunk_start = 4
      */
@@ -206,7 +225,7 @@ export interface UploadAPI_GetPartURL_Response {
     /**
      * The number of the byte _after_ the last to be sent in the chunk.
      * Absolute position from the start of the file.
-     * The client is expected to send [<chunk_start>; <chunk_end>) range.
+     * The client is expected to send the [<chunk_start>; <chunk_end>) range.
      *
      * @generated from protobuf field: uint64 chunk_end = 5
      */
@@ -225,11 +244,59 @@ export interface UploadAPI_Finalize_Request {
      * @generated from protobuf field: uint64 resource_id = 1
      */
     resourceId: bigint;
+    /**
+     * Signature proving the caller is authorized to access this resource.
+     *
+     * @generated from protobuf field: optional bytes resource_signature = 4
+     */
+    resourceSignature?: Uint8Array;
+    /**
+     * The client can send the final checksum of the whole file to verify the upload.
+     * The algorithm used to calculate this final checksum must match the algorithm from
+     * Init.Response. The server may reject the request on a mismatch
+     * (meaning the server does not support the given algorithm).
+     *
+     * @generated from protobuf field: MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm checksum_algorithm = 2
+     */
+    checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
+    /**
+     * Checksum of the whole file for validation. When provided, the server may verify the upload before
+     * marking it final. This is optional behavior that depends on the particular storage driver
+     * used on the backend side for this upload. See the storage driver's implementation for more details.
+     *
+     * @generated from protobuf field: bytes checksum = 3
+     */
+    checksum: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Finalize.Response
  */
 export interface UploadAPI_Finalize_Response {
+}
+/**
+ * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset
+ */
+export interface UploadAPI_Reset {
+}
+/**
+ * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset.Request
+ */
+export interface UploadAPI_Reset_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * Signature proving the caller is authorized to access this resource.
+     *
+     * @generated from protobuf field: optional bytes resource_signature = 2
+     */
+    resourceSignature?: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset.Response
+ */
+export interface UploadAPI_Reset_Response {
 }
 /**
  * @generated from protobuf enum MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm
@@ -324,7 +391,8 @@ export const UploadAPI_Init = new UploadAPI_Init$Type();
 class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.Init.Request", [
-            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_Init_Request>): UploadAPI_Init_Request {
@@ -342,6 +410,9 @@ class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
+                case /* optional bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -357,6 +428,9 @@ class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -497,6 +571,7 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.UpdateProgress.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "bytes_processed", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
@@ -515,6 +590,9 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 3:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* int64 bytes_processed */ 2:
                     message.bytesProcessed = reader.int64().toBigInt();
@@ -537,6 +615,9 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
         /* int64 bytes_processed = 2; */
         if (message.bytesProcessed !== 0n)
             writer.tag(2, WireType.Varint).int64(message.bytesProcessed);
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -628,6 +709,7 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.GetPartURL.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 6, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "part_number", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "uploaded_part_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "is_internal_use", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
@@ -652,6 +734,9 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 6:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* uint64 part_number */ 2:
                     message.partNumber = reader.uint64().toBigInt();
@@ -692,6 +777,9 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
         /* string part_checksum = 5; */
         if (message.partChecksum !== "")
             writer.tag(5, WireType.LengthDelimited).string(message.partChecksum);
+        /* optional bytes resource_signature = 6; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(6, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -706,8 +794,8 @@ export const UploadAPI_GetPartURL_Request = new UploadAPI_GetPartURL_Request$Typ
 class UploadAPI_GetPartURL_HTTPHeader$Type extends MessageType<UploadAPI_GetPartURL_HTTPHeader> {
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.GetPartURL.HTTPHeader", [
-            { no: 1, name: "Name", kind: "scalar", jsonName: "Name", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "Value", kind: "scalar", jsonName: "Value", T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "value", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_GetPartURL_HTTPHeader>): UploadAPI_GetPartURL_HTTPHeader {
@@ -723,10 +811,10 @@ class UploadAPI_GetPartURL_HTTPHeader$Type extends MessageType<UploadAPI_GetPart
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* string Name */ 1:
+                case /* string name */ 1:
                     message.name = reader.string();
                     break;
-                case /* string Value */ 2:
+                case /* string value */ 2:
                     message.value = reader.string();
                     break;
                 default:
@@ -741,10 +829,10 @@ class UploadAPI_GetPartURL_HTTPHeader$Type extends MessageType<UploadAPI_GetPart
         return message;
     }
     internalBinaryWrite(message: UploadAPI_GetPartURL_HTTPHeader, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* string Name = 1; */
+        /* string name = 1; */
         if (message.name !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.name);
-        /* string Value = 2; */
+        /* string value = 2; */
         if (message.value !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.value);
         let u = options.writeUnknownFields;
@@ -878,12 +966,17 @@ export const UploadAPI_Finalize = new UploadAPI_Finalize$Type();
 class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.Finalize.Request", [
-            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "checksum_algorithm", kind: "enum", T: () => ["MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm", UploadAPI_ChecksumAlgorithm, "CHECKSUM_ALGORITHM_"] },
+            { no: 3, name: "checksum", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_Finalize_Request>): UploadAPI_Finalize_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.checksumAlgorithm = 0;
+        message.checksum = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<UploadAPI_Finalize_Request>(this, message, value);
         return message;
@@ -895,6 +988,15 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 4:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm checksum_algorithm */ 2:
+                    message.checksumAlgorithm = reader.int32();
+                    break;
+                case /* bytes checksum */ 3:
+                    message.checksum = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -911,6 +1013,15 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm checksum_algorithm = 2; */
+        if (message.checksumAlgorithm !== 0)
+            writer.tag(2, WireType.Varint).int32(message.checksumAlgorithm);
+        /* bytes checksum = 3; */
+        if (message.checksum.length)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.checksum);
+        /* optional bytes resource_signature = 4; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -959,6 +1070,136 @@ class UploadAPI_Finalize_Response$Type extends MessageType<UploadAPI_Finalize_Re
  * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.UploadAPI.Finalize.Response
  */
 export const UploadAPI_Finalize_Response = new UploadAPI_Finalize_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UploadAPI_Reset$Type extends MessageType<UploadAPI_Reset> {
+    constructor() {
+        super("MiLaboratories.Controller.Shared.UploadAPI.Reset", []);
+    }
+    create(value?: PartialMessage<UploadAPI_Reset>): UploadAPI_Reset {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UploadAPI_Reset>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadAPI_Reset): UploadAPI_Reset {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UploadAPI_Reset, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset
+ */
+export const UploadAPI_Reset = new UploadAPI_Reset$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UploadAPI_Reset_Request$Type extends MessageType<UploadAPI_Reset_Request> {
+    constructor() {
+        super("MiLaboratories.Controller.Shared.UploadAPI.Reset.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<UploadAPI_Reset_Request>): UploadAPI_Reset_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<UploadAPI_Reset_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadAPI_Reset_Request): UploadAPI_Reset_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UploadAPI_Reset_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* optional bytes resource_signature = 2; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset.Request
+ */
+export const UploadAPI_Reset_Request = new UploadAPI_Reset_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class UploadAPI_Reset_Response$Type extends MessageType<UploadAPI_Reset_Response> {
+    constructor() {
+        super("MiLaboratories.Controller.Shared.UploadAPI.Reset.Response", []);
+    }
+    create(value?: PartialMessage<UploadAPI_Reset_Response>): UploadAPI_Reset_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<UploadAPI_Reset_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: UploadAPI_Reset_Response): UploadAPI_Reset_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: UploadAPI_Reset_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset.Response
+ */
+export const UploadAPI_Reset_Response = new UploadAPI_Reset_Response$Type();
 /**
  * @generated ServiceType for protobuf service MiLaboratories.Controller.Shared.Upload
  */
@@ -966,5 +1207,6 @@ export const Upload = new ServiceType("MiLaboratories.Controller.Shared.Upload",
     { name: "Init", options: { "google.api.http": { post: "/v1/upload/init", body: "*" } }, I: UploadAPI_Init_Request, O: UploadAPI_Init_Response },
     { name: "GetPartURL", options: { "google.api.http": { post: "/v1/upload/get-part-url", body: "*" } }, I: UploadAPI_GetPartURL_Request, O: UploadAPI_GetPartURL_Response },
     { name: "UpdateProgress", options: { "google.api.http": { post: "/v1/upload/update-progress", body: "*" } }, I: UploadAPI_UpdateProgress_Request, O: UploadAPI_UpdateProgress_Response },
-    { name: "Finalize", options: { "google.api.http": { post: "/v1/upload/finalize", body: "*" } }, I: UploadAPI_Finalize_Request, O: UploadAPI_Finalize_Response }
+    { name: "Finalize", options: { "google.api.http": { post: "/v1/upload/finalize", body: "*" } }, I: UploadAPI_Finalize_Request, O: UploadAPI_Finalize_Response },
+    { name: "Reset", options: { "google.api.http": { post: "/v1/upload/reset", body: "*" } }, I: UploadAPI_Reset_Request, O: UploadAPI_Reset_Response }
 ]);

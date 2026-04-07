@@ -55,6 +55,7 @@ export class ClientLs {
         await client.POST("/v1/list", {
           body: {
             resourceId: rInfo.id.toString(),
+            resourceSignature: "",
             location: path,
           },
           headers: { ...createRTypeRoutingHeader(rInfo.type) },
