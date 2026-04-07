@@ -116,9 +116,8 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct,
-    ...annotated.linked,
+    ...annotated.linked.flatMap((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
     ...annotated.labels,
-    ...annotated.linkers,
   ]);
 
   const filters = mergeFilters(state.pTableParams.filters, options.filters);
@@ -135,11 +134,10 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const fullDef = createPTableDefV3({
     coreColumns,
-    secondaryColumns: [
-      ...nonCoreDirectColumns,
-      ...annotated.linked,
-      ...annotated.linkers,
-      ...annotated.labels,
+    secondaryGroups: [
+      ...nonCoreDirectColumns.map((c) => [c]),
+      ...annotated.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
+      ...annotated.labels.map((c) => [c]),
     ],
     coreJoinType,
     filters,
@@ -151,7 +149,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.direct,
     ...annotated.linked,
     ...annotated.labels,
-    ...annotated.linkers,
+    ...uniqueBy([...annotated.linkers.values()].flat(), (c) => c.id),
   ]);
   if (!fullHandle || !pframeHandle) return undefined;
 
@@ -167,11 +165,10 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const visibleDef = createPTableDefV3({
     coreColumns,
-    secondaryColumns: [
-      ...visibleNonCoreDirect,
-      ...visible.linked,
-      ...annotated.linkers,
-      ...visible.labels,
+    secondaryGroups: [
+      ...visibleNonCoreDirect.map((c) => [c]),
+      ...visible.linked.map((lc) => [...(visible.linkers.get(lc.id) ?? []), lc]),
+      ...visible.labels.map((c) => [c]),
     ],
     coreJoinType,
     filters,
@@ -210,23 +207,24 @@ type SplitDiscoveredColumns = {
 };
 
 type ResolvedColumns = {
-  readonly all: TableColumn[];
   readonly direct: TableColumn[];
   readonly linked: TableColumn[];
-  readonly linkers: TableColumn[];
+  readonly linkers: Map<PObjectId, TableColumn[]>;
+  readonly all: TableColumn[];
 };
 
 type AnnotatedColumnGroups = {
   readonly direct: TableColumn[];
   readonly linked: TableColumn[];
+  readonly linkers: Map<PObjectId, TableColumn[]>;
   readonly labels: TableColumn[];
-  readonly linkers: TableColumn[];
 };
 
 type VisibleColumns = {
   readonly all: TableColumn[];
   readonly direct: TableColumn[];
   readonly linked: TableColumn[];
+  readonly linkers: Map<PObjectId, TableColumn[]>;
   readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
@@ -245,15 +243,18 @@ function resolveDiscoveredColumns(
   split: SplitDiscoveredColumns,
   allDiscovered: DiscoveredColumn<SUniversalPColumnId>[],
 ): ResolvedColumns {
-  const linkers = uniqueBy(
-    allDiscovered.flatMap((dc) => dc.linkerPath.map((s) => s.column)),
-    (c) => c.id,
-  ).map(resolveSnapshot);
+  const linked = split.linked.map(resolveSnapshot);
+  const linkers = new Map<PObjectId, TableColumn[]>(
+    split.linked.map((dc, i) => [
+      linked[i].id,
+      dc.linkerPath.map((s) => resolveSnapshot(s.column)),
+    ]),
+  );
 
   return {
     all: allDiscovered.map(resolveSnapshot),
     direct: split.direct.map(resolveSnapshot),
-    linked: split.linked.map(resolveSnapshot),
+    linked,
     linkers,
   };
 }
@@ -273,15 +274,12 @@ function annotateColumnGroups(
     displayOptions,
     withLabelAnnotations(derivedLabels, resolved.linked),
   );
+  const linkers = new Map<PObjectId, TableColumn[]>(
+    [...resolved.linkers].map(([id, cols]) => [id, withLabelAnnotations(derivedLabels, cols)]),
+  );
   const labels = withLabelAnnotations(derivedLabels, labelColumns);
-  const linkers = withLabelAnnotations(derivedLabels, resolved.linkers);
 
-  return {
-    direct,
-    linked,
-    labels,
-    linkers,
-  };
+  return { direct, linked, linkers, labels };
 }
 
 /** Build an index of all valid column IDs (axes + columns) for filter/sorting validation. */
@@ -392,9 +390,12 @@ function buildVisibleColumns(
 ): VisibleColumns {
   const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.id));
   const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.id));
-  const all = [...direct, ...linked];
+  const linkers = new Map<PObjectId, TableColumn[]>(
+    [...annotated.linkers].filter(([id]) => !hiddenColumns.has(id)),
+  );
+  const all: TableColumn[] = [...direct, ...linked];
   const labels = getMatchingLabelColumns(all.map(getColumnIdAndSpec), originalLabelColumns);
-  return { direct, linked, all, labels };
+  return { direct, linked, linkers, all, labels };
 }
 
 /** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */

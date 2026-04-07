@@ -161,6 +161,15 @@ export async function calculateGridOptions({
     .map(([i]) => i)
     .toArray();
 
+  // Deduplicate by spec ID (shared linkers can appear in multiple join groups)
+  const seenSpecIds = new Set<string>();
+  indices = indices.filter((i) => {
+    const id = specId(specs[i]);
+    if (seenSpecIds.has(id)) return false;
+    seenSpecIds.add(id);
+    return true;
+  });
+
   // order columns: axes first, then by OrderPriority annotation (higher = further left)
   indices.sort((a, b) => {
     if (specs[a].type !== specs[b].type) return specs[a].type === "axis" ? -1 : 1;

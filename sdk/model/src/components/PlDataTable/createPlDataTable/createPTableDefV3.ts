@@ -18,7 +18,7 @@ import type { Nil } from "@milaboratories/helpers";
 export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   coreJoinType: "inner" | "full";
   coreColumns: PColumn<Data>[];
-  secondaryColumns: PColumn<Data>[];
+  secondaryGroups: PColumn<Data>[][];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
 }): PTableDefV2<PColumn<Data>> {
@@ -31,7 +31,12 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   let query: SpecQuery<PColumn<Data>> = {
     type: "outerJoin",
     primary: toJoinEntry(coreJoinQuery),
-    secondary: params.secondaryColumns.map((c) => toJoinEntry({ type: "column", column: c })),
+    secondary: params.secondaryGroups.map((group) =>
+      toJoinEntry({
+        type: "innerJoin" as const,
+        entries: group.map((c) => toJoinEntry({ type: "column" as const, column: c })),
+      }),
+    ),
   };
 
   // Apply filters
