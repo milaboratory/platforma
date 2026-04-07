@@ -233,7 +233,7 @@ export class PlClient {
     // Try ListUserResources first (new backend, gRPC only)
     let rootFromServer: ResourceId | undefined;
     try {
-      const responses = await this._ll.listUserResources();
+      const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
           rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);

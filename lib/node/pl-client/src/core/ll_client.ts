@@ -591,14 +591,20 @@ export class LLPlClient implements WireClientProviderFactory {
     }
   }
 
-  public async listUserResources(): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
+  public async listUserResources(
+    opts: { login?: string; startFrom?: bigint; limit?: number } = {},
+  ): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
     const cl = this.clientProvider.get();
 
     if (!(cl instanceof GrpcPlApiClient)) {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    const call = cl.listUserResources({ login: "", startFrom: 0n, limit: 0 });
+    const call = cl.listUserResources({
+      login: opts.login ?? "",
+      startFrom: opts.startFrom ?? 0n,
+      limit: opts.limit ?? 0,
+    });
     const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
     for await (const msg of call.responses) {
       responses.push(msg);
