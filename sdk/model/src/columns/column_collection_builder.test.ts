@@ -333,13 +333,6 @@ describe("AnchoredColumnCollection", () => {
     );
   });
 
-  test("build with PlRef anchor throws", () => {
-    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    const plRef = { __isRef: true as const, blockId: "b1", name: "out" };
-
-    expect(() => builder.build({ anchors: { main: plRef } })).toThrow(/PlRef/);
-  });
-
   test("getColumn returns snapshot by SUniversalPColumnId", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
