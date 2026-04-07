@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.55.0
+
+### Minor Changes
+
+- 904ebd9: Enable prerun to run even if args error
+
 ## 1.54.7
 
 ### Patch Changes
