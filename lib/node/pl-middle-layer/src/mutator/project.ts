@@ -762,23 +762,18 @@ export class ProjectMutator {
         "currentArgs",
         this.createJsonFieldValue(deriveArgsResult.value),
       );
-      // Derive prerunArgs from storage
-      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-        blockConfig,
-        initialStorageJson,
-      );
-      if (prerunArgs !== undefined) {
-        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
-      } else {
-        this.deleteBlockFields(blockId, "currentPrerunArgs");
-      }
     } else {
-      if (info.fields.currentPrerunArgs !== undefined) {
-        this.projectHelper.logger.warn(
-          `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
-        );
-      }
       this.deleteBlockFields(blockId, "currentArgs");
+    }
+
+    // Derive prerunArgs independently — prerun should work even when args validation fails
+    const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+      blockConfig,
+      initialStorageJson,
+    );
+    if (prerunArgs !== undefined) {
+      this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+    } else {
       this.deleteBlockFields(blockId, "currentPrerunArgs");
     }
   }
@@ -828,17 +823,13 @@ export class ProjectMutator {
           blockConfig,
           updatedStorageJson,
         );
-        if (derivedArgsResult.error) {
-          args = undefined;
-          prerunArgs = undefined;
-        } else {
-          args = derivedArgsResult.value;
-          // Derive prerunArgs from storage, or fall back to args
-          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-            blockConfig,
-            updatedStorageJson,
-          );
-        }
+        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
+
+        // Derive prerunArgs independently — prerun should work even when args validation fails
+        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+          blockConfig,
+          updatedStorageJson,
+        );
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1123,13 +1114,10 @@ export class ProjectMutator {
         blockConfig,
         storageToWrite,
       );
-      if (deriveArgsResult.error) {
-        args = undefined;
-        prerunArgs = undefined;
-      } else {
-        args = deriveArgsResult.value;
-        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
-      }
+      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
+
+      // Derive prerunArgs independently — prerun should work even when args validation fails
+      prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1413,18 +1401,15 @@ export class ProjectMutator {
           "currentArgs",
           this.createJsonFieldValue(deriveArgsResult.value),
         );
-        const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
-        if (prerunArgs !== undefined) {
-          this.setBlockFieldObj(
-            blockId,
-            "currentPrerunArgs",
-            this.createJsonFieldValue(prerunArgs),
-          );
-        } else {
-          this.deleteBlockFields(blockId, "currentPrerunArgs");
-        }
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
+      }
+
+      // Derive prerunArgs independently — prerun should work even when args validation fails
+      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
+      if (prerunArgs !== undefined) {
+        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+      } else {
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     };
