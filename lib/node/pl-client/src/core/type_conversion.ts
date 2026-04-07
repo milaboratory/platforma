@@ -40,6 +40,7 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
+    resourceSignature: proto.resourceSignature,
     fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField),
   };
 }
@@ -68,6 +69,8 @@ export function protoToField(proto: Field): FieldData {
     value: proto.value as OptionalResourceId,
     error: proto.error as OptionalResourceId,
     valueIsFinal: proto.valueIsFinal,
+    valueSignature: proto.valueSignature,
+    errorSignature: proto.errorSignature,
   };
 }
 

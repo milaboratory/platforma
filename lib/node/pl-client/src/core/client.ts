@@ -26,6 +26,7 @@ import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
+import { SignatureCache } from "./signature_cache";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -89,6 +90,9 @@ export class PlClient {
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
   private readonly resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+
+  /** Cross-transaction signature cache */
+  private readonly _signatureCache = new SignatureCache();
 
   private constructor(
     configOrAddress: PlClientConfig | string,
@@ -203,6 +207,12 @@ export class PlClient {
     return this._serverInfo!;
   }
 
+  /** Shared signature cache, persists across transactions.
+   * Call clear() on auth errors to invalidate stale signatures. */
+  public get signatureCache(): SignatureCache {
+    return this._signatureCache;
+  }
+
   /** Currently implements custom logic to emulate future behaviour with single root. */
   private async init() {
     if (this.initialized) throw new Error("Already initialized");
@@ -298,6 +308,7 @@ export class PlClient {
           clientRoot,
           this.finalPredicate,
           this.resourceDataCache,
+          this._signatureCache,
         );
 
         let ok = false;

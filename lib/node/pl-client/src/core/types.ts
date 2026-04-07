@@ -87,6 +87,9 @@ export type BasicResourceData = {
   /** This value is derived from resource state by the server and can be used as
    * a robust criteria to determine resource is in final state. */
   readonly final: boolean;
+
+  /** Signature for this resource, used for authorization in subsequent requests. */
+  readonly resourceSignature?: Uint8Array;
 };
 
 export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
@@ -101,6 +104,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
+    resourceSignature,
   } = rd;
   return {
     id,
@@ -113,6 +117,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
+    resourceSignature,
   };
 }
 
@@ -137,6 +142,11 @@ export type FieldData = {
 
   /** True if value the fields points to is in final state. */
   readonly valueIsFinal: boolean;
+
+  /** Signature for the value resource, inheriting parent resource's color. */
+  readonly valueSignature?: Uint8Array;
+  /** Signature for the error resource, inheriting parent resource's color. */
+  readonly errorSignature?: Uint8Array;
 };
 
 //
