@@ -7,11 +7,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./vite": {
-      "types": "./src/vite.d.ts",
-      "import": "./dist/vite.js",
-      "require": "./dist/vite.cjs"
     }
   },
   "scripts": {
