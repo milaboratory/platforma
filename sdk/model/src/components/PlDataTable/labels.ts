@@ -1,4 +1,4 @@
-import type { AxisId, PColumn, PColumnIdAndSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type { AxisId, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import {
   getAxisId,
   isLabelColumn,
@@ -26,7 +26,7 @@ export function getAllLabelColumns(
 
 /** Get label columns matching the provided columns from the result pool */
 export function getMatchingLabelColumns(
-  columns: PColumnIdAndSpec[],
+  columns: { spec: PColumnSpec }[],
   allLabelColumns: PColumn<PColumnDataUniversal>[],
 ): PColumn<PColumnDataUniversal>[] {
   // split input columns into label and value columns

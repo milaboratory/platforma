@@ -59,7 +59,7 @@ export function createPlDataTableV2<A, U>(
   const allLabelColumns = getAllLabelColumns(ctx.resultPool);
   if (!allLabelColumns) return undefined;
 
-  let fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  let fullLabelColumns = getMatchingLabelColumns(columns, allLabelColumns);
   fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map(
     (v) => {
       return {

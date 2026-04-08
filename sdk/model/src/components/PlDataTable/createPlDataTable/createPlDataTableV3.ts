@@ -94,7 +94,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const resolved = resolveDiscoveredColumns(splited, discovered);
 
   const labelColumns = getMatchingLabelColumns(
-    resolved.all.map(getColumnIdAndSpec),
+    resolved.all,
     getAllLabelColumns(ctx.resultPool) ?? [],
   );
 
