@@ -433,6 +433,77 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
   });
 });
 
+test("v3 blocks: resetToInitialStorage derives prerunArgs even when args() throws", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    // Add block with valid data so args and prerunArgs are both set
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        {
+          storageMode: "fromModel",
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+        },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [4, 2, 6] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify both args and prerunArgs are set
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      const argsData = JSON.parse(Buffer.from(currentArgs.data.data!).toString());
+      expect(argsData).toStrictEqual({ numbers: [2, 4, 6] });
+
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [2, 4, 6] });
+    });
+
+    // Reset to initial storage — init() returns { numbers: [] }
+    // args() will throw "Numbers are required!" but prerunArgs() should still succeed
+    await pl.withWriteTx("ResetToInitial", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.resetToInitialStorage("enter1");
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify: currentArgs is cleared (args threw), but currentPrerunArgs is still derived
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+
+      // currentArgs should be gone since args() throws for empty numbers
+      const currentArgsField = prjR.data.fields.find(
+        (f) => f.name === projectFieldName("enter1", "currentArgs"),
+      );
+      expect(currentArgsField).toBeUndefined();
+
+      // currentPrerunArgs should still be set with empty even numbers
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [] });
+    });
+  });
+});
+
 test("v3 blocks: migrateBlockPack assigns author marker", async () => {
   const quickJs = await getQuickJS();
 

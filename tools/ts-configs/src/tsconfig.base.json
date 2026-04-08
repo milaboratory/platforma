@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noEmit": true,
     "customConditions": ["sources"],
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -10,11 +11,5 @@
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build",
-    "**/*.spec.ts",
-    "**/*.test.ts"
-  ]
+  "exclude": ["node_modules", "dist", "build", "**/*.spec.ts", "**/*.test.ts"]
 }

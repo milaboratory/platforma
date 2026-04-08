@@ -40,7 +40,6 @@
     "@zed-industries/vscode-langservers-extracted": "catalog:",
     "husky": "catalog:",
     "rimraf": "catalog:",
-    "rollup": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

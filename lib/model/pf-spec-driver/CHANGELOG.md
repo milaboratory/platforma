@@ -1,5 +1,11 @@
 # @milaboratories/pf-spec-driver
 
+## 1.2.4
+
+### Patch Changes
+
+- 5a6ce18: PFrames discoverColumns fix - no more paths with dangling linkers
+
 ## 1.2.3
 
 ### Patch Changes

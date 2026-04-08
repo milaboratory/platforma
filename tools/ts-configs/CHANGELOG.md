@@ -1,5 +1,11 @@
 # @milaboratories/ts-configs
 
+## 1.2.3
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+
 ## 1.2.2
 
 ### Patch Changes
