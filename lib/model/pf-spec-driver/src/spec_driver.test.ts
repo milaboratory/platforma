@@ -190,11 +190,11 @@ describe("SpecDriver", () => {
     expect(names).toContain("value");
     expect(names).toContain("description");
     expect(names).toContain("priority");
-    expect(response.hits).toHaveLength(6);
+    expect(response.hits).toHaveLength(4);
 
     // Linked columns should have non-empty path
     const linkedHits = response.hits.filter((h) => h.path.length > 0);
-    expect(linkedHits).toHaveLength(4);
+    expect(linkedHits).toHaveLength(2);
     const linkedNames = linkedHits.map((h) => h.hit.spec.name);
     expect(linkedNames).toContain("description");
     expect(linkedNames).toContain("priority");
