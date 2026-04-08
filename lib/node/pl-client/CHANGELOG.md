@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.1.0
+
+### Minor Changes
+
+- 96b0516: Support ListUserResources API method for getting user's root
+
 ## 3.0.0
 
 ### Major Changes
