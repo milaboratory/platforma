@@ -3,7 +3,7 @@
 
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type * as sdk from "@milaboratories/pl-model-common";
-import { bigintToResourceId, signatureToBase64Url, type ResourceSignature } from "@milaboratories/pl-client";
+import { bigintToResourceId, signatureToBase64Url, base64UrlToSignature } from "@milaboratories/pl-client";
 
 export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
   const sigStr = signatureToBase64Url(rInfo.resourceSignature);
@@ -20,7 +20,7 @@ export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHand
  * in this case the handle should be refreshed. */
 
 export const liveHandleRegex =
-  /^log\+live:\/\/log\/(?<resourceType>[^\/]+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
+  /^log\+live:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
 
 export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
   return liveHandleRegex.test(handle);
@@ -29,7 +29,7 @@ export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
 /** Handle of the ready logs of a program. */
 
 export const readyHandleRegex =
-  /^log\+ready:\/\/log\/(?<resourceType>[^\/]+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
+  /^log\+ready:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
 
 export function isReadyLogHandle(handle: string): handle is sdk.ReadyLogHandle {
   return readyHandleRegex.test(handle);
@@ -50,6 +50,6 @@ export function getResourceInfoFromLogHandle(handle: sdk.AnyLogHandle): Resource
   return {
     id: bigintToResourceId(BigInt(resourceId)),
     type: { name: resourceType, version: resourceVersion },
-    ...(resourceSig ? { resourceSignature: Buffer.from(resourceSig, 'base64url') as unknown as ResourceSignature } : {}),
+    ...(resourceSig ? { resourceSignature: base64UrlToSignature(resourceSig) } : {}),
   };
 }

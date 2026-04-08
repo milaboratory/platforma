@@ -4,13 +4,12 @@
 import type { Signer } from "@milaboratories/ts-helpers";
 import type { OnDemandBlobResourceSnapshot } from "../types";
 import type { RemoteBlobHandle } from "@milaboratories/pl-model-common";
-import { bigintToResourceId, signatureToBase64Url, type ResourceSignature } from "@milaboratories/pl-client";
+import { bigintToResourceId, signatureToBase64Url, base64UrlToSignature } from "@milaboratories/pl-client";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 import { getSize } from "../types";
 
-// https://regex101.com/r/Q4YdTa/5
 const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?)\/(?<size>\d+?)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?)#(?<signature>.*)$/;
+  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)\/(?<size>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?)#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
@@ -49,7 +48,7 @@ export function parseRemoteHandle(
     info: {
       id: bigintToResourceId(BigInt(resourceId)),
       type: { name: resourceType, version: resourceVersion },
-      ...(resourceSig ? { resourceSignature: Buffer.from(resourceSig, 'base64url') as unknown as ResourceSignature } : {}),
+      ...(resourceSig ? { resourceSignature: base64UrlToSignature(resourceSig) } : {}),
     },
     size: Number(size),
   };

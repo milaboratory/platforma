@@ -96,6 +96,16 @@ export function signatureToBase64Url(sig?: ResourceSignature): string {
   return sig ? Buffer.from(sig).toString("base64url") : "";
 }
 
+/** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
+export function toResourceSignature(raw?: Uint8Array): ResourceSignature | undefined {
+  return raw && raw.length > 0 ? (raw as ResourceSignature) : undefined;
+}
+
+/** Decode base64url-encoded string back to a branded ResourceSignature. */
+export function base64UrlToSignature(str: string): ResourceSignature {
+  return toResourceSignature(Buffer.from(str, "base64url"))!;
+}
+
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export type BasicResourceData = {
   readonly id: ResourceId;

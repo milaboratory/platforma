@@ -23,6 +23,7 @@ import {
   isLocalResourceId,
   extractBasicResourceData,
   isNullResourceId,
+  toResourceSignature,
 } from "./types";
 import type {
   ClientMessageRequest,
@@ -152,6 +153,13 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
   }
 }
 
+export type PlTransactionOptions = {
+  finalPredicate: FinalResourceDataPredicate;
+  resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  signatureCache?: SignatureCache;
+  enableFormattedErrors?: boolean;
+};
+
 /**
  * Each platform transaction has 3 stages:
  *   - initialization (txOpen message -> txInfo response)
@@ -193,23 +201,30 @@ export class PlTransaction {
     };
   }
 
+  private readonly finalPredicate: FinalResourceDataPredicate;
+  private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  private readonly sharedSignatureCache?: SignatureCache;
+  private readonly enableFormattedErrors: boolean;
+
   constructor(
     private readonly ll: LLPlTransaction,
     public readonly name: string,
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalResourceId,
-    private readonly finalPredicate: FinalResourceDataPredicate,
-    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>,
-    private readonly sharedSignatureCache?: SignatureCache,
-    private readonly enableFormattedErrors: boolean = false,
+    options: PlTransactionOptions,
   ) {
+    this.finalPredicate = options.finalPredicate;
+    this.sharedResourceDataCache = options.resourceDataCache;
+    this.sharedSignatureCache = options.signatureCache;
+    this.enableFormattedErrors = options.enableFormattedErrors ?? false;
+
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
       {
         oneofKind: "txOpen",
         txOpen: {
           name,
-          enableFormattedErrors,
+          enableFormattedErrors: this.enableFormattedErrors,
           writable: writable
             ? TxAPI_Open_Request_WritableTx.WRITABLE
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
@@ -289,8 +304,8 @@ export class PlTransaction {
   }
 
   private storeSignature(id: AnyResourceId, sig?: Uint8Array): void {
-    if (sig && sig.length > 0) {
-      const rs = sig as ResourceSignature;
+    const rs = toResourceSignature(sig);
+    if (rs && !this.signatureStore.has(id)) {
       this.signatureStore.set(id, rs);
       if (!isLocalResourceId(id)) {
         this.sharedSignatureCache?.set(id, rs);
@@ -311,6 +326,14 @@ export class PlTransaction {
   private toSignedFieldId(fId: AnyFieldRef): SignedFieldId {
     const base = toFieldId(fId);
     return { ...base, resourceSignature: this.getSignature(base.resourceId) };
+  }
+
+  private toSignedErrorRef(rId: AnyResourceRef): {
+    errorResourceId: AnyResourceId;
+    errorResourceSignature?: ResourceSignature;
+  } {
+    const signed = this.toSignedResourceId(rId);
+    return { errorResourceId: signed.resourceId, errorResourceSignature: signed.resourceSignature };
   }
 
   private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
@@ -413,10 +436,9 @@ export class PlTransaction {
     errorIfExists: boolean = false,
     colorProof?: ColorProof,
   ): ResourceRef {
-    const localId = this.nextLocalResourceId(false);
-
-    const globalId = this.sendSingleAndParse(
-      {
+    return this.createResource(
+      false,
+      (localId) => ({
         oneofKind: "resourceCreateSingleton",
         resourceCreateSingleton: {
           type,
@@ -425,19 +447,10 @@ export class PlTransaction {
           errorIfExists,
           colorProof: colorProof ?? this.defaultColorProof,
         },
-      },
-      (r) => {
-        const sig = r.resourceCreateSingleton.resourceSignature;
-        const id = r.resourceCreateSingleton.resourceId as ResourceId;
-        this.storeSignature(id, sig);
-        this.storeSignature(localId, sig);
-        return id;
-      },
+      }),
+      (r) => r.resourceCreateSingleton.resourceId,
+      (r) => r.resourceCreateSingleton.resourceSignature,
     );
-
-    void this.track(globalId);
-
-    return { globalId, localId };
   }
 
   public getSingleton(name: string, loadFields: true): Promise<ResourceData>;
@@ -799,15 +812,11 @@ export class PlTransaction {
   }
 
   public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
-    const signed = this.toSignedResourceId(rId);
-    const signedError = this.toSignedResourceId(ref);
     this.sendVoidAsync({
       oneofKind: "resourceSetError",
       resourceSetError: {
-        resourceId: signed.resourceId,
-        resourceSignature: signed.resourceSignature,
-        errorResourceId: signedError.resourceId,
-        errorResourceSignature: signedError.resourceSignature,
+        ...this.toSignedResourceId(rId),
+        ...this.toSignedErrorRef(ref),
       },
     });
   }
@@ -861,13 +870,11 @@ export class PlTransaction {
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
     this._stat.fieldsSet++;
-    const signedError = this.toSignedResourceId(ref);
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
       fieldSetError: {
         field: this.toSignedFieldId(fId),
-        errorResourceId: signedError.resourceId,
-        errorResourceSignature: signedError.resourceSignature,
+        ...this.toSignedErrorRef(ref),
       },
     });
   }
@@ -890,11 +897,17 @@ export class PlTransaction {
   }
 
   public resetField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: "fieldReset", fieldReset: { field: this.toSignedFieldId(fId) } });
+    this.sendVoidAsync({
+      oneofKind: "fieldReset",
+      fieldReset: { field: this.toSignedFieldId(fId) },
+    });
   }
 
   public removeField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: "fieldRemove", fieldRemove: { field: this.toSignedFieldId(fId) } });
+    this.sendVoidAsync({
+      oneofKind: "fieldRemove",
+      fieldRemove: { field: this.toSignedFieldId(fId) },
+    });
   }
 
   //
