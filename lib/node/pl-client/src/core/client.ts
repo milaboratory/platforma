@@ -4,7 +4,7 @@ import { LLPlClient } from "./ll_client";
 import type { AnyResourceRef } from "./transaction";
 import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
 import { createHash } from "node:crypto";
-import type { OptionalResourceId, ResourceId } from "./types";
+import type { OptionalResourceId, ResourceId, ResourceSignature } from "./types";
 import {
   bigintToResourceId,
   ensureResourceIdNotNull,
@@ -242,13 +242,13 @@ export class PlClient {
 
     // Try ListUserResources first (new backend, gRPC only)
     let rootFromServer: ResourceId | undefined;
-    let rootSignature: Uint8Array | undefined;
+    let rootSignature: ResourceSignature | undefined;
     try {
       const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
           rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
-          rootSignature = msg.entry.userRoot.resourceSignature;
+          rootSignature = msg.entry.userRoot.resourceSignature as ResourceSignature;
           break;
         }
       }
