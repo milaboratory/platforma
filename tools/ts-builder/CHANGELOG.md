@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.3.1
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+- Updated dependencies [cad9688]
+  - @milaboratories/ts-configs@1.2.3
+
 ## 1.3.0
 
 ### Minor Changes

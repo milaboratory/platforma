@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-configs",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
