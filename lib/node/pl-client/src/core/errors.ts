@@ -29,8 +29,8 @@ export function isPermissionDenied(err: unknown, nested: boolean = false): boole
   if (err === undefined || err === null) return false;
 
   if (err instanceof PermissionDeniedError) return true;
-  if ((err as any).name == "RpcError" && (err as any).code == "PERMISSION_DENIED") return true;
-  if ((err as any).name == "RESTError" && (err as any).status.code == Code.PERMISSION_DENIED)
+  if ((err as any).name === "RpcError" && (err as any).code === "PERMISSION_DENIED") return true;
+  if ((err as any).name === "RESTError" && (err as any).status.code === Code.PERMISSION_DENIED)
     return true;
   if ((err as any).cause !== undefined && !nested)
     return isPermissionDenied((err as any).cause, true);

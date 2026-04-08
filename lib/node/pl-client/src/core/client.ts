@@ -10,6 +10,7 @@ import {
   ensureResourceIdNotNull,
   isNullResourceId,
   NullResourceId,
+  toResourceSignature,
 } from "./types";
 import { ClientRoot } from "../helpers/pl";
 import { isPermissionDenied, isUnimplementedError } from "./errors";
@@ -248,7 +249,7 @@ export class PlClient {
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
           rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
-          rootSignature = msg.entry.userRoot.resourceSignature as ResourceSignature;
+          rootSignature = toResourceSignature(msg.entry.userRoot.resourceSignature);
           break;
         }
       }
@@ -359,15 +360,11 @@ export class PlClient {
         // opening low-level tx
         const llTx = this.ll.createTx(writable, ops);
         // wrapping it into high-level tx (this also asynchronously sends initialization message)
-        const tx = new PlTransaction(
-          llTx,
-          name,
-          writable,
-          clientRoot,
-          this.finalPredicate,
-          this.resourceDataCache,
-          this._signatureCache,
-        );
+        const tx = new PlTransaction(llTx, name, writable, clientRoot, {
+          finalPredicate: this.finalPredicate,
+          resourceDataCache: this.resourceDataCache,
+          signatureCache: this._signatureCache,
+        });
 
         // Auto-set default color proof so that resource creation (write TXs)
         // and name lookups (read TXs) carry the correct access color.
@@ -397,8 +394,11 @@ export class PlClient {
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-            // Invalidate stale signatures on permission denied so the next
-            // transaction can re-fetch fresh ones from the server.
+            // Invalidate all cached signatures on permission denied.
+            // Targeted invalidation is impractical here because the failing
+            // resource id is not reliably available from the error.  A full
+            // clear is safe: signatures are re-populated lazily from server
+            // responses in subsequent transactions.
             if (isPermissionDenied(e)) {
               this._signatureCache.clear();
             }
