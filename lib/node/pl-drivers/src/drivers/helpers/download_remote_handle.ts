@@ -10,13 +10,16 @@ import { getSize } from "../types";
 
 // https://regex101.com/r/Q4YdTa/5
 const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?)\/(?<size>\d+?))#(?<signature>.*)$/;
+  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?)\/(?<size>\d+?)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?)#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
   signer: Signer,
 ): RemoteBlobHandle {
   let content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}/${getSize(rInfo)}`;
+  if (rInfo.resourceSignature) {
+    content += `/${Buffer.from(rInfo.resourceSignature).toString('base64url')}`;
+  }
 
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;
 }
@@ -37,7 +40,7 @@ export function parseRemoteHandle(
     throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
   }
 
-  const { content, resourceType, resourceVersion, resourceId, size, signature } = parsed.groups!;
+  const { content, resourceType, resourceVersion, resourceId, size, resourceSig, signature } = parsed.groups!;
 
   signer.verify(content, signature, `Signature verification failed for ${handle}`);
 
@@ -45,6 +48,7 @@ export function parseRemoteHandle(
     info: {
       id: bigintToResourceId(BigInt(resourceId)),
       type: { name: resourceType, version: resourceVersion },
+      ...(resourceSig ? { resourceSignature: Buffer.from(resourceSig, 'base64url') } : {}),
     },
     size: Number(size),
   };

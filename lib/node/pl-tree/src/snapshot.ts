@@ -18,6 +18,7 @@ export type ResourceSnapshot<
 > = {
   readonly id: ResourceId;
   readonly type: ResourceType;
+  readonly resourceSignature?: Uint8Array;
   readonly data: Data;
   readonly fields: Fields;
   readonly kv: KV;

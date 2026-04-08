@@ -304,6 +304,7 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
   return {
     id: download.id,
     type: download.type,
+    resourceSignature: download.resourceSignature,
     data: undefined,
     fields: undefined,
     kv: {

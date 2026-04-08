@@ -46,6 +46,7 @@ export class ClientLs {
       return await client.list(
         {
           resourceId: rInfo.id,
+          resourceSignature: rInfo.resourceSignature,
           location: path,
         },
         addRTypeToMetadata(rInfo.type, options),
@@ -55,7 +56,9 @@ export class ClientLs {
         await client.POST("/v1/list", {
           body: {
             resourceId: rInfo.id.toString(),
-            resourceSignature: "",
+            resourceSignature: rInfo.resourceSignature
+              ? Buffer.from(rInfo.resourceSignature).toString("base64")
+              : "",
             location: path,
           },
           headers: { ...createRTypeRoutingHeader(rInfo.type) },
