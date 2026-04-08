@@ -11,6 +11,8 @@ import type {
   ResourceId,
   ResourceType,
   FutureFieldType,
+  SignedResourceId,
+  SignedFieldId,
 } from "./types";
 import {
   createLocalResourceId,
@@ -295,9 +297,12 @@ export class PlTransaction {
     return this.signatureStore.get(rId) ?? this.sharedSignatureCache?.get(rId);
   }
 
-  private toSignedFieldId(
-    fId: AnyFieldRef,
-  ): { resourceId: bigint; fieldName: string; resourceSignature?: Uint8Array } {
+  private toSignedResourceId(rId: AnyResourceRef): SignedResourceId {
+    const resourceId = toResourceId(rId);
+    return { resourceId, resourceSignature: this.getSignature(resourceId) };
+  }
+
+  private toSignedFieldId(fId: AnyFieldRef): SignedFieldId {
     const base = toFieldId(fId);
     return { ...base, resourceSignature: this.getSignature(base.resourceId) };
   }
@@ -576,10 +581,9 @@ export class PlTransaction {
   }
 
   public setResourceName(name: string, rId: AnyResourceRef): void {
-    const id = toResourceId(rId);
     this.sendVoidAsync({
       oneofKind: "resourceNameSet",
-      resourceNameSet: { resourceId: id, resourceSignature: this.getSignature(id), name },
+      resourceNameSet: { ...this.toSignedResourceId(rId), name },
     });
   }
 
@@ -608,7 +612,7 @@ export class PlTransaction {
   public removeResource(rId: ResourceId): void {
     this.sendVoidAsync({
       oneofKind: "resourceRemove",
-      resourceRemove: { resourceId: rId, resourceSignature: this.getSignature(rId) },
+      resourceRemove: this.toSignedResourceId(rId),
     });
   }
 
@@ -616,7 +620,7 @@ export class PlTransaction {
     return this.sendSingleAndParse(
       {
         oneofKind: "resourceExists",
-        resourceExists: { resourceId: rId, resourceSignature: this.getSignature(rId) },
+        resourceExists: this.toSignedResourceId(rId),
       },
       (r) => r.resourceExists.exists,
     );
@@ -674,13 +678,11 @@ export class PlTransaction {
         }
       }
 
-      const id = toResourceId(rId);
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceGet",
           resourceGet: {
-            resourceId: id,
-            resourceSignature: this.getSignature(id),
+            ...this.toSignedResourceId(rId),
             loadFields: loadFields,
           },
         },
@@ -768,10 +770,9 @@ export class PlTransaction {
    */
   public lockInputs(rId: AnyResourceRef): void {
     this._stat.inputsLocked++;
-    const id = toResourceId(rId);
     this.sendVoidAsync({
       oneofKind: "resourceLockInputs",
-      resourceLockInputs: { resourceId: id, resourceSignature: this.getSignature(id) },
+      resourceLockInputs: this.toSignedResourceId(rId),
     });
   }
 
@@ -781,10 +782,9 @@ export class PlTransaction {
    */
   public lockOutputs(rId: AnyResourceRef): void {
     this._stat.outputsLocked++;
-    const id = toResourceId(rId);
     this.sendVoidAsync({
       oneofKind: "resourceLockOutputs",
-      resourceLockOutputs: { resourceId: id, resourceSignature: this.getSignature(id) },
+      resourceLockOutputs: this.toSignedResourceId(rId),
     });
   }
 
@@ -794,15 +794,15 @@ export class PlTransaction {
   }
 
   public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
-    const id = toResourceId(rId);
-    const errorId = toResourceId(ref);
+    const signed = this.toSignedResourceId(rId);
+    const signedError = this.toSignedResourceId(ref);
     this.sendVoidAsync({
       oneofKind: "resourceSetError",
       resourceSetError: {
-        resourceId: id,
-        resourceSignature: this.getSignature(id),
-        errorResourceId: errorId,
-        errorResourceSignature: this.getSignature(errorId),
+        resourceId: signed.resourceId,
+        resourceSignature: signed.resourceSignature,
+        errorResourceId: signedError.resourceId,
+        errorResourceSignature: signedError.resourceSignature,
       },
     });
   }
@@ -833,14 +833,12 @@ export class PlTransaction {
   public setField(fId: AnyFieldRef, ref: AnyRef): void {
     this._stat.fieldsSet++;
     if (isResource(ref)) {
-      const refId = toResourceId(ref);
       this.sendVoidAsync({
         oneofKind: "fieldSet",
         fieldSet: {
           field: this.toSignedFieldId(fId),
           value: {
-            resourceId: refId,
-            resourceSignature: this.getSignature(refId),
+            ...this.toSignedResourceId(ref),
             fieldName: "", // default value, read as undefined
           },
         },
@@ -858,13 +856,13 @@ export class PlTransaction {
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
     this._stat.fieldsSet++;
-    const errorId = toResourceId(ref);
+    const signedError = this.toSignedResourceId(ref);
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
       fieldSetError: {
         field: this.toSignedFieldId(fId),
-        errorResourceId: errorId,
-        errorResourceSignature: this.getSignature(errorId),
+        errorResourceId: signedError.resourceId,
+        errorResourceSignature: signedError.resourceSignature,
       },
     });
   }
@@ -900,13 +898,11 @@ export class PlTransaction {
 
   public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
     return this.track(async () => {
-      const id = toResourceId(rId);
       const result = await this.sendMultiAndParse(
         {
           oneofKind: "resourceKeyValueList",
           resourceKeyValueList: {
-            resourceId: id,
-            resourceSignature: this.getSignature(id),
+            ...this.toSignedResourceId(rId),
             startFrom: "",
             limit: 0,
           },
@@ -944,12 +940,10 @@ export class PlTransaction {
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
     this._stat.kvSetRequests++;
     this._stat.kvSetBytes++;
-    const id = toResourceId(rId);
     this.sendVoidAsync({
       oneofKind: "resourceKeyValueSet",
       resourceKeyValueSet: {
-        resourceId: id,
-        resourceSignature: this.getSignature(id),
+        ...this.toSignedResourceId(rId),
         key,
         value: toBytes(value),
       },
@@ -957,12 +951,10 @@ export class PlTransaction {
   }
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {
-    const id = toResourceId(rId);
     this.sendVoidAsync({
       oneofKind: "resourceKeyValueDelete",
       resourceKeyValueDelete: {
-        resourceId: id,
-        resourceSignature: this.getSignature(id),
+        ...this.toSignedResourceId(rId),
         key,
       },
     });
@@ -970,13 +962,11 @@ export class PlTransaction {
 
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     return this.track(async () => {
-      const id = toResourceId(rId);
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGet",
           resourceKeyValueGet: {
-            resourceId: id,
-            resourceSignature: this.getSignature(id),
+            ...this.toSignedResourceId(rId),
             key,
           },
         },
@@ -1003,13 +993,11 @@ export class PlTransaction {
     key: string,
   ): Promise<Uint8Array | undefined> {
     return this.track(async () => {
-      const id = toResourceId(rId);
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGetIfExists",
           resourceKeyValueGetIfExists: {
-            resourceId: id,
-            resourceSignature: this.getSignature(id),
+            ...this.toSignedResourceId(rId),
             key,
           },
         },

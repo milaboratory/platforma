@@ -1,3 +1,5 @@
+import type { SignedResourceId } from "./types";
+
 /** Cross-transaction cache for resource signatures.
  * Keyed by resource ID (bigint), stores opaque signature bytes (Uint8Array). */
 export class SignatureCache {
@@ -9,6 +11,11 @@ export class SignatureCache {
 
   get(id: bigint): Uint8Array | undefined {
     return this.store.get(id);
+  }
+
+  /** Return a SignedResourceId by looking up the cached signature. */
+  sign(id: bigint): SignedResourceId {
+    return { resourceId: id, resourceSignature: this.get(id) };
   }
 
   delete(id: bigint): boolean {

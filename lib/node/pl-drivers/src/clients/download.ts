@@ -3,6 +3,7 @@ import type { WireClientProvider, WireClientProviderFactory } from "@milaborator
 import {
   addRTypeToMetadata,
   stringifyWithResourceId,
+  signatureToBase64,
   RestAPI,
   createRTypeRoutingHeader,
 } from "@milaboratories/pl-client";
@@ -147,9 +148,7 @@ export class ClientDownload {
         await client.POST("/v1/get-download-url", {
           body: {
             resourceId: id.toString(),
-            resourceSignature: resourceSignature
-              ? Buffer.from(resourceSignature).toString("base64")
-              : "",
+            resourceSignature: signatureToBase64(resourceSignature),
             isInternalUse: false,
           },
           headers: { ...createRTypeRoutingHeader(type) },
