@@ -2,6 +2,7 @@
 /* eslint-disable no-prototype-builtins */
 import type {
   AnyResourceId,
+  ColorProof,
   LocalResourceId,
   OptionalResourceId,
   BasicResourceData,
@@ -9,6 +10,7 @@ import type {
   FieldType,
   ResourceData,
   ResourceId,
+  ResourceSignature,
   ResourceType,
   FutureFieldType,
   SignedResourceId,
@@ -168,10 +170,10 @@ export class PlTransaction {
   private localResourceIdCounter = 0;
 
   /** Maps resource ids (both local and global) to their signatures received from the server */
-  private readonly signatureStore = new Map<bigint, Uint8Array>();
+  private readonly signatureStore = new Map<AnyResourceId, ResourceSignature>();
 
   /** Default color proof to include in resource creation requests */
-  private defaultColorProof?: Uint8Array;
+  private defaultColorProof?: ColorProof;
 
   /** Store logical tx open / closed state to prevent invalid sequence of requests.
    * True means output stream was completed.
@@ -286,15 +288,19 @@ export class PlTransaction {
     void this.track(this.sendVoidSync(r));
   }
 
-  private storeSignature(id: bigint, sig?: Uint8Array): void {
+  private storeSignature(id: AnyResourceId, sig?: Uint8Array): void {
     if (sig && sig.length > 0) {
-      this.signatureStore.set(id, sig);
-      this.sharedSignatureCache?.set(id, sig);
+      const rs = sig as ResourceSignature;
+      this.signatureStore.set(id, rs);
+      if (!isLocalResourceId(id)) {
+        this.sharedSignatureCache?.set(id, rs);
+      }
     }
   }
 
-  private getSignature(rId: bigint): Uint8Array | undefined {
-    return this.signatureStore.get(rId) ?? this.sharedSignatureCache?.get(rId);
+  private getSignature(rId: AnyResourceId): ResourceSignature | undefined {
+    return this.signatureStore.get(rId)
+      ?? (!isLocalResourceId(rId) ? this.sharedSignatureCache?.get(rId) : undefined);
   }
 
   private toSignedResourceId(rId: AnyResourceRef): SignedResourceId {
@@ -318,7 +324,7 @@ export class PlTransaction {
   }
 
   /** Set default color proof for subsequent resource creation requests */
-  public setDefaultColor(colorProof: Uint8Array): void {
+  public setDefaultColor(colorProof: ColorProof): void {
     this.defaultColorProof = colorProof;
     this.sendVoidAsync({
       oneofKind: "setDefaultColor",
@@ -405,7 +411,7 @@ export class PlTransaction {
     name: string,
     type: ResourceType,
     errorIfExists: boolean = false,
-    colorProof?: Uint8Array,
+    colorProof?: ColorProof,
   ): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
@@ -422,10 +428,10 @@ export class PlTransaction {
       },
       (r) => {
         const sig = r.resourceCreateSingleton.resourceSignature;
-        const id = r.resourceCreateSingleton.resourceId;
+        const id = r.resourceCreateSingleton.resourceId as ResourceId;
         this.storeSignature(id, sig);
         this.storeSignature(localId, sig);
-        return id as ResourceId;
+        return id;
       },
     );
 
@@ -492,7 +498,7 @@ export class PlTransaction {
   public createStruct(
     type: ResourceType,
     data?: Uint8Array | string,
-    colorProof?: Uint8Array,
+    colorProof?: ColorProof,
   ): ResourceRef {
     this._stat.structsCreated++;
     this._stat.structsCreatedDataBytes += data?.length ?? 0;
@@ -516,7 +522,7 @@ export class PlTransaction {
   public createEphemeral(
     type: ResourceType,
     data?: Uint8Array | string,
-    colorProof?: Uint8Array,
+    colorProof?: ColorProof,
   ): ResourceRef {
     this._stat.ephemeralsCreated++;
     this._stat.ephemeralsCreatedDataBytes += data?.length ?? 0;
@@ -541,7 +547,7 @@ export class PlTransaction {
     type: ResourceType,
     data: Uint8Array | string,
     errorIfExists: boolean = false,
-    colorProof?: Uint8Array,
+    colorProof?: ColorProof,
   ): ResourceRef {
     this._stat.valuesCreated++;
     this._stat.valuesCreatedDataBytes += data?.length ?? 0;

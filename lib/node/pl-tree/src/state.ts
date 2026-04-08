@@ -8,6 +8,7 @@ import type {
   ResourceData,
   ResourceId,
   ResourceKind,
+  ResourceSignature,
   ResourceType,
 } from "@milaboratories/pl-client";
 import {
@@ -105,7 +106,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
-  resourceSignature?: Uint8Array;
+  resourceSignature?: ResourceSignature;
   private dataAsString?: string;
   private dataAsJson?: unknown;
 

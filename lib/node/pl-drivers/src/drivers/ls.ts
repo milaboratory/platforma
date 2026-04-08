@@ -215,7 +215,7 @@ export class LsDriver implements InternalLsDriver {
   /** Enrich parsed storage data with resource signature from cache */
   private withSignature(storageData: StorageHandleData): StorageHandleData {
     if (storageData.isRemote && this.signatureCache) {
-      const sig = this.signatureCache.get(storageData.id as bigint);
+      const sig = this.signatureCache.get(storageData.id);
       if (sig) {
         return { ...storageData, resourceSignature: sig };
       }

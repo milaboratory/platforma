@@ -5,7 +5,7 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type { ResourceId, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
+import type { ResourceId, ResourceSignature, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
 import {
   resourceIdToString,
   resourceTypesEqual,
@@ -152,7 +152,7 @@ export class PlTreeEntryAccessor {
 export type ResourceInfo = {
   readonly id: ResourceId;
   readonly type: ResourceType;
-  readonly resourceSignature?: Uint8Array;
+  readonly resourceSignature?: ResourceSignature;
 };
 
 /**

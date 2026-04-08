@@ -3,7 +3,7 @@
 
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type * as sdk from "@milaboratories/pl-model-common";
-import { bigintToResourceId, signatureToBase64Url } from "@milaboratories/pl-client";
+import { bigintToResourceId, signatureToBase64Url, type ResourceSignature } from "@milaboratories/pl-client";
 
 export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
   const sigStr = signatureToBase64Url(rInfo.resourceSignature);
@@ -50,6 +50,6 @@ export function getResourceInfoFromLogHandle(handle: sdk.AnyLogHandle): Resource
   return {
     id: bigintToResourceId(BigInt(resourceId)),
     type: { name: resourceType, version: resourceVersion },
-    ...(resourceSig ? { resourceSignature: Buffer.from(resourceSig, 'base64url') } : {}),
+    ...(resourceSig ? { resourceSignature: Buffer.from(resourceSig, 'base64url') as unknown as ResourceSignature } : {}),
   };
 }
