@@ -242,11 +242,13 @@ export class PlClient {
 
     // Try ListUserResources first (new backend, gRPC only)
     let rootFromServer: ResourceId | undefined;
+    let rootSignature: Uint8Array | undefined;
     try {
       const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
           rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
+          rootSignature = msg.entry.userRoot.resourceSignature;
           break;
         }
       }
@@ -256,6 +258,12 @@ export class PlClient {
     }
 
     if (rootFromServer !== undefined) {
+      // Store root signature in cross-transaction cache so subsequent
+      // transactions can attach it to requests and use it as color proof.
+      if (rootSignature && rootSignature.length > 0) {
+        this._signatureCache.set(rootFromServer, rootSignature);
+      }
+
       // New path: server created/returned the root
       if (this.conf.alternativeRoot === undefined) {
         this._clientRoot = rootFromServer;
@@ -360,6 +368,15 @@ export class PlClient {
           this.resourceDataCache,
           this._signatureCache,
         );
+
+        // Auto-set default color proof for write transactions so that
+        // resource creation carries the correct access color.
+        if (writable && !isNullResourceId(clientRoot)) {
+          const rootSig = this._signatureCache.get(clientRoot);
+          if (rootSig) {
+            tx.setDefaultColor(rootSig);
+          }
+        }
 
         let ok = false;
         let result: T | undefined = undefined;

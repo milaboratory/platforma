@@ -5,6 +5,18 @@ import { test, expect } from "vitest";
 
 import { isTimeoutOrCancelError } from "./errors";
 import { Aborted } from "@milaboratories/ts-helpers";
+import type { LLPlClient } from "./ll_client";
+
+/** Get root resource signature from ListUserResources for use as color proof in tests. */
+async function getRootSignature(client: LLPlClient): Promise<Uint8Array> {
+  const responses = await client.listUserResources({ limit: 1 });
+  for (const msg of responses) {
+    if (msg.entry.oneofKind === "userRoot" && msg.entry.userRoot.resourceSignature) {
+      return msg.entry.userRoot.resourceSignature;
+    }
+  }
+  return new Uint8Array(0);
+}
 
 test("check successful transaction", async () => {
   const client = await getTestLLClient();
@@ -80,6 +92,7 @@ test("check timeout error type (passive)", async () => {
 
 test("check timeout error type (active)", async () => {
   const client = await getTestLLClient();
+  const rootSig = await getRootSignature(client);
   const tx = client.createTx(true, { timeout: 500 });
 
   try {
@@ -96,6 +109,12 @@ test("check timeout error type (active)", async () => {
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
+    // Set default color so resource creation succeeds in strict mode
+    await tx.send(
+      { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
+      false,
+    );
+
     const rData = Uint8Array.from([
       (Math.random() * 256) & 0xff,
       (Math.random() * 256) & 0xff,
@@ -115,12 +134,13 @@ test("check timeout error type (active)", async () => {
           type: { name: "TestValue", version: "1" },
           data: rData,
           errorIfExists: false,
-          colorProof: new Uint8Array(0),
         },
       },
       false,
     );
-    const id = (await createResponse).resourceCreateValue.resourceId;
+    const createResp = (await createResponse).resourceCreateValue;
+    const id = createResp.resourceId;
+    const resourceSignature = createResp.resourceSignature ?? new Uint8Array(0);
 
     while (true) {
       const vr = await tx.send(
@@ -129,7 +149,7 @@ test("check timeout error type (active)", async () => {
           resourceGet: {
             resourceId: id,
             loadFields: false,
-            resourceSignature: new Uint8Array(0),
+            resourceSignature,
           },
         },
         false,
@@ -144,6 +164,7 @@ test("check timeout error type (active)", async () => {
 
 test("check is abort error (active)", async () => {
   const client = await getTestLLClient();
+  const rootSig = await getRootSignature(client);
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
   try {
@@ -160,6 +181,12 @@ test("check is abort error (active)", async () => {
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
+    // Set default color so resource creation succeeds in strict mode
+    await tx.send(
+      { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
+      false,
+    );
+
     const rData = Uint8Array.from([
       Math.random() & 0xff,
       Math.random() & 0xff,
@@ -179,12 +206,13 @@ test("check is abort error (active)", async () => {
           type: { name: "TestValue", version: "1" },
           data: rData,
           errorIfExists: false,
-          colorProof: new Uint8Array(0),
         },
       },
       false,
     );
-    const id = (await createResponse).resourceCreateValue.resourceId;
+    const createResp = (await createResponse).resourceCreateValue;
+    const id = createResp.resourceId;
+    const resourceSignature = createResp.resourceSignature ?? new Uint8Array(0);
 
     while (true) {
       const vr = await tx.send(
@@ -193,7 +221,7 @@ test("check is abort error (active)", async () => {
           resourceGet: {
             resourceId: id,
             loadFields: false,
-            resourceSignature: new Uint8Array(0),
+            resourceSignature,
           },
         },
         false,

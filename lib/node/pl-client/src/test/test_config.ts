@@ -89,8 +89,11 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
 }
 
 const cleanAuthInfoCallback = () => {
-  console.warn(`Removing: ${getFullAuthDataFilePath()}`);
-  fs.rmSync(getFullAuthDataFilePath());
+  const p = getFullAuthDataFilePath();
+  if (fs.existsSync(p)) {
+    console.warn(`Removing: ${p}`);
+    fs.rmSync(p);
+  }
 };
 
 export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
