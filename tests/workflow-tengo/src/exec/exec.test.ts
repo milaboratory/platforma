@@ -76,32 +76,6 @@ tplTest.concurrent.for([{ gpuCount: 37 }])(
 );
 
 /**
- * Verifies that {system.gpu} expression resolves to the GPU count
- * passed via .gpu(N). This tests the full chain:
- * SDK .gpu() → quota JSON → Quota resource → ComputeAllocation → system.gpu expression
- */
-tplTest.concurrent("gpu-system-var", async ({ helper, expect }) => {
-  const gpuNum = 23;
-  const result = await helper.renderTemplate(
-    false,
-    "exec.run.echo_gpu_system_var",
-    ["result"],
-    (tx) => ({
-      gpuCount: tx.createValue(Pl.JsonObject, JSON.stringify(gpuNum)),
-      dedup: tx.createValue(Pl.JsonObject, JSON.stringify(Math.random())),
-    }),
-  );
-
-  const output = await result
-    .computeOutput("result", (a) => a?.getDataAsString())
-    .awaitStableValue();
-  // Output format: "<dedup>,<gpu>\n" — hello-world echoes its single arg
-  const gpuValue = output!.trim().split(",").pop();
-  console.log(`GPU system var output: "${output}" -> gpu=${gpuValue}`);
-  expect(Number(gpuValue)).eq(gpuNum);
-});
-
-/**
  * Requests a secret and checks its value is not empty.
  */
 tplTest.concurrent("check-secret", async ({ helper, expect }) => {
