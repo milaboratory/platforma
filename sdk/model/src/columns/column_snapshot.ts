@@ -45,7 +45,7 @@ export function createReadyColumnData(getData: () => PColumnDataUniversal | unde
 // --- Snapshot construction helpers ---
 
 /** Creates a ColumnSnapshot from parts. */
-export function createColumnSnapshot<Id extends PObjectId = PObjectId>(
+export function createColumnSnapshot<Id extends PObjectId>(
   id: Id,
   spec: PColumnSpec,
   dataStatus: ColumnDataStatus,

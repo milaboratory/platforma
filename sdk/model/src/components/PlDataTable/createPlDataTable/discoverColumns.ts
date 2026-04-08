@@ -27,7 +27,7 @@ import type {
 } from "./createPlDataTableV3";
 
 export type DiscoveredColumnOptions = {
-  sources?: ColumnSource | ColumnSource[];
+  sources?: ColumnSource[];
   anchors: Record<string, PObjectId | PColumnSpec | PlRef>;
   columnsSelector: ColumnsSelectorConfig;
 };
@@ -94,18 +94,10 @@ function resolveAnchors<A, U>(
 }
 
 /** Resolve column snapshot providers from explicit sources or context. */
-function resolveProviders<A, U>(
-  ctx: RenderCtxBase<A, U>,
-  sources: ColumnSource | ColumnSource[] | undefined,
-) {
-  return sources
-    ? normalizeSourceList(sources).map(toColumnSnapshotProvider)
+function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | ColumnSource[]) {
+  return sources !== undefined
+    ? sources.map(toColumnSnapshotProvider)
     : collectCtxColumnSnapshotProviders(ctx);
-}
-
-/** Normalize raw ColumnSource | ColumnSource[] into a flat list of sources. */
-function normalizeSourceList(source: ColumnSource | ColumnSource[]): ColumnSource[] {
-  return Array.isArray(source) ? (source as ColumnSource[]) : [source as ColumnSource];
 }
 
 /** Pre-resolve linker column snapshots (deduped) for all matched columns. */
