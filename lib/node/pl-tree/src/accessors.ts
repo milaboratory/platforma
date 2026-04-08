@@ -5,7 +5,12 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type { ResourceId, ResourceSignature, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
+import type {
+  ResourceId,
+  ResourceSignature,
+  ResourceType,
+  OptionalResourceId,
+} from "@milaboratories/pl-client";
 import {
   resourceIdToString,
   resourceTypesEqual,
@@ -197,7 +202,11 @@ export class PlTreeNodeAccessor {
   }
 
   public get resourceInfo(): ResourceInfo {
-    return { id: this.id, type: this.resourceType, resourceSignature: this.resource.resourceSignature };
+    return {
+      id: this.id,
+      type: this.resourceType,
+      resourceSignature: this.resource.resourceSignature,
+    };
   }
 
   private getResourceFromTree(rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
