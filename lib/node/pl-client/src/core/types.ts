@@ -68,6 +68,22 @@ export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): bo
   return type1.name === type2.name && type1.version === type2.version;
 }
 
+/** Resource ID bundled with its authorization signature. */
+export type SignedResourceId = {
+  readonly resourceId: bigint;
+  readonly resourceSignature?: Uint8Array;
+};
+
+/** Signed field reference — resource signature attached to field's parent resource. */
+export type SignedFieldId = SignedResourceId & {
+  readonly fieldName: string;
+};
+
+/** Encode resource signature to base64 string for REST APIs. */
+export function signatureToBase64(sig?: Uint8Array): string {
+  return sig ? Buffer.from(sig).toString("base64") : "";
+}
+
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export type BasicResourceData = {
   readonly id: ResourceId;

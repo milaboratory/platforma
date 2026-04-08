@@ -4,7 +4,7 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import { addRTypeToMetadata, createRTypeRoutingHeader, signatureToBase64, RestAPI } from "@milaboratories/pl-client";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
@@ -71,9 +71,7 @@ export class ClientProgress {
         await client.POST("/v1/get-progress", {
           body: {
             resourceId: id.toString(),
-            resourceSignature: resourceSignature
-              ? Buffer.from(resourceSignature).toString("base64")
-              : "",
+            resourceSignature: signatureToBase64(resourceSignature),
           },
           headers: { ...createRTypeRoutingHeader(type) },
         })

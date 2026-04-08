@@ -3,7 +3,7 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import { addRTypeToMetadata, createRTypeRoutingHeader, signatureToBase64, RestAPI } from "@milaboratories/pl-client";
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
@@ -100,9 +100,7 @@ export class ClientUpload {
       await client.POST("/v1/upload/init", {
         body: {
           resourceId: id.toString(),
-          resourceSignature: resourceSignature
-            ? Buffer.from(resourceSignature).toString("base64")
-            : "",
+          resourceSignature: signatureToBase64(resourceSignature),
         },
         headers: { ...createRTypeRoutingHeader(type) },
       })
@@ -148,9 +146,7 @@ export class ClientUpload {
         await client.POST("/v1/upload/get-part-url", {
           body: {
             resourceId: id.toString(),
-            resourceSignature: resourceSignature
-              ? Buffer.from(resourceSignature).toString("base64")
-              : "",
+            resourceSignature: signatureToBase64(resourceSignature),
             partNumber: partNumber.toString(),
             uploadedPartSize: "0",
             isInternalUse: false,
@@ -245,9 +241,7 @@ export class ClientUpload {
       await client.POST("/v1/upload/finalize", {
         body: {
           resourceId: info.id.toString(),
-          resourceSignature: info.resourceSignature
-            ? Buffer.from(info.resourceSignature).toString("base64")
-            : "",
+          resourceSignature: signatureToBase64(info.resourceSignature),
           checksumAlgorithm: 0,
           checksum: "",
         },
@@ -291,9 +285,7 @@ export class ClientUpload {
     await client.POST("/v1/upload/update-progress", {
       body: {
         resourceId: id.toString(),
-        resourceSignature: resourceSignature
-          ? Buffer.from(resourceSignature).toString("base64")
-          : "",
+        resourceSignature: signatureToBase64(resourceSignature),
         bytesProcessed: bytesProcessed.toString(),
       },
       headers: { ...createRTypeRoutingHeader(type) },
