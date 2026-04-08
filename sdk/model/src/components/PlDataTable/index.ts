@@ -22,7 +22,7 @@ export {
 } from "./state-migration";
 
 export { createPlDataTableSheet } from "./createPlDataTableSheet";
-export { createPlDataTable } from "./createPlDataTable";
+export { createPlDataTable, discoverColumns } from "./createPlDataTable";
 export { createPlDataTableV2 } from "./createPlDataTable/createPlDataTableV2";
 export { createPlDataTableV3 } from "./createPlDataTable/createPlDataTableV3";
 export {

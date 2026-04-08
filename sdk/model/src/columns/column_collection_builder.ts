@@ -218,15 +218,6 @@ export class ColumnCollectionBuilder {
   }
 }
 
-// --- Permissive constraints for plain (non-anchored) filtering ---
-
-const PLAIN_CONSTRAINTS: DiscoverColumnsConstraints = {
-  allowFloatingSourceAxes: true,
-  allowFloatingHitAxes: true,
-  allowSourceQualifications: false,
-  allowHitQualifications: false,
-};
-
 // --- ColumnCollectionImpl ---
 
 interface ColumnCollectionImplOptions {
@@ -273,7 +264,7 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
       excludeColumns,
       axes: [],
       maxHops: 0,
-      constraints: PLAIN_CONSTRAINTS,
+      constraints: matchingModeToConstraints("enrichment"),
     });
 
     // Map hits back to snapshots
@@ -443,9 +434,9 @@ function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsConstrain
     case "enrichment":
       return {
         allowFloatingSourceAxes: true,
-        allowFloatingHitAxes: true,
-        allowSourceQualifications: false,
-        allowHitQualifications: false,
+        allowFloatingHitAxes: false,
+        allowSourceQualifications: true,
+        allowHitQualifications: true,
       };
     case "related":
       return {

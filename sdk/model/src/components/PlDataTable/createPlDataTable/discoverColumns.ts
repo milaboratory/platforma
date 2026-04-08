@@ -1,14 +1,12 @@
 import type {
-  CanonicalizedJson,
   PColumnSpec,
-  PColumnSpecId,
   PlRef,
   PObjectId,
   RequireServices,
   Services,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, getPColumnSpecId, isPlRef } from "@milaboratories/pl-model-common";
+import { isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
@@ -38,9 +36,7 @@ export function discoverColumns<A, U, S extends RequireServices<typeof Services.
   options: DiscoveredColumnOptions,
 ): DiscoveredColumn<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
-  const resolvedAnchors = resolveAnchors(ctx, options.anchors);
-  if (resolvedAnchors === undefined) return undefined;
-  const resolvedOptions = { ...options, anchors: resolvedAnchors };
+  const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
 
   // Resolve providers
   const providers = resolveProviders(ctx, resolvedOptions.sources);
@@ -62,10 +58,10 @@ export function discoverColumns<A, U, S extends RequireServices<typeof Services.
     const resolvedLinkers = resolveLinkerSnapshots(collection, matched);
 
     // Build anchor spec ID set
-    const anchorSpecIdSet = buildAnchorSpecIdSet(collection, resolvedOptions.anchors);
+    const anchorIdSet = buildAnchorIdSet(collection, matched, resolvedOptions.anchors);
 
     // Normalize into DiscoveredColumn[]
-    return mapToDiscoveredColumns(matched, resolvedLinkers, anchorSpecIdSet);
+    return mapToDiscoveredColumns(matched, resolvedLinkers, anchorIdSet);
   } finally {
     collection.dispose();
   }
@@ -77,7 +73,7 @@ export function discoverColumns<A, U, S extends RequireServices<typeof Services.
 function resolveAnchors<A, U>(
   ctx: RenderCtxBase<A, U>,
   anchors: Record<string, PObjectId | PColumnSpec | PlRef>,
-): Record<string, PObjectId | PColumnSpec> | undefined {
+): Record<string, PObjectId | PColumnSpec> {
   const result: Record<string, PObjectId | PColumnSpec> = {};
   for (const [key, value] of Object.entries(anchors)) {
     if (isPlRef(value)) {
@@ -120,23 +116,83 @@ function resolveLinkerSnapshots(
   return result;
 }
 
-/** Build set of canonical anchor spec IDs for isAnchor flagging. */
-function buildAnchorSpecIdSet(
+/** Build set of canonical anchor spec IDs for isAnchor flagging.
+ *  For PObjectId anchors — exact lookup in the collection.
+ *  For PColumnSpec anchors — partial match against matched columns,
+ *  because the provided spec may lack domain/contextDomain that real columns have. */
+function buildAnchorIdSet(
   collection: AnchoredColumnCollection,
+  matched: readonly ColumnMatch[],
   anchors: Record<string, PObjectId | PColumnSpec>,
-): Set<CanonicalizedJson<PColumnSpecId>> {
-  const result = new Set<CanonicalizedJson<PColumnSpecId>>();
+): Set<PObjectId> {
+  const result = new Set<PObjectId>();
   for (const anchor of Object.values(anchors)) {
     if (typeof anchor === "string") {
       const snap =
         collection.getColumnByOriginalId(anchor) ??
         throwError(`Anchor column ${anchor} not found in anchored collection`);
-      result.add(canonicalizeJson(getPColumnSpecId(snap.spec)));
+      result.add(snap.id);
     } else {
-      result.add(canonicalizeJson(getPColumnSpecId(anchor)));
+      for (const match of matched) {
+        if (isPartialSpecMatch(anchor, match.column.spec)) {
+          if (result.has(match.column.id)) {
+            const specStr = JSON.stringify(anchor);
+            throw new Error(
+              `Multiple matched columns with ID ${match.column.id} for anchor spec ${specStr}. Consider making the anchor more specific by adding domain/contextDomain properties.`,
+            );
+          }
+          result.add(match.column.id);
+        }
+      }
     }
   }
+
+  if (result.size === 0) {
+    throw new Error(
+      "No anchors were matched in the discovered columns. Please check that your anchor specs correctly match the columns in the sources, and consider making them more specific by including domain/contextDomain properties.",
+    );
+  }
+
   return result;
+}
+
+/** Check that all fields present in the anchor spec match the candidate.
+ *  axesSpec — candidate axes must be a subset of anchor axes (by name+type+domain subset).
+ *  domain/contextDomain — each key in anchor must exist with same value in candidate. */
+function isPartialSpecMatch(anchor: PColumnSpec, candidate: PColumnSpec): boolean {
+  if (anchor.name !== candidate.name) return false;
+  if (anchor.valueType !== candidate.valueType) return false;
+
+  // Candidate axes must be a subset of anchor axes,
+  // because anchor resolution may filter out some axes.
+  // Each candidate axis must find a matching anchor axis by name + type,
+  // and its domain must be a superset of the anchor axis domain.
+  for (const cAxis of candidate.axesSpec) {
+    const aAxis = anchor.axesSpec.find((a) => a.name === cAxis.name && a.type === cAxis.type);
+    if (aAxis === undefined) return false;
+    if (aAxis.domain !== undefined) {
+      if (cAxis.domain === undefined) return false;
+      for (const [k, v] of Object.entries(aAxis.domain)) {
+        if (cAxis.domain[k] !== v) return false;
+      }
+    }
+  }
+
+  if (anchor.domain !== undefined) {
+    if (candidate.domain === undefined) return false;
+    for (const [k, v] of Object.entries(anchor.domain)) {
+      if (candidate.domain[k] !== v) return false;
+    }
+  }
+
+  if (anchor.contextDomain !== undefined) {
+    if (candidate.contextDomain === undefined) return false;
+    for (const [k, v] of Object.entries(anchor.contextDomain)) {
+      if (candidate.contextDomain[k] !== v) return false;
+    }
+  }
+
+  return true;
 }
 
 /** Build linker path for a single match entry. */
@@ -156,7 +212,7 @@ function buildLinkerPath(
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
   resolvedLinkers: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-  anchorSpecIdSet: Set<CanonicalizedJson<PColumnSpecId>>,
+  anchorIdSet: Set<PObjectId>,
 ): DiscoveredColumn<SUniversalPColumnId>[] {
   const hitCounts = matched.reduce(
     (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
@@ -179,7 +235,7 @@ function mapToDiscoveredColumns(
       spec: snap.spec,
       dataStatus: snap.dataStatus,
       data: snap.data,
-      isAnchor: anchorSpecIdSet.has(canonicalizeJson(getPColumnSpecId(snap.spec))),
+      isAnchor: anchorIdSet.has(snap.id),
       linkerPath: buildLinkerPath(match, resolvedLinkers),
     };
   });

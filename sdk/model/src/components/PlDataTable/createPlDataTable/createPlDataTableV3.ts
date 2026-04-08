@@ -132,6 +132,8 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const coreColumns = annotated.direct.filter((c) => anchorColumnIds.has(c.id));
   const nonCoreDirectColumns = annotated.direct.filter((c) => !anchorColumnIds.has(c.id));
 
+  if (coreColumns.length === 0) return undefined;
+
   const fullDef = createPTableDefV3({
     coreColumns,
     secondaryGroups: [
