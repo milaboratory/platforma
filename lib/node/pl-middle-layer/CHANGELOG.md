@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.55.2
+
+### Patch Changes
+
+- Updated dependencies [cad9688]
+  - @platforma-sdk/block-tools@2.7.6
+  - @milaboratories/pl-model-backend@1.2.6
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/pf-spec-driver@1.2.4
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pf-driver@1.3.3
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-deployments@2.16.5
+  - @milaboratories/pl-drivers@1.12.8
+  - @milaboratories/pl-errors@1.2.6
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.9.7
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
 ## 1.55.1
 
 ### Patch Changes

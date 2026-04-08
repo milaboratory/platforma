@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/pl-cli",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "description": "CLI for Platforma server state manipulation",
   "license": "UNLICENSED",
   "bin": {
