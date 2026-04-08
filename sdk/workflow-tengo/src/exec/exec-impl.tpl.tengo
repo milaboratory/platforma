@@ -85,8 +85,7 @@ self.validateInputs({
 		queue: "string",
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
-		"gpu,?": "number",
-		"gpuType,?": "string"
+		"gpu,?": "number"
 	}
 })
 
@@ -148,9 +147,6 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(quota.gpu) && quota.gpu > 0 {
 		computeRequest.gpu = quota.gpu
-		if !is_undefined(quota.gpuType) && quota.gpuType != "" {
-			computeRequest.gpuType = quota.gpuType
-		}
 	}
 	computeAllocationRef := delayedCompAlloc.create(wdBefore, computeRequest)
 

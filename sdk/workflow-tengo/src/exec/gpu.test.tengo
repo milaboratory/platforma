@@ -9,7 +9,7 @@ Test_gpu_method_exists := func() {
 	test.isTrue(ll.methodExists(b, "gpu"), "exec.builder should have gpu method")
 }
 
-Test_gpu_with_count_only := func() {
+Test_gpu_with_count := func() {
 	b := exec.builder().
 		cmd("nvidia-smi").
 		cpu(1).
@@ -19,47 +19,26 @@ Test_gpu_with_count_only := func() {
 	test.isTrue(ll.methodExists(b, "run"), "gpu() should return builder with run method")
 }
 
-Test_gpu_with_count_and_type := func() {
-	b := exec.builder().
-		cmd("nvidia-smi").
-		cpu(1).
-		mem("2GiB").
-		gpu(2, "nvidia-tesla-a100")
-
-	test.isTrue(ll.methodExists(b, "run"), "gpu(count, type) should return builder")
-}
-
 Test_gpu_chaining := func() {
 	b := exec.builder().
 		cmd("test").
 		cpu(1).
 		mem("2GiB").
-		gpu(4, "a100").
+		gpu(4).
 		arg("--flag")
 
 	test.isTrue(ll.methodExists(b, "run"), "gpu() should not break the builder chain")
 }
 
-Test_gpu_override_resets_type := func() {
+Test_gpu_override := func() {
 	b := exec.builder().
 		cmd("test").
 		cpu(1).
 		mem("2GiB").
-		gpu(2, "nvidia-tesla-a100").
+		gpu(2).
 		gpu(1)
 
 	test.isTrue(ll.methodExists(b, "run"), "gpu() override should return valid builder")
-}
-
-Test_gpu_override_replaces_type := func() {
-	b := exec.builder().
-		cmd("test").
-		cpu(1).
-		mem("2GiB").
-		gpu(1, "a100").
-		gpu(2, "v100")
-
-	test.isTrue(ll.methodExists(b, "run"), "gpu() with new type should return valid builder")
 }
 
 // Deduplication tests: verify that the quota map structure
@@ -67,10 +46,7 @@ Test_gpu_override_replaces_type := func() {
 // extra keys break content hashing.
 
 Test_quota_without_gpu_has_no_gpu_keys := func() {
-	// Replicate the quota-building logic from the builder
-	// when gpuCount == 0 (no .gpu() call)
 	gpuCount := 0
-	gpuType := ""
 
 	quotaData := {
 		queue: "heavy",
@@ -79,9 +55,6 @@ Test_quota_without_gpu_has_no_gpu_keys := func() {
 	}
 	if gpuCount > 0 {
 		quotaData.gpu = gpuCount
-		if gpuType != "" {
-			quotaData.gpuType = gpuType
-		}
 	}
 
 	serialized := json.encode(quotaData)
@@ -97,7 +70,6 @@ Test_quota_without_gpu_has_no_gpu_keys := func() {
 
 Test_quota_with_gpu_has_gpu_key := func() {
 	gpuCount := 1
-	gpuType := ""
 
 	quotaData := {
 		queue: "heavy",
@@ -106,38 +78,9 @@ Test_quota_with_gpu_has_gpu_key := func() {
 	}
 	if gpuCount > 0 {
 		quotaData.gpu = gpuCount
-		if gpuType != "" {
-			quotaData.gpuType = gpuType
-		}
 	}
 
 	serialized := json.encode(quotaData)
 	test.isTrue(text.contains(serialized, "\"gpu\""),
 		"quota with .gpu(1) must contain 'gpu' key")
-	// gpuType should NOT be present when empty
-	test.isFalse(text.contains(serialized, "gpuType"),
-		"quota with .gpu(1) without type must not contain 'gpuType' key")
-}
-
-Test_quota_with_gpu_and_type_has_both_keys := func() {
-	gpuCount := 2
-	gpuType := "a100"
-
-	quotaData := {
-		queue: "heavy",
-		cpu: 4,
-		ram: "16GiB"
-	}
-	if gpuCount > 0 {
-		quotaData.gpu = gpuCount
-		if gpuType != "" {
-			quotaData.gpuType = gpuType
-		}
-	}
-
-	serialized := json.encode(quotaData)
-	test.isTrue(text.contains(serialized, "\"gpu\""),
-		"quota with .gpu(2, 'a100') must contain 'gpu' key")
-	test.isTrue(text.contains(serialized, "\"gpuType\""),
-		"quota with .gpu(2, 'a100') must contain 'gpuType' key")
 }

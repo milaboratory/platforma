@@ -75,8 +75,7 @@ self.validateInputs({
 		queue: "string",
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
-		"gpu,?": "number",
-		"gpuType,?": "string"
+		"gpu,?": "number"
 	}
 })
 
