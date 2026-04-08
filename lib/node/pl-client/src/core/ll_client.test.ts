@@ -146,7 +146,14 @@ test("test https call via proxy", async () => {
 test("list user resources returns user root", async () => {
   const client = await getTestLLClient();
   const responses = await client.listUserResources({ limit: 1 });
-  expect(responses.length).toBe(1);
-  const msg = responses[0];
-  expect(msg.entry.oneofKind).toBe("userRoot");
+
+  // First message is always the user root.
+  expect(responses.length).toBeGreaterThanOrEqual(1);
+  expect(responses[0].entry.oneofKind).toBe("userRoot");
+
+  // If there are more resources, the last message is a continuation token.
+  if (responses.length > 1) {
+    const last = responses[responses.length - 1];
+    expect(last.nextResourceId).not.toBe(0n);
+  }
 });
