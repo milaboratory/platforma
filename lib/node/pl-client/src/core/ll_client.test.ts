@@ -142,3 +142,11 @@ test("test https call via proxy", async () => {
   const text = await response.body.text();
   expect(text).toEqual("pong");
 });
+
+test("list user resources returns user root", async () => {
+  const client = await getTestLLClient();
+  const responses = await client.listUserResources({ limit: 1 });
+  expect(responses.length).toBe(1);
+  const msg = responses[0];
+  expect(msg.entry.oneofKind).toBe("userRoot");
+});

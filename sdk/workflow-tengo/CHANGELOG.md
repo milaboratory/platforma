@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.12.0
+
+### Minor Changes
+
+- faa2923: Add support of custom command names in workflows. Custom command name is shown in error message if command fails and in logs of backend
+
 ## 5.11.0
 
 ### Minor Changes

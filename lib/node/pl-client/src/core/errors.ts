@@ -80,6 +80,17 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   return false;
 }
 
+export function isUnimplementedError(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
+  if ((err as any).name == "RpcError" && (err as any).code == "UNIMPLEMENTED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.UNIMPLEMENTED)
+    return true;
+  if ((err as any).cause !== undefined && !nested)
+    return isUnimplementedError((err as any).cause, true);
+  return false;
+}
+
 export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 

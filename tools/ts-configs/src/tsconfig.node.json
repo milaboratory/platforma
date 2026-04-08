@@ -3,8 +3,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
-    "lib": ["ESNext"],
     "moduleResolution": "Bundler",
+    "lib": ["ESNext"],
     "types": ["node"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true

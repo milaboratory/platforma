@@ -5,8 +5,14 @@ import type { AnyResourceRef } from "./transaction";
 import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
 import { createHash } from "node:crypto";
 import type { OptionalResourceId, ResourceId } from "./types";
-import { ensureResourceIdNotNull, isNullResourceId, NullResourceId } from "./types";
+import {
+  bigintToResourceId,
+  ensureResourceIdNotNull,
+  isNullResourceId,
+  NullResourceId,
+} from "./types";
 import { ClientRoot } from "../helpers/pl";
+import { isUnimplementedError } from "./errors";
 import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
 import { assertNever, createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
 import type { PlDriver, PlDriverDefinition } from "./driver";
@@ -213,7 +219,9 @@ export class PlClient {
     return this._signatureCache;
   }
 
-  /** Currently implements custom logic to emulate future behaviour with single root. */
+  /** Discovers or creates the user's root resource.
+   *  Tries ListUserResources RPC first (new backend), falls back to
+   *  legacy named-resource lookup for older backends. */
   private async init() {
     if (this.initialized) throw new Error("Already initialized");
 
@@ -226,45 +234,87 @@ export class PlClient {
     this._ll = await this.buildLLPlClient(false);
     const wireProtocol = this._ll.wireProtocol;
 
-    // calculating reproducible root name from the username
-    const user = this._ll.authUser;
-    const mainRootName =
-      user === null ? AnonymousClientRoot : createHash("sha256").update(user).digest("hex");
-
     this._serverInfo = await this.ping();
     if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
       await this._ll.close();
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    this._clientRoot = await this._withTx("initialization", true, NullResourceId, async (tx) => {
-      let mainRoot: AnyResourceRef;
-
-      if (await tx.checkResourceNameExists(mainRootName))
-        mainRoot = await tx.getResourceByName(mainRootName);
-      else {
-        mainRoot = tx.createRoot(ClientRoot);
-        tx.setResourceName(mainRootName, mainRoot);
+    // Try ListUserResources first (new backend, gRPC only)
+    let rootFromServer: ResourceId | undefined;
+    try {
+      const responses = await this._ll.listUserResources({ limit: 1 });
+      for (const msg of responses) {
+        if (msg.entry.oneofKind === "userRoot") {
+          rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
+          break;
+        }
       }
+    } catch (err) {
+      if (!isUnimplementedError(err)) throw err;
+      // Backend doesn't support ListUserResources — fall through to legacy
+    }
 
+    if (rootFromServer !== undefined) {
+      // New path: server created/returned the root
       if (this.conf.alternativeRoot === undefined) {
-        await tx.commit();
-        return await toGlobalResourceId(mainRoot);
+        this._clientRoot = rootFromServer;
       } else {
-        const aFId = {
-          resourceId: mainRoot,
-          fieldName: alternativeRootFieldName(this.conf.alternativeRoot),
-        };
+        this._clientRoot = await this._withTx(
+          "initialization",
+          true,
+          rootFromServer,
+          async (tx) => {
+            const aFId = {
+              resourceId: tx.clientRoot,
+              fieldName: alternativeRootFieldName(this.conf.alternativeRoot!),
+            };
 
-        const altRoot = tx.createEphemeral(ClientRoot);
-        tx.lock(altRoot);
-        tx.createField(aFId, "Dynamic");
-        tx.setField(aFId, altRoot);
-        await tx.commit();
+            const altRoot = tx.createEphemeral(ClientRoot);
+            tx.lock(altRoot);
+            tx.createField(aFId, "Dynamic");
+            tx.setField(aFId, altRoot);
+            await tx.commit();
 
-        return await altRoot.globalId;
+            return await altRoot.globalId;
+          },
+        );
       }
-    });
+    } else {
+      // Legacy path: named resource lookup
+      const user = this._ll.authUser;
+      const mainRootName =
+        user === null ? AnonymousClientRoot : createHash("sha256").update(user).digest("hex");
+
+      this._clientRoot = await this._withTx("initialization", true, NullResourceId, async (tx) => {
+        let mainRoot: AnyResourceRef;
+
+        if (await tx.checkResourceNameExists(mainRootName))
+          mainRoot = await tx.getResourceByName(mainRootName);
+        else {
+          mainRoot = tx.createRoot(ClientRoot);
+          tx.setResourceName(mainRootName, mainRoot);
+        }
+
+        if (this.conf.alternativeRoot === undefined) {
+          await tx.commit();
+          return await toGlobalResourceId(mainRoot);
+        } else {
+          const aFId = {
+            resourceId: mainRoot,
+            fieldName: alternativeRootFieldName(this.conf.alternativeRoot),
+          };
+
+          const altRoot = tx.createEphemeral(ClientRoot);
+          tx.lock(altRoot);
+          tx.createField(aFId, "Dynamic");
+          tx.setField(aFId, altRoot);
+          await tx.commit();
+
+          return await altRoot.globalId;
+        }
+      });
+    }
   }
 
   /** Returns true if field existed */
