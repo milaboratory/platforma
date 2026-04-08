@@ -369,9 +369,9 @@ export class PlClient {
           this._signatureCache,
         );
 
-        // Auto-set default color proof for write transactions so that
-        // resource creation carries the correct access color.
-        if (writable && !isNullResourceId(clientRoot)) {
+        // Auto-set default color proof so that resource creation (write TXs)
+        // and name lookups (read TXs) carry the correct access color.
+        if (!isNullResourceId(clientRoot)) {
           const rootSig = this._signatureCache.get(clientRoot);
           if (rootSig) {
             tx.setDefaultColor(rootSig);

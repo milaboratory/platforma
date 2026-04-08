@@ -60,6 +60,7 @@ export type RemoteStorageHandleData = {
   name: string;
   id: ResourceId;
   type: ResourceType;
+  resourceSignature?: Uint8Array;
 };
 
 const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;

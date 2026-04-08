@@ -37,7 +37,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async lastLines(
-    { id: rId, type: rType }: ResourceInfo,
+    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the end.
     searchStr?: string,
@@ -47,7 +47,13 @@ export class ClientLogs {
     if (client instanceof StreamingClient) {
       return (
         await client.lastLines(
-          { resourceId: rId, lineCount: lineCount, offset: offsetBytes, search: searchStr },
+          {
+            resourceId: rId,
+            resourceSignature: rSig,
+            lineCount: lineCount,
+            offset: offsetBytes,
+            search: searchStr,
+          },
           addRTypeToMetadata(rType, options),
         )
       ).response;
@@ -57,7 +63,7 @@ export class ClientLogs {
       await client.POST("/v1/last-lines", {
         body: {
           resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceSignature: rSig ? Buffer.from(rSig).toString("base64") : "",
           lineCount: lineCount,
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
@@ -78,7 +84,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async readText(
-    { id: rId, type: rType }: ResourceInfo,
+    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the beginning.
     searchStr?: string,
@@ -91,6 +97,7 @@ export class ClientLogs {
         await client.readText(
           {
             resourceId: notEmpty(rId),
+            resourceSignature: rSig,
             readLimit: BigInt(lineCount),
             offset: offsetBytes,
             search: searchStr,
@@ -104,7 +111,7 @@ export class ClientLogs {
       await client.POST("/v1/read/text", {
         body: {
           resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceSignature: rSig ? Buffer.from(rSig).toString("base64") : "",
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),
           search: searchStr ?? "",

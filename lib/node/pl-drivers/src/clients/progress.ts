@@ -50,19 +50,31 @@ export class ClientProgress {
   close() {}
 
   /** getStatus gets a progress status by given rId and rType. */
-  async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
+  async getStatus(
+    { id, type, resourceSignature }: ResourceInfo,
+    options?: RpcOptions,
+  ): Promise<ProgressStatus> {
     const client = this.wire.get();
 
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
-        (await client.getStatus({ resourceId: id }, addRTypeToMetadata(type, options)).response)
-          .report,
+        (
+          await client.getStatus(
+            { resourceId: id, resourceSignature },
+            addRTypeToMetadata(type, options),
+          ).response
+        ).report,
       );
     } else {
       const resp = (
         await client.POST("/v1/get-progress", {
-          body: { resourceId: id.toString(), resourceSignature: "" },
+          body: {
+            resourceId: id.toString(),
+            resourceSignature: resourceSignature
+              ? Buffer.from(resourceSignature).toString("base64")
+              : "",
+          },
           headers: { ...createRTypeRoutingHeader(type) },
         })
       ).data!.report;

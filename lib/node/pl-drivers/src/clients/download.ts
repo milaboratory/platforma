@@ -129,7 +129,7 @@ export class ClientDownload {
   }
 
   private async grpcGetDownloadUrl(
-    { id, type }: ResourceInfo,
+    { id, type, resourceSignature }: ResourceInfo,
     options?: RpcOptions,
     signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
@@ -139,7 +139,7 @@ export class ClientDownload {
     const client = this.wire.get();
     if (client instanceof DownloadClient) {
       return await client.getDownloadURL(
-        { resourceId: id, isInternalUse: false },
+        { resourceId: id, resourceSignature, isInternalUse: false },
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
@@ -147,7 +147,9 @@ export class ClientDownload {
         await client.POST("/v1/get-download-url", {
           body: {
             resourceId: id.toString(),
-            resourceSignature: "",
+            resourceSignature: resourceSignature
+              ? Buffer.from(resourceSignature).toString("base64")
+              : "",
             isInternalUse: false,
           },
           headers: { ...createRTypeRoutingHeader(type) },

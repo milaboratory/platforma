@@ -152,6 +152,7 @@ export class PlTreeEntryAccessor {
 export type ResourceInfo = {
   readonly id: ResourceId;
   readonly type: ResourceType;
+  readonly resourceSignature?: Uint8Array;
 };
 
 /**
@@ -196,7 +197,7 @@ export class PlTreeNodeAccessor {
   }
 
   public get resourceInfo(): ResourceInfo {
-    return { id: this.id, type: this.resourceType };
+    return { id: this.id, type: this.resourceType, resourceSignature: this.resource.resourceSignature };
   }
 
   private getResourceFromTree(rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
