@@ -3,7 +3,12 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, signatureToBase64, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  signatureToBase64,
+  RestAPI,
+} from "@milaboratories/pl-client";
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
@@ -82,10 +87,7 @@ export class ClientUpload {
 
     if (client instanceof UploadClient) {
       const init = (
-        await client.init(
-          { resourceId: id, resourceSignature },
-          addRTypeToMetadata(type, options),
-        )
+        await client.init({ resourceId: id, resourceSignature }, addRTypeToMetadata(type, options))
       ).response;
 
       return {

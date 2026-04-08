@@ -314,8 +314,10 @@ export class PlTransaction {
   }
 
   private getSignature(rId: AnyResourceId): ResourceSignature | undefined {
-    return this.signatureStore.get(rId)
-      ?? (!isLocalResourceId(rId) ? this.sharedSignatureCache?.get(rId) : undefined);
+    return (
+      this.signatureStore.get(rId) ??
+      (!isLocalResourceId(rId) ? this.sharedSignatureCache?.get(rId) : undefined)
+    );
   }
 
   private toSignedResourceId(rId: AnyResourceRef): SignedResourceId {
@@ -338,7 +340,7 @@ export class PlTransaction {
 
   private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
     this.storeSignature(result.id, result.resourceSignature);
-    if ('fields' in result && result.fields) {
+    if ("fields" in result && result.fields) {
       for (const f of result.fields) {
         if (!isNullResourceId(f.value)) this.storeSignature(f.value, f.valueSignature);
         if (!isNullResourceId(f.error)) this.storeSignature(f.error, f.errorSignature);

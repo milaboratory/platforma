@@ -4,7 +4,11 @@
 import type { Signer } from "@milaboratories/ts-helpers";
 import type { OnDemandBlobResourceSnapshot } from "../types";
 import type { RemoteBlobHandle } from "@milaboratories/pl-model-common";
-import { bigintToResourceId, signatureToBase64Url, base64UrlToSignature } from "@milaboratories/pl-client";
+import {
+  bigintToResourceId,
+  signatureToBase64Url,
+  base64UrlToSignature,
+} from "@milaboratories/pl-client";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 import { getSize } from "../types";
 
@@ -40,7 +44,8 @@ export function parseRemoteHandle(
     throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
   }
 
-  const { content, resourceType, resourceVersion, resourceId, size, resourceSig, signature } = parsed.groups!;
+  const { content, resourceType, resourceVersion, resourceId, size, resourceSig, signature } =
+    parsed.groups!;
 
   signer.verify(content, signature, `Signature verification failed for ${handle}`);
 
