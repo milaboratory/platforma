@@ -4,7 +4,7 @@
 import type { Signer } from "@milaboratories/ts-helpers";
 import type { OnDemandBlobResourceSnapshot } from "../types";
 import type { RemoteBlobHandle } from "@milaboratories/pl-model-common";
-import { bigintToResourceId } from "@milaboratories/pl-client";
+import { bigintToResourceId, signatureToBase64Url } from "@milaboratories/pl-client";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 import { getSize } from "../types";
 
@@ -17,8 +17,9 @@ export function newRemoteHandle(
   signer: Signer,
 ): RemoteBlobHandle {
   let content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}/${getSize(rInfo)}`;
-  if (rInfo.resourceSignature) {
-    content += `/${Buffer.from(rInfo.resourceSignature).toString('base64url')}`;
+  const sigStr = signatureToBase64Url(rInfo.resourceSignature);
+  if (sigStr) {
+    content += `/${sigStr}`;
   }
 
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;

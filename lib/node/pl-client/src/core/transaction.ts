@@ -309,9 +309,8 @@ export class PlTransaction {
 
   private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
     this.storeSignature(result.id, result.resourceSignature);
-    const rd = result as ResourceData;
-    if (rd.fields) {
-      for (const f of rd.fields) {
+    if ('fields' in result && result.fields) {
+      for (const f of result.fields) {
         if (!isNullResourceId(f.value)) this.storeSignature(f.value, f.valueSignature);
         if (!isNullResourceId(f.error)) this.storeSignature(f.error, f.errorSignature);
       }
