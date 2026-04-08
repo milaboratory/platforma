@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.12.1
+
+### Patch Changes
+
+- f0ef695: No functional changes. Better assertion error text
+
 ## 5.12.0
 
 ### Minor Changes
