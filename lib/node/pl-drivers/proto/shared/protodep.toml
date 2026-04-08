@@ -1,5 +1,5 @@
 proto_outdir = "./.proto"
 
 [[dependencies]]
-    target = "github.com/googleapis/googleapis"
-    path = "./"
+target = "github.com/googleapis/googleapis"
+path = "./"

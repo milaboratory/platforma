@@ -3,11 +3,15 @@
 
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type * as sdk from "@milaboratories/pl-model-common";
-import { bigintToResourceId, signatureToBase64Url, base64UrlToSignature } from "@milaboratories/pl-client";
+import {
+  bigintToResourceId,
+  signatureToBase64Url,
+  base64UrlToSignature,
+} from "@milaboratories/pl-client";
 
 export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
   const sigStr = signatureToBase64Url(rInfo.resourceSignature);
-  const resSig = sigStr ? `/${sigStr}` : '';
+  const resSig = sigStr ? `/${sigStr}` : "";
   if (live) {
     return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}${resSig}` as sdk.LiveLogHandle;
   }
