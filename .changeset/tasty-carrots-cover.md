@@ -1,5 +1,5 @@
 ---
-"@milaboratories/build-configs": patch
+"@milaboratories/build-configs": major
 "@platforma-sdk/block-tools": patch
 "@milaboratories/ts-builder": patch
 "@milaboratories/ts-configs": patch
