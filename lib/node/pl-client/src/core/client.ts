@@ -12,7 +12,7 @@ import {
   NullResourceId,
 } from "./types";
 import { ClientRoot } from "../helpers/pl";
-import { isUnimplementedError } from "./errors";
+import { isPermissionDenied, isUnimplementedError } from "./errors";
 import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
 import { assertNever, createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
 import type { PlDriver, PlDriverDefinition } from "./driver";
@@ -397,6 +397,11 @@ export class PlClient {
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
+            // Invalidate stale signatures on permission denied so the next
+            // transaction can re-fetch fresh ones from the server.
+            if (isPermissionDenied(e)) {
+              this._signatureCache.clear();
+            }
             throw e;
           }
         } finally {

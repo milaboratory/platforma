@@ -79,9 +79,14 @@ export type SignedFieldId = SignedResourceId & {
   readonly fieldName: string;
 };
 
-/** Encode resource signature to base64 string for REST APIs. */
+/** Encode resource signature to standard base64 for REST API bodies. */
 export function signatureToBase64(sig?: Uint8Array): string {
   return sig ? Buffer.from(sig).toString("base64") : "";
+}
+
+/** Encode resource signature to base64url for embedding in URL-based handles. */
+export function signatureToBase64Url(sig?: Uint8Array): string {
+  return sig ? Buffer.from(sig).toString("base64url") : "";
 }
 
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
