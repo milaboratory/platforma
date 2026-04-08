@@ -81,12 +81,13 @@ tplTest.concurrent.for([{ gpuCount: 37 }])(
  * SDK .gpu() → quota JSON → Quota resource → ComputeAllocation → system.gpu expression
  */
 tplTest.concurrent("gpu-system-var", async ({ helper, expect }) => {
+  const gpuNum = 23;
   const result = await helper.renderTemplate(
     false,
     "exec.run.echo_gpu_system_var",
     ["result"],
     (tx) => ({
-      gpuCount: tx.createValue(Pl.JsonObject, JSON.stringify(2)),
+      gpuCount: tx.createValue(Pl.JsonObject, JSON.stringify(gpuNum)),
       dedup: tx.createValue(Pl.JsonObject, JSON.stringify(Math.random())),
     }),
   );
@@ -97,7 +98,7 @@ tplTest.concurrent("gpu-system-var", async ({ helper, expect }) => {
   // Output format: "<dedup>,<gpu>\n" — hello-world echoes its single arg
   const gpuValue = output!.trim().split(",").pop();
   console.log(`GPU system var output: "${output}" -> gpu=${gpuValue}`);
-  expect(Number(gpuValue)).eq(2);
+  expect(Number(gpuValue)).eq(gpuNum);
 });
 
 /**
