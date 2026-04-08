@@ -5857,6 +5857,7 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
     create(value?: PartialMessage<ResourceAPI_CreateStruct_Request>): ResourceAPI_CreateStruct_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
+        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateStruct_Request>(this, message, value);
         return message;
@@ -6017,6 +6018,7 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
     create(value?: PartialMessage<ResourceAPI_CreateEphemeral_Request>): ResourceAPI_CreateEphemeral_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
+        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateEphemeral_Request>(this, message, value);
         return message;
@@ -6326,6 +6328,7 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
+        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateValue_Request>(this, message, value);
         return message;
@@ -6641,6 +6644,7 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
+        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateSingleton_Request>(this, message, value);
         return message;

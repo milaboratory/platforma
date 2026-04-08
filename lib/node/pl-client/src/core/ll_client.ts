@@ -25,7 +25,6 @@ import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
 import type * as grpcTypes from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { AuthAPI_GetJWTToken_Role } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import {
   type PlApiPaths,
   type PlRestClientType,
@@ -36,6 +35,7 @@ import { notEmpty, retry, withTimeout, type RetryOptions } from "@milaboratories
 import { Code } from "../proto-grpc/google/rpc/code";
 import { WebSocketBiDiStream } from "./websocket_stream";
 import {
+  AuthAPI_GetJWTToken_Role,
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
@@ -589,6 +589,27 @@ export class LLPlClient implements WireClientProviderFactory {
         "REST: empty response for auth methods request",
       );
     }
+  }
+
+  public async listUserResources(
+    opts: { login?: string; startFrom?: bigint; limit?: number } = {},
+  ): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
+    const cl = this.clientProvider.get();
+
+    if (!(cl instanceof GrpcPlApiClient)) {
+      throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
+    }
+
+    const call = cl.listUserResources({
+      login: opts.login ?? "",
+      startFrom: opts.startFrom ?? 0n,
+      limit: opts.limit ?? 0,
+    });
+    const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
+    for await (const msg of call.responses) {
+      responses.push(msg);
+    }
+    return responses;
   }
 
   public async txSync(txId: bigint): Promise<void> {
