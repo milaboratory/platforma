@@ -1,48 +1,30 @@
 {
-  "version": "1.5.2",
   "name": "@milaboratories/build-configs",
+  "version": "1.5.2",
   "type": "module",
-  "deprecated": {
-    "tsconfig_lib_bundled.json": "Use @milaboratories/ts-configs instead"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./vite": {
-      "types": "./src/vite.d.ts",
-      "import": "./dist/vite.js",
-      "require": "./dist/vite.cjs"
-    },
-    "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
+    }
   },
-  "files": [
-    "./dist/**",
-    "./tsconfig_lib_bundled.json"
-  ],
   "scripts": {
-    "build": "vite build",
-    "type-check": "tsc --noEmit --composite false",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "check": "ts-builder check --target node",
+    "fmt": "ts-builder format",
+    "build": "ts-builder build --target node",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
-  "dependencies": {
-    "@rollup/plugin-commonjs": "catalog:",
-    "@rollup/plugin-json": "catalog:",
-    "@rollup/plugin-node-resolve": "catalog:",
-    "@rollup/plugin-typescript": "catalog:",
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "rollup": "catalog:",
-    "rollup-plugin-cleandir": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
-    "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vite-plugin-lib-inject-css": "catalog:",
-    "vite-plugin-externalize-deps": "catalog:",
-    "vitest": "catalog:",
-    "vue": "catalog:"
+    "vitest": "catalog:"
   }
 }
