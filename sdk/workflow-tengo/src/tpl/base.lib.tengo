@@ -97,6 +97,9 @@ AWAIT_TEMPLATES := {
 		[{ wildcard: "*" }, "spec", "ResourceReady"],
 		[{ wildcard: "*" }, "data", "InputsLocked"],
 		[{ wildcard: "*" }, "data", { match: "^\\{.*\\}$" }, "InputsLocked"] // for multi-hit BQuery results; key is always ref
+	],
+	"PrimarySpecsReady": [
+		[{ wildcard: "*" }, "spec", "ResourceReady"]
 	]
 }
 

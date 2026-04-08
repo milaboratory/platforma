@@ -37,6 +37,14 @@ Detection: `PlRef` has `__isRef: true` at top level.
 Dependency scanner deep-scans for `__isRef: true` — finds
 nested PlRefs inside PrimaryRef without changes.
 
+## Implementation Checklist
+
+- [x] **Stage A** — Workflow Resolution Layer (R4, R5)
+- [ ] **Stage B** — PrimaryRef Types (R1, R2, R3)
+- [ ] **Stage C** — Filter Discovery (R6, R7)
+- [ ] **Stage D** — tableBuilder (R9-R12, R14) — BLOCKED
+- [ ] **Stage E** — PlDatasetSelector (R8)
+
 ## Dependencies and Parallelism
 
 Stages ordered by risk (highest first) within dependency
@@ -175,14 +183,14 @@ await since resolved primaries don't carry top-level `ref`.
 
 ### Verification — Stage A
 
-- [ ] `wf.resolve(plRef)` returns `{ spec, data }`
+- [x] `wf.resolve(plRef)` returns `{ spec, data }`
       (backward compat)
-- [ ] `wf.resolve(primaryRef)` preserves `__isPrimaryRef`,
+- [x] `wf.resolve(primaryRef)` preserves `__isPrimaryRef`,
       resolves nested `column` and `filter`
-- [ ] `wf.resolve(primaryRef, { data: false })` omits data
-- [ ] `wf.resolve({ noRefs: "here" })` panics
-- [ ] `wf.resolve({ a: plRef1, b: [plRef2] })` resolves both
-- [ ] `tpl.awaitState("x", "PrimarySpecsReady")` registers
+- [x] `wf.resolve(primaryRef, { data: false })` omits data
+- [x] `wf.resolve({ noRefs: "here" })` panics
+- [x] `wf.resolve({ a: plRef1, b: [plRef2] })` resolves both
+- [x] `tpl.awaitState("x", "PrimarySpecsReady")` registers
 - [ ] Template body runs when specs ready, data still computing
 - [ ] End-to-end: resolve a PrimaryRef, pass to ephemeral
       template, awaitState proceeds when specs resolve
