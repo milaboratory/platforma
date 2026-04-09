@@ -70,6 +70,10 @@ async function optionsSearch(s: string | string[], type: "label" | "value") {
       <summary>Block UI pframeSpec service</summary>
       <pre>{{ blockSpecResult }}</pre>
     </details>
+    <details open>
+      <summary>Counter plugin public output (block level)</summary>
+      <pre>count: {{ app.plugins.counter.publicOutputs.count }}</pre>
+    </details>
     <Counter :handle="app.plugins.counter.handle" />
   </PlBlockPage>
 </template>

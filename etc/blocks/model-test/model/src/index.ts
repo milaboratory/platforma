@@ -87,6 +87,7 @@ export const counterPlugin = PluginModel.define({
     const handle = ctx.services.pframe.createPFrame([]);
     return `pframe: created handle ${handle}`;
   })
+  .publicOutput("count", (d) => d.count)
   .build();
 
 export type CounterPlugin = typeof counterPlugin;
