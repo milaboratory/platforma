@@ -13,7 +13,7 @@ import { ResourceInfo } from "@milaboratories/pl-tree";
 import { getSize } from "../types";
 
 const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)\/(?<size>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?)#(?<signature>.*)$/;
+  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>[^/]+)\/(?<resourceId>\d+)\/(?<size>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?)#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,

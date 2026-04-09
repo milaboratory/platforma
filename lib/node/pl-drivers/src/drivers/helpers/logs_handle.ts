@@ -24,7 +24,7 @@ export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHand
  * in this case the handle should be refreshed. */
 
 export const liveHandleRegex =
-  /^log\+live:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
+  /^log\+live:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
 
 export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
   return liveHandleRegex.test(handle);
@@ -33,7 +33,7 @@ export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
 /** Handle of the ready logs of a program. */
 
 export const readyHandleRegex =
-  /^log\+ready:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^\/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
+  /^log\+ready:\/\/log\/(?<resourceType>.+)\/(?<resourceVersion>[^/]+)\/(?<resourceId>\d+)(?:\/(?<resourceSig>[A-Za-z0-9_-]*))?$/;
 
 export function isReadyLogHandle(handle: string): handle is sdk.ReadyLogHandle {
   return readyHandleRegex.test(handle);
