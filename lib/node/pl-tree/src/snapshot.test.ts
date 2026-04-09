@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
-import { DefaultFinalResourceDataPredicate, ResourceId } from "@milaboratories/pl-client";
+import { bigintToResourceId, DefaultFinalResourceDataPredicate } from "@milaboratories/pl-client";
 import { z } from "zod";
 import { InferSnapshot, makeResourceSnapshot, rsSchema } from "./snapshot";
 import { PlTreeState } from "./state";
@@ -38,16 +38,16 @@ test("simple snapshot test", async () => {
   });
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
     {
       ...TestStructuralResourceState1,
-      id: rid(1n),
-      fields: [iField("b", rid(2n))],
+      id: bigintToResourceId(1n),
+      fields: [iField("b", bigintToResourceId(2n))],
       data: new TextEncoder().encode(`{"jf": 0}`),
     },
     {
       ...TestValueResourceState1,
-      id: rid(2n),
+      id: bigintToResourceId(2n),
     },
   ]);
 
@@ -58,8 +58,8 @@ test("simple snapshot test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(1n),
-      fields: [iField("b", rid(2n))],
+      id: bigintToResourceId(1n),
+      fields: [iField("b", bigintToResourceId(2n))],
       data: new TextEncoder().encode(`{"jf": 0}`),
       kv: [{ key: "thekey", value: Buffer.from('"thevalue"') }],
     },
@@ -67,13 +67,13 @@ test("simple snapshot test", async () => {
 
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toMatchObject({
-    id: rid(1n),
+    id: bigintToResourceId(1n),
     type: TestStructuralResourceType1,
     data: {
       jf: 0,
     },
     fields: {
-      b: rid(2n),
+      b: bigintToResourceId(2n),
       c: undefined,
     },
     kv: {
@@ -85,8 +85,8 @@ test("simple snapshot test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(1n),
-      fields: [iField("b", rid(2n))],
+      id: bigintToResourceId(1n),
+      fields: [iField("b", bigintToResourceId(2n))],
       data: new TextEncoder().encode(`{"jf": 0}`),
       kv: [{ key: "thekey", value: Buffer.from("123") }], // thekey type changed to number (invalid accordig to zod schema)
     },
@@ -96,7 +96,3 @@ test("simple snapshot test", async () => {
   expect((await c1.getValueOrError()).type).toStrictEqual("error");
   expect(c1.isChanged()).toBeFalsy();
 });
-
-function rid(id: bigint): ResourceId {
-  return id as ResourceId;
-}
