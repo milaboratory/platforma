@@ -5,7 +5,12 @@ import type {
   PTableColumnSpec,
   PTableVector,
 } from "@milaboratories/pl-middle-layer";
-import { pTableValue, isPTableAbsent } from "@milaboratories/pl-model-common";
+import {
+  Annotation,
+  isPTableAbsent,
+  pTableValue,
+  readAnnotation,
+} from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, textResult } from "./types";
@@ -48,7 +53,7 @@ async function resolveHandle(
         type: s.type,
         name: s.spec.name,
         valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
-        label: s.spec.annotations?.["pl7.app/label"],
+        label: readAnnotation(s.spec, Annotation.Label),
       })),
     };
     if (spec.length > maxColumns) {
@@ -71,7 +76,7 @@ async function resolveHandle(
       columns: columns.slice(0, maxColumns).map((c) => ({
         name: c.spec.name,
         valueType: c.spec.valueType,
-        label: c.spec.annotations?.["pl7.app/label"],
+        label: readAnnotation(c.spec, Annotation.Label),
       })),
     };
     if (columns.length > maxColumns) {
@@ -192,12 +197,12 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           columnId: c.columnId,
           name: c.spec.name,
           valueType: c.spec.valueType,
-          label: c.spec.annotations?.["pl7.app/label"],
-          visibility: c.spec.annotations?.["pl7.app/table/visibility"],
+          label: readAnnotation(c.spec, Annotation.Label),
+          visibility: readAnnotation(c.spec, Annotation.Table.Visibility),
           axes: c.spec.axesSpec.map((a) => ({
             name: a.name,
             type: a.type,
-            label: a.annotations?.["pl7.app/label"],
+            label: readAnnotation(a, Annotation.Label),
           })),
         })),
       );
@@ -291,7 +296,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           index: idx,
           type: s.type,
           name: s.type === "column" ? s.spec.name : s.spec.name,
-          label: s.spec.annotations?.["pl7.app/label"],
+          label: readAnnotation(s.spec, Annotation.Label),
         };
       });
 
