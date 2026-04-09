@@ -1,6 +1,7 @@
 import type { PlClient } from "@milaboratories/pl-client";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
 import { PlMcpServer } from "@milaboratories/pl-mcp-server";
+import type { McpSecret } from "@milaboratories/pl-mcp-server";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { randomUUID } from "node:crypto";
@@ -31,7 +32,7 @@ export interface McpTestContext {
 
 export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
-  const secret = randomUUID().replace(/-/g, "");
+  const secret = randomUUID().replace(/-/g, "") as McpSecret;
   const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {

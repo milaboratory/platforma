@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
+import type { Branded } from "@milaboratories/pl-model-common";
 import type { ToolContext } from "./tools/types";
 import { registerPingTool } from "./tools/ping";
 import { registerConnectionTools } from "./tools/connection";
@@ -65,13 +66,16 @@ export interface ServerConnection {
   lastConnected?: string;
 }
 
+/** Branded type for the MCP server URL secret path segment. */
+export type McpSecret = Branded<string, "McpSecret">;
+
 export interface PlMcpServerOptions {
   /** MiddleLayer instance providing access to projects, blocks, etc. Optional — server can start without it. */
   middleLayer?: MiddleLayer;
   /** Port to listen on. */
   port: number;
   /** Secret path segment for URL security. */
-  secret: string;
+  secret: McpSecret;
   /** Optional callbacks for project lifecycle events (e.g. to sync UI state). */
   callbacks?: PlMcpServerCallbacks;
 }
@@ -79,7 +83,7 @@ export interface PlMcpServerOptions {
 export class PlMcpServer {
   private ml: MiddleLayer | null;
   private port: number;
-  private readonly secret: string;
+  private readonly secret: McpSecret;
   private readonly callbacks: PlMcpServerCallbacks;
   private httpServer: Server | undefined;
   private readonly transports = new Map<string, StreamableHTTPServerTransport>();

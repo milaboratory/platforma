@@ -1,6 +1,7 @@
 import { test, expect } from "vitest";
 import { withMcpServer, getFreePort } from "./with-mcp";
 import { PlMcpServer } from "@milaboratories/pl-mcp-server";
+import type { McpSecret } from "@milaboratories/pl-mcp-server";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
 import type { PlClient } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
@@ -27,7 +28,7 @@ test("lists ping tool", { timeout: 30_000 }, async () => {
 
 test("wrong secret returns 404", { timeout: 30_000 }, async () => {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
-  const secret = randomUUID().replace(/-/g, "");
+  const secret = randomUUID().replace(/-/g, "") as McpSecret;
   const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
@@ -64,7 +65,7 @@ test("wrong secret returns 404", { timeout: 30_000 }, async () => {
 
 test("wrong path returns 404", { timeout: 30_000 }, async () => {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
-  const secret = randomUUID().replace(/-/g, "");
+  const secret = randomUUID().replace(/-/g, "") as McpSecret;
   const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
