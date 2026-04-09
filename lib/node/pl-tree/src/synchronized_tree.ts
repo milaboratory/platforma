@@ -124,12 +124,14 @@ export class SynchronizedTreeState {
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error("tree synchronization is terminated");
     const request = constructTreeLoadingRequest(this.state, this.pruning);
+    const treeState = this.state;
     const data = await this.pl.withReadTx(
       "ReadingTree",
-      async (tx) => {
-        return await loadTreeState(tx, request, stats);
+      async (tx) => loadTreeState(tx, request, stats),
+      {
+        ...txOps,
+        signatureResolver: (id) => treeState.getResourceSignature(id),
       },
-      txOps,
     );
     this.state.updateFromResourceData(data, true);
   }

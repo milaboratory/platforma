@@ -13,8 +13,6 @@ import type {
   ResourceSignature,
   ResourceType,
   FutureFieldType,
-  SignedResourceId,
-  SignedFieldId,
 } from "./types";
 import {
   createLocalResourceId,
@@ -45,7 +43,6 @@ import { isNotFoundError } from "./errors";
 import type { FinalResourceDataPredicate } from "./final";
 import type { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
-import type { SignatureCache } from "./signature_cache";
 import type { TxStat } from "./stat";
 import { initialTxStatWithoutTime } from "./stat";
 import type { ErrorResourceData } from "./error_resource";
@@ -88,7 +85,7 @@ export type FieldRef = _FieldId<ResourceRef>;
 export type LocalFieldId = _FieldId<LocalResourceId>;
 export type AnyFieldId = FieldId | LocalFieldId;
 
-export type AnyResourceRef = ResourceRef | ResourceId;
+export type AnyResourceRef = ResourceRef | AnyResourceId;
 export type AnyFieldRef = _FieldId<AnyResourceRef>; // FieldRef | FieldId
 export type AnyRef = AnyResourceRef | AnyFieldRef;
 
@@ -97,9 +94,7 @@ export function isField(ref: AnyRef): ref is AnyFieldRef {
 }
 
 export function isResource(ref: AnyRef): ref is AnyResourceRef {
-  return (
-    typeof ref === "bigint" || (ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId"))
-  );
+  return typeof ref === "bigint" || isResourceRef(ref);
 }
 
 export function isResourceId(ref: AnyRef): ref is ResourceId {
@@ -110,29 +105,30 @@ export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
   return isResourceRef(ref.resourceId);
 }
 
-export function isResourceRef(ref: AnyResourceRef): ref is ResourceRef {
-  return ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId");
+export function isResourceRef(ref: AnyRef): ref is ResourceRef {
+  return typeof ref !== "bigint" && ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId");
 }
+
 
 export function toFieldId(ref: AnyFieldRef): AnyFieldId {
   if (isFieldRef(ref)) return { resourceId: ref.resourceId.localId, fieldName: ref.fieldName };
-  else return ref as FieldId;
+  return ref as AnyFieldId;
 }
 
 export async function toGlobalFieldId(ref: AnyFieldRef): Promise<FieldId> {
   if (isFieldRef(ref))
     return { resourceId: await ref.resourceId.globalId, fieldName: ref.fieldName };
-  else return ref as FieldId;
+  return { resourceId: ref.resourceId as ResourceId, fieldName: ref.fieldName };
 }
 
 export function toResourceId(ref: AnyResourceRef): AnyResourceId {
   if (isResourceRef(ref)) return ref.localId;
-  else return ref;
+  return ref;
 }
 
 export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
   if (isResourceRef(ref)) return await ref.globalId;
-  else return ref;
+  return ref as ResourceId;
 }
 
 export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRef {
@@ -153,10 +149,12 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
   }
 }
 
+export type SignatureResolver = (id: ResourceId) => ResourceSignature | undefined;
+
 export type PlTransactionOptions = {
   finalPredicate: FinalResourceDataPredicate;
+  signatureResolver?: SignatureResolver;
   resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
-  signatureCache?: SignatureCache;
   enableFormattedErrors?: boolean;
 };
 
@@ -203,7 +201,7 @@ export class PlTransaction {
 
   private readonly finalPredicate: FinalResourceDataPredicate;
   private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
-  private readonly sharedSignatureCache?: SignatureCache;
+  private readonly signatureResolver?: SignatureResolver;
   private readonly enableFormattedErrors: boolean;
 
   constructor(
@@ -215,7 +213,7 @@ export class PlTransaction {
   ) {
     this.finalPredicate = options.finalPredicate;
     this.sharedResourceDataCache = options.resourceDataCache;
-    this.sharedSignatureCache = options.signatureCache;
+    this.signatureResolver = options.signatureResolver;
     this.enableFormattedErrors = options.enableFormattedErrors ?? false;
 
     // initiating transaction
@@ -307,35 +305,32 @@ export class PlTransaction {
     const rs = toResourceSignature(sig);
     if (rs && !this.signatureStore.has(id)) {
       this.signatureStore.set(id, rs);
-      if (!isLocalResourceId(id)) {
-        this.sharedSignatureCache?.set(id, rs);
-      }
     }
   }
 
   private getSignature(rId: AnyResourceId): ResourceSignature | undefined {
     return (
       this.signatureStore.get(rId) ??
-      (!isLocalResourceId(rId) ? this.sharedSignatureCache?.get(rId) : undefined)
+      (!isLocalResourceId(rId) ? this.signatureResolver?.(rId as ResourceId) : undefined)
     );
   }
 
-  private toSignedResourceId(rId: AnyResourceRef): SignedResourceId {
+  private toSignedResourceId(rId: AnyResourceRef): { resourceId: AnyResourceId; resourceSignature?: ResourceSignature } {
     const resourceId = toResourceId(rId);
     return { resourceId, resourceSignature: this.getSignature(resourceId) };
   }
 
-  private toSignedFieldId(fId: AnyFieldRef): SignedFieldId {
+  private toSignedFieldId(fId: AnyFieldRef): { resourceId: AnyResourceId; resourceSignature?: ResourceSignature; fieldName: string } {
     const base = toFieldId(fId);
-    return { ...base, resourceSignature: this.getSignature(base.resourceId) };
+    return { resourceId: base.resourceId, fieldName: base.fieldName, resourceSignature: this.getSignature(base.resourceId) };
   }
 
   private toSignedErrorRef(rId: AnyResourceRef): {
     errorResourceId: AnyResourceId;
     errorResourceSignature?: ResourceSignature;
   } {
-    const signed = this.toSignedResourceId(rId);
-    return { errorResourceId: signed.resourceId, errorResourceSignature: signed.resourceSignature };
+    const { resourceId, resourceSignature } = this.toSignedResourceId(rId);
+    return { errorResourceId: resourceId, errorResourceSignature: resourceSignature };
   }
 
   private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
@@ -831,7 +826,10 @@ export class PlTransaction {
     this._stat.fieldsCreated++;
     this.sendVoidAsync({
       oneofKind: "fieldCreate",
-      fieldCreate: { type: fieldTypeToProto(fieldType), id: this.toSignedFieldId(fId) },
+      fieldCreate: {
+        type: fieldTypeToProto(fieldType),
+        id: this.toSignedFieldId(fId),
+      },
     });
     if (value !== undefined) this.setField(fId, value);
   }
