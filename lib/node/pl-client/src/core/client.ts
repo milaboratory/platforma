@@ -4,15 +4,16 @@ import { LLPlClient } from "./ll_client";
 import type { AnyResourceRef } from "./transaction";
 import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
 import { createHash } from "node:crypto";
-import type { OptionalResourceId, ResourceId } from "./types";
+import type { OptionalResourceId, ResourceId, ResourceSignature } from "./types";
 import {
   bigintToResourceId,
   ensureResourceIdNotNull,
   isNullResourceId,
   NullResourceId,
+  toResourceSignature,
 } from "./types";
 import { ClientRoot } from "../helpers/pl";
-import { isUnimplementedError } from "./errors";
+import { isPermissionDenied, isUnimplementedError } from "./errors";
 import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
 import { assertNever, createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
 import type { PlDriver, PlDriverDefinition } from "./driver";
@@ -32,6 +33,7 @@ import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
+import { SignatureCache } from "./signature_cache";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -95,6 +97,9 @@ export class PlClient {
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
   private readonly resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+
+  /** Cross-transaction signature cache */
+  private readonly _signatureCache = new SignatureCache();
 
   private constructor(
     configOrAddress: PlClientConfig | string,
@@ -209,6 +214,12 @@ export class PlClient {
     return this._serverInfo!;
   }
 
+  /** Shared signature cache, persists across transactions.
+   * Call clear() on auth errors to invalidate stale signatures. */
+  public get signatureCache(): SignatureCache {
+    return this._signatureCache;
+  }
+
   /** Discovers or creates the user's root resource.
    *  Tries ListUserResources RPC first (new backend), falls back to
    *  legacy named-resource lookup for older backends. */
@@ -232,11 +243,13 @@ export class PlClient {
 
     // Try ListUserResources first (new backend, gRPC only)
     let rootFromServer: ResourceId | undefined;
+    let rootSignature: ResourceSignature | undefined;
     try {
       const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
           rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
+          rootSignature = toResourceSignature(msg.entry.userRoot.resourceSignature);
           break;
         }
       }
@@ -246,6 +259,12 @@ export class PlClient {
     }
 
     if (rootFromServer !== undefined) {
+      // Store root signature in cross-transaction cache so subsequent
+      // transactions can attach it to requests and use it as color proof.
+      if (rootSignature && rootSignature.length > 0) {
+        this._signatureCache.set(rootFromServer, rootSignature);
+      }
+
       // New path: server created/returned the root
       if (this.conf.alternativeRoot === undefined) {
         this._clientRoot = rootFromServer;
@@ -341,14 +360,20 @@ export class PlClient {
         // opening low-level tx
         const llTx = this.ll.createTx(writable, ops);
         // wrapping it into high-level tx (this also asynchronously sends initialization message)
-        const tx = new PlTransaction(
-          llTx,
-          name,
-          writable,
-          clientRoot,
-          this.finalPredicate,
-          this.resourceDataCache,
-        );
+        const tx = new PlTransaction(llTx, name, writable, clientRoot, {
+          finalPredicate: this.finalPredicate,
+          resourceDataCache: this.resourceDataCache,
+          signatureCache: this._signatureCache,
+        });
+
+        // Auto-set default color proof so that resource creation (write TXs)
+        // and name lookups (read TXs) carry the correct access color.
+        if (!isNullResourceId(clientRoot)) {
+          const rootSig = this._signatureCache.get(clientRoot);
+          if (rootSig) {
+            tx.setDefaultColor(rootSig);
+          }
+        }
 
         let ok = false;
         let result: T | undefined = undefined;
@@ -369,6 +394,14 @@ export class PlClient {
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
+            // Invalidate all cached signatures on permission denied.
+            // Targeted invalidation is impractical here because the failing
+            // resource id is not reliably available from the error.  A full
+            // clear is safe: signatures are re-populated lazily from server
+            // responses in subsequent transactions.
+            if (isPermissionDenied(e)) {
+              this._signatureCache.clear();
+            }
             throw e;
           }
         } finally {

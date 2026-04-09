@@ -4,7 +4,12 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  signatureToBase64,
+  RestAPI,
+} from "@milaboratories/pl-client";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
@@ -50,19 +55,29 @@ export class ClientProgress {
   close() {}
 
   /** getStatus gets a progress status by given rId and rType. */
-  async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
+  async getStatus(
+    { id, type, resourceSignature }: ResourceInfo,
+    options?: RpcOptions,
+  ): Promise<ProgressStatus> {
     const client = this.wire.get();
 
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
-        (await client.getStatus({ resourceId: id }, addRTypeToMetadata(type, options)).response)
-          .report,
+        (
+          await client.getStatus(
+            { resourceId: id, resourceSignature },
+            addRTypeToMetadata(type, options),
+          ).response
+        ).report,
       );
     } else {
       const resp = (
         await client.POST("/v1/get-progress", {
-          body: { resourceId: id.toString(), resourceSignature: "" },
+          body: {
+            resourceId: id.toString(),
+            resourceSignature: signatureToBase64(resourceSignature),
+          },
           headers: { ...createRTypeRoutingHeader(type) },
         })
       ).data!.report;

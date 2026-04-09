@@ -68,6 +68,44 @@ export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): bo
   return type1.name === type2.name && type1.version === type2.version;
 }
 
+/** Opaque authorization signature attached to a resource. */
+declare const __resource_signature_type__: unique symbol;
+export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
+
+/** Color proof used for resource creation requests (alias for ResourceSignature). */
+export type ColorProof = ResourceSignature;
+
+/** Resource ID bundled with its authorization signature. */
+export type SignedResourceId = {
+  readonly resourceId: AnyResourceId;
+  readonly resourceSignature?: ResourceSignature;
+};
+
+/** Signed field reference — resource signature attached to field's parent resource. */
+export type SignedFieldId = SignedResourceId & {
+  readonly fieldName: string;
+};
+
+/** Encode resource signature to standard base64 for REST API bodies. */
+export function signatureToBase64(sig?: ResourceSignature): string {
+  return sig ? Buffer.from(sig).toString("base64") : "";
+}
+
+/** Encode resource signature to base64url for embedding in URL-based handles. */
+export function signatureToBase64Url(sig?: ResourceSignature): string {
+  return sig ? Buffer.from(sig).toString("base64url") : "";
+}
+
+/** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
+export function toResourceSignature(raw?: Uint8Array): ResourceSignature | undefined {
+  return raw && raw.length > 0 ? (raw as ResourceSignature) : undefined;
+}
+
+/** Decode base64url-encoded string back to a branded ResourceSignature. */
+export function base64UrlToSignature(str: string): ResourceSignature {
+  return toResourceSignature(Buffer.from(str, "base64url"))!;
+}
+
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export type BasicResourceData = {
   readonly id: ResourceId;
@@ -87,6 +125,9 @@ export type BasicResourceData = {
   /** This value is derived from resource state by the server and can be used as
    * a robust criteria to determine resource is in final state. */
   readonly final: boolean;
+
+  /** Signature for this resource, used for authorization in subsequent requests. */
+  readonly resourceSignature?: ResourceSignature;
 };
 
 export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
@@ -101,6 +142,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
+    resourceSignature,
   } = rd;
   return {
     id,
@@ -113,6 +155,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
+    resourceSignature,
   };
 }
 
@@ -137,6 +180,11 @@ export type FieldData = {
 
   /** True if value the fields points to is in final state. */
   readonly valueIsFinal: boolean;
+
+  /** Signature for the value resource, inheriting parent resource's color. */
+  readonly valueSignature?: ResourceSignature;
+  /** Signature for the error resource, inheriting parent resource's color. */
+  readonly errorSignature?: ResourceSignature;
 };
 
 //

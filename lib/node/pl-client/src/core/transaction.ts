@@ -2,6 +2,7 @@
 /* eslint-disable no-prototype-builtins */
 import type {
   AnyResourceId,
+  ColorProof,
   LocalResourceId,
   OptionalResourceId,
   BasicResourceData,
@@ -9,8 +10,11 @@ import type {
   FieldType,
   ResourceData,
   ResourceId,
+  ResourceSignature,
   ResourceType,
   FutureFieldType,
+  SignedResourceId,
+  SignedFieldId,
 } from "./types";
 import {
   createLocalResourceId,
@@ -19,6 +23,7 @@ import {
   isLocalResourceId,
   extractBasicResourceData,
   isNullResourceId,
+  toResourceSignature,
 } from "./types";
 import type {
   ClientMessageRequest,
@@ -40,6 +45,7 @@ import { isNotFoundError } from "./errors";
 import type { FinalResourceDataPredicate } from "./final";
 import type { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
+import type { SignatureCache } from "./signature_cache";
 import type { TxStat } from "./stat";
 import { initialTxStatWithoutTime } from "./stat";
 import type { ErrorResourceData } from "./error_resource";
@@ -147,6 +153,13 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
   }
 }
 
+export type PlTransactionOptions = {
+  finalPredicate: FinalResourceDataPredicate;
+  resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  signatureCache?: SignatureCache;
+  enableFormattedErrors?: boolean;
+};
+
 /**
  * Each platform transaction has 3 stages:
  *   - initialization (txOpen message -> txInfo response)
@@ -163,6 +176,12 @@ export class PlTransaction {
   private readonly txOpenTimestamp = Date.now();
 
   private localResourceIdCounter = 0;
+
+  /** Maps resource ids (both local and global) to their signatures received from the server */
+  private readonly signatureStore = new Map<AnyResourceId, ResourceSignature>();
+
+  /** Default color proof to include in resource creation requests */
+  private defaultColorProof?: ColorProof;
 
   /** Store logical tx open / closed state to prevent invalid sequence of requests.
    * True means output stream was completed.
@@ -182,22 +201,30 @@ export class PlTransaction {
     };
   }
 
+  private readonly finalPredicate: FinalResourceDataPredicate;
+  private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  private readonly sharedSignatureCache?: SignatureCache;
+  private readonly enableFormattedErrors: boolean;
+
   constructor(
     private readonly ll: LLPlTransaction,
     public readonly name: string,
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalResourceId,
-    private readonly finalPredicate: FinalResourceDataPredicate,
-    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>,
-    private readonly enableFormattedErrors: boolean = false,
+    options: PlTransactionOptions,
   ) {
+    this.finalPredicate = options.finalPredicate;
+    this.sharedResourceDataCache = options.resourceDataCache;
+    this.sharedSignatureCache = options.signatureCache;
+    this.enableFormattedErrors = options.enableFormattedErrors ?? false;
+
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
       {
         oneofKind: "txOpen",
         txOpen: {
           name,
-          enableFormattedErrors,
+          enableFormattedErrors: this.enableFormattedErrors,
           writable: writable
             ? TxAPI_Open_Request_WritableTx.WRITABLE
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
@@ -274,6 +301,60 @@ export class PlTransaction {
     r: OneOfKind<ClientMessageRequest, Kind>,
   ): void {
     void this.track(this.sendVoidSync(r));
+  }
+
+  private storeSignature(id: AnyResourceId, sig?: Uint8Array): void {
+    const rs = toResourceSignature(sig);
+    if (rs && !this.signatureStore.has(id)) {
+      this.signatureStore.set(id, rs);
+      if (!isLocalResourceId(id)) {
+        this.sharedSignatureCache?.set(id, rs);
+      }
+    }
+  }
+
+  private getSignature(rId: AnyResourceId): ResourceSignature | undefined {
+    return (
+      this.signatureStore.get(rId) ??
+      (!isLocalResourceId(rId) ? this.sharedSignatureCache?.get(rId) : undefined)
+    );
+  }
+
+  private toSignedResourceId(rId: AnyResourceRef): SignedResourceId {
+    const resourceId = toResourceId(rId);
+    return { resourceId, resourceSignature: this.getSignature(resourceId) };
+  }
+
+  private toSignedFieldId(fId: AnyFieldRef): SignedFieldId {
+    const base = toFieldId(fId);
+    return { ...base, resourceSignature: this.getSignature(base.resourceId) };
+  }
+
+  private toSignedErrorRef(rId: AnyResourceRef): {
+    errorResourceId: AnyResourceId;
+    errorResourceSignature?: ResourceSignature;
+  } {
+    const signed = this.toSignedResourceId(rId);
+    return { errorResourceId: signed.resourceId, errorResourceSignature: signed.resourceSignature };
+  }
+
+  private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
+    this.storeSignature(result.id, result.resourceSignature);
+    if ("fields" in result && result.fields) {
+      for (const f of result.fields) {
+        if (!isNullResourceId(f.value)) this.storeSignature(f.value, f.valueSignature);
+        if (!isNullResourceId(f.error)) this.storeSignature(f.error, f.errorSignature);
+      }
+    }
+  }
+
+  /** Set default color proof for subsequent resource creation requests */
+  public setDefaultColor(colorProof: ColorProof): void {
+    this.defaultColorProof = colorProof;
+    this.sendVoidAsync({
+      oneofKind: "setDefaultColor",
+      setDefaultColor: { colorProof },
+    });
   }
 
   private checkTxOpen() {
@@ -355,26 +436,23 @@ export class PlTransaction {
     name: string,
     type: ResourceType,
     errorIfExists: boolean = false,
+    colorProof?: ColorProof,
   ): ResourceRef {
-    const localId = this.nextLocalResourceId(false);
-
-    const globalId = this.sendSingleAndParse(
-      {
+    return this.createResource(
+      false,
+      (localId) => ({
         oneofKind: "resourceCreateSingleton",
         resourceCreateSingleton: {
           type,
           id: localId,
           data: Buffer.from(name),
           errorIfExists,
-          colorProof: new Uint8Array(0),
+          colorProof: colorProof ?? this.defaultColorProof,
         },
-      },
-      (r) => r.resourceCreateSingleton.resourceId as ResourceId,
+      }),
+      (r) => r.resourceCreateSingleton.resourceId,
+      (r) => r.resourceCreateSingleton.resourceSignature,
     );
-
-    void this.track(globalId);
-
-    return { globalId, localId };
   }
 
   public getSingleton(name: string, loadFields: true): Promise<ResourceData>;
@@ -391,7 +469,11 @@ export class PlTransaction {
           loadFields,
         },
       },
-      (r) => protoToResource(notEmpty(r.resourceGetSingleton.resource)),
+      (r) => {
+        const result = protoToResource(notEmpty(r.resourceGetSingleton.resource));
+        this.storeSignaturesFromResourceData(result);
+        return result;
+      },
     );
   }
 
@@ -399,10 +481,19 @@ export class PlTransaction {
     root: boolean,
     req: (localId: LocalResourceId) => OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => bigint,
+    sigExtractor?: (resp: OneOfKind<ServerMessageResponse, Kind>) => Uint8Array | undefined,
   ): ResourceRef {
     const localId = this.nextLocalResourceId(root);
 
-    const globalId = this.sendSingleAndParse(req(localId), (r) => parser(r) as ResourceId);
+    const globalId = this.sendSingleAndParse(req(localId), (r) => {
+      const id = parser(r) as ResourceId;
+      if (sigExtractor) {
+        const sig = sigExtractor(r);
+        this.storeSignature(id, sig);
+        this.storeSignature(localId, sig);
+      }
+      return id;
+    });
 
     void this.track(globalId);
 
@@ -415,10 +506,15 @@ export class PlTransaction {
       true,
       (localId) => ({ oneofKind: "resourceCreateRoot", resourceCreateRoot: { type, id: localId } }),
       (r) => r.resourceCreateRoot.resourceId,
+      (r) => r.resourceCreateRoot.resourceSignature,
     );
   }
 
-  public createStruct(type: ResourceType, data?: Uint8Array | string): ResourceRef {
+  public createStruct(
+    type: ResourceType,
+    data?: Uint8Array | string,
+    colorProof?: ColorProof,
+  ): ResourceRef {
     this._stat.structsCreated++;
     this._stat.structsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
@@ -430,14 +526,19 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
-          colorProof: new Uint8Array(0),
+          colorProof: colorProof ?? this.defaultColorProof,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
+      (r) => r.resourceCreateStruct.resourceSignature,
     );
   }
 
-  public createEphemeral(type: ResourceType, data?: Uint8Array | string): ResourceRef {
+  public createEphemeral(
+    type: ResourceType,
+    data?: Uint8Array | string,
+    colorProof?: ColorProof,
+  ): ResourceRef {
     this._stat.ephemeralsCreated++;
     this._stat.ephemeralsCreatedDataBytes += data?.length ?? 0;
     return this.createResource(
@@ -449,10 +550,11 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
-          colorProof: new Uint8Array(0),
+          colorProof: colorProof ?? this.defaultColorProof,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
+      (r) => r.resourceCreateEphemeral.resourceSignature,
     );
   }
 
@@ -460,6 +562,7 @@ export class PlTransaction {
     type: ResourceType,
     data: Uint8Array | string,
     errorIfExists: boolean = false,
+    colorProof?: ColorProof,
   ): ResourceRef {
     this._stat.valuesCreated++;
     this._stat.valuesCreatedDataBytes += data?.length ?? 0;
@@ -472,10 +575,11 @@ export class PlTransaction {
           id: localId,
           data: typeof data === "string" ? Buffer.from(data) : data,
           errorIfExists,
-          colorProof: new Uint8Array(0),
+          colorProof: colorProof ?? this.defaultColorProof,
         },
       }),
       (r) => r.resourceCreateValue.resourceId,
+      (r) => r.resourceCreateValue.resourceSignature,
     );
   }
 
@@ -499,7 +603,7 @@ export class PlTransaction {
   public setResourceName(name: string, rId: AnyResourceRef): void {
     this.sendVoidAsync({
       oneofKind: "resourceNameSet",
-      resourceNameSet: { resourceId: toResourceId(rId), name },
+      resourceNameSet: { ...this.toSignedResourceId(rId), name },
     });
   }
 
@@ -510,7 +614,11 @@ export class PlTransaction {
   public getResourceByName(name: string): Promise<ResourceId> {
     return this.sendSingleAndParse(
       { oneofKind: "resourceNameGet", resourceNameGet: { name } },
-      (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId),
+      (r) => {
+        const id = ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId);
+        this.storeSignature(id, r.resourceNameGet.resourceSignature);
+        return id;
+      },
     );
   }
 
@@ -524,7 +632,7 @@ export class PlTransaction {
   public removeResource(rId: ResourceId): void {
     this.sendVoidAsync({
       oneofKind: "resourceRemove",
-      resourceRemove: { resourceId: rId },
+      resourceRemove: this.toSignedResourceId(rId),
     });
   }
 
@@ -532,7 +640,7 @@ export class PlTransaction {
     return this.sendSingleAndParse(
       {
         oneofKind: "resourceExists",
-        resourceExists: { resourceId: rId },
+        resourceExists: this.toSignedResourceId(rId),
       },
       (r) => r.resourceExists.exists,
     );
@@ -578,11 +686,13 @@ export class PlTransaction {
           if (!loadFields) {
             this._stat.rGetDataCacheHits++;
             this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
+            this.storeSignaturesFromResourceData(fromCache.basicData);
             return fromCache.basicData;
           } else if (fromCache.data) {
             this._stat.rGetDataCacheHits++;
             this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
             this._stat.rGetDataCacheFields += fromCache.data.fields.length;
+            this.storeSignaturesFromResourceData(fromCache.data);
             return fromCache.data;
           }
         }
@@ -592,11 +702,15 @@ export class PlTransaction {
         {
           oneofKind: "resourceGet",
           resourceGet: {
-            resourceId: toResourceId(rId),
+            ...this.toSignedResourceId(rId),
             loadFields: loadFields,
           },
         },
-        (r) => protoToResource(notEmpty(r.resourceGet.resource)),
+        (r) => {
+          const rd = protoToResource(notEmpty(r.resourceGet.resource));
+          this.storeSignaturesFromResourceData(rd);
+          return rd;
+        },
       );
 
       this._stat.rGetDataNetRequests++;
@@ -678,7 +792,7 @@ export class PlTransaction {
     this._stat.inputsLocked++;
     this.sendVoidAsync({
       oneofKind: "resourceLockInputs",
-      resourceLockInputs: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0) },
+      resourceLockInputs: this.toSignedResourceId(rId),
     });
   }
 
@@ -690,7 +804,7 @@ export class PlTransaction {
     this._stat.outputsLocked++;
     this.sendVoidAsync({
       oneofKind: "resourceLockOutputs",
-      resourceLockOutputs: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0) },
+      resourceLockOutputs: this.toSignedResourceId(rId),
     });
   }
 
@@ -703,8 +817,8 @@ export class PlTransaction {
     this.sendVoidAsync({
       oneofKind: "resourceSetError",
       resourceSetError: {
-        resourceId: toResourceId(rId),
-        errorResourceId: toResourceId(ref),
+        ...this.toSignedResourceId(rId),
+        ...this.toSignedErrorRef(ref),
       },
     });
   }
@@ -717,7 +831,7 @@ export class PlTransaction {
     this._stat.fieldsCreated++;
     this.sendVoidAsync({
       oneofKind: "fieldCreate",
-      fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) },
+      fieldCreate: { type: fieldTypeToProto(fieldType), id: this.toSignedFieldId(fId) },
     });
     if (value !== undefined) this.setField(fId, value);
   }
@@ -726,7 +840,7 @@ export class PlTransaction {
     return this.sendSingleAndParse(
       {
         oneofKind: "fieldExists",
-        fieldExists: { field: toFieldId(fId) },
+        fieldExists: { field: this.toSignedFieldId(fId) },
       },
       (r) => r.fieldExists.exists,
     );
@@ -734,25 +848,26 @@ export class PlTransaction {
 
   public setField(fId: AnyFieldRef, ref: AnyRef): void {
     this._stat.fieldsSet++;
-    if (isResource(ref))
+    if (isResource(ref)) {
       this.sendVoidAsync({
         oneofKind: "fieldSet",
         fieldSet: {
-          field: toFieldId(fId),
+          field: this.toSignedFieldId(fId),
           value: {
-            resourceId: toResourceId(ref),
+            ...this.toSignedResourceId(ref),
             fieldName: "", // default value, read as undefined
           },
         },
       });
-    else
+    } else {
       this.sendVoidAsync({
         oneofKind: "fieldSet",
         fieldSet: {
-          field: toFieldId(fId),
-          value: toFieldId(ref),
+          field: this.toSignedFieldId(fId),
+          value: this.toSignedFieldId(ref),
         },
       });
+    }
   }
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
@@ -760,8 +875,8 @@ export class PlTransaction {
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
       fieldSetError: {
-        field: toFieldId(fId),
-        errorResourceId: toResourceId(ref),
+        field: this.toSignedFieldId(fId),
+        ...this.toSignedErrorRef(ref),
       },
     });
   }
@@ -769,8 +884,13 @@ export class PlTransaction {
   public getField(fId: AnyFieldRef): Promise<FieldData> {
     this._stat.fieldsGet++;
     return this.sendSingleAndParse(
-      { oneofKind: "fieldGet", fieldGet: { field: toFieldId(fId) } },
-      (r) => protoToField(notEmpty(r.fieldGet.field)),
+      { oneofKind: "fieldGet", fieldGet: { field: this.toSignedFieldId(fId) } },
+      (r) => {
+        const fd = protoToField(notEmpty(r.fieldGet.field));
+        if (!isNullResourceId(fd.value)) this.storeSignature(fd.value, fd.valueSignature);
+        if (!isNullResourceId(fd.error)) this.storeSignature(fd.error, fd.errorSignature);
+        return fd;
+      },
     );
   }
 
@@ -779,11 +899,17 @@ export class PlTransaction {
   }
 
   public resetField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: "fieldReset", fieldReset: { field: toFieldId(fId) } });
+    this.sendVoidAsync({
+      oneofKind: "fieldReset",
+      fieldReset: { field: this.toSignedFieldId(fId) },
+    });
   }
 
   public removeField(fId: AnyFieldRef): void {
-    this.sendVoidAsync({ oneofKind: "fieldRemove", fieldRemove: { field: toFieldId(fId) } });
+    this.sendVoidAsync({
+      oneofKind: "fieldRemove",
+      fieldRemove: { field: this.toSignedFieldId(fId) },
+    });
   }
 
   //
@@ -796,7 +922,7 @@ export class PlTransaction {
         {
           oneofKind: "resourceKeyValueList",
           resourceKeyValueList: {
-            resourceId: toResourceId(rId),
+            ...this.toSignedResourceId(rId),
             startFrom: "",
             limit: 0,
           },
@@ -837,8 +963,7 @@ export class PlTransaction {
     this.sendVoidAsync({
       oneofKind: "resourceKeyValueSet",
       resourceKeyValueSet: {
-        resourceId: toResourceId(rId),
-        resourceSignature: new Uint8Array(0),
+        ...this.toSignedResourceId(rId),
         key,
         value: toBytes(value),
       },
@@ -849,8 +974,7 @@ export class PlTransaction {
     this.sendVoidAsync({
       oneofKind: "resourceKeyValueDelete",
       resourceKeyValueDelete: {
-        resourceId: toResourceId(rId),
-        resourceSignature: new Uint8Array(0),
+        ...this.toSignedResourceId(rId),
         key,
       },
     });
@@ -862,7 +986,7 @@ export class PlTransaction {
         {
           oneofKind: "resourceKeyValueGet",
           resourceKeyValueGet: {
-            resourceId: toResourceId(rId),
+            ...this.toSignedResourceId(rId),
             key,
           },
         },
@@ -893,7 +1017,7 @@ export class PlTransaction {
         {
           oneofKind: "resourceKeyValueGetIfExists",
           resourceKeyValueGetIfExists: {
-            resourceId: toResourceId(rId),
+            ...this.toSignedResourceId(rId),
             key,
           },
         },

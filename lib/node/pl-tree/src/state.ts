@@ -8,6 +8,7 @@ import type {
   ResourceData,
   ResourceId,
   ResourceKind,
+  ResourceSignature,
   ResourceType,
 } from "@milaboratories/pl-client";
 import {
@@ -105,6 +106,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
+  resourceSignature?: ResourceSignature;
   private dataAsString?: string;
   private dataAsJson?: unknown;
 
@@ -131,6 +133,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.outputsLocked = initialState.outputsLocked;
     this.resourceReady = initialState.resourceReady;
     this.finalFlag = initialState.final;
+    this.resourceSignature = initialState.resourceSignature;
     this.logger = logger;
   }
 
@@ -343,6 +346,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       error: this.error,
       originalResourceId: this.originalResourceId,
       final: this.finalFlag,
+      resourceSignature: this.resourceSignature,
     };
   }
 
@@ -453,6 +457,9 @@ export class PlTreeState {
         let changed = false;
         // updating resource version, even if it was not changed
         resource.version += 1;
+
+        // always update signature to latest from server
+        resource.resourceSignature = rd.resourceSignature;
 
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {

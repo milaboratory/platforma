@@ -1,4 +1,4 @@
-import type { PlClient, ResourceData, ResourceId } from "@milaboratories/pl-client";
+import type { PlClient, ResourceData, ResourceId, SignatureCache } from "@milaboratories/pl-client";
 import { isNotNullResourceId } from "@milaboratories/pl-client";
 import type * as sdk from "@milaboratories/pl-model-common";
 import type {
@@ -23,6 +23,7 @@ import {
   parseUploadHandle,
 } from "./helpers/ls_remote_import_handle";
 import {
+  type StorageHandleData,
   createLocalStorageHandle,
   createRemoteStorageHandle,
   parseStorageHandle,
@@ -73,6 +74,8 @@ export class LsDriver implements InternalLsDriver {
     /** Local projections by storageId */
     private readonly localProjectionsMap: Map<string, LocalStorageProjection>,
     private readonly openFileDialogCallback: OpenFileDialogCallback,
+    /** Cross-transaction signature cache for resource authorization */
+    private readonly signatureCache?: SignatureCache,
   ) {}
 
   public async getLocalFileContent(
@@ -209,11 +212,22 @@ export class LsDriver implements InternalLsDriver {
     return [...virtualStorages, ...noRoot];
   }
 
+  /** Enrich parsed storage data with resource signature from cache */
+  private withSignature(storageData: StorageHandleData): StorageHandleData {
+    if (storageData.isRemote && this.signatureCache) {
+      const sig = this.signatureCache.get(storageData.id);
+      if (sig) {
+        return { ...storageData, resourceSignature: sig };
+      }
+    }
+    return storageData;
+  }
+
   public async listFiles(
     storageHandle: sdk.StorageHandle,
     fullPath: string,
   ): Promise<sdk.ListFilesResult> {
-    const storageData = parseStorageHandle(storageHandle);
+    const storageData = this.withSignature(parseStorageHandle(storageHandle));
 
     if (storageData.isRemote) {
       const response = await this.lsClient.list(storageData, fullPath);
@@ -258,7 +272,7 @@ export class LsDriver implements InternalLsDriver {
     storageHandle: sdk.StorageHandle,
     fullPath: string,
   ): Promise<ListRemoteFilesResultWithAdditionalInfo> {
-    const storageData = parseStorageHandle(storageHandle);
+    const storageData = this.withSignature(parseStorageHandle(storageHandle));
     if (!storageData.isRemote) {
       throw new Error(`Storage ${storageData.name} is not remote`);
     }
@@ -320,6 +334,7 @@ export class LsDriver implements InternalLsDriver {
       virtualStoragesMap,
       localProjectionsMap,
       openFileDialogCallback,
+      client.signatureCache,
     );
   }
 }

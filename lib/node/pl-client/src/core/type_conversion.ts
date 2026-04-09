@@ -16,7 +16,7 @@ import type {
   ResourceId,
   ResourceKind,
 } from "./types";
-import { NullResourceId } from "./types";
+import { NullResourceId, toResourceSignature } from "./types";
 import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
 import { throwPlNotFoundError } from "./errors";
 
@@ -40,6 +40,7 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
+    resourceSignature: toResourceSignature(proto.resourceSignature),
     fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField),
   };
 }
@@ -68,6 +69,8 @@ export function protoToField(proto: Field): FieldData {
     value: proto.value as OptionalResourceId,
     error: proto.error as OptionalResourceId,
     valueIsFinal: proto.valueIsFinal,
+    valueSignature: toResourceSignature(proto.valueSignature),
+    errorSignature: toResourceSignature(proto.errorSignature),
   };
 }
 

@@ -3,7 +3,12 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  signatureToBase64,
+  RestAPI,
+} from "@milaboratories/pl-client";
 import type { StreamingAPI_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol";
 import { StreamingClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client";
 import type { StreamingApiPaths, StreamingRestClientType } from "../proto-rest";
@@ -37,7 +42,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async lastLines(
-    { id: rId, type: rType }: ResourceInfo,
+    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the end.
     searchStr?: string,
@@ -47,7 +52,13 @@ export class ClientLogs {
     if (client instanceof StreamingClient) {
       return (
         await client.lastLines(
-          { resourceId: rId, lineCount: lineCount, offset: offsetBytes, search: searchStr },
+          {
+            resourceId: rId,
+            resourceSignature: rSig,
+            lineCount: lineCount,
+            offset: offsetBytes,
+            search: searchStr,
+          },
           addRTypeToMetadata(rType, options),
         )
       ).response;
@@ -57,7 +68,7 @@ export class ClientLogs {
       await client.POST("/v1/last-lines", {
         body: {
           resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceSignature: signatureToBase64(rSig),
           lineCount: lineCount,
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
@@ -78,7 +89,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async readText(
-    { id: rId, type: rType }: ResourceInfo,
+    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the beginning.
     searchStr?: string,
@@ -91,6 +102,7 @@ export class ClientLogs {
         await client.readText(
           {
             resourceId: notEmpty(rId),
+            resourceSignature: rSig,
             readLimit: BigInt(lineCount),
             offset: offsetBytes,
             search: searchStr,
@@ -104,7 +116,7 @@ export class ClientLogs {
       await client.POST("/v1/read/text", {
         body: {
           resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceSignature: signatureToBase64(rSig),
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
