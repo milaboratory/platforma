@@ -64,6 +64,16 @@ export class DownloadByUrlTask {
         return;
       }
 
+      // If our abort was triggered, treat any resulting error (e.g. ClientDestroyedError
+      // thrown when the client is closed before the abort signal propagates to undici)
+      // as an abort rather than a recoverable error that would cause infinite retries.
+      if (this.signalCtl.signal.aborted) {
+        this.setError(this.signalCtl.signal.reason);
+        this.change.markChanged(`download of ${this.url} aborted`);
+        await rmRFDir(this.path);
+        return;
+      }
+
       throw e;
     }
   }
