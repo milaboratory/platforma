@@ -9,46 +9,107 @@ import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, textResult } from "./types";
 
+const HEX_HASH_RE = /^[a-f0-9]{64}$/;
+
 /**
- * Extracts PFrame and PTable handles from block outputs by scanning for
- * string values matching the handle pattern (64-char hex hash).
+ * Try to resolve a 64-char hex handle as PTable, then PFrame.
+ * Returns a summary object or the original string if neither works.
  */
-function extractHandles(outputs: Record<string, unknown>): {
-  pFrames: { path: string; handle: string }[];
-  pTables: { path: string; handle: string }[];
-} {
-  const pFrames: { path: string; handle: string }[] = [];
-  const pTables: { path: string; handle: string }[] = [];
-  const hexHashPattern = /^[a-f0-9]{64}$/;
+async function resolveHandle(
+  handle: string,
+  driver: {
+    listColumns: (
+      h: PFrameHandle,
+    ) => Promise<
+      { spec: { name: string; valueType: string; annotations?: Record<string, string> } }[]
+    >;
+    getShape: (h: PTableHandle) => Promise<{ rows: number }>;
+    getSpec: (h: PTableHandle) => Promise<PTableColumnSpec[]>;
+  },
+  maxColumns: number,
+  cache: Map<string, unknown>,
+): Promise<unknown> {
+  if (cache.has(handle)) return cache.get(handle);
 
-  function walk(obj: unknown, path: string) {
-    if (obj === null || obj === undefined) return;
-    if (typeof obj === "string" && hexHashPattern.test(obj)) {
-      const lowerPath = path.toLowerCase();
-      if (lowerPath.includes("pframe")) {
-        pFrames.push({ path, handle: obj });
-      } else if (lowerPath.includes("table") && lowerPath.includes("handle")) {
-        pTables.push({ path, handle: obj });
-      }
+  // Try PTable first (has rows — more useful info)
+  try {
+    const [shape, spec] = await Promise.all([
+      driver.getShape(handle as PTableHandle),
+      driver.getSpec(handle as PTableHandle),
+    ]);
+    const summary: Record<string, unknown> = {
+      _type: "PTable",
+      handle,
+      rows: shape.rows,
+      columnCount: spec.length,
+      columns: spec.slice(0, maxColumns).map((s: PTableColumnSpec, idx: number) => ({
+        index: idx,
+        type: s.type,
+        name: s.spec.name,
+        valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
+        label: s.spec.annotations?.["pl7.app/label"],
+      })),
+    };
+    if (spec.length > maxColumns) {
+      summary.truncated = true;
+      summary.showing = maxColumns;
     }
-    if (typeof obj === "object" && !Array.isArray(obj)) {
-      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-        walk(value, path ? `${path}.${key}` : key);
-      }
-    }
-    if (Array.isArray(obj)) {
-      obj.forEach((item, i) => walk(item, `${path}[${i}]`));
-    }
+    cache.set(handle, summary);
+    return summary;
+  } catch {
+    // not a PTable
   }
 
-  for (const [key, output] of Object.entries(outputs)) {
-    const out = output as { ok?: boolean; value?: unknown };
-    if (out?.ok && out.value !== undefined && out.value !== null) {
-      walk(out.value, key);
+  // Try PFrame
+  try {
+    const columns = await driver.listColumns(handle as PFrameHandle);
+    const summary: Record<string, unknown> = {
+      _type: "PFrame",
+      handle,
+      columnCount: columns.length,
+      columns: columns.slice(0, maxColumns).map((c) => ({
+        name: c.spec.name,
+        valueType: c.spec.valueType,
+        label: c.spec.annotations?.["pl7.app/label"],
+      })),
+    };
+    if (columns.length > maxColumns) {
+      summary.truncated = true;
+      summary.showing = maxColumns;
     }
+    cache.set(handle, summary);
+    return summary;
+  } catch {
+    // not a PFrame either
   }
 
-  return { pFrames, pTables };
+  cache.set(handle, handle);
+  return handle;
+}
+
+/**
+ * Recursively walk a value tree, replacing 64-char hex handles
+ * with PFrame/PTable summaries (column specs + row count).
+ */
+async function resolveHandlesInValue(
+  value: unknown,
+  driver: Parameters<typeof resolveHandle>[1],
+  maxColumns: number,
+  cache: Map<string, unknown>,
+): Promise<unknown> {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "string") {
+    return HEX_HASH_RE.test(value) ? resolveHandle(value, driver, maxColumns, cache) : value;
+  }
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return Promise.all(value.map((v) => resolveHandlesInValue(v, driver, maxColumns, cache)));
+  }
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    out[k] = await resolveHandlesInValue(v, driver, maxColumns, cache);
+  }
+  return out;
 }
 
 /**
@@ -98,7 +159,9 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     "get_block_outputs",
     {
       description:
-        "Get block outputs with PFrame/PTable handles and column summaries. Use this to discover available data before querying tables.",
+        "Get block output values as a JSON map. " +
+        "PFrame/PTable handles are resolved inline to summaries with column specs and row counts. " +
+        "Use this to discover block results and available data before querying tables.",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
         blockId: z.string().describe("Block ID"),
@@ -106,7 +169,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           .number()
           .optional()
           .default(30)
-          .describe("Max columns to return per PFrame/PTable summary (default 30)."),
+          .describe("Max columns to show per PFrame/PTable summary (default 30)."),
       },
     },
     async ({ projectId, blockId, maxColumns }) => {
@@ -118,86 +181,20 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.",
         );
 
-      const outputs = state.outputs as Record<string, unknown>;
-      const { pFrames, pTables } = extractHandles(outputs);
+      const outputs = state.outputs as Record<string, { ok?: boolean; value?: unknown }>;
+      const driver = ctx.requireMl().internalDriverKit.pFrameDriver;
+      const cache = new Map<string, unknown>();
 
-      // Deduplicate by handle, collecting all paths
-      const pFramesByHandle = new Map<string, string[]>();
-      for (const pf of pFrames) {
-        const paths = pFramesByHandle.get(pf.handle) ?? [];
-        paths.push(pf.path);
-        pFramesByHandle.set(pf.handle, paths);
-      }
-      const pTablesByHandle = new Map<string, string[]>();
-      for (const pt of pTables) {
-        const paths = pTablesByHandle.get(pt.handle) ?? [];
-        paths.push(pt.path);
-        pTablesByHandle.set(pt.handle, paths);
-      }
-
-      const MAX_COLUMNS = maxColumns;
-
-      // For each unique PFrame, list columns (summary only)
-      const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
-      const pFrameSummaries = [];
-      for (const [handle, paths] of pFramesByHandle) {
-        try {
-          const columns = await pFrameDriver.listColumns(handle as PFrameHandle);
-          const mapped = columns.slice(0, MAX_COLUMNS).map((c) => ({
-            name: c.spec.name,
-            valueType: c.spec.valueType,
-            label: c.spec.annotations?.["pl7.app/label"],
-          }));
-          pFrameSummaries.push({
-            paths,
-            handle,
-            columnCount: columns.length,
-            columns: mapped,
-            ...(columns.length > MAX_COLUMNS ? { truncated: true, showing: MAX_COLUMNS } : {}),
-          });
-        } catch (err) {
-          pFrameSummaries.push({
-            paths,
-            handle,
-            error: String(err),
-          });
+      const result: Record<string, unknown> = {};
+      for (const [key, output] of Object.entries(outputs)) {
+        if (!output?.ok || output.value == null) {
+          result[key] = { ok: output?.ok ?? false };
+          continue;
         }
+        result[key] = await resolveHandlesInValue(output.value, driver, maxColumns, cache);
       }
 
-      // For each unique PTable, get shape and spec (summary only)
-      const pTableSummaries = [];
-      for (const [handle, paths] of pTablesByHandle) {
-        try {
-          const shape = await pFrameDriver.getShape(handle as PTableHandle);
-          const spec = await pFrameDriver.getSpec(handle as PTableHandle);
-          const mapped = spec.slice(0, MAX_COLUMNS).map((s: PTableColumnSpec, idx: number) => ({
-            index: idx,
-            type: s.type,
-            name: s.type === "column" ? s.spec.name : s.spec.name,
-            valueType: s.type === "column" ? s.spec.valueType : s.spec.type,
-            label: s.spec.annotations?.["pl7.app/label"],
-          }));
-          pTableSummaries.push({
-            paths,
-            handle,
-            rows: shape.rows,
-            columnCount: spec.length,
-            columns: mapped,
-            ...(spec.length > MAX_COLUMNS ? { truncated: true, showing: MAX_COLUMNS } : {}),
-          });
-        } catch (err) {
-          pTableSummaries.push({
-            paths,
-            handle,
-            error: String(err),
-          });
-        }
-      }
-
-      return textResult({
-        pFrames: pFrameSummaries,
-        pTables: pTableSummaries,
-      });
+      return textResult(result);
     },
   );
 
