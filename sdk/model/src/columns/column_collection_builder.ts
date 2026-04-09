@@ -1,7 +1,10 @@
 import type {
+  AxesSpec,
   AxisQualification,
   ColumnAxesWithQualifications,
   DiscoverColumnsConstraints,
+  DiscoverColumnsRequest,
+  DiscoverColumnsResponse,
   DiscoverColumnsStepInfo,
   MultiColumnSelector,
   NativePObjectId,
@@ -9,8 +12,18 @@ import type {
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { AnchoredIdDeriver, deriveNativeId } from "@milaboratories/pl-model-common";
-import type { ColumnSelectorInput } from "./column_selector";
+import {
+  AnchoredIdDeriver,
+  canonicalizeAxisId,
+  canonicalizeJson,
+  deriveNativeId,
+  getAxesId,
+  getDenormalizedAxesList,
+  getNormalizedAxesList,
+  isLinkerColumn,
+  isPColumnSpec,
+} from "@milaboratories/pl-model-common";
+import type { ColumnSelectorInput, RelaxedColumnSelector } from "./column_selector";
 import { normalizeSelectors } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
@@ -20,6 +33,7 @@ import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot
 
 import type { PFrameSpecDriver, PoolEntry, SpecFrameHandle } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
+import { uniqBy } from "es-toolkit";
 
 // --- FindColumnsOptions ---
 
@@ -52,6 +66,10 @@ export interface ColumnCollection extends Disposable {
 export interface AnchoredColumnCollection extends Disposable {
   /** Release the underlying spec frame WASM resource. */
   dispose(): void;
+
+  /** List of specs corresponding to the anchored columns, in arbitrary order. */
+  getAnchorSpecs(): PColumnSpec[];
+
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
 
@@ -107,8 +125,7 @@ export interface BuildOptions {
   allowPartialColumnList?: true;
 }
 
-export type NecessaryColumnSpec = Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">;
-export type AnchorRef = PObjectId | PColumnSpec;
+export type AnchorRef = PObjectId | PColumnSpec | RelaxedColumnSelector;
 
 export interface AnchoredBuildOptions extends BuildOptions {
   anchors: Record<string, AnchorRef>;
@@ -169,75 +186,45 @@ export class ColumnCollectionBuilder {
     | (ColumnCollection & { readonly columnListComplete: boolean })
     | (AnchoredColumnCollection & { readonly columnListComplete: boolean }) {
     const allowPartial = options?.allowPartialColumnList === true;
-    const hasAnchors = options !== undefined && "anchors" in options;
 
     // Check column list completeness
     const allComplete = this.providers.every((p) => p.isColumnListComplete());
     if (!allComplete && !allowPartial) return undefined;
 
     // Collect all columns, dedup by native ID (first source wins)
-    const columnMap = this.collectColumns();
+    const columns = collectColumns(this.providers);
+    const hasAnchors = options !== undefined && "anchors" in options;
 
     if (hasAnchors) {
-      const anchorSpecs = resolveAnchorSpecs(options.anchors, columnMap);
-      const idDeriver = new AnchoredIdDeriver(anchorSpecs);
-
       return new AnchoredColumnCollectionImpl(this.specDriver, {
-        columns: columnMap,
-        idDeriver,
-        anchorSpecs,
-        columnListComplete: allowPartial ? allComplete : false,
+        anchors: options.anchors,
+        columns,
       });
     } else {
       return new ColumnCollectionImpl(this.specDriver, {
-        columns: columnMap,
-        columnListComplete: allowPartial ? allComplete : false,
+        columns,
       });
     }
-  }
-
-  /**
-   * Collect all columns from all providers, dedup by NativePObjectId.
-   * First source wins.
-   */
-  private collectColumns(): Map<PObjectId, ColumnSnapshot<PObjectId>> {
-    const seen = new Set<NativePObjectId>();
-    const result = new Map<PObjectId, ColumnSnapshot<PObjectId>>();
-
-    for (const provider of this.providers) {
-      const columns = provider.getAllColumns();
-      for (const col of columns) {
-        const nativeId = deriveNativeId(col.spec);
-        if (seen.has(nativeId)) continue;
-        seen.add(nativeId);
-        result.set(col.id, col);
-      }
-    }
-
-    return result;
   }
 }
 
 // --- ColumnCollectionImpl ---
 
 interface ColumnCollectionImplOptions {
-  readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
-  readonly columnListComplete?: boolean;
+  readonly columns: ColumnSnapshot<PObjectId>[];
 }
 
 class ColumnCollectionImpl implements ColumnCollection, Disposable {
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
   private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
-  public readonly columnListComplete: boolean;
 
   constructor(
     private readonly specDriver: PFrameSpecDriver,
     options: ColumnCollectionImplOptions,
   ) {
-    this.columns = options.columns;
-    this.columnListComplete = options.columnListComplete ?? false;
+    this.columns = new Map(options.columns.map((col) => [col.id, col]));
     this.specFrameEntry = this.specDriver.createSpecFrame(
-      Object.fromEntries(Array.from(this.columns.entries(), ([id, col]) => [id, col.spec])),
+      Object.fromEntries(options.columns.map((col) => [col.id, col.spec])),
     );
   }
 
@@ -284,42 +271,56 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
 // --- AnchoredColumnCollectionImpl ---
 
 interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOptions {
-  readonly idDeriver: AnchoredIdDeriver;
-  readonly anchorSpecs: Record<string, NecessaryColumnSpec>;
+  readonly anchors: Record<string, AnchorRef>;
 }
 
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposable {
+  private readonly anchors: PColumnSpec[];
   private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+
   private readonly idDeriver: AnchoredIdDeriver;
-  private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
   private readonly anchorAxes: ColumnAxesWithQualifications[];
   private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
-  public readonly columnListComplete: boolean;
+  private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
 
   constructor(
     private readonly specDriver: PFrameSpecDriver,
     options: AnchoredColumnCollectionImplOptions,
   ) {
-    this.columns = options.columns;
-    this.idDeriver = options.idDeriver;
-    this.columnListComplete = options.columnListComplete ?? false;
-
     // Create spec frame from all collected columns
     this.specFrameEntry = this.specDriver.createSpecFrame(
-      Object.fromEntries(Array.from(this.columns.entries(), ([id, col]) => [id, col.spec])),
+      Object.fromEntries(options.columns.map((col) => [col.id, col.spec])),
+    );
+
+    const resolvedAnchorMap = resolveAnchorMap(
+      options.anchors,
+      options.columns,
+      this.specDriver.discoverColumns.bind(this.specDriver, this.specFrameEntry.key),
+    );
+    const uniqAnchorSpecs = uniqBy(Array.from(resolvedAnchorMap.values()).flat(), deriveNativeId);
+
+    if (uniqAnchorSpecs.length === 0) {
+      throwError("At least one anchor must be resolved to a valid column spec");
+    }
+
+    this.columns = new Map(options.columns.map((col) => [col.id, col]));
+    this.anchors = uniqAnchorSpecs;
+    this.idDeriver = new AnchoredIdDeriver(
+      Object.fromEntries(resolveAnchorSpecInterections(resolvedAnchorMap)),
     );
 
     // Build anchor axes for discovery requests
-    this.anchorAxes = Object.values(options.anchorSpecs).map((spec) => ({
-      axesSpec: spec.axesSpec,
-      qualifications: [],
-    }));
+    this.anchorAxes = uniqBy(
+      this.anchors.map((spec) => ({
+        axesSpec: spec.axesSpec,
+        qualifications: [], // If you want to change, don't forget update uniq preidicate
+      })),
+      (axis) => canonicalizeJson(getAxesId(axis.axesSpec)),
+    );
 
     // Build reverse lookup map
     this.idToOriginal = new Map(
-      Array.from(this.columns.entries()).map(
-        ([id, col]) => [this.idDeriver.deriveS(col.spec), id] as const,
-      ),
+      options.columns.map((col) => [this.idDeriver.deriveS(col.spec), col.id] as const),
     );
   }
 
@@ -329,6 +330,10 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
 
   [Symbol.dispose](): void {
     this.dispose();
+  }
+
+  getAnchorSpecs(): PColumnSpec[] {
+    return this.anchors;
   }
 
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId> {
@@ -388,6 +393,27 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
   }
 }
 
+/**
+ * Collect all columns from all providers, dedup by NativePObjectId.
+ * First source wins.
+ */
+function collectColumns(providers: ColumnSnapshotProvider[]): ColumnSnapshot<PObjectId>[] {
+  const seen = new Set<NativePObjectId>();
+  const result: ColumnSnapshot<PObjectId>[] = [];
+
+  for (const provider of providers) {
+    const columns = provider.getAllColumns();
+    for (const col of columns) {
+      const nativeId = deriveNativeId(col.spec);
+      if (seen.has(nativeId)) continue;
+      seen.add(nativeId);
+      result.push(col);
+    }
+  }
+
+  return result;
+}
+
 // --- Shared snapshot helpers ---
 
 /** Create a new snapshot with a different ID, preserving data accessors. */
@@ -410,21 +436,92 @@ function toMultiColumnSelectors(input: ColumnSelectorInput): MultiColumnSelector
  * - PColumnSpec: used directly
  * - PObjectId (string): looked up in the collected column map
  */
-function resolveAnchorSpecs(
+function resolveAnchorMap(
   anchors: Record<string, AnchorRef>,
-  columnMap: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-): Record<string, NecessaryColumnSpec> {
-  const result: Record<string, NecessaryColumnSpec> = {};
+  columns: ColumnSnapshot<PObjectId>[],
+  discoverColumns: (request: DiscoverColumnsRequest) => DiscoverColumnsResponse,
+): Map<string, PColumnSpec[]> {
+  const result = new Map<string, PColumnSpec[]>();
+
   for (const [key, anchor] of Object.entries(anchors)) {
     if (typeof anchor === "string") {
-      result[key] =
-        columnMap.get(anchor as PObjectId)?.spec ??
-        throwError(`Anchor "${key}": column with id "${anchor}" not found in sources`);
+      result.set(key, [
+        columns.find((col) => col.id === anchor)?.spec ??
+          throwError(`Anchor "${key}": column with id "${anchor}" not found in sources`),
+      ]);
+    } else if ("kind" in anchor) {
+      result.set(
+        key,
+        isPColumnSpec(anchor) ? [anchor] : throwError(`Anchor "${key}": invalid PColumnSpec`),
+      );
     } else {
-      result[key] = anchor;
+      const matched = discoverColumns({
+        includeColumns: toMultiColumnSelectors(anchor),
+        excludeColumns: undefined,
+        axes: [],
+        maxHops: 0,
+        constraints: matchingModeToConstraints("exact"),
+      });
+      result.set(
+        key,
+        matched.hits.map((v) => v.hit.spec).filter((spec) => !isLinkerColumn(spec)),
+      );
     }
   }
+
   return result;
+}
+
+function resolveAnchorSpecInterections(
+  anchorMap: Map<string, PColumnSpec[]>,
+): Map<string, Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">> {
+  return new Map(
+    Array.from(anchorMap.entries()).map(([key, specs]) => [
+      key,
+      specs.length === 1
+        ? specs[0]
+        : {
+            axesSpec: intersectAxesSpecs(specs.map((s) => s.axesSpec)),
+            domain: intersectRecords(specs.map((s) => s.domain)),
+            contextDomain: intersectRecords(specs.map((s) => s.contextDomain)),
+          },
+    ]),
+  );
+}
+
+function intersectAxesSpecs(allAxes: AxesSpec[]): AxesSpec {
+  const restIdSets = allAxes
+    .slice(1)
+    .map((axes) => new Set(axes.map((axis) => canonicalizeAxisId(axis))));
+
+  const normalized = getNormalizedAxesList(allAxes[0]);
+
+  const commonIds = new Set(
+    normalized
+      .filter((axis) => restIdSets.every((set) => set.has(canonicalizeAxisId(axis))))
+      .map((axis) => canonicalizeAxisId(axis)),
+  );
+
+  const filtered = normalized.filter(
+    (axis) =>
+      commonIds.has(canonicalizeAxisId(axis)) &&
+      axis.parentAxesSpec.every((parent) => commonIds.has(canonicalizeAxisId(parent))),
+  );
+
+  return getDenormalizedAxesList(filtered);
+}
+
+function intersectRecords(
+  records: (Record<string, string> | undefined)[],
+): Record<string, string> | undefined {
+  const defined = records.filter((r): r is Record<string, string> => r !== undefined);
+  if (defined.length !== records.length || defined.length === 0) return undefined;
+
+  const result = Object.fromEntries(
+    Object.entries(defined[0]).filter(([key, value]) => defined.every((r) => r[key] === value)),
+  );
+
+  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 // --- MatchingMode → DiscoverColumnsConstraints ---

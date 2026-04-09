@@ -528,11 +528,9 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
 
 /** Create list of regular axisSpec from normalized (parents are indexes, inside of current axes list) */
 export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
-  const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+  const idsList = axesSpec.map(canonicalizeAxisId);
   return axesSpec.map((axisSpec) => {
-    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) =>
-      canonicalizeJson(getAxisId(axisSpec)),
-    );
+    const parentsIds = axisSpec.parentAxesSpec.map(canonicalizeAxisId);
     const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
     const { parentAxesSpec: _, ...copiedRest } = axisSpec;
     if (parentIdxs.length) {

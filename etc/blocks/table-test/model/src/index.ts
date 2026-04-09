@@ -3,6 +3,7 @@ import {
   DataModelBuilder,
   createPlDataTable,
   createPlDataTableStateV2,
+  createPlDataTableV3,
   type InferHrefType,
   type InferOutputsType,
   type PlDataTableStateV2,
@@ -41,15 +42,13 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .title((ctx) => ctx.args?.label || "Table Test")
 
   .outputWithStatus("tableV3", (ctx) => {
-    return createPlDataTable(ctx, {
+    return createPlDataTableV3(ctx, {
       tableState: ctx.data.tableState,
 
       anchors: {
         main: {
-          kind: "PColumn",
-          name: "value",
-          valueType: "Int",
-          axesSpec: [{ type: "String", name: "name" }],
+          axes: [{ name: "name" }],
+          partialAxesMatch: true,
         },
       },
       columnsSelector: {
