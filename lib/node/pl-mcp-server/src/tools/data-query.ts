@@ -5,12 +5,7 @@ import type {
   PTableColumnSpec,
   PTableVector,
 } from "@milaboratories/pl-middle-layer";
-import {
-  Annotation,
-  isPTableAbsent,
-  pTableValue,
-  readAnnotation,
-} from "@milaboratories/pl-model-common";
+import { Annotation, pTableValue, readAnnotation } from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, textResult } from "./types";
@@ -123,9 +118,7 @@ function vectorToJson(vector: PTableVector, rows: number): (string | number | nu
   const result: (string | number | null | "ABSENT")[] = [];
   for (let i = 0; i < rows; i++) {
     const v = pTableValue(vector, i);
-    if (isPTableAbsent(v)) {
-      result.push("ABSENT");
-    } else if (v === null) {
+    if (v === null) {
       result.push(null);
     } else {
       result.push(v as string | number);
