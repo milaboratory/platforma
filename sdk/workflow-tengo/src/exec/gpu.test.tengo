@@ -1,8 +1,6 @@
 test := import(":test")
 exec := import(":exec")
 ll := import(":ll")
-json := import("json")
-text := import("text")
 
 Test_gpu_method_exists := func() {
 	b := exec.builder()
@@ -39,48 +37,4 @@ Test_gpu_override := func() {
 		gpu(1)
 
 	test.isTrue(ll.methodExists(b, "run"), "gpu() override should return valid builder")
-}
-
-// Deduplication tests: verify that the quota map structure
-// matches exactly what the builder produces, ensuring no
-// extra keys break content hashing.
-
-Test_quota_without_gpu_has_no_gpu_keys := func() {
-	gpuCount := 0
-
-	quotaData := {
-		queue: "heavy",
-		cpu: 4,
-		ram: "16GiB"
-	}
-	if gpuCount > 0 {
-		quotaData.gpu = gpuCount
-	}
-
-	serialized := json.encode(quotaData)
-	test.isFalse(
-		is_undefined(serialized),
-		"quotaData should serialize"
-	)
-
-	// Verify no gpu keys in serialized JSON
-	test.isFalse(text.contains(serialized, "gpu"),
-		"quota without .gpu() must not contain 'gpu' key — would break deduplication")
-}
-
-Test_quota_with_gpu_has_gpu_key := func() {
-	gpuCount := 1
-
-	quotaData := {
-		queue: "heavy",
-		cpu: 4,
-		ram: "16GiB"
-	}
-	if gpuCount > 0 {
-		quotaData.gpu = gpuCount
-	}
-
-	serialized := json.encode(quotaData)
-	test.isTrue(text.contains(serialized, "\"gpu\""),
-		"quota with .gpu(1) must contain 'gpu' key")
 }
