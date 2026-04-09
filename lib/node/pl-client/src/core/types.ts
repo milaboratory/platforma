@@ -4,8 +4,12 @@ import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 declare const __resource_id_type__: unique symbol;
 type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
 
-/** Global resource id */
-export type ResourceId = BrandResourceId<"global">;
+/** Brand indicating this resource ID carries a server-issued authorization signature. */
+declare const __signed_resource__: unique symbol;
+type BrandSignedResource<S> = { readonly [__signed_resource__]: S };
+
+/** Global resource id — always signed (received from server). */
+export type ResourceId = BrandResourceId<"global"> & BrandSignedResource<true>;
 
 /** Null resource id */
 export type NullResourceId = BrandResourceId<"null">;
@@ -74,17 +78,6 @@ export type ResourceSignature = Uint8Array & { readonly [__resource_signature_ty
 
 /** Color proof used for resource creation requests (alias for ResourceSignature). */
 export type ColorProof = ResourceSignature;
-
-/** Resource ID bundled with its authorization signature. */
-export type SignedResourceId = {
-  readonly resourceId: AnyResourceId;
-  readonly resourceSignature?: ResourceSignature;
-};
-
-/** Signed field reference — resource signature attached to field's parent resource. */
-export type SignedFieldId = SignedResourceId & {
-  readonly fieldName: string;
-};
 
 /** Encode resource signature to standard base64 for REST API bodies. */
 export function signatureToBase64(sig?: ResourceSignature): string {

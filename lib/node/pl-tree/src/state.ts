@@ -100,13 +100,13 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   kvChangedPerKey? = new KeyedChangeSource();
 
   readonly id: ResourceId;
+  readonly resourceSignature?: ResourceSignature;
   originalResourceId: OptionalResourceId;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
-  resourceSignature?: ResourceSignature;
   private dataAsString?: string;
   private dataAsJson?: unknown;
 
@@ -458,9 +458,6 @@ export class PlTreeState {
         // updating resource version, even if it was not changed
         resource.version += 1;
 
-        // always update signature to latest from server
-        resource.resourceSignature = rd.resourceSignature;
-
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {
           if (resource.originalResourceId !== NullResourceId)
@@ -792,6 +789,10 @@ export class PlTreeState {
   public accessor(rid: ResourceId = this.root): PlTreeEntry {
     this.checkValid();
     return this.entry(rid);
+  }
+
+  public getResourceSignature(rid: ResourceId): ResourceSignature | undefined {
+    return this.resources.get(rid)?.resourceSignature;
   }
 
   public entry(rid: ResourceId = this.root): PlTreeEntry {
