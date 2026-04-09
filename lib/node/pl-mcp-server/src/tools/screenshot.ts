@@ -31,7 +31,7 @@ export function registerScreenshotTool(server: McpServer, ctx: ToolContext): voi
 
       if (savePath) {
         const absPath = resolve(savePath);
-        await writeFile(absPath, Buffer.from(base64Png, "base64"));
+        await writeFile(absPath, Buffer.from(base64Png, "base64"), { flag: "wx" });
         return {
           content: [
             { type: "image" as const, data: base64Png, mimeType: "image/png" },
