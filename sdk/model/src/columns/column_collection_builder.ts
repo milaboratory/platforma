@@ -23,8 +23,8 @@ import {
   isLinkerColumn,
   isPColumnSpec,
 } from "@milaboratories/pl-model-common";
-import type { ColumnSelectorInput, RelaxedColumnSelector } from "./column_selector";
-import { normalizeSelectors } from "./column_selector";
+import type { ColumnSelector, RelaxedColumnSelector } from "./column_selector";
+import { convertColumnSelectorToMultiColumnSelector } from "./column_selector";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { ColumnSnapshot } from "./column_snapshot";
 import { createColumnSnapshot } from "./column_snapshot";
@@ -40,9 +40,9 @@ import { uniqBy } from "es-toolkit";
 /** Options for plain collection findColumns. */
 export interface FindColumnsOptions {
   /** Include columns matching these selectors. If omitted, includes all columns. */
-  include?: ColumnSelectorInput;
+  include?: ColumnSelector;
   /** Exclude columns matching these selectors. */
-  exclude?: ColumnSelectorInput;
+  exclude?: ColumnSelector;
 }
 
 // --- ColumnCollection ---
@@ -425,8 +425,8 @@ function remapSnapshot<Id extends PObjectId>(
 }
 
 /** Normalize SDK ColumnSelectorInput to MultiColumnSelector[]. */
-function toMultiColumnSelectors(input: ColumnSelectorInput): MultiColumnSelector[] {
-  return normalizeSelectors(input);
+function toMultiColumnSelectors(input: ColumnSelector): MultiColumnSelector[] {
+  return convertColumnSelectorToMultiColumnSelector(input);
 }
 
 // --- Anchor resolution ---
