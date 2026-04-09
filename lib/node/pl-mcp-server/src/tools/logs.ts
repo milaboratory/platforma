@@ -1,4 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { isAnyLogHandle } from "@milaboratories/pl-model-common";
+import type { AnyLogHandle } from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, textResult } from "./types";
@@ -28,27 +30,36 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
           "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.",
         );
 
-      // Find log handles in outputs — look for the "logs" output
-      const logsOutput = (state.outputs as Record<string, unknown>)?.["logs"] as
-        | { ok: boolean; value?: { data?: { key: string[]; value: string }[] } }
-        | undefined;
-      if (!logsOutput?.ok || !logsOutput.value?.data) {
+      // Scan all outputs for log handles (log+ready:// or log+live://)
+      const outputs = state.outputs as Record<
+        string,
+        { ok?: boolean; value?: { data?: { key: string[]; value: unknown }[] } }
+      >;
+      const logEntries: { outputKey: string; key: string[]; handle: AnyLogHandle }[] = [];
+      for (const [outputKey, output] of Object.entries(outputs)) {
+        if (!output?.ok || !output.value?.data) continue;
+        for (const entry of output.value.data) {
+          if (isAnyLogHandle(entry.value)) {
+            logEntries.push({ outputKey, key: entry.key, handle: entry.value });
+          }
+        }
+      }
+
+      if (logEntries.length === 0) {
         return errorResult(
           "No log handles found in block outputs.",
           "This block may not produce logs, or it hasn't run yet. Use get_block_outputs to inspect available output types.",
         );
       }
 
-      const logEntries = logsOutput.value.data;
       const logDriver = ctx.requireMl().driverKit.logDriver;
       const results: Record<string, string> = {};
 
       for (const entry of logEntries) {
         const key = entry.key.join("/");
         if (sampleId && !entry.key.includes(sampleId)) continue;
-        const handle = entry.value as `log+ready://log/${string}` | `log+live://log/${string}`;
         try {
-          const response = await logDriver.lastLines(handle, lines);
+          const response = await logDriver.lastLines(entry.handle, lines);
           if (response.shouldUpdateHandle) {
             results[key] = "[log handle stale — block may still be running, retry later]";
           } else {

@@ -1,18 +1,30 @@
-/** Handle of logs. This handle should be passed
- * to the driver for retrieving logs. */
-export type AnyLogHandle = LiveLogHandle | ReadyLogHandle;
+/** Prefix constants — single source of truth for handle format. */
+const LIVE_LOG_PREFIX = "log+live://log/";
+const READY_LOG_PREFIX = "log+ready://log/";
 
 /** Handle of the live logs of a program.
  * The resource that represents a log can be deleted,
  * in this case the handle should be refreshed. */
-export type LiveLogHandle = `log+live://log/${string}`;
+export type LiveLogHandle = `${typeof LIVE_LOG_PREFIX}${string}`;
 
 /** Handle of the ready logs of a program. */
-export type ReadyLogHandle = `log+ready://log/${string}`;
+export type ReadyLogHandle = `${typeof READY_LOG_PREFIX}${string}`;
 
-/** Type guard to check if log is live, and corresponding porcess is not finished. */
+/** Handle of logs. This handle should be passed
+ * to the driver for retrieving logs. */
+export type AnyLogHandle = LiveLogHandle | ReadyLogHandle;
+
+/** Type guard to check if a value is any kind of log handle. */
+export function isAnyLogHandle(value: unknown): value is AnyLogHandle {
+  return (
+    typeof value === "string" &&
+    (value.startsWith(LIVE_LOG_PREFIX) || value.startsWith(READY_LOG_PREFIX))
+  );
+}
+
+/** Type guard to check if log is live, and corresponding process is not finished. */
 export function isLiveLog(handle: AnyLogHandle | undefined): handle is LiveLogHandle {
-  return handle !== undefined && handle.startsWith("log+live://log/");
+  return handle !== undefined && handle.startsWith(LIVE_LOG_PREFIX);
 }
 
 /** Driver to retrieve logs given log handle */
