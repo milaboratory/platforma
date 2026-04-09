@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
 import {
+  bigintToResourceId,
   DefaultFinalResourceDataPredicate,
   NullResourceId,
-  ResourceId,
 } from "@milaboratories/pl-client";
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from "./accessors";
 import { PlTreeState } from "./state";
@@ -17,10 +17,6 @@ import {
   TestStructuralResourceState1,
   TestValueResourceState1,
 } from "./test_utils";
-
-function rid(id: bigint): ResourceId {
-  return id as ResourceId;
-}
 
 test("simple tree test 1", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
@@ -54,11 +50,11 @@ test("simple tree test 1", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
+    { ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [iField("b", bigintToResourceId(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -85,11 +81,11 @@ test("simple tree kv test", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
+    { ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [iField("b", bigintToResourceId(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -101,7 +97,7 @@ test("simple tree kv test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
       kv: [{ key: "thekey", value: Buffer.from("thevalue") }],
     },
@@ -114,7 +110,7 @@ test("simple tree kv test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
       kv: [],
     },
@@ -143,11 +139,11 @@ test("partial tree update", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
-    { ...TestStructuralResourceState1, id: rid(1n), fields: [dField("b", rid(2n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
+    { ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [dField("b", bigintToResourceId(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(2n),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -155,7 +151,7 @@ test("partial tree update", async () => {
   expect(await c1.getValue()).toStrictEqual("Test1");
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }]);
+  tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
@@ -172,10 +168,10 @@ test("resource error", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, error: rid(7n), fields: [] },
+    { ...TestDynamicRootState1, error: bigintToResourceId(7n), fields: [] },
     {
       ...TestErrorResourceState2,
-      id: rid(7n),
+      id: bigintToResourceId(7n),
       data: Buffer.from('"error"'),
       fields: [],
     },
@@ -197,11 +193,11 @@ test("field error", async () => {
   tree.updateFromResourceData([
     {
       ...TestDynamicRootState1,
-      fields: [dField("b", NullResourceId, rid(7n))],
+      fields: [dField("b", NullResourceId, bigintToResourceId(7n))],
     },
     {
       ...TestErrorResourceState2,
-      id: rid(7n),
+      id: bigintToResourceId(7n),
       data: Buffer.from('"error"'),
       fields: [],
     },
@@ -214,17 +210,17 @@ test("exception - deletion of input field", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
-    { ...TestStructuralResourceState1, id: rid(1n), fields: [iField("b", rid(2n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
+    { ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [iField("b", bigintToResourceId(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(2n),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
 
   expect(() =>
-    tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }]),
+    tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: bigintToResourceId(1n), fields: [] }]),
   ).toThrow(/removal of Input field/);
 });
 
@@ -232,16 +228,16 @@ test("exception - addition of input field", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
     {
       ...TestStructuralResourceState1,
-      id: rid(1n),
-      fields: [iField("b", rid(2n))],
+      id: bigintToResourceId(1n),
+      fields: [iField("b", bigintToResourceId(2n))],
       ...ResourceReady,
     },
     {
       ...TestValueResourceState1,
-      id: rid(2n),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -250,8 +246,8 @@ test("exception - addition of input field", () => {
     tree.updateFromResourceData([
       {
         ...TestStructuralResourceState1,
-        id: rid(1n),
-        fields: [iField("b", rid(2n)), iField("df")],
+        id: bigintToResourceId(1n),
+        fields: [iField("b", bigintToResourceId(2n)), iField("df")],
         ...ResourceReady,
       },
     ]),
@@ -265,17 +261,17 @@ test("exception - ready without locks 1", () => {
     tree.updateFromResourceData([
       {
         ...TestDynamicRootState1,
-        fields: [dField("b"), dField("a", rid(1n))],
+        fields: [dField("b"), dField("a", bigintToResourceId(1n))],
       },
       {
         ...TestStructuralResourceState1,
-        id: rid(1n),
-        fields: [iField("b", rid(2n))],
+        id: bigintToResourceId(1n),
+        fields: [iField("b", bigintToResourceId(2n))],
         resourceReady: true,
       },
       {
         ...TestValueResourceState1,
-        id: rid(2n),
+        id: bigintToResourceId(2n),
         data: new TextEncoder().encode("Test1"),
       },
     ]),
@@ -286,15 +282,15 @@ test("exception - ready without locks 2", () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", bigintToResourceId(1n))] },
     {
       ...TestStructuralResourceState1,
-      id: rid(1n),
-      fields: [iField("b", rid(2n))],
+      id: bigintToResourceId(1n),
+      fields: [iField("b", bigintToResourceId(2n))],
     },
     {
       ...TestValueResourceState1,
-      id: rid(2n),
+      id: bigintToResourceId(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -303,17 +299,17 @@ test("exception - ready without locks 2", () => {
     tree.updateFromResourceData([
       {
         ...TestDynamicRootState1,
-        fields: [dField("b"), dField("a", rid(1n))],
+        fields: [dField("b"), dField("a", bigintToResourceId(1n))],
       },
       {
         ...TestStructuralResourceState1,
-        id: rid(1n),
-        fields: [iField("b", rid(2n))],
+        id: bigintToResourceId(1n),
+        fields: [iField("b", bigintToResourceId(2n))],
         resourceReady: true,
       },
       {
         ...TestValueResourceState1,
-        id: rid(2n),
+        id: bigintToResourceId(2n),
         data: new TextEncoder().encode("Test1"),
       },
     ]),
