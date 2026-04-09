@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { isTimeoutError } from "@milaboratories/pl-middle-layer";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
@@ -69,7 +70,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
               .getBlockState(blockId)
               .awaitStableValue(AbortSignal.timeout(remaining));
           } catch (e: unknown) {
-            if (e instanceof DOMException && e.name === "TimeoutError") {
+            if (isTimeoutError(e)) {
               return textResult({
                 timedOut: true,
                 status: "Done",
