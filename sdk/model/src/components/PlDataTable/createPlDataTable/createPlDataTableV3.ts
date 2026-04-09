@@ -3,6 +3,7 @@ import type {
   CanonicalizedJson,
   DiscoverColumnsStepInfo,
   PColumn,
+  PColumnIdAndSpec,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
@@ -25,7 +26,8 @@ import { isEmpty } from "es-toolkit/compat";
 import type { PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnSnapshot, MatchingMode } from "../../../columns";
+import type { ColumnSnapshot, MatchingMode, SplitAxis } from "../../../columns";
+import { expandByPartition } from "../../../columns";
 import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
@@ -35,6 +37,7 @@ import {
   isColumnOptional,
   withLabelAnnotations,
   withTableVisualAnnotations,
+  type LabelableColumn,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverColumns, type DiscoveredColumnOptions } from "./discoverColumns";
@@ -44,6 +47,25 @@ export type createPlDataTableOptionsV3 = DiscoveredColumnOptions & {
   filters?: PlDataTableFilters;
   sorting?: PTableSorting[];
   coreJoinType?: "inner" | "full";
+
+  /**
+   * Custom predicate to select core columns. Core columns are joined together
+   * (inner or full, controlled by coreJoinType) and define the row universe.
+   * Non-core columns are left-joined onto the core result.
+   *
+   * When omitted, anchor columns (isAnchor flag from discovery) are used as core.
+   * Overrides `splitAxes.asCore` when both are provided.
+   */
+  coreColumnPredicate?: (spec: PColumnIdAndSpec) => boolean;
+
+  /**
+   * Split matching columns along partition axes (e.g. split abundance by sampleId).
+   * Matched columns are expanded by partition — one output per key combination —
+   * with split axes removed from spec and trace annotations added.
+   * Expanded columns replace originals in the table.
+   * When `asCore` is true, expanded columns become core (defining the row universe).
+   */
+  splitAxes?: SplitAxesConfig;
 
   tableState?: PlDataTableStateV2;
   labelsOptions?: DeriveLabelsOptions;
@@ -78,20 +100,76 @@ export type ColumnVisibilityRule = {
 
 export type ColumnMatcher = (spec: PColumnSpec) => boolean;
 
+/**
+ * Axis splitting config for columns matching a predicate.
+ * Matched columns are expanded by partition (one output per key combination),
+ * with split axes removed from their spec and trace annotations added.
+ */
+export type SplitAxesConfig = {
+  /** Which columns to split. */
+  match: ColumnMatcher;
+  /** Axis indices to split on. */
+  axes: SplitAxis[];
+  /** Whether expanded columns should be core (defining the row universe). Default: false. */
+  asCore?: boolean;
+};
+
 // Main Function
 
 export function createPlDataTableV3<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
   ctx: RenderCtxBase<A, U, S>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
-  const state = upgradePlDataTableStateV2(options.tableState);
-  const coreJoinType = options.coreJoinType ?? "full";
+  const input = resolveColumns(ctx, options);
+  if (!input) return undefined;
 
-  const discovered = discoverColumns(ctx, options);
+  return buildTable(ctx, input, options);
+}
+
+/** Discover columns, optionally split by partition axes, and prepare for the table pipeline. */
+function resolveColumns<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
+  options: createPlDataTableOptionsV3,
+): ResolvedTableInput | undefined {
+  let discovered = discoverColumns(ctx, options);
   if (discovered === undefined || discovered.length === 0) return undefined;
 
-  const splited = splitDiscoveredColumns(discovered);
-  const resolved = resolveDiscoveredColumns(splited, discovered);
+  // Apply axis splitting: expand matched columns, replace originals
+  let expandedIds: Set<PObjectId> | undefined;
+  if (options.splitAxes) {
+    const result = applyAxisSplitting(discovered, options.splitAxes);
+    if (!result) return undefined; // partition data not ready
+    discovered = result.columns;
+    expandedIds = result.expandedIds;
+  }
+
+  const split = splitDiscoveredColumns(discovered);
+  const resolved = resolveDiscoveredColumns(split, discovered);
+
+  // Core columns: expanded split columns (if asCore) or anchor columns
+  const anchorColumnIds =
+    expandedIds && options.splitAxes?.asCore
+      ? expandedIds
+      : new Set<PObjectId>(discovered.filter((dc) => dc.isAnchor).map((dc) => dc.id));
+
+  const labelableColumns: LabelableColumn[] = discovered.map((dc) => ({
+    id: dc.id as PObjectId,
+    spec: dc.spec,
+    linkerPath: dc.linkerPath,
+  }));
+
+  return { labelableColumns, resolved, anchorColumnIds };
+}
+
+/** Shared pipeline: labels → annotate → core/non-core → table defs → handles. */
+function buildTable<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
+  input: ResolvedTableInput,
+  options: createPlDataTableOptionsV3,
+): PlDataTableModel | undefined {
+  const state = upgradePlDataTableStateV2(options.tableState);
+  const coreJoinType = options.coreJoinType ?? "full";
+  const { labelableColumns, resolved, anchorColumnIds } = input;
 
   const labelColumns = getMatchingLabelColumns(
     resolved.all,
@@ -99,7 +177,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   );
 
   const derivedLabels = deriveAllLabels({
-    columns: discovered,
+    columns: labelableColumns,
     labelColumns,
     deriveLabelsOptions: {
       includeNativeLabel: true,
@@ -126,11 +204,15 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const sorting = resolveSorting(state.pTableParams.sorting, options.sorting);
   validateSorting(sorting, columnIsAvailable);
 
-  const anchorColumnIds = new Set<PObjectId>(
-    discovered.filter((dc) => dc.isAnchor).map((dc) => dc.id),
-  );
-  const coreColumns = annotated.direct.filter((c) => anchorColumnIds.has(c.id));
-  const nonCoreDirectColumns = annotated.direct.filter((c) => !anchorColumnIds.has(c.id));
+  let isCoreColumn: (c: TableColumn) => boolean;
+  if (options.coreColumnPredicate) {
+    const predicate = options.coreColumnPredicate;
+    isCoreColumn = (c) => predicate(getColumnIdAndSpec(c));
+  } else {
+    isCoreColumn = (c) => anchorColumnIds.has(c.id);
+  }
+  const coreColumns = annotated.direct.filter(isCoreColumn);
+  const nonCoreDirectColumns = annotated.direct.filter((c) => !isCoreColumn(c));
 
   if (coreColumns.length === 0) return undefined;
 
@@ -187,7 +269,17 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   } satisfies PlDataTableModel;
 }
 
-// Helpers
+// Types
+
+/** Resolved input for the shared table-building pipeline. */
+type ResolvedTableInput = {
+  /** Columns with optional linkerPath for label derivation. */
+  readonly labelableColumns: LabelableColumn[];
+  /** Column groups for table construction. */
+  readonly resolved: ResolvedColumns;
+  /** IDs of anchor columns (empty for direct mode). */
+  readonly anchorColumnIds: Set<PObjectId>;
+};
 
 /** A linker step with its resolved column data. */
 export type ResolvedLinkerStep = {
@@ -398,6 +490,33 @@ function buildVisibleColumns(
   const all: TableColumn[] = [...direct, ...linked];
   const labels = getMatchingLabelColumns(all.map(getColumnIdAndSpec), originalLabelColumns);
   return { direct, linked, linkers, all, labels };
+}
+
+/** Apply axis splitting: expand matched columns by partition, replace originals. */
+function applyAxisSplitting(
+  discovered: DiscoveredColumn<SUniversalPColumnId>[],
+  config: SplitAxesConfig,
+): { columns: DiscoveredColumn<SUniversalPColumnId>[]; expandedIds: Set<PObjectId> } | undefined {
+  const toSplit = discovered.filter((dc) => config.match(dc.spec));
+  const toKeep = discovered.filter((dc) => !config.match(dc.spec));
+
+  // SUniversalPColumnId extends PObjectId, so this is safe
+  const { items, complete } = expandByPartition(toSplit, config.axes);
+  if (!complete) return undefined;
+
+  const expanded: DiscoveredColumn<SUniversalPColumnId>[] = items.map((snap) => ({
+    id: snap.id as SUniversalPColumnId,
+    spec: snap.spec,
+    dataStatus: snap.dataStatus,
+    data: snap.data,
+    isAnchor: false,
+    linkerPath: [],
+  }));
+
+  return {
+    columns: [...expanded, ...toKeep],
+    expandedIds: new Set(items.map((s) => s.id)),
+  };
 }
 
 /** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */
