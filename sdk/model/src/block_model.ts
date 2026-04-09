@@ -97,7 +97,7 @@ export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
-  PublicOutputs extends PluginPublicOutputs = {},
+  PublicOutputs extends PluginPublicOutputs = PluginPublicOutputs,
   ModelServices = unknown,
   UiServices = unknown,
 > = {
