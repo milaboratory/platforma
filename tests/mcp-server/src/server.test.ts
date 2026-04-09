@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { withMcpServer, getFreePort } from "./with-mcp";
+import { withMcpServer } from "./with-mcp";
 import { PlMcpServer } from "@milaboratories/pl-mcp-server";
 import type { McpSecret } from "@milaboratories/pl-mcp-server";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
@@ -29,7 +29,6 @@ test("lists ping tool", { timeout: 30_000 }, async () => {
 test("wrong secret returns 404", { timeout: 30_000 }, async () => {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
   const secret = randomUUID().replace(/-/g, "") as McpSecret;
-  const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
     const ml = await MiddleLayer.init(pl, workFolder, {
@@ -45,11 +44,12 @@ test("wrong secret returns 404", { timeout: 30_000 }, async () => {
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
 
-    const mcpServer = new PlMcpServer({ middleLayer: ml, port, secret });
+    const mcpServer = new PlMcpServer({ middleLayer: ml, port: 0, secret });
     await mcpServer.start();
 
     try {
-      const wrongUrl = `http://127.0.0.1:${port}/wrong-secret/mcp`;
+      const realPort = new URL(mcpServer.url).port;
+      const wrongUrl = `http://127.0.0.1:${realPort}/wrong-secret/mcp`;
       const response = await fetch(wrongUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,7 +66,6 @@ test("wrong secret returns 404", { timeout: 30_000 }, async () => {
 test("wrong path returns 404", { timeout: 30_000 }, async () => {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
   const secret = randomUUID().replace(/-/g, "") as McpSecret;
-  const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
     const ml = await MiddleLayer.init(pl, workFolder, {
@@ -82,11 +81,12 @@ test("wrong path returns 404", { timeout: 30_000 }, async () => {
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
 
-    const mcpServer = new PlMcpServer({ middleLayer: ml, port, secret });
+    const mcpServer = new PlMcpServer({ middleLayer: ml, port: 0, secret });
     await mcpServer.start();
 
     try {
-      const wrongUrl = `http://127.0.0.1:${port}/${secret}/other`;
+      const realPort = new URL(mcpServer.url).port;
+      const wrongUrl = `http://127.0.0.1:${realPort}/${secret}/other`;
       const response = await fetch(wrongUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

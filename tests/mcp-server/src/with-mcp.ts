@@ -6,23 +6,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import net from "node:net";
-
-async function getFreePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = net.createServer();
-    srv.listen(0, "127.0.0.1", () => {
-      const addr = srv.address();
-      if (addr && typeof addr === "object") {
-        const port = addr.port;
-        srv.close(() => resolve(port));
-      } else {
-        srv.close(() => reject(new Error("Failed to get free port")));
-      }
-    });
-    srv.on("error", reject);
-  });
-}
 
 export interface McpTestContext {
   client: Client;
@@ -33,7 +16,6 @@ export interface McpTestContext {
 export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
   const secret = randomUUID().replace(/-/g, "") as McpSecret;
-  const port = await getFreePort();
 
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
     const ml = await MiddleLayer.init(pl, workFolder, {
@@ -49,7 +31,7 @@ export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>):
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
 
-    const mcpServer = new PlMcpServer({ middleLayer: ml, port, secret });
+    const mcpServer = new PlMcpServer({ middleLayer: ml, port: 0, secret });
     await mcpServer.start();
 
     const client = new Client({ name: "test-client", version: "1.0.0" });
@@ -65,5 +47,3 @@ export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>):
     }
   });
 }
-
-export { getFreePort };

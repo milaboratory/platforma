@@ -178,6 +178,11 @@ export class PlMcpServer {
           server.listen(this.port, "127.0.0.1", () => resolve());
           server.once("error", reject);
         });
+        // Read back the actual port (important when port is 0)
+        const addr = server.address();
+        if (addr && typeof addr === "object") {
+          this.port = addr.port;
+        }
         return;
       } catch (err: unknown) {
         if (
