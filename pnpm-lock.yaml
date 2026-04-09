@@ -46,8 +46,8 @@ catalogs:
       specifier: ^2.0.3
       version: 2.0.3
     '@platforma-open/milaboratories.software-test-utils':
-      specifier: ^1.1.1
-      version: 1.1.1
+      specifier: ^1.1.6
+      version: 1.1.6
     '@protobuf-ts/grpc-transport':
       specifier: 2.11.1
       version: 2.11.1
