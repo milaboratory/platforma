@@ -107,7 +107,6 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   kvChangedPerKey? = new KeyedChangeSource();
 
   readonly id: ResourceId;
-  readonly resourceSignature?: ResourceSignature;
   originalResourceId: OptionalResourceId;
 
   readonly kind: ResourceKind;
@@ -140,7 +139,6 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.outputsLocked = initialState.outputsLocked;
     this.resourceReady = initialState.resourceReady;
     this.finalFlag = initialState.final;
-    this.resourceSignature = initialState.resourceSignature;
     this.logger = logger;
   }
 
@@ -353,7 +351,6 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       error: this.error,
       originalResourceId: this.originalResourceId,
       final: this.finalFlag,
-      resourceSignature: this.resourceSignature,
     };
   }
 
@@ -799,7 +796,7 @@ export class PlTreeState {
   }
 
   public getResourceSignature(rid: ResourceId): ResourceSignature | undefined {
-    return this.resources.get(rid.id)?.resourceSignature;
+    return this.resources.get(rid.id)?.id.signature;
   }
 
   public entry(rid: ResourceId = this.root): PlTreeEntry {

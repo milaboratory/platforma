@@ -10,7 +10,7 @@ import {
 } from "@milaboratories/pl-client";
 
 export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
-  const sigStr = signatureToBase64Url(rInfo.resourceSignature);
+  const sigStr = signatureToBase64Url(rInfo.id.signature);
   const resSig = sigStr ? `/${sigStr}` : "";
   if (live) {
     return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${rInfo.id.id}${resSig}` as sdk.LiveLogHandle;
@@ -52,8 +52,7 @@ export function getResourceInfoFromLogHandle(handle: sdk.AnyLogHandle): Resource
   const { resourceType, resourceVersion, resourceId, resourceSig } = parsed.groups!;
 
   return {
-    id: bigintToResourceId(BigInt(resourceId)),
+    id: bigintToResourceId(BigInt(resourceId), resourceSig ? base64UrlToSignature(resourceSig) : undefined),
     type: { name: resourceType, version: resourceVersion },
-    ...(resourceSig ? { resourceSignature: base64UrlToSignature(resourceSig) } : {}),
   };
 }

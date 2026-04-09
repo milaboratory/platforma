@@ -20,7 +20,7 @@ export function newRemoteHandle(
   signer: Signer,
 ): RemoteBlobHandle {
   let content = `${rInfo.type.name}/${rInfo.type.version}/${rInfo.id.id}/${getSize(rInfo)}`;
-  const sigStr = signatureToBase64Url(rInfo.resourceSignature);
+  const sigStr = signatureToBase64Url(rInfo.id.signature);
   if (sigStr) {
     content += `/${sigStr}`;
   }
@@ -51,9 +51,8 @@ export function parseRemoteHandle(
 
   return {
     info: {
-      id: bigintToResourceId(BigInt(resourceId)),
+      id: bigintToResourceId(BigInt(resourceId), resourceSig ? base64UrlToSignature(resourceSig) : undefined),
       type: { name: resourceType, version: resourceVersion },
-      ...(resourceSig ? { resourceSignature: base64UrlToSignature(resourceSig) } : {}),
     },
     size: Number(size),
   };

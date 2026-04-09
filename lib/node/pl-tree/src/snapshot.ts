@@ -1,4 +1,4 @@
-import type { ResourceId, ResourceSignature, ResourceType } from "@milaboratories/pl-client";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import type { Optional, Writable } from "utility-types";
 import type { ZodType, z } from "zod";
 import type { PlTreeNodeAccessor } from "./accessors";
@@ -18,7 +18,6 @@ export type ResourceSnapshot<
 > = {
   readonly id: ResourceId;
   readonly type: ResourceType;
-  readonly resourceSignature?: ResourceSignature;
   readonly data: Data;
   readonly fields: Fields;
   readonly kv: KV;

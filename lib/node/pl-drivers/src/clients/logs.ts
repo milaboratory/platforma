@@ -42,7 +42,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async lastLines(
-    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
+    { id: rId, type: rType }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the end.
     searchStr?: string,
@@ -54,7 +54,7 @@ export class ClientLogs {
         await client.lastLines(
           {
             resourceId: rId.id,
-            resourceSignature: rSig,
+            resourceSignature: rId.signature,
             lineCount: lineCount,
             offset: offsetBytes,
             search: searchStr,
@@ -68,7 +68,7 @@ export class ClientLogs {
       await client.POST("/v1/last-lines", {
         body: {
           resourceId: rId.id.toString(),
-          resourceSignature: signatureToBase64(rSig),
+          resourceSignature: signatureToBase64(rId.signature),
           lineCount: lineCount,
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
@@ -89,7 +89,7 @@ export class ClientLogs {
    * the new offset
    * and the total size of the (currently existing) file. */
   public async readText(
-    { id: rId, type: rType, resourceSignature: rSig }: ResourceInfo,
+    { id: rId, type: rType }: ResourceInfo,
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the beginning.
     searchStr?: string,
@@ -102,7 +102,7 @@ export class ClientLogs {
         await client.readText(
           {
             resourceId: rId.id,
-            resourceSignature: rSig,
+            resourceSignature: rId.signature,
             readLimit: BigInt(lineCount),
             offset: offsetBytes,
             search: searchStr,
@@ -116,7 +116,7 @@ export class ClientLogs {
       await client.POST("/v1/read/text", {
         body: {
           resourceId: rId.id.toString(),
-          resourceSignature: signatureToBase64(rSig),
+          resourceSignature: signatureToBase64(rId.signature),
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),
           search: searchStr ?? "",

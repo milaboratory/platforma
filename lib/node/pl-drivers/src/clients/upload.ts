@@ -75,7 +75,7 @@ export class ClientUpload {
   close() {}
 
   public async initUpload(
-    { id, type, resourceSignature }: ResourceInfo,
+    { id, type }: ResourceInfo,
     options?: RpcOptions,
   ): Promise<{
     overall: bigint;
@@ -87,7 +87,7 @@ export class ClientUpload {
 
     if (client instanceof UploadClient) {
       const init = (
-        await client.init({ resourceId: id.id, resourceSignature }, addRTypeToMetadata(type, options))
+        await client.init({ resourceId: id.id, resourceSignature: id.signature }, addRTypeToMetadata(type, options))
       ).response;
 
       return {
@@ -102,7 +102,7 @@ export class ClientUpload {
       await client.POST("/v1/upload/init", {
         body: {
           resourceId: id.id.toString(),
-          resourceSignature: signatureToBase64(resourceSignature),
+          resourceSignature: signatureToBase64(id.signature),
         },
         headers: { ...createRTypeRoutingHeader(type) },
       })
@@ -117,7 +117,7 @@ export class ClientUpload {
   }
 
   public async partUpload(
-    { id, type, resourceSignature }: ResourceInfo,
+    { id, type }: ResourceInfo,
     path: string,
     expectedMTimeUnix: bigint,
     partNumber: bigint,
@@ -134,7 +134,7 @@ export class ClientUpload {
         await client.getPartURL(
           {
             resourceId: id.id,
-            resourceSignature,
+            resourceSignature: id.signature,
             partNumber,
             uploadedPartSize: 0n,
             isInternalUse: false,
@@ -148,7 +148,7 @@ export class ClientUpload {
         await client.POST("/v1/upload/get-part-url", {
           body: {
             resourceId: id.id.toString(),
-            resourceSignature: signatureToBase64(resourceSignature),
+            resourceSignature: signatureToBase64(id.signature),
             partNumber: partNumber.toString(),
             uploadedPartSize: "0",
             isInternalUse: false,
@@ -220,7 +220,7 @@ export class ClientUpload {
     }
 
     await this.updateProgress(
-      { id, type, resourceSignature },
+      { id, type },
       BigInt(info.chunkEnd - info.chunkStart),
       options,
     );
@@ -233,7 +233,7 @@ export class ClientUpload {
       await client.finalize(
         {
           resourceId: info.id.id,
-          resourceSignature: info.resourceSignature,
+          resourceSignature: info.id.signature,
           checksumAlgorithm: UploadAPI_ChecksumAlgorithm.UNSPECIFIED,
           checksum: new Uint8Array(0),
         },
@@ -243,7 +243,7 @@ export class ClientUpload {
       await client.POST("/v1/upload/finalize", {
         body: {
           resourceId: info.id.id.toString(),
-          resourceSignature: signatureToBase64(info.resourceSignature),
+          resourceSignature: signatureToBase64(info.id.signature),
           checksumAlgorithm: 0,
           checksum: "",
         },
@@ -266,7 +266,7 @@ export class ClientUpload {
   }
 
   private async updateProgress(
-    { id, type, resourceSignature }: ResourceInfo,
+    { id, type }: ResourceInfo,
     bytesProcessed: bigint,
     options?: RpcOptions,
   ): Promise<void> {
@@ -276,7 +276,7 @@ export class ClientUpload {
       await client.updateProgress(
         {
           resourceId: id.id,
-          resourceSignature,
+          resourceSignature: id.signature,
           bytesProcessed,
         },
         addRTypeToMetadata(type, options),
@@ -287,7 +287,7 @@ export class ClientUpload {
     await client.POST("/v1/upload/update-progress", {
       body: {
         resourceId: id.id.toString(),
-        resourceSignature: signatureToBase64(resourceSignature),
+        resourceSignature: signatureToBase64(id.signature),
         bytesProcessed: bytesProcessed.toString(),
       },
       headers: { ...createRTypeRoutingHeader(type) },
