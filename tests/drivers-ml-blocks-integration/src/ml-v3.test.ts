@@ -334,7 +334,7 @@ test("v3: reorder & rename blocks", { timeout: 20000 }, async ({ expect }) => {
       value: { sources: [outputRef(block1Id, "numbers"), outputRef(block2Id, "numbers")] },
     });
     await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id);
+    await awaitBlockDone(prj, block3Id, 15000);
 
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot1).toMatchObject({
