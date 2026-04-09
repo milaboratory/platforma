@@ -51,6 +51,7 @@ builder := func() {
 	queue := execConstants.HEAVY_QUEUE
 	cpuRequest := undefined
 	ramRequest := undefined
+	gpuCount := 0
 
 	commandName := ""
 	cache := 0
@@ -432,6 +433,20 @@ builder := func() {
 		 */
 		ram: func(amount) {
 			self.mem(amount)
+			return self
+		},
+
+		/**
+		 * Requests GPU resources from the underlying executor.
+		 *
+		 * @param count: number - number of GPU devices to request (must be > 0).
+		 *
+		 * @return builder
+		 */
+		gpu: func(count) {
+			validation.assertType(count, "number", "exec.builder.gpu: count must be a number")
+			ll.assert(count > 0, "exec.builder.gpu: count must be greater than 0")
+			gpuCount = count
 			return self
 		},
 
@@ -1019,12 +1034,16 @@ builder := func() {
 			if (is_int(ramRequest)) {
 				ramRequest = string(ramRequest) + "b"
 			}
+			quotaData := {
+				queue: queue,
+				cpu: cpuRequest,
+				ram: ramRequest
+			}
+			if gpuCount > 0 {
+				quotaData.gpu = gpuCount
+			}
 			metaExecInputs := {
-				quota: smart.createJsonResource({
-					queue: queue,
-					cpu: cpuRequest,
-					ram: ramRequest
-				})
+				quota: smart.createJsonResource(quotaData)
 			}
 
 			// We add monetization only if it's enabled
