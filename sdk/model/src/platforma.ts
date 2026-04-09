@@ -14,6 +14,7 @@ import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
+import type { PublicOutputFieldDef } from "./plugin_model";
 
 /** Defines all methods to interact with the platform environment from within a block UI. @deprecated */
 export interface PlatformaV1<
@@ -96,6 +97,7 @@ export type BlockModelInfo = {
   >;
   pluginIds: PluginHandle[];
   featureFlags: BlockCodeKnownFeatureFlags;
+  pluginPublicOutputs: Record<string, Record<string, PublicOutputFieldDef>>;
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];
@@ -159,9 +161,13 @@ export type InferPluginHandles<T extends Record<string, unknown>> = {
     infer Data,
     infer Params,
     infer Outputs,
+    infer PublicOutputs,
     infer ModelServices,
     infer UiServices
   >
-    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices>> }
+    ? {
+        handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices>>;
+        publicOutputs: PublicOutputs;
+      }
     : never;
 };
