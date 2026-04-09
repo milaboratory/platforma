@@ -2210,6 +2210,9 @@ importers:
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../pl-middle-layer
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../model/common
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder

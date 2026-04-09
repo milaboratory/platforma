@@ -5,6 +5,7 @@ import type {
   PTableColumnSpec,
   PTableVector,
 } from "@milaboratories/pl-middle-layer";
+import { pTableValue, isPTableAbsent } from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, textResult } from "./types";
@@ -112,43 +113,17 @@ async function resolveHandlesInValue(
   return out;
 }
 
-/**
- * Converts PTableVector data to JSON-serializable arrays.
- * Handles typed arrays (Int32Array, Float64Array, BigInt64Array, etc.)
- * and marks NA/absent values.
- */
+/** Converts a PTableVector column to a JSON-serializable array using the SDK helper. */
 function vectorToJson(vector: PTableVector, rows: number): (string | number | null | "ABSENT")[] {
   const result: (string | number | null | "ABSENT")[] = [];
   for (let i = 0; i < rows; i++) {
-    // Check absent
-    const absentByteIndex = Math.floor(i / 8);
-    const absentBitMask = 1 << (7 - (i % 8));
-    if (
-      vector.absent &&
-      vector.absent.length > 0 &&
-      (vector.absent[absentByteIndex] & absentBitMask) > 0
-    ) {
+    const v = pTableValue(vector, i);
+    if (isPTableAbsent(v)) {
       result.push("ABSENT");
-      continue;
-    }
-    // Check NA
-    if (vector.isNA) {
-      const naByteIndex = Math.floor(i / 8);
-      const naBitMask = 1 << (7 - (i % 8));
-      if ((vector.isNA[naByteIndex] & naBitMask) > 0) {
-        result.push(null);
-        continue;
-      }
-    }
-    const value = vector.data[i];
-    if (value === null || value === undefined) {
+    } else if (v === null) {
       result.push(null);
-    } else if (typeof value === "bigint") {
-      result.push(Number(value));
-    } else if (value instanceof Uint8Array) {
-      result.push("[bytes]");
     } else {
-      result.push(value as string | number);
+      result.push(v as string | number);
     }
   }
   return result;
