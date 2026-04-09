@@ -13,11 +13,14 @@ self.awaitState("ResourceReady")
 self.body(func(inputs) {
 	request := inputs.request
 
-	quotaRef := limits.quotaBuilder().
+	qb := limits.quotaBuilder().
 		queue(request.queue).
 		cpu(request.cpu).
-		ram(request.ram).
-		build()
+		ram(request.ram)
+	if !is_undefined(request.gpu) && request.gpu > 0 {
+		qb.gpu(request.gpu)
+	}
+	quotaRef := qb.build()
 
 	computeRequestRef := limits.computeRequestBuilder().
 		quota(quotaRef).
