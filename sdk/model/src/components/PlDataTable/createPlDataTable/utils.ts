@@ -1,9 +1,9 @@
 import {
-  type AxisId,
   type PColumn,
   type PColumnSpec,
   type PObjectId,
   Annotation,
+  canonicalizeAxisId,
   canonicalizeJson,
   getAxisId,
   readAnnotation,
@@ -14,6 +14,7 @@ import {
   type DeriveLabelsOptions,
 } from "../../../labels/derive_distinct_labels";
 import type { ColumnsDisplayOptions } from "./createPlDataTableV3";
+import { isNil } from "es-toolkit";
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
@@ -29,7 +30,7 @@ export function isColumnOptional(spec: { annotations?: Annotation }): boolean {
 export function getEffectiveVisibility(
   spec: PColumnSpec,
   displayConfig?: ColumnsDisplayOptions,
-): "default" | "optional" | "hidden" {
+): undefined | "default" | "optional" | "hidden" {
   if (displayConfig?.visibility) {
     for (const rule of displayConfig.visibility) {
       if (rule.match(spec)) {
@@ -39,11 +40,14 @@ export function getEffectiveVisibility(
   }
   if (isColumnHidden(spec)) return "hidden";
   if (isColumnOptional(spec)) return "optional";
-  return "default";
+  return undefined;
 }
 
 /** Get ordering priority for a column. Display config rules first, then annotation fallback. */
-export function getOrderPriority(spec: PColumnSpec, displayConfig?: ColumnsDisplayOptions): number {
+export function getOrderPriority(
+  spec: PColumnSpec,
+  displayConfig?: ColumnsDisplayOptions,
+): undefined | number {
   if (displayConfig?.ordering) {
     for (const rule of displayConfig.ordering) {
       if (rule.match(spec)) {
@@ -51,7 +55,7 @@ export function getOrderPriority(spec: PColumnSpec, displayConfig?: ColumnsDispl
       }
     }
   }
-  return readAnnotationJson(spec, Annotation.Table.OrderPriority) ?? 0;
+  return readAnnotationJson(spec, Annotation.Table.OrderPriority);
 }
 
 /**
@@ -72,14 +76,14 @@ export function withLabelAnnotations<Data>(
       ...col,
       spec: {
         ...col.spec,
-        ...(colLabel !== undefined
-          ? { annotations: { ...col.spec.annotations, [Annotation.Label]: colLabel } }
-          : {}),
+        ...(isNil(colLabel)
+          ? {}
+          : { annotations: { ...col.spec.annotations, [Annotation.Label]: colLabel } }),
         axesSpec: col.spec.axesSpec.map((axis) => {
-          const label = derivedLabels[canonicalizeJson<AxisId>(getAxisId(axis))];
-          return label !== undefined
-            ? { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } }
-            : axis;
+          const label = derivedLabels[canonicalizeAxisId(axis)];
+          return isNil(label)
+            ? axis
+            : { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } };
         }),
       },
     };
@@ -96,15 +100,19 @@ export function withTableVisualAnnotations<Data>(
 ): PColumn<Data>[] {
   if (displayOptions === undefined) return columns;
   return columns.map((col) => {
+    const annotations = { ...col.spec.annotations };
+
+    const visibility = getEffectiveVisibility(col.spec, displayOptions);
+    if (!isNil(visibility)) annotations[Annotation.Table.Visibility] = visibility;
+
+    const orderPriority = getOrderPriority(col.spec, displayOptions);
+    if (!isNil(orderPriority)) annotations[Annotation.Table.OrderPriority] = String(orderPriority);
+
     return {
       ...col,
       spec: {
         ...col.spec,
-        annotations: {
-          ...col.spec.annotations,
-          [Annotation.Table.Visibility]: getEffectiveVisibility(col.spec, displayOptions),
-          [Annotation.Table.OrderPriority]: String(getOrderPriority(col.spec, displayOptions)),
-        },
+        annotations: annotations,
       },
     };
   });

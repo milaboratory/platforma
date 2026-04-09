@@ -48,8 +48,8 @@ export function createReadyColumnData(getData: () => PColumnDataUniversal | unde
 export function createColumnSnapshot<Id extends PObjectId>(
   id: Id,
   spec: PColumnSpec,
+  data: undefined | ColumnData,
   dataStatus: ColumnDataStatus,
-  data: ColumnData | undefined,
 ): ColumnSnapshot<Id> {
-  return { id, spec, dataStatus, data };
+  return { id, spec, data, dataStatus };
 }

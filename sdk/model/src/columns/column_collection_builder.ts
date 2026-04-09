@@ -5,7 +5,6 @@ import type {
   DiscoverColumnsConstraints,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
-  DiscoverColumnsStepInfo,
   MultiColumnSelector,
   NativePObjectId,
   PColumnSpec,
@@ -73,9 +72,6 @@ export interface AnchoredColumnCollection extends Disposable {
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
 
-  /** Point lookup by provider-native (original) ID. */
-  getColumnByOriginalId(id: PObjectId): undefined | ColumnSnapshot<PObjectId>;
-
   /** Axis-aware column discovery. */
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[];
 }
@@ -100,7 +96,10 @@ export interface ColumnMatch {
   /** Match variants — different paths/qualifications that reach this column. */
   readonly variants: MatchVariant[];
   /** Linker steps traversed to reach this hit; empty for direct matches. */
-  readonly path: DiscoverColumnsStepInfo[];
+  readonly path: {
+    linker: ColumnSnapshot<SUniversalPColumnId>;
+    qualifications: AxisQualification[];
+  }[];
 }
 
 /** Qualifications needed for both query (already-integrated) columns and the hit column. */
@@ -341,13 +340,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     if (origId === undefined) return undefined;
     const col = this.columns.get(origId);
     if (col === undefined) return undefined;
-    return this.toSnapshot(id, col);
-  }
-
-  getColumnByOriginalId(id: PObjectId): undefined | ColumnSnapshot<PObjectId> {
-    const col = this.columns.get(id);
-    if (col === undefined) return undefined;
-    return remapSnapshot(col.id, col);
+    return remapSnapshot(id, col);
   }
 
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[] {
@@ -373,23 +366,24 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       const origId = hit.hit.columnId as PObjectId;
       const col =
         this.columns.get(origId) ?? throwError(`Column with id ${origId} not found in collection`);
-      const universalId = this.idDeriver.deriveS(col.spec);
+      const associatedId = this.idDeriver.deriveS(col.spec);
+
       results.push({
-        path: hit.path,
-        column: this.toSnapshot(universalId, col),
+        path: hit.path.map((step) => ({
+          linker: remapSnapshot(
+            this.idDeriver.deriveS(step.linker.spec),
+            this.columns.get(step.linker.columnId) ??
+              throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
+          ),
+          qualifications: step.qualifications,
+        })),
+        column: remapSnapshot(associatedId, col),
         variants: hit.mappingVariants,
         originalId: origId,
       });
     }
 
     return results;
-  }
-
-  private toSnapshot(
-    universalId: SUniversalPColumnId,
-    col: ColumnSnapshot<PObjectId>,
-  ): ColumnSnapshot<SUniversalPColumnId> {
-    return remapSnapshot(universalId, col);
   }
 }
 
@@ -421,7 +415,7 @@ function remapSnapshot<Id extends PObjectId>(
   id: Id,
   col: ColumnSnapshot<PObjectId>,
 ): ColumnSnapshot<Id> {
-  return createColumnSnapshot(id, col.spec, col.dataStatus, col.data);
+  return createColumnSnapshot(id, col.spec, col.data, col.dataStatus);
 }
 
 /** Normalize SDK ColumnSelectorInput to MultiColumnSelector[]. */

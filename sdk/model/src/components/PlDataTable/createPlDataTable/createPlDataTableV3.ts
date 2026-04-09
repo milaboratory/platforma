@@ -1,7 +1,6 @@
 import type {
   AxisId,
   CanonicalizedJson,
-  DiscoverColumnsStepInfo,
   PColumn,
   PObjectId,
   PTableColumnId,
@@ -191,13 +190,13 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
 /** A linker step with its resolved column data. */
 export type ResolvedLinkerStep = {
-  readonly info: DiscoverColumnsStepInfo;
   readonly column: ColumnSnapshot<PObjectId>;
 };
 
 /** A single column discovered from sources — normalized from raw ColumnSnapshot/ColumnMatch. */
 export type DiscoveredColumn<Id extends PObjectId | SUniversalPColumnId> = ColumnSnapshot<Id> & {
   readonly isAnchor: boolean;
+  readonly originalId: PObjectId;
   readonly linkerPath: ResolvedLinkerStep[];
 };
 

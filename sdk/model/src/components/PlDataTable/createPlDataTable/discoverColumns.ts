@@ -8,22 +8,12 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
-import type {
-  ColumnSource,
-  AnchoredColumnCollection,
-  ColumnSnapshot,
-  ColumnMatch,
-  RelaxedColumnSelector,
-} from "../../../columns";
+import type { ColumnSource, ColumnMatch, RelaxedColumnSelector } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
-import type {
-  ColumnsSelectorConfig,
-  DiscoveredColumn,
-  ResolvedLinkerStep,
-} from "./createPlDataTableV3";
+import type { ColumnsSelectorConfig, DiscoveredColumn } from "./createPlDataTableV3";
 
 export type DiscoveredColumnOptions = {
   sources?: ColumnSource[];
@@ -58,11 +48,8 @@ export function discoverColumns<A, U, S extends RequireServices<typeof Services.
     // Get anchor specs for matched columns
     const anchors = collection.getAnchorSpecs();
 
-    // Resolve linker snapshots
-    const resolvedLinkers = resolveLinkerSnapshots(collection, matched);
-
     // Normalize into DiscoveredColumn[]
-    return mapToDiscoveredColumns(matched, anchors, resolvedLinkers);
+    return mapToDiscoveredColumns(matched, anchors);
   } finally {
     collection.dispose();
   }
@@ -97,44 +84,10 @@ function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | C
     : collectCtxColumnSnapshotProviders(ctx);
 }
 
-/** Pre-resolve linker column snapshots (deduped) for all matched columns. */
-function resolveLinkerSnapshots(
-  collection: AnchoredColumnCollection,
-  matched: ColumnMatch[],
-): Map<PObjectId, ColumnSnapshot<PObjectId>> {
-  const result = new Map<PObjectId, ColumnSnapshot<PObjectId>>();
-  for (const match of matched) {
-    for (const step of match.path) {
-      const linkerId = step.linker.columnId;
-      if (result.has(linkerId)) continue;
-      result.set(
-        linkerId,
-        collection.getColumnByOriginalId(linkerId) ??
-          throwError(`Linker column ${linkerId} not found in anchored collection`),
-      );
-    }
-  }
-  return result;
-}
-
-/** Build linker path for a single match entry. */
-function buildLinkerPath(
-  match: ColumnMatch,
-  resolvedLinkers: Map<PObjectId, ColumnSnapshot<PObjectId>>,
-): ResolvedLinkerStep[] {
-  return match.path.map((step) => ({
-    info: step,
-    column:
-      resolvedLinkers.get(step.linker.columnId) ??
-      throwError(`Linker column ${step.linker.columnId} not found in resolved linkers map`),
-  }));
-}
-
 /** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
   anchors: readonly PColumnSpec[],
-  resolvedLinkers: Map<PObjectId, ColumnSnapshot<PObjectId>>,
 ): DiscoveredColumn<SUniversalPColumnId>[] {
   const hitCounts = matched.reduce(
     (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
@@ -155,11 +108,12 @@ function mapToDiscoveredColumns(
 
     return {
       id,
+      originalId: match.originalId,
       spec: snap.spec,
       data: snap.data,
       dataStatus: snap.dataStatus,
       isAnchor: anchors.some((anchor) => snapSpecId === deriveNativeId(anchor)),
-      linkerPath: buildLinkerPath(match, resolvedLinkers),
+      linkerPath: match.path.map((step) => ({ column: step.linker })),
     };
   });
 }

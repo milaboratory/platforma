@@ -1,6 +1,7 @@
 import {
   BlockModelV3,
   DataModelBuilder,
+  PObjectId,
   createPlDataTable,
   createPlDataTableStateV2,
   createPlDataTableV3,
@@ -55,6 +56,14 @@ export const platforma = BlockModelV3.create(blockDataModel)
         mode: "related",
         maxHops: 4,
       },
+      sorting: [
+        {
+          column: { type: "column", id: "value" as PObjectId },
+          ascending: true,
+          naAndAbsentAreLeastValues: true,
+        },
+      ],
+
       labelsOptions: {
         // Custom linker label formatter to verify linker path labels in the UI.
         // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
@@ -66,7 +75,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
           { match: (spec) => spec.name === "category", priority: 20 },
           // Then "value"
           { match: (spec) => spec.name === "value", priority: 10 },
-          // Unmatched columns (score, note) get default priority 0
+          // Unmatched columns (score, note) keep their original order
         ],
         visibility: [
           // "note" hidden by default (user can re-enable in UI)
