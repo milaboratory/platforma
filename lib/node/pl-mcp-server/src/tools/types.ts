@@ -8,7 +8,7 @@ export interface AuthorMarker {
 }
 
 export interface ToolContext {
-  getMl: () => MiddleLayer | undefined;
+  getMl: () => MiddleLayer | null;
   requireMl: () => MiddleLayer;
   resolveProject: (projectId: string) => Promise<ProjectListEntry>;
   getOpenedProject: (projectId: string) => Promise<Project>;

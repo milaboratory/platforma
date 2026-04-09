@@ -77,7 +77,7 @@ export interface PlMcpServerOptions {
 }
 
 export class PlMcpServer {
-  private ml: MiddleLayer | undefined;
+  private ml: MiddleLayer | null;
   private port: number;
   private readonly secret: string;
   private readonly callbacks: PlMcpServerCallbacks;
@@ -85,15 +85,15 @@ export class PlMcpServer {
   private readonly transports = new Map<string, StreamableHTTPServerTransport>();
 
   constructor(options: PlMcpServerOptions) {
-    this.ml = options.middleLayer;
+    this.ml = options.middleLayer ?? null;
     this.port = options.port;
     this.secret = options.secret;
     this.callbacks = options.callbacks ?? {};
   }
 
   /** Set or update the MiddleLayer instance (e.g. after connecting to a server). */
-  setMiddleLayer(ml: MiddleLayer | undefined) {
-    this.ml = ml;
+  setMiddleLayer(ml: MiddleLayer | null | undefined) {
+    this.ml = ml ?? null;
   }
 
   get url(): string {
