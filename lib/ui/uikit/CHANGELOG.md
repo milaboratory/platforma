@@ -1,5 +1,49 @@
 # @milaboratories/uikit
 
+## 2.11.7
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
+## 2.11.6
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
+## 2.11.5
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @platforma-sdk/model@1.63.0
+
+## 2.11.4
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @platforma-sdk/model@1.62.0
+
+## 2.11.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 2.11.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
 ## 2.11.1
 
 ### Patch Changes

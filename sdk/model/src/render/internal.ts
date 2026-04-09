@@ -1,10 +1,5 @@
 import type { Optional } from "utility-types";
-import type {
-  Branded,
-  DiscoverColumnsRequest,
-  DiscoverColumnsResponse,
-  StringifiedJson,
-} from "@milaboratories/pl-model-common";
+import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
@@ -24,9 +19,9 @@ import type {
   ValueOrError,
   DataInfo,
   RangeBytes,
-  PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
+import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -164,19 +159,6 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   ): PTableHandle;
 
   //
-  // Spec Frames (synchronous WASM-based PFrame for spec-level operations)
-  //
-
-  createSpecFrame(specs: Record<string, PColumnSpec>): string;
-
-  specFrameDiscoverColumns(
-    handle: string,
-    request: DiscoverColumnsRequest,
-  ): DiscoverColumnsResponse;
-
-  specFrameDispose(handle: string): void;
-
-  //
   // Computable
   //
 
@@ -201,7 +183,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pFrameInSetFilterSupport: true as const,
 };
 
-export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
+export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
   //
   // State: Args, UI State, Active Args
   //

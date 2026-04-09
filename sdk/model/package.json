@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.60.2",
+  "version": "1.63.1",
   "description": "Platforma.bio SDK / Block Model",
   "files": [
     "./dist/**/*",
@@ -50,6 +50,7 @@
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/pf-driver": "workspace:*",
+    "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",

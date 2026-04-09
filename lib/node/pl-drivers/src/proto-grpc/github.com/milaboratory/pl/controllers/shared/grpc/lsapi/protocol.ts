@@ -22,53 +22,53 @@ export interface LsAPI {
  */
 export interface LsAPI_ListItem {
     /**
-     * name of the item in storage, without any prefixes
+     * Name of the item in storage, without any prefixes.
      *
      * @generated from protobuf field: string name = 1
      */
     name: string;
     /**
-     * size of item in bytes
-     * is always zero for directories (is_dir = true)
+     * Size of the item in bytes.
+     * Is always zero for directories (is_dir = true).
      *
      * @generated from protobuf field: uint64 size = 2
      */
     size: bigint;
     /**
-     * is_dir is true for item, that can have subitems.
+     * is_dir is true for an item that can have subitems.
      *
      * @generated from protobuf field: bool is_dir = 3
      */
     isDir: boolean;
     /**
-     * full_name is the name of item absolute to storage root.
-     * it is <directory> + <name>
+     * full_name is the full name of the item, relative to the storage root.
+     * It is <directory> + <name>.
      * The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
      *
      * @generated from protobuf field: string full_name = 10
      */
     fullName: string;
     /**
-     * directory, the item is located in. The value here is always a prefix of name:
+     * The directory the item is located in. The value here is always a prefix of name:
      * name.HasPrefix(directory) is always true.
      *
      * @generated from protobuf field: string directory = 11
      */
     directory: string;
     /**
-     * last_modified keeps the item last modification timestamp
+     * last_modified keeps the item's last modification timestamp.
      *
      * @generated from protobuf field: google.protobuf.Timestamp last_modified = 12
      */
     lastModified?: Timestamp;
     /**
-     * version of item in storage.
-     * When storage supports versioning or provides checksums for the data stored,
+     * Version of item in storage.
+     * When the storage supports versioning or provides checksums for the data stored,
      * the <version> field keeps that data.
-     * If not - it keeps the any simple combination of item attributes, that helps to
-     * detect if the contents of item has changed, e.g. <size>+<mtime>.
-     * Anyway, client should not try to interpret this field, but should provide it to the Platform
-     * in operations with given item (like BlobImportInternal) to help Platform with deduplication.
+     * If not, it keeps any simple combination of item attributes that helps to
+     * detect if the contents of the item have changed, e.g. <size>+<mtime>.
+     * Anyway, the client should not try to interpret this field, but should provide it to the Platform
+     * in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
      *
      * @generated from protobuf field: string version = 13
      */
@@ -90,8 +90,14 @@ export interface LsAPI_List_Request {
      */
     resourceId: bigint;
     /**
-     * location to list, absolute to storage root. Only items, that have <full_name> starting
-     * from <location> are included into list response.
+     * Signature proving the caller is authorized to access this resource.
+     *
+     * @generated from protobuf field: optional bytes resource_signature = 3
+     */
+    resourceSignature?: Uint8Array;
+    /**
+     * Location to list, relative to the storage root. Only items that have <full_name> starting
+     * with <location> are included in the list response.
      *
      * @generated from protobuf field: string location = 2
      */
@@ -102,7 +108,7 @@ export interface LsAPI_List_Request {
  */
 export interface LsAPI_List_Response {
     /**
-     * List of the full (absolute to storage root) names of items from storage.
+     * List of the full (relative to storage root) names of items from storage.
      * E.g., for 'fs' storage each name will consist of names of all directories, where the
      * item is located, and the item name itself.
      * The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
@@ -111,7 +117,7 @@ export interface LsAPI_List_Response {
      */
     items: LsAPI_ListItem[];
     /**
-     * delimiter is path separator, used in this storage. Client can use it to parse item names into parts,
+     * The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
      * to extract directory names.
      *
      * @generated from protobuf field: string delimiter = 2
@@ -293,6 +299,7 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.LsAPI.List.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "location", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
@@ -311,6 +318,9 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* optional bytes resource_signature */ 3:
+                    message.resourceSignature = reader.bytes();
                     break;
                 case /* string location */ 2:
                     message.location = reader.string();
@@ -333,6 +343,9 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
         /* string location = 2; */
         if (message.location !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.location);
+        /* optional bytes resource_signature = 3; */
+        if (message.resourceSignature !== undefined)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

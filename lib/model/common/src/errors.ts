@@ -28,6 +28,59 @@ export function isAggregateError(error: unknown): error is AggregateError {
   return error instanceof Error && error.name === "AggregateError";
 }
 
+export class ServiceError extends Error {
+  name = "ServiceError";
+}
+
+export function isServiceError(error: unknown): error is ServiceError {
+  return (
+    error instanceof Error &&
+    (error.name === "ServiceError" || error.name.startsWith("ServiceError."))
+  );
+}
+
+export class ServiceInvalidIdError extends ServiceError {
+  name = "ServiceError.InvalidId";
+}
+
+export function isServiceInvalidIdError(error: unknown): error is ServiceInvalidIdError {
+  return error instanceof Error && error.name === "ServiceError.InvalidId";
+}
+
+export class ServiceAlreadyRegisteredError extends ServiceError {
+  name = "ServiceError.AlreadyRegistered";
+}
+
+export function isServiceAlreadyRegisteredError(
+  error: unknown,
+): error is ServiceAlreadyRegisteredError {
+  return error instanceof Error && error.name === "ServiceError.AlreadyRegistered";
+}
+
+export class ServiceInjectionError extends ServiceError {
+  name = "ServiceError.Injection";
+}
+
+export function isServiceInjectionError(error: unknown): error is ServiceInjectionError {
+  return error instanceof Error && error.name === "ServiceError.Injection";
+}
+
+export class ServiceNotRegisteredError extends ServiceError {
+  name = "ServiceError.NotRegistered";
+}
+
+export function isServiceNotRegisteredError(error: unknown): error is ServiceNotRegisteredError {
+  return error instanceof Error && error.name === "ServiceError.NotRegistered";
+}
+
+export class ServiceMethodNotFoundError extends ServiceError {
+  name = "ServiceError.MethodNotFound";
+}
+
+export function isServiceMethodNotFoundError(error: unknown): error is ServiceMethodNotFoundError {
+  return error instanceof Error && error.name === "ServiceError.MethodNotFound";
+}
+
 export class PFrameError extends Error {
   name = "PFrameError";
 }
@@ -42,6 +95,14 @@ export class PFrameDriverError extends PFrameError {
 
 export function isPFrameDriverError(error: unknown): error is PFrameDriverError {
   return error instanceof Error && error.name === "PFrameError.Driver";
+}
+
+export class PFrameSpecDriverError extends PFrameError {
+  name = "PFrameError.SpecDriver";
+}
+
+export function isPFrameSpecDriverError(error: unknown): error is PFrameSpecDriverError {
+  return error instanceof Error && error.name === "PFrameError.SpecDriver";
 }
 
 function stringifyValue(value: unknown): string {

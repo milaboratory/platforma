@@ -4,6 +4,7 @@ import type { RolldownOptions, RolldownPluginOption } from "rolldown";
 const useSources = process.env.USE_SOURCES === "1";
 
 const dtsPlugin = dts({
+  sourcemap: true,
   ...(useSources && {
     compilerOptions: {
       customConditions: ["sources"],

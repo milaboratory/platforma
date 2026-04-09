@@ -9,6 +9,7 @@ import type {
   OutputWithStatus,
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./version";
+import type { ServiceDispatch, UiServices as AllUiServices } from "@milaboratories/pl-model-common";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";
@@ -54,13 +55,18 @@ export interface PlatformaV3<
   >,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
 >
   extends BlockApiV3<Data, Args, Outputs, Href>, DriverKit {
   /** Information about SDK version current platforma environment was compiled with. */
   readonly sdkInfo: SdkInfo;
   readonly apiVersion: 3;
+  /** Service dispatch — lists available services, their methods, and invokes them. */
+  readonly serviceDispatch: ServiceDispatch;
   /** @internal Type brand for plugin type inference. Not used at runtime. */
   readonly __pluginsBrand?: Plugins;
+  /** @internal Type brand for UI service type inference. Not used at runtime. */
+  readonly __uiServicesBrand?: UiServices;
 }
 
 export type Platforma<
@@ -148,7 +154,13 @@ export type InferPluginData<Pl, PluginId extends string> =
  * because PluginRecord doesn't carry Config (lost after factory.create()).
  */
 export type InferPluginHandles<T extends Record<string, unknown>> = {
-  readonly [K in keyof T]: T[K] extends PluginRecord<infer Data, infer Params, infer Outputs>
-    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
+  readonly [K in keyof T]: T[K] extends PluginRecord<
+    infer Data,
+    infer Params,
+    infer Outputs,
+    infer ModelServices,
+    infer UiServices
+  >
+    ? { handle: PluginHandle<PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices>> }
     : never;
 };

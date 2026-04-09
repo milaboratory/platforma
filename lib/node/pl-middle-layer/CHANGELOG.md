@@ -1,5 +1,236 @@
 # @milaboratories/pl-middle-layer
 
+## 1.55.5
+
+### Patch Changes
+
+- Updated dependencies [aeee41f]
+  - @platforma-sdk/workflow-tengo@5.13.0
+
+## 1.55.4
+
+### Patch Changes
+
+- Updated dependencies [f0ef695]
+  - @platforma-sdk/workflow-tengo@5.12.1
+
+## 1.55.3
+
+### Patch Changes
+
+- Updated dependencies [fc09bcb]
+- Updated dependencies [96b0516]
+  - @milaboratories/pf-driver@1.3.4
+  - @milaboratories/pl-client@3.1.0
+  - @platforma-sdk/model@1.63.1
+  - @milaboratories/pl-model-backend@1.2.7
+  - @milaboratories/pl-drivers@1.12.9
+  - @milaboratories/pl-errors@1.2.7
+  - @milaboratories/pl-tree@1.9.8
+  - @platforma-sdk/workflow-tengo@5.12.0
+
+## 1.55.2
+
+### Patch Changes
+
+- Updated dependencies [cad9688]
+  - @platforma-sdk/block-tools@2.7.6
+  - @milaboratories/pl-model-backend@1.2.6
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/pf-spec-driver@1.2.4
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pf-driver@1.3.3
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-deployments@2.16.5
+  - @milaboratories/pl-drivers@1.12.8
+  - @milaboratories/pl-errors@1.2.6
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.9.7
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
+## 1.55.1
+
+### Patch Changes
+
+- Updated dependencies [faa2923]
+  - @platforma-sdk/workflow-tengo@5.12.0
+
+## 1.55.0
+
+### Minor Changes
+
+- 904ebd9: Enable prerun to run even if args error
+
+## 1.54.7
+
+### Patch Changes
+
+- Updated dependencies [5a6ce18]
+  - @milaboratories/pf-spec-driver@1.2.4
+  - @platforma-sdk/model@1.63.1
+
+## 1.54.6
+
+### Patch Changes
+
+- Updated dependencies [de415f7]
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-model-backend@1.2.6
+  - @milaboratories/pl-drivers@1.12.8
+  - @milaboratories/pl-errors@1.2.6
+  - @milaboratories/pl-tree@1.9.7
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.54.5
+
+### Patch Changes
+
+- f1089db: Fix "Run" button doing nothing on errored blocks; preserve errored outputs during re-run
+
+## 1.54.4
+
+### Patch Changes
+
+- 9f5e086: Fix broken project duplication: ensure field group consistency for prodUiCtx/stagingUiCtx
+
+## 1.54.3
+
+### Patch Changes
+
+- 6dc9e0d: Move browser-safe types (MiLogger, RefCountPoolBase, isDisposable) from ts-helpers to helpers to fix Vite browser bundling error in ui-vue
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pf-spec-driver@1.2.3
+  - @milaboratories/pf-driver@1.3.3
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/pl-drivers@1.12.7
+  - @platforma-sdk/model@1.63.1
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pl-client@2.18.5
+  - @milaboratories/pl-deployments@2.16.5
+  - @milaboratories/pl-errors@1.2.5
+  - @milaboratories/pl-tree@1.9.6
+  - @platforma-sdk/block-tools@2.7.5
+  - @milaboratories/pl-model-backend@1.2.5
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.54.2
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @milaboratories/pl-model-common@1.31.0
+  - @platforma-sdk/model@1.63.0
+  - @milaboratories/pl-model-middle-layer@1.16.2
+  - @milaboratories/pf-spec-driver@1.2.2
+  - @milaboratories/pf-driver@1.3.2
+  - @milaboratories/pl-client@2.18.4
+  - @milaboratories/pl-deployments@2.16.4
+  - @milaboratories/pl-drivers@1.12.6
+  - @platforma-sdk/block-tools@2.7.4
+  - @milaboratories/pl-model-backend@1.2.4
+  - @milaboratories/pl-errors@1.2.4
+  - @milaboratories/pl-tree@1.9.5
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.54.1
+
+### Patch Changes
+
+- Updated dependencies [e44b64c]
+  - @milaboratories/pf-spec-driver@1.2.1
+  - @milaboratories/pf-driver@1.3.1
+  - @platforma-sdk/model@1.62.0
+
+## 1.54.0
+
+### Minor Changes
+
+- 74a2ffa: Add block-level services infrastructure (PFrameSpec, PFrame)
+
+  - Introduce `Services` registry in pl-model-common with service definitions, feature flags, and typed driver interfaces
+  - Add `PFrameSpec` service: synchronous WASM-based spec operations (createSpecFrame, discoverColumns, evaluateQuery)
+  - Wire services through block model, plugin model, and UI layers with compile-time `RequireServices` constraints
+  - Add `ColumnCollection` with `dispose()` for deterministic spec frame cleanup. **Breaking:** `ColumnCollection` and `AnchoredColumnCollection` now extend `Disposable` — custom implementations must add a `dispose()` method
+  - Add `createPlDataTable` v3 API using `ColumnCollectionBuilder` with include/exclude column selectors
+  - Auto-dispose leaked SpecFrame handles via `addOnDestroy` in computable lifecycle. **Breaking:** `PFrameSpecDriver.createSpecFrame` now returns `PoolEntry<SpecFrameHandle>` instead of `SpecFrameHandle`; `disposeSpecFrame` removed — use `entry.unref()` instead
+  - Add `PoolEntry`, `PoolEntryGuard` to pl-model-common for cross-package pool entry lifecycle management
+  - Add `ServiceRegistryBase.dispose()` for proper service cleanup; wire disposal in middle layer and UI
+  - Migrate `PFramePool` from `RefCountManualPoolBase` to `RefCountPoolBase` with idempotent unref; remove `RefCountManualPoolBase`
+  - Add `requireComputableCtx` getter to centralize computable context guards; migrate `createPFrame`/`createPTable`/`createPTableV2` to use `PoolEntryGuard` for leak-safe resource handling
+  - Move pf-spec-driver logging before WASM calls for better crash diagnostics
+  - Fix outputWithStatus in plugin model
+  - Fix table row selection not propagating to selection model
+  - Fix linker columns with `pl7.app/parents` annotation failing WASM validation ("must have exactly 2 connected components") by resolving annotation-based parents to numeric `parentAxes` before passing specs to Rust/WASM engine
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/pl-model-common@1.30.0
+  - @milaboratories/pf-spec-driver@1.2.0
+  - @milaboratories/pf-driver@1.3.0
+  - @milaboratories/ts-helpers@1.8.0
+  - @platforma-sdk/model@1.62.0
+  - @milaboratories/pl-model-middle-layer@1.16.1
+  - @milaboratories/pl-client@2.18.3
+  - @milaboratories/pl-deployments@2.16.3
+  - @milaboratories/pl-drivers@1.12.5
+  - @platforma-sdk/block-tools@2.7.3
+  - @milaboratories/computable@2.9.1
+  - @milaboratories/pl-errors@1.2.3
+  - @milaboratories/pl-tree@1.9.4
+  - @milaboratories/pl-model-backend@1.2.3
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.53.3
+
+### Patch Changes
+
+- 0da8bdc: Fix unhelpful "Unknown error" when opening a project from a newer Platforma version
+
+## 1.53.2
+
+### Patch Changes
+
+- Updated dependencies [e34a693]
+  - @milaboratories/pl-drivers@1.12.4
+
+## 1.53.1
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 1.53.0
+
+### Minor Changes
+
+- cfee265: Drop V1 DiscoverColumnsRequest/PFrameWasm/PFrameWasmAPI, adopt V2 interfaces; update DiscoverColumnsRequest in common with includeColumns/excludeColumns/maxHops fields; extract SpecDriver into @milaboratories/pf-spec-driver package; rename specFrameDispose to disposeSpecFrame for API consistency
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-model-middle-layer@1.16.0
+  - @milaboratories/pf-driver@1.2.0
+  - @milaboratories/pf-spec-driver@1.1.0
+  - @platforma-sdk/model@1.61.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-deployments@2.16.2
+  - @milaboratories/pl-drivers@1.12.3
+  - @platforma-sdk/block-tools@2.7.2
+  - @milaboratories/pl-model-backend@1.2.2
+  - @milaboratories/pl-errors@1.2.2
+  - @milaboratories/pl-tree@1.9.3
+  - @platforma-sdk/workflow-tengo@5.11.0
+
 ## 1.52.1
 
 ### Patch Changes

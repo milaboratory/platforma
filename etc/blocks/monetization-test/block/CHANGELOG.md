@@ -1,5 +1,94 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.3.14
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.3
+
+## 1.3.13
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.2
+
+## 1.3.12
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.6
+- @milaboratories/milaboratories.monetization-test.ui@1.2.11
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.1
+
+## 1.3.11
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.1
+
+## 1.3.10
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.10
+
+## 1.3.9
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.6
+- @milaboratories/milaboratories.monetization-test.ui@1.2.9
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.0
+
+## 1.3.8
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.5
+- @milaboratories/milaboratories.monetization-test.ui@1.2.8
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.0
+
+## 1.3.7
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.7
+
+## 1.3.6
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.4
+- @milaboratories/milaboratories.monetization-test.ui@1.2.6
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.0
+
+## 1.3.5
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.5
+
+## 1.3.4
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.4
+
+## 1.3.3
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.3
+- @milaboratories/milaboratories.monetization-test.model@1.1.3
+
+## 1.3.2
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.2
+- @milaboratories/milaboratories.monetization-test.ui@1.2.2
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.0
+
 ## 1.3.1
 
 ### Patch Changes

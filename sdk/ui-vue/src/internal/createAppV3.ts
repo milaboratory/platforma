@@ -12,6 +12,7 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
+  InferFactoryUiServices,
   PluginFactoryLike,
 } from "@platforma-sdk/model";
 import {
@@ -21,9 +22,13 @@ import {
   getPluginData,
   isPluginOutputKey,
   pluginOutputPrefix,
+  createNodeServiceProxy,
+  buildServices,
 } from "@platforma-sdk/model";
+import { type UiServices as AllUiServices } from "@milaboratories/pl-model-common";
+import { createUiServiceRegistry } from "./service_factories";
 import type { Ref } from "vue";
-import { reactive, computed, ref } from "vue";
+import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
 import { parseQuery } from "../urls";
 import { ensureOutputHasStableFlag, MultiError } from "../utils";
@@ -35,10 +40,11 @@ import type { PluginState, PluginAccess } from "../usePlugin";
 export const patchPoolingDelay = 150;
 
 /** Internal per-plugin state with reconciliation support. */
-interface InternalPluginState<Data = unknown, Outputs = unknown> extends PluginState<
-  Data,
-  Outputs
-> {
+interface InternalPluginState<
+  Data = unknown,
+  Outputs = unknown,
+  Services = Record<string, unknown>,
+> extends PluginState<Data, Outputs, Services> {
   readonly ignoreUpdates: (fn: () => void) => void;
 }
 
@@ -75,9 +81,10 @@ export function createAppV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
 >(
   state: ValueWithUTag<BlockStateV3<Data, Outputs, Href>>,
-  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins>>,
+  platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins, UiServices>>,
   settings: AppSettings,
 ) {
   const debug = (msg: string, ...rest: unknown[]) => {
@@ -223,12 +230,11 @@ export function createAppV3<
   (async () => {
     window.addEventListener("beforeunload", () => {
       closedRef.value = true;
-      platforma
-        .dispose()
-        .then(unwrapResult)
-        .catch((err) => {
+      Promise.allSettled([uiRegistry.dispose(), platforma.dispose().then(unwrapResult)]).catch(
+        (err) => {
           error("error in dispose", err);
-        });
+        },
+      );
     });
 
     while (!closedRef.value) {
@@ -328,6 +334,10 @@ export function createAppV3<
     },
   };
 
+  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
+  const uiRegistry = createUiServiceRegistry({ proxy });
+  const services = buildServices<UiServices>(platforma.serviceDispatch, uiRegistry);
+
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
@@ -340,10 +350,17 @@ export function createAppV3<
         snapshot.value.outputs as Partial<Readonly<Outputs>>,
       )) {
         if (!key.startsWith(prefix)) continue;
-        result[key.slice(prefix.length)] =
-          outputWithStatus.ok && outputWithStatus.value !== undefined
-            ? outputWithStatus.value
+        const outputKey = key.slice(prefix.length);
+        if (platforma.blockModelInfo.outputs[key]?.withStatus) {
+          result[outputKey] = outputWithStatus
+            ? ensureOutputHasStableFlag(outputWithStatus)
             : undefined;
+        } else {
+          result[outputKey] =
+            outputWithStatus.ok && outputWithStatus.value !== undefined
+              ? outputWithStatus.value
+              : undefined;
+        }
       }
       return result;
     });
@@ -380,6 +397,7 @@ export function createAppV3<
 
     return {
       model: pluginModel,
+      services: markRaw(services),
       ignoreUpdates,
     };
   };
@@ -389,22 +407,31 @@ export function createAppV3<
     getOrCreatePluginState<F extends PluginFactoryLike>(handle: PluginHandle<F>) {
       const existing = pluginStates.get(handle);
       if (existing) {
-        return existing as unknown as PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+        return existing as unknown as PluginState<
+          InferFactoryData<F>,
+          InferFactoryOutputs<F>,
+          InferFactoryUiServices<F>
+        >;
       }
       const state = createPluginState(handle);
       pluginStates.set(handle, state);
-      return state;
+      return state as unknown as PluginState<
+        InferFactoryData<F>,
+        InferFactoryOutputs<F>,
+        InferFactoryUiServices<F>
+      >;
     },
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, id]),
+    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
   ) as InferPluginHandles<Plugins>;
 
   const getters = {
     closedRef,
     snapshot,
     plugins,
+    services: markRaw(services),
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() =>
@@ -428,4 +455,5 @@ export type BaseAppV3<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   Href extends `/${string}` = `/${string}`,
   Plugins extends Record<string, unknown> = Record<string, unknown>,
-> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins>>["app"];
+  UiServices extends Partial<AllUiServices> = Partial<AllUiServices>,
+> = ReturnType<typeof createAppV3<Data, Args, Outputs, Href, Plugins, UiServices>>["app"];

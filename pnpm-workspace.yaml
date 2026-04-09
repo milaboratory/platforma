@@ -22,6 +22,7 @@ packages:
   - lib/node/node-streams
   - lib/node/computable
   - lib/node/pf-driver
+  - lib/model/pf-spec-driver
   - lib/node/pl-client
   - lib/node/pl-tree
   - lib/node/pl-drivers
@@ -158,9 +159,8 @@ catalog:
   "typescript": ~5.9.3
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
-  "vite": 8.0.0-beta.15
-  "@vitejs/plugin-vue": ^6.0.4
-  "rollup": ^4.45.1
+  "vite": ^8.0.6
+  "@vitejs/plugin-vue": ^6.0.5
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
   "@rollup/plugin-commonjs": ^28.0.6
@@ -170,7 +170,7 @@ catalog:
   "rollup-plugin-sourcemaps2": ^0.5.2
   "vite-plugin-dts": ^4.5.3
   "vite-plugin-lib-inject-css": ^2.2.2
-  "vite-plugin-externalize-deps": ^0.9.0
+  "vite-plugin-externalize-deps": ^0.10.0
   "vite-plugin-commonjs": ^0.10.4
   "ts-node": ^10.9.2
   "@zed-industries/vscode-langservers-extracted": ^4.10.7
@@ -242,8 +242,8 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": &pframes-rs 1.1.14
-  "@milaboratories/pframes-rs-wasm": *pframes-rs
+  "@milaboratories/pframes-rs-node": 1.1.18
+  "@milaboratories/pframes-rs-wasm": 1.1.18
 
   "quickjs-emscripten": 0.31.0
 
@@ -252,7 +252,7 @@ catalog:
   "vue": ^3.5.24
   "@vueuse/core": ^13.3.0
   "@vueuse/integrations": ^13.3.0
-  "vue-tsc": ^2.2.10
+  "vue-tsc": ^3.2.6
   "sass": ~1.83.4
   "vitepress": "1.5.0"
   "highlight.js": "11.10.0"
@@ -276,6 +276,8 @@ catalog:
 
   "@zip.js/zip.js": ^2.8.2
 
+  "@noble/hashes": ^2.0.1
+
   # SW
 
   "@milaboratories/software-pframes-conv": &pframes-version 2.2.9
@@ -286,7 +288,7 @@ catalog:
 
   # Test
 
-  "vitest": &vitest-version ^4.0.18
+  "vitest": &vitest-version ^4.1.3
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^9.2.0
   "jsdom": ^25.0.1

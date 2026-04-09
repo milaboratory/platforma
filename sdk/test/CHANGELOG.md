@@ -1,5 +1,166 @@
 # @platforma-sdk/test
 
+## 1.63.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.5
+
+## 1.63.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.4
+
+## 1.63.9
+
+### Patch Changes
+
+- Updated dependencies [96b0516]
+  - @milaboratories/pl-client@3.1.0
+  - @milaboratories/pl-middle-layer@1.55.3
+  - @platforma-sdk/model@1.63.1
+  - @milaboratories/pl-tree@1.9.8
+
+## 1.63.8
+
+### Patch Changes
+
+- @milaboratories/computable@2.9.2
+- @milaboratories/pl-client@3.0.0
+- @milaboratories/pl-middle-layer@1.55.2
+- @milaboratories/pl-tree@1.9.7
+- @platforma-sdk/model@1.63.1
+
+## 1.63.7
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.1
+
+## 1.63.6
+
+### Patch Changes
+
+- Updated dependencies [904ebd9]
+  - @milaboratories/pl-middle-layer@1.55.0
+
+## 1.63.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.54.7
+- @platforma-sdk/model@1.63.1
+
+## 1.63.4
+
+### Patch Changes
+
+- Updated dependencies [de415f7]
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-middle-layer@1.54.6
+  - @milaboratories/pl-tree@1.9.7
+
+## 1.63.3
+
+### Patch Changes
+
+- Updated dependencies [f1089db]
+  - @milaboratories/pl-middle-layer@1.54.5
+
+## 1.63.2
+
+### Patch Changes
+
+- Updated dependencies [9f5e086]
+  - @milaboratories/pl-middle-layer@1.54.4
+
+## 1.63.1
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/pl-middle-layer@1.54.3
+  - @platforma-sdk/model@1.63.1
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pl-client@2.18.5
+  - @milaboratories/pl-tree@1.9.6
+
+## 1.63.0
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @platforma-sdk/model@1.63.0
+  - @milaboratories/pl-client@2.18.4
+  - @milaboratories/pl-middle-layer@1.54.2
+  - @milaboratories/pl-tree@1.9.5
+
+## 1.62.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.54.1
+- @platforma-sdk/model@1.62.0
+
+## 1.62.0
+
+### Minor Changes
+
+- 74a2ffa: Add block-level services infrastructure (PFrameSpec, PFrame)
+
+  - Introduce `Services` registry in pl-model-common with service definitions, feature flags, and typed driver interfaces
+  - Add `PFrameSpec` service: synchronous WASM-based spec operations (createSpecFrame, discoverColumns, evaluateQuery)
+  - Wire services through block model, plugin model, and UI layers with compile-time `RequireServices` constraints
+  - Add `ColumnCollection` with `dispose()` for deterministic spec frame cleanup. **Breaking:** `ColumnCollection` and `AnchoredColumnCollection` now extend `Disposable` — custom implementations must add a `dispose()` method
+  - Add `createPlDataTable` v3 API using `ColumnCollectionBuilder` with include/exclude column selectors
+  - Auto-dispose leaked SpecFrame handles via `addOnDestroy` in computable lifecycle. **Breaking:** `PFrameSpecDriver.createSpecFrame` now returns `PoolEntry<SpecFrameHandle>` instead of `SpecFrameHandle`; `disposeSpecFrame` removed — use `entry.unref()` instead
+  - Add `PoolEntry`, `PoolEntryGuard` to pl-model-common for cross-package pool entry lifecycle management
+  - Add `ServiceRegistryBase.dispose()` for proper service cleanup; wire disposal in middle layer and UI
+  - Migrate `PFramePool` from `RefCountManualPoolBase` to `RefCountPoolBase` with idempotent unref; remove `RefCountManualPoolBase`
+  - Add `requireComputableCtx` getter to centralize computable context guards; migrate `createPFrame`/`createPTable`/`createPTableV2` to use `PoolEntryGuard` for leak-safe resource handling
+  - Move pf-spec-driver logging before WASM calls for better crash diagnostics
+  - Fix outputWithStatus in plugin model
+  - Fix table row selection not propagating to selection model
+  - Fix linker columns with `pl7.app/parents` annotation failing WASM validation ("must have exactly 2 connected components") by resolving annotation-based parents to numeric `parentAxes` before passing specs to Rust/WASM engine
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/pl-middle-layer@1.54.0
+  - @platforma-sdk/model@1.62.0
+  - @milaboratories/pl-client@2.18.3
+  - @milaboratories/computable@2.9.1
+  - @milaboratories/pl-tree@1.9.4
+
+## 1.61.5
+
+### Patch Changes
+
+- Updated dependencies [0da8bdc]
+  - @milaboratories/pl-middle-layer@1.53.3
+
+## 1.61.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.53.2
+
+## 1.61.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.53.1
+
+## 1.61.0
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-middle-layer@1.53.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-tree@1.9.3
+
 ## 1.60.2
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.0
+
+### Minor Changes
+
+- aeee41f: GPU minimal support in tengo workflow
+
+## 5.12.1
+
+### Patch Changes
+
+- f0ef695: No functional changes. Better assertion error text
+
+## 5.12.0
+
+### Minor Changes
+
+- faa2923: Add support of custom command names in workflows. Custom command name is shown in error message if command fails and in logs of backend
+
 ## 5.11.0
 
 ### Minor Changes

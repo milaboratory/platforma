@@ -23,7 +23,7 @@ export default {
   generic="
     R extends true | false,
     V extends undefined | number,
-    C extends Exclude<V, R extends true ? undefined : never>
+    C extends Exclude<V, [R] extends [true] ? undefined : never>
   "
 >
 import "./pl-number-field.scss";

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "2.5.1",
+  "version": "2.5.7",
   "description": "Pl Tengo Template Builder",
   "license": "UNLICENSED",
   "bin": {
