@@ -1,5 +1,5 @@
 import type * as sdk from "@milaboratories/pl-model-common";
-import type { ResourceId, ResourceSignature, ResourceType } from "@milaboratories/pl-client";
+import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
 import { bigintToResourceId } from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
@@ -60,7 +60,6 @@ export type RemoteStorageHandleData = {
   name: string;
   id: ResourceId;
   type: ResourceType;
-  resourceSignature?: ResourceSignature;
 };
 
 const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;

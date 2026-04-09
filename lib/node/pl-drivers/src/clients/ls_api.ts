@@ -50,7 +50,7 @@ export class ClientLs {
       return await client.list(
         {
           resourceId: rInfo.id.id,
-          resourceSignature: rInfo.resourceSignature,
+          resourceSignature: rInfo.id.signature,
           location: path,
         },
         addRTypeToMetadata(rInfo.type, options),
@@ -60,7 +60,7 @@ export class ClientLs {
         await client.POST("/v1/list", {
           body: {
             resourceId: rInfo.id.id.toString(),
-            resourceSignature: signatureToBase64(rInfo.resourceSignature),
+            resourceSignature: signatureToBase64(rInfo.id.signature),
             location: path,
           },
           headers: { ...createRTypeRoutingHeader(rInfo.type) },

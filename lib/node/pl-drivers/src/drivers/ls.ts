@@ -1,4 +1,4 @@
-import type { PlClient, ResourceData, ResourceId, ResourceSignature } from "@milaboratories/pl-client";
+import type { PlClient, ResourceData, ResourceId } from "@milaboratories/pl-client";
 import { isNotNullResourceId } from "@milaboratories/pl-client";
 import type * as sdk from "@milaboratories/pl-model-common";
 import type {
@@ -31,7 +31,6 @@ import {
 import type { LocalStorageProjection, VirtualLocalStorageSpec } from "./types";
 import { DefaultVirtualLocalStorages } from "./virtual_storages";
 
-type StorageEntry = { id: ResourceId; signature?: ResourceSignature };
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -68,8 +67,8 @@ export class LsDriver implements InternalLsDriver {
   private constructor(
     private readonly logger: MiLogger,
     private readonly lsClient: ClientLs,
-    /** Pl storage id, to storage entry (resource id + signature). */
-    private readonly storageIdToResourceId: Record<string, StorageEntry>,
+    /** Pl storage id, to resource id (with embedded signature). */
+    private readonly storageIdToResourceId: Record<string, ResourceId>,
     private readonly signer: Signer,
     /** Virtual storages by name */
     private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>,
@@ -194,9 +193,9 @@ export class LsDriver implements InternalLsDriver {
       initialFullPath: s.initialPath,
     }));
 
-    const otherStorages = Object.entries(this.storageIdToResourceId!).map(([storageId, entry]) => ({
+    const otherStorages = Object.entries(this.storageIdToResourceId!).map(([storageId, resourceId]) => ({
       name: storageId,
-      handle: createRemoteStorageHandle(storageId, entry.id),
+      handle: createRemoteStorageHandle(storageId, resourceId),
       initialFullPath: "", // we don't have any additional information from where to start browsing remote storages
       isInitialPathHome: false,
     }));
@@ -210,11 +209,11 @@ export class LsDriver implements InternalLsDriver {
     return [...virtualStorages, ...noRoot];
   }
 
-  /** Enrich parsed storage data with resource signature stored alongside its ID */
+  /** Enrich parsed storage data with the signature embedded in the stored ResourceId */
   private withSignature(storageData: StorageHandleData): StorageHandleData {
     if (storageData.isRemote) {
       const sig = this.storageIdToResourceId[storageData.name]?.signature;
-      if (sig) return { ...storageData, resourceSignature: sig };
+      if (sig) return { ...storageData, id: { ...storageData.id, signature: sig } };
     }
     return storageData;
   }
@@ -334,7 +333,7 @@ export class LsDriver implements InternalLsDriver {
   }
 }
 
-async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, StorageEntry>> {
+async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, ResourceId>> {
   return client.withReadTx("GetAvailableStorageIds", async (tx) => {
     const lsProviderId = await tx.getResourceByName("LSProvider");
     const provider = await tx.getResourceData(lsProviderId, true);
@@ -343,13 +342,10 @@ async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string
   });
 }
 
-function providerToStorageIds(provider: ResourceData): Record<string, StorageEntry> {
+function providerToStorageIds(provider: ResourceData): Record<string, ResourceId> {
   return Object.fromEntries(
     provider.fields
       .filter((f) => f.type == "Dynamic" && isNotNullResourceId(f.value))
-      .map((f) => [
-        f.name.substring("storage/".length),
-        { id: f.value as ResourceId, signature: f.valueSignature },
-      ]),
+      .map((f) => [f.name.substring("storage/".length), f.value as ResourceId]),
   );
 }

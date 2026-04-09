@@ -35,9 +35,8 @@ function protoIdToOptionalResourceId(id: bigint, signature?: Uint8Array): Option
 /** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
   if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
-  const resourceSignature = toResourceSignature(proto.resourceSignature);
   return {
-    id: { id: proto.resourceId as GlobalResourceId, signature: resourceSignature },
+    id: { id: proto.resourceId as GlobalResourceId, signature: toResourceSignature(proto.resourceSignature) },
     originalResourceId: protoIdToOptionalResourceId(proto.originalResourceId),
     type: notEmpty(proto.type),
     data: proto.data,
@@ -47,7 +46,6 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
-    resourceSignature,
     fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField),
   };
 }
@@ -72,8 +70,6 @@ function protoToError(proto: Resource): OptionalResourceId {
 }
 
 export function protoToField(proto: Field): FieldData {
-  const valueSignature = toResourceSignature(proto.valueSignature);
-  const errorSignature = toResourceSignature(proto.errorSignature);
   return {
     name: notEmpty(proto.id?.fieldName),
     type: protoToFieldType(proto.type),
@@ -81,8 +77,6 @@ export function protoToField(proto: Field): FieldData {
     value: protoIdToOptionalResourceId(proto.value, proto.valueSignature),
     error: protoIdToOptionalResourceId(proto.error, proto.errorSignature),
     valueIsFinal: proto.valueIsFinal,
-    valueSignature,
-    errorSignature,
   };
 }
 

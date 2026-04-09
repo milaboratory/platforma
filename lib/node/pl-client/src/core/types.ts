@@ -7,9 +7,6 @@ type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
 /** Opaque authorization signature attached to a resource. */
 declare const __resource_signature_type__: unique symbol;
 export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
-
-export type ResourceId = SignedResourceId
-
 /** Null resource id */
 export type NullResourceId = BrandResourceId<"null">;
 
@@ -23,6 +20,8 @@ export type SignedResourceId = {
   id: GlobalResourceId,
   signature?: ResourceSignature
 }
+
+export type ResourceId = SignedResourceId
 
 /** Any non-null resource id */
 export type AnyResourceId = ResourceId | LocalResourceId;
@@ -122,9 +121,6 @@ export type BasicResourceData = {
   /** This value is derived from resource state by the server and can be used as
    * a robust criteria to determine resource is in final state. */
   readonly final: boolean;
-
-  /** Signature for this resource, used for authorization in subsequent requests. */
-  readonly resourceSignature?: ResourceSignature;
 };
 
 export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
@@ -139,7 +135,6 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
-    resourceSignature,
   } = rd;
   return {
     id,
@@ -152,7 +147,6 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
     outputsLocked,
     resourceReady,
     final,
-    resourceSignature,
   };
 }
 
@@ -177,11 +171,6 @@ export type FieldData = {
 
   /** True if value the fields points to is in final state. */
   readonly valueIsFinal: boolean;
-
-  /** Signature for the value resource, inheriting parent resource's color. */
-  readonly valueSignature?: ResourceSignature;
-  /** Signature for the error resource, inheriting parent resource's color. */
-  readonly errorSignature?: ResourceSignature;
 };
 
 //

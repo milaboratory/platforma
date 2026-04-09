@@ -350,11 +350,6 @@ export class PlTransaction {
     return { errorResourceId: resourceId, errorResourceSignature: resourceSignature };
   }
 
-  private storeSignaturesFromResourceData(_result: BasicResourceData | ResourceData): void {
-    // Signatures are now embedded in ResourceId objects (via protoToResource/protoToField).
-    // Local ID signatures are stored directly in createResource.
-  }
-
   /** Set default color proof for subsequent resource creation requests */
   public setDefaultColor(colorProof: ColorProof): void {
     this.defaultColorProof = colorProof;
@@ -476,11 +471,7 @@ export class PlTransaction {
           loadFields,
         },
       },
-      (r) => {
-        const result = protoToResource(notEmpty(r.resourceGetSingleton.resource));
-        this.storeSignaturesFromResourceData(result);
-        return result;
-      },
+      (r) => protoToResource(notEmpty(r.resourceGetSingleton.resource)),
     );
   }
 

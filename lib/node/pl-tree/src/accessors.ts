@@ -7,7 +7,6 @@ import type {
 } from "@milaboratories/computable";
 import type {
   ResourceId,
-  ResourceSignature,
   ResourceType,
   OptionalResourceId,
 } from "@milaboratories/pl-client";
@@ -157,7 +156,6 @@ export class PlTreeEntryAccessor {
 export type ResourceInfo = {
   readonly id: ResourceId;
   readonly type: ResourceType;
-  readonly resourceSignature?: ResourceSignature;
 };
 
 /**
@@ -205,7 +203,6 @@ export class PlTreeNodeAccessor {
     return {
       id: this.id,
       type: this.resourceType,
-      resourceSignature: this.resource.resourceSignature,
     };
   }
 

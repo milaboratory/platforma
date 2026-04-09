@@ -56,7 +56,7 @@ export class ClientProgress {
 
   /** getStatus gets a progress status by given rId and rType. */
   async getStatus(
-    { id, type, resourceSignature }: ResourceInfo,
+    { id, type }: ResourceInfo,
     options?: RpcOptions,
   ): Promise<ProgressStatus> {
     const client = this.wire.get();
@@ -66,7 +66,7 @@ export class ClientProgress {
       report = notEmpty(
         (
           await client.getStatus(
-            { resourceId: id.id, resourceSignature },
+            { resourceId: id.id, resourceSignature: id.signature },
             addRTypeToMetadata(type, options),
           ).response
         ).report,
@@ -76,7 +76,7 @@ export class ClientProgress {
         await client.POST("/v1/get-progress", {
           body: {
             resourceId: id.id.toString(),
-            resourceSignature: signatureToBase64(resourceSignature),
+            resourceSignature: signatureToBase64(id.signature),
           },
           headers: { ...createRTypeRoutingHeader(type) },
         })

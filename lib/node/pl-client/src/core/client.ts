@@ -4,7 +4,7 @@ import { LLPlClient } from "./ll_client";
 import type { AnyResourceRef, SignatureResolver } from "./transaction";
 import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
 import { createHash } from "node:crypto";
-import type { GlobalResourceId, OptionalResourceId, ResourceId, ResourceSignature } from "./types";
+import type { GlobalResourceId, OptionalResourceId, ResourceId } from "./types";
 import {
   bigintToResourceId,
   ensureResourceIdNotNull,
@@ -97,9 +97,6 @@ export class PlClient {
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
   private readonly resourceDataCache: LRUCache<GlobalResourceId, ResourceDataCacheRecord>;
-
-  /** Root signature (user's actual root, used as default color proof) */
-  private _rootSignature?: ResourceSignature;
 
   private constructor(
     configOrAddress: PlClientConfig | string,
@@ -237,13 +234,14 @@ export class PlClient {
 
     // Try ListUserResources first (new backend, gRPC only)
     let rootFromServer: ResourceId | undefined;
-    let rootSignature: ResourceSignature | undefined;
     try {
       const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
-          rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
-          rootSignature = toResourceSignature(msg.entry.userRoot.resourceSignature);
+          rootFromServer = bigintToResourceId(
+            msg.entry.userRoot.resourceId,
+            toResourceSignature(msg.entry.userRoot.resourceSignature),
+          );
           break;
         }
       }
@@ -253,10 +251,6 @@ export class PlClient {
     }
 
     if (rootFromServer !== undefined) {
-      if (rootSignature && rootSignature.length > 0) {
-        this._rootSignature = rootSignature;
-      }
-
       // New path: server created/returned the root
       if (this.conf.alternativeRoot === undefined) {
         this._clientRoot = rootFromServer;
@@ -279,8 +273,8 @@ export class PlClient {
 
             return await altRoot.globalId;
           },
-          rootSignature !== undefined
-            ? { signatureResolver: (id) => (id === rootFromServer ? rootSignature : undefined) }
+          rootFromServer.signature !== undefined
+            ? { signatureResolver: (id) => (id.id === rootFromServer!.id ? rootFromServer!.signature : undefined) }
             : undefined,
         );
       }
@@ -363,8 +357,8 @@ export class PlClient {
 
         // Auto-set default color proof so that resource creation (write TXs)
         // and name lookups (read TXs) carry the correct access color.
-        if (!isNullResourceId(clientRoot) && this._rootSignature) {
-          tx.setDefaultColor(this._rootSignature);
+        if (!isNullResourceId(clientRoot) && clientRoot.signature && writable) {
+          tx.setDefaultColor(clientRoot.signature);
         }
 
         let ok = false;
