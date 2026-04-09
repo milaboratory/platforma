@@ -1,6 +1,7 @@
 import type {
   AxisId,
   CanonicalizedJson,
+  FilterSpecNode,
   PColumn,
   PObjectId,
   PTableColumnId,
@@ -18,10 +19,10 @@ import {
   parseJson,
   uniqueBy,
 } from "@milaboratories/pl-model-common";
-import { collectFilterSpecColumns } from "../../../filters/traverse";
+import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
-import type { PlDataTableFilters, PlDataTableModel } from "../typesV5";
+import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSnapshot, MatchingMode } from "../../../columns";
@@ -37,12 +38,12 @@ import {
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverColumns, type DiscoveredColumnOptions } from "./discoverColumns";
-import { isNil, type Nil } from "@milaboratories/helpers";
+import { isNil, throwError, type Nil } from "@milaboratories/helpers";
 
 export type createPlDataTableOptionsV3 = DiscoveredColumnOptions & {
+  coreJoinType?: "inner" | "full";
   filters?: PlDataTableFilters;
   sorting?: PTableSorting[];
-  coreJoinType?: "inner" | "full";
 
   tableState?: PlDataTableStateV2;
   labelsOptions?: DeriveLabelsOptions;
@@ -89,6 +90,8 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const discovered = discoverColumns(ctx, options);
   if (discovered === undefined || discovered.length === 0) return undefined;
 
+  const idMapping = buildOriginalToDiscoveredIdMapping(discovered);
+
   const splited = splitDiscoveredColumns(discovered);
   const resolved = resolveDiscoveredColumns(splited, discovered);
 
@@ -119,10 +122,16 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
-  const filters = mergeFilters(state.pTableParams.filters, options.filters);
+  const filters = remapFilterColumnIds(
+    mergeFilters(state.pTableParams.filters, options.filters),
+    idMapping,
+  );
   validateFilters(filters, columnIsAvailable);
 
-  const sorting = resolveSorting(state.pTableParams.sorting, options.sorting);
+  const sorting = remapSortingColumnIds(
+    resolveSorting(state.pTableParams.sorting, options.sorting),
+    idMapping,
+  );
   validateSorting(sorting, columnIsAvailable);
 
   const anchorColumnIds = new Set<PObjectId>(
@@ -286,7 +295,7 @@ function annotateColumnGroups(
 /** Build an index of all valid column IDs (axes + columns) for filter/sorting validation. */
 function createColumnValidationById(fullColumns: TableColumn[]) {
   const axisIds = uniqueBy(
-    fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a))),
+    fullColumns.flatMap((c) => c.spec.axesSpec.map(getAxisId)),
     (a) => canonicalizeJson<AxisId>(a),
   );
 
@@ -297,7 +306,9 @@ function createColumnValidationById(fullColumns: TableColumn[]) {
 
   const validIdSet = new Set(allIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
 
-  return (id: string): boolean => validIdSet.has(id as CanonicalizedJson<PTableColumnId>);
+  return (id: string): boolean => {
+    return validIdSet.has(id as CanonicalizedJson<PTableColumnId>);
+  };
 }
 
 /** Merge filters from table state and options into a single filter spec. */
@@ -404,4 +415,65 @@ function resolveSnapshot(
   snap: ColumnSnapshot<PObjectId>,
 ): PColumn<undefined | PColumnDataUniversal> {
   return { id: snap.id, spec: snap.spec, data: snap.data?.get() };
+}
+
+/** Build a mapping from originalId to discovered id (first occurrence wins). */
+function buildOriginalToDiscoveredIdMapping(
+  discovered: DiscoveredColumn<SUniversalPColumnId>[],
+): Map<PObjectId, PObjectId> {
+  return discovered.reduce(
+    (acc, dc) => (acc.has(dc.originalId) ? acc : acc.set(dc.originalId, dc.id)),
+    new Map<PObjectId, PObjectId>(),
+  );
+}
+
+/** Remap a PTableColumnId using original→discovered mapping. */
+function remapPTableColumnId(
+  columnId: PTableColumnId,
+  mapping: Map<PObjectId, PObjectId>,
+): PTableColumnId {
+  return columnId.type === "column"
+    ? {
+        type: "column",
+        id:
+          mapping.get(columnId.id) ??
+          throwError(
+            `Column ID "${columnId.id}" not found in mapping ${JSON.stringify([...mapping.entries()])}`,
+          ),
+      }
+    : columnId;
+}
+
+/** Remap column references in sorting entries. */
+function remapSortingColumnIds(
+  sorting: PTableSorting[],
+  mapping: Map<PObjectId, PObjectId>,
+): PTableSorting[] {
+  return sorting.map((s) => ({ ...s, column: remapPTableColumnId(s.column, mapping) }));
+}
+
+type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
+
+/** Remap column references in a filter tree. */
+function remapFilterColumnIds(
+  filters: Nil | PlDataTableFilters,
+  mapping: Map<PObjectId, PObjectId>,
+): Nil | PlDataTableFilters {
+  if (isNil(filters)) return filters;
+
+  const remapRef = (ref: CanonicalizedJson<PTableColumnId>): CanonicalizedJson<PTableColumnId> =>
+    canonicalizeJson(remapPTableColumnId(parseJson(ref), mapping));
+
+  return traverseFilterSpec(filters, {
+    leaf: (leaf): PlDataTableFilterNode => {
+      if (leaf.type === undefined) return leaf;
+      const result = { ...leaf };
+      if ("column" in result) result.column = remapRef(result.column);
+      if ("rhs" in result) result.rhs = remapRef(result.rhs);
+      return result;
+    },
+    and: (results): PlDataTableFilterNode => ({ type: "and", filters: results }),
+    or: (results): PlDataTableFilterNode => ({ type: "or", filters: results }),
+    not: (result): PlDataTableFilterNode => ({ type: "not", filter: result }),
+  }) as PlDataTableFilters;
 }

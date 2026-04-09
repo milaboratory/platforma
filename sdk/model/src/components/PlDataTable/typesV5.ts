@@ -63,9 +63,10 @@ export type PlDataTableSheetState = {
 };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
-export type PlDataTableFilters = RootFilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>;
+export type PlDataTableFilterSpecLeaf = FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>;
+export type PlDataTableFilters = RootFilterSpec<PlDataTableFilterSpecLeaf>;
 export type PlDataTableFiltersWithMeta = RootFilterSpec<
-  FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>,
+  PlDataTableFilterSpecLeaf,
   { id: number; isExpanded?: boolean; source?: "table-filter" | "table-search" }
 >;
 

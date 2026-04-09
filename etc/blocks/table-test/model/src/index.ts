@@ -2,6 +2,7 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PObjectId,
+  PlDataTableFilters,
   createPlDataTable,
   createPlDataTableStateV2,
   createPlDataTableV3,
@@ -58,11 +59,25 @@ export const platforma = BlockModelV3.create(blockDataModel)
       },
       sorting: [
         {
-          column: { type: "column", id: "value" as PObjectId },
+          column: {
+            type: "column",
+            id: '{"name":"value","resolvePath":["main","tableFrame"]}' as PObjectId,
+          },
           ascending: true,
           naAndAbsentAreLeastValues: true,
         },
       ],
+      filters: {
+        type: "and",
+        filters: [
+          {
+            type: "greaterThan",
+            column:
+              '{"type":"column","id":"{\\"name\\":\\"value\\",\\"resolvePath\\":[\\"main\\",\\"tableFrame\\"]}"}',
+            x: 11,
+          },
+        ],
+      } as PlDataTableFilters,
 
       labelsOptions: {
         // Custom linker label formatter to verify linker path labels in the UI.
