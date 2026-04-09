@@ -113,6 +113,7 @@ export class PlMcpServer {
 
     this.httpServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
       try {
+        // Origin validation — only allow localhost
         if (req.headers.origin !== undefined) {
           try {
             const origin = new URL(req.headers.origin);
@@ -128,44 +129,35 @@ export class PlMcpServer {
           }
         }
 
+        // Secret path check
         if (req.url !== expectedPath) {
           res.writeHead(404, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Not Found" }));
           return;
         }
 
+        // Route to existing session transport
         const sessionId = req.headers["mcp-session-id"] as string | undefined;
-        const existingTransport = sessionId ? this.transports.get(sessionId) : undefined;
-        if (existingTransport) {
-          await existingTransport.handleRequest(req, res);
+        if (sessionId && this.transports.has(sessionId)) {
+          await this.transports.get(sessionId)!.handleRequest(req, res);
           return;
         }
 
-        if (req.method === "POST") {
-          const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-          });
-
-          let closed = false;
-          transport.onclose = () => {
-            closed = true;
-            const sid = transport.sessionId;
-            if (sid) this.transports.delete(sid);
-          };
-
-          const server = this.createMcpServer();
-          await server.connect(transport);
-          await transport.handleRequest(req, res);
-
-          // Store after handleRequest so sessionId is assigned.
-          // Guard against storing an already-closed transport (race condition).
+        // New session — create transport and connect MCP server
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+        });
+        transport.onclose = () => {
           const sid = transport.sessionId;
-          if (sid && !closed) this.transports.set(sid, transport);
-          return;
-        }
+          if (sid) this.transports.delete(sid);
+        };
 
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Bad Request: no valid session" }));
+        const server = this.createMcpServer();
+        await server.connect(transport);
+        await transport.handleRequest(req, res);
+
+        const sid = transport.sessionId;
+        if (sid) this.transports.set(sid, transport);
       } catch {
         if (!res.headersSent) {
           res.writeHead(500, { "Content-Type": "application/json" });
@@ -188,7 +180,12 @@ export class PlMcpServer {
         });
         return;
       } catch (err: unknown) {
-        if ((err as { code?: string }).code === "EADDRINUSE" && attempt < maxRetries - 1) {
+        if (
+          err instanceof Error &&
+          "code" in err &&
+          err.code === "EADDRINUSE" &&
+          attempt < maxRetries - 1
+        ) {
           server.removeAllListeners();
           this.httpServer = createServer(requestHandler);
           this.port++;
