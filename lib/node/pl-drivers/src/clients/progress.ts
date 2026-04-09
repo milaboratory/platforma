@@ -66,7 +66,7 @@ export class ClientProgress {
       report = notEmpty(
         (
           await client.getStatus(
-            { resourceId: id, resourceSignature },
+            { resourceId: id.id, resourceSignature },
             addRTypeToMetadata(type, options),
           ).response
         ).report,
@@ -75,7 +75,7 @@ export class ClientProgress {
       const resp = (
         await client.POST("/v1/get-progress", {
           body: {
-            resourceId: id.toString(),
+            resourceId: id.id.toString(),
             resourceSignature: signatureToBase64(resourceSignature),
           },
           headers: { ...createRTypeRoutingHeader(type) },

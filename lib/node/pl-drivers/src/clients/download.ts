@@ -140,14 +140,14 @@ export class ClientDownload {
     const client = this.wire.get();
     if (client instanceof DownloadClient) {
       return await client.getDownloadURL(
-        { resourceId: id, resourceSignature, isInternalUse: false },
+        { resourceId: id.id, resourceSignature, isInternalUse: false },
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
       return (
         await client.POST("/v1/get-download-url", {
           body: {
-            resourceId: id.toString(),
+            resourceId: id.id.toString(),
             resourceSignature: signatureToBase64(resourceSignature),
             isInternalUse: false,
           },

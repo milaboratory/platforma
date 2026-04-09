@@ -13,10 +13,10 @@ export function newLogHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHand
   const sigStr = signatureToBase64Url(rInfo.resourceSignature);
   const resSig = sigStr ? `/${sigStr}` : "";
   if (live) {
-    return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}${resSig}` as sdk.LiveLogHandle;
+    return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${rInfo.id.id}${resSig}` as sdk.LiveLogHandle;
   }
 
-  return `log+ready://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}${resSig}` as sdk.ReadyLogHandle;
+  return `log+ready://log/${rInfo.type.name}/${rInfo.type.version}/${rInfo.id.id}${resSig}` as sdk.ReadyLogHandle;
 }
 
 /** Handle of the live logs of a program.

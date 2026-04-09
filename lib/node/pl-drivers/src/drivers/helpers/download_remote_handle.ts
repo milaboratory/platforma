@@ -19,7 +19,7 @@ export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
   signer: Signer,
 ): RemoteBlobHandle {
-  let content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}/${getSize(rInfo)}`;
+  let content = `${rInfo.type.name}/${rInfo.type.version}/${rInfo.id.id}/${getSize(rInfo)}`;
   const sigStr = signatureToBase64Url(rInfo.resourceSignature);
   if (sigStr) {
     content += `/${sigStr}`;

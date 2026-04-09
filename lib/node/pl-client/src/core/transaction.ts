@@ -3,6 +3,7 @@
 import type {
   AnyResourceId,
   ColorProof,
+  GlobalResourceId,
   LocalResourceId,
   OptionalResourceId,
   BasicResourceData,
@@ -94,11 +95,18 @@ export function isField(ref: AnyRef): ref is AnyFieldRef {
 }
 
 export function isResource(ref: AnyRef): ref is AnyResourceRef {
-  return typeof ref === "bigint" || isResourceRef(ref);
+  if (typeof ref === "bigint") return true; // LocalResourceId or NullResourceId
+  return isResourceRef(ref) || isResourceId(ref);
 }
 
 export function isResourceId(ref: AnyRef): ref is ResourceId {
-  return typeof ref === "bigint" && !isLocalResourceId(ref) && !isNullResourceId(ref);
+  return (
+    typeof ref === "object" &&
+    ref !== null &&
+    "id" in ref &&
+    !("globalId" in ref) &&
+    !("resourceId" in ref)
+  );
 }
 
 export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
@@ -106,7 +114,12 @@ export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
 }
 
 export function isResourceRef(ref: AnyRef): ref is ResourceRef {
-  return typeof ref !== "bigint" && ref.hasOwnProperty("globalId") && ref.hasOwnProperty("localId");
+  return (
+    typeof ref === "object" &&
+    ref !== null &&
+    ref.hasOwnProperty("globalId") &&
+    ref.hasOwnProperty("localId")
+  );
 }
 
 
@@ -154,7 +167,7 @@ export type SignatureResolver = (id: ResourceId) => ResourceSignature | undefine
 export type PlTransactionOptions = {
   finalPredicate: FinalResourceDataPredicate;
   signatureResolver?: SignatureResolver;
-  resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  resourceDataCache: LRUCache<GlobalResourceId, ResourceDataCacheRecord>;
   enableFormattedErrors?: boolean;
 };
 
@@ -175,8 +188,8 @@ export class PlTransaction {
 
   private localResourceIdCounter = 0;
 
-  /** Maps resource ids (both local and global) to their signatures received from the server */
-  private readonly signatureStore = new Map<AnyResourceId, ResourceSignature>();
+  /** Maps local resource ids to their signatures until the resource is globalized */
+  private readonly signatureStore = new Map<bigint, ResourceSignature>();
 
   /** Default color proof to include in resource creation requests */
   private defaultColorProof?: ColorProof;
@@ -200,7 +213,7 @@ export class PlTransaction {
   }
 
   private readonly finalPredicate: FinalResourceDataPredicate;
-  private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  private readonly sharedResourceDataCache: LRUCache<GlobalResourceId, ResourceDataCacheRecord>;
   private readonly signatureResolver?: SignatureResolver;
   private readonly enableFormattedErrors: boolean;
 
@@ -301,7 +314,7 @@ export class PlTransaction {
     void this.track(this.sendVoidSync(r));
   }
 
-  private storeSignature(id: AnyResourceId, sig?: Uint8Array): void {
+  private storeSignature(id: LocalResourceId, sig?: Uint8Array): void {
     const rs = toResourceSignature(sig);
     if (rs && !this.signatureStore.has(id)) {
       this.signatureStore.set(id, rs);
@@ -309,38 +322,37 @@ export class PlTransaction {
   }
 
   private getSignature(rId: AnyResourceId): ResourceSignature | undefined {
-    return (
-      this.signatureStore.get(rId) ??
-      (!isLocalResourceId(rId) ? this.signatureResolver?.(rId as ResourceId) : undefined)
-    );
+    if (typeof rId !== "bigint") {
+      // ResourceId (object): prefer embedded signature, then resolver
+      return rId.signature ?? this.signatureStore.get(rId.id) ?? this.signatureResolver?.(rId);
+    }
+    // LocalResourceId: look in store
+    return this.signatureStore.get(rId);
   }
 
-  private toSignedResourceId(rId: AnyResourceRef): { resourceId: AnyResourceId; resourceSignature?: ResourceSignature } {
+  private toSignedResourceId(rId: AnyResourceRef): { resourceId: bigint; resourceSignature?: ResourceSignature } {
     const resourceId = toResourceId(rId);
-    return { resourceId, resourceSignature: this.getSignature(resourceId) };
+    const rawId: bigint = typeof resourceId === "bigint" ? resourceId : resourceId.id;
+    return { resourceId: rawId, resourceSignature: this.getSignature(resourceId) };
   }
 
-  private toSignedFieldId(fId: AnyFieldRef): { resourceId: AnyResourceId; resourceSignature?: ResourceSignature; fieldName: string } {
+  private toSignedFieldId(fId: AnyFieldRef): { resourceId: bigint; resourceSignature?: ResourceSignature; fieldName: string } {
     const base = toFieldId(fId);
-    return { resourceId: base.resourceId, fieldName: base.fieldName, resourceSignature: this.getSignature(base.resourceId) };
+    const rawId: bigint = typeof base.resourceId === "bigint" ? base.resourceId : base.resourceId.id;
+    return { resourceId: rawId, fieldName: base.fieldName, resourceSignature: this.getSignature(base.resourceId) };
   }
 
   private toSignedErrorRef(rId: AnyResourceRef): {
-    errorResourceId: AnyResourceId;
+    errorResourceId: bigint;
     errorResourceSignature?: ResourceSignature;
   } {
     const { resourceId, resourceSignature } = this.toSignedResourceId(rId);
     return { errorResourceId: resourceId, errorResourceSignature: resourceSignature };
   }
 
-  private storeSignaturesFromResourceData(result: BasicResourceData | ResourceData): void {
-    this.storeSignature(result.id, result.resourceSignature);
-    if ("fields" in result && result.fields) {
-      for (const f of result.fields) {
-        if (!isNullResourceId(f.value)) this.storeSignature(f.value, f.valueSignature);
-        if (!isNullResourceId(f.error)) this.storeSignature(f.error, f.errorSignature);
-      }
-    }
+  private storeSignaturesFromResourceData(_result: BasicResourceData | ResourceData): void {
+    // Signatures are now embedded in ResourceId objects (via protoToResource/protoToField).
+    // Local ID signatures are stored directly in createResource.
   }
 
   /** Set default color proof for subsequent resource creation requests */
@@ -481,13 +493,12 @@ export class PlTransaction {
     const localId = this.nextLocalResourceId(root);
 
     const globalId = this.sendSingleAndParse(req(localId), (r) => {
-      const id = parser(r) as ResourceId;
-      if (sigExtractor) {
-        const sig = sigExtractor(r);
-        this.storeSignature(id, sig);
+      const rawId = parser(r);
+      const sig = sigExtractor ? toResourceSignature(sigExtractor(r)) : undefined;
+      if (sig) {
         this.storeSignature(localId, sig);
       }
-      return id;
+      return { id: rawId as GlobalResourceId, signature: sig };
     });
 
     void this.track(globalId);
@@ -610,9 +621,10 @@ export class PlTransaction {
     return this.sendSingleAndParse(
       { oneofKind: "resourceNameGet", resourceNameGet: { name } },
       (r) => {
-        const id = ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId);
-        this.storeSignature(id, r.resourceNameGet.resourceSignature);
-        return id;
+        const rawId = r.resourceNameGet.resourceId;
+        if (rawId === 0n) throw new Error("null resource id from getResourceByName");
+        const sig = toResourceSignature(r.resourceNameGet.resourceSignature);
+        return { id: rawId as GlobalResourceId, signature: sig };
       },
     );
   }
@@ -674,20 +686,18 @@ export class PlTransaction {
     ignoreCache: boolean = false,
   ): Promise<BasicResourceData | ResourceData> {
     return this.track(async () => {
-      if (!ignoreCache && !isResourceRef(rId) && !isLocalResourceId(rId)) {
+      if (!ignoreCache && isResourceId(rId)) {
         // checking if we can return result from cache
-        const fromCache = this.sharedResourceDataCache.get(rId);
+        const fromCache = this.sharedResourceDataCache.get(rId.id);
         if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
           if (!loadFields) {
             this._stat.rGetDataCacheHits++;
             this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
-            this.storeSignaturesFromResourceData(fromCache.basicData);
             return fromCache.basicData;
           } else if (fromCache.data) {
             this._stat.rGetDataCacheHits++;
             this._stat.rGetDataCacheBytes += fromCache.basicData.data?.length ?? 0;
             this._stat.rGetDataCacheFields += fromCache.data.fields.length;
-            this.storeSignaturesFromResourceData(fromCache.data);
             return fromCache.data;
           }
         }
@@ -701,11 +711,7 @@ export class PlTransaction {
             loadFields: loadFields,
           },
         },
-        (r) => {
-          const rd = protoToResource(notEmpty(r.resourceGet.resource));
-          this.storeSignaturesFromResourceData(rd);
-          return rd;
-        },
+        (r) => protoToResource(notEmpty(r.resourceGet.resource)),
       );
 
       this._stat.rGetDataNetRequests++;
@@ -714,9 +720,9 @@ export class PlTransaction {
 
       // we will cache only final resource data states
       // caching result even if we were ignore the cache
-      if (!isResourceRef(rId) && !isLocalResourceId(rId) && this.finalPredicate(result)) {
+      if (isResourceId(rId) && this.finalPredicate(result)) {
         deepFreeze(result);
-        const fromCache = this.sharedResourceDataCache.get(rId);
+        const fromCache = this.sharedResourceDataCache.get(rId.id);
         if (fromCache) {
           if (loadFields && !fromCache.data) {
             fromCache.data = result;
@@ -727,13 +733,13 @@ export class PlTransaction {
           const basicData = extractBasicResourceData(result);
           deepFreeze(basicData);
           if (loadFields)
-            this.sharedResourceDataCache.set(rId, {
+            this.sharedResourceDataCache.set(rId.id, {
               basicData,
               data: result,
               cacheTxOpenTimestamp: this.txOpenTimestamp,
             });
           else
-            this.sharedResourceDataCache.set(rId, {
+            this.sharedResourceDataCache.set(rId.id, {
               basicData,
               data: undefined,
               cacheTxOpenTimestamp: this.txOpenTimestamp,
@@ -769,8 +775,8 @@ export class PlTransaction {
       );
 
       // cleaning cache record if resource was removed from the db
-      if (result === undefined && !isResourceRef(rId) && !isLocalResourceId(rId))
-        this.sharedResourceDataCache.delete(rId);
+      if (result === undefined && isResourceId(rId))
+        this.sharedResourceDataCache.delete(rId.id);
 
       return result;
     });
@@ -883,12 +889,7 @@ export class PlTransaction {
     this._stat.fieldsGet++;
     return this.sendSingleAndParse(
       { oneofKind: "fieldGet", fieldGet: { field: this.toSignedFieldId(fId) } },
-      (r) => {
-        const fd = protoToField(notEmpty(r.fieldGet.field));
-        if (!isNullResourceId(fd.value)) this.storeSignature(fd.value, fd.valueSignature);
-        if (!isNullResourceId(fd.error)) this.storeSignature(fd.error, fd.errorSignature);
-        return fd;
-      },
+      (r) => protoToField(notEmpty(r.fieldGet.field)),
     );
   }
 

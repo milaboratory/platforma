@@ -53,7 +53,7 @@ export class ClientLogs {
       return (
         await client.lastLines(
           {
-            resourceId: rId,
+            resourceId: rId.id,
             resourceSignature: rSig,
             lineCount: lineCount,
             offset: offsetBytes,
@@ -67,7 +67,7 @@ export class ClientLogs {
     const resp = (
       await client.POST("/v1/last-lines", {
         body: {
-          resourceId: rId.toString(),
+          resourceId: rId.id.toString(),
           resourceSignature: signatureToBase64(rSig),
           lineCount: lineCount,
           offset: offsetBytes.toString(),
@@ -101,7 +101,7 @@ export class ClientLogs {
       return (
         await client.readText(
           {
-            resourceId: notEmpty(rId),
+            resourceId: rId.id,
             resourceSignature: rSig,
             readLimit: BigInt(lineCount),
             offset: offsetBytes,
@@ -115,7 +115,7 @@ export class ClientLogs {
     const resp = (
       await client.POST("/v1/read/text", {
         body: {
-          resourceId: rId.toString(),
+          resourceId: rId.id.toString(),
           resourceSignature: signatureToBase64(rSig),
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),

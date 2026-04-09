@@ -55,7 +55,7 @@ export async function createProjectList(
         rid: prj.id,
         created: new Date(created),
         lastModified: new Date(lastModified),
-        opened: oProjects.indexOf(prj.id) >= 0,
+        opened: oProjects.some((id) => id.id === prj.id.id),
         meta,
       });
     }

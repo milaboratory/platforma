@@ -1,4 +1,4 @@
-import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import type { GlobalResourceId, PlClient, ResourceId } from "@milaboratories/pl-client";
 import {
   field,
   isNotNullResourceId,
@@ -216,7 +216,7 @@ export class MiddleLayer {
   // Projects
   //
 
-  private readonly openedProjectsByRid = new Map<ResourceId, Project>();
+  private readonly openedProjectsByRid = new Map<GlobalResourceId, { rid: ResourceId; project: Project }>();
 
   private async projectIdToResourceId(id: string): Promise<ResourceId> {
     return await this.pl.withReadTx("Project id to resource id", async (tx) => {
@@ -234,31 +234,31 @@ export class MiddleLayer {
   /** Opens a project, and starts corresponding project maintenance loop. */
   public async openProject(id: ResourceId | string) {
     const rid = await this.ensureProjectRid(id);
-    if (this.openedProjectsByRid.has(rid)) throw new Error(`Project ${rid} already opened`);
-    this.openedProjectsByRid.set(rid, await Project.init(this.env, rid));
-    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
+    if (this.openedProjectsByRid.has(rid.id)) throw new Error(`Project ${rid} already opened`);
+    this.openedProjectsByRid.set(rid.id, { rid, project: await Project.init(this.env, rid) });
+    this.openedProjectsList.setValue([...this.openedProjectsByRid.values()].map((v) => v.rid));
   }
 
   /** Closes the project, and deallocate all corresponding resources. */
   public async closeProject(rid: ResourceId): Promise<void> {
-    const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
-    this.openedProjectsByRid.delete(rid);
-    await prj.destroy();
-    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
+    const entry = this.openedProjectsByRid.get(rid.id);
+    if (entry === undefined) throw new Error(`Project ${rid} not found among opened projects`);
+    this.openedProjectsByRid.delete(rid.id);
+    await entry.project.destroy();
+    this.openedProjectsList.setValue([...this.openedProjectsByRid.values()].map((v) => v.rid));
   }
 
   /** Returns a project access object for opened project, for the given project
    * resource id. */
   public getOpenedProject(rid: ResourceId): Project {
-    const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
-    return prj;
+    const entry = this.openedProjectsByRid.get(rid.id);
+    if (entry === undefined) throw new Error(`Project ${rid} not found among opened projects`);
+    return entry.project;
   }
 
   /** Returns true if project with given resource id is currently opened. */
   public isProjectOpened(rid: ResourceId): boolean {
-    return this.openedProjectsByRid.has(rid);
+    return this.openedProjectsByRid.has(rid.id);
   }
 
   /**
@@ -267,7 +267,7 @@ export class MiddleLayer {
    * them.
    */
   public async close() {
-    await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
+    await Promise.all([...this.openedProjectsByRid.values()].map((entry) => entry.project.destroy()));
     // this.env.quickJs;
     await this.projectListTree.terminate();
     await this.env.dispose();

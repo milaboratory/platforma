@@ -4,18 +4,25 @@ import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 declare const __resource_id_type__: unique symbol;
 type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
 
-/** Brand indicating this resource ID carries a server-issued authorization signature. */
-declare const __signed_resource__: unique symbol;
-type BrandSignedResource<S> = { readonly [__signed_resource__]: S };
+/** Opaque authorization signature attached to a resource. */
+declare const __resource_signature_type__: unique symbol;
+export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
 
-/** Global resource id — always signed (received from server). */
-export type ResourceId = BrandResourceId<"global"> & BrandSignedResource<true>;
+export type ResourceId = SignedResourceId
 
 /** Null resource id */
 export type NullResourceId = BrandResourceId<"null">;
 
+/** Global resource id — always signed (received from server). */
+export type GlobalResourceId = BrandResourceId<"global">
+
 /** Local resource id */
 export type LocalResourceId = BrandResourceId<"local">;
+
+export type SignedResourceId = {
+  id: GlobalResourceId,
+  signature?: ResourceSignature
+}
 
 /** Any non-null resource id */
 export type AnyResourceId = ResourceId | LocalResourceId;
@@ -28,12 +35,12 @@ export type OptionalAnyResourceId = NullResourceId | ResourceId | LocalResourceI
 
 export const NullResourceId = 0n as NullResourceId;
 
-export function isNullResourceId(resourceId: bigint): resourceId is NullResourceId {
-  return resourceId === NullResourceId;
+export function isNullResourceId(resourceId: OptionalAnyResourceId): resourceId is NullResourceId {
+  return typeof resourceId === "bigint" && resourceId === NullResourceId;
 }
 
 export function isNotNullResourceId(resourceId: OptionalResourceId): resourceId is ResourceId {
-  return resourceId !== NullResourceId;
+  return typeof resourceId !== "bigint";
 }
 
 export function ensureResourceIdNotNull(resourceId: OptionalResourceId): ResourceId {
@@ -41,8 +48,9 @@ export function ensureResourceIdNotNull(resourceId: OptionalResourceId): Resourc
   return resourceId;
 }
 
-export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId {
-  return resourceId !== 0n;
+export function isAnyResourceId(resourceId: OptionalAnyResourceId): resourceId is AnyResourceId {
+  if (typeof resourceId === "bigint") return resourceId !== 0n;
+  return true;
 }
 
 // see local / global resource logic below...
@@ -71,10 +79,6 @@ export function resourceTypeToString(rt: ResourceType): string {
 export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): boolean {
   return type1.name === type2.name && type1.version === type2.version;
 }
-
-/** Opaque authorization signature attached to a resource. */
-declare const __resource_signature_type__: unique symbol;
-export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
 
 /** Color proof used for resource creation requests (alias for ResourceSignature). */
 export type ColorProof = ResourceSignature;
@@ -227,8 +231,9 @@ export function createLocalResourceId(
     (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
 }
 
-export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): ResourceId {
-  return ((isRoot ? ResourceIdRootMask : 0n) | unmaskedId) as ResourceId;
+export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint, signature?: ResourceSignature): ResourceId {
+  const id = ((isRoot ? ResourceIdRootMask : 0n) | unmaskedId) as GlobalResourceId;
+  return { id, signature };
 }
 
 export function extractTxId(localResourceId: LocalResourceId): number {
@@ -236,6 +241,7 @@ export function extractTxId(localResourceId: LocalResourceId): number {
 }
 
 export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxId: number): void {
+  if (typeof resourceId !== "bigint") return; // ResourceId (object) is never local
   if (!isLocalResourceId(resourceId)) return;
   if (extractTxId(resourceId) !== expectedTxId)
     throw Error(
@@ -244,21 +250,22 @@ export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxI
 }
 
 export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
-  if (isNullResourceId(resourceId)) return "XX:0x0";
-  if (isLocalResourceId(resourceId))
+  const raw: bigint = typeof resourceId === "bigint" ? resourceId : resourceId.id;
+  if (raw === 0n) return "XX:0x0";
+  if ((raw & ResourceIdLocalMask) !== 0n)
     return (
-      (isRootResourceId(resourceId) ? "R" : "N") +
+      (isRootResourceId(raw) ? "R" : "N") +
       "L:0x" +
-      (LocalIdMask & resourceId).toString(16) +
+      (LocalIdMask & raw).toString(16) +
       "[0x" +
-      extractTxId(resourceId).toString(16) +
+      extractTxId(raw as LocalResourceId).toString(16) +
       "]"
     );
   else
     return (
-      (isRootResourceId(resourceId) ? "R" : "N") +
+      (isRootResourceId(raw) ? "R" : "N") +
       "G:0x" +
-      (NoFlagsIdMask & resourceId).toString(16)
+      (NoFlagsIdMask & raw).toString(16)
     );
 }
 
@@ -276,15 +283,23 @@ export function resourceIdFromString(str: string): OptionalAnyResourceId | undef
 }
 
 /** Converts bigint to global resource id */
-export function bigintToResourceId(resourceId: bigint): ResourceId {
+export function bigintToResourceId(resourceId: bigint, signature?: ResourceSignature): ResourceId {
   if (isLocalResourceId(resourceId))
-    throw new Error(`Local resource id: ${resourceIdToString(resourceId)}`);
-  if (isNullResourceId(resourceId)) throw new Error(`Null resource id.`);
-  return resourceId as ResourceId;
+    throw new Error(`Local resource id: ${resourceIdToString(resourceId as LocalResourceId)}`);
+  if (isNullResourceId(resourceId as NullResourceId)) throw new Error(`Null resource id.`);
+  return { id: resourceId as GlobalResourceId, signature };
 }
 
 export function stringifyWithResourceId(object: unknown): string {
-  return JSON.stringify(object, (key, value) =>
-    typeof value === "bigint" ? resourceIdToString(value as OptionalAnyResourceId) : value,
-  );
+  return JSON.stringify(object, (key, value) => {
+    if (typeof value === "bigint") return resourceIdToString(value as LocalResourceId);
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "id" in value &&
+      typeof (value as { id: unknown }).id === "bigint"
+    )
+      return resourceIdToString(value as ResourceId);
+    return value;
+  });
 }

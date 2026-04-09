@@ -120,7 +120,7 @@ export class Project {
   }
 
   get projectLockId(): string {
-    return "project:" + this.rid.toString();
+    return "project:" + this.rid.id.toString();
   }
 
   private async refreshLoop(): Promise<void> {

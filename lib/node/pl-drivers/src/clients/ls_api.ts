@@ -49,7 +49,7 @@ export class ClientLs {
     if (client instanceof LSClient) {
       return await client.list(
         {
-          resourceId: rInfo.id,
+          resourceId: rInfo.id.id,
           resourceSignature: rInfo.resourceSignature,
           location: path,
         },
@@ -59,7 +59,7 @@ export class ClientLs {
       const resp = (
         await client.POST("/v1/list", {
           body: {
-            resourceId: rInfo.id.toString(),
+            resourceId: rInfo.id.id.toString(),
             resourceSignature: signatureToBase64(rInfo.resourceSignature),
             location: path,
           },
