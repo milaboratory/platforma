@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
@@ -66,18 +67,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).getValue();
-      let data: unknown = undefined;
-      if (state.blockStorage) {
-        try {
-          const parsed =
-            typeof state.blockStorage === "string"
-              ? JSON.parse(state.blockStorage as string)
-              : state.blockStorage;
-          data = (parsed as Record<string, unknown>)?.__data;
-        } catch {
-          data = undefined;
-        }
-      }
+      const data = deriveDataFromStorage(state.blockStorage);
       if (transform) {
         try {
           const result = safeEval(transform, { data, outputs: state.outputs }, transformTimeout);
