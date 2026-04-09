@@ -15,6 +15,7 @@ import type {
   ResourceData,
   ResourceId,
   ResourceKind,
+  GlobalResourceId,
 } from "./types";
 import { NullResourceId, toResourceSignature } from "./types";
 import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
@@ -26,12 +27,18 @@ function resourceIsDeleted(proto: Resource): boolean {
   return proto.deletedTime !== undefined && proto.deletedTime.seconds !== 0n;
 }
 
+function protoIdToOptionalResourceId(id: bigint, signature?: Uint8Array): OptionalResourceId {
+  if (id === 0n) return NullResourceId;
+  return { id: id as GlobalResourceId, signature: toResourceSignature(signature) };
+}
+
 /** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
   if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
+  const resourceSignature = toResourceSignature(proto.resourceSignature);
   return {
-    id: proto.resourceId as ResourceId,
-    originalResourceId: proto.originalResourceId as OptionalResourceId,
+    id: { id: proto.resourceId as GlobalResourceId, signature: resourceSignature },
+    originalResourceId: protoIdToOptionalResourceId(proto.originalResourceId),
     type: notEmpty(proto.type),
     data: proto.data,
     inputsLocked: proto.inputsLocked,
@@ -40,7 +47,7 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
-    resourceSignature: toResourceSignature(proto.resourceSignature),
+    resourceSignature,
     fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField),
   };
 }
@@ -58,19 +65,24 @@ function protoToResourceKind(proto: Resource_Kind): ResourceKind {
 
 function protoToError(proto: Resource): OptionalResourceId {
   const f = proto.fields.find((f) => f?.id?.fieldName === ResourceErrorField);
-  return (f?.error ?? NullResourceId) as OptionalResourceId;
+  if (!f) return NullResourceId;
+  const errId = f.error ?? 0n;
+  if (errId === 0n) return NullResourceId;
+  return { id: errId as GlobalResourceId, signature: toResourceSignature(f.errorSignature) };
 }
 
 export function protoToField(proto: Field): FieldData {
+  const valueSignature = toResourceSignature(proto.valueSignature);
+  const errorSignature = toResourceSignature(proto.errorSignature);
   return {
     name: notEmpty(proto.id?.fieldName),
     type: protoToFieldType(proto.type),
     status: protoToFieldStatus(proto.valueStatus),
-    value: proto.value as OptionalResourceId,
-    error: proto.error as OptionalResourceId,
+    value: protoIdToOptionalResourceId(proto.value, proto.valueSignature),
+    error: protoIdToOptionalResourceId(proto.error, proto.errorSignature),
     valueIsFinal: proto.valueIsFinal,
-    valueSignature: toResourceSignature(proto.valueSignature),
-    errorSignature: toResourceSignature(proto.errorSignature),
+    valueSignature,
+    errorSignature,
   };
 }
 

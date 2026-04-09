@@ -5,7 +5,7 @@ import type { ArchiveFormat } from "@milaboratories/pl-model-common";
 export type Id = string;
 
 export function newId(id: ResourceId, format: ArchiveFormat): Id {
-  return `id:${String(BigInt(id))}-${format}`;
+  return `id:${String(id.id)}-${format}`;
 }
 
 // export function

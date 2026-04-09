@@ -225,6 +225,6 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
   }
 
   private getFilePath(id: ResourceId, format: ArchiveFormat): string {
-    return path.join(this.saveDir, `${String(BigInt(id))}_${format}`);
+    return path.join(this.saveDir, `${String(id.id)}_${format}`);
   }
 }

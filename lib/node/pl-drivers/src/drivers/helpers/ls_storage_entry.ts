@@ -72,7 +72,7 @@ export function isRemoteStorageHandle(
 }
 
 export function createRemoteStorageHandle(name: string, rId: ResourceId): sdk.StorageHandleRemote {
-  return `remote://${name}/${BigInt(rId)}`;
+  return `remote://${name}/${rId.id}`;
 }
 
 function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {

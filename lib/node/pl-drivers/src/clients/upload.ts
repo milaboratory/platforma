@@ -87,7 +87,7 @@ export class ClientUpload {
 
     if (client instanceof UploadClient) {
       const init = (
-        await client.init({ resourceId: id, resourceSignature }, addRTypeToMetadata(type, options))
+        await client.init({ resourceId: id.id, resourceSignature }, addRTypeToMetadata(type, options))
       ).response;
 
       return {
@@ -101,7 +101,7 @@ export class ClientUpload {
     const init = (
       await client.POST("/v1/upload/init", {
         body: {
-          resourceId: id.toString(),
+          resourceId: id.id.toString(),
           resourceSignature: signatureToBase64(resourceSignature),
         },
         headers: { ...createRTypeRoutingHeader(type) },
@@ -133,7 +133,7 @@ export class ClientUpload {
       info = (
         await client.getPartURL(
           {
-            resourceId: id,
+            resourceId: id.id,
             resourceSignature,
             partNumber,
             uploadedPartSize: 0n,
@@ -147,7 +147,7 @@ export class ClientUpload {
       const resp = (
         await client.POST("/v1/upload/get-part-url", {
           body: {
-            resourceId: id.toString(),
+            resourceId: id.id.toString(),
             resourceSignature: signatureToBase64(resourceSignature),
             partNumber: partNumber.toString(),
             uploadedPartSize: "0",
@@ -232,7 +232,7 @@ export class ClientUpload {
     if (client instanceof UploadClient) {
       await client.finalize(
         {
-          resourceId: info.id,
+          resourceId: info.id.id,
           resourceSignature: info.resourceSignature,
           checksumAlgorithm: UploadAPI_ChecksumAlgorithm.UNSPECIFIED,
           checksum: new Uint8Array(0),
@@ -242,7 +242,7 @@ export class ClientUpload {
     } else {
       await client.POST("/v1/upload/finalize", {
         body: {
-          resourceId: info.id.toString(),
+          resourceId: info.id.id.toString(),
           resourceSignature: signatureToBase64(info.resourceSignature),
           checksumAlgorithm: 0,
           checksum: "",
@@ -275,7 +275,7 @@ export class ClientUpload {
     if (client instanceof UploadClient) {
       await client.updateProgress(
         {
-          resourceId: id,
+          resourceId: id.id,
           resourceSignature,
           bytesProcessed,
         },
@@ -286,7 +286,7 @@ export class ClientUpload {
 
     await client.POST("/v1/upload/update-progress", {
       body: {
-        resourceId: id.toString(),
+        resourceId: id.id.toString(),
         resourceSignature: signatureToBase64(resourceSignature),
         bytesProcessed: bytesProcessed.toString(),
       },

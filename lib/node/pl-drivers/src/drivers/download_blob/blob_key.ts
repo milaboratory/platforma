@@ -2,7 +2,7 @@ import { bigintToResourceId, ResourceId } from "@milaboratories/pl-client";
 import * as path from "node:path";
 
 export function blobKey(rId: ResourceId): string {
-  return `${BigInt(rId)}`;
+  return `${rId.id}`;
 }
 
 export function pathToKey(fPath: string): string {

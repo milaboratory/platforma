@@ -4,7 +4,7 @@ import { LLPlClient } from "./ll_client";
 import type { AnyResourceRef, SignatureResolver } from "./transaction";
 import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
 import { createHash } from "node:crypto";
-import type { OptionalResourceId, ResourceId, ResourceSignature } from "./types";
+import type { GlobalResourceId, OptionalResourceId, ResourceId, ResourceSignature } from "./types";
 import {
   bigintToResourceId,
   ensureResourceIdNotNull,
@@ -96,7 +96,7 @@ export class PlClient {
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
-  private readonly resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  private readonly resourceDataCache: LRUCache<GlobalResourceId, ResourceDataCacheRecord>;
 
   /** Root signature (user's actual root, used as default color proof) */
   private _rootSignature?: ResourceSignature;
