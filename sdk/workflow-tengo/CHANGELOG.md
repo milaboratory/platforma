@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.0
+
+### Minor Changes
+
+- aeee41f: GPU minimal support in tengo workflow
+
 ## 5.12.1
 
 ### Patch Changes
