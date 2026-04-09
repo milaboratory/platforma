@@ -1,4 +1,4 @@
 [ -n "$CI" ] && exit 0
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 pnpm fmt
-[ -n "$STAGED" ] && echo "$STAGED" | xargs git add
+if [ -n "$STAGED" ]; then echo "$STAGED" | xargs git add; fi
