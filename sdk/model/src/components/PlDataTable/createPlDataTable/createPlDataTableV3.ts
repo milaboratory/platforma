@@ -134,8 +134,6 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
-  ctx.logInfo(`befor: ${JSON.stringify(options.filters)}`);
-  ctx.logInfo(`after: ${JSON.stringify(remapFilterColumnIds(options.filters, discovered))}`);
   const filters = mergeFilters(
     state.pTableParams.filters,
     remapFilterColumnIds(options.filters, discovered),
