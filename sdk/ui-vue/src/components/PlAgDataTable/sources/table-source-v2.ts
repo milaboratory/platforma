@@ -100,27 +100,21 @@ export async function calculateGridOptions({
   }
 > {
   const stateGeneration = generation.value;
-  const stateChangedError = new Error("table state generation changed");
+  if (stateGeneration !== generation.value) throw new Error("table state generation changed");
 
   // get specs of the full table
-  const specs = await pfDriver.getSpec(model.fullTableHandle);
-  if (stateGeneration !== generation.value) throw stateChangedError;
-
+  const tableSpecs = await pfDriver.getSpec(model.fullTableHandle);
   // get specs of the visible table (with hidden columns omitted)
-  const pt = model.visibleTableHandle;
-  const dataSpecs = await pfDriver.getSpec(pt);
-  if (stateGeneration !== generation.value) throw stateChangedError;
+  const visibleTableSpecs = await pfDriver.getSpec(model.visibleTableHandle);
 
   // create index mapping from full specs to visible subset (hidden columns would have -1)
   const specId = (spec: PTableColumnSpec) =>
     canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
-  const dataSpecsMap = new Map(dataSpecs.entries().map(([i, spec]) => [specId(spec), i]));
+  const dataSpecsMap = new Map(visibleTableSpecs.entries().map(([i, spec]) => [specId(spec), i]));
   const specsToDataSpecsMapping = new Map(
-    specs.entries().map(([i, spec]) => {
-      const dataSpecIdx = dataSpecsMap.get(specId(spec)) ?? -1;
-      if (dataSpecIdx === -1 && spec.type === "axis")
-        throw new Error(`axis ${JSON.stringify(spec.spec)} not present in join result`);
-      return [i, dataSpecIdx];
+    tableSpecs.entries().flatMap(([i, spec]) => {
+      const dataSpecIdx = dataSpecsMap.get(specId(spec));
+      return isNil(dataSpecIdx) ? [] : [[i, dataSpecIdx]];
     }),
   );
 
@@ -142,7 +136,7 @@ export async function calculateGridOptions({
   };
 
   // filter out partitioned axes, label columns and hidden columns
-  let indices = specs
+  let indices = tableSpecs
     .entries()
     .filter(([i, spec]) => {
       switch (spec.type) {
@@ -164,14 +158,14 @@ export async function calculateGridOptions({
 
   // order columns: axes first, then by OrderPriority annotation (higher = further left)
   indices.sort((a, b) => {
-    if (specs[a].type !== specs[b].type) return specs[a].type === "axis" ? -1 : 1;
+    if (tableSpecs[a].type !== tableSpecs[b].type) return tableSpecs[a].type === "axis" ? -1 : 1;
     const aPriority =
-      specs[a].type === "column"
-        ? (readAnnotationJson(specs[a].spec, Annotation.Table.OrderPriority) ?? 0)
+      tableSpecs[a].type === "column"
+        ? (readAnnotationJson(tableSpecs[a].spec, Annotation.Table.OrderPriority) ?? 0)
         : 0;
     const bPriority =
-      specs[b].type === "column"
-        ? (readAnnotationJson(specs[b].spec, Annotation.Table.OrderPriority) ?? 0)
+      tableSpecs[b].type === "column"
+        ? (readAnnotationJson(tableSpecs[b].spec, Annotation.Table.OrderPriority) ?? 0)
         : 0;
     return bPriority - aPriority;
   });
@@ -180,7 +174,7 @@ export async function calculateGridOptions({
   const fields = [...indices];
   // replace axes with label columns
   indices = indices.map((i) => {
-    const spec = specs[i];
+    const spec = tableSpecs[i];
     if (spec.type === "axis") {
       const labelColumnIdx = getLabelColumnIndex(spec.id);
       if (labelColumnIdx !== -1) {
@@ -192,9 +186,9 @@ export async function calculateGridOptions({
   // When no saved state, compute default hidden columns from annotations
   if (isNil(hiddenColIds)) {
     hiddenColIds = fields.reduce<PlTableColumnIdJson[]>((acc, field, i) => {
-      const spec = specs[field];
+      const spec = tableSpecs[field];
       if (spec.type === "column" && isColumnOptional(spec.spec)) {
-        const labeledSpec = specs[indices[i]];
+        const labeledSpec = tableSpecs[indices[i]];
         acc.push(canonicalizeJson<PlTableColumnId>({ source: spec, labeled: labeledSpec }));
       }
       return acc;
@@ -204,12 +198,18 @@ export async function calculateGridOptions({
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
     ...fields.map((field, index) =>
-      makeColDef(field, specs[field], specs[indices[index]], hiddenColIds, cellButtonAxisParams),
+      makeColDef(
+        field,
+        tableSpecs[field],
+        tableSpecs[indices[index]],
+        hiddenColIds,
+        cellButtonAxisParams,
+      ),
     ),
   ];
 
   // mix in indices of skipped axes (axes that were partitioned or replaced with label columns)
-  const axesSpec = specs
+  const axesSpec = tableSpecs
     .values()
     .filter((spec) => spec.type === "axis")
     .map((spec) => spec.spec)
@@ -245,7 +245,7 @@ export async function calculateGridOptions({
       if (stateGeneration !== generation.value) return params.fail();
       try {
         if (rowCount === -1) {
-          const ptShape = await pfDriver.getShape(pt);
+          const ptShape = await pfDriver.getShape(model.visibleTableHandle);
           if (stateGeneration !== generation.value || params.api.isDestroyed())
             return params.fail();
           rowCount = ptShape.rows;
@@ -275,7 +275,7 @@ export async function calculateGridOptions({
         ) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
-            const data = await pfDriver.getData(pt, requestIndices, {
+            const data = await pfDriver.getData(model.visibleTableHandle, requestIndices, {
               offset: params.request.startRow,
               length,
             });
