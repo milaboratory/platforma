@@ -1,4 +1,3 @@
-import { runInNewContext } from "node:vm";
 import type {
   AuthorMarker,
   MiddleLayer,
@@ -23,21 +22,6 @@ export function textResult(data: unknown) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(data) }],
   };
-}
-
-/**
- * Evaluate a JS expression in a sandboxed VM context.
- * The expression has access to the provided variables.
- */
-export function safeEval(
-  expression: string,
-  context: Record<string, unknown>,
-  timeout: number,
-): unknown {
-  return runInNewContext(`(${expression})`, context, {
-    timeout,
-    filename: "transform",
-  });
 }
 
 /** Return an MCP error result with an actionable hint for the AI agent. */

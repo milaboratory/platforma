@@ -13,7 +13,8 @@ import {
 } from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, safeEval, textResult } from "./types";
+import { safeEval } from "./sandbox";
+import { errorResult, textResult } from "./types";
 
 const HEX_HASH_RE = /^[a-f0-9]{64}$/;
 
@@ -277,7 +278,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
 
       if (transform) {
         try {
-          const result = safeEval(
+          const result = await safeEval(
             transform,
             {
               rows,

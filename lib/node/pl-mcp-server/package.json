@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
+    "quickjs-emscripten": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

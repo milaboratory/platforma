@@ -4,7 +4,8 @@ import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
-import { errorResult, safeEval, textResult } from "./types";
+import { safeEval } from "./sandbox";
+import { errorResult, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -96,7 +97,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
 
           if (transform) {
             try {
-              const result = safeEval(
+              const result = await safeEval(
                 transform,
                 {
                   data,

@@ -3,7 +3,8 @@ import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
-import { errorResult, safeEval, textResult } from "./types";
+import { safeEval } from "./sandbox";
+import { errorResult, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -71,7 +72,11 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
       const data = deriveDataFromStorage(state.blockStorage);
       if (transform) {
         try {
-          const result = safeEval(transform, { data, outputs: state.outputs }, transformTimeout);
+          const result = await safeEval(
+            transform,
+            { data, outputs: state.outputs },
+            transformTimeout,
+          );
           return textResult(result);
         } catch (e: unknown) {
           return errorResult(
