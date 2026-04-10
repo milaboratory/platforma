@@ -100,12 +100,14 @@ export async function calculateGridOptions({
   }
 > {
   const stateGeneration = generation.value;
-  if (stateGeneration !== generation.value) throw new Error("table state generation changed");
+  const stateChangedError = new Error("table state generation changed");
 
   // get specs of the full table
   const tableSpecs = await pfDriver.getSpec(model.fullTableHandle);
+  if (stateGeneration !== generation.value) throw stateChangedError;
   // get specs of the visible table (with hidden columns omitted)
   const visibleTableSpecs = await pfDriver.getSpec(model.visibleTableHandle);
+  if (stateGeneration !== generation.value) throw stateChangedError;
 
   // create index mapping from full specs to visible subset (hidden columns would have -1)
   const specId = (spec: PTableColumnSpec) =>
@@ -229,8 +231,8 @@ export async function calculateGridOptions({
   const requestIndices: number[] = [];
   const resultMapping: number[] = [];
   indices.forEach((idx) => {
-    const dataSpecIdx = specsToDataSpecsMapping.get(idx)!;
-    if (dataSpecIdx !== -1) {
+    const dataSpecIdx = specsToDataSpecsMapping.get(idx);
+    if (dataSpecIdx !== undefined) {
       resultMapping.push(requestIndices.length);
       requestIndices.push(dataSpecIdx);
     } else {
