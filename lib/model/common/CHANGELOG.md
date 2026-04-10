@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.31.2
+
+### Patch Changes
+
+- 9c3b6c2: Export isAnyLogHandle type guard and branded log handle types added in the MCP server PR.
+
 ## 1.31.1
 
 ### Patch Changes
