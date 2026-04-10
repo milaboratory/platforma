@@ -1,12 +1,10 @@
-import { computed, type MaybeRefOrGetter, toValue } from "vue";
+import { computed, toValue } from "vue";
 
-export function useFilteredItems<T>(
-  props: MaybeRefOrGetter<{
-    items: T[];
-    query: string;
-    getStrings: (item: T) => Iterable<string>;
-  }>,
-) {
+export function useFilteredItems<T>(props: {
+  items: T[];
+  query: string;
+  getStrings: (item: T) => Iterable<string>;
+}) {
   const result = computed(() => {
     const { items, query, getStrings } = toValue(props);
     const filteredItems: T[] = [];
