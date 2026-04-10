@@ -37,15 +37,15 @@ import {
   withTableVisualAnnotations,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverColumnSnaphots, type DiscoveredColumnOptions } from "./discoverColumns";
+import { discoverTableColumnSnaphots, type DiscoveredTableColumnOptions } from "./discoverColumns";
 import { isNil, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
 
 export type createPlDataTableOptionsV3 = (
   | {
-      discoverColumnOptions: DiscoveredColumnOptions;
+      discoverColumnOptions: DiscoveredTableColumnOptions;
     }
   | {
-      columns: Nil | DiscoveredColumnSnapshot<SUniversalPColumnId>[];
+      columns: Nil | TableColumnSnapshot<SUniversalPColumnId>[];
     }
 ) & {
   filters?: PlDataTableFilters;
@@ -96,7 +96,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const discovered =
     "discoverColumnOptions" in options
-      ? discoverColumnSnaphots(ctx, options.discoverColumnOptions)
+      ? discoverTableColumnSnaphots(ctx, options.discoverColumnOptions)
       : options.columns;
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
@@ -207,21 +207,18 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   } satisfies PlDataTableModel;
 }
 
-// Helpers
-
 /** A single column discovered from sources — normalized from raw ColumnSnapshot/ColumnMatch. */
-export type DiscoveredColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> =
-  ColumnSnapshot<Id> & {
-    readonly isPrimary?: boolean;
-    readonly originalId?: PObjectId;
-    readonly linkerPath?: ColumnMatch["path"];
-  };
+export type TableColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> = ColumnSnapshot<Id> & {
+  readonly isPrimary?: boolean;
+  readonly originalId?: PObjectId;
+  readonly linkerPath?: ColumnMatch["path"];
+};
 
 type TableColumn = PColumn<undefined | PColumnDataUniversal>;
 
 type SplitDiscoveredColumns = {
-  readonly direct: DiscoveredColumnSnapshot<SUniversalPColumnId>[];
-  readonly linked: DiscoveredColumnSnapshot<SUniversalPColumnId>[];
+  readonly direct: TableColumnSnapshot<SUniversalPColumnId>[];
+  readonly linked: TableColumnSnapshot<SUniversalPColumnId>[];
 };
 
 type ResolvedColumns = {
@@ -248,7 +245,7 @@ type VisibleColumns = {
 
 /** Split discovered columns into direct (no linker path) and linked (with linker path). */
 function splitDiscoveredColumns(
-  columns: DiscoveredColumnSnapshot<SUniversalPColumnId>[],
+  columns: TableColumnSnapshot<SUniversalPColumnId>[],
 ): SplitDiscoveredColumns {
   return {
     direct: columns.filter((dc) => isNil(dc.linkerPath) || dc.linkerPath.length === 0),
@@ -259,13 +256,13 @@ function splitDiscoveredColumns(
 /** Resolve DiscoveredColumn snapshots into PColumn objects with lazily-evaluated data. */
 function resolveDiscoveredColumns(
   split: SplitDiscoveredColumns,
-  allDiscovered: DiscoveredColumnSnapshot<SUniversalPColumnId>[],
+  allDiscovered: TableColumnSnapshot<SUniversalPColumnId>[],
 ): ResolvedColumns {
   const linked = split.linked.map(resolveSnapshot);
   const linkers = new Map<PObjectId, TableColumn[]>(
     split.linked
       .filter(
-        (dc): dc is RequiredBy<DiscoveredColumnSnapshot<SUniversalPColumnId>, "linkerPath"> =>
+        (dc): dc is RequiredBy<TableColumnSnapshot<SUniversalPColumnId>, "linkerPath"> =>
           !isNil(dc.linkerPath),
       )
       .map((dc, i) => [linked[i].id, dc.linkerPath.map((s) => resolveSnapshot(s.linker))]),
@@ -430,7 +427,7 @@ function resolveSnapshot(
 /** Remap column references in sorting entries. */
 function remapSortingColumnIds(
   sorting: Nil | PTableSorting[],
-  columns: DiscoveredColumnSnapshot<PObjectId | SUniversalPColumnId>[],
+  columns: TableColumnSnapshot<PObjectId | SUniversalPColumnId>[],
 ): Nil | PTableSorting[] {
   return sorting?.map((s) => {
     if (s.column.type === "axis") return s; // Axis references are unaffected by column ID remapping
@@ -455,7 +452,7 @@ type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
 /** Remap column references in a filter tree. */
 function remapFilterColumnIds(
   filters: Nil | PlDataTableFilters,
-  columns: DiscoveredColumnSnapshot<PObjectId | SUniversalPColumnId>[],
+  columns: TableColumnSnapshot<PObjectId | SUniversalPColumnId>[],
 ): Nil | PlDataTableFilters {
   if (isNil(filters)) return filters;
 

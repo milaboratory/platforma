@@ -27,4 +27,4 @@ export function createPlDataTable<A, U, S extends RequireServices<typeof Service
   }
 }
 
-export { discoverColumnSnaphots as discoverColumns } from "./discoverColumns";
+export { discoverTableColumnSnaphots as discoverColumns } from "./discoverColumns";

@@ -13,19 +13,23 @@ import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
-import type { ColumnsSelectorConfig, DiscoveredColumnSnapshot } from "./createPlDataTableV3";
+import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
 
-export type DiscoveredColumnOptions = {
+export type DiscoveredTableColumnOptions = {
   sources?: ColumnSource[];
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>;
   columnsSelector: ColumnsSelectorConfig;
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverColumnSnaphots<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+export function discoverTableColumnSnaphots<
+  A,
+  U,
+  S extends RequireServices<typeof Services.PFrameSpec>,
+>(
   ctx: RenderCtxBase<A, U, S>,
-  options: DiscoveredColumnOptions,
-): DiscoveredColumnSnapshot<SUniversalPColumnId>[] | undefined {
+  options: DiscoveredTableColumnOptions,
+): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
   const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
 
@@ -88,7 +92,7 @@ function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | C
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
   anchors: readonly PColumnSpec[],
-): DiscoveredColumnSnapshot<SUniversalPColumnId>[] {
+): TableColumnSnapshot<SUniversalPColumnId>[] {
   const hitCounts = matched.reduce(
     (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
     new Map<PObjectId, number>(),
