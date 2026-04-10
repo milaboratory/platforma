@@ -2,7 +2,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
+import { summarizeOutputs } from "./tokens";
+import { errorResult, safeEval, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(

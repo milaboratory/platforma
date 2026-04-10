@@ -3,7 +3,8 @@ import { isTimeoutError } from "@milaboratories/pl-middle-layer";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { z } from "zod";
 import type { ToolContext } from "./types";
-import { errorResult, safeEval, summarizeOutputs, textResult } from "./types";
+import { summarizeOutputs } from "./tokens";
+import { errorResult, safeEval, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
@@ -121,12 +122,18 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
           });
         }
 
-        // Still running — wait up to 5s for overview to change, then re-poll
+        // Still running — wait up to 5s for overview to change, then re-poll.
+        // Minimum 500ms delay to avoid busy-looping if awaitChange resolves immediately.
+        const pollStart = Date.now();
         try {
           const result = await project.overview.getFullValue();
           await project.overview.awaitChange(AbortSignal.timeout(5000), result.uTag);
         } catch {
           // timeout or abort — just re-poll
+        }
+        const elapsed = Date.now() - pollStart;
+        if (elapsed < 500) {
+          await new Promise((r) => setTimeout(r, 500 - elapsed));
         }
       }
 

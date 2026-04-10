@@ -1,3 +1,5 @@
+import type { Branded } from "../branding";
+
 /** Prefix constants — single source of truth for handle format. */
 const LIVE_LOG_PREFIX = "log+live://log/";
 const READY_LOG_PREFIX = "log+ready://log/";
@@ -5,10 +7,10 @@ const READY_LOG_PREFIX = "log+ready://log/";
 /** Handle of the live logs of a program.
  * The resource that represents a log can be deleted,
  * in this case the handle should be refreshed. */
-export type LiveLogHandle = `${typeof LIVE_LOG_PREFIX}${string}`;
+export type LiveLogHandle = Branded<`${typeof LIVE_LOG_PREFIX}${string}`, "LiveLogHandle">;
 
 /** Handle of the ready logs of a program. */
-export type ReadyLogHandle = `${typeof READY_LOG_PREFIX}${string}`;
+export type ReadyLogHandle = Branded<`${typeof READY_LOG_PREFIX}${string}`, "ReadyLogHandle">;
 
 /** Handle of logs. This handle should be passed
  * to the driver for retrieving logs. */

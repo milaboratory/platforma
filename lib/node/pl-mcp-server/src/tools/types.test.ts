@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateTokens } from "./types";
+import { estimateTokens } from "./tokens";
 
 // --- Test data ---
 
