@@ -30,6 +30,7 @@ export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>):
     ml.addRuntimeCapability("requiresUIAPIVersion", 1);
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
+    ml.addRuntimeCapability("requiresCreatePTable", 2);
 
     const mcpServer = new PlMcpServer({ middleLayer: ml, port: 0, secret });
     await mcpServer.start();

@@ -5,7 +5,12 @@ import type {
   PTableColumnSpec,
   PTableVector,
 } from "@milaboratories/pl-middle-layer";
-import { Annotation, pTableValue, readAnnotation } from "@milaboratories/pl-model-common";
+import {
+  Annotation,
+  pTableValue,
+  readAnnotation,
+  PFrameDriver,
+} from "@milaboratories/pl-model-common";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult, safeEval, textResult } from "./types";
@@ -18,15 +23,7 @@ const HEX_HASH_RE = /^[a-f0-9]{64}$/;
  */
 async function resolveHandle(
   handle: string,
-  driver: {
-    listColumns: (
-      h: PFrameHandle,
-    ) => Promise<
-      { spec: { name: string; valueType: string; annotations?: Record<string, string> } }[]
-    >;
-    getShape: (h: PTableHandle) => Promise<{ rows: number }>;
-    getSpec: (h: PTableHandle) => Promise<PTableColumnSpec[]>;
-  },
+  driver: PFrameDriver,
   maxColumns: number,
   cache: Map<string, unknown>,
 ): Promise<unknown> {
@@ -34,10 +31,8 @@ async function resolveHandle(
 
   // Try PTable first (has rows — more useful info)
   try {
-    const [shape, spec] = await Promise.all([
-      driver.getShape(handle as PTableHandle),
-      driver.getSpec(handle as PTableHandle),
-    ]);
+    const spec = await driver.getSpec(handle as PTableHandle);
+    const shape = await driver.getShape(handle as PTableHandle);
     const summary: Record<string, unknown> = {
       _type: "PTable",
       handle,
@@ -114,15 +109,10 @@ async function resolveHandlesInValue(
 }
 
 /** Converts a PTableVector column to a JSON-serializable array using the SDK helper. */
-function vectorToJson(vector: PTableVector, rows: number): (string | number | null | "ABSENT")[] {
-  const result: (string | number | null | "ABSENT")[] = [];
+function vectorToJson(vector: PTableVector, rows: number): (string | number | null)[] {
+  const result: (string | number | null)[] = [];
   for (let i = 0; i < rows; i++) {
-    const v = pTableValue(vector, i);
-    if (v === null) {
-      result.push(null);
-    } else {
-      result.push(v as string | number);
-    }
+    result.push(pTableValue(vector, i));
   }
   return result;
 }
@@ -230,7 +220,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           .optional()
           .describe(
             "JS expression evaluated server-side against query results. " +
-              "Available variables: `rows` (array of row arrays), `columns` (column headers), `totalRows`, `offset`, `rowCount`. " +
+              "Available variables: `rows` (array of row arrays), `columns` (column headers), `offset`, `rowCount`. " +
               "Example: `rows.map(r => r[0])` — extract first column only.",
           ),
         transformTimeout: z
@@ -243,13 +233,6 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     async ({ pTableHandle, columns, offset, limit, maxLimit, transform, transformTimeout }) => {
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const handle = pTableHandle as PTableHandle;
-
-      let shape;
-      try {
-        shape = await pFrameDriver.getShape(handle);
-      } catch (err) {
-        return textResult({ error: `getShape failed: ${err}` });
-      }
 
       let spec;
       try {
@@ -270,7 +253,6 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       } catch (err) {
         return textResult({
           error: `getData failed: ${err}`,
-          shape,
           columnIndices,
           range,
         });
@@ -300,7 +282,6 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
             {
               rows,
               columns: columnHeaders,
-              totalRows: shape.rows,
               offset,
               rowCount: actualRows,
             },
@@ -310,13 +291,12 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
         } catch (e: unknown) {
           return errorResult(
             `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
-            "Check your JS expression syntax. Available variables: rows, columns, totalRows, offset, rowCount.",
+            "Check your JS expression syntax. Available variables: rows, columns, offset, rowCount.",
           );
         }
       }
 
       return textResult({
-        totalRows: shape.rows,
         offset,
         rowCount: actualRows,
         columns: columnHeaders,
