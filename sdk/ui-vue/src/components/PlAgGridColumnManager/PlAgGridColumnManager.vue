@@ -42,11 +42,11 @@ const items = computed(() => {
   }));
 });
 
-const { filteredItems, segments } = useFilteredItems({
+const { filteredItems, segments } = useFilteredItems(() => ({
   items: items.value,
   query: query.value,
   getStrings: (item) => [item.label],
-});
+}));
 </script>
 
 <template>
