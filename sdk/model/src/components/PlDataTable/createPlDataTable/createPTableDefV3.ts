@@ -16,16 +16,16 @@ import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
 
 export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
-  coreJoinType: "inner" | "full";
-  coreColumns: PColumn<Data>[];
+  primaryJoinType: "inner" | "full";
+  primaryColumns: PColumn<Data>[];
   secondaryGroups: PColumn<Data>[][];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
 }): PTableDefV2<PColumn<Data>> {
   // Build SpecQuery directly from columns
   const coreJoinQuery: SpecQuery<PColumn<Data>> = {
-    type: params.coreJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: params.coreColumns.map((c) => toJoinEntry({ type: "column", column: c })),
+    type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
+    entries: params.primaryColumns.map((c) => toJoinEntry({ type: "column", column: c })),
   };
 
   let query: SpecQuery<PColumn<Data>> = {

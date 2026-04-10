@@ -33,9 +33,9 @@ export function createPTableDefV2(params: {
   secondaryColumns.push(...params.labelColumns);
 
   return createPTableDefV3({
-    coreColumns,
+    primaryColumns: coreColumns,
     secondaryGroups: secondaryColumns.map((c) => [c]),
-    coreJoinType: params.coreJoinType,
+    primaryJoinType: params.coreJoinType,
     filters: params.filters,
     sorting: params.sorting,
   });

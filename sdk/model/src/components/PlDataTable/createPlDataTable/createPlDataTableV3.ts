@@ -50,7 +50,7 @@ export type createPlDataTableOptionsV3 = (
 ) & {
   filters?: PlDataTableFilters;
   sorting?: PTableSorting[];
-  coreJoinType?: "inner" | "full";
+  primaryJoinType?: "inner" | "full";
 
   tableState?: PlDataTableStateV2;
   labelsOptions?: DeriveLabelsOptions;
@@ -92,7 +92,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
   const state = upgradePlDataTableStateV2(options.tableState);
-  const coreJoinType = options.coreJoinType ?? "full";
+  const primaryJoinType = options.primaryJoinType ?? "full";
 
   const discovered =
     "discoverColumnOptions" in options
@@ -146,22 +146,22 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   );
   validateSorting(sorting, columnIsAvailable);
 
-  const anchorColumnIds = new Set<PObjectId>(
+  const primaryColumnIds = new Set<PObjectId>(
     discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
   );
-  const coreColumns = annotated.direct.filter((c) => anchorColumnIds.has(c.id));
-  const nonCoreDirectColumns = annotated.direct.filter((c) => !anchorColumnIds.has(c.id));
+  const primaryColumns = annotated.direct.filter((c) => primaryColumnIds.has(c.id));
+  const secondaryColumns = annotated.direct.filter((c) => !primaryColumnIds.has(c.id));
 
-  if (coreColumns.length === 0) return undefined;
+  if (primaryColumns.length === 0) return undefined;
 
   const fullDef = createPTableDefV3({
-    coreColumns,
+    primaryJoinType,
+    primaryColumns: primaryColumns,
     secondaryGroups: [
-      ...nonCoreDirectColumns.map((c) => [c]),
+      ...secondaryColumns.map((c) => [c]),
       ...annotated.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
       ...annotated.labels.map((c) => [c]),
     ],
-    coreJoinType,
     filters,
     sorting,
   });
@@ -183,16 +183,16 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   );
 
   const visible = buildVisibleColumns(annotated, hidden, labelColumns);
-  const visibleNonCoreDirect = nonCoreDirectColumns.filter((c) => !hidden.has(c.id));
+  const visibleNonCoreDirect = secondaryColumns.filter((c) => !hidden.has(c.id));
 
   const visibleDef = createPTableDefV3({
-    coreColumns,
+    primaryJoinType,
+    primaryColumns: primaryColumns,
     secondaryGroups: [
       ...visibleNonCoreDirect.map((c) => [c]),
       ...visible.linked.map((lc) => [...(visible.linkers.get(lc.id) ?? []), lc]),
       ...visible.labels.map((c) => [c]),
     ],
-    coreJoinType,
     filters,
     sorting,
   });
