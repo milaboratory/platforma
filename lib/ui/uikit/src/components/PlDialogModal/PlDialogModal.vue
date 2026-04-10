@@ -74,6 +74,7 @@ const props = withDefaults(
     closable: true,
     noContentGutters: false,
     actionsHasTopBorder: true,
+    closeOnOutsideClick: true,
     size: undefined,
   },
 );
