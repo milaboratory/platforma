@@ -122,7 +122,7 @@ export function withTableVisualAnnotations<Data>(
 export type LabelableColumn = {
   readonly id: PObjectId;
   readonly spec: PColumnSpec;
-  readonly linkerPath?: readonly { readonly column: { readonly spec: PColumnSpec } }[];
+  readonly linkerPath?: { spec: PColumnSpec }[];
 };
 
 /** Derive labels for all table elements: columns via deriveDistinctLabels, axes from label columns. */
@@ -133,13 +133,7 @@ export function deriveAllLabels(options: {
 }): Record<string, string> {
   const { columns, labelColumns, deriveLabelsOptions } = options;
   const axisLabels = deriveAxisLabels(columns, labelColumns);
-  const columnLabels = deriveDistinctLabels(
-    columns.map((dc) => ({
-      spec: dc.spec,
-      linkersPath: dc.linkerPath?.map((step) => ({ spec: step.column.spec })),
-    })),
-    deriveLabelsOptions,
-  ).reduce(
+  const columnLabels = deriveDistinctLabels(columns, deriveLabelsOptions).reduce(
     (acc, label, index) => ((acc[columns[index].id] = label), acc),
     {} as Record<string, string>,
   );

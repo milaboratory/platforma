@@ -13,7 +13,7 @@ import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
-import type { ColumnsSelectorConfig, DiscoveredColumn } from "./createPlDataTableV3";
+import type { ColumnsSelectorConfig, DiscoveredColumnSnapshot } from "./createPlDataTableV3";
 
 export type DiscoveredColumnOptions = {
   sources?: ColumnSource[];
@@ -22,10 +22,10 @@ export type DiscoveredColumnOptions = {
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverColumns<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+export function discoverColumnSnaphots<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
   ctx: RenderCtxBase<A, U, S>,
   options: DiscoveredColumnOptions,
-): DiscoveredColumn<SUniversalPColumnId>[] | undefined {
+): DiscoveredColumnSnapshot<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
   const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
 
@@ -88,7 +88,7 @@ function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | C
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
   anchors: readonly PColumnSpec[],
-): DiscoveredColumn<SUniversalPColumnId>[] {
+): DiscoveredColumnSnapshot<SUniversalPColumnId>[] {
   const hitCounts = matched.reduce(
     (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
     new Map<PObjectId, number>(),
@@ -112,8 +112,8 @@ function mapToDiscoveredColumns(
       spec: snap.spec,
       data: snap.data,
       dataStatus: snap.dataStatus,
-      isAnchor: anchors.some((anchor) => snapSpecId === deriveNativeId(anchor)),
-      linkerPath: match.path.map((step) => ({ column: step.linker })),
+      isPrimary: anchors.some((anchor) => snapSpecId === deriveNativeId(anchor)),
+      linkerPath: match.path,
     };
   });
 }

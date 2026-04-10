@@ -25,7 +25,7 @@ import { isEmpty } from "es-toolkit/compat";
 import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnSnapshot, MatchingMode } from "../../../columns";
+import type { ColumnMatch, ColumnSnapshot, MatchingMode } from "../../../columns";
 import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
@@ -37,13 +37,20 @@ import {
   withTableVisualAnnotations,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverColumns, type DiscoveredColumnOptions } from "./discoverColumns";
-import { isNil, throwError, type Nil } from "@milaboratories/helpers";
+import { discoverColumnSnaphots, type DiscoveredColumnOptions } from "./discoverColumns";
+import { isNil, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
 
-export type createPlDataTableOptionsV3 = DiscoveredColumnOptions & {
-  coreJoinType?: "inner" | "full";
+export type createPlDataTableOptionsV3 = (
+  | {
+      discoverColumnOptions: DiscoveredColumnOptions;
+    }
+  | {
+      columns: Nil | DiscoveredColumnSnapshot<SUniversalPColumnId>[];
+    }
+) & {
   filters?: PlDataTableFilters;
   sorting?: PTableSorting[];
+  coreJoinType?: "inner" | "full";
 
   tableState?: PlDataTableStateV2;
   labelsOptions?: DeriveLabelsOptions;
@@ -87,10 +94,11 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const state = upgradePlDataTableStateV2(options.tableState);
   const coreJoinType = options.coreJoinType ?? "full";
 
-  const discovered = discoverColumns(ctx, options);
-  if (discovered === undefined || discovered.length === 0) return undefined;
-
-  const idMapping = buildOriginalToDiscoveredIdMapping(discovered);
+  const discovered =
+    "discoverColumnOptions" in options
+      ? discoverColumnSnaphots(ctx, options.discoverColumnOptions)
+      : options.columns;
+  if (isNil(discovered) || discovered.length === 0) return undefined;
 
   const splited = splitDiscoveredColumns(discovered);
   const resolved = resolveDiscoveredColumns(splited, discovered);
@@ -101,7 +109,11 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   );
 
   const derivedLabels = deriveAllLabels({
-    columns: discovered,
+    columns: discovered.map((dc) => ({
+      id: dc.id,
+      spec: dc.spec,
+      linkerPath: dc.linkerPath?.map((lp) => ({ spec: lp.linker.spec })),
+    })),
     labelColumns,
     deriveLabelsOptions: {
       includeNativeLabel: true,
@@ -122,20 +134,22 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
+  ctx.logInfo(`befor: ${JSON.stringify(options.filters)}`);
+  ctx.logInfo(`after: ${JSON.stringify(remapFilterColumnIds(options.filters, discovered))}`);
   const filters = mergeFilters(
     state.pTableParams.filters,
-    remapFilterColumnIds(options.filters, idMapping),
+    remapFilterColumnIds(options.filters, discovered),
   );
   validateFilters(filters, columnIsAvailable);
 
   const sorting = resolveSorting(
     state.pTableParams.sorting,
-    remapSortingColumnIds(options.sorting, idMapping),
+    remapSortingColumnIds(options.sorting, discovered),
   );
   validateSorting(sorting, columnIsAvailable);
 
   const anchorColumnIds = new Set<PObjectId>(
-    discovered.filter((dc) => dc.isAnchor).map((dc) => dc.id),
+    discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
   );
   const coreColumns = annotated.direct.filter((c) => anchorColumnIds.has(c.id));
   const nonCoreDirectColumns = annotated.direct.filter((c) => !anchorColumnIds.has(c.id));
@@ -197,23 +211,19 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
 // Helpers
 
-/** A linker step with its resolved column data. */
-export type ResolvedLinkerStep = {
-  readonly column: ColumnSnapshot<PObjectId>;
-};
-
 /** A single column discovered from sources — normalized from raw ColumnSnapshot/ColumnMatch. */
-export type DiscoveredColumn<Id extends PObjectId | SUniversalPColumnId> = ColumnSnapshot<Id> & {
-  readonly isAnchor: boolean;
-  readonly originalId: PObjectId;
-  readonly linkerPath: ResolvedLinkerStep[];
-};
+export type DiscoveredColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> =
+  ColumnSnapshot<Id> & {
+    readonly isPrimary?: boolean;
+    readonly originalId?: PObjectId;
+    readonly linkerPath?: ColumnMatch["path"];
+  };
 
 type TableColumn = PColumn<undefined | PColumnDataUniversal>;
 
 type SplitDiscoveredColumns = {
-  readonly direct: DiscoveredColumn<SUniversalPColumnId>[];
-  readonly linked: DiscoveredColumn<SUniversalPColumnId>[];
+  readonly direct: DiscoveredColumnSnapshot<SUniversalPColumnId>[];
+  readonly linked: DiscoveredColumnSnapshot<SUniversalPColumnId>[];
 };
 
 type ResolvedColumns = {
@@ -240,25 +250,27 @@ type VisibleColumns = {
 
 /** Split discovered columns into direct (no linker path) and linked (with linker path). */
 function splitDiscoveredColumns(
-  columns: DiscoveredColumn<SUniversalPColumnId>[],
+  columns: DiscoveredColumnSnapshot<SUniversalPColumnId>[],
 ): SplitDiscoveredColumns {
   return {
-    direct: columns.filter((dc) => dc.linkerPath.length === 0),
-    linked: columns.filter((dc) => dc.linkerPath.length > 0),
+    direct: columns.filter((dc) => isNil(dc.linkerPath) || dc.linkerPath.length === 0),
+    linked: columns.filter((dc) => !isNil(dc.linkerPath) && dc.linkerPath.length > 0),
   };
 }
 
 /** Resolve DiscoveredColumn snapshots into PColumn objects with lazily-evaluated data. */
 function resolveDiscoveredColumns(
   split: SplitDiscoveredColumns,
-  allDiscovered: DiscoveredColumn<SUniversalPColumnId>[],
+  allDiscovered: DiscoveredColumnSnapshot<SUniversalPColumnId>[],
 ): ResolvedColumns {
   const linked = split.linked.map(resolveSnapshot);
   const linkers = new Map<PObjectId, TableColumn[]>(
-    split.linked.map((dc, i) => [
-      linked[i].id,
-      dc.linkerPath.map((s) => resolveSnapshot(s.column)),
-    ]),
+    split.linked
+      .filter(
+        (dc): dc is RequiredBy<DiscoveredColumnSnapshot<SUniversalPColumnId>, "linkerPath"> =>
+          !isNil(dc.linkerPath),
+      )
+      .map((dc, i) => [linked[i].id, dc.linkerPath.map((s) => resolveSnapshot(s.linker))]),
   );
 
   return {
@@ -417,39 +429,27 @@ function resolveSnapshot(
   return { id: snap.id, spec: snap.spec, data: snap.data?.get() };
 }
 
-/** Build a mapping from originalId to discovered id (first occurrence wins). */
-function buildOriginalToDiscoveredIdMapping(
-  discovered: DiscoveredColumn<SUniversalPColumnId>[],
-): Map<PObjectId, PObjectId> {
-  return discovered.reduce(
-    (acc, dc) => (acc.has(dc.originalId) ? acc : acc.set(dc.originalId, dc.id)),
-    new Map<PObjectId, PObjectId>(),
-  );
-}
-
-/** Remap a PTableColumnId using original→discovered mapping. */
-function remapPTableColumnId(
-  columnId: PTableColumnId,
-  mapping: Map<PObjectId, PObjectId>,
-): PTableColumnId {
-  return columnId.type === "column"
-    ? {
-        type: "column",
-        id:
-          mapping.get(columnId.id) ??
-          throwError(
-            `Column ID "${columnId.id}" not found in mapping ${JSON.stringify([...mapping.entries()])}`,
-          ),
-      }
-    : columnId;
-}
-
 /** Remap column references in sorting entries. */
 function remapSortingColumnIds(
   sorting: Nil | PTableSorting[],
-  mapping: Map<PObjectId, PObjectId>,
+  columns: DiscoveredColumnSnapshot<PObjectId | SUniversalPColumnId>[],
 ): Nil | PTableSorting[] {
-  return sorting?.map((s) => ({ ...s, column: remapPTableColumnId(s.column, mapping) }));
+  return sorting?.map((s) => {
+    if (s.column.type === "axis") return s; // Axis references are unaffected by column ID remapping
+
+    const id = s.column.id;
+    const column =
+      columns.find((c) => (c.originalId ?? c.id) === id) ??
+      throwError(`Column ID "${id}" in sorting does not match any discovered column`);
+
+    return {
+      ...s,
+      column: {
+        type: "column",
+        id: column.id,
+      },
+    };
+  });
 }
 
 type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
@@ -457,19 +457,33 @@ type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
 /** Remap column references in a filter tree. */
 function remapFilterColumnIds(
   filters: Nil | PlDataTableFilters,
-  mapping: Map<PObjectId, PObjectId>,
+  columns: DiscoveredColumnSnapshot<PObjectId | SUniversalPColumnId>[],
 ): Nil | PlDataTableFilters {
   if (isNil(filters)) return filters;
 
-  const remapRef = (ref: CanonicalizedJson<PTableColumnId>): CanonicalizedJson<PTableColumnId> =>
-    canonicalizeJson(remapPTableColumnId(parseJson(ref), mapping));
+  const map = (
+    tableColumnId: CanonicalizedJson<PTableColumnId>,
+  ): CanonicalizedJson<PTableColumnId> => {
+    const parsed = parseJson<PTableColumnId>(tableColumnId);
+    if (parsed.type === "axis") return tableColumnId; // Axis references are unaffected by column ID remapping
+
+    const originalId = parsed.id;
+    const column =
+      columns.find((c) => (c.originalId ?? c.id) === originalId) ??
+      throwError(`Column ID "${parsed.id}" in filters does not match any discovered column`);
+
+    return canonicalizeJson<PTableColumnId>({
+      type: "column",
+      id: column.id,
+    });
+  };
 
   return traverseFilterSpec(filters, {
     leaf: (leaf): PlDataTableFilterNode => {
       if (leaf.type === undefined) return leaf;
       const result = { ...leaf };
-      if ("column" in result) result.column = remapRef(result.column);
-      if ("rhs" in result) result.rhs = remapRef(result.rhs);
+      if ("column" in result) result.column = map(result.column);
+      if ("rhs" in result) result.rhs = map(result.rhs);
       return result;
     },
     and: (results): PlDataTableFilterNode => ({ type: "and", filters: results }),
