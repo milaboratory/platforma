@@ -156,7 +156,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const fullDef = createPTableDefV3({
     primaryJoinType,
-    primaryColumns: primaryColumns,
+    primaryColumns,
     secondaryGroups: [
       ...secondaryColumns.map((c) => [c]),
       ...annotated.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
@@ -187,7 +187,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const visibleDef = createPTableDefV3({
     primaryJoinType,
-    primaryColumns: primaryColumns,
+    primaryColumns,
     secondaryGroups: [
       ...visibleNonCoreDirect.map((c) => [c]),
       ...visible.linked.map((lc) => [...(visible.linkers.get(lc.id) ?? []), lc]),
