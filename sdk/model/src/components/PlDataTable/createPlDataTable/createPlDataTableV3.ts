@@ -122,15 +122,15 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
-  const filters = remapFilterColumnIds(
-    mergeFilters(state.pTableParams.filters, options.filters),
-    idMapping,
+  const filters = mergeFilters(
+    state.pTableParams.filters,
+    remapFilterColumnIds(options.filters, idMapping),
   );
   validateFilters(filters, columnIsAvailable);
 
-  const sorting = remapSortingColumnIds(
-    resolveSorting(state.pTableParams.sorting, options.sorting),
-    idMapping,
+  const sorting = resolveSorting(
+    state.pTableParams.sorting,
+    remapSortingColumnIds(options.sorting, idMapping),
   );
   validateSorting(sorting, columnIsAvailable);
 
@@ -446,10 +446,10 @@ function remapPTableColumnId(
 
 /** Remap column references in sorting entries. */
 function remapSortingColumnIds(
-  sorting: PTableSorting[],
+  sorting: Nil | PTableSorting[],
   mapping: Map<PObjectId, PObjectId>,
-): PTableSorting[] {
-  return sorting.map((s) => ({ ...s, column: remapPTableColumnId(s.column, mapping) }));
+): Nil | PTableSorting[] {
+  return sorting?.map((s) => ({ ...s, column: remapPTableColumnId(s.column, mapping) }));
 }
 
 type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
