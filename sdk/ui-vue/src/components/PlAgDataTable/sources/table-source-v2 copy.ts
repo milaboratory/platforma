@@ -48,7 +48,7 @@ import { getColumnRenderingSpec } from "./value-rendering";
 import type { Ref } from "vue";
 import { isJsonEqual } from "@milaboratories/helpers";
 import type { DeferredCircular } from "./focus-row";
-import { isNil, uniq } from "es-toolkit";
+import { isNil } from "es-toolkit";
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === "column" && isLabelColumnSpec(column.spec);
@@ -58,19 +58,21 @@ export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnS
 function columns2rows(
   fields: number[],
   columns: PTableVector[],
-  fieldResultMapping: number[],
-  axesResultIndices: number[],
+  axes: number[],
+  resultMapping: number[],
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey: PTableKey = axesResultIndices.map((ri) => pTableValue(columns[ri], iRow));
+    const axesKey: PTableKey = axes.flatMap((iAxis) =>
+      resultMapping[iAxis] === -1 ? [] : [pTableValue(columns[resultMapping[iAxis]], iRow)],
+    );
     const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row = fields.reduce<PlAgDataTableV2Row>(
       (acc, field, iCol) => {
         acc[field.toString() as `${number}`] =
-          fieldResultMapping[iCol] === -1
+          resultMapping[iCol] === -1
             ? PTableHidden
-            : pTableValue(columns[fieldResultMapping[iCol]], iRow);
+            : pTableValue(columns[resultMapping[iCol]], iRow);
         return acc;
       },
       { id, axesKey },
@@ -104,16 +106,12 @@ export async function calculateGridOptions({
   }
 > {
   const stateGeneration = generation.value;
-  const stateChangedError = new Error("table state generation changed");
+  if (stateGeneration !== generation.value) throw new Error("table state generation changed");
 
   // get specs of the full table
   const tableSpecs = await pfDriver.getSpec(model.fullTableHandle);
-  if (stateGeneration !== generation.value) throw stateChangedError;
   // get specs of the visible table (with hidden columns omitted)
   const visibleTableSpecs = await pfDriver.getSpec(model.visibleTableHandle);
-  if (stateGeneration !== generation.value) throw stateChangedError;
-
-  if (stateGeneration !== generation.value) throw new Error("table state generation changed");
 
   // create index mapping from full specs to visible subset (hidden columns would have -1)
   const specId = (spec: PTableColumnSpec) =>
@@ -218,37 +216,35 @@ export async function calculateGridOptions({
     ),
   ];
 
-  // axes — taken directly from visible table (always present as part of join)
-  const visibleAxesIndices: number[] = [];
-  const axesSpec: AxesSpec = visibleTableSpecs
-    .entries()
-    .filter(([i, spec]) => {
-      if (spec.type === "axis") {
-        visibleAxesIndices.push(i);
-        return true;
+  // mix in indices of skipped axes (axes that were partitioned or replaced with label columns)
+  const axesSpec = tableSpecs
+    .values()
+    .filter((spec) => spec.type === "axis")
+    .map((spec) => spec.spec)
+    .toArray();
+  const axes = axesSpec
+    .keys()
+    .map((i) => {
+      let r = indices.indexOf(i);
+      if (r === -1) {
+        r = indices.length;
+        indices.push(i);
       }
-      return false;
-    })
-    .map(([, spec]) => {
-      if (spec.type !== "axis") throw new Error("unreachable");
-      return spec.spec;
+      return r;
     })
     .toArray();
 
-  // build request indices: first fields, then axes
-  let requestIndices: number[] = [];
-  const fieldResultMapping: number[] = [];
-  fields.forEach((idx) => {
-    const visibleSpecIdx = specsToVisibleSpecsMapping.get(idx);
-    if (visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
-      fieldResultMapping.push(requestIndices.length);
+  const requestIndices: number[] = [];
+  const resultMapping: number[] = [];
+  indices.forEach((idx) => {
+    const visibleSpecIdx = specsToVisibleSpecsMapping.get(idx)!;
+    if (visibleSpecIdx !== -1) {
+      resultMapping.push(requestIndices.length);
       requestIndices.push(visibleSpecIdx);
     } else {
-      fieldResultMapping.push(-1);
+      resultMapping.push(-1);
     }
   });
-  requestIndices = uniq([...requestIndices, ...visibleAxesIndices]);
-  const axesResultIndices = visibleAxesIndices.map((vi) => requestIndices.indexOf(vi));
 
   let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
@@ -293,7 +289,7 @@ export async function calculateGridOptions({
             });
             if (stateGeneration !== generation.value || params.api.isDestroyed())
               return params.fail();
-            rowData = columns2rows(fields, data, fieldResultMapping, axesResultIndices);
+            rowData = columns2rows(fields, data, axes, resultMapping);
           }
         }
 

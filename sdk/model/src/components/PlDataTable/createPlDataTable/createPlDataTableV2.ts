@@ -134,7 +134,11 @@ export function createPlDataTableV2<A, U>(
       if (coreJoinType === "inner") return [];
 
       const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-      if (hiddenColIds) return hiddenColIds;
+      if (hiddenColIds !== null) {
+        return hiddenColIds
+          .filter((s): s is PTableColumnIdColumn => s.type === "column")
+          .map((s) => s.id);
+      }
 
       return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
     })(),

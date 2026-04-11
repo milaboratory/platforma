@@ -3,7 +3,6 @@ import type {
   AxisSpec,
   CanonicalizedJson,
   ListOptionBase,
-  PObjectId,
   PTableColumnSpec,
   PTableSorting,
   PColumnIdAndSpec,
@@ -92,7 +91,7 @@ export type PTableParamsV2 =
     }
   | {
       sourceId: string;
-      hiddenColIds: null | PObjectId[];
+      hiddenColIds: null | PTableColumnId[];
       filters: null | PlDataTableFilters;
       sorting: PTableSorting[];
     };

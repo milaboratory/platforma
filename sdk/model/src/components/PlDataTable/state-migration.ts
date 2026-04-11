@@ -188,7 +188,9 @@ function migrateV4toV5(
       currentCache && oldSourceId
         ? {
             sourceId: oldSourceId,
-            hiddenColIds: state.pTableParams.hiddenColIds,
+            hiddenColIds:
+              state.pTableParams.hiddenColIds?.map((id) => ({ type: "column" as const, id })) ??
+              null,
             filters: distillFilterSpec(currentCache.filtersState),
             sorting: state.pTableParams.sorting,
           }
