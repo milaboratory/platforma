@@ -233,18 +233,24 @@ export async function calculateGridOptions({
     })
     .toArray();
 
-  // build request indices: first fields, then axes
+  // build request indices: only non-hidden fields
   let requestIndices: number[] = [];
   const fieldResultMapping: number[] = [];
-  fields.forEach((idx) => {
-    const visibleSpecIdx = specsToVisibleSpecsMapping.get(idx);
-    if (visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
+  fields.forEach((field, i) => {
+    const colId = canonicalizeJson<PlTableColumnId>({
+      source: tableSpecs[field],
+      labeled: tableSpecs[indices[i]],
+    });
+    const isHidden = hiddenColIds !== undefined && hiddenColIds.includes(colId);
+    const visibleSpecIdx = specsToVisibleSpecsMapping.get(field);
+    if (!isHidden && visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
       fieldResultMapping.push(requestIndices.length);
       requestIndices.push(visibleSpecIdx);
     } else {
       fieldResultMapping.push(-1);
     }
   });
+
   requestIndices = uniq([...requestIndices, ...visibleAxesIndices]);
   const axesResultIndices = visibleAxesIndices.map((vi) => requestIndices.indexOf(vi));
 
