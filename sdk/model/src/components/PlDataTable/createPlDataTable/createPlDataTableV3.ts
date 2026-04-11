@@ -182,7 +182,6 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     [...annotated.direct, ...annotated.linked],
     sorting,
     filters,
-    ctx,
   );
 
   const visible = buildVisibleColumns(annotated, hidden, labelColumns);
@@ -380,7 +379,6 @@ function computeHiddenColumns(
   dataColumns: TableColumn[],
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
-  ctx: RenderCtxBase,
 ): Set<PObjectId> {
   const alwaysHidden = dataColumns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
   const optionalHidden =
@@ -390,7 +388,6 @@ function computeHiddenColumns(
   const initial = [...alwaysHidden, ...optionalHidden];
   const preserved = collectPreservedColumnIds(sorting, filters);
 
-  ctx.logInfo(`>>>> ${JSON.stringify(initial)}`);
   return new Set(initial.filter((id) => !preserved.has(id)));
 }
 
