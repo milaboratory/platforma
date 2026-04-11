@@ -104,14 +104,12 @@ export async function calculateGridOptions({
   }
 > {
   const stateGeneration = generation.value;
-  const stateChangedError = new Error("table state generation changed");
 
   // get specs of the full table
-  const tableSpecs = await pfDriver.getSpec(model.fullTableHandle);
-  if (stateGeneration !== generation.value) throw stateChangedError;
-  // get specs of the visible table (with hidden columns omitted)
-  const visibleTableSpecs = await pfDriver.getSpec(model.visibleTableHandle);
-  if (stateGeneration !== generation.value) throw stateChangedError;
+  const [tableSpecs, visibleTableSpecs] = await Promise.all([
+    pfDriver.getSpec(model.fullTableHandle),
+    pfDriver.getSpec(model.visibleTableHandle),
+  ]);
 
   if (stateGeneration !== generation.value) throw new Error("table state generation changed");
 
