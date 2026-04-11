@@ -411,12 +411,21 @@ function trimGroupByVisibleAxes(
       .map((s) => canonicalizeJson(s.id)),
   );
 
+  const uncoveredAxisIds = new Set(
+    group
+      .flatMap((c) => c.spec.axesSpec.map((as) => canonicalizeJson(getAxisId(as))))
+      .filter((id) => !hiddenAxisIds.has(id)),
+  );
+
   let lastNeeded = -1;
   for (let i = 0; i < group.length; i++) {
-    const hasNonHiddenAxis = group[i].spec.axesSpec.some(
-      (as) => !hiddenAxisIds.has(canonicalizeJson(getAxisId(as))),
-    );
-    if (hasNonHiddenAxis) lastNeeded = i;
+    const newAxes = group[i].spec.axesSpec
+      .map((as) => canonicalizeJson(getAxisId(as)))
+      .filter((id) => uncoveredAxisIds.has(id));
+    if (newAxes.length > 0) {
+      for (const id of newAxes) uncoveredAxisIds.delete(id);
+      lastNeeded = i;
+    }
   }
   return lastNeeded === -1 ? [] : group.slice(0, lastNeeded + 1);
 }
