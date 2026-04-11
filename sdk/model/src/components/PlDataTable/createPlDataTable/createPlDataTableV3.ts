@@ -177,23 +177,21 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
 
-  const hidden = computeHiddenColumns(
-    hiddenSpecs,
+  const hiddenColumnIds = computeHiddenColumns(
     [...annotated.direct, ...annotated.linked],
     sorting,
     filters,
+    hiddenSpecs,
   );
 
-  const visible = buildVisibleColumns(annotated, hidden, labelColumns);
-  const visibleNonCoreDirect = secondaryColumns.filter((c) => !hidden.has(c.id));
-
-  // Build linked column groups — include hidden columns if they bring non-hidden axes
-  const visibleLinkedGroups = [...annotated.linked]
-    .map((lc) => {
-      const group = [...(annotated.linkers.get(lc.id) ?? []), lc];
-      return !hidden.has(lc.id) ? group : trimGroupByVisibleAxes(group, hiddenSpecs);
-    })
-    .filter((group) => group.length > 0);
+  const visible = buildVisibleColumns(annotated, hiddenColumnIds, labelColumns);
+  const visibleNonCoreDirect = secondaryColumns.filter((c) => !hiddenColumnIds.has(c.id));
+  const visibleLinkedGroups = buildVisibleLinkedGroups(
+    visible.direct,
+    visible.linked,
+    annotated.linkers,
+    hiddenSpecs,
+  );
 
   const visibleDef = createPTableDefV3({
     primaryJoinType,
@@ -248,7 +246,6 @@ type AnnotatedColumnGroups = {
 type VisibleColumns = {
   readonly direct: TableColumn[];
   readonly linked: TableColumn[];
-  readonly linkers: Map<PObjectId, TableColumn[]>;
   readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
@@ -375,16 +372,15 @@ function validateSorting(sorting: PTableSorting[], isValidColumnId: (id: string)
 
 /** Determine which columns should be hidden based on state or optional-column defaults. */
 function computeHiddenColumns(
-  hiddenSpecs: PTableColumnId[] | null,
-  dataColumns: TableColumn[],
+  columns: TableColumn[],
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
+  hiddenSpecs: Nil | PTableColumnId[],
 ): Set<PObjectId> {
-  const alwaysHidden = dataColumns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
-  const optionalHidden =
-    hiddenSpecs !== null
-      ? hiddenSpecs.filter((s): s is PTableColumnIdColumn => s.type === "column").map((s) => s.id)
-      : dataColumns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
+  const alwaysHidden = columns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
+  const optionalHidden = !isNil(hiddenSpecs)
+    ? hiddenSpecs.filter((s): s is PTableColumnIdColumn => s.type === "column").map((s) => s.id)
+    : columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
   const initial = [...alwaysHidden, ...optionalHidden];
   const preserved = collectPreservedColumnIds(sorting, filters);
 
@@ -392,13 +388,56 @@ function computeHiddenColumns(
 }
 
 /**
+ * Build visible linked column groups. Non-hidden groups are included fully;
+ * hidden groups are trimmed to only the prefix that brings axes not yet
+ * covered by earlier groups (visible or previously trimmed).
+ */
+function buildVisibleLinkedGroups(
+  direct: TableColumn[],
+  linked: TableColumn[],
+  linkers: Map<PObjectId, TableColumn[]>,
+  hiddenSpecs: PTableColumnId[] | null,
+): TableColumn[][] {
+  const result: TableColumn[][] = [];
+  const coveredAxisIds = new Set<CanonicalizedJson<AxisId>>();
+
+  const collectAxes = (group: TableColumn[]) => {
+    for (const col of group) {
+      for (const as of col.spec.axesSpec) {
+        coveredAxisIds.add(canonicalizeJson(getAxisId(as)));
+      }
+    }
+  };
+
+  collectAxes(direct);
+
+  for (const lc of linked) {
+    const group = [...(linkers.get(lc.id) ?? []), lc];
+    result.push(group);
+    collectAxes(group);
+  }
+
+  for (const group of linkers.values()) {
+    const trimmed = trimGroupByVisibleAxes(group, hiddenSpecs, coveredAxisIds);
+    if (trimmed.length > 0) {
+      result.push(trimmed);
+      collectAxes(trimmed);
+    }
+  }
+
+  return result;
+}
+
+/**
  * For a linked column group [linker1, ..., linkerN, column], find the rightmost
- * element that has at least one non-hidden axis. Return the prefix up to and
- * including that element. If no element has a non-hidden axis, return empty array.
+ * element that has at least one non-hidden and not-yet-covered axis.
+ * Return the prefix up to and including that element.
+ * If no element has such an axis, return empty array.
  */
 function trimGroupByVisibleAxes(
   group: TableColumn[],
   hiddenSpecs: PTableColumnId[] | null,
+  coveredAxisIds: Set<CanonicalizedJson<AxisId>>,
 ): TableColumn[] {
   if (hiddenSpecs === null) return group;
 
@@ -411,7 +450,7 @@ function trimGroupByVisibleAxes(
   const uncoveredAxisIds = new Set(
     group
       .flatMap((c) => c.spec.axesSpec.map((as) => canonicalizeJson(getAxisId(as))))
-      .filter((id) => !hiddenAxisIds.has(id)),
+      .filter((id) => !hiddenAxisIds.has(id) && !coveredAxisIds.has(id)),
   );
 
   let lastNeeded = -1;
@@ -455,12 +494,11 @@ function buildVisibleColumns(
 ): VisibleColumns {
   const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.id));
   const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.id));
-  const linkers = new Map<PObjectId, TableColumn[]>(
-    [...annotated.linkers].filter(([id]) => !hiddenColumns.has(id)),
+  const labels = getMatchingLabelColumns(
+    [...direct, ...linked].map(getColumnIdAndSpec),
+    originalLabelColumns,
   );
-  const all: TableColumn[] = [...direct, ...linked];
-  const labels = getMatchingLabelColumns(all.map(getColumnIdAndSpec), originalLabelColumns);
-  return { direct, linked, linkers, labels };
+  return { direct, linked, labels };
 }
 
 /** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */

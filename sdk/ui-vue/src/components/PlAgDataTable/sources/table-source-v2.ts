@@ -236,14 +236,9 @@ export async function calculateGridOptions({
   // build request indices: only non-hidden fields
   let requestIndices: number[] = [];
   const fieldResultMapping: number[] = [];
-  fields.forEach((field, i) => {
-    const colId = canonicalizeJson<PlTableColumnId>({
-      source: tableSpecs[field],
-      labeled: tableSpecs[indices[i]],
-    });
-    const isHidden = hiddenColIds !== undefined && hiddenColIds.includes(colId);
+  fields.forEach((field) => {
     const visibleSpecIdx = specsToVisibleSpecsMapping.get(field);
-    if (!isHidden && visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
+    if (visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
       fieldResultMapping.push(requestIndices.length);
       requestIndices.push(visibleSpecIdx);
     } else {
