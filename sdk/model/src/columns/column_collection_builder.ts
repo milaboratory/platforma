@@ -1,5 +1,4 @@
 import type {
-  AxesSpec,
   AxisQualification,
   ColumnAxesWithQualifications,
   DiscoverColumnsConstraints,
@@ -7,19 +6,16 @@ import type {
   DiscoverColumnsResponse,
   MultiColumnSelector,
   NativePObjectId,
+  PColumnIdAndSpec,
   PColumnSpec,
   PObjectId,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
-  canonicalizeAxisId,
   canonicalizeJson,
   deriveNativeId,
   getAxesId,
-  getDenormalizedAxesList,
-  getNormalizedAxesList,
-  isLinkerColumn,
   isPColumnSpec,
 } from "@milaboratories/pl-model-common";
 import type { ColumnSelector, RelaxedColumnSelector } from "./column_selector";
@@ -50,6 +46,7 @@ export interface FindColumnsOptions {
 export interface ColumnCollection extends Disposable {
   /** Release the underlying spec frame WASM resource. */
   dispose(): void;
+
   /** Point lookup by provider-native ID. */
   getColumn(id: PObjectId): undefined | ColumnSnapshot<PObjectId>;
 
@@ -66,8 +63,8 @@ export interface AnchoredColumnCollection extends Disposable {
   /** Release the underlying spec frame WASM resource. */
   dispose(): void;
 
-  /** List of specs corresponding to the anchored columns, in arbitrary order. */
-  getAnchorSpecs(): PColumnSpec[];
+  /** List of anchors used for discovery, with their resolved specs. */
+  getAnchors(): Map<string, PColumnIdAndSpec>;
 
   /** Point lookup by anchored ID. */
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId>;
@@ -124,10 +121,10 @@ export interface BuildOptions {
   allowPartialColumnList?: true;
 }
 
-export type AnchorRef = PObjectId | PColumnSpec | RelaxedColumnSelector;
+export type AnchorEntry = PObjectId | PColumnSpec | RelaxedColumnSelector;
 
 export interface AnchoredBuildOptions extends BuildOptions {
-  anchors: Record<string, AnchorRef>;
+  anchors: Record<string, AnchorEntry>;
 }
 
 // --- ColumnCollectionBuilder ---
@@ -270,16 +267,16 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
 // --- AnchoredColumnCollectionImpl ---
 
 interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOptions {
-  readonly anchors: Record<string, AnchorRef>;
+  readonly anchors: Record<string, AnchorEntry>;
 }
 
 class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposable {
-  private readonly anchors: PColumnSpec[];
-  private readonly columns: Map<PObjectId, ColumnSnapshot<PObjectId>>;
+  private readonly anchorsMap: Map<string, PColumnIdAndSpec>;
+  private readonly columnsMap: Map<PObjectId, ColumnSnapshot<PObjectId>>;
 
   private readonly idDeriver: AnchoredIdDeriver;
-  private readonly anchorAxes: ColumnAxesWithQualifications[];
-  private readonly idToOriginal: Map<SUniversalPColumnId, PObjectId>;
+  private readonly uniqAnchorAxes: ColumnAxesWithQualifications[];
+  private readonly idToOriginalIdMap: Map<SUniversalPColumnId, PObjectId>;
   private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
 
   constructor(
@@ -290,35 +287,25 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     this.specFrameEntry = this.specDriver.createSpecFrame(
       Object.fromEntries(options.columns.map((col) => [col.id, col.spec])),
     );
-
-    const resolvedAnchorMap = resolveAnchorMap(
+    this.columnsMap = new Map(options.columns.map((col) => [col.id, col]));
+    this.anchorsMap = resolveAnchorMap(
       options.anchors,
       options.columns,
       this.specDriver.discoverColumns.bind(this.specDriver, this.specFrameEntry.key),
     );
-    const uniqAnchorSpecs = uniqBy(Array.from(resolvedAnchorMap.values()).flat(), deriveNativeId);
-
-    if (uniqAnchorSpecs.length === 0) {
-      throwError("At least one anchor must be resolved to a valid column spec");
-    }
-
-    this.columns = new Map(options.columns.map((col) => [col.id, col]));
-    this.anchors = uniqAnchorSpecs;
     this.idDeriver = new AnchoredIdDeriver(
-      Object.fromEntries(resolveAnchorSpecInterections(resolvedAnchorMap)),
+      Object.fromEntries(
+        Array.from(this.anchorsMap.entries()).map(([k, v]) => [k, v.spec] as const),
+      ),
     );
-
-    // Build anchor axes for discovery requests
-    this.anchorAxes = uniqBy(
-      this.anchors.map((spec) => ({
+    this.uniqAnchorAxes = uniqBy(
+      Array.from(this.anchorsMap.values(), ({ spec }) => ({
         axesSpec: spec.axesSpec,
-        qualifications: [], // If you want to change, don't forget update uniq preidicate
+        qualifications: [],
       })),
-      (axis) => canonicalizeJson(getAxesId(axis.axesSpec)),
+      (axis) => canonicalizeJson(getAxesId(axis.axesSpec)) + canonicalizeJson(axis.qualifications),
     );
-
-    // Build reverse lookup map
-    this.idToOriginal = new Map(
+    this.idToOriginalIdMap = new Map(
       options.columns.map((col) => [this.idDeriver.deriveS(col.spec), col.id] as const),
     );
   }
@@ -331,14 +318,14 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     this.dispose();
   }
 
-  getAnchorSpecs(): PColumnSpec[] {
-    return this.anchors;
+  getAnchors(): Map<string, PColumnIdAndSpec> {
+    return this.anchorsMap;
   }
 
   getColumn(id: SUniversalPColumnId): undefined | ColumnSnapshot<SUniversalPColumnId> {
-    const origId = this.idToOriginal.get(id);
+    const origId = this.idToOriginalIdMap.get(id);
     if (origId === undefined) return undefined;
-    const col = this.columns.get(origId);
+    const col = this.columnsMap.get(origId);
     if (col === undefined) return undefined;
     return remapSnapshot(id, col);
   }
@@ -354,7 +341,7 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       excludeColumns,
       constraints,
       maxHops: options?.maxHops ?? 4,
-      axes: this.anchorAxes,
+      axes: this.uniqAnchorAxes,
     });
 
     // Map every WASM discovery hit to a ColumnMatch.
@@ -365,14 +352,15 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     for (const hit of response.hits) {
       const origId = hit.hit.columnId as PObjectId;
       const col =
-        this.columns.get(origId) ?? throwError(`Column with id ${origId} not found in collection`);
+        this.columnsMap.get(origId) ??
+        throwError(`Column with id ${origId} not found in collection`);
       const associatedId = this.idDeriver.deriveS(col.spec);
 
       results.push({
         path: hit.path.map((step) => ({
           linker: remapSnapshot(
             this.idDeriver.deriveS(step.linker.spec),
-            this.columns.get(step.linker.columnId) ??
+            this.columnsMap.get(step.linker.columnId) ??
               throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
           ),
           qualifications: step.qualifications,
@@ -431,23 +419,36 @@ function toMultiColumnSelectors(input: ColumnSelector): MultiColumnSelector[] {
  * - PObjectId (string): looked up in the collected column map
  */
 function resolveAnchorMap(
-  anchors: Record<string, AnchorRef>,
+  anchors: Record<string, AnchorEntry>,
   columns: ColumnSnapshot<PObjectId>[],
   discoverColumns: (request: DiscoverColumnsRequest) => DiscoverColumnsResponse,
-): Map<string, PColumnSpec[]> {
-  const result = new Map<string, PColumnSpec[]>();
+): Map<string, PColumnIdAndSpec> {
+  const result = new Map<string, PColumnIdAndSpec>();
+  const resovedIds = new Set<PObjectId>();
+  const getDuplicateError = (key: string) =>
+    `Anchor "${key}": selector matched a column that was already matched by another anchor; please refine the selector to match a different column`;
 
   for (const [key, anchor] of Object.entries(anchors)) {
     if (typeof anchor === "string") {
-      result.set(key, [
-        columns.find((col) => col.id === anchor)?.spec ??
-          throwError(`Anchor "${key}": column with id "${anchor}" not found in sources`),
-      ]);
+      const found =
+        columns.find((col) => col.id === anchor) ??
+        throwError(`Anchor "${key}": column with id "${anchor}" not found in sources`);
+      if (resovedIds.has(found.id)) {
+        throwError(getDuplicateError(key));
+      }
+      result.set(key, { columnId: found.id, spec: found.spec });
+      resovedIds.add(found.id);
     } else if ("kind" in anchor) {
-      result.set(
-        key,
-        isPColumnSpec(anchor) ? [anchor] : throwError(`Anchor "${key}": invalid PColumnSpec`),
-      );
+      if (!isPColumnSpec(anchor)) throwError(`Anchor "${key}": invalid PColumnSpec`);
+      const nativeId = deriveNativeId(anchor);
+      const found =
+        columns.find((col) => deriveNativeId(col.spec) === nativeId) ??
+        throwError(`Anchor "${key}": no column matching spec found in sources`);
+      if (resovedIds.has(found.id)) {
+        throwError(getDuplicateError(key));
+      }
+      result.set(key, { columnId: found.id, spec: anchor });
+      resovedIds.add(found.id);
     } else {
       const matched = discoverColumns({
         includeColumns: toMultiColumnSelectors(anchor),
@@ -456,66 +457,28 @@ function resolveAnchorMap(
         maxHops: 0,
         constraints: matchingModeToConstraints("exact"),
       });
-      result.set(
-        key,
-        matched.hits.map((v) => v.hit.spec).filter((spec) => !isLinkerColumn(spec)),
-      );
+      if (matched.hits.length === 0) {
+        throwError(`Anchor "${key}": no columns matched selector`);
+      }
+      if (matched.hits.length > 1) {
+        throwError(
+          `Anchor "${key}": selector is ambiguous and matched multiple columns; please refine the selector to match exactly one column`,
+        );
+      }
+      if (resovedIds.has(matched.hits[0].hit.columnId as PObjectId)) {
+        throwError(getDuplicateError(key));
+      }
+
+      result.set(key, matched.hits[0].hit);
+      resovedIds.add(matched.hits[0].hit.columnId);
     }
   }
 
+  if (resovedIds.size === 0) {
+    throwError("At least one anchor must be resolved to a valid column");
+  }
+
   return result;
-}
-
-function resolveAnchorSpecInterections(
-  anchorMap: Map<string, PColumnSpec[]>,
-): Map<string, Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">> {
-  return new Map(
-    Array.from(anchorMap.entries()).map(([key, specs]) => [
-      key,
-      specs.length === 1
-        ? specs[0]
-        : {
-            axesSpec: intersectAxesSpecs(specs.map((s) => s.axesSpec)),
-            domain: intersectRecords(specs.map((s) => s.domain)),
-            contextDomain: intersectRecords(specs.map((s) => s.contextDomain)),
-          },
-    ]),
-  );
-}
-
-function intersectAxesSpecs(allAxes: AxesSpec[]): AxesSpec {
-  const restIdSets = allAxes
-    .slice(1)
-    .map((axes) => new Set(axes.map((axis) => canonicalizeAxisId(axis))));
-
-  const normalized = getNormalizedAxesList(allAxes[0]);
-
-  const commonIds = new Set(
-    normalized
-      .filter((axis) => restIdSets.every((set) => set.has(canonicalizeAxisId(axis))))
-      .map((axis) => canonicalizeAxisId(axis)),
-  );
-
-  const filtered = normalized.filter(
-    (axis) =>
-      commonIds.has(canonicalizeAxisId(axis)) &&
-      axis.parentAxesSpec.every((parent) => commonIds.has(canonicalizeAxisId(parent))),
-  );
-
-  return getDenormalizedAxesList(filtered);
-}
-
-function intersectRecords(
-  records: (Record<string, string> | undefined)[],
-): Record<string, string> | undefined {
-  const defined = records.filter((r): r is Record<string, string> => r !== undefined);
-  if (defined.length !== records.length || defined.length === 0) return undefined;
-
-  const result = Object.fromEntries(
-    Object.entries(defined[0]).filter(([key, value]) => defined.every((r) => r[key] === value)),
-  );
-
-  return Object.keys(result).length > 0 ? result : undefined;
 }
 
 // --- MatchingMode → DiscoverColumnsConstraints ---

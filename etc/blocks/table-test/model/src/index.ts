@@ -72,8 +72,8 @@ export const platforma = BlockModelV3.create(blockDataModel)
       discoverColumnOptions: {
         anchors: {
           main: {
+            name: "value",
             axes: [{ name: "name" }],
-            partialAxesMatch: true,
           },
         },
         columnsSelector: {

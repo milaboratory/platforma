@@ -6,7 +6,7 @@ import type {
   Services,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { deriveNativeId, isPlRef } from "@milaboratories/pl-model-common";
+import { isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type { ColumnSource, ColumnMatch, RelaxedColumnSelector } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
@@ -46,14 +46,12 @@ export function discoverTableColumnSnaphots<
   if (collection === undefined) return undefined;
 
   try {
-    // Find columns matching the selector
     const matched = collection.findColumns(resolvedOptions.columnsSelector ?? undefined);
-
-    // Get anchor specs for matched columns
-    const anchors = collection.getAnchorSpecs();
-
-    // Normalize into DiscoveredColumn[]
-    return mapToDiscoveredColumns(matched, anchors);
+    const anchors = collection.getAnchors();
+    return mapToDiscoveredColumns(
+      matched,
+      Array.from(Array.from(anchors.values()).map((v) => v.columnId)),
+    );
   } finally {
     collection.dispose();
   }
@@ -91,7 +89,7 @@ function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | C
 /** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
-  anchors: readonly PColumnSpec[],
+  anchorColumnIds: readonly PObjectId[],
 ): TableColumnSnapshot<SUniversalPColumnId>[] {
   const hitCounts = matched.reduce(
     (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
@@ -101,7 +99,6 @@ function mapToDiscoveredColumns(
   const hitIndices = new Map<PObjectId, number>();
   return matched.map((match) => {
     const snap = match.column;
-    const snapSpecId = deriveNativeId(snap.spec);
 
     let id = snap.id;
     if ((hitCounts.get(match.originalId) ?? 0) > 1) {
@@ -116,7 +113,9 @@ function mapToDiscoveredColumns(
       spec: snap.spec,
       data: snap.data,
       dataStatus: snap.dataStatus,
-      isPrimary: anchors.some((anchor) => snapSpecId === deriveNativeId(anchor)),
+      isPrimary: anchorColumnIds.some(
+        (anchor) => snap.id === anchor || match.originalId === anchor,
+      ),
       linkerPath: match.path,
     };
   });
