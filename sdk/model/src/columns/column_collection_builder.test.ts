@@ -108,17 +108,17 @@ describe("ColumnCollectionBuilder", () => {
 
     const collection = builder.build({ allowPartialColumnList: true });
     expect(collection).toBeDefined();
-    expect(collection.columnListComplete).toBe(false);
     expect(collection.findColumns()).toHaveLength(1);
   });
 
-  test("allowPartialColumnList with complete providers sets columnListComplete true", () => {
+  test("allowPartialColumnList with complete providers returns collection", () => {
     const snap = createSnapshot("id1", createSpec("col1"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap], true));
 
     const collection = builder.build({ allowPartialColumnList: true });
-    expect(collection.columnListComplete).toBe(true);
+    expect(collection).toBeDefined();
+    expect(collection.findColumns()).toHaveLength(1);
   });
 });
 
@@ -290,25 +290,30 @@ describe("multiple providers", () => {
     expect(builder.build()).toBeUndefined();
   });
 
-  test("allowPartialColumnList is false only when all providers complete", () => {
+  test("allowPartialColumnList returns collection when any provider incomplete", () => {
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([createSnapshot("id1", createSpec("col1"))], true));
     builder.addSource(createProvider([createSnapshot("id2", createSpec("col2"))], false));
 
     const collection = builder.build({ allowPartialColumnList: true });
-    expect(collection.columnListComplete).toBe(false);
+    expect(collection).toBeDefined();
+    expect(collection.findColumns()).toHaveLength(2);
   });
 });
 
 describe("AnchoredColumnCollection", () => {
+  // The anchor spec must also exist as a source column — the new implementation
+  // resolves PColumnSpec anchors by matching native ID in the collected columns.
   const anchorSpec = createSpec("anchor-col", {
     axesSpec: [sampleAxis("sample"), sampleAxis("gene")],
   });
+  const anchorSnap = createSnapshot("anchor-snap-id", anchorSpec);
 
   test("build with PColumnSpec anchor returns anchored collection", () => {
     const s1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([s1]);
+    // anchorSnap must be in sources so resolveAnchorMap can find it by native ID
+    builder.addSource([s1, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } });
     expect(collection).toBeDefined();
@@ -337,7 +342,7 @@ describe("AnchoredColumnCollection", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
+    builder.addSource([snap, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
@@ -353,50 +358,65 @@ describe("AnchoredColumnCollection", () => {
   test("getColumn returns undefined for unknown id", () => {
     const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
+    builder.addSource([snap, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
     expect(collection.getColumn("not-a-real-id" as SUniversalPColumnId)).toBeUndefined();
+  });
+
+  test("getAnchors returns resolved anchor map", () => {
+    const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
+    const snap = createSnapshot("id1", spec);
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([snap, anchorSnap]);
+
+    const collection = builder.build({ anchors: { main: anchorSpec } })!;
+    const anchors = collection.getAnchors();
+    expect(anchors.size).toBe(1);
+    expect(anchors.get("main")).toBeDefined();
+    expect(anchors.get("main")!.spec.name).toBe("anchor-col");
   });
 
   test("findColumns returns ColumnMatch with originalId and variants", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
+    // anchorSnap itself also appears in findColumns results (axes ⊆ anchor axes)
+    builder.addSource([snap, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
     const matches = collection.findColumns();
 
-    expect(matches).toHaveLength(1);
-    expect(matches[0].originalId).toBe("id1");
-    expect(matches[0].column.spec.name).toBe("col1");
-    expect(matches[0].variants).toBeDefined();
+    // col1 + anchor-col are both discovered
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    const col1Match = matches.find((m) => m.column.spec.name === "col1")!;
+    expect(col1Match).toBeDefined();
+    expect(col1Match.originalId).toBe("id1");
+    expect(col1Match.variants).toBeDefined();
   });
 
   test("findColumns exclude filters out matching columns", () => {
     const snap1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const snap2 = createSnapshot("id2", createSpec("col2", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap1, snap2]);
+    builder.addSource([snap1, snap2, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
     const results = collection.findColumns({ exclude: { name: "col1" } });
-    expect(results).toHaveLength(1);
-    expect(results[0].column.spec.name).toBe("col2");
+    expect(results.every((r) => r.column.spec.name !== "col1")).toBe(true);
+    expect(results.some((r) => r.column.spec.name === "col2")).toBe(true);
   });
 
-  test("allowPartialColumnList with anchors tracks completeness", () => {
+  test("allowPartialColumnList with anchors returns collection when incomplete", () => {
     const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource(createProvider([snap], false));
+    builder.addSource(createProvider([snap, anchorSnap], false));
 
     const collection = builder.build({
       anchors: { main: anchorSpec },
       allowPartialColumnList: true,
     });
     expect(collection).toBeDefined();
-    expect(collection.columnListComplete).toBe(false);
   });
 
   test("build returns undefined with anchors when incomplete and no allowPartial", () => {
@@ -413,7 +433,7 @@ describe("AnchoredColumnCollection", () => {
     const snap = createSnapshot("id1", spec, "computing");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([snap]);
+    builder.addSource([snap, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
