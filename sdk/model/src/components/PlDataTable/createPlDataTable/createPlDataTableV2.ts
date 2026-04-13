@@ -15,16 +15,20 @@ import {
   isLinkerColumn,
   uniqueBy,
   parseJson,
-  Services,
-  type RequireServices,
+  PColumnName,
 } from "@milaboratories/pl-model-common";
-import type { PColumnDataUniversal, RenderCtxBase } from "../../../render";
-import { allPColumnsReady, deriveLabels } from "../../../render";
+import type {
+  AxisLabelProvider,
+  ColumnProvider,
+  PColumnDataUniversal,
+  RenderCtxBase,
+} from "../../../render";
+import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
 import type { CreatePlDataTableOps, PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
+import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
 import { createPTableDefV2 } from "./createPTableDefV2";
@@ -48,8 +52,8 @@ export type createPlDataTableOptionsV2 = {
  * @param tableState table ui state
  * @returns PlAgDataTableV2 table source
  */
-export function createPlDataTableV2<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
-  ctx: RenderCtxBase<A, U, S>,
+export function createPlDataTableV2<A, U>(
+  ctx: RenderCtxBase<A, U>,
   columns: createPlDataTableOptionsV2["columns"],
   tableState?: createPlDataTableOptionsV2["tableState"],
   options?: createPlDataTableOptionsV2["options"],
@@ -57,8 +61,7 @@ export function createPlDataTableV2<A, U, S extends RequireServices<typeof Servi
   if (columns.length === 0) return undefined;
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
-
-  const allLabelColumns = getAllLabelColumns(ctx);
+  const allLabelColumns = getAllLabelColumns(ctx.resultPool) ?? [];
 
   let fullLabelColumns = getMatchingLabelColumns(columns, allLabelColumns);
   fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map(
@@ -200,4 +203,19 @@ export function createPlDataTableV2<A, U, S extends RequireServices<typeof Servi
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
   } satisfies PlDataTableModel;
+}
+
+function getAllLabelColumns(
+  resultPool: AxisLabelProvider & ColumnProvider,
+): PColumn<PColumnDataUniversal>[] | undefined {
+  return new PColumnCollection()
+    .addAxisLabelProvider(resultPool)
+    .addColumnProvider(resultPool)
+    .getColumns(
+      {
+        name: PColumnName.Label,
+        axes: [{}], // exactly one axis
+      },
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    );
 }
