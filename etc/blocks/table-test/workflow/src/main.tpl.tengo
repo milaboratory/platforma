@@ -8,11 +8,11 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 wf.body(func(args) {
 	// --- Main data: columns on "name" axis ---
 	mainTsv := "name\tvalue\tscore\tcategory\tnote\n" +
-		"Alpha\t10\t1.5\tA\thello\n" +
-		"Beta\t20\t2.7\tB\tworld\n" +
-		"Gamma\t30\t3.1\tA\tfoo\n" +
-		"Delta\t40\t4.8\tB\tbar\n" +
-		"Epsilon\t50\t5.0\tA\tbaz\n"
+		"A\t10\t1.5\tA\thello\n" +
+		"B\t20\t2.7\tB\tworld\n" +
+		"C\t30\t3.1\tA\tfoo\n" +
+		"D\t40\t4.8\tB\tbar\n" +
+		"E\t50\t5.0\tA\tbaz\n"
 
 	// --- Linked data: columns on "group" axis ---
 	groupTsv := "group\tdescription\tpriority\n" +
@@ -21,11 +21,11 @@ wf.body(func(args) {
 
 	// --- Linker: maps "name" -> "group" ---
 	linkerTsv := "name\tgroup\tlink\n" +
-		"Alpha\tG1\t1\n" +
-		"Beta\tG1\t1\n" +
-		"Gamma\tG2\t1\n" +
-		"Delta\tG2\t1\n" +
-		"Epsilon\tG1\t1\n"
+		"A\tG1\t1\n" +
+		"B\tG1\t1\n" +
+		"C\tG2\t1\n" +
+		"D\tG2\t1\n" +
+		"E\tG1\t1\n"
 
 	// --- Second-hop linked data: columns on "region" axis ---
 	regionTsv := "region\tregionName\tpopulation\n" +
@@ -37,6 +37,24 @@ wf.body(func(args) {
 		"G1\tR1\t1\n" +
 		"G2\tR2\t1\n"
 
+	// --- Label columns: axis value -> human-readable label ---
+	// participate in getMatchingLabelColumns / deriveAllLabels (createPlDataTableV3.ts#L106-110)
+	// each has single axis and column name "pl7.app/label"
+	nameLabelTsv := "name\tlabel\n" +
+		"A\tAlpha sample\n" +
+		"B\tBeta sample\n" +
+		"C\tGamma sample\n" +
+		"D\tDelta sample\n" +
+		"E\tEpsilon sample\n"
+
+	groupLabelTsv := "group\tlabel\n" +
+		"G1\tGroup One\n" +
+		"G2\tGroup Two\n"
+
+	regionLabelTsv := "region\tlabel\n" +
+		"R1\tNorth region\n" +
+		"R2\tSouth region\n"
+
 	e := exec.builder().
 		cpu(1).ram("50Mi").
 		cmd("env").
@@ -45,11 +63,17 @@ wf.body(func(args) {
 		writeFile("linker.tsv", linkerTsv).
 		writeFile("region.tsv", regionTsv).
 		writeFile("linker2.tsv", linker2Tsv).
+		writeFile("nameLabel.tsv", nameLabelTsv).
+		writeFile("groupLabel.tsv", groupLabelTsv).
+		writeFile("regionLabel.tsv", regionLabelTsv).
 		saveFile("main.tsv").
 		saveFile("group.tsv").
 		saveFile("linker.tsv").
 		saveFile("region.tsv").
 		saveFile("linker2.tsv").
+		saveFile("nameLabel.tsv").
+		saveFile("groupLabel.tsv").
+		saveFile("regionLabel.tsv").
 		run()
 
 	mainFile := e.getFile("main.tsv")
@@ -57,6 +81,9 @@ wf.body(func(args) {
 	linkerFile := e.getFile("linker.tsv")
 	regionFile := e.getFile("region.tsv")
 	linker2File := e.getFile("linker2.tsv")
+	nameLabelFile := e.getFile("nameLabel.tsv")
+	groupLabelFile := e.getFile("groupLabel.tsv")
+	regionLabelFile := e.getFile("regionLabel.tsv")
 
 	nameAxisSpec := {
 		name: "name",
@@ -240,12 +267,75 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
+	nameLabelSpec := {
+		axes: [{
+			column: "name",
+			spec: nameAxisSpec
+		}],
+		columns: [{
+			column: "label",
+			id: "nameLabel",
+			spec: {
+				name: "pl7.app/label",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Name label"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	groupLabelSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}],
+		columns: [{
+			column: "label",
+			id: "groupLabel",
+			spec: {
+				name: "pl7.app/label",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Group label"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	regionLabelSpec := {
+		axes: [{
+			column: "region",
+			spec: regionAxisSpec
+		}],
+		columns: [{
+			column: "label",
+			id: "regionLabel",
+			spec: {
+				name: "pl7.app/label",
+				valueType: "String",
+				annotations: {
+					"pl7.app/label": "Region label"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
 	importOps := { inputCache: times.second, splitDataAndSpec: true }
 	mainPf := xsv.importFile(mainFile, "tsv", mainSpec, importOps)
 	groupPf := xsv.importFile(groupFile, "tsv", groupSpec, importOps)
 	linkerPf := xsv.importFile(linkerFile, "tsv", linkerSpec, importOps)
 	regionPf := xsv.importFile(regionFile, "tsv", regionSpec, importOps)
 	linker2Pf := xsv.importFile(linker2File, "tsv", linker2Spec, importOps)
+	nameLabelPf := xsv.importFile(nameLabelFile, "tsv", nameLabelSpec, importOps)
+	groupLabelPf := xsv.importFile(groupLabelFile, "tsv", groupLabelSpec, importOps)
+	regionLabelPf := xsv.importFile(regionLabelFile, "tsv", regionLabelSpec, importOps)
 
 	// Merge all into a single pframe
 	pf := pframes.pFrameBuilder()
@@ -262,6 +352,15 @@ wf.body(func(args) {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in linker2Pf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in nameLabelPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in groupLabelPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in regionLabelPf {
 		pf.add(k, v.spec, v.data)
 	}
 

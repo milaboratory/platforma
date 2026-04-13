@@ -4,24 +4,35 @@ import {
   isLabelColumn,
   matchAxisId,
   PColumnName,
+  Services,
+  type RequireServices,
 } from "@milaboratories/pl-model-common";
-import type { AxisLabelProvider, ColumnProvider, PColumnDataUniversal } from "../../render";
-import { PColumnCollection } from "../../render";
+import type { PColumnDataUniversal, RenderCtxBase } from "../../render";
+import { ColumnCollectionBuilder, collectCtxColumnSnapshotProviders } from "../../columns";
+import { throwError } from "@milaboratories/helpers";
 
-/** Get all label columns from the result pool */
-export function getAllLabelColumns(
-  resultPool: AxisLabelProvider & ColumnProvider,
-): PColumn<PColumnDataUniversal>[] | undefined {
-  return new PColumnCollection()
-    .addAxisLabelProvider(resultPool)
-    .addColumnProvider(resultPool)
-    .getColumns(
-      {
-        name: PColumnName.Label,
-        axes: [{}], // exactly one axis
-      },
-      { dontWaitAllData: true, overrideLabelAnnotation: false },
-    );
+/**
+ * Get all label columns visible in the current render context
+ * (result pool + block outputs + prerun).
+ */
+export function getAllLabelColumns<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
+): PColumn<PColumnDataUniversal>[] {
+  const pframeSpec =
+    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for label discovery.");
+  const collection = new ColumnCollectionBuilder(pframeSpec)
+    .addSources(collectCtxColumnSnapshotProviders(ctx))
+    .build({ allowPartialColumnList: true });
+  try {
+    return collection
+      .findColumns({ include: { name: PColumnName.Label, axes: [] } })
+      .reduce<PColumn<PColumnDataUniversal>[]>((acc, hit) => {
+        const data = hit.data?.get();
+        return data === undefined ? acc : [...acc, { id: hit.id, spec: hit.spec, data }];
+      }, []);
+  } finally {
+    collection.dispose();
+  }
 }
 
 /** Get label columns matching the provided columns from the result pool */

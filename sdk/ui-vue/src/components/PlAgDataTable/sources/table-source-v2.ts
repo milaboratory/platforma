@@ -183,13 +183,8 @@ export async function calculateGridOptions({
   // replace axes with label columns
   indices = indices.map((i) => {
     const spec = tableSpecs[i];
-    if (spec.type === "axis") {
-      const labelColumnIdx = getLabelColumnIndex(spec.id);
-      if (labelColumnIdx !== -1) {
-        return labelColumnIdx;
-      }
-    }
-    return i;
+    const idx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
+    return idx === -1 ? i : idx;
   });
   // When no saved state, compute default hidden columns from annotations
   if (isNil(hiddenColIds)) {
@@ -233,11 +228,13 @@ export async function calculateGridOptions({
     })
     .toArray();
 
-  // build request indices: only non-hidden fields
+  // build request indices: only non-hidden fields.
+  // For axes replaced by label columns, request label column data (used for display),
+  // while the original axis values are fetched separately via visibleAxesIndices (used for row selection keys).
   let requestIndices: number[] = [];
   const fieldResultMapping: number[] = [];
-  fields.forEach((field) => {
-    const visibleSpecIdx = specsToVisibleSpecsMapping.get(field);
+  indices.forEach((displayField) => {
+    const visibleSpecIdx = specsToVisibleSpecsMapping.get(displayField);
     if (visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
       fieldResultMapping.push(requestIndices.length);
       requestIndices.push(visibleSpecIdx);
@@ -352,7 +349,9 @@ export function makeColDef(
     }
   }
   const headerName =
-    readAnnotation(spec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`;
+    readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ??
+    readAnnotation(spec.spec, Annotation.Label)?.trim() ??
+    `Unlabeled ${spec.type} ${iCol}`;
 
   return {
     colId,

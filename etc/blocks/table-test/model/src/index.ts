@@ -3,7 +3,6 @@ import {
   DataModelBuilder,
   PObjectId,
   PlDataTableFilters,
-  createPlDataTable,
   createPlDataTableStateV2,
   createPlDataTableV3,
   type InferHrefType,
@@ -32,11 +31,6 @@ export const platforma = BlockModelV3.create(blockDataModel)
         type: "link",
         href: "/",
         label: "Table V3",
-      },
-      {
-        type: "link",
-        href: "/v2",
-        label: "Table V2",
       },
     ];
   })
@@ -102,16 +96,6 @@ export const platforma = BlockModelV3.create(blockDataModel)
           { match: (spec) => spec.name === "score", visibility: "optional" },
         ],
       },
-    });
-  })
-
-  .outputWithStatus("tableV2", (ctx) => {
-    const columns = ctx.outputs?.resolve("tableFrame")?.getPColumns();
-    if (!columns) return undefined;
-    return createPlDataTable(ctx, {
-      version: "v2",
-      columns,
-      tableState: ctx.data.tableState,
     });
   })
 

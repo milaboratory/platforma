@@ -4,14 +4,14 @@ import { useApp } from "./app";
 
 const app = useApp();
 
-const tableSettingsV2 = usePlDataTableSettingsV2({
-  model: () => app.model.outputs.tableV2,
+const tableSettingsV3 = usePlDataTableSettingsV2({
+  model: () => app.model.outputs.tableV3,
 });
 </script>
 
 <template>
   <PlBlockPage>
-    <template #title>Table V2</template>
-    <PlAgDataTableV2 v-model="app.model.data.tableState" :settings="tableSettingsV2" />
+    <template #title>Table(don't forget run block)</template>
+    <PlAgDataTableV2 v-model="app.model.data.tableState" :settings="tableSettingsV3" />
   </PlBlockPage>
 </template>

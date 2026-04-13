@@ -15,6 +15,8 @@ import {
   isLinkerColumn,
   uniqueBy,
   parseJson,
+  Services,
+  type RequireServices,
 } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, RenderCtxBase } from "../../../render";
 import { allPColumnsReady, deriveLabels } from "../../../render";
@@ -46,8 +48,8 @@ export type createPlDataTableOptionsV2 = {
  * @param tableState table ui state
  * @returns PlAgDataTableV2 table source
  */
-export function createPlDataTableV2<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function createPlDataTableV2<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   columns: createPlDataTableOptionsV2["columns"],
   tableState?: createPlDataTableOptionsV2["tableState"],
   options?: createPlDataTableOptionsV2["options"],
@@ -56,8 +58,7 @@ export function createPlDataTableV2<A, U>(
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
 
-  const allLabelColumns = getAllLabelColumns(ctx.resultPool);
-  if (!allLabelColumns) return undefined;
+  const allLabelColumns = getAllLabelColumns(ctx);
 
   let fullLabelColumns = getMatchingLabelColumns(columns, allLabelColumns);
   fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map(

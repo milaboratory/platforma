@@ -103,10 +103,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const splited = splitDiscoveredColumns(discovered);
   const resolved = resolveDiscoveredColumns(splited, discovered);
 
-  const labelColumns = getMatchingLabelColumns(
-    resolved.all,
-    getAllLabelColumns(ctx.resultPool) ?? [],
-  );
+  const labelColumns = getMatchingLabelColumns(resolved.all, getAllLabelColumns(ctx));
 
   const derivedLabels = deriveAllLabels({
     columns: discovered.map((dc) => ({

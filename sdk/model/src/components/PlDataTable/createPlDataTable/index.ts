@@ -5,8 +5,8 @@ import { createPlDataTableOptionsV2, createPlDataTableV2 } from "./createPlDataT
 import { createPlDataTableV3 } from "./createPlDataTableV3";
 import type { createPlDataTableOptionsV3 } from "./createPlDataTableV3";
 
-export function createPlDataTable<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function createPlDataTable<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
+  ctx: RenderCtxBase<A, U, S>,
   options: { version: "v2" } & createPlDataTableOptionsV2,
 ): ReturnType<typeof createPlDataTableV2>;
 export function createPlDataTable<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
