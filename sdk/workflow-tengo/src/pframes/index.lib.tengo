@@ -18,6 +18,7 @@ xsvBuilder := import(":pframes.xsv-builder")
 pColumnData := import(":pframes.data")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
+llBatchProcessTpl := assets.importTemplate(":pframes.process-pcolumn-batch")
 
 // Schema for basic column spec used in TsvContent settings
 BASIC_TSV_COLUMN_SPEC_SCHEMA := {
@@ -365,6 +366,405 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": true, "String": true, "Bytes": true }
 
 /**
+ * Internal implementation for processColumn batch mode.
+ * See processColumn docs for the public API.
+ */
+_processColumnBatch := func(input, bodyTpl, outputs, opts) {
+	// Validate batch options
+	if is_undefined(opts.batch) {
+		ll.panic("batch option is required when using primary+enrichment input form")
+	}
+	if !is_undefined(opts.aggregate) {
+		ll.panic("aggregate and batch options are mutually exclusive")
+	}
+
+	batch := opts.batch
+	if is_undefined(batch.size) || !is_int(batch.size) || batch.size <= 0 {
+		ll.panic("batch.size must be a positive integer")
+	}
+	if is_undefined(batch.keyColumns) {
+		ll.panic("batch.keyColumns is required")
+	}
+	if is_undefined(batch.format) {
+		batch.format = "tsv"
+	}
+	if is_undefined(batch.passContent) {
+		batch.passContent = false
+	}
+
+	primaryJoin := input.primaryJoin
+	if is_undefined(primaryJoin) {
+		primaryJoin = "full"
+	}
+
+	isEph := false
+	if !is_undefined(opts.isEphemeral) {
+		isEph = opts.isEphemeral
+	}
+
+	// Normalize column entries
+	primaryEntries := pUtil.normalizeColumnEntries(input.primary)
+	enrichmentEntries := pUtil.normalizeColumnEntries(input.enrichments)
+
+	if len(primaryEntries) == 0 {
+		ll.panic("at least one primary column is required")
+	}
+
+	// Get axes spec from first primary column
+	allAxesSpec := primaryEntries[0].src.spec.axesSpec
+	if is_undefined(allAxesSpec) {
+		ll.panic("primary column must have axesSpec defined")
+	}
+
+	// Match batch key columns against axes
+	batchKeyIndices := pSpec.matchAxes(allAxesSpec, batch.keyColumns)
+	isolationIndices := pUtil.calculateGroupAxesIndices(len(allAxesSpec), batchKeyIndices)
+
+	isolationAxesSpec := []
+	for i in isolationIndices {
+		isolationAxesSpec = append(isolationAxesSpec, allAxesSpec[i])
+	}
+
+	batchKeyAxesSpec := []
+	for i in batchKeyIndices {
+		batchKeyAxesSpec = append(batchKeyAxesSpec, allAxesSpec[i])
+	}
+
+	// iterationAxesSpec for batch mode = isolation axes (the outer iteration level)
+	iterationAxesSpec := copy(isolationAxesSpec)
+
+	// Build output specs and processed outputs
+	processedOutputs := []
+	outputSpecs := {}
+	outputsMap := {}
+
+	createOutputTrace := func(output) {
+		hasOutputTrace := !is_undefined(output.traceSteps)
+		hasGlobalTrace := !is_undefined(opts.traceSteps)
+
+		// For batch mode, we don't have a single input spec for trace
+		// Use the first primary's spec
+		inputSpec := primaryEntries[0].src.spec
+		hasInputTrace := !is_undefined(inputSpec.annotations) && !is_undefined(inputSpec.annotations[pSpec.A_TRACE])
+
+		outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
+
+		trace := undefined
+		if len(outputTraceSteps) > 0 || hasInputTrace {
+			trace = pSpec.makeTrace(inputSpec, outputTraceSteps...)
+		}
+
+		outputOverrideTrace := output.overrideTrace
+		if is_undefined(outputOverrideTrace) {
+			outputOverrideTrace = hasOutputTrace || hasGlobalTrace
+		}
+
+		return { trace: trace, overrideTrace: outputOverrideTrace }
+	}
+
+	for output in outputs {
+		outputsMap[output.name] = output
+		traceInfo := createOutputTrace(output)
+
+		if output.type == "Resource" {
+			ll.panic("Resource output type is not supported in batch mode. Use ResourceMap or Xsv instead.")
+		} else if output.type == "ResourceMap" {
+			spec := maps.merge(output.spec, {
+				axesSpec: copy(iterationAxesSpec) + copy(batchKeyAxesSpec) + slices.normalize(output.spec.axesSpec)
+			})
+			if !is_undefined(traceInfo.trace) {
+				spec = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
+			}
+			outputSpecs[output.name] = spec
+			processedOutputs = append(processedOutputs, maps.merge(output, {
+				keyLength: len(output.spec.axesSpec),
+				spec: undefined,
+				traceSteps: undefined,
+				overrideTrace: undefined
+			}))
+		} else if output.type == "Xsv" {
+			if is_undefined(output.settings) {
+				ll.panic("settings are required for Xsv output")
+			}
+
+			// For batch mode Xsv with batchKeyColumns, convert to standard axes format
+			batchKeyColumnsNames := output.settings.batchKeyColumns
+			if is_undefined(batchKeyColumnsNames) {
+				ll.panic("batchKeyColumns is required for Xsv output in batch mode")
+			}
+
+			// Build axes from batch key columns
+			batchAxes := []
+			for colName in batchKeyColumnsNames {
+				// Find matching axis spec
+				matchedAxis := undefined
+				for axSpec in batchKeyAxesSpec {
+					if axSpec.name == colName {
+						matchedAxis = axSpec
+						break
+					}
+				}
+				if is_undefined(matchedAxis) {
+					ll.panic("batchKeyColumns references unknown axis: %v", colName)
+				}
+				batchAxes = append(batchAxes, {
+					column: colName,
+					spec: matchedAxis
+				})
+			}
+
+			// Create modified settings with proper axes instead of batchKeyColumns.
+			// partitionKeyLength MUST be < len(axes), so we use 0 — pfconv embeds
+			// all rows as a single "[]" partition with JSON {axis_value: column_value} mapping.
+			modifiedSettings := maps.merge(output.settings, {
+				axes: batchAxes,
+				batchKeyColumns: undefined
+			})
+
+			decomposition := pUtil.decomposePfconvImportCfg(modifiedSettings, {
+				additionalAxesSpec: iterationAxesSpec
+			})
+			purifiedPfconvCfg := decomposition.purifiedCfg
+			columnsSpec := decomposition.columnsSpec
+			if !is_undefined(traceInfo.trace) {
+				for columnName, spec in columnsSpec {
+					columnsSpec[columnName] = traceInfo.trace.inject(spec, {override: traceInfo.overrideTrace})
+				}
+			}
+			outputSpecs[output.name] = columnsSpec
+			processedOutputs = append(processedOutputs, maps.merge(output, {
+				settings: purifiedPfconvCfg,
+				flattenWithDelimiter: "/",
+				traceSteps: undefined,
+				overrideTrace: undefined
+			}))
+		} else {
+			ll.panic("unsupported output type in batch mode: %v. Use ResourceMap or Xsv.", output.type)
+		}
+	}
+
+	// Prepare template parameters
+	primaryHeaders := []
+	for entry in primaryEntries {
+		primaryHeaders = append(primaryHeaders, entry.header)
+	}
+	enrichmentHeaders := []
+	for entry in enrichmentEntries {
+		enrichmentHeaders = append(enrichmentHeaders, entry.header)
+	}
+
+	batchTemplateParams := {
+		batchSize: batch.size,
+		batchFormat: batch.format,
+		passContent: batch.passContent,
+		batchKeyIndices: batchKeyIndices,
+		isolationIndices: isolationIndices,
+		primaryJoin: primaryJoin,
+		eph: isEph,
+		outputs: processedOutputs,
+		primaryColumnCount: len(primaryEntries),
+		enrichmentColumnCount: len(enrichmentEntries),
+		primaryHeaders: primaryHeaders,
+		enrichmentHeaders: enrichmentHeaders
+	}
+
+	// Build render inputs — pass column data as direct named inputs
+	renderInputs := {
+		params: smart.createJsonResource(batchTemplateParams),
+		body: bodyTpl
+	}
+
+	// Pass each column's data and spec as named inputs
+	for i, entry in primaryEntries {
+		renderInputs["__col_primary_" + string(i) + "_data"] = entry.src.data
+		renderInputs["__col_primary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
+		if !is_undefined(entry.filter) {
+			renderInputs["__col_primary_" + string(i) + "_filter_data"] = entry.filter.data
+			renderInputs["__col_primary_" + string(i) + "_filter_spec"] = smart.createJsonResource(entry.filter.spec)
+		}
+	}
+	for i, entry in enrichmentEntries {
+		renderInputs["__col_enrichment_" + string(i) + "_data"] = entry.src.data
+		renderInputs["__col_enrichment_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
+	}
+
+	// Forward extra/metaExtra
+	extra := opts.extra
+	if !is_undefined(extra) {
+		for k, v in extra {
+			renderInputs["__extra_" + k] = v
+		}
+	}
+
+	renderResult := render.createEphemeral(llBatchProcessTpl, renderInputs)
+
+	// Build return object (same interface as standard processColumn)
+	self := undefined
+	self = ll.toStrict({
+		renderResult: renderResult,
+
+		outputSpec: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			spec := outputSpecs[name]
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec = spec[columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+				return spec
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return spec
+			}
+		},
+
+		outputData: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				return renderResult.output(name + "/" + column[0])
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return renderResult.output(name)
+			}
+		},
+
+		output: func(name, ...column) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+
+			if output.type == "Xsv" {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for Xsv output")
+				}
+				columnName := column[0]
+				spec := outputSpecs[name][columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+				return {
+					data: renderResult.output(name + "/" + columnName),
+					spec: spec
+				}
+			} else {
+				if len(column) > 0 {
+					ll.panic("column name should not be provided for non-Xsv output")
+				}
+				return {
+					data: renderResult.output(name),
+					spec: outputSpecs[name]
+				}
+			}
+		},
+
+		xsvOutputFrame: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			if output.type != "Xsv" {
+				ll.panic("xsvOutputFrame can only be used with Xsv outputs")
+			}
+
+			pf := builder.pFrameBuilder()
+			for columnName, spec in outputSpecs[name] {
+				pf.add(columnName, spec, renderResult.output(name + "/" + columnName))
+			}
+			return pf.build()
+		},
+
+		addAllOutputsToBuilder: func(builder, ...separator) {
+			sep := "."
+			if len(separator) > 0 {
+				sep = separator[0]
+			}
+
+			maps.forEach(outputsMap, func(name, output) {
+				if output.type == "Xsv" {
+					for columnName, spec in outputSpecs[name] {
+						builder.add(
+							name + sep + columnName,
+							spec,
+							renderResult.output(name + "/" + columnName)
+						)
+					}
+				} else {
+					builder.add(
+						name,
+						outputSpecs[name],
+						renderResult.output(name)
+					)
+				}
+			})
+
+			return builder
+		},
+
+		allOutputsFrame: func(...xsvNameSeparator) {
+			pf := builder.pFrameBuilder()
+			self.addAllOutputsToBuilder(pf, xsvNameSeparator...)
+			return pf.build()
+		},
+
+		listOutputs: func() {
+			return maps.getKeys(outputsMap)
+		},
+
+		isXsvOutput: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			return output.type == "Xsv"
+		},
+
+		listXsvColumns: func(name) {
+			output := outputsMap[name]
+			if is_undefined(output) {
+				ll.panic("unknown output: " + name)
+			}
+			if output.type != "Xsv" {
+				ll.panic("output is not Xsv: " + name)
+			}
+			return maps.getKeys(outputSpecs[name])
+		},
+
+		addXsvOutputToBuilder: func(builder, outputName, prefix) {
+			for columnName in self.listXsvColumns(outputName) {
+				builder.add(
+					prefix + columnName,
+					self.outputSpec(outputName, columnName),
+					self.outputData(outputName, columnName)
+				)
+			}
+			return builder
+		}
+	})
+
+	return self
+}
+
+/**
  * Constructs a mapping or aggregation pipeline for a given input PColumn and returns a specialized
  * output object for accessing the processing results.
  *
@@ -585,6 +985,15 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	} else {
 		ll.panic("too many arguments")
 	}
+
+	// --- Batch mode detection ---
+	isBatchMode := is_map(input) && !is_undefined(input.primary)
+
+	if isBatchMode {
+		return _processColumnBatch(input, bodyTpl, outputs, opts)
+	}
+
+	// --- Standard mode (mapping / aggregation) ---
 
 	if is_undefined(input.spec) {
 		ll.panic("no input spec provided")
