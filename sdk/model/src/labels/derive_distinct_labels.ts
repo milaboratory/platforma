@@ -2,32 +2,34 @@ import {
   Annotation,
   parseJson,
   readAnnotation,
-  type CanonicalizedJson,
   type PObjectSpec,
+  type StringifiedJson,
+  type Trace,
 } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
+import { isFunction, isNil } from "es-toolkit";
+
+export type { Trace, TraceEntry } from "@milaboratories/pl-model-common";
 
 const DISTANCE_PENALTY = 0.001;
 const LABEL_TYPE = "__LABEL__";
 const LABEL_TYPE_FULL = "__LABEL__@1";
 
-export type WithLabel<T> = {
-  value: T;
-  label: string;
-};
-
-type TraceEntry = {
-  id?: string;
-  type: string;
-  label: string;
+/** SDK-internal trace shape — adds fields used by this algorithm only, not part of the on-disk contract. */
+type ExtendedTraceEntry = Trace[number] & {
   importance?: number;
+  position?: "prefix" | "suffix";
 };
-
-export type Trace = TraceEntry[];
 
 export type Entry =
   | PObjectSpec
-  | { spec: PObjectSpec; prefixTrace?: TraceEntry[]; suffixTrace?: TraceEntry[] };
+  | {
+      spec: PObjectSpec;
+      /** Extra trace entries merged with the base trace from annotations. */
+      extraTrace?: ExtendedTraceEntry[];
+      /** Linker steps traversed to discover this column; used to append "via $linkLabel" to derived labels. */
+      linkerPath?: { spec: PObjectSpec }[];
+    };
 
 export type DeriveLabelsOptions = {
   /** Separator to use between label parts (" / " by default) */
@@ -38,17 +40,32 @@ export type DeriveLabelsOptions = {
   includeNativeLabel?: boolean;
   /** Trace elements list that will be forced to be included in the label. */
   forceTraceElements?: string[];
+  /** Custom formatter for linker path suffix. Receives the array of linker labels from the full traversal chain,
+   *  the column spec, and the column index.
+   *  If returns undefined, no linker suffix is appended. By default labels are joined with " > " and prefixed with "via ". */
+  linkerLabelFormatter?: (
+    linkerLabels: string[],
+    spec: PObjectSpec,
+    index: number,
+  ) => string | undefined;
 };
 
-export function deriveDistinctLabels<T extends Entry>(
-  values: T[],
-  options: DeriveLabelsOptions = {},
-): WithLabel<T>[] {
+export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptions = {}): string[] {
   const forceTraceElements =
     options.forceTraceElements !== undefined && options.forceTraceElements.length > 0
       ? new Set(options.forceTraceElements)
       : undefined;
   const separator = options.separator ?? " / ";
+
+  // Collect per-entry linker suffixes before disambiguation
+  const linkerSuffixes = values.map((v, i) => {
+    const spec = "spec" in v && typeof v.spec === "object" ? v.spec : (v as PObjectSpec);
+    const linkerLabels = extractLinkerLabels(v);
+    if (linkerLabels.length === 0) return undefined;
+    return isFunction(options.linkerLabelFormatter)
+      ? options.linkerLabelFormatter(linkerLabels, spec, i)
+      : `via ${linkerLabels.join(" > ")}`;
+  });
 
   // Phase 1: enrich each value with parsed trace
   const records = values.map((v) => enrichRecord(v, options));
@@ -65,7 +82,12 @@ export function deriveDistinctLabels<T extends Entry>(
   if (mainTypes.length === 0) {
     if (secondaryTypes.length !== 0)
       throw new Error("Non-empty secondary types list while main types list is empty.");
-    return build(new Set(LABEL_TYPE_FULL), true)!;
+
+    return applyLinkerSuffixes(
+      build(new Set(LABEL_TYPE_FULL), true) ??
+        throwError("Failed to derive labels using native column labels"),
+      linkerSuffixes,
+    );
   }
 
   // Phase 4: search for minimal type set that produces unique labels
@@ -96,7 +118,10 @@ export function deriveDistinctLabels<T extends Entry>(
         options,
         separator,
       );
-      return build(minimized, false) ?? throwError("Failed to derive unique labels");
+      return applyLinkerSuffixes(
+        build(minimized, false) ?? throwError("Failed to derive unique labels"),
+        linkerSuffixes,
+      );
     }
 
     additionalType++;
@@ -116,29 +141,55 @@ export function deriveDistinctLabels<T extends Entry>(
     options,
     separator,
   );
-  return build(minimized, true) ?? throwError("Failed to derive unique labels");
+  return applyLinkerSuffixes(
+    build(minimized, true) ?? throwError("Failed to derive unique labels"),
+    linkerSuffixes,
+  );
+}
+
+/** Apply pre-formatted linker suffixes to labels that have them. */
+function applyLinkerSuffixes(labels: string[], suffixes: (string | undefined)[]): string[] {
+  return labels.map((label, i) => (isNil(suffixes[i]) ? label : `${label} ${suffixes[i]}`));
+}
+
+/** Extract linker labels from every step of the linkers path. */
+function extractLinkerLabels(entry: Entry): string[] {
+  if (!("spec" in entry) || typeof entry.spec !== "object") return [];
+  const path = entry.linkerPath;
+  if (path === undefined || path.length === 0) return [];
+  const labels: string[] = [];
+  for (const step of path) {
+    const label = (
+      readAnnotation(step.spec, Annotation.LinkLabel) ?? readAnnotation(step.spec, Annotation.Label)
+    )?.trim();
+    if (label !== undefined && label.length > 0) {
+      labels.push(label);
+    }
+  }
+  return labels;
 }
 
 // --- Pure helpers ---
-type FullTraceEntry = TraceEntry & { fullType: string; occurrenceIndex: number };
+type FullTraceEntry = ExtendedTraceEntry & { fullType: string; occurrenceIndex: number };
 
-type EnrichedRecord<T> = {
-  value: T;
+type EnrichedRecord = {
   fullTrace: FullTraceEntry[];
 };
 
 function extractSpecAndTrace(entry: Entry): {
   spec: PObjectSpec;
-  prefixTrace: TraceEntry[] | undefined;
-  suffixTrace: TraceEntry[] | undefined;
+  extraTrace: ExtendedTraceEntry[] | undefined;
+  linkerPath: { spec: PObjectSpec }[] | undefined;
 } {
-  if ("spec" in entry && typeof entry.spec === "object") {
-    return { spec: entry.spec, prefixTrace: entry.prefixTrace, suffixTrace: entry.suffixTrace };
-  }
-  return { spec: entry as PObjectSpec, prefixTrace: undefined, suffixTrace: undefined };
+  const isEnriched = "spec" in entry && typeof entry.spec === "object";
+  return {
+    spec: isEnriched ? entry.spec : (entry as PObjectSpec),
+    extraTrace: isEnriched ? entry.extraTrace : undefined,
+    linkerPath: isEnriched ? entry.linkerPath : undefined,
+  };
 }
 
-function buildFullTrace(trace: TraceEntry[]): FullTraceEntry[] {
+function buildFullTrace(trace: ExtendedTraceEntry[]): FullTraceEntry[] {
   const result: FullTraceEntry[] = [];
   const occurrences = new Map<string, number>();
 
@@ -157,15 +208,17 @@ function buildFullTrace(trace: TraceEntry[]): FullTraceEntry[] {
   return result;
 }
 
-function enrichRecord<T extends Entry>(value: T, options: DeriveLabelsOptions): EnrichedRecord<T> {
-  const { spec, prefixTrace, suffixTrace } = extractSpecAndTrace(value);
+function enrichRecord(value: Entry, options: DeriveLabelsOptions): EnrichedRecord {
+  const { spec, extraTrace } = extractSpecAndTrace(value);
 
   const label = readAnnotation(spec, Annotation.Label);
-  const traceStr = readAnnotation(spec, Annotation.Trace) as
-    | CanonicalizedJson<TraceEntry[]>
-    | undefined;
-  const baseTrace: Trace = traceStr ? (parseJson<Trace>(traceStr) ?? []) : [];
-  const trace = [...(prefixTrace ?? []), ...baseTrace, ...(suffixTrace ?? [])];
+  const traceStr = readAnnotation(spec, Annotation.Trace);
+  const baseTrace = traceStr
+    ? (parseJson(traceStr as StringifiedJson<ExtendedTraceEntry[]>) ?? [])
+    : [];
+  const prefixExtra = extraTrace?.filter((e) => e.position === "prefix") ?? [];
+  const suffixExtra = extraTrace?.filter((e) => e.position !== "prefix") ?? [];
+  const trace = [...prefixExtra, ...baseTrace, ...suffixExtra];
 
   if (label !== undefined) {
     const labelEntry = { label, type: LABEL_TYPE, importance: -2 };
@@ -173,7 +226,7 @@ function enrichRecord<T extends Entry>(value: T, options: DeriveLabelsOptions): 
     else trace.splice(0, 0, labelEntry);
   }
 
-  return { value, fullTrace: buildFullTrace(trace) };
+  return { fullTrace: buildFullTrace(trace) };
 }
 
 type TypeStats = {
@@ -181,7 +234,7 @@ type TypeStats = {
   countByType: Map<string, number>;
 };
 
-function collectTypeStats<T>(records: EnrichedRecord<T>[]): TypeStats {
+function collectTypeStats(records: EnrichedRecord[]): TypeStats {
   const importances = new Map<string, number>();
   const countByType = new Map<string, number>();
 
@@ -220,14 +273,14 @@ function classifyTypes(
   return { mainTypes, secondaryTypes };
 }
 
-function buildLabels<T>(
-  records: EnrichedRecord<T>[],
+function buildLabels(
+  records: EnrichedRecord[],
   includedTypes: Set<string>,
   forceTraceElements: Set<string> | undefined,
   separator: string,
   force: boolean,
-): WithLabel<T>[] | undefined {
-  const result: WithLabel<T>[] = [];
+): string[] | undefined {
+  const result: string[] = [];
 
   for (const r of records) {
     const parts: string[] = [];
@@ -239,24 +292,24 @@ function buildLabels<T>(
 
     if (parts.length === 0) {
       if (!force) return undefined;
-      result.push({ label: "Unlabeled", value: r.value });
+      result.push("Unlabeled");
       continue;
     }
 
-    result.push({ label: parts.join(separator), value: r.value });
+    result.push(parts.join(separator));
   }
 
   return result;
 }
 
-function countUniqueLabels<T>(result: WithLabel<T>[] | undefined): number {
+function countUniqueLabels(result: string[] | undefined): number {
   if (result === undefined) return 0;
-  return new Set(result.map((c) => c.label)).size;
+  return new Set(result).size;
 }
 
-function minimizeTypeSet<T>(
+function minimizeTypeSet(
   typeSet: Set<string>,
-  records: EnrichedRecord<T>[],
+  records: EnrichedRecord[],
   stats: TypeStats,
   forceTraceElements: Set<string> | undefined,
   options: DeriveLabelsOptions,

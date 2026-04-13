@@ -12,9 +12,9 @@ import {
   Domain,
   readAnnotation,
   readDomain,
-  getAxisId,
   getUniqueSourceValuesWithLabels,
   parseJson,
+  getPTableColumnId,
 } from "@platforma-sdk/model";
 import { computed, onMounted, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
@@ -48,11 +48,7 @@ const filtersOn = computed(() => {
 });
 
 function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
-  const id: PTableColumnId =
-    spec.type === "axis"
-      ? { type: "axis", id: getAxisId(spec.spec) }
-      : { type: "column", id: spec.id };
-  return canonicalizeJson<PTableColumnId>(id);
+  return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
 }
 
 const items = computed<PlAdvancedFilterItem[]>(() => {

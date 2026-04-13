@@ -12,7 +12,6 @@ import {
   type PlDataTableStateV2,
   type PlDataTableStateV2CacheEntry,
   type PlDataTableStateV2Normalized,
-  type PObjectId,
   type PTableParamsV2,
   type PTableSorting,
   type PlDataTableFilters,
@@ -178,15 +177,10 @@ function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
   };
 }
 
-function getHiddenColIds(state: PlDataTableGridStateCore["columnVisibility"]): PObjectId[] | null {
-  return (
-    state?.hiddenColIds?.map(parseJson).reduce((acc, c) => {
-      if (c.source.type === "column") {
-        acc.push(c.source.id);
-      }
-      return acc;
-    }, [] as PObjectId[]) ?? null
-  );
+function getHiddenColIds(
+  state: PlDataTableGridStateCore["columnVisibility"],
+): PTableColumnId[] | null {
+  return state?.hiddenColIds?.map((json) => getPTableColumnId(parseJson(json).source)) ?? null;
 }
 
 function convertPartitionFiltersToFilterSpec(

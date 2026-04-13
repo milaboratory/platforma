@@ -118,4 +118,85 @@ describe("SpecDriver", () => {
     expect(cellAxis!.annotations?.["pl7.app/parents"]).toBe('["sample"]');
     expect(cellAxis!.parentAxes).toEqual([0]);
   });
+
+  test("discoverColumns discovers columns through linker", async () => {
+    await using driver = new SpecDriver();
+
+    const nameAxis: AxisSpec = {
+      name: "name",
+      type: "String",
+      annotations: { "pl7.app/label": "Name" },
+    } as AxisSpec;
+    const groupAxis: AxisSpec = {
+      name: "group",
+      type: "String",
+      annotations: { "pl7.app/label": "Group" },
+    } as AxisSpec;
+
+    const { key: handle } = driver.createSpecFrame({
+      note: {
+        kind: "PColumn",
+        name: "note",
+        valueType: "String",
+        axesSpec: [nameAxis],
+        annotations: { "pl7.app/label": "Note" },
+      } as PColumnSpec,
+      value: {
+        kind: "PColumn",
+        name: "value",
+        valueType: "Int",
+        axesSpec: [nameAxis],
+        annotations: { "pl7.app/label": "Value" },
+      } as PColumnSpec,
+      description: {
+        kind: "PColumn",
+        name: "description",
+        valueType: "String",
+        axesSpec: [groupAxis],
+        annotations: { "pl7.app/label": "Description" },
+      } as PColumnSpec,
+      priority: {
+        kind: "PColumn",
+        name: "priority",
+        valueType: "Int",
+        axesSpec: [groupAxis],
+        annotations: { "pl7.app/label": "Priority" },
+      } as PColumnSpec,
+      linker_name_group: {
+        kind: "PColumn",
+        name: "linker_name_group",
+        valueType: "Int",
+        axesSpec: [groupAxis, nameAxis],
+        annotations: {
+          "pl7.app/isLinkerColumn": "true",
+          "pl7.app/linkLabel": "Name-Group Linker",
+        },
+      } as PColumnSpec,
+    });
+
+    const response = driver.discoverColumns(handle, {
+      axes: [{ axesSpec: [{ type: "String", name: "name" } as AxisSpec], qualifications: [] }],
+      maxHops: 1,
+      constraints: {
+        allowFloatingSourceAxes: true,
+        allowFloatingHitAxes: true,
+        allowSourceQualifications: true,
+        allowHitQualifications: true,
+      },
+    });
+
+    const names = response.hits.map((h) => h.hit.spec.name);
+    expect(names).toContain("note");
+    expect(names).toContain("value");
+    expect(names).toContain("description");
+    expect(names).toContain("priority");
+    expect(response.hits).toHaveLength(4);
+
+    // Linked columns should have non-empty path
+    const linkedHits = response.hits.filter((h) => h.path.length > 0);
+    expect(linkedHits).toHaveLength(2);
+    const linkedNames = linkedHits.map((h) => h.hit.spec.name);
+    expect(linkedNames).toContain("description");
+    expect(linkedNames).toContain("priority");
+  });
 });

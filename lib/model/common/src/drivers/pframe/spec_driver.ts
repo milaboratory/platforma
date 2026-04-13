@@ -103,6 +103,7 @@ export interface DiscoverColumnsRequest {
 }
 
 /** Linker step: traversal through a linker column */
+/** A step traversed during path-based column discovery. Discriminated by `type`. */
 export interface DiscoverColumnsLinkerStep {
   type: "linker";
   /** The linker column traversed in this step */

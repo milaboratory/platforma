@@ -1,3 +1,4 @@
+import type { PObjectId } from "@milaboratories/pl-model-common";
 import { PColumn } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { PColumnDataUniversal } from "../render/internal";
@@ -13,7 +14,7 @@ import type { ColumnDataStatus, ColumnSnapshot } from "./column_snapshot";
  */
 export interface ColumnSnapshotProvider {
   /** Returns all currently known columns. */
-  getAllColumns(): ColumnSnapshot[];
+  getAllColumns(): ColumnSnapshot<PObjectId>[];
 
   /** Whether the provider has finished enumerating all its columns.
    *  Calling this may mark the render context unstable — it touches
@@ -29,7 +30,7 @@ export interface ColumnSnapshotProvider {
  */
 export type ColumnSource =
   | ColumnSnapshotProvider
-  | ColumnSnapshot[]
+  | ColumnSnapshot<PObjectId>[]
   | PColumn<PColumnDataUniversal | undefined>[];
 
 // --- ArrayColumnProvider ---
@@ -39,7 +40,7 @@ export type ColumnSource =
  * Always complete, data status always 'ready'.
  */
 export class ArrayColumnProvider implements ColumnSnapshotProvider {
-  private readonly columns: ColumnSnapshot[];
+  private readonly columns: ColumnSnapshot<PObjectId>[];
 
   constructor(columns: PColumn<PColumnDataUniversal | undefined>[]) {
     this.columns = columns.map((col) => ({
@@ -50,7 +51,7 @@ export class ArrayColumnProvider implements ColumnSnapshotProvider {
     }));
   }
 
-  getAllColumns(): ColumnSnapshot[] {
+  getAllColumns(): ColumnSnapshot<PObjectId>[] {
     return this.columns;
   }
 
@@ -66,9 +67,9 @@ export class ArrayColumnProvider implements ColumnSnapshotProvider {
  * Always complete. Data status taken from each snapshot.
  */
 export class SnapshotColumnProvider implements ColumnSnapshotProvider {
-  constructor(private readonly snapshots: ColumnSnapshot[]) {}
+  constructor(private readonly snapshots: ColumnSnapshot<PObjectId>[]) {}
 
-  getAllColumns(): ColumnSnapshot[] {
+  getAllColumns(): ColumnSnapshot<PObjectId>[] {
     return this.snapshots;
   }
 
@@ -94,7 +95,7 @@ export class OutputColumnProvider implements ColumnSnapshotProvider {
     private readonly opts?: OutputColumnProviderOpts,
   ) {}
 
-  getAllColumns(): ColumnSnapshot[] {
+  getAllColumns(): ColumnSnapshot<PObjectId>[] {
     return this.getColumns();
   }
 
@@ -102,7 +103,7 @@ export class OutputColumnProvider implements ColumnSnapshotProvider {
     return this.accessor.getInputsLocked();
   }
 
-  private getColumns(): ColumnSnapshot[] {
+  private getColumns(): ColumnSnapshot<PObjectId>[] {
     const pColumns = this.accessor.getPColumns();
     if (pColumns === undefined) return [];
 
@@ -155,7 +156,7 @@ function isPColumnArray(source: unknown): source is PColumn<PColumnDataUniversal
 }
 
 /** Checks if a value looks like a ColumnSnapshot array. */
-function isColumnSnapshotArray(source: unknown): source is ColumnSnapshot[] {
+function isColumnSnapshotArray(source: unknown): source is ColumnSnapshot<PObjectId>[] {
   if (!Array.isArray(source)) return false;
   if (source.length === 0) return true; // empty array — treat as snapshots
   const first = source[0];
@@ -165,7 +166,7 @@ function isColumnSnapshotArray(source: unknown): source is ColumnSnapshot[] {
 /**
  * Normalize any ColumnSource into a ColumnSnapshotProvider.
  * - ColumnSnapshotProvider → returned as-is
- * - ColumnSnapshot[] → wrapped in SnapshotColumnProvider
+ * - ColumnSnapshot<PObjectId>[] → wrapped in SnapshotColumnProvider
  * - PColumn[] → wrapped in ArrayColumnProvider
  */
 export function toColumnSnapshotProvider(source: ColumnSource): ColumnSnapshotProvider {

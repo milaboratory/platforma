@@ -1,13 +1,12 @@
 import type {
   AxisValueType,
   ColumnValueType,
-  DiscoverColumnsLinkerStep,
   DiscoverColumnsStepInfo,
   PColumnIdAndSpec,
 } from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
 
-export type { DiscoverColumnsLinkerStep, DiscoverColumnsStepInfo };
+export type { DiscoverColumnsStepInfo };
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };

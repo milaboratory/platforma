@@ -686,10 +686,12 @@ export abstract class RenderCtxBase<
 
   // TODO remove all non-PColumn fields
   public createPFrame(
-    def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>,
+    def: PFrameDef<
+      PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>
+    >,
   ): PFrameHandle | undefined {
-    this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
+    this.verifyInlineAndExplicitColumnsSupport(def);
     return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
   }
 
@@ -731,11 +733,19 @@ export abstract class RenderCtxBase<
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
-  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+  public createPTableV2(
+    def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
+  ): PTableHandle | undefined {
     const columns = collectSpecQueryColumns(def.query);
-    this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    return this.ctx.createPTableV2(
+      mapPTableDefV2(def, (po) => {
+        if (po.data === undefined)
+          throw new Error("unreachable: column data undefined after readiness check");
+        return transformPColumnData({ id: po.id, spec: po.spec, data: po.data });
+      }),
+    );
   }
 
   /** @deprecated scheduled for removal from SDK */

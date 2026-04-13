@@ -1,4 +1,4 @@
-import type { PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type { PColumnSpec, PObjectId, SUniversalPColumnId } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../render/internal";
 
 // --- ColumnSnapshot ---
@@ -13,7 +13,7 @@ export type ColumnDataStatus = "ready" | "computing" | "absent";
  * - `data` holds an active object when data exists (ready or computing),
  *   or `undefined` when data is permanently absent.
  */
-export interface ColumnSnapshot<Id extends PObjectId = PObjectId> {
+export interface ColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> {
   readonly id: Id;
   readonly spec: PColumnSpec;
   readonly dataStatus: ColumnDataStatus;
@@ -45,11 +45,11 @@ export function createReadyColumnData(getData: () => PColumnDataUniversal | unde
 // --- Snapshot construction helpers ---
 
 /** Creates a ColumnSnapshot from parts. */
-export function createColumnSnapshot<Id extends PObjectId = PObjectId>(
+export function createColumnSnapshot<Id extends PObjectId>(
   id: Id,
   spec: PColumnSpec,
+  data: undefined | ColumnData,
   dataStatus: ColumnDataStatus,
-  data: ColumnData | undefined,
 ): ColumnSnapshot<Id> {
-  return { id, spec, dataStatus, data };
+  return { id, spec, data, dataStatus };
 }

@@ -51,7 +51,7 @@ export function collectCtxColumnSnapshotProviders<A, U, S>(
 export class ResultPoolColumnSnapshotProvider implements ColumnSnapshotProvider {
   constructor(private readonly pool: ResultPool) {}
 
-  getAllColumns(): ColumnSnapshot[] {
+  getAllColumns(): ColumnSnapshot<PObjectId>[] {
     const pColumns = this.pool.selectColumns(() => true);
     return pColumns.map((col) => toSnapshot(col.id, col.spec, col.data));
   }
@@ -65,7 +65,7 @@ function toSnapshot(
   id: PObjectId,
   spec: PColumnSpec,
   accessor: TreeNodeAccessor | undefined,
-): ColumnSnapshot {
+): ColumnSnapshot<PObjectId> {
   if (accessor === undefined) {
     return { id, spec, dataStatus: "absent" as ColumnDataStatus, data: undefined };
   }
