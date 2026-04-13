@@ -222,4 +222,36 @@ describe("deriveAxisLabels via deriveAllLabels", () => {
 
     expect(result[axisKey(axis)]).toBe("Label Col Label");
   });
+
+  // Regression: LabelableColumn.linkerPath used to be `linkerPath` while
+  // deriveDistinctLabels.Entry expected `linkersPath`. Structural typing +
+  // optional fields hid the mismatch from the type checker — the field flowed
+  // through as "extra" and disambiguation silently broke. This asserts the
+  // linker label reaches the output.
+  test("linkerPath flows into deriveDistinctLabels and produces the 'via' suffix", () => {
+    const linkerSpec = makeSpec({
+      name: "linker",
+      annotations: { [Annotation.LinkLabel]: "ClusterA" },
+    });
+    const columns: LabelableColumn[] = [
+      makeLabelableColumn(
+        "c1",
+        { name: "shared", annotations: { [Annotation.Label]: "Cluster size" } },
+        [{ spec: linkerSpec }],
+      ),
+      makeLabelableColumn("c2", {
+        name: "shared",
+        annotations: { [Annotation.Label]: "Cluster size" },
+      }),
+    ];
+
+    const result = deriveAllLabels({
+      columns,
+      labelColumns: [],
+      deriveLabelsOptions: { includeNativeLabel: true },
+    });
+
+    expect(result["c1"]).toContain("via ClusterA");
+    expect(result["c2"]).not.toContain("via ");
+  });
 });

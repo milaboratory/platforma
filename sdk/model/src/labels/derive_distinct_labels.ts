@@ -28,7 +28,7 @@ export type Entry =
       /** Extra trace entries merged with the base trace from annotations. */
       extraTrace?: ExtendedTraceEntry[];
       /** Linker steps traversed to discover this column; used to append "via $linkLabel" to derived labels. */
-      linkersPath?: { spec: PObjectSpec }[];
+      linkerPath?: { spec: PObjectSpec }[];
     };
 
 export type DeriveLabelsOptions = {
@@ -155,7 +155,7 @@ function applyLinkerSuffixes(labels: string[], suffixes: (string | undefined)[])
 /** Extract linker labels from every step of the linkers path. */
 function extractLinkerLabels(entry: Entry): string[] {
   if (!("spec" in entry) || typeof entry.spec !== "object") return [];
-  const path = entry.linkersPath;
+  const path = entry.linkerPath;
   if (path === undefined || path.length === 0) return [];
   const labels: string[] = [];
   for (const step of path) {
@@ -179,13 +179,13 @@ type EnrichedRecord = {
 function extractSpecAndTrace(entry: Entry): {
   spec: PObjectSpec;
   extraTrace: ExtendedTraceEntry[] | undefined;
-  linkersPath: { spec: PObjectSpec }[] | undefined;
+  linkerPath: { spec: PObjectSpec }[] | undefined;
 } {
   const isEnriched = "spec" in entry && typeof entry.spec === "object";
   return {
     spec: isEnriched ? entry.spec : (entry as PObjectSpec),
     extraTrace: isEnriched ? entry.extraTrace : undefined,
-    linkersPath: isEnriched ? entry.linkersPath : undefined,
+    linkerPath: isEnriched ? entry.linkerPath : undefined,
   };
 }
 

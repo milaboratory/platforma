@@ -314,15 +314,15 @@ test("Entry with extraTrace position prefix prepends to labels", () => {
   expect(labels).toEqual(["P1", "P2"]);
 });
 
-// --- linkersPath ---
+// --- linkerPath ---
 
-test("linkersPath appends default 'via' suffix", () => {
+test("linkerPath appends default 'via' suffix", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [
+      linkerPath: [
         {
           spec: createSpec({
             annotations: { [Annotation.LinkLabel]: "MyLinker" },
@@ -340,13 +340,13 @@ test("linkersPath appends default 'via' suffix", () => {
   expect(labels).toEqual(["Col1 via MyLinker", "Col2"]);
 });
 
-test("linkersPath with multiple steps joins with ' > '", () => {
+test("linkerPath with multiple steps joins with ' > '", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [
+      linkerPath: [
         { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) },
         { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L2" } }) },
       ],
@@ -361,13 +361,13 @@ test("linkersPath with multiple steps joins with ' > '", () => {
   expect(labels).toEqual(["Col1 via L1 > L2", "Col2"]);
 });
 
-test("linkersPath skips steps without labels", () => {
+test("linkerPath skips steps without labels", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [
+      linkerPath: [
         { spec: createSpec() },
         { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L2" } }) },
       ],
@@ -382,13 +382,13 @@ test("linkersPath skips steps without labels", () => {
   expect(labels).toEqual(["Col1 via L2", "Col2"]);
 });
 
-test("linkersPath with custom linkerLabelFormatter", () => {
+test("linkerPath with custom linkerLabelFormatter", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
     },
     {
       spec: createSpec({
@@ -402,13 +402,13 @@ test("linkersPath with custom linkerLabelFormatter", () => {
   expect(labels).toEqual(["Col1 [L1]", "Col2"]);
 });
 
-test("linkersPath with linkerLabelFormatter returning undefined suppresses suffix", () => {
+test("linkerPath with linkerLabelFormatter returning undefined suppresses suffix", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
     },
     {
       spec: createSpec({
@@ -422,13 +422,13 @@ test("linkersPath with linkerLabelFormatter returning undefined suppresses suffi
   expect(labels).toEqual(["Col1", "Col2"]);
 });
 
-test("linkersPath falls back to Label when LinkLabel is absent", () => {
+test("linkerPath falls back to Label when LinkLabel is absent", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
         annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
       }),
-      linkersPath: [{ spec: createSpec({ annotations: { [Annotation.Label]: "FallbackLabel" } }) }],
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.Label]: "FallbackLabel" } }) }],
     },
     {
       spec: createSpec({
