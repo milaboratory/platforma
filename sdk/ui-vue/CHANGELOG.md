@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.64.0
+
+### Minor Changes
+
+- 559d124: Support display options and lables options for createPlDataTableV3
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/model@1.64.0
+  - @milaboratories/uikit@2.11.9
+
 ## 1.63.12
 
 ### Patch Changes
