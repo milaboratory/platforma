@@ -205,9 +205,23 @@ export type Annotation = Metadata &
     [Annotation.Table.FontFamily]: string;
     [Annotation.Table.OrderPriority]: StringifiedJson<number>;
     [Annotation.Table.Visibility]: "hidden" | "optional" | (string & {});
-    [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+    [Annotation.Trace]: StringifiedJson<Trace>;
     [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
   }>;
+
+/// One step in a column's derivation lineage. Only `type` and `label` are part
+/// of the typed public surface; writers may add fields (e.g. `id`, `importance`)
+/// passed through opaquely as `unknown`, accessed via explicit narrowing.
+const TraceEntrySchema = z
+  .object({
+    type: z.string(),
+    label: z.string(),
+  })
+  .catchall(z.unknown());
+
+export type TraceEntry = z.infer<typeof TraceEntrySchema>;
+
+export type Trace = TraceEntry[];
 
 // export const AxisSpec = z.object({
 //   type: z.nativeEnum(ValueType),
@@ -257,7 +271,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
   [Annotation.Table.OrderPriority]: z.number(),
-  [Annotation.Trace]: z.record(z.string(), z.unknown()),
+  [Annotation.Trace]: z.array(TraceEntrySchema),
   [Annotation.VDJ.IsAssemblingFeature]: z.boolean(),
 };
 

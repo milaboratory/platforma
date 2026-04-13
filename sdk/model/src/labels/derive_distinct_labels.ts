@@ -2,32 +2,31 @@ import {
   Annotation,
   parseJson,
   readAnnotation,
-  type CanonicalizedJson,
   type PObjectSpec,
+  type StringifiedJson,
+  type Trace,
 } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
+
+export type { Trace, TraceEntry } from "@milaboratories/pl-model-common";
 
 const DISTANCE_PENALTY = 0.001;
 const LABEL_TYPE = "__LABEL__";
 const LABEL_TYPE_FULL = "__LABEL__@1";
 
-type TraceEntry = {
-  id?: string;
-  type: string;
-  label: string;
+/** SDK-internal trace shape — adds fields used by this algorithm only, not part of the on-disk contract. */
+type ExtendedTraceEntry = Trace[number] & {
   importance?: number;
   position?: "prefix" | "suffix";
 };
-
-export type Trace = TraceEntry[];
 
 export type Entry =
   | PObjectSpec
   | {
       spec: PObjectSpec;
       /** Extra trace entries merged with the base trace from annotations. */
-      extraTrace?: TraceEntry[];
+      extraTrace?: ExtendedTraceEntry[];
       /** Linker steps traversed to discover this column; used to append "via $linkLabel" to derived labels. */
       linkersPath?: { spec: PObjectSpec }[];
     };
@@ -171,7 +170,7 @@ function extractLinkerLabels(entry: Entry): string[] {
 }
 
 // --- Pure helpers ---
-type FullTraceEntry = TraceEntry & { fullType: string; occurrenceIndex: number };
+type FullTraceEntry = ExtendedTraceEntry & { fullType: string; occurrenceIndex: number };
 
 type EnrichedRecord = {
   fullTrace: FullTraceEntry[];
@@ -179,7 +178,7 @@ type EnrichedRecord = {
 
 function extractSpecAndTrace(entry: Entry): {
   spec: PObjectSpec;
-  extraTrace: TraceEntry[] | undefined;
+  extraTrace: ExtendedTraceEntry[] | undefined;
   linkersPath: { spec: PObjectSpec }[] | undefined;
 } {
   const isEnriched = "spec" in entry && typeof entry.spec === "object";
@@ -190,7 +189,7 @@ function extractSpecAndTrace(entry: Entry): {
   };
 }
 
-function buildFullTrace(trace: TraceEntry[]): FullTraceEntry[] {
+function buildFullTrace(trace: ExtendedTraceEntry[]): FullTraceEntry[] {
   const result: FullTraceEntry[] = [];
   const occurrences = new Map<string, number>();
 
@@ -213,10 +212,10 @@ function enrichRecord(value: Entry, options: DeriveLabelsOptions): EnrichedRecor
   const { spec, extraTrace } = extractSpecAndTrace(value);
 
   const label = readAnnotation(spec, Annotation.Label);
-  const traceStr = readAnnotation(spec, Annotation.Trace) as
-    | CanonicalizedJson<TraceEntry[]>
-    | undefined;
-  const baseTrace: Trace = traceStr ? (parseJson<Trace>(traceStr) ?? []) : [];
+  const traceStr = readAnnotation(spec, Annotation.Trace);
+  const baseTrace = traceStr
+    ? (parseJson(traceStr as StringifiedJson<ExtendedTraceEntry[]>) ?? [])
+    : [];
   const prefixExtra = extraTrace?.filter((e) => e.position === "prefix") ?? [];
   const suffixExtra = extraTrace?.filter((e) => e.position !== "prefix") ?? [];
   const trace = [...prefixExtra, ...baseTrace, ...suffixExtra];
