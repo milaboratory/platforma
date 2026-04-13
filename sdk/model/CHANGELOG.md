@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.64.0
+
+### Minor Changes
+
+- 559d124: Support display options and lables options for createPlDataTableV3
+
 ## 1.63.12
 
 ### Patch Changes

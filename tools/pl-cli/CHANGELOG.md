@@ -1,5 +1,11 @@
 # @platforma-sdk/pl-cli
 
+## 0.2.26
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.8
+
 ## 0.2.25
 
 ### Patch Changes
