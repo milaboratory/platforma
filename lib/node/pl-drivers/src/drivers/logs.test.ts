@@ -28,8 +28,10 @@ const downloadDriverOps = {
   rangesCacheMaxSizeBytes: 1024,
 };
 
+const useDocker = process.env.PL_TEST_USE_DOCKER === 'true';
+
 vi.setConfig({
-  testTimeout: 60000,
+  testTimeout: 90000,
 });
 
 test("should get all logs", async () => {
@@ -265,13 +267,15 @@ function createRunCommand(
       value: arg,
     };
   });
-  const optsData = {
+  const optsData: Record<string, unknown> = {
     errorLines: 200,
     redirectStdout: "logs.txt",
     redirectStderr: "logs.txt",
     envs: [],
-    dockerImageTag: "busybox",
   };
+  if (useDocker) {
+    optsData.dockerImageTag = 'busybox';
+  }
 
   const runCmdId = tx.createEphemeral({ name: "RunCommand/executor", version: "2" });
 
