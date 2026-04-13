@@ -1,0 +1,281 @@
+import {
+  createDefaultPTableParams,
+  parseJson,
+  canonicalizeJson,
+  upgradePlDataTableStateV2,
+  type FilterSpec,
+  type FilterSpecLeaf,
+  type PTableColumnId,
+  type PTableColumnSpec,
+  type PlDataTableGridStateCore,
+  type PlDataTableSheetState,
+  type PlDataTableStateV2,
+  type PlDataTableStateV2CacheEntry,
+  type PlDataTableStateV2Normalized,
+  type PTableParamsV2,
+  type PTableSorting,
+  type PlDataTableFilters,
+  distillFilterSpec,
+  PlDataTableFiltersWithMeta,
+  getPTableColumnId,
+  CanonicalizedJson,
+} from "@platforma-sdk/model";
+import { computed, ref, watch, type ComputedRef, type Ref, type WritableComputedRef } from "vue";
+import type { PlDataTableSettingsV2 } from "../../PlAgDataTable/types";
+import { isJsonEqual, randomInt } from "@milaboratories/helpers";
+import { computedCached } from "@milaboratories/uikit";
+import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
+import { debounce, isNil } from "es-toolkit";
+import { STATE_CACHE_DEPTH, STATE_PERSIST_DEBOUNCE_MS } from "../constants";
+
+export function useTableState(
+  tableStateDenormalized: Ref<PlDataTableStateV2>,
+  settings: Ref<PlDataTableSettingsV2>,
+  columns: Ref<PTableColumnSpec[]>,
+): {
+  gridState: WritableComputedRef<PlDataTableGridStateCore>;
+  sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
+  filtersState: Ref<PlDataTableFiltersWithMeta>;
+  searchString: WritableComputedRef<string>;
+  pTableParams: ComputedRef<PTableParamsV2>;
+} {
+  const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
+    get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
+    set: debounce(
+      (newState) => (tableStateDenormalized.value = newState),
+      STATE_PERSIST_DEBOUNCE_MS,
+    ),
+  });
+
+  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
+    get: () => {
+      const defaultState = makeDefaultState();
+
+      const sourceId = settings.value.sourceId;
+      const undefinedSourceId = "error" in settings.value && settings.value.error === null;
+      if (sourceId === null && undefinedSourceId) return defaultState;
+
+      const suitableSourceId = sourceId ?? tableStateNormalized.value.stateCache.at(-1)?.sourceId;
+      if (suitableSourceId === undefined || suitableSourceId === null) return defaultState;
+
+      const cachedState = tableStateNormalized.value.stateCache.find(
+        (entry) => entry.sourceId === suitableSourceId,
+      );
+      if (cachedState === undefined) return { ...defaultState, sourceId: suitableSourceId };
+
+      return cachedState;
+    },
+    set: (state) => {
+      const newState: PlDataTableStateV2Normalized = {
+        ...tableStateNormalized.value,
+        stateCache: [...tableStateNormalized.value.stateCache],
+        pTableParams: createDefaultPTableParams(),
+      };
+
+      if (state.sourceId !== null) {
+        newState.pTableParams = createPTableParams(state, columns.value);
+
+        const stateIdx = newState.stateCache.findIndex(
+          (entry) => entry.sourceId === state.sourceId,
+        );
+        if (stateIdx !== -1) {
+          newState.stateCache.splice(stateIdx, 1);
+        }
+        newState.stateCache.push(state);
+        newState.stateCache = newState.stateCache.slice(-STATE_CACHE_DEPTH);
+      }
+
+      if (!isJsonEqual(tableStateNormalized.value, newState)) {
+        tableStateNormalized.value = newState;
+      }
+    },
+  });
+
+  const gridState = computed<PlDataTableGridStateCore>({
+    get: () => tableState.value.gridState,
+    set: (gridState) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId !== null) {
+        tableState.value = {
+          ...oldState,
+          gridState,
+        };
+      }
+    },
+  });
+
+  const sheetsState = computed<PlDataTableSheetState[]>({
+    get: () => tableState.value.sheetsState,
+    set: (sheetsState) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId !== null) {
+        tableState.value = {
+          ...oldState,
+          sheetsState,
+        };
+      }
+    },
+  });
+
+  const filtersState = computed<PlDataTableFiltersWithMeta>({
+    get: () => {
+      const raw = tableState.value.filtersState;
+      const isCorrect =
+        raw !== null &&
+        raw !== undefined &&
+        (raw.type === "and" || raw.type === "or") &&
+        "filters" in raw &&
+        Array.isArray(raw.filters);
+
+      return isCorrect
+        ? (raw satisfies PlDataTableFiltersWithMeta)
+        : { id: randomInt(), type: "and" as const, isExpanded: true, filters: [] };
+    },
+    set: (filtersState: PlDataTableFiltersWithMeta) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId !== null) {
+        tableState.value = {
+          ...oldState,
+          filtersState,
+        };
+      }
+    },
+  });
+
+  const searchString = computed<string>({
+    get: () => tableState.value.searchString ?? "",
+    set: (searchString: string) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId !== null) {
+        tableState.value = {
+          ...oldState,
+          searchString,
+        };
+      }
+    },
+  });
+
+  const pTableParams = computed<PTableParamsV2>(() => {
+    const state = tableState.value;
+    return state.sourceId !== null
+      ? createPTableParams(state, columns.value)
+      : createDefaultPTableParams();
+  });
+
+  const filtersStateDeepReactive = ref(filtersState);
+  watch(
+    () => filtersStateDeepReactive.value,
+    (newValue) => (filtersState.value = newValue),
+    { deep: true },
+  );
+
+  return {
+    gridState,
+    sheetsState,
+    filtersState: filtersStateDeepReactive,
+    searchString,
+    pTableParams,
+  };
+}
+
+type PlDataTableStateV2CacheEntryNullable =
+  | PlDataTableStateV2CacheEntry
+  | {
+      sourceId: null;
+      gridState: Record<string, never>;
+      sheetsState: [];
+      filtersState: null;
+      searchString?: string;
+    };
+
+function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
+  return {
+    sourceId: null,
+    gridState: {},
+    sheetsState: [],
+    filtersState: null,
+  };
+}
+
+function getHiddenColIds(
+  state: PlDataTableGridStateCore["columnVisibility"],
+): PTableColumnId[] | null {
+  return state?.hiddenColIds?.map((json) => getPTableColumnId(parseJson(json).source)) ?? null;
+}
+
+function convertPartitionFiltersToFilterSpec(
+  sheetsState: PlDataTableSheetState[],
+): FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>[] {
+  return sheetsState.map((s) => {
+    const column = canonicalizeJson<PTableColumnId>({ type: "axis", id: s.axisId });
+    return typeof s.value === "number"
+      ? { type: "equal" as const, column, x: s.value }
+      : { type: "patternEquals" as const, column, value: s.value };
+  });
+}
+
+function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
+  return (
+    state?.sortModel.map((item) => {
+      const { spec: _, ...column } = parseJson(item.colId).labeled;
+      return {
+        column,
+        ascending: item.sort === "asc",
+        naAndAbsentAreLeastValues: item.sort === "asc",
+      };
+    }) ?? []
+  );
+}
+
+function createSearchFilterNode(
+  columns: PTableColumnSpec[],
+  search: null | undefined | string,
+): null | FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>> {
+  const trimmed = search?.trim();
+  if (isNil(trimmed) || trimmed.length === 0) return null;
+
+  const parts: FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>[] = [];
+  const numericValue = Number(trimmed);
+  const isValidNumber = trimmed.length > 0 && !isNaN(numericValue) && isFinite(numericValue);
+
+  for (const col of columns) {
+    const column = canonicalizeJson<PTableColumnId>(getPTableColumnId(col));
+    const spec = col.spec;
+
+    if (isStringValueType(spec)) {
+      parts.push({ type: "patternEquals", column, value: trimmed });
+    }
+
+    if (isNumericValueType(spec) && isValidNumber) {
+      parts.push({ type: "equal", column, x: numericValue });
+    }
+  }
+
+  if (parts.length === 0) return null;
+
+  return { type: "or", filters: parts };
+}
+
+function createPTableParams(
+  state: PlDataTableStateV2CacheEntry,
+  filterableColumns: PTableColumnSpec[],
+): PTableParamsV2 {
+  const searchNode = createSearchFilterNode(filterableColumns, state.searchString);
+  const parts = [
+    ...convertPartitionFiltersToFilterSpec(state.sheetsState),
+    ...(state.filtersState !== null && state.filtersState !== undefined
+      ? [state.filtersState]
+      : []),
+    ...(searchNode !== null ? [searchNode] : []),
+  ];
+  const filters: null | PlDataTableFilters = distillFilterSpec(
+    parts.length === 0 ? null : parts.length === 1 ? parts[0] : { type: "and", filters: parts },
+  );
+
+  return {
+    sourceId: state.sourceId,
+    hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
+    filters,
+    sorting: convertAgSortingToPTableSorting(state.gridState.sort),
+  };
+}
