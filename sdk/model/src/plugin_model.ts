@@ -7,7 +7,8 @@
  * @module plugin_model
  */
 
-import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
+import type { BlockCodeKnownFeatureFlags, OutputWithStatus } from "@milaboratories/pl-model-common";
+import type { ResolveModelServices, ResolveUiServices } from "./services/service_resolve";
 import {
   type DataModel,
   DataModelBuilder,
@@ -21,6 +22,30 @@ import type { PluginRenderCtx } from "./render";
 
 /** Symbol for internal builder creation method */
 const FROM_BUILDER = Symbol("fromBuilder");
+
+/** Output function signature for plugin render context. */
+type PluginOutputFn<
+  Data extends PluginData,
+  Params extends PluginParams,
+  ModelServices,
+  UiServices,
+  T,
+> = (
+  ctx: PluginRenderCtx<
+    PluginFactoryLike<Data, Params, Record<string, unknown>, ModelServices, UiServices>
+  >,
+) => T;
+
+/** Mapped output functions for a plugin's outputs. */
+type PluginOutputFns<
+  Data extends PluginData,
+  Params extends PluginParams,
+  Outputs extends PluginOutputs,
+  ModelServices,
+  UiServices,
+> = {
+  [K in keyof Outputs]: PluginOutputFn<Data, Params, ModelServices, UiServices, Outputs[K]>;
+};
 
 /** Symbol for internal plugin model creation — not accessible to external consumers */
 export const CREATE_PLUGIN_MODEL = Symbol("createPluginModel");
@@ -78,6 +103,11 @@ type PluginChainState = {
   recoverFn?: (version: string, data: unknown) => unknown;
   recoverAtIndex?: number;
 };
+
+/** Version → persisted data shape for each migration step (third generic of `PluginModel.define` when `data` is a `PluginDataModel`). */
+export type PluginDataModelVersions<
+  M extends PluginDataModel<PluginData, Record<string, unknown>, unknown>,
+> = M extends PluginDataModel<PluginData, infer Versions, unknown> ? Versions : never;
 
 /**
  * Builder for creating PluginDataModel with type-safe migrations.
@@ -277,45 +307,68 @@ export class PluginInstance<
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
   TransferData = never,
+  ModelServices = unknown,
+  UiServices = unknown,
 > implements TransferTarget<Id, TransferData> {
   readonly id: Id;
   readonly transferVersion: string;
-  /** @internal */
-  readonly __transferBrand?: TransferData;
-  private readonly factory: PluginModelFactory<Data, Params, Outputs, any, any>;
-  private readonly config: any;
+  /** @internal Phantom for type inference; never set at runtime. */
+  readonly __instanceTypes?: {
+    data: Data;
+    params: Params;
+    outputs: Outputs;
+    modelServices: ModelServices;
+    uiServices: UiServices;
+  };
+  /** Bound closure that creates the PluginModel. Config is captured at factory.create() time. */
+  private readonly createPluginModel: () => PluginModel<
+    Data,
+    Params,
+    Outputs,
+    ModelServices,
+    UiServices
+  >;
 
   private constructor(
     id: Id,
-    factory: PluginModelFactory<Data, Params, Outputs, any, any>,
+    createPluginModel: () => PluginModel<Data, Params, Outputs, ModelServices, UiServices>,
     transferVersion: string,
-    config?: any,
   ) {
     this.id = id;
-    this.factory = factory;
+    this.createPluginModel = createPluginModel;
     this.transferVersion = transferVersion;
-    this.config = config;
   }
 
-  /** @internal */
+  /** @internal Accepts concrete Config — binds it into a closure, avoiding Config variance issues. */
   static [FROM_BUILDER]<
     Id extends string,
     Data extends PluginData,
     Params extends PluginParams,
     Outputs extends PluginOutputs,
     TransferData,
+    Config extends PluginConfig = PluginConfig,
+    ModelServices = unknown,
+    UiServices = unknown,
   >(
     id: Id,
-    factory: PluginModelFactory<Data, Params, Outputs, any, any>,
+    factory: PluginModelFactory<
+      Data,
+      Params,
+      Outputs,
+      Config,
+      Record<string, unknown>,
+      ModelServices,
+      UiServices
+    >,
     transferVersion: string,
-    config?: any,
-  ): PluginInstance<Id, Data, Params, Outputs, TransferData> {
-    return new PluginInstance(id, factory, transferVersion, config);
+    config?: Config,
+  ): PluginInstance<Id, Data, Params, Outputs, TransferData, ModelServices, UiServices> {
+    return new PluginInstance(id, () => factory[CREATE_PLUGIN_MODEL](config), transferVersion);
   }
 
   /** @internal Create a PluginModel from this instance. Used by BlockModelV3.plugin(). */
-  [CREATE_PLUGIN_MODEL](): PluginModel<Data, Params, Outputs> {
-    return this.factory[CREATE_PLUGIN_MODEL](this.config);
+  [CREATE_PLUGIN_MODEL](): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
+    return this.createPluginModel();
   }
 }
 
@@ -327,15 +380,17 @@ export class PluginModel<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
+  ModelServices = {},
+  UiServices = {},
 > {
   /** Globally unique plugin name */
   readonly name: PluginName;
   /** Data model instance for this plugin */
   readonly dataModel: DataModel<Data>;
   /** Output definitions - functions that compute outputs from plugin context */
-  readonly outputs: {
-    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-  };
+  readonly outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+  /** Per-output flags (e.g. withStatus) */
+  readonly outputFlags: Record<string, { withStatus: boolean }>;
   /** Feature flags declared by this plugin */
   readonly featureFlags?: BlockCodeKnownFeatureFlags;
   /** Create fresh default data. Config (if any) is captured at creation time. */
@@ -344,15 +399,15 @@ export class PluginModel<
   private constructor(options: {
     name: PluginName;
     dataModel: DataModel<Data>;
-    outputs: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
   }) {
     this.name = options.name;
     this.dataModel = options.dataModel;
     this.outputs = options.outputs;
+    this.outputFlags = options.outputFlags;
     this.featureFlags = options.featureFlags;
     this.getDefaultData = options.getDefaultData;
   }
@@ -366,16 +421,17 @@ export class PluginModel<
     Data extends PluginData,
     Params extends PluginParams,
     Outputs extends PluginOutputs,
+    ModelServices = {},
+    UiServices = {},
   >(options: {
     name: PluginName;
     dataModel: DataModel<Data>;
-    outputs: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
-  }): PluginModel<Data, Params, Outputs> {
-    return new PluginModel<Data, Params, Outputs>(options);
+  }): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
+    return new PluginModel<Data, Params, Outputs, ModelServices, UiServices>(options);
   }
 
   /**
@@ -399,11 +455,19 @@ export class PluginModel<
     Params extends PluginParams = undefined,
     Versions extends Record<string, unknown> = {},
     Config extends PluginConfig = undefined,
+    Flags extends BlockCodeKnownFeatureFlags = {},
   >(options: {
     name: PluginName;
     data: PluginDataModel<Data, Versions, Config>;
-    featureFlags?: BlockCodeKnownFeatureFlags;
-  }): PluginModelBuilder<Data, Params, {}, Config, Versions>;
+    featureFlags?: Flags;
+  }): PluginModelInitialBuilder<
+    Data,
+    Params,
+    Config,
+    Versions,
+    ResolveModelServices<Flags>,
+    ResolveUiServices<Flags>
+  >;
   /**
    * Creates a new PluginModelBuilder with a data model factory function (backward compatible).
    *
@@ -417,26 +481,34 @@ export class PluginModel<
     Data extends PluginData,
     Params extends PluginParams = undefined,
     Config extends PluginConfig = undefined,
+    Flags extends BlockCodeKnownFeatureFlags = {},
   >(options: {
     name: PluginName;
     data: (config?: Config) => DataModel<Data>;
-    featureFlags?: BlockCodeKnownFeatureFlags;
-  }): PluginModelBuilder<Data, Params, {}, Config, {}>;
+    featureFlags?: Flags;
+  }): PluginModelInitialBuilder<
+    Data,
+    Params,
+    Config,
+    {},
+    ResolveModelServices<Flags>,
+    ResolveUiServices<Flags>
+  >;
   static define(options: {
     name: PluginName;
     data: PluginDataModel<any, any, any> | ((config?: any) => DataModel<any>);
     featureFlags?: BlockCodeKnownFeatureFlags;
-  }): PluginModelBuilder {
+  }): PluginModelInitialBuilder {
     if (options.data instanceof PluginDataModel) {
       const pdm = options.data;
-      return PluginModelBuilder[FROM_BUILDER]({
+      return PluginModelInitialBuilder.create({
         name: options.name,
         dataFn: () => pdm.dataModel,
         getDefaultDataFn: (config: any) => pdm.getDefaultData(config),
         featureFlags: options.featureFlags,
       });
     }
-    return PluginModelBuilder[FROM_BUILDER]({
+    return PluginModelInitialBuilder.create({
       name: options.name,
       dataFn: options.data,
       featureFlags: options.featureFlags,
@@ -451,13 +523,15 @@ export interface PluginFactory<
   Outputs extends PluginOutputs = PluginOutputs,
   Config extends PluginConfig = undefined,
   Versions extends Record<string, unknown> = {},
-> extends PluginFactoryLike<Data, Params, Outputs> {
+  ModelServices = {},
+  UiServices = {},
+> extends PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices> {
   /** Create a named plugin instance, optionally with transfer at a specific version. */
   create<const Id extends string, const V extends string & keyof Versions = never>(options: {
     pluginId: Id;
     transferAt?: V;
     config?: Config;
-  }): PluginInstance<Id, Data, Params, Outputs, Versions[V]>;
+  }): PluginInstance<Id, Data, Params, Outputs, Versions[V], ModelServices, UiServices>;
 
   /**
    * @internal Phantom field for structural type extraction.
@@ -467,6 +541,8 @@ export interface PluginFactory<
     data: Data;
     params: Params;
     outputs: Outputs;
+    modelServices: ModelServices;
+    uiServices: UiServices;
     config: Config;
     versions: Versions;
   };
@@ -478,28 +554,29 @@ class PluginModelFactory<
   Outputs extends PluginOutputs = PluginOutputs,
   Config extends PluginConfig = undefined,
   Versions extends Record<string, unknown> = {},
-> implements PluginFactory<Data, Params, Outputs, Config, Versions> {
+  ModelServices = {},
+  UiServices = {},
+> implements PluginFactory<Data, Params, Outputs, Config, Versions, ModelServices, UiServices> {
   private readonly name: PluginName;
   private readonly dataFn: (config?: Config) => DataModel<Data>;
   private readonly getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-  readonly outputs: {
-    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-  };
+  readonly outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+  private readonly outputFlags: Record<string, { withStatus: boolean }>;
   private readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
   private constructor(options: {
     name: PluginName;
     dataFn: (config?: Config) => DataModel<Data>;
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-    outputs: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
     this.name = options.name;
     this.dataFn = options.dataFn;
     this.getDefaultDataFn = options.getDefaultDataFn;
     this.outputs = options.outputs;
+    this.outputFlags = options.outputFlags;
     this.featureFlags = options.featureFlags;
   }
 
@@ -510,15 +587,16 @@ class PluginModelFactory<
     Outputs extends PluginOutputs,
     Config extends PluginConfig,
     Versions extends Record<string, unknown>,
+    ModelServices = {},
+    UiServices = {},
   >(options: {
     name: PluginName;
     dataFn: (config?: Config) => DataModel<Data>;
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-    outputs: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-  }): PluginModelFactory<Data, Params, Outputs, Config, Versions> {
+  }): PluginModelFactory<Data, Params, Outputs, Config, Versions, ModelServices, UiServices> {
     return new PluginModelFactory(options);
   }
 
@@ -526,24 +604,31 @@ class PluginModelFactory<
     pluginId: Id;
     transferAt?: V;
     config?: Config;
-  }): PluginInstance<Id, Data, Params, Outputs, Versions[V]> {
+  }): PluginInstance<Id, Data, Params, Outputs, Versions[V], ModelServices, UiServices> {
     const transferVersion = options.transferAt ?? NO_TRANSFER_VERSION;
-    return PluginInstance[FROM_BUILDER]<Id, Data, Params, Outputs, Versions[V]>(
-      options.pluginId as Id,
-      this as any,
-      transferVersion,
-      options.config,
-    );
+    return PluginInstance[FROM_BUILDER]<
+      Id,
+      Data,
+      Params,
+      Outputs,
+      Versions[V],
+      Config,
+      ModelServices,
+      UiServices
+    >(options.pluginId as Id, this, transferVersion, options.config);
   }
 
   /** @internal Create a PluginModel from config. Config is captured in getDefaultData closure. */
-  [CREATE_PLUGIN_MODEL](config?: Config): PluginModel<Data, Params, Outputs> {
+  [CREATE_PLUGIN_MODEL](
+    config?: Config,
+  ): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
     const dataModel = this.dataFn(config);
     const getDefaultDataFn = this.getDefaultDataFn;
-    return PluginModel[FROM_BUILDER]<Data, Params, Outputs>({
+    return PluginModel[FROM_BUILDER]<Data, Params, Outputs, ModelServices, UiServices>({
       name: this.name,
       dataModel,
       outputs: this.outputs,
+      outputFlags: this.outputFlags,
       featureFlags: this.featureFlags,
       getDefaultData: getDefaultDataFn
         ? () => getDefaultDataFn(config)
@@ -577,32 +662,30 @@ class PluginModelBuilder<
   Outputs extends PluginOutputs = PluginOutputs,
   Config extends PluginConfig = undefined,
   Versions extends Record<string, unknown> = {},
+  ModelServices = {},
+  UiServices = {},
 > {
-  private readonly name: PluginName;
-  private readonly dataFn: (config?: Config) => DataModel<Data>;
-  private readonly getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-  private readonly outputs: {
-    [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-  };
-  private readonly featureFlags?: BlockCodeKnownFeatureFlags;
+  protected readonly name: PluginName;
+  protected readonly dataFn: (config?: Config) => DataModel<Data>;
+  protected readonly getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
+  private readonly outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+  private readonly outputFlags: Record<string, { withStatus: boolean }>;
+  protected readonly featureFlags?: BlockCodeKnownFeatureFlags;
 
-  private constructor(options: {
+  protected constructor(options: {
     name: PluginName;
     dataFn: (config?: Config) => DataModel<Data>;
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-    outputs?: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs?: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags?: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }) {
     this.name = options.name;
     this.dataFn = options.dataFn;
     this.getDefaultDataFn = options.getDefaultDataFn;
     this.outputs =
-      options.outputs ??
-      ({} as {
-        [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-      });
+      options.outputs ?? ({} as PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>);
+    this.outputFlags = options.outputFlags ?? {};
     this.featureFlags = options.featureFlags;
   }
 
@@ -613,15 +696,16 @@ class PluginModelBuilder<
     Outputs extends PluginOutputs,
     Config extends PluginConfig,
     Versions extends Record<string, unknown> = {},
+    ModelServices = {},
+    UiServices = {},
   >(options: {
     name: PluginName;
     dataFn: (config?: Config) => DataModel<Data>;
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
-    outputs?: {
-      [K in keyof Outputs]: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => Outputs[K];
-    };
+    outputs?: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
+    outputFlags?: Record<string, { withStatus: boolean }>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-  }): PluginModelBuilder<Data, Params, Outputs, Config, Versions> {
+  }): PluginModelBuilder<Data, Params, Outputs, Config, Versions, ModelServices, UiServices> {
     return new PluginModelBuilder(options);
   }
 
@@ -638,9 +722,29 @@ class PluginModelBuilder<
    */
   output<const Key extends string, T>(
     key: Key,
-    fn: (ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>) => T,
-  ): PluginModelBuilder<Data, Params, Outputs & { [K in Key]: T }, Config, Versions> {
-    return new PluginModelBuilder<Data, Params, Outputs & { [K in Key]: T }, Config, Versions>({
+    fn: (
+      ctx: PluginRenderCtx<
+        PluginFactoryLike<Data, Params, Record<string, unknown>, ModelServices, UiServices>
+      >,
+    ) => T,
+  ): PluginModelBuilder<
+    Data,
+    Params,
+    Outputs & { [K in Key]: T },
+    Config,
+    Versions,
+    ModelServices,
+    UiServices
+  > {
+    return new PluginModelBuilder<
+      Data,
+      Params,
+      Outputs & { [K in Key]: T },
+      Config,
+      Versions,
+      ModelServices,
+      UiServices
+    >({
       name: this.name,
       dataFn: this.dataFn,
       getDefaultDataFn: this.getDefaultDataFn,
@@ -650,9 +754,72 @@ class PluginModelBuilder<
         [key]: fn,
       } as {
         [K in keyof (Outputs & { [P in Key]: T })]: (
-          ctx: PluginRenderCtx<PluginFactoryLike<Data, Params>>,
+          ctx: PluginRenderCtx<
+            PluginFactoryLike<Data, Params, Record<string, unknown>, ModelServices, UiServices>
+          >,
         ) => (Outputs & { [P in Key]: T })[K];
       },
+      outputFlags: { ...this.outputFlags, [key]: { withStatus: false } },
+    });
+  }
+
+  /**
+   * Adds an output wrapped with status information to the plugin.
+   *
+   * The UI receives the full {@link OutputWithStatus} object instead of an unwrapped value,
+   * allowing it to distinguish between pending, success, and error states.
+   *
+   * @param key - Output name
+   * @param fn - Function that computes the output value from plugin context
+   * @returns PluginModel with the new status-wrapped output added
+   *
+   * @example
+   * .outputWithStatus('table', (ctx) => {
+   *   const pCols = ctx.params.pFrame?.getPColumns();
+   *   if (pCols === undefined) return undefined;
+   *   return createPlDataTableV2(ctx, pCols, ctx.data.tableState);
+   * })
+   */
+  outputWithStatus<const Key extends string, T>(
+    key: Key,
+    fn: (
+      ctx: PluginRenderCtx<
+        PluginFactoryLike<Data, Params, Record<string, unknown>, ModelServices, UiServices>
+      >,
+    ) => T,
+  ): PluginModelBuilder<
+    Data,
+    Params,
+    Outputs & { [K in Key]: OutputWithStatus<T> },
+    Config,
+    Versions,
+    ModelServices,
+    UiServices
+  > {
+    return new PluginModelBuilder<
+      Data,
+      Params,
+      Outputs & { [K in Key]: OutputWithStatus<T> },
+      Config,
+      Versions,
+      ModelServices,
+      UiServices
+    >({
+      name: this.name,
+      dataFn: this.dataFn,
+      getDefaultDataFn: this.getDefaultDataFn,
+      featureFlags: this.featureFlags,
+      outputs: {
+        ...this.outputs,
+        [key]: fn,
+      } as {
+        [K in keyof (Outputs & { [P in Key]: OutputWithStatus<T> })]: (
+          ctx: PluginRenderCtx<
+            PluginFactoryLike<Data, Params, Record<string, unknown>, ModelServices, UiServices>
+          >,
+        ) => (Outputs & { [P in Key]: OutputWithStatus<T> })[K];
+      },
+      outputFlags: { ...this.outputFlags, [key]: { withStatus: true } },
     });
   }
 
@@ -669,12 +836,84 @@ class PluginModelBuilder<
    * // Create a named instance:
    * const table = myPlugin.create({ pluginId: 'mainTable', config: { ... } });
    */
-  build(): PluginFactory<Data, Params, Outputs, Config, Versions> {
-    return PluginModelFactory[FROM_BUILDER]<Data, Params, Outputs, Config, Versions>({
+  build(): PluginFactory<Data, Params, Outputs, Config, Versions, ModelServices, UiServices> {
+    return PluginModelFactory[FROM_BUILDER]<
+      Data,
+      Params,
+      Outputs,
+      Config,
+      Versions,
+      ModelServices,
+      UiServices
+    >({
       name: this.name,
       dataFn: this.dataFn,
       getDefaultDataFn: this.getDefaultDataFn,
       outputs: this.outputs,
+      outputFlags: this.outputFlags,
+      featureFlags: this.featureFlags,
+    });
+  }
+}
+
+/**
+ * Initial builder returned by PluginModel.define(). Extends PluginModelBuilder with .params().
+ * Once .params() or .output() is called, transitions to PluginModelBuilder (no second .params()).
+ */
+class PluginModelInitialBuilder<
+  Data extends PluginData = PluginData,
+  Params extends PluginParams = undefined,
+  Config extends PluginConfig = undefined,
+  Versions extends Record<string, unknown> = {},
+  ModelServices = {},
+  UiServices = {},
+> extends PluginModelBuilder<Data, Params, {}, Config, Versions, ModelServices, UiServices> {
+  /** @internal */
+  static create<
+    Data extends PluginData,
+    Config extends PluginConfig,
+    Versions extends Record<string, unknown> = {},
+    ModelServices = {},
+    UiServices = {},
+  >(options: {
+    name: PluginName;
+    dataFn: (config?: Config) => DataModel<Data>;
+    getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
+    featureFlags?: BlockCodeKnownFeatureFlags;
+  }): PluginModelInitialBuilder<Data, undefined, Config, Versions, ModelServices, UiServices> {
+    return new PluginModelInitialBuilder(options);
+  }
+
+  /**
+   * Sets the Params type for this plugin — the shape of data derived from the block's
+   * render context and passed into plugin output functions via `ctx.params`.
+   * Must be called before .output(). Available only on the initial builder.
+   *
+   * @example
+   * .params<{ title: string }>()
+   * .output('displayText', (ctx) => ctx.params.title)
+   */
+  params<P extends PluginParams>(): PluginModelBuilder<
+    Data,
+    P,
+    {},
+    Config,
+    Versions,
+    ModelServices,
+    UiServices
+  > {
+    return PluginModelBuilder[FROM_BUILDER]<
+      Data,
+      P,
+      {},
+      Config,
+      Versions,
+      ModelServices,
+      UiServices
+    >({
+      name: this.name,
+      dataFn: this.dataFn,
+      getDefaultDataFn: this.getDefaultDataFn,
       featureFlags: this.featureFlags,
     });
   }

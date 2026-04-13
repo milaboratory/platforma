@@ -1,5 +1,11 @@
 # @platforma-sdk/blocks-deps-updater
 
+## 2.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
 ## 2.1.0
 
 ### Minor Changes

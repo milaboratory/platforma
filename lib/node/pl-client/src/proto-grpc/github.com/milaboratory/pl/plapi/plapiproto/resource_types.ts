@@ -138,6 +138,10 @@ export interface NotificationFilter_EventFilter {
      */
     resourceReady?: boolean;
     /**
+     * @generated from protobuf field: optional bool resource_recovered = 18
+     */
+    resourceRecovered?: boolean;
+    /**
      * @generated from protobuf field: optional bool resource_duplicate = 6
      */
     resourceDuplicate?: boolean;
@@ -485,6 +489,7 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
             { no: 2, name: "resource_created", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 3, name: "resource_deleted", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 5, name: "resource_ready", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
+            { no: 18, name: "resource_recovered", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 6, name: "resource_duplicate", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 16, name: "resource_error", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 13, name: "inputs_locked", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
@@ -521,6 +526,9 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
                     break;
                 case /* optional bool resource_ready */ 5:
                     message.resourceReady = reader.bool();
+                    break;
+                case /* optional bool resource_recovered */ 18:
+                    message.resourceRecovered = reader.bool();
                     break;
                 case /* optional bool resource_duplicate */ 6:
                     message.resourceDuplicate = reader.bool();
@@ -618,6 +626,9 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
         /* optional bool field_got_error = 17; */
         if (message.fieldGotError !== undefined)
             writer.tag(17, WireType.Varint).bool(message.fieldGotError);
+        /* optional bool resource_recovered = 18; */
+        if (message.resourceRecovered !== undefined)
+            writer.tag(18, WireType.Varint).bool(message.resourceRecovered);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

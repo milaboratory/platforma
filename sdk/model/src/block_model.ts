@@ -6,9 +6,12 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
+import { resolveRequiredServices } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
+import type { BlockDefaultUiServices } from "./services/service_resolve";
+import { blockServiceNames, BLOCK_SERVICE_FLAGS } from "./services/block_services";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginData, PluginModel, PluginOutputs, PluginParams } from "./plugin_model";
@@ -87,8 +90,10 @@ export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
+  ModelServices = unknown,
+  UiServices = unknown,
 > = {
-  readonly model: PluginModel<Data, Params, Outputs>;
+  readonly model: PluginModel<Data, Params, Outputs, ModelServices, UiServices>;
   readonly inputs: ParamsInputErased;
 };
 
@@ -128,13 +133,17 @@ export class BlockModelV3<
     private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers>,
   ) {}
 
-  public static readonly INITIAL_BLOCK_FEATURE_FLAGS: BlockCodeKnownFeatureFlags = {
+  public static readonly FEATURE_FLAGS = {
     supportsLazyState: true,
     supportsPframeQueryRanking: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
-  };
+    ...BLOCK_SERVICE_FLAGS,
+  } satisfies BlockCodeKnownFeatureFlags;
+
+  /** @deprecated Use FEATURE_FLAGS */
+  public static readonly INITIAL_BLOCK_FEATURE_FLAGS = BlockModelV3.FEATURE_FLAGS;
 
   /**
    * Creates a new BlockModelV3 builder with the specified data model.
@@ -164,7 +173,7 @@ export class BlockModelV3<
       subtitle: undefined,
       tags: undefined,
       enrichmentTargets: undefined,
-      featureFlags: { ...BlockModelV3.INITIAL_BLOCK_FEATURE_FLAGS },
+      featureFlags: { ...BlockModelV3.FEATURE_FLAGS },
       argsFunction: undefined,
       prerunArgsFunction: undefined,
       plugins: {},
@@ -228,7 +237,7 @@ export class BlockModelV3<
         ...this.config.outputs,
         [key]: createAndRegisterRenderLambda({
           handle: `block-output#${key}`,
-          lambda: () => cfgOrRf(new BlockRenderCtx<Args, Data>()),
+          lambda: () => cfgOrRf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
           ...flags,
         }),
       },
@@ -324,7 +333,10 @@ export class BlockModelV3<
         ...this.config,
         // Replace the default sections callback with the user-provided one
         sections: createAndRegisterRenderLambda(
-          { handle: "sections", lambda: () => rf(new BlockRenderCtx<Args, Data>()) },
+          {
+            handle: "sections",
+            lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+          },
           true,
         ),
       },
@@ -339,7 +351,7 @@ export class BlockModelV3<
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
       }),
     });
   }
@@ -351,7 +363,7 @@ export class BlockModelV3<
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
       }),
     });
   }
@@ -363,7 +375,7 @@ export class BlockModelV3<
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
       }),
     });
   }
@@ -418,6 +430,8 @@ export class BlockModelV3<
     PParams extends PluginParams,
     POutputs extends PluginOutputs,
     PTransferData,
+    PluginModelServices,
+    PluginUiServices,
   >(
     instance: PluginInstanceClass<
       PluginId &
@@ -432,7 +446,9 @@ export class BlockModelV3<
       PData,
       PParams,
       POutputs,
-      PTransferData
+      PTransferData,
+      PluginModelServices,
+      PluginUiServices
     >,
     params?: ParamsInput<PParams, Args, Data>,
   ): BlockModelV3<
@@ -440,7 +456,15 @@ export class BlockModelV3<
     OutputsCfg,
     Data,
     Href,
-    Plugins & { [K in PluginId]: PluginRecord<PData, PParams, POutputs> },
+    Plugins & {
+      [K in PluginId]: PluginRecord<
+        PData,
+        PParams,
+        POutputs,
+        PluginModelServices,
+        PluginUiServices
+      >;
+    },
     Omit<Transfers, PluginId>
   >;
   public plugin(
@@ -489,7 +513,14 @@ export class BlockModelV3<
   public done(
     ..._: keyof Transfers extends never ? [] : [never]
   ): PlatformaExtended<
-    PlatformaV3<Data, Args, InferOutputsFromLambdas<OutputsCfg>, Href, Plugins>
+    PlatformaV3<
+      Data,
+      Args,
+      InferOutputsFromLambdas<OutputsCfg>,
+      Href,
+      Plugins,
+      BlockDefaultUiServices
+    >
   > {
     if (this.config.argsFunction === undefined) throw new Error("Args rendering function not set.");
 
@@ -504,6 +535,8 @@ export class BlockModelV3<
     }
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
+
+    const mergedServiceNames = resolveRequiredServices(this.config.featureFlags);
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -544,16 +577,18 @@ export class BlockModelV3<
       // Wrap plugin param lambdas: close over BlockRenderCtx creation
       const wrappedInputs: Record<string, () => unknown> = {};
       for (const [paramKey, paramFn] of Object.entries(inputs)) {
-        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx());
+        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx(mergedServiceNames));
       }
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
+      const { outputFlags } = model;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
-          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
+          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs, mergedServiceNames)),
+          withStatus: outputFlags[outputKey]?.withStatus,
         });
       }
     }

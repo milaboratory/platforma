@@ -4,9 +4,9 @@ import {
   type Branded,
   type PColumnSpec,
   type PColumnValues,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase, type PoolEntry } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { HttpHelpers } from "@milaboratories/pframes-rs-node";
 import fs from "node:fs";
 import path from "node:path";
@@ -118,6 +118,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
+    await this.pool[Symbol.asyncDispose]();
   }
 }
 

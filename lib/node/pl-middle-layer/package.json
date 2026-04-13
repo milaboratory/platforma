@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.48.26",
+  "version": "1.55.6",
   "description": "Pl Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
@@ -31,8 +31,11 @@
   },
   "dependencies": {
     "@milaboratories/computable": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pf-driver": "workspace:*",
+    "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
+    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-deployments": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",

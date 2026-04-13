@@ -4,7 +4,7 @@ import {
   type PColumnValues,
   type JsonDataInfo,
   type PColumnValue,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 
 export function makeJsonDataInfo(spec: PColumnSpec, data: PColumnValues): JsonDataInfo {
   const keyLength = spec.axesSpec.length;

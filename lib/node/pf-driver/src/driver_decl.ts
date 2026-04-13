@@ -14,8 +14,8 @@ import type {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
-} from "@platforma-sdk/model";
-import type { PoolEntry } from "@milaboratories/ts-helpers";
+} from "@milaboratories/pl-model-common";
+import type { PoolEntry } from "@milaboratories/helpers";
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle

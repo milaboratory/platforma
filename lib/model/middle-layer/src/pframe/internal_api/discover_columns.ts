@@ -1,5 +1,13 @@
-import type { PColumnIdAndSpec } from "@milaboratories/pl-model-common";
+import type {
+  AxisValueType,
+  ColumnValueType,
+  DiscoverColumnsLinkerStep,
+  DiscoverColumnsStepInfo,
+  PColumnIdAndSpec,
+} from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
+
+export type { DiscoverColumnsLinkerStep, DiscoverColumnsStepInfo };
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher = { type: "exact"; value: string } | { type: "regex"; value: string };
@@ -10,7 +18,7 @@ export type MatcherMap = Record<string, StringMatcher[]>;
 /** Selector for matching axes by various criteria */
 export interface MultiAxisSelector {
   /** Match any of the axis types listed here */
-  readonly type?: string[];
+  readonly type?: AxisValueType[];
   /** Match any of the axis names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -25,7 +33,7 @@ export interface MultiAxisSelector {
  * Multiple selectors are OR-ed: a column matches if it satisfies any selector. */
 export interface MultiColumnSelector {
   /** Match any of the value types listed here */
-  readonly type?: string[];
+  readonly type?: ColumnValueType[];
   /** Match any of the names listed here */
   readonly name?: StringMatcher[];
   /** Match requires all the domains listed here */
@@ -52,12 +60,16 @@ export interface DiscoverColumnsConstraints {
   allowHitQualifications: boolean;
 }
 
-/** Request for discovering columns compatible with a given axes integration */
-export interface DiscoverColumnsRequest {
-  /** Column filters (OR-ed); empty array matches all columns */
-  columnFilter?: MultiColumnSelector[];
+/** V2 request with separate include/exclude filters */
+export interface DiscoverColumnsRequestV2 {
+  /** Include columns matching these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Exclude columns matching these selectors (OR-ed); applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
   /** Already integrated axes with qualifications */
   axes: ColumnAxesWithQualifications[];
+  /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
+  maxHops?: number;
   /** Constraints controlling axes matching and qualification behavior */
   constraints: DiscoverColumnsConstraints;
 }
@@ -84,6 +96,8 @@ export interface DiscoverColumnsResponseHit {
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps traversed to reach this hit; empty for direct matches */
+  path: DiscoverColumnsStepInfo[];
 }
 
 /** Response from discover columns */

@@ -1,7 +1,13 @@
 import type { PlClient, ResourceId } from "@milaboratories/pl-client";
-import { field, isNullResourceId, toGlobalResourceId } from "@milaboratories/pl-client";
+import {
+  field,
+  isNotNullResourceId,
+  isNullResourceId,
+  toGlobalResourceId,
+} from "@milaboratories/pl-client";
 import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
-import { createProject, withProjectAuthored } from "../mutator/project";
+import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
+import { ProjectMetaKey } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
@@ -26,6 +32,11 @@ import type { MiddleLayerDriverKit } from "./driver_kit";
 import { initDriverKit } from "./driver_kit";
 import type { BlockCodeFeatureFlags, DriverKit, SupportedRequirement } from "@platforma-sdk/model";
 import { RuntimeCapabilities } from "@platforma-sdk/model";
+import {
+  type ModelServiceRegistry,
+  registerServiceCapabilities,
+} from "@milaboratories/pl-model-common";
+import { createModelServiceRegistry } from "../service_factories";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
 import { V2RegistryProvider } from "../block_registry";
 import type { Dispatcher } from "undici";
@@ -48,6 +59,7 @@ export interface MiddleLayerEnvironment {
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
   readonly driverKit: MiddleLayerDriverKit;
+  readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
 }
 
@@ -109,6 +121,11 @@ export class MiddleLayer {
     return this.env.driverKit;
   }
 
+  /** Returns the service registry for service introspection. */
+  public get serviceRegistry(): ModelServiceRegistry {
+    return this.env.serviceRegistry;
+  }
+
   //
   // Project List Manipulation
   //
@@ -152,6 +169,47 @@ export class MiddleLayer {
       await tx.commit();
     });
     await this.projectListTree.refreshState();
+  }
+
+  /**
+   * Duplicates an existing project and adds the copy to this user's project list.
+   *
+   * @param sourceRid - resource id of the project to duplicate
+   * @param rename - optional function that receives the source label and all existing
+   *   project labels (read within the same transaction), and returns the label for the copy
+   * @param id - optional id for the new project list entry (defaults to random UUID)
+   */
+  public async duplicateProject(
+    sourceRid: ResourceId,
+    rename?: (previousLabel: string, existingLabels: string[]) => string,
+    id: string = randomUUID(),
+  ): Promise<ResourceId> {
+    const resource = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
+      // Read source project meta
+      const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
+
+      // Read all existing project labels from the project list (parallel reads)
+      const projectListData = await tx.getResourceData(this.projectListResourceId, true);
+      const projectRids = projectListData.fields.map((f) => f.value).filter(isNotNullResourceId);
+      const existingLabels = (
+        await Promise.all(
+          projectRids.map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+        )
+      ).map((m) => m.label);
+
+      // Compute new label
+      const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
+
+      // Create the duplicate
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+
+      // Attach to project list
+      tx.createField(field(this.projectListResourceId, id), "Dynamic", newPrj);
+      await tx.commit();
+      return await toGlobalResourceId(newPrj);
+    });
+    await this.projectListTree.refreshState();
+    return resource;
   }
 
   //
@@ -288,7 +346,12 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
+    registerServiceCapabilities((flag, value) =>
+      runtimeCapabilities.addSupportedRequirement(flag, value),
+    );
     // runtime capabilities of the desktop are to be added by the desktop app / test framework
+
+    const serviceRegistry = createModelServiceRegistry({ logger });
 
     const env: MiddleLayerEnvironment = {
       pl,
@@ -307,9 +370,11 @@ export class MiddleLayer {
         preferredUpdateChannel: ops.preferredUpdateChannel,
       }),
       runtimeCapabilities,
+      serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
       dispose: async () => {
+        await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();
       },

@@ -7,6 +7,7 @@ import type {
   Project,
 } from "@milaboratories/pl-middle-layer";
 import { MiddleLayer } from "@milaboratories/pl-middle-layer";
+import { registerServiceCapabilities } from "@platforma-sdk/model";
 import { plTest } from "./test-pl";
 import { awaitStableState } from "./util";
 
@@ -108,6 +109,7 @@ export const blockTest = plTest.extend<{
     ml.addRuntimeCapability("requiresUIAPIVersion", 1);
     ml.addRuntimeCapability("requiresUIAPIVersion", 2);
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
+    registerServiceCapabilities((flag, value) => ml.addRuntimeCapability(flag, value));
 
     try {
       await use(ml);

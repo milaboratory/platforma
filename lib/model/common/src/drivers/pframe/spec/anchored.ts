@@ -8,7 +8,7 @@ import type {
   AnchorAxisRefByIdx,
   AnchoredPColumnId,
   AnchoredPColumnSelector,
-  AxisSelector,
+  LegacyAxisSelector,
   PColumnSelector,
 } from "./selectors";
 import type { AxisId, PColumnSpec } from "./spec";
@@ -323,7 +323,7 @@ export function resolveAnchors(
 function resolveAxisReference(
   anchors: Record<string, PColumnSpec>,
   axisRef: AAxisSelector,
-): AxisSelector {
+): LegacyAxisSelector {
   if (!isAnchorAxisRef(axisRef)) return axisRef;
 
   // It's an anchored reference

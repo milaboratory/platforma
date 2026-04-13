@@ -1,4 +1,4 @@
 {
   "extends": ["node_modules/@milaboratories/ts-builder/configs/oxfmt.json"],
-  "ignorePatterns": ["dist", "CHANGELOG.md", "src/proto-grpc/**"]
+  "ignorePatterns": ["dist", "coverage", "CHANGELOG.md", "src/proto-grpc/**"]
 }

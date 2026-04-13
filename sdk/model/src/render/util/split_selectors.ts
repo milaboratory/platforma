@@ -1,8 +1,8 @@
 import type {
   AAxisSelector,
-  AnchoredPColumnSelector,
-  AxisSelector,
   PColumnSelector,
+  AnchoredPColumnSelector,
+  LegacyAxisSelector,
 } from "@milaboratories/pl-model-common";
 
 /**
@@ -22,7 +22,7 @@ export type APColumnSelectorWithSplit = AnchoredPColumnSelector & {
 /**
  * AxisSelector with an optional split flag
  */
-export type AxisSelectorWithSplit = AxisSelector & {
+export type AxisSelectorWithSplit = LegacyAxisSelector & {
   split?: boolean;
 };
 

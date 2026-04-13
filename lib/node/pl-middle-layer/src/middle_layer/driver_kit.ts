@@ -15,7 +15,8 @@ import {
 } from "@milaboratories/pl-drivers";
 import type * as Sdk from "@milaboratories/pl-model-common";
 import type { Signer } from "@milaboratories/ts-helpers";
-import { HmacSha256Signer, isAsyncDisposable } from "@milaboratories/ts-helpers";
+import { isAsyncDisposable } from "@milaboratories/helpers";
+import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import type { InternalPFrameDriver } from "../pool";
 import { createPFrameDriver } from "../pool";
 import type { DriverKitOps, DriverKitOpsConstructor } from "./ops";

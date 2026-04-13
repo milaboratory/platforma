@@ -1,5 +1,69 @@
 # @milaboratories/pl-local
 
+## 2.16.6
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+
+## 2.16.5
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-config@1.7.17
+
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @milaboratories/pl-model-common@1.31.0
+
+## 2.16.3
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/pl-model-common@1.30.0
+  - @milaboratories/ts-helpers@1.8.0
+  - @milaboratories/pl-config@1.7.16
+
+## 2.16.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+
+## 2.16.1
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+
+## 2.16.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-common@1.27.0
+
+## 2.15.24
+
+### Patch Changes
+
+- Updated dependencies [227002e]
+  - @milaboratories/pl-model-common@1.26.1
+
 ## 2.15.23
 
 ### Patch Changes

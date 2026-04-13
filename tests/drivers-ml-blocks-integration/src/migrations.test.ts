@@ -1,12 +1,7 @@
 import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
-import type { Project } from "@milaboratories/pl-middle-layer";
+import type { Project, StorageDebugView } from "@milaboratories/pl-middle-layer";
 import { parseJson } from "@milaboratories/pl-model-common";
-import {
-  createBlockStorage,
-  isBlockStorage,
-  deriveDataFromStorage,
-  type StorageDebugView,
-} from "@platforma-sdk/model";
+import { createBlockStorage, isBlockStorage, deriveDataFromStorage } from "@platforma-sdk/model";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "vitest";

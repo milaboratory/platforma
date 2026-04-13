@@ -1,5 +1,72 @@
 # @milaboratories/pl-model-backend
 
+## 1.2.8
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.1
+
+## 1.2.7
+
+### Patch Changes
+
+- Updated dependencies [96b0516]
+  - @milaboratories/pl-client@3.1.0
+
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [de415f7]
+  - @milaboratories/pl-client@3.0.0
+
+## 1.2.5
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.5
+
+## 1.2.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.4
+
+## 1.2.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.3
+
+## 1.2.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.2
+
+## 1.2.1
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.18.1
+
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-client@2.18.0
+
+## 1.1.59
+
+### Patch Changes
+
+- @milaboratories/pl-client@2.17.12
+
 ## 1.1.58
 
 ### Patch Changes

@@ -47,6 +47,7 @@ message NotificationFilter {
     optional bool resource_deleted = 3;
 
     optional bool resource_ready = 5;
+    optional bool resource_recovered = 18;
     optional bool resource_duplicate = 6;
     optional bool resource_error = 16;
 
@@ -68,7 +69,7 @@ message NotificationFilter {
     optional bool generic_otw_set = 15;
     optional bool dynamic_changed = 11;
 
-    // next free 18;
+    // next free: 19;
   }
 
   message Payload {

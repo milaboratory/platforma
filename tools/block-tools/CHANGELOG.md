@@ -1,5 +1,91 @@
 # @platforma-sdk/block-tools
 
+## 2.7.7
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+  - @milaboratories/pl-model-middle-layer@1.16.4
+
+## 2.7.6
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/ts-helpers-oclif@1.1.40
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+
+## 2.7.5
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pl-model-middle-layer@1.16.3
+  - @milaboratories/ts-helpers-oclif@1.1.40
+
+## 2.7.4
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @milaboratories/pl-model-common@1.31.0
+  - @milaboratories/pl-model-middle-layer@1.16.2
+
+## 2.7.3
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/pl-model-common@1.30.0
+  - @milaboratories/ts-helpers@1.8.0
+  - @milaboratories/pl-model-middle-layer@1.16.1
+  - @milaboratories/ts-helpers-oclif@1.1.39
+
+## 2.7.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-model-middle-layer@1.16.0
+
+## 2.7.1
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+  - @milaboratories/pl-model-middle-layer@1.15.0
+
+## 2.7.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+  - @milaboratories/pl-model-middle-layer@1.14.0
+  - @milaboratories/pl-model-common@1.27.0
+
+## 2.6.70
+
+### Patch Changes
+
+- Updated dependencies [227002e]
+  - @milaboratories/pl-model-common@1.26.1
+  - @milaboratories/pl-model-middle-layer@1.13.1
+
 ## 2.6.69
 
 ### Patch Changes

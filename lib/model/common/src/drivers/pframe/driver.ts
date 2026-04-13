@@ -1,6 +1,9 @@
 import type { Branded } from "../../branding";
 import type { PTable } from "./table";
-import type { PFrame } from "./pframe";
+import type { PFrame, PFrameDef } from "./pframe";
+import type { PColumn } from "./spec/spec";
+import type { PColumnValues, DataInfo } from "./data_info";
+import type { PTableDef, PTableDefV2 } from "./table_calculate";
 import type { AddParameterToAllMethods } from "./type_util";
 import type { PTableShape, PTableVector, TableRange } from "./data_types";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
@@ -15,6 +18,13 @@ export type PFrameHandle = Branded<string, "PFrame">;
 
 /** PFrame handle */
 export type PTableHandle = Branded<string, "PTable">;
+
+/** Model-side PFrame service — creates frames/tables from column definitions. */
+export interface PFrameModelDriver<Col = PColumn<string | PColumnValues | DataInfo<string>>> {
+  createPFrame(def: PFrameDef<Col>): PFrameHandle;
+  createPTable(def: PTableDef<Col>): PTableHandle;
+  createPTableV2(def: PTableDefV2<Col>): PTableHandle;
+}
 
 /** Allows to access main data layer features of platforma */
 export interface PFrameDriver {

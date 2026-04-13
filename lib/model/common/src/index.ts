@@ -17,3 +17,6 @@ export * from "./value_or_error";
 export * from "./base64";
 export * from "./util";
 export * from "./httpAuth";
+export * from "./resource_types";
+export * from "./services";
+export * from "./pool_entry";

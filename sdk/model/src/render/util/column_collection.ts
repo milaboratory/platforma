@@ -25,17 +25,17 @@ import {
   isLinkerColumn,
   isPartitionedDataInfoEntries,
   isPColumnSpec,
+  legacyColumnSelectorsToPredicate,
   LinkerMap,
   matchAxisId,
   resolveAnchors,
-  selectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
 import type { TreeNodeAccessor } from "../accessor";
 import type { PColumnDataUniversal } from "../internal";
 import { filterDataInfoEntries } from "./axis_filtering";
-import type { LabelDerivationOps, TraceEntry } from "./label";
+import type { LabelDerivationOps } from "./label";
 import { deriveLabels } from "./label";
 import { convertOrParsePColumnData, getUniquePartitionKeys } from "./pcolumn_data";
 import type { APColumnSelectorWithSplit, PColumnSelectorWithSplit } from "./split_selectors";
@@ -66,7 +66,8 @@ class ArrayColumnProvider implements ColumnProvider {
   selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<PColumnDataUniversal | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
     // Filter based on spec, ignoring data type for now
     return this.columns.filter((column): column is PColumn<PColumnDataUniversal | undefined> =>
       predicate(column.spec),
@@ -125,7 +126,7 @@ type IntermediateDirectEntry = {
 // Union type for intermediate processing
 type IntermediateColumnEntry = IntermediateSplitEntry | IntermediateDirectEntry;
 
-function splitFiltersToTrace(splitFilters?: AxisFilterInfo[]): TraceEntry[] | undefined {
+function splitFiltersToTrace(splitFilters?: AxisFilterInfo[]) {
   if (!splitFilters) return undefined;
   return splitFilters.map((filter) => ({
     type: `split:${canonicalizeAxisId(filter.axisId)}`,
@@ -300,8 +301,10 @@ export class PColumnCollection {
             throw new Error(
               "Anchored selectors in exclude require an AnchoredIdDeriver to be provided in options.",
             );
-          return selectorsToPredicate(resolveAnchors(anchorCtx.anchors, selector, opts));
-        } else return selectorsToPredicate(selector);
+          return legacyColumnSelectorsToPredicate(
+            resolveAnchors(anchorCtx.anchors, selector, opts),
+          );
+        } else return legacyColumnSelectorsToPredicate(selector);
       });
       excludePredicate = (spec) => excludePredicartes.some((predicate) => predicate(spec));
     }
