@@ -1,0 +1,38 @@
+// proc_batch — test template for batch processColumn
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+
+bodyTpl := assets.importTemplate(":pframes.proc_batch_body")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+
+	primaryEntries := []
+	for entry in params.primaryEntries {
+		primaryEntries = append(primaryEntries, {
+			src: {
+				spec: entry.spec,
+				data: inputs[entry.dataInputName]
+			},
+			header: entry.header
+		})
+	}
+
+	processResult := pframes.processColumn({
+		primary: primaryEntries,
+		primaryJoin: params.primaryJoin
+	}, bodyTpl, params.outputs, {
+		batch: params.batch
+	})
+
+	return {
+		result: pframes.exportFrame(processResult.allOutputsFrame())
+	}
+})

@@ -1,0 +1,207 @@
+// pframes batch split — receives joined content, splits into batches, renders body per batch
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+render := import(":render")
+smart := import(":smart")
+pConstants := import(":pframes.constants")
+pUtil := import(":pframes.util")
+xsv := import(":pframes.xsv")
+assets := import(":assets")
+text := import("text")
+
+json := import("json")
+
+mergePartitionedTpl := assets.importTemplate(":pframes.merge-partitioned")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+self.awaitState("joinedContent", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	body := inputs.body
+
+	batchSize := params.batchSize
+	passContent := params.passContent
+	eph := params.eph
+	outputs := params.outputs
+	batchKeyHeaders := params.batchKeyHeaders
+
+	// joinedContent is a file content resource (not JSON) — read raw data as string
+	joinedContentResource := inputs.joinedContent
+	contentStr := ""
+	if is_string(joinedContentResource) {
+		contentStr = joinedContentResource
+	} else if smart.isResource(joinedContentResource) {
+		contentStr = joinedContentResource.getData()
+	} else {
+		ll.panic("unexpected joinedContent type: %v", joinedContentResource)
+	}
+
+	// Split content into lines
+	lines := text.split(contentStr, "\n")
+
+	// Remove trailing empty lines
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	if len(lines) <= 1 {
+		// No data (only header or empty) — return empty outputs
+		result := {}
+		for output in outputs {
+			if output.type == "ResourceMap" {
+				result[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: 0 })
+				).lockAndBuild()
+			} else if output.type == "Xsv" {
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					result[output.name + "/" + id] = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+						json.encode({ partitionKeyLength: 0 })
+					).lockAndBuild()
+				}
+			}
+		}
+		return result
+	}
+
+	header := lines[0]
+	dataLines := lines[1:]
+	totalRecords := len(dataLines)
+	totalBatches := (totalRecords + batchSize - 1) / batchSize
+
+	// Prepare output collectors
+	// For Xsv: collect per-column per-batch references for post-processing
+	xsvBatchResults := {} // { "outputName/colId": { "[batchIdx]": fieldRef } }
+	resourceMapOutputs := {}
+
+	for output in outputs {
+		if output.type == "Xsv" {
+			for column in output.settings.columns {
+				id := pUtil.xsvColumnId(column)
+				xsvBatchResults[output.name + "/" + id] = {}
+			}
+		} else if output.type == "ResourceMap" {
+			resourceMapOutputs[output.name] = smart.structBuilder(
+				pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+				json.encode({ keyLength: output.keyLength })
+			)
+		}
+	}
+
+	// Collect extra inputs to forward to body template
+	extraInputs := {}
+	for name, field in self.rawInputs() {
+		if text.has_prefix(name, "__extra_") {
+			extraInputs[name] = field
+		}
+	}
+
+	// Process each batch
+	for batchIdx := 0; batchIdx < totalBatches; batchIdx++ {
+		startLine := batchIdx * batchSize
+		endLine := startLine + batchSize
+		if endLine > totalRecords {
+			endLine = totalRecords
+		}
+
+		batchLines := dataLines[startLine:endLine]
+		batchContent := header + "\n" + text.join(batchLines, "\n") + "\n"
+		ll.print("batch-split: batch ", batchIdx, " content (len=", len(batchContent), "): ", batchContent)
+
+		// Build render inputs for body template
+		renderInputs := {}
+		renderInputs[pConstants.VALUE_FIELD_NAME] = smart.createJsonResource(batchContent)
+
+		// Forward extra inputs
+		for k, v in extraInputs {
+			renderInputs[k] = v
+		}
+
+		batchResult := render.createUniversal(body, eph, renderInputs)
+
+		// Collect outputs from batch result
+		for output in outputs {
+			outputPath := output.path
+			if is_undefined(outputPath) || len(outputPath) == 0 {
+				outputPath = [output.name]
+			}
+
+			batchOutputRef := batchResult
+			for step in outputPath {
+				if is_string(step) {
+					batchOutputRef = batchOutputRef.output(step)
+				} else if is_map(step) && step.optional {
+					batchOutputRef = batchOutputRef.output(step.name)
+				}
+			}
+
+			if output.type == "Xsv" {
+				importSettings := output.settings
+				importOps := { dataOnly: true }
+				if !is_undefined(output.cpu) {
+					importOps.cpu = output.cpu
+				}
+				if !is_undefined(output.mem) {
+					importOps.mem = output.mem
+				}
+
+				xsvType := output.xsvType
+				if is_undefined(xsvType) {
+					xsvType = "tsv"
+				}
+
+				pf := xsv.importFile(batchOutputRef, xsvType, importSettings, importOps)
+
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					sBatchKey := json.encode([batchIdx])
+					// With dataOnly: true, pf is a map resource; get column data field directly
+					xsvBatchResults[output.name + "/" + id][sBatchKey] = pf.getFutureInputField(id)
+				}
+			} else if output.type == "ResourceMap" {
+				resourceMapOutputs[output.name].createInputField(
+					json.encode([batchIdx])
+				).set(batchOutputRef)
+			}
+		}
+	}
+
+	// Post-process Xsv outputs: merge partitions across batches into a single partitioned resource.
+	// Each batch's xsv.importFile produces a JsonPartitioned/BinaryPartitioned/ParquetPartitioned
+	// resource with axes = batchKeyColumns. Batches have disjoint axis values, so we can union them.
+	result := {}
+
+	for output in outputs {
+		if output.type == "ResourceMap" {
+			result[output.name] = resourceMapOutputs[output.name].lockAndBuild()
+		} else if output.type == "Xsv" {
+			for column in output.settings.columns {
+				id := pUtil.xsvColumnId(column)
+				key := output.name + "/" + id
+				parts := xsvBatchResults[key]
+
+				if totalBatches == 1 {
+					// Single batch — pass through the imported partitioned resource directly
+					singleKey := json.encode([0])
+					result[key] = parts[singleKey]
+				} else {
+					// Multiple batches — render merge template to union partition entries
+					mergeInputs := {}
+					for sBatchKey, partData in parts {
+						mergeInputs["src_" + sBatchKey] = partData
+					}
+					mergeResult := render.createEphemeral(mergePartitionedTpl, mergeInputs)
+					result[key] = mergeResult.output("result")
+				}
+			}
+		}
+	}
+
+	return result
+})
