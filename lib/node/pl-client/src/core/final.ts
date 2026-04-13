@@ -1,6 +1,8 @@
 import type { Optional } from "utility-types";
 import type { BasicResourceData, ResourceData } from "./types";
 import { getField, isNotNullResourceId, isNullResourceId } from "./types";
+import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
+export { ResourceTypeName, ResourceTypePrefix };
 
 /**
  * Function is used to guide multiple layers of caching in pl-client and derived pl-tree.
@@ -36,7 +38,7 @@ const unknownResourceTypeNames = new Set<string>();
 /** Default implementation, defining behaviour for built-in resource types. */
 export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r): boolean => {
   switch (r.type.name) {
-    case "StreamManager": {
+    case ResourceTypeName.StreamManager: {
       if (!readyOrDuplicateOrError(r)) return false;
       if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
       if (isNotNullResourceId(r.error)) return true;
@@ -44,51 +46,54 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       const stream = getField(r as ResourceData, "stream");
       return stream.value === downloadable.value;
     }
-    case "StdMap":
-    case "std/map":
-    case "EphStdMap":
-    case "PFrame":
-    case "ParquetChunk":
-    case "BContext":
-    case "BlockPackCustom":
-    case "BinaryMap":
-    case "BinaryValue":
-    case "BlobMap":
-    case "BResolveSingle":
-    case "BResolveSingleNoResult":
-    case "BQueryResult":
-    case "TengoTemplate":
-    case "TengoLib":
-    case "SoftwareInfo":
-    case "Dummy":
+    case ResourceTypeName.StdMap:
+    case ResourceTypeName.StdMapSlash:
+    case ResourceTypeName.EphStdMap:
+    case ResourceTypeName.PFrame:
+    case ResourceTypeName.ParquetChunk:
+    case ResourceTypeName.BContext:
+    case ResourceTypeName.BlockPackCustom:
+    case ResourceTypeName.BinaryMap:
+    case ResourceTypeName.BinaryValue:
+    case ResourceTypeName.BlobMap:
+    case ResourceTypeName.BResolveSingle:
+    case ResourceTypeName.BResolveSingleNoResult:
+    case ResourceTypeName.BQueryResult:
+    case ResourceTypeName.TengoTemplate:
+    case ResourceTypeName.TengoLib:
+    case ResourceTypeName.SoftwareInfo:
+    case ResourceTypeName.Dummy:
       return readyOrDuplicateOrError(r);
-    case "json/resourceError":
+    case ResourceTypeName.JsonResourceError:
       return r.type.version === "1";
-    case "json/object":
-    case "json-gz/object":
-    case "json/string":
-    case "json/array":
-    case "json/number":
-    case "BContextEnd":
-    case "Frontend/FromUrl":
-    case "Frontend/FromFolder":
-    case "BObjectSpec":
-    case "Blob":
-    case "Null":
-    case "binary":
-    case "LSProvider":
+    case ResourceTypeName.JsonObject:
+    case ResourceTypeName.JsonGzObject:
+    case ResourceTypeName.JsonString:
+    case ResourceTypeName.JsonArray:
+    case ResourceTypeName.JsonNumber:
+    case ResourceTypeName.BContextEnd:
+    case ResourceTypeName.FrontendFromUrl:
+    case ResourceTypeName.FrontendFromFolder:
+    case ResourceTypeName.BObjectSpec:
+    case ResourceTypeName.Blob:
+    case ResourceTypeName.Null:
+    case ResourceTypeName.Binary:
+    case ResourceTypeName.LSProvider:
       return true;
-    case "UserProject":
-    case "Projects":
-    case "ClientRoot":
+    case ResourceTypeName.UserProject:
+    case ResourceTypeName.Projects:
+    case ResourceTypeName.ClientRoot:
       return false;
     default:
-      if (r.type.name.startsWith("Blob/")) return true;
-      else if (r.type.name.startsWith("BlobUpload/") || r.type.name.startsWith("BlobIndex/")) {
+      if (r.type.name.startsWith(ResourceTypePrefix.Blob)) return true;
+      else if (
+        r.type.name.startsWith(ResourceTypePrefix.BlobUpload) ||
+        r.type.name.startsWith(ResourceTypePrefix.BlobIndex)
+      ) {
         return readyAndHasAllOutputsFilled(r);
-      } else if (r.type.name.startsWith("PColumnData/")) {
+      } else if (r.type.name.startsWith(ResourceTypePrefix.PColumnData)) {
         return readyOrDuplicateOrError(r);
-      } else if (r.type.name.startsWith("StreamWorkdir/")) {
+      } else if (r.type.name.startsWith(ResourceTypePrefix.StreamWorkdir)) {
         return readyOrDuplicateOrError(r);
       } else {
         // Unknown resource type detected

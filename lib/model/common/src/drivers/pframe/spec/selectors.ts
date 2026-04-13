@@ -12,8 +12,14 @@ import { getAxisId } from "./spec";
  *
  * This interface is used in various selection and matching operations
  * throughout the PFrame system, such as column queries and axis lookups.
+ *
+ * @deprecated This selector is part of the legacy column matching API.
+ * The new Columns API (see sdk/model/src/columns/) now handles column and axis
+ * selection via {@link AxisSelector} and {@link ColumnSelector}, providing
+ * stricter matching semantics (StringMatcher-based) and a unified approach
+ * to working with columns, including domain and annotation matching.
  */
-export interface AxisSelector {
+export interface LegacyAxisSelector {
   /**
    * Optional value type to match against.
    * When specified, only axes with this exact type will match.
@@ -94,7 +100,7 @@ export type ADomain = string | AnchorDomainRef;
  * Axis identifier that can be either a direct AxisId or a reference to an axis through an anchor
  * Allows referring to axes in a way that can be resolved in different contexts
  */
-export type AAxisSelector = AxisSelector | AnchorAxisRef;
+export type AAxisSelector = LegacyAxisSelector | AnchorAxisRef;
 
 /**
  * Match resolution strategy for PColumns
@@ -144,7 +150,7 @@ export interface PColumnSelector extends AnchoredPColumnSelector {
   domain?: Record<string, string>;
   contextDomainAnchor?: never;
   contextDomain?: Record<string, string>;
-  axes?: AxisSelector[];
+  axes?: LegacyAxisSelector[];
 }
 
 /**
@@ -187,7 +193,7 @@ export function isAnchoredPColumnId(id: unknown): id is AnchoredPColumnId {
  * @param axis - The AxisId to check against the selector
  * @returns true if the AxisId matches all specified criteria in the selector, false otherwise
  */
-export function matchAxis(selector: AxisSelector, axis: AxisId): boolean {
+export function matchAxis(selector: LegacyAxisSelector, axis: AxisId): boolean {
   // Match name if specified
   if (selector.name !== undefined && selector.name !== axis.name) return false;
 
@@ -298,7 +304,7 @@ export function matchPColumn(pcolumn: PColumnSpec, selector: PColumnSelector): b
  *                              or an array of PColumnSelectors, or a single PColumnSelector
  * @returns A function that takes a PColumnSpec and returns a boolean
  */
-export function selectorsToPredicate(
+export function legacyColumnSelectorsToPredicate(
   predicateOrSelectors: PColumnSelector | PColumnSelector[],
 ): (spec: PObjectSpec) => boolean {
   if (Array.isArray(predicateOrSelectors))

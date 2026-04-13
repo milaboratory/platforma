@@ -366,6 +366,7 @@ export class PlTransaction {
           id: localId,
           data: Buffer.from(name),
           errorIfExists,
+          colorProof: new Uint8Array(0),
         },
       },
       (r) => r.resourceCreateSingleton.resourceId as ResourceId,
@@ -429,6 +430,7 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
+          colorProof: new Uint8Array(0),
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -447,6 +449,7 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
+          colorProof: new Uint8Array(0),
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -469,6 +472,7 @@ export class PlTransaction {
           id: localId,
           data: typeof data === "string" ? Buffer.from(data) : data,
           errorIfExists,
+          colorProof: new Uint8Array(0),
         },
       }),
       (r) => r.resourceCreateValue.resourceId,
@@ -518,12 +522,18 @@ export class PlTransaction {
   }
 
   public removeResource(rId: ResourceId): void {
-    this.sendVoidAsync({ oneofKind: "resourceRemove", resourceRemove: { id: rId } });
+    this.sendVoidAsync({
+      oneofKind: "resourceRemove",
+      resourceRemove: { resourceId: rId },
+    });
   }
 
   public resourceExists(rId: ResourceId): Promise<boolean> {
     return this.sendSingleAndParse(
-      { oneofKind: "resourceExists", resourceExists: { resourceId: rId } },
+      {
+        oneofKind: "resourceExists",
+        resourceExists: { resourceId: rId },
+      },
       (r) => r.resourceExists.exists,
     );
   }
@@ -581,7 +591,10 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceGet",
-          resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields },
+          resourceGet: {
+            resourceId: toResourceId(rId),
+            loadFields: loadFields,
+          },
         },
         (r) => protoToResource(notEmpty(r.resourceGet.resource)),
       );
@@ -665,7 +678,7 @@ export class PlTransaction {
     this._stat.inputsLocked++;
     this.sendVoidAsync({
       oneofKind: "resourceLockInputs",
-      resourceLockInputs: { resourceId: toResourceId(rId) },
+      resourceLockInputs: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0) },
     });
   }
 
@@ -677,7 +690,7 @@ export class PlTransaction {
     this._stat.outputsLocked++;
     this.sendVoidAsync({
       oneofKind: "resourceLockOutputs",
-      resourceLockOutputs: { resourceId: toResourceId(rId) },
+      resourceLockOutputs: { resourceId: toResourceId(rId), resourceSignature: new Uint8Array(0) },
     });
   }
 
@@ -689,7 +702,10 @@ export class PlTransaction {
   public setResourceError(rId: AnyResourceRef, ref: AnyResourceRef): void {
     this.sendVoidAsync({
       oneofKind: "resourceSetError",
-      resourceSetError: { resourceId: toResourceId(rId), errorResourceId: toResourceId(ref) },
+      resourceSetError: {
+        resourceId: toResourceId(rId),
+        errorResourceId: toResourceId(ref),
+      },
     });
   }
 
@@ -743,7 +759,10 @@ export class PlTransaction {
     this._stat.fieldsSet++;
     this.sendVoidAsync({
       oneofKind: "fieldSetError",
-      fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) },
+      fieldSetError: {
+        field: toFieldId(fId),
+        errorResourceId: toResourceId(ref),
+      },
     });
   }
 
@@ -776,7 +795,11 @@ export class PlTransaction {
       const result = await this.sendMultiAndParse(
         {
           oneofKind: "resourceKeyValueList",
-          resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: "", limit: 0 },
+          resourceKeyValueList: {
+            resourceId: toResourceId(rId),
+            startFrom: "",
+            limit: 0,
+          },
         },
         (r) => r.map((e) => e.resourceKeyValueList.record!),
       );
@@ -815,6 +838,7 @@ export class PlTransaction {
       oneofKind: "resourceKeyValueSet",
       resourceKeyValueSet: {
         resourceId: toResourceId(rId),
+        resourceSignature: new Uint8Array(0),
         key,
         value: toBytes(value),
       },
@@ -826,6 +850,7 @@ export class PlTransaction {
       oneofKind: "resourceKeyValueDelete",
       resourceKeyValueDelete: {
         resourceId: toResourceId(rId),
+        resourceSignature: new Uint8Array(0),
         key,
       },
     });
@@ -836,7 +861,10 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGet",
-          resourceKeyValueGet: { resourceId: toResourceId(rId), key },
+          resourceKeyValueGet: {
+            resourceId: toResourceId(rId),
+            key,
+          },
         },
         (r) => r.resourceKeyValueGet.value,
       );
@@ -864,7 +892,10 @@ export class PlTransaction {
       const result = await this.sendSingleAndParse(
         {
           oneofKind: "resourceKeyValueGetIfExists",
-          resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key },
+          resourceKeyValueGetIfExists: {
+            resourceId: toResourceId(rId),
+            key,
+          },
         },
         (r) =>
           r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,

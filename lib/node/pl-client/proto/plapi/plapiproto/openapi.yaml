@@ -6,6 +6,30 @@ info:
   title: Platform API
   version: 1.0.0
 paths:
+  /v1/auth/grant-access:
+    post:
+      tags:
+        - Platform
+      operationId: Platform_GrantAccess
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantAccess_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrantAccess_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /v1/auth/jwt-token:
     post:
       tags:
@@ -43,6 +67,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ListMethods_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /v1/auth/revoke-grant:
+    post:
+      tags:
+        - Platform
+      operationId: Platform_RevokeGrant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeGrant_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeGrant_Response"
         default:
           description: Default error response
           content:
@@ -378,8 +426,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
-  /v1/locks/lease:
-    put:
+  /v1/locks/lease/create:
+    post:
+      tags:
+        - Platform
+      description: |-
+        LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+         Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+         To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
+      operationId: Platform_LeaseResource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Create_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /v1/locks/lease/release:
+    post:
+      tags:
+        - Platform
+      operationId: Platform_ReleaseLease
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Release_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Release_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /v1/locks/lease/update:
+    post:
       tags:
         - Platform
       operationId: Platform_UpdateLease
@@ -402,11 +502,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /v1/locks/lock/create:
     post:
       tags:
         - Platform
-      description: Locks
-      operationId: Platform_LeaseResource
+      description: |-
+        LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+           - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+           - list resource's fields, take fields with names set in request
+           - get resolved values of listed fields (IDs of 'ON' resources).
+           - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
+
+         Lock logic constraints:
+           - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+             succeeds, while the other fails with an error (no long waiting)
+           - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+             the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+           - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+             being lockable. An attempt to lock a resource that has not become original will fail.
+           - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
+      operationId: Platform_LockFieldValues
       requestBody:
         content:
           application/json:
@@ -420,29 +535,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Create_Response"
-        default:
-          description: Default error response
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Status"
-    delete:
-      tags:
-        - Platform
-      operationId: Platform_ReleaseLease
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Release_Request"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Release_Response"
         default:
           description: Default error response
           content:
@@ -654,6 +746,9 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
     Exists_Response:
       type: object
       properties:
@@ -674,14 +769,20 @@ components:
         value:
           type: string
           description: |-
-            _resolved_ value of field or _assigned_ if the field was assigned to a resource.
-             If field refers to another field, it will get
-             value only when this chain of references ends up with direct resource
-             reference. At that moment all fields in the chain will get their values
+            _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
+             If a field refers to another field, it will get
+             a value only when this chain of references ends up with a direct resource
+             reference. At that moment, all fields in the chain will get their values
              resolved and will start to refer to the same resource directly.
+        valueSignature:
+          type: string
+          description: |-
+            Signature for value resource ID, inheriting the parent resource's color.
+             Populated server-side when the parent resource has a known color in the current TX.
+          format: bytes
         valueStatus:
           type: integer
-          description: If the value was empty, assigned or finally resolved.
+          description: Whether the value is empty, assigned, or finally resolved.
           format: enum
         valueIsFinal:
           type: boolean
@@ -689,13 +790,20 @@ components:
         error:
           type: string
           description: |-
-            Resource error resource id if any.
-             Is intended to report problems _from_ platform to client.
+            Error resource ID, if any.
+             Is intended to report problems _from_ the platform to the client.
+        errorSignature:
+          type: string
+          description: Signature for error resource ID, inheriting the parent resource's color.
+          format: bytes
     FieldRef:
       type: object
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
         fieldName:
           type: string
     FieldSchema:
@@ -712,11 +820,17 @@ components:
         expiration:
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
           type: string
+        requestedRole:
+          type: integer
+          format: enum
     GetJWTToken_Response:
       type: object
       properties:
         token:
           type: string
+        sessionId:
+          type: string
+          format: bytes
     GetNotifications_Request:
       type: object
       properties:
@@ -749,6 +863,9 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
         loadFields:
           type: boolean
     Get_Response:
@@ -764,6 +881,27 @@ components:
           description: The type of the serialized message.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+    GrantAccess_Request:
+      type: object
+      properties:
+        resourceId:
+          type: string
+        resourceSignature:
+          type: string
+          format: bytes
+        targetUser:
+          type: string
+        permissions:
+          $ref: "#/components/schemas/Grant_Permissions"
+    GrantAccess_Response:
+      type: object
+      properties: {}
+    Grant_Permissions:
+      type: object
+      properties:
+        writable:
+          type: boolean
+      description: Permissions describes access level for a grant.
     License_Response:
       type: object
       properties:
@@ -846,6 +984,8 @@ components:
           type: boolean
         resourceReady:
           type: boolean
+        resourceRecovered:
+          type: boolean
         resourceDuplicate:
           type: boolean
         resourceError:
@@ -912,6 +1052,8 @@ components:
           type: boolean
         dynamicChanged:
           type: boolean
+        resourceRecovered:
+          type: boolean
     Notification_FieldChange:
       type: object
       properties:
@@ -925,8 +1067,6 @@ components:
         coreVersion:
           type: string
         coreFullVersion:
-          type: string
-        serverInfo:
           type: string
         compression:
           type: integer
@@ -969,6 +1109,9 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
         leaseId:
           type: string
           format: bytes
@@ -986,8 +1129,11 @@ components:
     Resource:
       type: object
       properties:
-        id:
+        resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
         canonicalId:
           type: string
           format: bytes
@@ -1046,6 +1192,43 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FieldSchema"
+        accessFlags:
+          allOf:
+            - $ref: "#/components/schemas/ResourceSchema_AccessFlags"
+          description: Access restriction flags for non-controller roles
+        freeInputs:
+          type: boolean
+        freeOutputs:
+          type: boolean
+    ResourceSchema_AccessFlags:
+      type: object
+      properties:
+        createResource:
+          type: boolean
+          description: |-
+            Deny-list approach: default = allowed (true)
+             Controllers set these to false to restrict non-controller roles (role='u', role='w')
+        readFields:
+          type: boolean
+          description: "IMPORTANT: read_fields=false with write_fields=true is a forbidden combination"
+        writeFields:
+          type: boolean
+        readKv:
+          type: boolean
+          description: "IMPORTANT: read_kv=false with write_kv=true is a forbidden combination"
+        writeKv:
+          type: boolean
+        readByFieldType:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: |-
+            Per-field-type overrides (map: field_type → bool)
+             When defined for a field type, overrides resource-level flags
+        writeByFieldType:
+          type: object
+          additionalProperties:
+            type: boolean
     ResourceType:
       type: object
       properties:
@@ -1058,6 +1241,19 @@ components:
       properties:
         ephemeral:
           type: boolean
+    RevokeGrant_Request:
+      type: object
+      properties:
+        resourceId:
+          type: string
+        resourceSignature:
+          type: string
+          format: bytes
+        targetUser:
+          type: string
+    RevokeGrant_Response:
+      type: object
+      properties: {}
     SetFeatures_Request:
       type: object
       properties:

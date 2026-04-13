@@ -1,6 +1,6 @@
-import type { PTableHandle } from "@platforma-sdk/model";
+import type { PTableHandle } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import type { PoolEntry } from "@milaboratories/ts-helpers";
+import type { PoolEntry } from "@milaboratories/helpers";
 import { LRUCache } from "lru-cache";
 import { logPFrames } from "./logging";
 import type { PTableHolder } from "./ptable_pool";

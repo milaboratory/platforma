@@ -1,3 +1,4 @@
+import type { ServiceRequireFlags } from "../services";
 import type { ArrayTypeUnion, Assert, Is, IsSubtypeOf } from "./type_utils";
 
 /**
@@ -20,7 +21,7 @@ export type BlockCodeKnownFeatureFlags = {
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
   readonly requiresCreatePTable?: number;
-};
+} & ServiceRequireFlags;
 
 export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframeQueryRanking"] as const;
 
@@ -42,9 +43,11 @@ type _KnownFlagsAreValidFlags = Assert<
 
 // This check ensures that all keys in BlockConfigV3FeatureFlags are covered in the arrays above.
 // It will produce a compile-time error if there's a mismatch.
+// Adding a service to Services automatically satisfies this assertion via ServiceRequireFlags.
 type _AllFlagsAreCovered = Assert<
   Is<
     keyof BlockCodeKnownFeatureFlags,
-    ArrayTypeUnion<typeof AllRequiresFeatureFlags, typeof AllSupportsFeatureFlags>
+    | ArrayTypeUnion<typeof AllRequiresFeatureFlags, typeof AllSupportsFeatureFlags>
+    | keyof ServiceRequireFlags
   >
 >;

@@ -1,6 +1,6 @@
-import { PFrameDriverError, type PTableHandle } from "@platforma-sdk/model";
+import { PFrameDriverError, type PTableHandle } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase } from "@milaboratories/ts-helpers";
+import { RefCountPoolBase } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import type { FullPTableDef } from "./ptable_shared";
 import { stableKeyFromFullPTableDef } from "./ptable_shared";

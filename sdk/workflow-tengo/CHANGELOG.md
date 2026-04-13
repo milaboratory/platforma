@@ -1,5 +1,40 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.0
+
+### Minor Changes
+
+- aeee41f: GPU minimal support in tengo workflow
+
+## 5.12.1
+
+### Patch Changes
+
+- f0ef695: No functional changes. Better assertion error text
+
+## 5.12.0
+
+### Minor Changes
+
+- faa2923: Add support of custom command names in workflows. Custom command name is shown in error message if command fails and in logs of backend
+
+## 5.11.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-open/milaboratories.software-ptabler@1.15.0
+
+## 5.10.1
+
+### Patch Changes
+
+- 598b009: fix: xsv converter can be launched in k8s installations.
+
 ## 5.10.0
 
 ### Minor Changes

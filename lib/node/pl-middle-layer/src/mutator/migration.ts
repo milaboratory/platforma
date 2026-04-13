@@ -1,3 +1,4 @@
+import { UiError } from "@milaboratories/pl-model-common";
 import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
 import type { ProjectField, ProjectStructure } from "../model/project_model";
 import {
@@ -6,6 +7,7 @@ import {
   SchemaVersionCurrent,
   SchemaVersionKey,
   SchemaVersionV2,
+  SchemaVersionV3,
 } from "../model/project_model";
 import { BlockFrontendStateKeyPrefixV1, SchemaVersionV1 } from "../model/project_model_v1";
 import { field, isNullResourceId } from "@milaboratories/pl-client";
@@ -31,9 +33,21 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
 
     if (schemaVersion === SchemaVersionV2) {
       await migrateV2ToV3(tx, rid);
-    } else if (schemaVersion !== SchemaVersionV1) {
-      // If we got here and it's not v1 (which was handled above), it's unknown
-      throw new Error(`Unknown project schema version: ${schemaVersion}`);
+      schemaVersion = SchemaVersionV3;
+    }
+
+    if (schemaVersion === SchemaVersionV3) {
+      // V3 → V4: production context chain + staging re-render.
+      // The actual chain building and staging reset happens in fixProblemsAndMigrate()
+      // (called from ProjectMutator.load). This migration step just bumps the schema
+      // to prevent older clients from operating on the new project structure.
+      schemaVersion = SchemaVersionCurrent;
+    }
+
+    if (schemaVersion !== SchemaVersionCurrent) {
+      throw new UiError(
+        `This project was created with a newer version of Platforma. Please update to the latest version to open it.`,
+      );
     }
 
     tx.setKValue(rid, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));

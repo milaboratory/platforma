@@ -51,6 +51,31 @@ tplTest.concurrent.for([
 );
 
 /**
+ * Verifies that .gpu(N) passes the GPU count through to the system variables.
+ * The template echoes {system.gpu},{system.cpu} — we check gpu matches what was requested.
+ */
+tplTest.concurrent.for([{ gpuCount: 37 }])(
+  "gpu-limits (gpu=$gpuCount)",
+  async ({ gpuCount }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.hello_gpu_limits",
+      ["gpuCount"],
+      (tx) => ({
+        gpuCount: tx.createValue(Pl.JsonObject, JSON.stringify(gpuCount)),
+      }),
+    );
+
+    const gpuOut = await result
+      .computeOutput("gpuCount", (a) => a?.getDataAsJson())
+      .awaitStableValue();
+    console.log(`GPU test output limits: "${gpuOut}"`);
+    // Yes, this test checks nothing except that .gpu() in workflow doesn't breaks anything
+    expect(Number(gpuOut)).eq(gpuCount);
+  },
+);
+
+/**
  * Requests a secret and checks its value is not empty.
  */
 tplTest.concurrent("check-secret", async ({ helper, expect }) => {

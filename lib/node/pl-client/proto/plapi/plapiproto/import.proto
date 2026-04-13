@@ -11,8 +11,8 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
-// Makes protobuf to forcefully compile all well-known types into code (for TS)
-// or just add dependencies on them (for go)
+// Forces protobuf to compile all well-known types into code (for TS)
+// or just adds dependencies on them (for go)
 message _ImportWellKnown {
   google.protobuf.Empty empty = 1;
   google.protobuf.Any any = 2;

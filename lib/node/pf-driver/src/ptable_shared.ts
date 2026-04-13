@@ -5,7 +5,7 @@ import type {
   PTableHandle,
   DataQuery,
   PTableColumnSpec,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import { hashJson } from "@milaboratories/pl-model-middle-layer";
 
 export type FullPTableDefV1 = {

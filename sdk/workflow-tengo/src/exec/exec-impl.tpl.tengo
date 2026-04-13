@@ -56,6 +56,7 @@ self.validateInputs({
 	settings: {
 		"dirsToCreate,?": ["string"],
 		runOptions: {
+			"name,?": "string",
 			"software,?": pkg.softwareInfoScheme,
 			"cmd,?": "string",
 			args: ["string"],
@@ -84,7 +85,8 @@ self.validateInputs({
 	"quota": {
 		queue: "string",
 		"cpu,?": "number",
-		"ram,?": ["or", "number", "string"]
+		"ram,?": ["or", "number", "string"],
+		"gpu,?": "number"
 	}
 })
 
@@ -139,11 +141,15 @@ self.body(func(inputs) {
 	// it has acquired the storage quota required for workdir creation,
 	// which is a prerequisite for the computation itself.
 
-	computeAllocationRef := delayedCompAlloc.create(wdBefore, {
+	computeRequest := {
 		queue: runOptions.queue,
 		cpu: quota.cpu,
 		ram: quota.ram
-	})
+	}
+	if !is_undefined(quota.gpu) && quota.gpu > 0 {
+		computeRequest.gpu = quota.gpu
+	}
+	computeAllocationRef := delayedCompAlloc.create(wdBefore, computeRequest)
 
 	runEnvType := inputs.mainPlan.options.runEnvType
 
@@ -168,6 +174,10 @@ self.body(func(inputs) {
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
 		inQueue(runOptions.queue).
 		allocation(computeAllocationRef)
+
+	if !is_undefined(runOptions.name) && runOptions.name != "" {
+		mainRunBuilder.name(runOptions.name)
+	}
 
 	// Passing arguments and environment variables from run options passed by the user
 

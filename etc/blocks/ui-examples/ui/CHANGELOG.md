@@ -1,5 +1,83 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.9.7
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.12
+- @milaboratories/milaboratories.ui-examples.model@1.5.7
+
+## 1.9.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.1
+- @milaboratories/milaboratories.ui-examples.model@1.5.6
+
+## 1.9.5
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @platforma-sdk/model@1.63.0
+  - @milaboratories/milaboratories.ui-examples.model@1.5.5
+
+## 1.9.4
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @platforma-sdk/model@1.62.0
+  - @milaboratories/milaboratories.ui-examples.model@1.5.4
+
+## 1.9.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+  - @milaboratories/milaboratories.ui-examples.model@1.5.3
+
+## 1.9.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+  - @milaboratories/milaboratories.ui-examples.model@1.5.2
+
+## 1.9.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+- @milaboratories/milaboratories.ui-examples.model@1.5.1
+
+## 1.9.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/milaboratories.ui-examples.model@1.5.0
+  - @platforma-sdk/model@1.60.0
+
+## 1.8.37
+
+### Patch Changes
+
+- 68bc3e4: update uikit file/number input
+
+## 1.8.36
+
+### Patch Changes
+
+- @platforma-sdk/model@1.59.3
+- @milaboratories/milaboratories.ui-examples.model@1.4.34
+
 ## 1.8.35
 
 ### Patch Changes

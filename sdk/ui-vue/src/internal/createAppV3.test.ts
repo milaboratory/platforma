@@ -165,6 +165,11 @@ function createMockApiV3<
     async dispose(): Promise<ResultOrError<void>> {
       return { value: undefined };
     },
+    serviceDispatch: {
+      getServiceNames: () => [],
+      getServiceMethods: () => [],
+      callServiceMethod: () => undefined,
+    },
     //
     blobDriver: undefined as any,
     //
@@ -519,6 +524,96 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     expect(pluginState.model.outputErrors["formatted"]).toBeDefined();
 
     app.closedRef = true;
+  });
+
+  it("should default stable to true on plugin withStatus outputs when stable is absent", async () => {
+    type F = PluginFactory<PluginData, undefined, { pFrame: OutputWithStatus<string | undefined> }>;
+    const pluginId = "graphMaker" as PluginHandle<F>;
+    const pluginOutputName = pluginOutputKey(pluginId, "pFrame");
+
+    const outputsWithoutStable = {
+      ...defaultOutputs(),
+      [pluginOutputName]: { ok: true, value: undefined } as OutputWithStatus<string | undefined>,
+    } as Outputs;
+
+    const state = new BlockStateV3Mock<Data, Outputs>(defaultData(), outputsWithoutStable, "/", {
+      [pluginId]: defaultPluginData(),
+    });
+
+    const blockModelInfo: BlockModelInfo = {
+      outputs: {
+        doubled: { withStatus: false },
+        [pluginOutputName]: { withStatus: true },
+      },
+      pluginIds: [pluginId],
+      featureFlags: {},
+    };
+
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { pluginAccess } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    const pluginState = pluginAccess.getOrCreatePluginState(pluginId);
+
+    const pFrame = pluginState.model.outputs["pFrame"] as Extract<
+      OutputWithStatus<string | undefined>,
+      { ok: true }
+    >;
+    expect(pFrame).toBeDefined();
+    expect(pFrame.ok).toBe(true);
+    expect(pFrame.stable).toBe(true);
+    expect(pFrame.value).toBeUndefined();
+  });
+
+  it("should preserve stable=false on plugin withStatus outputs when explicitly set", async () => {
+    type F = PluginFactory<PluginData, undefined, { pFrame: OutputWithStatus<string | undefined> }>;
+    const pluginId = "graphMaker" as PluginHandle<F>;
+    const pluginOutputName = pluginOutputKey(pluginId, "pFrame");
+
+    const outputsUnstable = {
+      ...defaultOutputs(),
+      [pluginOutputName]: { ok: true, value: undefined, stable: false } as OutputWithStatus<
+        string | undefined
+      >,
+    } as Outputs;
+
+    const state = new BlockStateV3Mock<Data, Outputs>(defaultData(), outputsUnstable, "/", {
+      [pluginId]: defaultPluginData(),
+    });
+
+    const blockModelInfo: BlockModelInfo = {
+      outputs: {
+        doubled: { withStatus: false },
+        [pluginOutputName]: { withStatus: true },
+      },
+      pluginIds: [pluginId],
+      featureFlags: {},
+    };
+
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { pluginAccess } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    const pluginState = pluginAccess.getOrCreatePluginState(pluginId);
+
+    const pFrame = pluginState.model.outputs["pFrame"] as Extract<
+      OutputWithStatus<string | undefined>,
+      { ok: true }
+    >;
+    expect(pFrame).toBeDefined();
+    expect(pFrame.ok).toBe(true);
+    expect(pFrame.stable).toBe(false);
+    expect(pFrame.value).toBeUndefined();
   });
 
   it("should navigate to href", async () => {

@@ -1,14 +1,14 @@
-<script lang="ts" setup>
+<script lang="ts" setup generic="V extends undefined | string, C extends V">
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { computed } from "vue";
 import PlTooltip from "../PlTooltip/PlTooltip.vue";
 
-const model = defineModel<string>({ required: true });
+const model = defineModel<V>({ required: true });
 
 const props = defineProps<{
   modelValue?: string;
-  clearable?: boolean;
+  clearable?: boolean | (() => C);
   placeholder?: string;
   disabled?: boolean;
   helper?: string;
@@ -20,7 +20,11 @@ const slots = defineSlots<{
 const nonEmpty = computed(() => model.value != null && model.value.length > 0);
 const hasHelper = computed(() => props.helper != null || slots.helper != null);
 
-const clear = () => (model.value = "");
+const clear = () => {
+  if (props.clearable) {
+    model.value = (typeof props.clearable === "function" ? props.clearable() : "") as V;
+  }
+};
 </script>
 
 <template>

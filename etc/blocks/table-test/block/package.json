@@ -2,18 +2,18 @@
   "name": "@milaboratories/milaboratories.test-block-table",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "build": "rm -rf ./block-pack && block-tools pack"
-  },
   "files": [
     "index.d.ts",
     "index.js"
   ],
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
   "dependencies": {
-    "@platforma-sdk/model": "workspace:*",
-    "@milaboratories/milaboratories.test-block-table.workflow": "workspace:*",
     "@milaboratories/milaboratories.test-block-table.model": "workspace:*",
-    "@milaboratories/milaboratories.test-block-table.ui": "workspace:*"
+    "@milaboratories/milaboratories.test-block-table.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-block-table.workflow": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@platforma-sdk/block-tools": "workspace:*"

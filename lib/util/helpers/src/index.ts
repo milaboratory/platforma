@@ -18,5 +18,8 @@ export * from "./random";
 export * from "./uniqId";
 export * from "./perfTimer";
 export * from "./parse";
+export * from "./logger";
+export * from "./disposable";
+export * from "./ref_count_pool";
 
 export { utils, strings, objects, collections, functions, prettyBytes };

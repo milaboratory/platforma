@@ -15,3 +15,4 @@ export * from "./spec";
 export * from "./driver";
 
 export * from "./linker_columns";
+export * from "./spec_driver";

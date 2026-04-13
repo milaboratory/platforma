@@ -3,19 +3,11 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
     "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true,
     "jsx": "preserve",
-    "types": [
-      "vite/client",
-      "vitest/importMeta"
-    ]
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "vitest/importMeta"]
   }
 }

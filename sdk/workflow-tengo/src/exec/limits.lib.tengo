@@ -51,7 +51,7 @@ quotaBuilder := func() {
 	queue_name := undefined
 	cpu_request := undefined
 	ram_request := undefined
-
+	gpu_request := undefined
 
 	self = ll.toStrict({
 		/**
@@ -100,6 +100,20 @@ quotaBuilder := func() {
 		},
 
 		/**
+		 * Number of GPU devices to request.
+		 *
+		 * @param amount: number - number of GPUs.
+		 * @return builder
+		 */
+		gpu: func(amount) {
+			validation.assertType(amount, ["or", "number", "null"], "exec.quota.builder.gpu: GPU amount should be a number")
+			ll.assert(is_undefined(amount) || amount > 0, "exec.quota.builder.gpu: amount should be greater than 0")
+			gpu_request = amount
+
+			return self
+		},
+
+		/**
 		 * Create Quota resource.
 		 *
 		 * @return smart.resource - reference to the resulting value resource
@@ -115,6 +129,9 @@ quotaBuilder := func() {
 			}
 			if !is_undefined(ram_request) {
 				data.memory = ram_request
+			}
+			if !is_undefined(gpu_request) && gpu_request > 0 {
+				data.gpu = gpu_request
 			}
 
 			return smart.ephemeralBuilder(_RTYPE_QUOTA, json.encode(data)).lockAndBuild()

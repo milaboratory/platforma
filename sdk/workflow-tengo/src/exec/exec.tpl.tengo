@@ -46,6 +46,7 @@ self.validateInputs({
 
 	"dirsToCreate,?": ["string"],
 	runOptions: {
+		"name,?": "string",
 		"software,?": pkg.softwareInfoScheme,
 		"cmd,?": "string",
 		args: ["string"],
@@ -74,7 +75,8 @@ self.validateInputs({
 	"quota": {
 		queue: "string",
 		"cpu,?": "number",
-		"ram,?": ["or", "number", "string"]
+		"ram,?": ["or", "number", "string"],
+		"gpu,?": "number"
 	}
 })
 

@@ -1,0 +1,70 @@
+{
+  "name": "@platforma-sdk/pl-cli",
+  "version": "0.2.24",
+  "description": "CLI for Platforma server state manipulation",
+  "license": "UNLICENSED",
+  "bin": {
+    "pl-cli": "./bin/run.js"
+  },
+  "files": [
+    "./bin/*",
+    "./dist/**/*",
+    "./src/**/*",
+    "./README.md"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts && node --run fmt",
+    "build": "vite build",
+    "test": "vitest run --passWithNoTests",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@oclif/core": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  },
+  "oclif": {
+    "bin": "pl-cli",
+    "commands": {
+      "identifier": "COMMANDS",
+      "strategy": "explicit",
+      "target": "./dist/cli.js"
+    },
+    "dirname": "pl-cli",
+    "topicSeparator": " ",
+    "topics": {
+      "admin": {
+        "description": "Admin operations (requires controller credentials)"
+      },
+      "project": {
+        "description": "Manage projects"
+      }
+    }
+  }
+}

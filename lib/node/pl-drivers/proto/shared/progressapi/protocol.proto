@@ -8,7 +8,7 @@ import "google/protobuf/duration.proto";
 import "github.com/googleapis/googleapis/google/api/annotations.proto";
 
 //
-// Progress provides access to progress of any long-running process associated with resource.
+// Progress provides access to the progress of any long-running process associated with a resource.
 //
 service Progress {
   rpc GetStatus(ProgressAPI.GetStatus.Request) returns (ProgressAPI.GetStatus.Response) {
@@ -40,6 +40,7 @@ message ProgressAPI {
   message GetStatus {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
 
     message Response {
@@ -50,6 +51,7 @@ message ProgressAPI {
   message RealtimeStatus {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
       google.protobuf.Duration update_interval = 2;
     }
 

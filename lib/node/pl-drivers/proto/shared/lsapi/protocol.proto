@@ -8,10 +8,10 @@ import "google/protobuf/timestamp.proto";
 import "github.com/googleapis/googleapis/google/api/annotations.proto";
 
 //
-// LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
-// This API allows clients to know, whan items are available in storages, that
-// the contorllers can access, providing clients with the ability to start indexation
-// on, say, existing sequence files from the corporate storage.
+// LS provides access to lists of blobs (files, S3 objects and so on) in some storage.
+// This API allows clients to know what items are available in storages that
+// the controllers can access, providing clients with the ability to start indexing,
+// say, existing sequence files from the corporate storage.
 //
 service LS {
   rpc List(LsAPI.List.Request) returns (LsAPI.List.Response) {
@@ -24,35 +24,35 @@ service LS {
 
 message LsAPI {
   message ListItem {
-    // name of the item in storage, without any prefixes
+    // Name of the item in storage, without any prefixes.
     string name = 1;
 
-    // size of item in bytes
-    // is always zero for directories (is_dir = true)
+    // Size of the item in bytes.
+    // Is always zero for directories (is_dir = true).
     uint64 size = 2;
 
-    // is_dir is true for item, that can have subitems.
+    // is_dir is true for an item that can have subitems.
     bool is_dir = 3;
 
-    // full_name is the name of item absolute to storage root.
-    // it is <directory> + <name>
+    // full_name is the full name of the item, relative to the storage root.
+    // It is <directory> + <name>.
     // The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
     string full_name = 10;
 
-    // directory, the item is located in. The value here is always a prefix of name:
+    // The directory the item is located in. The value here is always a prefix of name:
     // name.HasPrefix(directory) is always true.
     string directory = 11;
 
-    // last_modified keeps the item last modification timestamp
+    // last_modified keeps the item's last modification timestamp.
     google.protobuf.Timestamp last_modified = 12;
 
-    // version of item in storage.
-    // When storage supports versioning or provides checksums for the data stored,
+    // Version of item in storage.
+    // When the storage supports versioning or provides checksums for the data stored,
     // the <version> field keeps that data.
-    // If not - it keeps the any simple combination of item attributes, that helps to
-    // detect if the contents of item has changed, e.g. <size>+<mtime>.
-    // Anyway, client should not try to interpret this field, but should provide it to the Platform
-    // in operations with given item (like BlobImportInternal) to help Platform with deduplication.
+    // If not, it keeps any simple combination of item attributes that helps to
+    // detect if the contents of the item have changed, e.g. <size>+<mtime>.
+    // Anyway, the client should not try to interpret this field, but should provide it to the Platform
+    // in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
     string version = 13;
   }
 
@@ -60,9 +60,11 @@ message LsAPI {
     message Request {
       // resource_id of 'LS/<Storage>' resource
       uint64 resource_id = 1;
+      // Signature proving the caller is authorized to access this resource.
+      optional bytes resource_signature = 3;
 
-      // location to list, absolute to storage root. Only items, that have <full_name> starting
-      // from <location> are included into list response.
+      // Location to list, relative to the storage root. Only items that have <full_name> starting
+      // with <location> are included in the list response.
       string location = 2;
       
       // // limit amount of items returned by server in single response.
@@ -87,13 +89,13 @@ message LsAPI {
     }
 
     message Response {
-      // List of the full (absolute to storage root) names of items from storage.
+      // List of the full (relative to storage root) names of items from storage.
       // E.g., for 'fs' storage each name will consist of names of all directories, where the
       // item is located, and the item name itself.
       // The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
       repeated ListItem items = 1;
 
-      // delimiter is path separator, used in this storage. Client can use it to parse item names into parts,
+      // The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
       // to extract directory names.
       string delimiter = 2;
 

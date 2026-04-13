@@ -76,6 +76,7 @@ function rsync_proto_files() {
         rsync \
             -av \
             --delete \
+            --exclude "signature.proto" \
             --include "*.proto" \
             --include "*.yaml" \
             --include "*.json" \

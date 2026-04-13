@@ -5,7 +5,7 @@ import type {
   NavigationState,
   StringifiedJson,
 } from "@milaboratories/pl-model-common";
-import type { StorageDebugView } from "@platforma-sdk/model";
+import type { StorageDebugView } from "./storage_debug_view";
 import type { Optional } from "utility-types";
 
 // @deprecated TODO v3: keep this name, or rename to BlockStateInternalLegacy?

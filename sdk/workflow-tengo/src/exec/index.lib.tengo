@@ -51,7 +51,9 @@ builder := func() {
 	queue := execConstants.HEAVY_QUEUE
 	cpuRequest := undefined
 	ramRequest := undefined
+	gpuCount := 0
 
+	commandName := ""
 	cache := 0
 	inputCache := 0
 	nErrorLines := 200
@@ -435,6 +437,20 @@ builder := func() {
 		},
 
 		/**
+		 * Requests GPU resources from the underlying executor.
+		 *
+		 * @param count: number - number of GPU devices to request (must be > 0).
+		 *
+		 * @return builder
+		 */
+		gpu: func(count) {
+			validation.assertType(count, "number", "exec.builder.gpu: count must be a number")
+			ll.assert(count > 0, "exec.builder.gpu: count must be greater than 0")
+			gpuCount = count
+			return self
+		},
+
+		/**
 		 * Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays to not make hidden mistakes in cache time ranges.
 		 * Sets the cache time.
 		 *
@@ -574,6 +590,19 @@ builder := func() {
 		cacheInputsDays: func(days) {
 			ll.assert(is_int(days) && days > 0, "input cache time must be a number of days")
 			inputCache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * Sets a human-readable name for this command.
+		 * Shown in error messages when the command fails.
+		 *
+		 * @param name: string - the command name.
+		 */
+		name: func(name) {
+			validation.assertType(name, "string", "exec.builder.name: name must be a string")
+
+			commandName = name
 			return self
 		},
 
@@ -1005,12 +1034,16 @@ builder := func() {
 			if (is_int(ramRequest)) {
 				ramRequest = string(ramRequest) + "b"
 			}
+			quotaData := {
+				queue: queue,
+				cpu: cpuRequest,
+				ram: ramRequest
+			}
+			if gpuCount > 0 {
+				quotaData.gpu = gpuCount
+			}
 			metaExecInputs := {
-				quota: smart.createJsonResource({
-					queue: queue,
-					cpu: cpuRequest,
-					ram: ramRequest
-				})
+				quota: smart.createJsonResource(quotaData)
 			}
 
 			// We add monetization only if it's enabled
@@ -1018,6 +1051,12 @@ builder := func() {
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
 				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
+			}
+
+			// We add name only when it is explicitly set
+			// to not break deduplication of exec's created before this feature existed.
+			if commandName != "" {
+				pureExecInputs.runOptions.name = commandName
 			}
 
 			// We add new argsTyped and envsTyped only when they were added

@@ -1,5 +1,68 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.5.7
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.12
+
+## 1.5.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.1
+
+## 1.5.5
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @platforma-sdk/model@1.63.0
+
+## 1.5.4
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @platforma-sdk/model@1.62.0
+
+## 1.5.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
+## 1.5.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+
+## 1.5.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/model@1.60.0
+
+## 1.4.34
+
+### Patch Changes
+
+- @platforma-sdk/model@1.59.3
+
 ## 1.4.33
 
 ### Patch Changes

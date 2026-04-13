@@ -8,6 +8,7 @@ import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
 
@@ -130,21 +131,46 @@ service Platform {
   //
   // Locks
   //
+
+  // LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+  //   - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+  //   - list resource's fields, take fields with names set in request
+  //   - get resolved values of listed fields (IDs of 'ON' resources).
+  //   - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
+  //
+  // Lock logic constraints:
+  //   - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+  //     succeeds, while the other fails with an error (no long waiting)
+  //   - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+  //     the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+  //   - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+  //     being lockable. An attempt to lock a resource that has not become original will fail.
+  //   - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
+  rpc LockFieldValues(LocksAPI.LockFieldValues.Create.Request) returns (LocksAPI.LockFieldValues.Create.Response) {
+    option (google.api.http) = {
+      post: "/v1/locks/lock/create"
+      body: "*"
+    };
+  }
+
+  // LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+  // Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+  // To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
   rpc LeaseResource(LocksAPI.Lease.Create.Request) returns (LocksAPI.Lease.Create.Response) {
     option (google.api.http) = {
-      post: "/v1/locks/lease"
+      post: "/v1/locks/lease/create"
       body: "*"
     };
   }
   rpc UpdateLease(LocksAPI.Lease.Update.Request) returns (LocksAPI.Lease.Update.Response) {
     option (google.api.http) = {
-      put: "/v1/locks/lease"
+      post: "/v1/locks/lease/update"
       body: "*"
     };
   }
   rpc ReleaseLease(LocksAPI.Lease.Release.Request) returns (LocksAPI.Lease.Release.Response) {
     option (google.api.http) = {
-      delete: "/v1/locks/lease"
+      post: "/v1/locks/lease/release"
       body: "*"
     };
   }
@@ -163,6 +189,24 @@ service Platform {
       body: "*"
     };
   }
+
+  rpc GrantAccess(AuthAPI.GrantAccess.Request) returns (AuthAPI.GrantAccess.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/grant-access"
+      body: "*"
+    };
+  }
+
+  rpc RevokeGrant(AuthAPI.RevokeGrant.Request) returns (AuthAPI.RevokeGrant.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/revoke-grant"
+      body: "*"
+    };
+  }
+
+  rpc ListGrants(AuthAPI.ListGrants.Request) returns (stream AuthAPI.ListGrants.Response) {}
+
+  rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
 
   //
   // Other stuff
@@ -188,22 +232,22 @@ service Platform {
   }
 }
 
-// Platform transactions on API level are implemented as bidirectional
+// Platform transactions at the API level are implemented as bidirectional
 // streams that exist in parallel with transactions.
 // One stream = one transaction at all times.
 //
-// Long story short from client side:
+// Long story short from the client side:
 //   - client initializes stream and immediately gets transaction info
 //     message from server;
 //   - client calls server methods by sending messages to the server,
 //     each message has its own request ID starting from 1, request ID number
 //     grows as new messages are sent to the server;
-//   - client reads server responses for each messages sent. Client can batch
+//   - client reads server responses for each message sent. Client can batch
 //     writes and reads: e.g. send 3 messages, read 2 responses, send one
 //     more, read 2;
-//   - to finish communication client sends 'commit' or 'discard' message and reads last
+//   - to finish communication, the client sends a 'commit' or 'discard' message and reads last
 //     response;
-//   - to make server interrupt communication, client sends 'stream_close' message and reads to the last
+//   - to make the server interrupt communication, the client sends a 'stream_close' message and reads up to the last
 //     server response. This allows graceful stream close, waiting for all queued server responses
 //     to be sent before closing the stream.
 //
@@ -213,24 +257,24 @@ service Platform {
 //
 // 1. Initialization:
 //
-//   - client opens new bidirectional stream by calling 'Tx' gRPC method;
-//   - client sends 'tx_open' message with request_id = 0 to open RO or RW
+//   - the client opens a new bidirectional stream by calling 'Tx' gRPC method;
+//   - the client sends a 'tx_open' message with request_id = 0 to open RO or RW
 //     transaction.
-//     Any message from client other than 'tx_open' during initialization is
-//     treated as communication error and causes server to close the stream;
-//   - server opens new transaction and sends transaction info to the client
-//     'tx_open' server message;
+//     Any message from the client other than 'tx_open' during initialization is
+//     treated as a communication error and causes the server to close the stream;
+//   - the server opens a new transaction and sends transaction info to the client
+//     in a 'tx_open' server message;
 //
 // 2. Communication:
 //
 //     Once the transaction gets initialized, all the communication between
-// client and server should be considered as request-response sequence.
-// The only difference to simple gRPC call is that sending a request does not
-// block client until the response arrives from server.
+// client and server should be considered a request-response sequence.
+// The only difference from a simple gRPC call is that sending a request does not
+// block the client until the response arrives from the server.
 //
-//     Client can send as many requests to the server as it wants before
-// reading responses. This allows client to batch method calls, when it is not
-// interested in result of each action, but needs only overall summary of
+//     The client can send as many requests to the server as it wants before
+// reading responses. This allows the client to batch method calls, when it is not
+// interested in the result of each action, but needs only the overall summary of
 // transaction commit.
 // For example, the following sequence is totally valid from client side:
 //   1. send reqA.
@@ -240,69 +284,69 @@ service Platform {
 //   5. get respB.
 //   6. get respC.
 //
-// Here are detailed rules of client-server communication inside transaction
+// Here are the detailed rules of client-server communication inside transaction
 // stream:
-//   - if stream is closed by client or interrupted by any unrecoverable
-//     communication error, the accompanied transaction is discarded;
-//   - each message in client stream (from client to server) is considered as
-//     method call.
-//     E.g. 'resource_remove' makes server to actually remove resource inside
-//     transaction, bound to current stream;
-//   - each message in client stream MUST have its own ID (request_id),
-//     generated by client, UNIQUE for transaction. Numeration starts from
-//     1 for each at this step. request_id == 0 is treated as unrecoverable
-//     communication error by server and cancels transaction;
-//   - server expects 'request_id' from client to grow constantly by one as
+//   - if the stream is closed by the client or interrupted by any unrecoverable
+//     communication error, the accompanying transaction is discarded;
+//   - each message in the client stream (from client to server) is considered
+//     a method call.
+//     E.g. 'resource_remove' makes the server actually remove the resource inside
+//     the transaction bound to the current stream;
+//   - each message in the client stream MUST have its own ID (request_id),
+//     generated by the client, UNIQUE for the transaction. Numbering starts from
+//     1 for each new transaction. request_id == 0 is treated as an unrecoverable
+//     communication error by the server and cancels the transaction;
+//   - server expects 'request_id' from the client to grow consecutively by one as
 //     messages come. If message M2 arrives next to M1 and
 //       M2.request_id != (M1.request_id + 1)
-//     server treats it as unrecoverable communication error and cancels
-//     transaction;
-//   - all messages in server stream (from server to client) in communication
-//     stage have the same 'request_id' as the client messages, that triggered
-//     the operation. This allows client to match server responses to the
+//     server treats it as an unrecoverable communication error and cancels
+//     the transaction;
+//   - all messages in the server stream (from server to client) in the communication
+//     stage have the same 'request_id' as the client messages that triggered
+//     the operation. This allows the client to match server responses to the
 //     requests it sent earlier;
-//   - messages order in server stream matches order in client stream: if
-//     client sent sequence [ReqA, ReqB], the server will always response
+//   - message order in the server stream matches the order in the client stream: if
+//     the client sent sequence [ReqA, ReqB], the server will always respond with
 //     [RespA, RespB];
-//   - server can send several responses to single client request (multi-message
+//   - the server can send several responses to a single client request (multi-message
 //     response). In that case, all such responses will have the same 'request_id'
-//     (the one from client request), but different message IDs. See
+//     (the one from the client request), but different message IDs. See
 //     'Multi-message responses' section below for more info.
-//   - client is allowed (but not obligated) to generate local IDs for new
+//   - the client is allowed (but not obligated) to generate local IDs for new
 //     instances and use them in links and other references. These local IDs
-//     are valid only within current transaction;
-//   - any instance in server stream always has _real_ global ID that is valid
-//     at any times in any other request outside current transaction;
+//     are valid only within the current transaction;
+//   - any instance in the server stream always has a _real_ global ID that is valid
+//     at any time in any other request outside the current transaction;
 //
 // 3. Finalization:
 //
-//    - client finalizes transaction by sending 'tx_commit' or 'tx_discard'
-//      message to the server. After that client can close client stream as any
+//    - the client finalizes the transaction by sending a 'tx_commit' or 'tx_discard'
+//      message to the server. After that, the client can close the client stream as any
 //      message sent to the server after commit/discard will be ignored anyway;
-//    - server stops reading client stream and does the commit/discard action.
-//    - once transaction is closed, server sends the result to client and
-//      closes server stream.
-//    - client stream reading may be interrupted by special 'stream_close' message, which
-//      causes transaction automatic discard and does not produce additional reply message.
+//    - the server stops reading the client stream and does the commit/discard action.
+//    - once the transaction is closed, the server sends the result to the client and
+//      closes the server stream.
+//    - the client stream reading may be interrupted by a special 'stream_close' message, which
+//      causes automatic transaction discard and does not produce an additional reply message.
 //      This 'stream_close' message also does not require any 'request_id' value and does not
-//      produce any response from server side.
+//      produce any response from the server side.
 //
-// At this point the transaction over gRPC is considered as finalized, all
+// At this point the transaction over gRPC is considered finalized, all
 // local IDs generated within the transaction are no longer valid.
 //
 // Multi-message responses
 //
 // Some transaction methods produce several messages by design, causing
-// single call to result in multiple responses. Listings are the clear
+// a single call to result in multiple responses. Listings are a clear
 // example of that.
-// All responses from server have special field (multi_message) with all meta
-// info on multi-message response:
+// All responses from the server have a special field (multi_message) with all meta
+// info on multi-message responses:
 //  - for single-message responses, multi_message is always empty;
 //  - for multi-message responses, multi_message.id is always > 0;
-//  - all messages in multi-message response have request_id equal to request_id from
-//    original client's request message;
-//  - last message in multi-message response always has multi_message.is_last = true;
-//  - empty multi-message response always has:
+//  - all messages in a multi-message response have request_id equal to request_id from
+//    the original client's request message;
+//  - the last message in a multi-message response always has multi_message.is_last = true;
+//  - an empty multi-message response always has:
 //      multi_message.is_last = true;
 //      multi_message.is_empty = true.
 //
@@ -315,15 +359,15 @@ message TxAPI {
       Commit.Request tx_commit = 12; // commit the transaction and close the stream
       Discard.Request tx_discard = 13; // discard the transaction and close the stream
 
-      // Interrupt the transaction network stream on server side.
+      // Interrupt the transaction network stream on the server side.
       //
-      // This allows to gracefully close network connection and discard the associated transaction,
+      // This allows one to gracefully close the network connection and discard the associated transaction,
       // ensuring all pending server responses are sent to the client before closing.
-      // We use this in RO transactions to imitate the feature of 'half-open' connection
+      // We use this in RO transactions to imitate the feature of a 'half-open' connection
       // available in pure gRPC, when we work with WebSockets.
-      // Pure gRPC uses 'end of client messages stream' as a criteria for graceful discard.
-      // Pure WebSocket does not allow this, breaking entire connection at once. stream_close helps to get
-      // behaviour as we have for gRPC.
+      // Pure gRPC uses 'end of the client message stream' as a criterion for graceful discard.
+      // Pure WebSocket does not allow this, breaking the entire connection at once. stream_close helps
+      // achieve the same behavior as in gRPC.
       CloseStream.Request stream_close = 14; // ask server to send all pending messages and close the stream
 
       ResourceAPI.CreateRoot.Request resource_create_root = 58; // create new root resource
@@ -339,7 +383,7 @@ message TxAPI {
       ResourceAPI.LockOutputs.Request resource_lock_outputs = 56; // lock outputs of resources without schema
       ResourceAPI.Exists.Request resource_exists = 54; // check if resource exists
       ResourceAPI.Get.Request resource_get = 55; // get actual resource info from server
-      ResourceAPI.SetError.Request resource_set_error = 61; // create a special field and set error there.
+      ResourceAPI.SetError.Request resource_set_error = 61; // create a special field and set an error there.
       ResourceAPI.List.ByType.Request resource_list_by_type = 60; // list resources of specific type
       ResourceAPI.Name.Set.Request resource_name_set = 66; // assign name to resource
       ResourceAPI.Name.Get.Request resource_name_get = 67; // get resource ID by name
@@ -349,7 +393,7 @@ message TxAPI {
       ResourceAPI.TreeSize.Request resource_tree_size = 71; // calculate size for all resources in tree
 
       FieldAPI.Create.Request field_create = 101; // add field to resource
-      FieldAPI.Exists.Request field_exists = 107; // add field to resource
+      FieldAPI.Exists.Request field_exists = 107; // check if field exists
       FieldAPI.Set.Request field_set = 102; // link field to another resource or field
       FieldAPI.SetError.Request field_set_error = 105; // link field to error resource
       FieldAPI.Get.Request field_get = 103; // get field info
@@ -359,12 +403,12 @@ message TxAPI {
 
       SubscriptionAPI.CreateSubscription.Request subscription_create = 111; // create subscription
       SubscriptionAPI.AttachFilter.Request subscription_attach_filter = 112; // add filter to existing subscription
-      SubscriptionAPI.DetachFilter.Request subscription_detach_filter = 113; // add filter to existing subscription
+      SubscriptionAPI.DetachFilter.Request subscription_detach_filter = 113; // detach filter from existing subscription
       SubscriptionAPI.CreateFilter.Request subscription_create_filter = 115; // create filter resource
 
       NotificationAPI.Get.Request notification_get = 154; // get notification info from platform
-      NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handle by controller
-      NotificationAPI.Discard.Request notification_discard = 156; // discard notification handle by controller
+      NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handled by controller
+      NotificationAPI.Discard.Request notification_discard = 156; // discard notification handled by controller
 
       ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
       ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
@@ -385,10 +429,12 @@ message TxAPI {
       ControllerKVAPI.GetFlagIfExists.Request controller_key_value_get_flag_if_exists = 255; // get a bool from a controller's key-value store, return false if key is not found.
 
       CacheAPI.SetToField.Request cache_set_to_field = 300; // store the topology info and results of the field.
-      CacheAPI.DeleteExpiredRecords.Request cache_delete_expired_records = 301; // iterate through all records and delete expired.
+      Util.Deprecated cache_delete_expired_records = 301 [deprecated = true];
 
       ControllerAPI.SetFeatures.Request controller_features_set = 350; // replace list of resource features, provided by controller.
       ControllerAPI.ClearFeatures.Request controller_features_clear = 351; // clear list of resource features, provided by controller.
+
+      SetDefaultColor.Request set_default_color = 400; // set default color for resource creation
     }
   }
 
@@ -399,7 +445,7 @@ message TxAPI {
       // Sequential message ID for multi-message response, starting from 1.
       // Caller can use 'id > 0' check as a sign of multi-message response.
       // Some API requests produce several messages in response by design (say, listings)
-      // In that case, the server responses to the client with many messages, each having
+      // In that case, the server responds to the client with many messages, each having
       // the same <request_id> value and different <message_id> values.
       uint32 id = 1;
 
@@ -408,7 +454,7 @@ message TxAPI {
       bool is_last = 2;
 
       // Sign of empty multi-message response. Some multi-message responses can produce nothing
-      // (like listing of empty directory). In that case client still has to know that the request was
+      // (like a listing of an empty directory). In that case, the client still has to know that the request was
       // handled and the empty result is OK.
       bool is_empty = 3;
     }
@@ -482,10 +528,12 @@ message TxAPI {
       ControllerKVAPI.GetFlagIfExists.Response controller_key_value_get_flag_if_exists = 255;
 
       CacheAPI.SetToField.Response cache_set_to_field = 300;
-      CacheAPI.DeleteExpiredRecords.Response cache_delete_expired_records = 301;
+      Util.Deprecated cache_delete_expired_records = 301 [deprecated = true];
 
       ControllerAPI.SetFeatures.Response controller_features_set = 350;
       ControllerAPI.ClearFeatures.Response controller_features_clear = 351;
+
+      SetDefaultColor.Response set_default_color = 400;
     }
 
     google.rpc.Status error = 3;
@@ -523,7 +571,7 @@ message TxAPI {
   message CloseStream {
     message Request {}
 
-    message Response {} // is never sent. Simplifies dark magic of typing on TypeScript side.
+    message Response {} // is never sent. Simplifies the dark magic of typing on the TypeScript side.
   }
 
   message Sync {
@@ -531,6 +579,13 @@ message TxAPI {
       uint64 tx_id = 1;
     }
 
+    message Response {}
+  }
+
+  message SetDefaultColor {
+    message Request {
+      optional bytes color_proof = 1;
+    }
     message Response {}
   }
 }
@@ -542,10 +597,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
+      optional bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
   message CreateEphemeral {
@@ -554,10 +611,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
+      optional bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -581,10 +640,12 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
+      optional bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -596,6 +657,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -607,10 +669,13 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
+
+      optional bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
 
@@ -630,6 +695,7 @@ message ResourceAPI {
   message LockInputs {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -638,6 +704,7 @@ message ResourceAPI {
   message LockOutputs {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -646,6 +713,7 @@ message ResourceAPI {
   message Exists {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
 
     message Response {
@@ -656,7 +724,10 @@ message ResourceAPI {
   message SetError {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       uint64 error_resource_id = 2;
+      optional bytes error_resource_signature = 4;
     }
     message Response {}
   }
@@ -664,6 +735,8 @@ message ResourceAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       bool load_fields = 2;
     }
 
@@ -677,16 +750,16 @@ message ResourceAPI {
       message Request {
         Base.ResourceType resource_type = 1;
 
-        // Non-zero value makes API to limit its responses count to at most
+        // Non-zero value makes the API limit its response count to at most
         // <limit> number of items.
-        // Zero value makes API to return all available items.
+        // Zero value makes the API return all available items.
         uint32 limit = 3;
 
         // Start listing from given resource ID (not including this resource ID itself)
         // After == 100 means listing will NOT contain resources with ID = 100 and lower.
         uint64 after = 6;
 
-        // True value makes API to return original resources instead of duplicates.
+        // True value makes the API return original resources instead of duplicates.
         bool resolve_duplicates = 4;
 
         // Load fields for each resource in list.
@@ -708,15 +781,17 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
   }
 
   // FIXME: add CreateResource method to API
 
-  // Remove any resource, that has garbage collection disabled
+  // Remove any resource that has garbage collection disabled
   message Remove {
     message Request {
-      uint64 id = 1;
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
 
     message Response {}
@@ -726,6 +801,7 @@ message ResourceAPI {
     message Set {
       message Request {
         uint64 resource_id = 1;
+        optional bytes resource_signature = 3;
         string name = 2;
       }
 
@@ -739,6 +815,7 @@ message ResourceAPI {
 
       message Response {
         uint64 resource_id = 1;
+        optional bytes resource_signature = 2;
       }
     }
 
@@ -764,12 +841,13 @@ message ResourceAPI {
   message Tree {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
 
-      // Limit maximum depth the tree is traversed.
-      // The resource <resource_id> is considered on depth = 0, the values of its fiels
+      // Limit the maximum depth the tree is traversed.
+      // The resource <resource_id> is considered at depth = 0, the values of its fields
       // are on depth = 1 and so on.
-      // The maximum uint32 value disables the limit at all.
-      // 0 value makes API to return only single resource <resource_id> and is actually
+      // The maximum uint32 value disables the limit entirely.
+      // A 0 value makes the API return only a single resource <resource_id> and is actually
       // equal to Get.Request
       optional uint32 max_depth = 2;
     }
@@ -783,10 +861,11 @@ message ResourceAPI {
   message TreeSize {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
     }
     message Response {
       // size of all tree resources in bytes
-      // could change between call regarding compression algorithm
+      // could change between calls depending on compression algorithm
       uint64 size = 1;
       uint64 resource_count = 2;
     }
@@ -829,7 +908,8 @@ message FieldAPI {
   message SetError {
     message Request {
       Base.FieldRef field = 1;
-      uint64 err_resource_id = 2;
+      uint64 error_resource_id = 2;
+      optional bytes error_resource_signature = 3;
     }
 
     message Response {}
@@ -862,14 +942,15 @@ message FieldAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 4;
 
       // Start the listing from given position, returning first field with
       // name >= start_from.
       string start_from = 2;
 
-      // Non-zero value makes API to limit number of returned fields to at
+      // Non-zero value makes the API limit the number of returned fields to at
       // most <limit>.
-      // Zero value makes API to return all available fields of the resource.
+      // Zero value makes the API return all available fields of the resource.
       uint32 limit = 3;
     }
 
@@ -880,7 +961,7 @@ message FieldAPI {
       // The name of field next to the current one.
       //
       // Is not empty only for the last message in the current listing, when <limit> was > 0 in List.Request AND
-      // there is more items to read (the listing was stopped because of that limit)
+      // there are more items to read (the listing was stopped because of that limit)
       //
       // Use <next> value as <start_from> in the List.Request to continue listing.
       string next = 4;
@@ -1115,14 +1196,15 @@ message ResourceKVAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 4;
 
       // Start the listing from given position, returning first item with
       // key >= start_from.
       string start_from = 2;
 
-      // Non-zero value makes API to limit its responses count to at most
+      // Non-zero value makes the API limit its response count to at most
       // <limit> number of items.
-      // Zero value makes API to return all available items.
+      // Zero value makes the API return all available items.
       uint32 limit = 3;
     }
 
@@ -1138,7 +1220,7 @@ message ResourceKVAPI {
       // The key of the KV item next to the last returned item.
       //
       // Is not empty only for the last message in the current listing, when <limit> was > 0 in List.Request AND
-      // there is more items to read (the listing was stopped because of that limit)
+      // there are more items to read (the listing was stopped because of that limit)
       //
       // Use <next> value as <start_from> of the List.Request to continue listing.
       string next = 4;
@@ -1148,6 +1230,8 @@ message ResourceKVAPI {
   message Set {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 4;
+
       string key = 2;
       bytes value = 3;
     }
@@ -1158,6 +1242,8 @@ message ResourceKVAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1169,6 +1255,8 @@ message ResourceKVAPI {
   message GetIfExists {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1181,6 +1269,8 @@ message ResourceKVAPI {
   message Delete {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1190,6 +1280,8 @@ message ResourceKVAPI {
   message SetFlag {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 4;
+
       string key = 2;
       bool value = 3;
     }
@@ -1200,6 +1292,8 @@ message ResourceKVAPI {
   message GetFlag {
     message Request {
       uint64 resource_id = 1;
+      optional bytes resource_signature = 3;
+
       string key = 2;
     }
 
@@ -1286,17 +1380,45 @@ message CacheAPI {
     message Response {}
   }
 
-  message DeleteExpiredRecords {
-    message Request {}
-    message Response {}
-  }
 }
 
 message LocksAPI {
+  message LockFieldValues {
+    message Create {
+      message Request {
+        uint64 resource_id = 1; // resource ID that will own the lock
+        repeated string lock_references_of = 2; // list of fields whose values should be locked
+        string comment = 3; // comment to show for other lockers on lock conflict. Truncated to 1024 bytes.
+      }
+
+      message Response {
+        // true when lock was acquired (new, or already owned by the owner)
+        // Client MUST pay attention to this flag, as it shows if lock was successful.
+        bool acquired = 1;
+
+        // Info about why lock was not acquired.
+        // Limited number of conflicts is reported: i.e. if lock operation failed for 20 fields, only first 10 are listed here.
+        // The number '10' is not a fixed contract for external clients. It is just 'somehow truncated'.
+        repeated LockInfo conflicting_locks = 2;
+        bool conflicts_list_truncated = 3; // true if there were more conflicts than reported
+
+        message LockInfo {
+          uint64 target_id = 1; // ID of resource that failed to be locked
+          string field_name = 2; // what field was referencing this <target_id>
+
+          uint64 locked_by = 3; // Who is owning the lock for <target_id>
+          google.protobuf.Timestamp locked_at = 4; // when the lock was obtained
+          string comment = 5; // comment from the locker holding the lock
+        }
+      }
+    }
+  }
+
   message Lease {
     message Create {
       message Request {
         uint64 resource_id = 1;
+        optional bytes resource_signature = 5;
 
         google.protobuf.Duration timeout = 3;
         string name = 4;
@@ -1309,8 +1431,9 @@ message LocksAPI {
     message Update {
       message Request {
         uint64 resource_id = 1;
-        bytes lease_id = 2;
+        optional bytes resource_signature = 5;
 
+        bytes lease_id = 2;
         google.protobuf.Duration timeout = 3;
         string name = 4;
       }
@@ -1320,6 +1443,8 @@ message LocksAPI {
     message Release {
       message Request {
         uint64 resource_id = 1;
+        optional bytes resource_signature = 3;
+
         bytes lease_id = 2;
       }
       message Response {}
@@ -1343,12 +1468,108 @@ message AuthAPI {
   }
 
   message GetJWTToken {
+    enum Role {
+      ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role
+      USER = 1;
+      CONTROLLER = 2;
+      WORKFLOW = 3;
+    }
+
     message Request {
       google.protobuf.Duration expiration = 1;
+      optional Role requested_role = 2;
     }
 
     message Response {
       string token = 1;
+      bytes session_id = 2;
+    }
+  }
+
+  message GrantAccess {
+    message Request {
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
+      string target_user = 3;        // user login to grant access to
+      Grant.Permissions permissions = 4;   // access level to grant
+    }
+
+    message Response {}
+  }
+
+  message RevokeGrant {
+    message Request {
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
+      string target_user = 3; // user login whose grant to revoke
+    }
+
+    message Response {}
+  }
+
+  message ListGrants {
+    message Request {
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
+    }
+
+    message Response {
+      Grant grant = 1; // one per stream message
+    }
+  }
+
+  message Grant {
+    // Permissions describes access level for a grant.
+    message Permissions {
+      bool writable = 1; // write access = ability to modify resource tree + share access
+    }
+
+    string user = 1;
+    uint64 resource_id = 2;
+    Permissions permissions = 3; // access level from grant table
+    string granted_by = 4;      // login of the user who created this grant
+    int64 granted_at = 5;       // unix timestamp in milliseconds
+  }
+
+  message ListUserResources {
+    message Request {
+      // User login to list resources for.
+      // Is ignored for regular user role: it can list only its own resources.
+      string login = 1;
+
+      // Start listing shared resources from given resource ID.
+      // User root is returned only on the first page (when start_from == 0).
+      uint64 start_from = 2;
+
+      // Non-zero value limits total resource count to at most <limit>.
+      // limit = 1 with start_from = 0 returns solely user's root
+      // limit = 2 with non-zero start_from returns 2 shared resources.
+      // Zero returns all resources.
+      uint32 limit = 3;
+    }
+
+    // Multi-message: first message contains UserRoot (only when start_from == 0),
+    message Response {
+      oneof entry {
+        UserRoot user_root = 1;
+        SharedResource shared_resource = 2;
+      }
+
+      // Set only on the last message when limit > 0 and more items exist.
+      // Use as 'start_from' in the next request to continue listing.
+      uint64 next_resource_id = 3;
+    }
+
+    message UserRoot {
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
+    }
+
+    message SharedResource {
+      uint64 resource_id = 1;
+      optional bytes resource_signature = 2;
+      Base.ResourceType resource_type = 3;
+      Grant.Permissions permissions = 4;
     }
   }
 }
@@ -1377,7 +1598,6 @@ message MaintenanceAPI {
       string core_version = 1;
       string core_full_version = 2;
 
-      string server_info = 3;
       Compression compression = 4;
 
       // instanceID is a unique ID that changes when we reset DB state.
@@ -1389,6 +1609,8 @@ message MaintenanceAPI {
       string platform = 6; // <os>-<arch>
       string os = 7; // linux / windows / macosx
       string arch = 8; // x64 / aarch64
+
+      // next free: 9
     }
   }
 
@@ -1403,4 +1625,8 @@ message MaintenanceAPI {
       bytes response_body = 3;
     }
   }
+}
+
+message Util {
+  message Deprecated {}
 }

@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 3.12.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
 ## 3.11.6
 
 ### Patch Changes

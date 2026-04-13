@@ -7,7 +7,7 @@ option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/download
 import "github.com/googleapis/googleapis/google/api/annotations.proto";
 
 //
-// Download provides access to any data, that can be downloaded via network.
+// Download provides access to any data that can be downloaded over the network.
 //
 service Download {
   rpc GetDownloadURL(DownloadAPI.GetDownloadURL.Request) returns (DownloadAPI.GetDownloadURL.Response) {
@@ -22,10 +22,12 @@ message DownloadAPI {
   message GetDownloadURL {
     message Request {
       uint64 resource_id = 1;
+      // Signature proving the caller is authorized to access this resource.
+      optional bytes resource_signature = 3;
 
-      // Pass `true` here if the blob will be downloaded from internal network,
-      // e.g. controllers could use this if they are trying to download something from internal network.
-      // For backward compatibility, by default pl treats all requests as from external network.
+      // Pass `true` here if the blob will be downloaded from the internal network,
+      // e.g. controllers could use this if they are trying to download something from the internal network.
+      // For backward compatibility, by default pl treats all requests as from the external network.
       bool is_internal_use = 2;
     }
 

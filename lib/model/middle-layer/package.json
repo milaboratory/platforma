@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-middle-layer",
-  "version": "1.13.0",
+  "version": "1.16.4",
   "description": "Common model between middle layer and non-block UI code",
   "files": [
     "./dist/**/*",
@@ -27,8 +27,8 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
     "es-toolkit": "catalog:",
     "utility-types": "catalog:",
     "zod": "catalog:"

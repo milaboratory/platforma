@@ -8,7 +8,7 @@ import type {
   AuthorMarker,
   StringifiedJson,
 } from "@milaboratories/pl-model-common";
-import type { StorageDebugView } from "@platforma-sdk/model";
+import type { StorageDebugView } from "./storage_debug_view";
 import type { UpdateSuggestions } from "./update_info";
 import type { BlockSettings } from "./block_settings";
 

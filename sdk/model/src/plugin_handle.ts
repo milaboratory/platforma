@@ -23,37 +23,55 @@ export interface PluginFactoryLike<
   Data extends Record<string, unknown> = Record<string, unknown>,
   Params extends undefined | Record<string, unknown> = undefined | Record<string, unknown>,
   Outputs extends Record<string, unknown> = Record<string, unknown>,
+  ModelServices = unknown,
+  UiServices = unknown,
 > {
   readonly __types?: {
     data: Data;
     params: Params;
     outputs: Outputs;
+    modelServices: ModelServices;
+    uiServices: UiServices;
   };
 }
 
 /** Extract the Data type from a PluginFactoryLike phantom. */
 export type InferFactoryData<F extends PluginFactoryLike> = NonNullable<
-  F extends PluginFactoryLike<infer D, any, any> ? D : Record<string, unknown>
+  F extends PluginFactoryLike<infer D, any, any, any, any> ? D : Record<string, unknown>
 >;
 
 /** Extract the Params type from a PluginFactoryLike phantom. */
 export type InferFactoryParams<F extends PluginFactoryLike> = NonNullable<
-  F extends PluginFactoryLike<any, infer P, any> ? P : undefined
+  F extends PluginFactoryLike<any, infer P, any, any, any> ? P : undefined
 >;
 
 /** Extract the Outputs type from a PluginFactoryLike phantom. */
 export type InferFactoryOutputs<F extends PluginFactoryLike> = NonNullable<
-  F extends PluginFactoryLike<any, any, infer O> ? O : Record<string, unknown>
+  F extends PluginFactoryLike<any, any, infer O, any, any> ? O : Record<string, unknown>
 >;
+
+/** Extract the pre-resolved model services type from a PluginFactoryLike phantom. */
+export type InferFactoryModelServices<F extends PluginFactoryLike> =
+  F extends PluginFactoryLike<any, any, any, infer ModelServices, any> ? ModelServices : {};
+
+/** Extract the pre-resolved UI services type from a PluginFactoryLike phantom. */
+export type InferFactoryUiServices<F extends PluginFactoryLike> =
+  F extends PluginFactoryLike<any, any, any, any, infer UiServices> ? UiServices : {};
 
 /**
  * Derive a typed PluginHandle from a PluginFactory type.
- * Normalizes the brand to only data/params/outputs (strips config) so handles
+ * Normalizes the brand to data/params/outputs/services (strips config) so handles
  * from InferPluginHandles match handles from InferPluginHandle.
  */
 export type InferPluginHandle<F extends PluginFactoryLike> = NonNullable<
-  F extends PluginFactoryLike<infer Data, infer Params, infer Outputs>
-    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs>>
+  F extends PluginFactoryLike<
+    infer Data,
+    infer Params,
+    infer Outputs,
+    infer ModelServices,
+    infer UiServices
+  >
+    ? PluginHandle<PluginFactoryLike<Data, Params, Outputs, ModelServices, UiServices>>
     : PluginHandle
 >;
 

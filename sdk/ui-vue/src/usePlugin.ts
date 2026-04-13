@@ -4,11 +4,16 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
+  InferFactoryUiServices,
   PluginFactoryLike,
 } from "@platforma-sdk/model";
 
 /** Per-plugin reactive model exposed to consumers via usePlugin(). */
-export interface PluginState<Data = unknown, Outputs = unknown> {
+export interface PluginState<
+  Data = unknown,
+  Outputs = unknown,
+  Services = Record<string, unknown>,
+> {
   readonly model: Reactive<{
     data: Data;
     outputs: Outputs extends Record<string, unknown>
@@ -18,13 +23,14 @@ export interface PluginState<Data = unknown, Outputs = unknown> {
       ? { [K in keyof Outputs]?: Error }
       : Record<string, Error | undefined>;
   }>;
+  readonly services: Services;
 }
 
 /** Internal interface for plugin access — provided via Vue injection to usePlugin(). */
 export interface PluginAccess {
   getOrCreatePluginState<F extends PluginFactoryLike>(
     handle: PluginHandle<F>,
-  ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>>;
+  ): PluginState<InferFactoryData<F>, InferFactoryOutputs<F>, InferFactoryUiServices<F>>;
 }
 
 /**

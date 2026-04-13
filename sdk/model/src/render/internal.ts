@@ -21,6 +21,7 @@ import type {
   RangeBytes,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "./accessor";
+import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 
 export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
@@ -182,7 +183,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pFrameInSetFilterSupport: true as const,
 };
 
-export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
+export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
   //
   // State: Args, UI State, Active Args
   //

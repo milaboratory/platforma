@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+  "/v1/auth/grant-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_GrantAccess"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/jwt-token": {
     parameters: {
       query?: never;
@@ -31,6 +47,22 @@ export interface paths {
     get: operations["Platform_AuthMethods"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/revoke-grant": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_RevokeGrant"];
     delete?: never;
     options?: never;
     head?: never;
@@ -230,7 +262,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/locks/lease": {
+  "/v1/locks/lease/create": {
     parameters: {
       query?: never;
       header?: never;
@@ -238,10 +270,78 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
-    put: operations["Platform_UpdateLease"];
-    /** @description Locks */
+    put?: never;
+    /**
+     * @description LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+     *      Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+     *      To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
+     */
     post: operations["Platform_LeaseResource"];
-    delete: operations["Platform_ReleaseLease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/locks/lease/release": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_ReleaseLease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/locks/lease/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_UpdateLease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/locks/lock/create": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+     *        - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+     *        - list resource's fields, take fields with names set in request
+     *        - get resolved values of listed fields (IDs of 'ON' resources).
+     *        - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
+     *
+     *      Lock logic constraints:
+     *        - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+     *          succeeds, while the other fails with an error (no long waiting)
+     *        - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+     *          the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+     *        - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+     *          being lockable. An attempt to lock a resource that has not become original will fail.
+     *        - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
+     */
+    post: operations["Platform_LockFieldValues"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -385,6 +485,8 @@ export interface components {
     DetachFilter_Response: Record<string, never>;
     Exists_Request: {
       resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
     };
     Exists_Response: {
       exists: boolean;
@@ -396,28 +498,41 @@ export interface components {
       type: number;
       features: components["schemas"]["Resource_Features"];
       /**
-       * @description _resolved_ value of field or _assigned_ if the field was assigned to a resource.
-       *      If field refers to another field, it will get
-       *      value only when this chain of references ends up with direct resource
-       *      reference. At that moment all fields in the chain will get their values
+       * @description _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
+       *      If a field refers to another field, it will get
+       *      a value only when this chain of references ends up with a direct resource
+       *      reference. At that moment, all fields in the chain will get their values
        *      resolved and will start to refer to the same resource directly.
        */
       value: string;
       /**
+       * Format: bytes
+       * @description Signature for value resource ID, inheriting the parent resource's color.
+       *      Populated server-side when the parent resource has a known color in the current TX.
+       */
+      valueSignature: string;
+      /**
        * Format: enum
-       * @description If the value was empty, assigned or finally resolved.
+       * @description Whether the value is empty, assigned, or finally resolved.
        */
       valueStatus: number;
       /** @description If the value is in its final state (ready, duplicate or error) */
       valueIsFinal: boolean;
       /**
-       * @description Resource error resource id if any.
-       *      Is intended to report problems _from_ platform to client.
+       * @description Error resource ID, if any.
+       *      Is intended to report problems _from_ the platform to the client.
        */
       error: string;
+      /**
+       * Format: bytes
+       * @description Signature for error resource ID, inheriting the parent resource's color.
+       */
+      errorSignature: string;
     };
     FieldRef: {
       resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
       fieldName: string;
     };
     FieldSchema: {
@@ -427,9 +542,13 @@ export interface components {
     };
     GetJWTToken_Request: {
       expiration: string;
+      /** Format: enum */
+      requestedRole: number;
     };
     GetJWTToken_Response: {
       token: string;
+      /** Format: bytes */
+      sessionId: string;
     };
     GetNotifications_Request: {
       controllerType: string;
@@ -448,6 +567,8 @@ export interface components {
     };
     Get_Request: {
       resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
       loadFields: boolean;
     };
     Get_Response: {
@@ -459,6 +580,18 @@ export interface components {
       "@type": string;
     } & {
       [key: string]: unknown;
+    };
+    GrantAccess_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      targetUser: string;
+      permissions: components["schemas"]["Grant_Permissions"];
+    };
+    GrantAccess_Response: Record<string, never>;
+    /** @description Permissions describes access level for a grant. */
+    Grant_Permissions: {
+      writable: boolean;
     };
     License_Response: {
       /** Format: int32 */
@@ -507,6 +640,7 @@ export interface components {
       resourceCreated: boolean;
       resourceDeleted: boolean;
       resourceReady: boolean;
+      resourceRecovered: boolean;
       resourceDuplicate: boolean;
       resourceError: boolean;
       /** @description Field events */
@@ -542,6 +676,7 @@ export interface components {
       allOutputsSet: boolean;
       genericOtwSet: boolean;
       dynamicChanged: boolean;
+      resourceRecovered: boolean;
     };
     Notification_FieldChange: {
       old: components["schemas"]["Field"];
@@ -550,7 +685,6 @@ export interface components {
     Ping_Response: {
       coreVersion: string;
       coreFullVersion: string;
-      serverInfo: string;
       /** Format: enum */
       compression: number;
       /**
@@ -578,6 +712,8 @@ export interface components {
     Release_Request: {
       resourceId: string;
       /** Format: bytes */
+      resourceSignature: string;
+      /** Format: bytes */
       leaseId: string;
     };
     Release_Response: Record<string, never>;
@@ -586,7 +722,9 @@ export interface components {
     };
     RemoveAliasesAndUrls_Response: Record<string, never>;
     Resource: {
-      id: string;
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
       /** Format: bytes */
       canonicalId: string;
       /** Format: enum */
@@ -618,6 +756,33 @@ export interface components {
     ResourceSchema: {
       type: components["schemas"]["ResourceType"];
       fields: components["schemas"]["FieldSchema"][];
+      /** @description Access restriction flags for non-controller roles */
+      accessFlags: components["schemas"]["ResourceSchema_AccessFlags"];
+      freeInputs: boolean;
+      freeOutputs: boolean;
+    };
+    ResourceSchema_AccessFlags: {
+      /**
+       * @description Deny-list approach: default = allowed (true)
+       *      Controllers set these to false to restrict non-controller roles (role='u', role='w')
+       */
+      createResource: boolean;
+      /** @description IMPORTANT: read_fields=false with write_fields=true is a forbidden combination */
+      readFields: boolean;
+      writeFields: boolean;
+      /** @description IMPORTANT: read_kv=false with write_kv=true is a forbidden combination */
+      readKv: boolean;
+      writeKv: boolean;
+      /**
+       * @description Per-field-type overrides (map: field_type → bool)
+       *      When defined for a field type, overrides resource-level flags
+       */
+      readByFieldType: {
+        [key: string]: boolean;
+      };
+      writeByFieldType: {
+        [key: string]: boolean;
+      };
     };
     ResourceType: {
       name: string;
@@ -626,6 +791,13 @@ export interface components {
     Resource_Features: {
       ephemeral: boolean;
     };
+    RevokeGrant_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      targetUser: string;
+    };
+    RevokeGrant_Response: Record<string, never>;
     SetFeatures_Request: {
       features: components["schemas"]["ResourceAPIFeature"][];
     };
@@ -676,6 +848,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  Platform_GrantAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GrantAccess_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GrantAccess_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
   Platform_GetJWTToken: {
     parameters: {
       query?: never;
@@ -725,6 +930,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ListMethods_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_RevokeGrant: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RevokeGrant_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevokeGrant_Response"];
         };
       };
       /** @description Default error response */
@@ -1196,39 +1434,6 @@ export interface operations {
       };
     };
   };
-  Platform_UpdateLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["Update_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Update_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
   Platform_LeaseResource: {
     parameters: {
       query?: never;
@@ -1282,6 +1487,72 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Release_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_UpdateLease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Update_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Update_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_LockFieldValues: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Create_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Create_Response"];
         };
       };
       /** @description Default error response */

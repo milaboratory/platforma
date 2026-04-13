@@ -27,8 +27,8 @@ import { BytesValue } from "../../../../../google/protobuf/wrappers";
 import { Any } from "../../../../../google/protobuf/any";
 import { Empty } from "../../../../../google/protobuf/empty";
 /**
- * Makes protobuf to forcefully compile all well-known types into code (for TS)
- * or just add dependencies on them (for go)
+ * Forces protobuf to compile all well-known types into code (for TS)
+ * or just adds dependencies on them (for go)
  *
  * @generated from protobuf message MiLaboratories.PL._Stub._ImportWellKnown
  */

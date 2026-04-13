@@ -303,7 +303,7 @@ export function isLinkerColumn(column: PColumnSpec): boolean {
  */
 export type AxisSpec = {
   /** Type of the axis value. Should not use non-key types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis */
   readonly name: string;
@@ -508,8 +508,6 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
       modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined)
         ? []
         : (parents as AxisSpecNormalized[]);
-
-      delete modifiedAxis.annotations?.[Annotation.Parents];
     }
   });
 
@@ -541,6 +539,22 @@ export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpe
     }
     return copiedRest;
   });
+}
+
+/**
+ * Resolve annotation-based parents (`pl7.app/parents`) to numeric `parentAxes`
+ * on a column spec. Returns the spec unchanged if all axes already use numeric
+ * indices or have no parent annotations.
+ */
+export function resolveAnnotationParents(spec: PColumnSpec): PColumnSpec {
+  const hasAnnotationParents = spec.axesSpec.some(
+    (axis) => !!readAnnotationJson(axis, Annotation.Parents),
+  );
+  if (!hasAnnotationParents) return spec;
+
+  const normalized = getNormalizedAxesList(spec.axesSpec);
+  const denormalized = getDenormalizedAxesList(normalized);
+  return { ...spec, axesSpec: denormalized };
 }
 
 /** Common type representing spec for all the axes in a column */
@@ -706,7 +720,7 @@ export interface PColumnInfo extends PColumnIdAndSpec {
 export interface AxisId {
   /** Type of the axis or column value. For an axis should not use non-key
    * types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis or column */
   readonly name: string;

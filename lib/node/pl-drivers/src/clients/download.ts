@@ -147,6 +147,7 @@ export class ClientDownload {
         await client.POST("/v1/get-download-url", {
           body: {
             resourceId: id.toString(),
+            resourceSignature: "",
             isInternalUse: false,
           },
           headers: { ...createRTypeRoutingHeader(type) },

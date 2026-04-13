@@ -30,7 +30,7 @@ function resourceIsDeleted(proto: Resource): boolean {
 export function protoToResource(proto: Resource): ResourceData {
   if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
   return {
-    id: proto.id as ResourceId,
+    id: proto.resourceId as ResourceId,
     originalResourceId: proto.originalResourceId as OptionalResourceId,
     type: notEmpty(proto.type),
     data: proto.data,

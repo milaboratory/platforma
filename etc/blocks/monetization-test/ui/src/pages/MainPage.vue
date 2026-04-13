@@ -35,11 +35,11 @@ function onProductKeyInput(key: string) {
   }
 }
 
-function validateProductKey(key: string): boolean | string {
+function validateProductKey(key: string): string | undefined {
   if (key.length > 0 && key.length !== PRODUCT_KEY_LENGTH) {
     return "Invalid product key";
   }
-  return true;
+  return undefined;
 }
 
 const dropdownOptions: ListOption<string>[] = [
@@ -142,7 +142,7 @@ const productOptions = [
           :model-value="app.model.args.productKey"
           label="or enter product key"
           clearable
-          :rules="[validateProductKey]"
+          :validate="validateProductKey"
           @update:model-value="onProductKeyInput"
         />
       </PlContainer>

@@ -1,5 +1,44 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.2.3
+
+### Patch Changes
+
+- Updated dependencies [aeee41f]
+  - @platforma-sdk/workflow-tengo@5.13.0
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [f0ef695]
+  - @platforma-sdk/workflow-tengo@5.12.1
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [faa2923]
+  - @platforma-sdk/workflow-tengo@5.12.0
+
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-sdk/workflow-tengo@5.11.0
+
+## 1.1.67
+
+### Patch Changes
+
+- Updated dependencies [598b009]
+  - @platforma-sdk/workflow-tengo@5.10.1
+
 ## 1.1.66
 
 ### Patch Changes

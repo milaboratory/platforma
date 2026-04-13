@@ -4,7 +4,7 @@
 openapi: 3.0.3
 info:
   title: Progress API
-  description: Progress provides access to progress of any long-running process associated with resource.
+  description: Progress provides access to the progress of any long-running process associated with a resource.
   version: 0.0.1
 paths:
   /v1/get-progress:
@@ -62,6 +62,9 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
     GetStatus_Response:
       type: object
       properties:
@@ -95,6 +98,9 @@ components:
       properties:
         resourceId:
           type: string
+        resourceSignature:
+          type: string
+          format: bytes
         updateInterval:
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
           type: string
