@@ -15,18 +15,28 @@ import {
   isLinkerColumn,
   uniqueBy,
   parseJson,
+  PColumnName,
 } from "@milaboratories/pl-model-common";
-import type { PColumnDataUniversal, RenderCtxBase } from "../../../render";
-import { allPColumnsReady, deriveLabels } from "../../../render";
+import type {
+  AxisLabelProvider,
+  ColumnProvider,
+  PColumnDataUniversal,
+  RenderCtxBase,
+} from "../../../render";
+import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
 import type { CreatePlDataTableOps, PlDataTableFilters, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
+import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
-import { createPTableDef, isColumnOptional } from "./createPlDataTableV3";
+import { createPTableDefV2 } from "./createPTableDefV2";
+import { isColumnOptional } from "./utils";
 
+/**
+ * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
+ */
 export type createPlDataTableOptionsV2 = {
   columns: PColumn<PColumnDataUniversal>[];
   tableState?: PlDataTableStateV2;
@@ -36,6 +46,7 @@ export type createPlDataTableOptionsV2 = {
 /**
  * Create p-table spec and handle given ui table state
  *
+ * @deprecated This version of createPlDataTable is deprecated and will be removed in future. Please migrate to v3 by switching to the new options format and providing necessary information for column discovery and display configuration. See createPlDataTableOptionsV3 for details.
  * @param ctx context
  * @param columns column list
  * @param tableState table ui state
@@ -50,11 +61,9 @@ export function createPlDataTableV2<A, U>(
   if (columns.length === 0) return undefined;
 
   const tableStateNormalized = upgradePlDataTableStateV2(tableState);
+  const allLabelColumns = getAllLabelColumns(ctx.resultPool) ?? [];
 
-  const allLabelColumns = getAllLabelColumns(ctx.resultPool);
-  if (!allLabelColumns) return undefined;
-
-  let fullLabelColumns = getMatchingLabelColumns(columns.map(getColumnIdAndSpec), allLabelColumns);
+  let fullLabelColumns = getMatchingLabelColumns(columns, allLabelColumns);
   fullLabelColumns = deriveLabels(fullLabelColumns, identity, { includeNativeLabel: true }).map(
     (v) => {
       return {
@@ -110,7 +119,7 @@ export function createPlDataTableV2<A, U>(
     );
 
   const coreJoinType = options?.coreJoinType ?? "full";
-  const fullDef = createPTableDef({
+  const fullDef = createPTableDefV2({
     columns,
     labelColumns: fullLabelColumns,
     coreJoinType,
@@ -129,7 +138,11 @@ export function createPlDataTableV2<A, U>(
       if (coreJoinType === "inner") return [];
 
       const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-      if (hiddenColIds) return hiddenColIds;
+      if (hiddenColIds !== null) {
+        return hiddenColIds
+          .filter((s): s is PTableColumnIdColumn => s.type === "column")
+          .map((s) => s.id);
+      }
 
       return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
     })(),
@@ -172,7 +185,7 @@ export function createPlDataTableV2<A, U>(
   // if at least one column is not yet computed, we can't show the table
   if (!allPColumnsReady([...visibleColumns, ...visibleLabelColumns])) return undefined;
 
-  const visibleDef = createPTableDef({
+  const visibleDef = createPTableDefV2({
     columns: visibleColumns,
     labelColumns: visibleLabelColumns,
     coreJoinType,
@@ -190,4 +203,19 @@ export function createPlDataTableV2<A, U>(
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
   } satisfies PlDataTableModel;
+}
+
+function getAllLabelColumns(
+  resultPool: AxisLabelProvider & ColumnProvider,
+): PColumn<PColumnDataUniversal>[] | undefined {
+  return new PColumnCollection()
+    .addAxisLabelProvider(resultPool)
+    .addColumnProvider(resultPool)
+    .getColumns(
+      {
+        name: PColumnName.Label,
+        axes: [{}], // exactly one axis
+      },
+      { dontWaitAllData: true, overrideLabelAnnotation: false },
+    );
 }

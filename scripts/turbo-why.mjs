@@ -162,6 +162,11 @@ function analyse(data) {
       (skipped ? `  ${dim(`(${skipped} skipped — no script)`)}` : ""),
   );
 
+  const globalExtDeps = data.globalCacheInputs?.hashOfExternalDependencies;
+  if (globalExtDeps) {
+    console.log(dim(`Global extDeps: ${globalExtDeps}`));
+  }
+
   if (!misses.length) {
     const saved = hits.reduce((s, t) => s + (t.cache.timeSaved ?? 0), 0);
     console.log(
@@ -171,6 +176,7 @@ function analyse(data) {
   }
 
   // ── dependency graph among misses ────────────────────────────────────
+  const taskMap = new Map(realTasks.map((t) => [t.taskId, t]));
   const missIds = new Set(misses.map((t) => t.taskId));
 
   const rootCauses = [];
@@ -203,6 +209,25 @@ function analyse(data) {
   for (const rc of rootCauses.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
     const tid = rc.taskId;
     console.log(`  ${boldRed(short(tid))}  ${dim(`hash: ${rc.hash}`)}`);
+
+    // dependency hashes (HIT deps that contribute to this task's hash)
+    const deps = rc.dependencies ?? [];
+    if (deps.length) {
+      const depInfo = deps
+        .map((d) => {
+          const dt = taskMap.get(d);
+          if (!dt) return null;
+          return `${short(d)}=${dt.hash?.slice(0, 12) ?? "?"}`;
+        })
+        .filter(Boolean)
+        .join(", ");
+      if (depInfo) console.log(dim(`    deps: ${depInfo}`));
+    }
+
+    // task-level external dependencies hash
+    if (rc.hashOfExternalDependencies) {
+      console.log(dim(`    extDeps: ${rc.hashOfExternalDependencies}`));
+    }
 
     // input files grouped by recency
     const inputs = rc.inputs ?? {};
