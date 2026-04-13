@@ -1,6 +1,7 @@
 import type {
   AxesSpec,
   PTableColumnId,
+  PTableColumnSpecAxis,
   PTableColumnSpecColumn,
   PTableValue,
 } from "@platforma-sdk/model";
@@ -113,90 +114,26 @@ export async function calculateGridOptions({
 
   if (stateGeneration !== generation.value) throw new Error("table state generation changed");
 
-  // create index mapping from full specs to visible subset (hidden columns would have -1)
-  const specId = (spec: PTableColumnSpec) =>
-    canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
-  const visibleSpecsMap = new Map(
-    visibleTableSpecs.entries().map(([i, spec]) => [specId(spec), i]),
+  // index mapping from full specs to visible subset (hidden columns → -1)
+  const specsToVisibleSpecsMapping = buildSpecsToVisibleSpecsMapping(tableSpecs, visibleTableSpecs);
+
+  const isPartitionedAxis = createPartitionedAxisPredicate(sheets);
+
+  // label columns indexed by labeled axis (for axis→label replacement later)
+  const getLabelColumnIndex = collectLabelColumnsByAxis(tableSpecs, isPartitionedAxis);
+
+  // displayable column indices ordered: axes first, then columns by OrderPriority
+  const fields = sortIndicesByTypeAndPriority(
+    selectDisplayableIndices(tableSpecs, isPartitionedAxis),
+    tableSpecs,
   );
-  const specsToVisibleSpecsMapping = new Map(
-    tableSpecs.entries().map(([i, spec]) => {
-      const visibleSpecIdx = visibleSpecsMap.get(specId(spec));
-      return isNil(visibleSpecIdx) ? [i, -1] : [i, visibleSpecIdx];
-    }),
-  );
 
-  // gether indices of columns that would be displayed in the table
+  // same as fields, but each axis replaced by its label column index when available
+  const indices = replaceAxesWithLabelColumns(fields, tableSpecs, getLabelColumnIndex);
 
-  const sheetAxesIds = sheets.map((sheet) => getAxisId(sheet.axis));
-  const isPartitionedAxis = (axisId: AxisId) => sheetAxesIds.some((id) => matchAxisId(id, axisId));
-
-  const labelColumns: { axisId: AxisId; labelColumnIdx: number }[] = [];
-  const setLabelColumnIndex = (axisId: AxisId, labelColumnIdx: number) => {
-    if (!labelColumns.some((info) => matchAxisId(info.axisId, axisId))) {
-      labelColumns.push({ axisId, labelColumnIdx });
-    } else {
-      console.warn(`multiple label columns match axisId: ${JSON.stringify(axisId)}`);
-    }
-  };
-  const getLabelColumnIndex = (axisId: AxisId) => {
-    return labelColumns.find((info) => matchAxisId(info.axisId, axisId))?.labelColumnIdx ?? -1;
-  };
-
-  // filter out partitioned axes, label columns and hidden columns
-  let indices = tableSpecs
-    .entries()
-    .filter(([i, spec]) => {
-      switch (spec.type) {
-        case "axis":
-          return !isPartitionedAxis(spec.id);
-        case "column":
-          if (isLabelColumnSpec(spec.spec)) {
-            const labeledAxisId = getAxisId(spec.spec.axesSpec[0]);
-            if (!isPartitionedAxis(labeledAxisId)) {
-              setLabelColumnIndex(labeledAxisId, i);
-            }
-            return false;
-          }
-          return !isColumnHidden(spec.spec) && !isLinkerColumnSpec(spec.spec);
-      }
-    })
-    .map(([i]) => i)
-    .toArray();
-
-  // order columns: axes first, then by OrderPriority annotation (higher = further left)
-  indices.sort((a, b) => {
-    if (tableSpecs[a].type !== tableSpecs[b].type) return tableSpecs[a].type === "axis" ? -1 : 1;
-    const aPriority =
-      tableSpecs[a].type === "column"
-        ? (readAnnotationJson(tableSpecs[a].spec, Annotation.Table.OrderPriority) ?? 0)
-        : 0;
-    const bPriority =
-      tableSpecs[b].type === "column"
-        ? (readAnnotationJson(tableSpecs[b].spec, Annotation.Table.OrderPriority) ?? 0)
-        : 0;
-    return bPriority - aPriority;
-  });
-
-  // fields are indices of columns that would go to columnDefs
-  const fields = [...indices];
-  // replace axes with label columns
-  indices = indices.map((i) => {
-    const spec = tableSpecs[i];
-    const idx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
-    return idx === -1 ? i : idx;
-  });
-  // When no saved state, compute default hidden columns from annotations
-  if (isNil(hiddenColIds)) {
-    hiddenColIds = fields.reduce<PlTableColumnIdJson[]>((acc, field, i) => {
-      const spec = tableSpecs[field];
-      if (spec.type === "column" && isColumnOptional(spec.spec)) {
-        const labeledSpec = tableSpecs[indices[i]];
-        acc.push(canonicalizeJson<PlTableColumnId>({ source: spec, labeled: labeledSpec }));
-      }
-      return acc;
-    }, []);
-  }
+  // default hidden columns derived from Optional annotation when no saved state
+  const resolvedHiddenColIds =
+    hiddenColIds ?? computeDefaultHiddenColIds(fields, indices, tableSpecs);
 
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
@@ -205,46 +142,23 @@ export async function calculateGridOptions({
         field,
         tableSpecs[field],
         tableSpecs[indices[index]],
-        hiddenColIds,
+        resolvedHiddenColIds,
         cellButtonAxisParams,
       ),
     ),
   ];
 
   // axes — taken directly from visible table (always present as part of join)
-  const visibleAxesIndices: number[] = [];
-  const axesSpec: AxesSpec = visibleTableSpecs
-    .entries()
-    .filter(([i, spec]) => {
-      if (spec.type === "axis") {
-        visibleAxesIndices.push(i);
-        return true;
-      }
-      return false;
-    })
-    .map(([, spec]) => {
-      if (spec.type !== "axis") throw new Error("unreachable");
-      return spec.spec;
-    })
-    .toArray();
+  const visibleAxes = collectVisibleAxes(visibleTableSpecs);
 
-  // build request indices: only non-hidden fields.
-  // For axes replaced by label columns, request label column data (used for display),
-  // while the original axis values are fetched separately via visibleAxesIndices (used for row selection keys).
-  let requestIndices: number[] = [];
-  const fieldResultMapping: number[] = [];
-  indices.forEach((displayField) => {
-    const visibleSpecIdx = specsToVisibleSpecsMapping.get(displayField);
-    if (visibleSpecIdx !== undefined && visibleSpecIdx !== -1) {
-      fieldResultMapping.push(requestIndices.length);
-      requestIndices.push(visibleSpecIdx);
-    } else {
-      fieldResultMapping.push(-1);
-    }
-  });
-
-  requestIndices = uniq([...requestIndices, ...visibleAxesIndices]);
-  const axesResultIndices = visibleAxesIndices.map((vi) => requestIndices.indexOf(vi));
+  // request indices: non-hidden display fields + visible axes for row selection keys.
+  // Axes replaced by label columns request label data (display); original axis values
+  // are fetched via visibleAxes (row keys).
+  const { requestIndices, fieldResultMapping, axesResultIndices } = buildRequestIndices(
+    indices,
+    specsToVisibleSpecsMapping,
+    visibleAxes.map(([i]) => i),
+  );
 
   let rowCount = -1;
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
@@ -311,7 +225,7 @@ export async function calculateGridOptions({
   };
 
   return {
-    axesSpec,
+    axesSpec: visibleAxes.map(([, { spec }]) => spec),
     columnDefs,
     serverSideDatasource,
   };
@@ -414,4 +328,161 @@ export function makeColDef(
       }
     })(),
   };
+}
+
+type LabelColumnLookup = (axisId: AxisId) => number;
+
+/** Build index mapping from full tableSpecs to their position in visibleTableSpecs (missing → -1). */
+function buildSpecsToVisibleSpecsMapping(
+  tableSpecs: PTableColumnSpec[],
+  visibleTableSpecs: PTableColumnSpec[],
+): Map<number, number> {
+  const specId = (spec: PTableColumnSpec) =>
+    canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
+  const visibleSpecsMap = new Map(
+    visibleTableSpecs.entries().map(([i, spec]) => [specId(spec), i] as const),
+  );
+  return new Map(
+    tableSpecs.entries().map(([i, spec]) => {
+      const visibleSpecIdx = visibleSpecsMap.get(specId(spec));
+      return [i, isNil(visibleSpecIdx) ? -1 : visibleSpecIdx];
+    }),
+  );
+}
+
+/** Predicate that returns true when an axis is one of the sheet partition axes. */
+function createPartitionedAxisPredicate(sheets: PlDataTableSheet[]): (axisId: AxisId) => boolean {
+  const sheetAxesIds = sheets.map((sheet) => getAxisId(sheet.axis));
+  return (axisId) => sheetAxesIds.some((id) => matchAxisId(id, axisId));
+}
+
+/**
+ * Collect label columns (skipping partitioned axes and duplicates) and return a
+ * lookup function that resolves labeled axisId → label column index (or -1).
+ */
+function collectLabelColumnsByAxis(
+  tableSpecs: PTableColumnSpec[],
+  isPartitionedAxis: (axisId: AxisId) => boolean,
+): LabelColumnLookup {
+  const labelColumns: { axisId: AxisId; labelColumnIdx: number }[] = [];
+  for (const [i, spec] of tableSpecs.entries()) {
+    if (spec.type !== "column" || !isLabelColumnSpec(spec.spec)) continue;
+    const labeledAxisId = getAxisId(spec.spec.axesSpec[0]);
+    if (isPartitionedAxis(labeledAxisId)) continue;
+    if (labelColumns.some((info) => matchAxisId(info.axisId, labeledAxisId))) {
+      console.warn(`multiple label columns match axisId: ${JSON.stringify(labeledAxisId)}`);
+      continue;
+    }
+    labelColumns.push({ axisId: labeledAxisId, labelColumnIdx: i });
+  }
+  return (axisId) =>
+    labelColumns.find((info) => matchAxisId(info.axisId, axisId))?.labelColumnIdx ?? -1;
+}
+
+/** Indices of columns to display: drop partitioned axes, label/linker columns, hidden columns. */
+function selectDisplayableIndices(
+  tableSpecs: PTableColumnSpec[],
+  isPartitionedAxis: (axisId: AxisId) => boolean,
+): number[] {
+  return tableSpecs
+    .entries()
+    .filter(([, spec]) => {
+      switch (spec.type) {
+        case "axis":
+          return !isPartitionedAxis(spec.id);
+        case "column":
+          return (
+            !isLabelColumnSpec(spec.spec) &&
+            !isColumnHidden(spec.spec) &&
+            !isLinkerColumnSpec(spec.spec)
+          );
+      }
+    })
+    .map(([i]) => i)
+    .toArray();
+}
+
+/** Sort: axes first, then columns by OrderPriority annotation (higher priority = further left). */
+function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColumnSpec[]): number[] {
+  const priorityOf = (i: number): number => {
+    const spec = tableSpecs[i];
+    return spec.type === "column"
+      ? (readAnnotationJson(spec.spec, Annotation.Table.OrderPriority) ?? 0)
+      : 0;
+  };
+  return [...indices].sort((a, b) => {
+    if (tableSpecs[a].type !== tableSpecs[b].type) {
+      return tableSpecs[a].type === "axis" ? -1 : 1;
+    }
+    return priorityOf(b) - priorityOf(a);
+  });
+}
+
+/** For each axis entry substitute the index of its matching label column when one exists. */
+function replaceAxesWithLabelColumns(
+  fields: number[],
+  tableSpecs: PTableColumnSpec[],
+  getLabelColumnIndex: LabelColumnLookup,
+): number[] {
+  return fields.map((i) => {
+    const spec = tableSpecs[i];
+    const labelIdx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
+    return labelIdx === -1 ? i : labelIdx;
+  });
+}
+
+/** Default hidden col ids built from columns marked with the Optional annotation. */
+function computeDefaultHiddenColIds(
+  fields: number[],
+  indices: number[],
+  tableSpecs: PTableColumnSpec[],
+): PlTableColumnIdJson[] {
+  return fields.reduce<PlTableColumnIdJson[]>((acc, field, i) => {
+    const spec = tableSpecs[field];
+    if (spec.type !== "column" || !isColumnOptional(spec.spec)) return acc;
+    const labeledSpec = tableSpecs[indices[i]];
+    return [...acc, canonicalizeJson<PlTableColumnId>({ source: spec, labeled: labeledSpec })];
+  }, []);
+}
+
+/** Extract axis indices and specs from the visible table (always present as part of join). */
+function collectVisibleAxes(
+  visibleTableSpecs: PTableColumnSpec[],
+): [number, PTableColumnSpecAxis][] {
+  return visibleTableSpecs
+    .entries()
+    .filter((entry): entry is [number, PTableColumnSpecAxis] => entry[1].type === "axis")
+    .toArray();
+}
+
+/**
+ * Compose request indices for the visible table:
+ * non-hidden display fields first, then visible axes (deduplicated).
+ * Returns fieldResultMapping (display field → position in requestIndices, -1 if not requested)
+ * and axesResultIndices (visible axis → position in requestIndices).
+ */
+function buildRequestIndices(
+  indices: number[],
+  specsToVisibleSpecsMapping: Map<number, number>,
+  visibleAxesIndices: number[],
+): {
+  requestIndices: number[];
+  fieldResultMapping: number[];
+  axesResultIndices: number[];
+} {
+  const resolved = indices.map((displayField) => {
+    const idx = specsToVisibleSpecsMapping.get(displayField);
+    return idx === undefined || idx === -1 ? null : idx;
+  });
+  const requestedFields = resolved.filter((v): v is number => v !== null);
+
+  const fieldResultMapping: number[] = [];
+  let pos = 0;
+  for (const v of resolved) {
+    fieldResultMapping.push(v === null ? -1 : pos++);
+  }
+
+  const requestIndices = uniq([...requestedFields, ...visibleAxesIndices]);
+  const axesResultIndices = visibleAxesIndices.map((vi) => requestIndices.indexOf(vi));
+  return { requestIndices, fieldResultMapping, axesResultIndices };
 }
