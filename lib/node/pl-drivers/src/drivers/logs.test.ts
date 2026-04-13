@@ -28,7 +28,7 @@ const downloadDriverOps = {
   rangesCacheMaxSizeBytes: 1024,
 };
 
-const useDocker = process.env.PL_TEST_USE_DOCKER === 'true';
+const useDocker = process.env.PL_TEST_USE_DOCKER === "true";
 
 vi.setConfig({
   testTimeout: 90000,
@@ -274,7 +274,7 @@ function createRunCommand(
     envs: [],
   };
   if (useDocker) {
-    optsData.dockerImageTag = 'busybox';
+    optsData.dockerImageTag = "busybox";
   }
 
   const runCmdId = tx.createEphemeral({ name: "RunCommand/executor", version: "2" });
