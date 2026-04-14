@@ -81,6 +81,15 @@ A_LABEL := "pl7.app/label"
  *   }
  */
 A_TRACE := "pl7.app/trace"
+/** Annotation marking a column as a linker between two axes */
+A_IS_LINKER := "pl7.app/isLinkerColumn"
+
+isLinkerColumn := func(spec) {
+	if is_undefined(spec.annotations) {
+		return false
+	}
+	return spec.annotations[A_IS_LINKER] == "true"
+}
 
 //
 // Format methods
@@ -604,6 +613,9 @@ export ll.toStrict({
 
 	A_LABEL: A_LABEL,
 	A_TRACE: A_TRACE,
+	A_IS_LINKER: A_IS_LINKER,
+
+	isLinkerColumn: isLinkerColumn,
 
 	normalizeColumnSpec: normalizeColumnSpec,
 
