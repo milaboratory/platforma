@@ -27,6 +27,7 @@ import {
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isNil } from "es-toolkit";
+import { useFeatureFlags } from "../../defineApp";
 
 const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
@@ -84,6 +85,10 @@ const supportedFilters = [
   "equal",
   "notEqual",
 ] as (typeof PlAdvancedFilterSupportedFilters)[number][];
+
+if (useFeatureFlags().supportsPframeQueryRanking) {
+  supportedFilters.push("topN", "bottomN");
+}
 
 // getSuggestOptions - provide discrete values from column annotations
 function handleSuggestOptions(params: {

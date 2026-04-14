@@ -15,6 +15,7 @@ import type {
   ExprStringEquals,
   ExprStringRegex,
   ExprNumericUnary,
+  ExprRanking,
   QueryAxisSelector,
   QueryColumn,
   QuerySparseToDenseColumn,
@@ -137,6 +138,7 @@ export type SpecQueryExpression =
   | ExprLogicalUnary<SpecQueryExpression>
   | ExprLogicalVariadic<SpecQueryExpression>
   | ExprIsIn<SpecQueryExpression, string>
-  | ExprIsIn<SpecQueryExpression, number>;
+  | ExprIsIn<SpecQueryExpression, number>
+  | ExprRanking<SpecQueryExpression, SingleAxisSelector, PObjectId>;
 
 export type SpecQueryBooleanExpression = InferBooleanExpressionUnion<SpecQueryExpression>;
