@@ -63,6 +63,9 @@ jobs:
       - name: Start Platforma Docker
         if: steps.dry-run.outputs.skip != 'true'
         uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        env:
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
         with:
           pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
           pl-docker-tag: main
