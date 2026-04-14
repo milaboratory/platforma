@@ -1,5 +1,74 @@
 # @platforma-sdk/tengo-builder
 
+## 2.5.8
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.8
+
+## 2.5.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.7
+
+## 2.5.6
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.6
+
+## 2.5.5
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pl-model-backend@1.2.5
+
+## 2.5.4
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.4
+
+## 2.5.3
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/ts-helpers@1.8.0
+  - @milaboratories/pl-model-backend@1.2.3
+
+## 2.5.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.2
+
+## 2.5.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.2.1
+
+## 2.5.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-model-backend@1.2.0
+
+## 2.4.30
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.1.59
+
 ## 2.4.29
 
 ### Patch Changes

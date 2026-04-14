@@ -3,7 +3,7 @@
 // tslint:disable
 //
 //
-// This is dirty implementation of custom protocol for fast WebSocket support testing in
+// This is a dirty implementation of a custom protocol for fast WebSocket support testing in
 // environments with ZScaler or other similar MITM corporate proxies.
 //
 //
@@ -32,11 +32,11 @@ export interface PingWS_Request {
     /**
      * @generated from protobuf field: int32 replies_count = 2
      */
-    repliesCount: number; // amount of Response messages to send (0 - send nothing)
+    repliesCount: number; // number of Response messages to send (0 - send nothing)
     /**
      * @generated from protobuf field: bool close = 3
      */
-    close: boolean; // make server to close connection after sending responses
+    close: boolean; // make the server close connection after sending responses
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.WSTest.PingWS.Response

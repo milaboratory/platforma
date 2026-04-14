@@ -23,6 +23,7 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
+  ServiceName,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -43,8 +44,8 @@ import {
   mapValueInVOE,
   PColumnName,
   readAnnotation,
-  selectorsToPredicate,
   withEnrichments,
+  legacyColumnSelectorsToPredicate,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -54,8 +55,11 @@ import type {
   PluginHandle,
   PluginFactoryLike,
   InferFactoryData,
+  InferFactoryModelServices,
   InferFactoryParams,
 } from "../plugin_handle";
+import type { BlockDefaultModelServices } from "../services/service_resolve";
+import type { ModelServices as AllModelServices } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -155,7 +159,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const predicate =
       typeof predicateOrSelector === "function"
         ? predicateOrSelector
-        : selectorsToPredicate(predicateOrSelector);
+        : legacyColumnSelectorsToPredicate(predicateOrSelector);
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
 
     let labelOps: LabelDerivationOps | ((spec: PObjectSpec, ref: PlRef) => string) = {};
@@ -494,7 +498,8 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<TreeNodeAccessor | undefined>[] {
-    const predicate = typeof selectors === "function" ? selectors : selectorsToPredicate(selectors);
+    const predicate =
+      typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
 
     const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
       if (!isPColumnSpec(spec)) return false;
@@ -549,11 +554,40 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
+export abstract class RenderCtxBase<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = Partial<AllModelServices>,
+> {
   protected readonly ctx: GlobalCfgRenderCtx;
+  private readonly requiredServiceNames: ServiceName[];
+  private cachedServices?: ModelServices;
 
-  constructor() {
+  constructor(requiredServiceNames: ServiceName[] = []) {
     this.ctx = getCfgRenderCtx();
+    this.requiredServiceNames = requiredServiceNames;
+  }
+
+  get services(): ModelServices {
+    if (this.cachedServices) return this.cachedServices;
+    const ctx = this.ctx;
+    const services = Object.freeze(
+      Object.fromEntries(
+        this.requiredServiceNames.map((id) => [
+          id,
+          Object.freeze(
+            Object.fromEntries(
+              (ctx.getServiceMethods(id) as string[]).map((method) => [
+                method,
+                (...args: unknown[]) => ctx.callServiceMethod(id, method, ...args),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+    ) as ModelServices;
+    this.cachedServices = services;
+    return services;
   }
 
   private dataCache?: { v: Data };
@@ -652,10 +686,12 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 
   // TODO remove all non-PColumn fields
   public createPFrame(
-    def: PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>>,
+    def: PFrameDef<
+      PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>
+    >,
   ): PFrameHandle | undefined {
-    this.verifyInlineAndExplicitColumnsSupport(def);
     if (!allPColumnsReady(def)) return undefined;
+    this.verifyInlineAndExplicitColumnsSupport(def);
     return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
   }
 
@@ -697,11 +733,19 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
   }
 
-  public createPTableV2(def: PTableDefV2<PColumn<PColumnDataUniversal>>): PTableHandle | undefined {
+  public createPTableV2(
+    def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
+  ): PTableHandle | undefined {
     const columns = collectSpecQueryColumns(def.query);
-    this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
+    this.verifyInlineAndExplicitColumnsSupport(columns);
+    return this.ctx.createPTableV2(
+      mapPTableDefV2(def, (po) => {
+        if (po.data === undefined)
+          throw new Error("unreachable: column data undefined after readiness check");
+        return transformPColumnData({ id: po.id, spec: po.spec, data: po.data });
+      }),
+    );
   }
 
   /** @deprecated scheduled for removal from SDK */
@@ -727,7 +771,11 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
+export class BlockRenderCtx<
+  Args = unknown,
+  Data = unknown,
+  ModelServices = BlockDefaultModelServices,
+> extends RenderCtxBase<Args, Data, ModelServices> {
   private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this.argsCache === undefined) {
@@ -776,26 +824,32 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
-  private readonly ctx: GlobalCfgRenderCtx;
+export class PluginRenderCtx<
+  F extends PluginFactoryLike = PluginFactoryLike,
+  ModelServices = InferFactoryModelServices<F>,
+> extends RenderCtxBase<unknown, InferFactoryData<F>, ModelServices> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
-    this.ctx = getCfgRenderCtx();
+  constructor(
+    handle: PluginHandle<F>,
+    wrappedInputs: Record<string, () => unknown>,
+    requiredServiceNames: ServiceName[] = [],
+  ) {
+    super(requiredServiceNames);
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }
 
-  private dataCache?: { v: InferFactoryData<F> };
+  private pluginDataCache?: { v: InferFactoryData<F> };
 
   /** Plugin's persistent data from blockStorage.__plugins.{pluginId}.__data */
-  public get data(): InferFactoryData<F> {
-    if (this.dataCache === undefined) {
+  public override get data(): InferFactoryData<F> {
+    if (this.pluginDataCache === undefined) {
       const raw = this.ctx.blockStorage();
-      this.dataCache = { v: getPluginData(parseJson(raw), this.handle) };
+      this.pluginDataCache = { v: getPluginData(parseJson(raw), this.handle) };
     }
-    return this.dataCache.v;
+    return this.pluginDataCache.v;
   }
 
   private paramsCache?: { v: InferFactoryParams<F> };
@@ -811,9 +865,6 @@ export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> {
     }
     return this.paramsCache.v;
   }
-
-  /** Result pool — same as block, from cfgRenderCtx methods */
-  public readonly resultPool = new ResultPool();
 }
 
 /** @deprecated Use BlockRenderCtx instead */

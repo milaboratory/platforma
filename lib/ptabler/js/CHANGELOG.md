@@ -1,5 +1,58 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.6
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.6
+
+## 1.2.5
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.5
+
+## 1.2.4
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.4
+
+## 1.2.3
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.3
+
+## 1.2.2
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.2
+
+## 1.2.1
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.1
+
+## 1.2.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.14.0
+
+## 1.1.27
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.13.20
+
 ## 1.1.26
 
 ### Patch Changes

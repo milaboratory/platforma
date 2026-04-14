@@ -1,38 +1,9 @@
 import { EventEmitter } from "node:events";
+import type { MiLoggerLevel } from "@milaboratories/helpers";
 
-/** Minimalistic logger facade */
-export interface MiLogger {
-  info(msg: unknown): void;
-
-  warn(msg: unknown): void;
-
-  error(msg: unknown): void;
-}
-
-const globalConsole = console;
-
-export class ConsoleLoggerAdapter implements MiLogger {
-  constructor(private readonly console: Console = globalConsole) {}
-
-  info(msg: unknown): void {
-    this.console.log(msg);
-  }
-
-  warn(msg: unknown): void {
-    this.console.warn(msg);
-  }
-
-  error(msg: unknown): void {
-    this.console.error(msg);
-  }
-}
-
-export type MiLoggerLevel = "info" | "warn" | "error";
-
-export type MiLoggerLogEvent = {
-  level: MiLoggerLevel;
-  message: string;
-};
+// Re-export logger types from @milaboratories/helpers for backwards compatibility
+export type { MiLogger, MiLoggerLevel, MiLoggerLogEvent } from "@milaboratories/helpers";
+export { ConsoleLoggerAdapter } from "@milaboratories/helpers";
 
 export type BlockEventDispatcherEvent = {
   type: "log";

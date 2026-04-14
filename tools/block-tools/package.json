@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.6.69",
+  "version": "2.7.7",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "license": "UNLICENSED",
   "bin": {
@@ -28,10 +28,10 @@
     "readme": "oclif readme",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
-    "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
+    "check": "ts-builder check --target node",
     "fmt": "ts-builder format"
   },
   "dependencies": {

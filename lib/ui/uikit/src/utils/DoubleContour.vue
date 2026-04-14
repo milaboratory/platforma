@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-withDefaults(
+const props = withDefaults(
   defineProps<{
     groupPosition?:
       | "top"
@@ -25,7 +25,7 @@ export default {
 </script>
 
 <template>
-  <div class="double-contour" :class="{ [groupPosition]: true }">
+  <div class="double-contour" :class="props.groupPosition">
     <div v-bind="$attrs">
       <slot />
     </div>

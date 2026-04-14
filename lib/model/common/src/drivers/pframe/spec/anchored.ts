@@ -8,7 +8,7 @@ import type {
   AnchorAxisRefByIdx,
   AnchoredPColumnId,
   AnchoredPColumnSelector,
-  AxisSelector,
+  LegacyAxisSelector,
   PColumnSelector,
 } from "./selectors";
 import type { AxisId, PColumnSpec } from "./spec";
@@ -50,7 +50,12 @@ export class AnchoredIdDeriver {
    * Creates a new anchor context from a set of anchor column specifications
    * @param anchors Record of anchor column specifications indexed by anchor ID
    */
-  constructor(public readonly anchors: Record<string, PColumnSpec>) {
+  constructor(
+    public readonly anchors: Record<
+      string,
+      Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">
+    >,
+  ) {
     const anchorEntries = Object.entries(anchors);
     anchorEntries.sort((a, b) => a[0].localeCompare(b[0]));
     for (const [anchorId, spec] of anchorEntries) {
@@ -241,7 +246,7 @@ export type ResolveAnchorsOptions = {
  * @returns A non-anchored column matcher with all references resolved to actual values
  */
 export function resolveAnchors(
-  anchors: Record<string, PColumnSpec>,
+  anchors: Record<string, Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">>,
   matcher: AnchoredPColumnSelector,
   options?: ResolveAnchorsOptions,
 ): PColumnSelector {
@@ -321,9 +326,9 @@ export function resolveAnchors(
  * Resolves an anchored axis reference to a concrete AxisId
  */
 function resolveAxisReference(
-  anchors: Record<string, PColumnSpec>,
+  anchors: Record<string, Pick<PColumnSpec, "axesSpec">>,
   axisRef: AAxisSelector,
-): AxisSelector {
+): LegacyAxisSelector {
   if (!isAnchorAxisRef(axisRef)) return axisRef;
 
   // It's an anchored reference

@@ -1,15 +1,12 @@
 import {
   pTableValue,
-  canonicalizeJson,
-  filterSpecToSpecQueryExpr,
   type CalculateTableDataResponse,
   type PFrameDriver,
   type PObjectId,
-  type PTableColumnId,
   type SpecQuery,
   type SpecQueryExpression,
   SpecQueryBooleanExpression,
-} from "@platforma-sdk/model";
+} from "@milaboratories/pl-model-common";
 import { readJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { test } from "vitest";
 import { join } from "node:path";
@@ -138,7 +135,6 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
         .map((d) =>
           [...d.data.keys()].map((i) =>
             pTableValue(d, i, {
-              absent: "|~|",
               na: null,
             }),
           ),
@@ -164,16 +160,6 @@ test("createTableV2 support", async ({ expect }) => {
     name: "column1",
     valueType: "Int" as const,
   };
-
-  const axisColumnStr = canonicalizeJson<PTableColumnId>({
-    type: "axis",
-    id: { name: "axis1", type: "String" },
-  }) as string;
-
-  const valueColumnStr = canonicalizeJson<PTableColumnId>({
-    type: "column",
-    id: columnId,
-  }) as string;
 
   const inlineData = [
     { key: ["a"], val: 10 },
@@ -213,11 +199,12 @@ test("createTableV2 support", async ({ expect }) => {
       query: {
         type: "filter",
         input: baseQuery,
-        predicate: filterSpecToSpecQueryExpr({
-          type: "patternEquals",
-          column: axisColumnStr,
+        predicate: {
+          type: "stringEquals",
+          input: { type: "axisRef", value: { name: "axis1", type: "String" } },
           value: "b",
-        }) as SpecQueryBooleanExpression,
+          caseInsensitive: false,
+        } as SpecQueryBooleanExpression,
       },
     });
 
@@ -235,11 +222,12 @@ test("createTableV2 support", async ({ expect }) => {
       query: {
         type: "filter",
         input: baseQuery,
-        predicate: filterSpecToSpecQueryExpr({
-          type: "greaterThan",
-          column: valueColumnStr,
-          x: 15,
-        }) as SpecQueryBooleanExpression,
+        predicate: {
+          type: "numericComparison",
+          operand: "gt",
+          left: { type: "columnRef", value: columnId },
+          right: { type: "constant", value: 15 },
+        } as SpecQueryBooleanExpression,
       },
     });
 
@@ -280,13 +268,26 @@ test("createTableV2 support", async ({ expect }) => {
         input: {
           type: "filter",
           input: baseQuery,
-          predicate: filterSpecToSpecQueryExpr({
+          predicate: {
             type: "and",
-            filters: [
-              { type: "greaterThan", column: valueColumnStr, x: 5 },
-              { type: "patternNotEquals", column: axisColumnStr, value: "c" },
+            input: [
+              {
+                type: "numericComparison",
+                operand: "gt",
+                left: { type: "columnRef", value: columnId },
+                right: { type: "constant", value: 5 },
+              },
+              {
+                type: "not",
+                input: {
+                  type: "stringEquals",
+                  input: { type: "axisRef", value: { name: "axis1", type: "String" } },
+                  value: "c",
+                  caseInsensitive: false,
+                },
+              },
             ],
-          }) as SpecQueryBooleanExpression,
+          } as SpecQueryBooleanExpression,
         },
         sortBy: [
           {

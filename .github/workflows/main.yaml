@@ -1,0 +1,167 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  packages: write
+  contents: write
+  pull-requests: write
+  issues: read
+
+env:
+  BODY_LIMIT: "1048576000"
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. Init
+  # ──────────────────────────────────────────────
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
+    steps:
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+
+  # ──────────────────────────────────────────────
+  # 2. Check changesets
+  # ──────────────────────────────────────────────
+  check-changesets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-pending: ${{ steps.check.outputs.has-pending }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changeset status
+        id: check
+        run: |
+          npx @changesets/cli status --since=origin/main
+
+          NON_README=$(ls .changeset/*.md 2>/dev/null | grep -v README.md || true)
+          if [ -n "$NON_README" ]; then
+            echo "has-pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ──────────────────────────────────────────────
+  # 3. Build (reusable)
+  # ──────────────────────────────────────────────
+  build:
+    needs: [init]
+    uses: ./.github/workflows/_build.yaml
+    secrets: inherit
+
+  # ──────────────────────────────────────────────
+  # 4. Test (reusable)
+  # ──────────────────────────────────────────────
+  test:
+    needs: [build]
+    uses: ./.github/workflows/_test.yaml
+    secrets: inherit
+
+  # ──────────────────────────────────────────────
+  # 5. Publish
+  # ──────────────────────────────────────────────
+  publish:
+    runs-on: dev-pl-sdk
+    needs: [init, build, test, check-changesets]
+    if: ${{ !failure() && !cancelled() && needs.check-changesets.outputs.has-pending == 'true' }}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Run changeset version
+        run: pnpm run version-packages
+
+      - name: Build for publish (full, non-local)
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ci:build
+
+      - name: Security scan
+        uses: milaboratory/github-ci/actions/docker/scan-pnpm-repo@v4
+
+      - name: Publish packages (public)
+        uses: changesets/action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+        with:
+          publish: pnpm -r publish --no-git-checks --access public
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version changes
+        env:
+          USER_ID: ${{ steps.get-user-id.outputs.user-id }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          git config --global user.name "${APP_SLUG}[bot]"
+          git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git checkout main
+          git add .
+          git commit -m "Version packages [skip ci]"
+          git push
+
+  # ──────────────────────────────────────────────
+  # 7. Notify
+  # ──────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [init, check-changesets, build, test, publish]
+    steps:
+      - id: search-tags
+        uses: milaboratory/github-ci/actions/strings/json-list@v4
+        with:
+          input: release
+
+      - uses: milaboratory/github-ci/blocks/notify/slack/release@v4
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+          job-status: |
+            ${{ needs.build.result }}
+            ${{ needs.test.result }}
+            ${{ needs.check-changesets.result }}
+            ${{ needs.publish.result }}
+            ${{ needs.check-changesets.result }}
+          product-name: Platforma SDK
+          search-tags: ${{ steps.search-tags.outputs.result }}

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-common",
-  "version": "1.26.0",
+  "version": "1.31.2",
   "description": "Platforma SDK Model",
   "files": [
     "./dist/**/*",
@@ -28,6 +28,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "canonicalize": "catalog:",
     "zod": "catalog:"

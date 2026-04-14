@@ -1,5 +1,117 @@
 # @milaboratories/pl-drivers
 
+## 1.12.10
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+  - @milaboratories/pl-client@3.1.1
+  - @milaboratories/pl-tree@1.9.9
+
+## 1.12.9
+
+### Patch Changes
+
+- Updated dependencies [96b0516]
+  - @milaboratories/pl-client@3.1.0
+  - @milaboratories/pl-tree@1.9.8
+
+## 1.12.8
+
+### Patch Changes
+
+- Updated dependencies [de415f7]
+  - @milaboratories/pl-client@3.0.0
+  - @milaboratories/pl-tree@1.9.7
+
+## 1.12.7
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/computable@2.9.2
+  - @milaboratories/pl-client@2.18.5
+  - @milaboratories/pl-tree@1.9.6
+
+## 1.12.6
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @milaboratories/pl-model-common@1.31.0
+  - @milaboratories/pl-client@2.18.4
+  - @milaboratories/pl-tree@1.9.5
+
+## 1.12.5
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @milaboratories/pl-model-common@1.30.0
+  - @milaboratories/ts-helpers@1.8.0
+  - @milaboratories/pl-client@2.18.3
+  - @milaboratories/computable@2.9.1
+  - @milaboratories/pl-tree@1.9.4
+
+## 1.12.4
+
+### Patch Changes
+
+- e34a693: Treat S3 ExpiredToken as retryable error during multipart upload instead of permanently aborting
+
+## 1.12.3
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @milaboratories/pl-model-common@1.29.0
+  - @milaboratories/pl-client@2.18.2
+  - @milaboratories/pl-tree@1.9.3
+
+## 1.12.2
+
+### Patch Changes
+
+- Updated dependencies [e1d62fe]
+  - @milaboratories/pl-model-common@1.28.0
+  - @milaboratories/pl-client@2.18.1
+  - @milaboratories/pl-tree@1.9.2
+
+## 1.12.1
+
+### Patch Changes
+
+- Updated dependencies [6078a1d]
+  - @milaboratories/computable@2.9.0
+  - @milaboratories/pl-tree@1.9.1
+
+## 1.12.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/pl-client@2.18.0
+  - @milaboratories/pl-model-common@1.27.0
+  - @milaboratories/pl-tree@1.9.0
+  - @milaboratories/helpers@1.14.0
+
+## 1.11.66
+
+### Patch Changes
+
+- Updated dependencies [227002e]
+  - @milaboratories/pl-model-common@1.26.1
+  - @milaboratories/pl-client@2.17.12
+  - @milaboratories/pl-tree@1.8.52
+
 ## 1.11.65
 
 ### Patch Changes

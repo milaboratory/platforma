@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 1.15.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
 ## 1.14.3
 
 ### Patch Changes

@@ -145,6 +145,7 @@ export const Annotation = {
   IsScore: "pl7.app/isScore",
   IsSubset: "pl7.app/isSubset",
   Label: "pl7.app/label",
+  LinkLabel: "pl7.app/linkLabel",
   Max: "pl7.app/max",
   Min: "pl7.app/min",
   MultipliesBy: "pl7.app/multipliesBy",
@@ -204,9 +205,23 @@ export type Annotation = Metadata &
     [Annotation.Table.FontFamily]: string;
     [Annotation.Table.OrderPriority]: StringifiedJson<number>;
     [Annotation.Table.Visibility]: "hidden" | "optional" | (string & {});
-    [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+    [Annotation.Trace]: StringifiedJson<Trace>;
     [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
   }>;
+
+/// One step in a column's derivation lineage. Only `type` and `label` are part
+/// of the typed public surface; writers may add fields (e.g. `id`, `importance`)
+/// passed through opaquely as `unknown`, accessed via explicit narrowing.
+const TraceEntrySchema = z
+  .object({
+    type: z.string(),
+    label: z.string(),
+  })
+  .catchall(z.unknown());
+
+export type TraceEntry = z.infer<typeof TraceEntrySchema>;
+
+export type Trace = TraceEntry[];
 
 // export const AxisSpec = z.object({
 //   type: z.nativeEnum(ValueType),
@@ -256,7 +271,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
   [Annotation.Table.OrderPriority]: z.number(),
-  [Annotation.Trace]: z.record(z.string(), z.unknown()),
+  [Annotation.Trace]: z.array(TraceEntrySchema),
   [Annotation.VDJ.IsAssemblingFeature]: z.boolean(),
 };
 
@@ -303,7 +318,7 @@ export function isLinkerColumn(column: PColumnSpec): boolean {
  */
 export type AxisSpec = {
   /** Type of the axis value. Should not use non-key types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis */
   readonly name: string;
@@ -508,8 +523,6 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
       modifiedAxis.parentAxesSpec = parents.some((p) => p === undefined)
         ? []
         : (parents as AxisSpecNormalized[]);
-
-      delete modifiedAxis.annotations?.[Annotation.Parents];
     }
   });
 
@@ -529,11 +542,9 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
 
 /** Create list of regular axisSpec from normalized (parents are indexes, inside of current axes list) */
 export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
-  const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+  const idsList = axesSpec.map(canonicalizeAxisId);
   return axesSpec.map((axisSpec) => {
-    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) =>
-      canonicalizeJson(getAxisId(axisSpec)),
-    );
+    const parentsIds = axisSpec.parentAxesSpec.map(canonicalizeAxisId);
     const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
     const { parentAxesSpec: _, ...copiedRest } = axisSpec;
     if (parentIdxs.length) {
@@ -541,6 +552,22 @@ export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpe
     }
     return copiedRest;
   });
+}
+
+/**
+ * Resolve annotation-based parents (`pl7.app/parents`) to numeric `parentAxes`
+ * on a column spec. Returns the spec unchanged if all axes already use numeric
+ * indices or have no parent annotations.
+ */
+export function resolveAnnotationParents(spec: PColumnSpec): PColumnSpec {
+  const hasAnnotationParents = spec.axesSpec.some(
+    (axis) => !!readAnnotationJson(axis, Annotation.Parents),
+  );
+  if (!hasAnnotationParents) return spec;
+
+  const normalized = getNormalizedAxesList(spec.axesSpec);
+  const denormalized = getDenormalizedAxesList(normalized);
+  return { ...spec, axesSpec: denormalized };
 }
 
 /** Common type representing spec for all the axes in a column */
@@ -706,7 +733,7 @@ export interface PColumnInfo extends PColumnIdAndSpec {
 export interface AxisId {
   /** Type of the axis or column value. For an axis should not use non-key
    * types like float or double. */
-  readonly type: ValueType;
+  readonly type: AxisValueType;
 
   /** Name of the axis or column */
   readonly name: string;

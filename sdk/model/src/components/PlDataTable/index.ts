@@ -12,7 +12,7 @@ export type {
   PlDataTableModel,
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
-} from "./v5";
+} from "./typesV5";
 
 export type { PlDataTableStateV2 } from "./state-migration";
 export {
@@ -21,9 +21,22 @@ export {
   createPlDataTableStateV2,
 } from "./state-migration";
 
+export { createPlDataTableSheet } from "./createPlDataTableSheet";
+export { createPlDataTable, discoverTableColumnSnaphots } from "./createPlDataTable";
+export { createPlDataTableV2 } from "./createPlDataTable/createPlDataTableV2";
+export { createPlDataTableV3 } from "./createPlDataTable/createPlDataTableV3";
 export {
   isColumnHidden,
   isColumnOptional,
-  createPlDataTableV2,
-  createPlDataTableSheet,
-} from "./table";
+  getOrderPriority,
+  getEffectiveVisibility,
+} from "./createPlDataTable/utils";
+
+export type {
+  ColumnsDisplayOptions,
+  ColumnOrderRule,
+  ColumnVisibilityRule,
+  ColumnMatcher,
+  ColumnsSelectorConfig,
+  createPlDataTableOptionsV3,
+} from "./createPlDataTable/createPlDataTableV3";

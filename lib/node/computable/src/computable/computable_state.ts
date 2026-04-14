@@ -208,6 +208,9 @@ interface SelfCellState<T> {
    * It needs to be hierarchical since it's included in the watcher.
    */
   readonly selfWatcher: HierarchicalWatcher;
+
+  /** Sync phase timing (ms). Only populated when onRecalculation is set on the kernel ops. */
+  readonly _syncMs?: number;
 }
 
 type ChildrenStates = Map<string | symbol, ChildStateEnvelop<unknown, unknown>>;
@@ -392,6 +395,9 @@ function renderSelfState<T>(
   // Creating self watcher, to inject it into rendering process
   const selfWatcher = new HierarchicalWatcher();
 
+  const measure = kernel.ops.onRecalculation !== undefined;
+  const t0 = measure ? performance.now() : 0;
+
   // Do rendering
   try {
     // stable by default
@@ -404,9 +410,11 @@ function renderSelfState<T>(
     // running main kernel callback
     const iResult = kernel.___kernel___(ctx);
 
-    return { kernel, ctx, selfWatcher, iResult };
+    const _syncMs = measure ? performance.now() - t0 : undefined;
+    return { kernel, ctx, selfWatcher, iResult, _syncMs };
   } catch (error: unknown) {
-    return { kernel, ctx, selfWatcher, iResult: { error } };
+    const _syncMs = measure ? performance.now() - t0 : undefined;
+    return { kernel, ctx, selfWatcher, iResult: { error }, _syncMs };
   } finally {
     // reset call-specific state
     ctx.afterCall();
@@ -530,11 +538,15 @@ function finalizeCellState<T>(
 async function calculateValue<T>(state_: CellState<T>): Promise<void> {
   if (!state_.valueNotCalculated) return;
 
+  const onRecalculation = state_.selfState.kernel.ops.onRecalculation;
+
+  const tChildren = onRecalculation ? performance.now() : 0;
   await Promise.all(
     [...state_.childrenStates.values()]
       .filter(({ orphan }) => !orphan)
       .map(({ state }) => calculateValue(state)),
   );
+  const childrenMs = onRecalculation ? performance.now() - tChildren : 0;
 
   // collecting errors after all postProcessing steps are executed for out children
   const allErrors: unknown[] = [];
@@ -552,9 +564,22 @@ async function calculateValue<T>(state_: CellState<T>): Promise<void> {
   (state_ as Writable<typeof state_>).allErrors = allErrors;
   (state_ as Writable<typeof state_>).unstableMarker = unstableMarker;
 
+  const tPost = onRecalculation ? performance.now() : 0;
   const previousValue = state_.value;
   delete state_.value;
   await fillCellValue(state_, previousValue);
+  const postprocessMs = onRecalculation ? performance.now() - tPost : 0;
+
+  if (onRecalculation) {
+    onRecalculation({
+      syncMs: state_.selfState._syncMs ?? 0,
+      asyncMs: childrenMs + postprocessMs,
+      childrenMs,
+      postprocessMs,
+      childCount: state_.childrenStates.size,
+      stable: state_.stable,
+    });
+  }
 }
 
 /** First (sync) stage of rendering pipeline */

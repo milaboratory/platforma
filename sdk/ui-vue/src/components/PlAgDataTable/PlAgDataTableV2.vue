@@ -119,7 +119,7 @@ const emit = defineEmits<{
 
 const dataRenderedTracker = new DeferredCircular<GridApi<PlAgDataTableV2Row>>();
 const { gridApi, gridOptions } = useGrid({
-  selection: selection.value,
+  selection,
   noRowsText: props.noRowsText,
   runningText: props.runningText,
   loadingText: props.loadingText,
@@ -234,10 +234,11 @@ function normalizeColumnVisibility(
 function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
   const cols = api.getAllGridColumns();
   if (!cols) return [];
+
   return cols
     .filter((col) => {
       const spec = col.getColDef().context as PTableColumnSpec | undefined;
-      return spec && isColumnOptional(spec.spec);
+      return spec !== undefined && spec.type === "column" && isColumnOptional(spec.spec);
     })
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }

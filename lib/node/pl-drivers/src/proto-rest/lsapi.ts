@@ -35,59 +35,64 @@ export interface components {
       /** @description resource_id of 'LS/<Storage>' resource */
       resourceId: string;
       /**
-       * @description location to list, absolute to storage root. Only items, that have <full_name> starting
-       *      from <location> are included into list response.
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description Location to list, relative to the storage root. Only items that have <full_name> starting
+       *      with <location> are included in the list response.
        */
       location: string;
     };
     List_Response: {
       /**
-       * @description List of the full (absolute to storage root) names of items from storage.
+       * @description List of the full (relative to storage root) names of items from storage.
        *      E.g., for 'fs' storage each name will consist of names of all directories, where the
        *      item is located, and the item name itself.
        *      The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
        */
       items: components["schemas"]["LsAPI_ListItem"][];
       /**
-       * @description delimiter is path separator, used in this storage. Client can use it to parse item names into parts,
+       * @description The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
        *      to extract directory names.
        */
       delimiter: string;
     };
     LsAPI_ListItem: {
-      /** @description name of the item in storage, without any prefixes */
+      /** @description Name of the item in storage, without any prefixes. */
       name: string;
       /**
-       * @description size of item in bytes
-       *      is always zero for directories (is_dir = true)
+       * @description Size of the item in bytes.
+       *      Is always zero for directories (is_dir = true).
        */
       size: string;
-      /** @description is_dir is true for item, that can have subitems. */
+      /** @description is_dir is true for an item that can have subitems. */
       isDir: boolean;
       /**
-       * @description full_name is the name of item absolute to storage root.
-       *      it is <directory> + <name>
+       * @description full_name is the full name of the item, relative to the storage root.
+       *      It is <directory> + <name>.
        *      The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
        */
       fullName: string;
       /**
-       * @description directory, the item is located in. The value here is always a prefix of name:
+       * @description The directory the item is located in. The value here is always a prefix of name:
        *      name.HasPrefix(directory) is always true.
        */
       directory: string;
       /**
        * Format: date-time
-       * @description last_modified keeps the item last modification timestamp
+       * @description last_modified keeps the item's last modification timestamp.
        */
       lastModified: string;
       /**
-       * @description version of item in storage.
-       *      When storage supports versioning or provides checksums for the data stored,
+       * @description Version of item in storage.
+       *      When the storage supports versioning or provides checksums for the data stored,
        *      the <version> field keeps that data.
-       *      If not - it keeps the any simple combination of item attributes, that helps to
-       *      detect if the contents of item has changed, e.g. <size>+<mtime>.
-       *      Anyway, client should not try to interpret this field, but should provide it to the Platform
-       *      in operations with given item (like BlobImportInternal) to help Platform with deduplication.
+       *      If not, it keeps any simple combination of item attributes that helps to
+       *      detect if the contents of the item have changed, e.g. <size>+<mtime>.
+       *      Anyway, the client should not try to interpret this field, but should provide it to the Platform
+       *      in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
        */
       version: string;
     };

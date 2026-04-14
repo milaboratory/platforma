@@ -31,9 +31,14 @@ export interface components {
     GetDownloadURL_Request: {
       resourceId: string;
       /**
-       * @description Pass `true` here if the blob will be downloaded from internal network,
-       *      e.g. controllers could use this if they are trying to download something from internal network.
-       *      For backward compatibility, by default pl treats all requests as from external network.
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description Pass `true` here if the blob will be downloaded from the internal network,
+       *      e.g. controllers could use this if they are trying to download something from the internal network.
+       *      For backward compatibility, by default pl treats all requests as from the external network.
        */
       isInternalUse: boolean;
     };

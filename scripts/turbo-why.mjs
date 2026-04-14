@@ -13,7 +13,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { styleText } from "node:util";
 
@@ -149,7 +149,6 @@ function analyse(data) {
   const realTasks = tasks.filter((t) => t.command !== "<NONEXISTENT>");
   const skipped = tasks.length - realTasks.length;
 
-  const byId = new Map(realTasks.map((t) => [t.taskId, t]));
   const hits = realTasks.filter((t) => t.cache.status === "HIT");
   const misses = realTasks.filter((t) => t.cache.status !== "HIT");
 
@@ -163,6 +162,11 @@ function analyse(data) {
       (skipped ? `  ${dim(`(${skipped} skipped — no script)`)}` : ""),
   );
 
+  const globalExtDeps = data.globalCacheInputs?.hashOfExternalDependencies;
+  if (globalExtDeps) {
+    console.log(dim(`Global extDeps: ${globalExtDeps}`));
+  }
+
   if (!misses.length) {
     const saved = hits.reduce((s, t) => s + (t.cache.timeSaved ?? 0), 0);
     console.log(
@@ -172,6 +176,7 @@ function analyse(data) {
   }
 
   // ── dependency graph among misses ────────────────────────────────────
+  const taskMap = new Map(realTasks.map((t) => [t.taskId, t]));
   const missIds = new Set(misses.map((t) => t.taskId));
 
   const rootCauses = [];
@@ -205,10 +210,52 @@ function analyse(data) {
     const tid = rc.taskId;
     console.log(`  ${boldRed(short(tid))}  ${dim(`hash: ${rc.hash}`)}`);
 
-    // input file count
-    const inputCount = Object.keys(rc.inputs ?? {}).length;
+    // dependency hashes (HIT deps that contribute to this task's hash)
+    const deps = rc.dependencies ?? [];
+    if (deps.length) {
+      const depInfo = deps
+        .map((d) => {
+          const dt = taskMap.get(d);
+          if (!dt) return null;
+          return `${short(d)}=${dt.hash?.slice(0, 12) ?? "?"}`;
+        })
+        .filter(Boolean)
+        .join(", ");
+      if (depInfo) console.log(dim(`    deps: ${depInfo}`));
+    }
+
+    // task-level external dependencies hash
+    if (rc.hashOfExternalDependencies) {
+      console.log(dim(`    extDeps: ${rc.hashOfExternalDependencies}`));
+    }
+
+    // input files grouped by recency
+    const inputs = rc.inputs ?? {};
+    const inputCount = Object.keys(inputs).length;
     if (inputCount) {
       console.log(dim(`    ${inputCount} input files`));
+
+      const now = Date.now();
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      const recent = [];
+      for (const filePath of Object.keys(inputs)) {
+        try {
+          const mtime = statSync(filePath).mtimeMs;
+          if (now - mtime <= ONE_DAY) {
+            recent.push({ filePath, hash: inputs[filePath], mtime });
+          }
+        } catch {
+          // file may not exist (generated/deleted)
+        }
+      }
+
+      if (recent.length) {
+        console.log(yellow(`    Changed in last 24h (${recent.length}):`));
+        for (const f of recent.sort((a, b) => b.mtime - a.mtime)) {
+          const time = new Date(f.mtime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+          console.log(dim(`      ${f.hash.slice(0, 8)}  ${time}  ${f.filePath}`));
+        }
+      }
     }
 
     // env vars

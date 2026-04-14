@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 2.0.0
+
+### Major Changes
+
+- cad9688: Fix "go to definition" + update build deps
+
 ## 1.5.2
 
 ### Patch Changes

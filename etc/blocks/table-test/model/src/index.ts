@@ -1,8 +1,10 @@
 import {
   BlockModelV3,
   DataModelBuilder,
+  PObjectId,
+  PlDataTableFilters,
   createPlDataTableStateV2,
-  createPlDataTableV2,
+  createPlDataTableV3,
   type InferHrefType,
   type InferOutputsType,
   type PlDataTableStateV2,
@@ -28,21 +30,73 @@ export const platforma = BlockModelV3.create(blockDataModel)
       {
         type: "link",
         href: "/",
-        label: "Main",
+        label: "Table V3",
       },
     ];
   })
 
   .title((ctx) => ctx.args?.label || "Table Test")
 
-  .outputWithStatus("table", (ctx) => {
-    const pf = ctx.outputs?.resolve("tableFrame");
-    if (!pf) return undefined;
+  .outputWithStatus("tableV3", (ctx) => {
+    return createPlDataTableV3(ctx, {
+      tableState: ctx.data.tableState,
 
-    const columns = pf.getPColumns();
-    if (!columns || columns.length === 0) return undefined;
+      sorting: [
+        {
+          column: {
+            type: "column",
+            id: '{"name":"value","resolvePath":["main","tableFrame"]}' as PObjectId,
+          },
+          ascending: true,
+          naAndAbsentAreLeastValues: true,
+        },
+      ],
+      filters: {
+        type: "and",
+        filters: [
+          {
+            type: "greaterThan",
+            column:
+              '{"type":"column","id":"{\\"name\\":\\"value\\",\\"resolvePath\\":[\\"main\\",\\"tableFrame\\"]}"}',
+            x: 11,
+          },
+        ],
+      } as PlDataTableFilters,
 
-    return createPlDataTableV2(ctx, columns, ctx.data.tableState);
+      discoverColumnOptions: {
+        anchors: {
+          main: {
+            name: "value",
+            axes: [{ name: "name" }],
+          },
+        },
+        columnsSelector: {
+          mode: "related",
+          maxHops: 4,
+        },
+      },
+
+      labelsOptions: {
+        // Custom linker label formatter to verify linker path labels in the UI.
+        // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
+        linkerLabelFormatter: (linkerLabels) => `[${linkerLabels.join(" > ")}]`,
+      },
+      columnsDisplayOptions: {
+        ordering: [
+          // "category" leftmost (highest priority)
+          { match: (spec) => spec.name === "category", priority: 20 },
+          // Then "value"
+          { match: (spec) => spec.name === "value", priority: 10 },
+          // Unmatched columns (score, note) keep their original order
+        ],
+        visibility: [
+          // "note" hidden by default (user can re-enable in UI)
+          { match: (spec) => spec.name === "note", visibility: "hidden" },
+          // "score" optional — hidden by default but toggleable
+          { match: (spec) => spec.name === "score", visibility: "optional" },
+        ],
+      },
+    });
   })
 
   .done();

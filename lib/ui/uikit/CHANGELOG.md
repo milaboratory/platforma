@@ -1,5 +1,92 @@
 # @milaboratories/uikit
 
+## 2.11.9
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/model@1.64.0
+
+## 2.11.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.12
+
+## 2.11.7
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
+## 2.11.6
+
+### Patch Changes
+
+- Updated dependencies [6dc9e0d]
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
+## 2.11.5
+
+### Patch Changes
+
+- Updated dependencies [5becf87]
+  - @platforma-sdk/model@1.63.0
+
+## 2.11.4
+
+### Patch Changes
+
+- Updated dependencies [74a2ffa]
+  - @platforma-sdk/model@1.62.0
+
+## 2.11.3
+
+### Patch Changes
+
+- Updated dependencies [616323d]
+  - @platforma-sdk/model@1.61.1
+
+## 2.11.2
+
+### Patch Changes
+
+- Updated dependencies [cfee265]
+  - @platforma-sdk/model@1.61.0
+
+## 2.11.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.60.2
+
+## 2.11.0
+
+### Minor Changes
+
+- d59f5fe: New collection columns implementation
+
+### Patch Changes
+
+- Updated dependencies [d59f5fe]
+  - @milaboratories/helpers@1.14.0
+  - @platforma-sdk/model@1.60.0
+
+## 2.10.46
+
+### Patch Changes
+
+- 68bc3e4: update uikit file/number input
+
+## 2.10.45
+
+### Patch Changes
+
+- @platforma-sdk/model@1.59.3
+
 ## 2.10.44
 
 ### Patch Changes
