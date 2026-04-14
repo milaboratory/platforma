@@ -60,21 +60,21 @@ TestBuildLinkedSelectorNoDomain := func() {
 TestPickStringDomain := func() {
 	test.isTrue(is_undefined(pSpec.pickStringDomain(undefined)))
 	test.isTrue(is_undefined(pSpec.pickStringDomain({})))
-	test.isEqual({ "a": "1" }, pSpec.pickStringDomain({ "a": "1", "b": 2 }))
-	test.isEqual({ "a": "1", "c": "3" }, pSpec.pickStringDomain({ "a": "1", "b": 2, "c": "3" }))
+	test.isEqual({ "a": "1" }, pSpec.pickStringDomain({ "a": "1" }))
+	test.isEqual({ "a": "1", "c": "3" }, pSpec.pickStringDomain({ "a": "1", "c": "3" }))
 }
 
 TestMakeColumnKey := func() {
 	spec1 := { name: "col1" }
 	spec2 := { name: "col1", domain: { "pl7.app/block": "b1" } }
-	spec3 := { name: "col1", domain: { "numericOnly": 42 } }
+	spec3 := { name: "col1", domain: {} }
 
 	key1 := pSpec.makeColumnKey(spec1)
 	key2 := pSpec.makeColumnKey(spec2)
 	key3 := pSpec.makeColumnKey(spec3)
 
-	// Same name without domain should produce same key
-	test.isEqual(key1, key3) // numeric domain is filtered out
-	// Different domain should produce different key
+	// Empty domain treated as absent
+	test.isEqual(key1, key3)
+	// Non-empty domain produces different key
 	test.isTrue(key1 != key2)
 }

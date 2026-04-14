@@ -588,21 +588,11 @@ getAxisId := func(axisSpec) {
 	return canonical.encode(id)
 }
 
-// Returns only string-valued entries from a domain map, or undefined if empty.
 pickStringDomain := func(domain) {
-	if is_undefined(domain) {
+	if is_undefined(domain) || len(domain) == 0 {
 		return undefined
 	}
-	out := {}
-	for k, v in domain {
-		if is_string(v) {
-			out[k] = v
-		}
-	}
-	if len(out) == 0 {
-		return undefined
-	}
-	return out
+	return domain
 }
 
 // Canonical key for a column spec, suitable for stable label lookups.
