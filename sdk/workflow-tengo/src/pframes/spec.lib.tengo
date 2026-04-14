@@ -588,14 +588,6 @@ getAxisId := func(axisSpec) {
 	return canonical.encode(id)
 }
 
-makeColumnKey := func(spec) {
-	keyObj := { name: spec.name }
-	if !is_undefined(spec.domain) && len(spec.domain) > 0 {
-		keyObj.domain = spec.domain
-	}
-	return canonical.encode(keyObj)
-}
-
 export ll.toStrict({
 	P_UNTYPED_SPEC_SCHEMA: P_UNTYPED_SPEC_SCHEMA,
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
@@ -625,8 +617,6 @@ export ll.toStrict({
 	prepareAxisFiltersAndAxesSpec: prepareAxisFiltersAndAxesSpec,
 	axisSpecToMatcher: axisSpecToMatcher,
 
-	getAxisId: getAxisId,
-
-	makeColumnKey: makeColumnKey
+	getAxisId: getAxisId
 })
 
