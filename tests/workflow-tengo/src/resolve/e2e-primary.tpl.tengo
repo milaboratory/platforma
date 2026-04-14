@@ -1,0 +1,40 @@
+// End-to-end test: resolve a PrimaryRef via wf.resolve() deep-walk,
+// pass the resolved column to an ephemeral template that uses awaitState.
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+wf.prepare(func(args) {
+	// PrimaryRef with a PlRef pointing to export "e2" from block "b1"
+	primaryRef := {
+		__isPrimaryRef: "v1",
+		column: {
+			__isRef: true,
+			blockId: "b1",
+			name: "e2"
+		}
+	}
+
+	// Deep-walk resolve: replaces the nested PlRef with { spec, data }
+	resolved := wf.resolve(primaryRef)
+
+	// Pass resolved column to ephemeral reader template
+	reader := assets.importTemplate(":resolve.e2e-primary-reader")
+	run := render.createEphemeral(reader, {
+		column: resolved.column
+	})
+
+	return {
+		specResult: run.output("main")
+	}
+})
+
+wf.body(func(args) {
+	return {
+		outputs: {
+			main: args.specResult
+		},
+		exports: {}
+	}
+})

@@ -191,8 +191,8 @@ await since resolved primaries don't carry top-level `ref`.
 - [x] `wf.resolve({ noRefs: "here" })` panics
 - [x] `wf.resolve({ a: plRef1, b: [plRef2] })` resolves both
 - [x] `tpl.awaitState("x", "PrimarySpecsReady")` registers
-- [ ] Template body runs when specs ready, data still computing
-- [ ] End-to-end: resolve a PrimaryRef, pass to ephemeral
+- [x] Template body runs when specs ready, data still computing
+- [x] End-to-end: resolve a PrimaryRef, pass to ephemeral
       template, awaitState proceeds when specs resolve
 
 ---
