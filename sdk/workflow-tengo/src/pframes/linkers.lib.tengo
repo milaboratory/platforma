@@ -10,19 +10,26 @@ ll := import(":ll")
 validation := import(":validation")
 pSpec := import(":pframes.spec")
 
+optionalDomain := func(domain) {
+	if is_undefined(domain) || len(domain) == 0 {
+		return undefined
+	}
+	return domain
+}
+
 linkerSingleMatchQuery := func(spec) {
 	validation.assertType(spec, pSpec.P_COLUMN_SPEC_SCHEMA)
 	axes := []
 	for axis in spec.axesSpec {
 		entry := { name: axis.name, type: axis.type }
-		domain := pSpec.pickStringDomain(axis.domain)
+		domain := optionalDomain(axis.domain)
 		if !is_undefined(domain) {
 			entry.domain = domain
 		}
 		axes = append(axes, entry)
 	}
 	selector := { name: spec.name, axes: axes }
-	colDomain := pSpec.pickStringDomain(spec.domain)
+	colDomain := optionalDomain(spec.domain)
 	if !is_undefined(colDomain) {
 		selector.domain = colDomain
 	}
@@ -32,7 +39,7 @@ linkerSingleMatchQuery := func(spec) {
 buildLinkedSelector := func(axisSpec) {
 	validation.assertType(axisSpec, pSpec.P_AXIS_SPEC_SCHEMA)
 	entry := { name: axisSpec.name, type: axisSpec.type }
-	domain := pSpec.pickStringDomain(axisSpec.domain)
+	domain := optionalDomain(axisSpec.domain)
 	if !is_undefined(domain) {
 		entry.domain = domain
 	}

@@ -588,19 +588,10 @@ getAxisId := func(axisSpec) {
 	return canonical.encode(id)
 }
 
-pickStringDomain := func(domain) {
-	if is_undefined(domain) || len(domain) == 0 {
-		return undefined
-	}
-	return domain
-}
-
-// Canonical key for a column spec, suitable for stable label lookups.
 makeColumnKey := func(spec) {
 	keyObj := { name: spec.name }
-	colDomain := pickStringDomain(spec.domain)
-	if !is_undefined(colDomain) {
-		keyObj.domain = colDomain
+	if !is_undefined(spec.domain) && len(spec.domain) > 0 {
+		keyObj.domain = spec.domain
 	}
 	return canonical.encode(keyObj)
 }
@@ -636,7 +627,6 @@ export ll.toStrict({
 
 	getAxisId: getAxisId,
 
-	pickStringDomain: pickStringDomain,
 	makeColumnKey: makeColumnKey
 })
 

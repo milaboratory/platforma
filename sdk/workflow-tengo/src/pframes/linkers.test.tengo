@@ -57,13 +57,6 @@ TestBuildLinkedSelectorNoDomain := func() {
 	test.isTrue(is_undefined(result.axes[0].domain))
 }
 
-TestPickStringDomain := func() {
-	test.isTrue(is_undefined(pSpec.pickStringDomain(undefined)))
-	test.isTrue(is_undefined(pSpec.pickStringDomain({})))
-	test.isEqual({ "a": "1" }, pSpec.pickStringDomain({ "a": "1" }))
-	test.isEqual({ "a": "1", "c": "3" }, pSpec.pickStringDomain({ "a": "1", "c": "3" }))
-}
-
 TestMakeColumnKey := func() {
 	spec1 := { name: "col1" }
 	spec2 := { name: "col1", domain: { "pl7.app/block": "b1" } }
