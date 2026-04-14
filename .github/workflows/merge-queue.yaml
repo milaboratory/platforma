@@ -31,21 +31,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Enable pnpm
-        run: corepack enable pnpm
-
-      - name: Install dependencies
-        env:
-          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm install --frozen-lockfile --prefer-offline
-
       - name: Check changeset status
-        run: pnpm changeset status --since=origin/main
+        run: npx @changesets/cli status --since=origin/main
 
   build:
     needs: [init, check-changesets]
