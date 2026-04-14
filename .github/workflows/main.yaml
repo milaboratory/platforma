@@ -75,12 +75,14 @@ jobs:
     secrets: inherit
 
   # ──────────────────────────────────────────────
-  # 5. Publish
+  # 5. Version packages
   # ──────────────────────────────────────────────
-  publish:
+  version-packages:
     runs-on: dev-pl-sdk
     needs: [init, build, test, check-changesets]
     if: ${{ !failure() && !cancelled() && needs.check-changesets.result == 'success' }}
+    outputs:
+      has-changes: ${{ steps.check-changes.outputs.has-changes }}
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -106,6 +108,63 @@ jobs:
       - name: Run changeset version
         run: pnpm run version-packages
 
+      - name: Check for changes
+        id: check-changes
+        run: |
+          TRACKED=$(git diff --diff-filter=ACMUXTR --name-only)
+          UNTRACKED=$(git ls-files --others --exclude-standard)
+          DELETED=$(git ls-files --deleted)
+
+          if [ -n "$TRACKED" ] || [ -n "$UNTRACKED" ] || [ -n "$DELETED" ]; then
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected after changeset version"
+          else
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
+            echo "No changes — nothing to publish"
+          fi
+
+      - name: Get GitHub App User ID
+        if: steps.check-changes.outputs.has-changes == 'true'
+        id: get-user-id
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push version changes
+        if: steps.check-changes.outputs.has-changes == 'true'
+        env:
+          USER_ID: ${{ steps.get-user-id.outputs.user-id }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          git config --global user.name "${APP_SLUG}[bot]"
+          git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git checkout main
+          git add .
+          git commit -m "Version packages [skip ci]"
+          git push
+
+  # ──────────────────────────────────────────────
+  # 6. Publish
+  # ──────────────────────────────────────────────
+  publish:
+    runs-on: dev-pl-sdk
+    needs: [version-packages]
+    if: ${{ needs.version-packages.outputs.has-changes == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
       - name: Build for publish (full, non-local)
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
@@ -115,42 +174,7 @@ jobs:
       - name: Security scan
         uses: milaboratory/github-ci/actions/docker/scan-pnpm-repo@v4
 
-      - name: Check for auto-generated changes
-        id: check-changes
-        run: |
-          TRACKED=$(git diff --diff-filter=ACMUXTR --name-only)
-          UNTRACKED=$(git ls-files --others --exclude-standard)
-          DELETED=$(git ls-files --deleted)
-
-          if [ -n "$TRACKED" ] || [ -n "$UNTRACKED" ] || [ -n "$DELETED" ]; then
-            echo "has-changes=1" >> "$GITHUB_OUTPUT"
-            echo "Auto-generated changes detected"
-          else
-            echo "has-changes=0" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Get GitHub App User ID
-        if: steps.check-changes.outputs.has-changes == '1'
-        id: get-user-id
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
-
-      - name: Commit auto-generated changes
-        if: steps.check-changes.outputs.has-changes == '1'
-        env:
-          USER_ID: ${{ steps.get-user-id.outputs.user-id }}
-          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: |
-          git config --global user.name "${APP_SLUG}[bot]"
-          git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
-          git checkout main
-          git add .
-          git commit -m "Auto-generated changes"
-          git push
-
       - name: Publish packages (public)
-        if: steps.check-changes.outputs.has-changes == '0'
         uses: changesets/action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -160,12 +184,12 @@ jobs:
           publish: pnpm -r publish --no-git-checks --access public
 
   # ──────────────────────────────────────────────
-  # 6. Notify
+  # 7. Notify
   # ──────────────────────────────────────────────
   notify:
     runs-on: ubuntu-latest
     if: always()
-    needs: [init, check-changesets, build, test, publish]
+    needs: [init, check-changesets, build, test, version-packages, publish]
     steps:
       - id: search-tags
         uses: milaboratory/github-ci/actions/strings/json-list@v4
@@ -179,6 +203,7 @@ jobs:
           job-status: |
             ${{ needs.build.result }}
             ${{ needs.test.result }}
+            ${{ needs.version-packages.result }}
             ${{ needs.publish.result }}
             ${{ needs.check-changesets.result }}
           product-name: Platforma SDK
