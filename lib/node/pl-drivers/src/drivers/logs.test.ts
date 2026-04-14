@@ -272,7 +272,6 @@ function createRunCommand(
     redirectStdout: "logs.txt",
     redirectStderr: "logs.txt",
     envs: [],
-    dockerImageTag: "busybox",
   };
   if (useDocker) {
     optsData.dockerImageTag = "busybox";
