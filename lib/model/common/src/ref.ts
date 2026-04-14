@@ -97,6 +97,25 @@ export function withEnrichments(ref: PlRef, requireEnrichments: boolean = true):
   }
 }
 
+/**
+ * Primary dataset + optional filter, stored in block args.
+ * `column` carries `requireEnrichments: true` by convention.
+ * The dependency scanner deep-scans for `__isRef: true` and
+ * finds nested PlRefs without changes.
+ */
+export type PrimaryRef = {
+  readonly __isPrimaryRef: "v1";
+  readonly column: PlRef;
+  readonly filter?: PlRef;
+};
+
+export function isPrimaryRef(value: unknown): value is PrimaryRef {
+  return typeof value === "object" && value !== null && "__isPrimaryRef" in value;
+}
+
+/** Block args accept either form — backward compatible. */
+export type DatasetInput = PlRef | PrimaryRef;
+
 /** Compare two PlRefs and returns true if they are qual */
 export function plRefsEqual(ref1: PlRef, ref2: PlRef, ignoreEnrichments: boolean = false) {
   return (

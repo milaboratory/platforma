@@ -40,7 +40,7 @@ nested PlRefs inside PrimaryRef without changes.
 ## Implementation Checklist
 
 - [x] **Stage A** — Workflow Resolution Layer (R4, R5)
-- [ ] **Stage B** — PrimaryRef Types (R1, R2, R3)
+- [x] **Stage B** — PrimaryRef Types (R1, R2, R3)
 - [ ] **Stage C** — Filter Discovery (R6, R7)
 - [ ] **Stage D** — tableBuilder (R9-R12, R14) — BLOCKED
 - [ ] **Stage E** — PlDatasetSelector (R8)
@@ -201,7 +201,7 @@ await since resolved primaries don't carry top-level `ref`.
 
 **Depends on:** nothing | **Status:** ready
 
-**Delivers:** `PrimaryRef` Zod schema, `isPrimaryRef()` guard,
+**Delivers:** `PrimaryRef` type, `isPrimaryRef()` guard,
 `DatasetInput` union in `pl-model-common`. Consumed by all
 downstream stages and phase 06.
 
@@ -209,14 +209,11 @@ downstream stages and phase 06.
 `index.ts` already re-exports via `export * from "./ref"`.
 
 ```typescript
-export const PrimaryRef = z
-  .object({
-    __isPrimaryRef: z.literal("v1"),
-    column: PlRef,
-    filter: PlRef.optional(),
-  })
-  .readonly();
-export type PrimaryRef = z.infer<typeof PrimaryRef>;
+export type PrimaryRef = {
+  readonly __isPrimaryRef: "v1";
+  readonly column: PlRef;
+  readonly filter?: PlRef;
+};
 
 export function isPrimaryRef(
   value: unknown,
@@ -233,13 +230,13 @@ export type DatasetInput = PlRef | PrimaryRef;
 
 ### Verification — Stage B
 
-- [ ] `isPrimaryRef({ __isPrimaryRef: "v1", column: ref })`
+- [x] `isPrimaryRef({ __isPrimaryRef: "v1", column: ref })`
       returns `true`
-- [ ] `isPrimaryRef(somePlRef)` returns `false`
-- [ ] `isPlRef(somePrimaryRef)` returns `false`
-- [ ] Dependency scanner finds `__isRef: true` inside nested
+- [x] `isPrimaryRef(somePlRef)` returns `false`
+- [x] `isPlRef(somePrimaryRef)` returns `false`
+- [x] Dependency scanner finds `__isRef: true` inside nested
       `column` and `filter` fields
-- [ ] Existing code using `PlRef` compiles unchanged
+- [x] Existing code using `PlRef` compiles unchanged
 
 ---
 
