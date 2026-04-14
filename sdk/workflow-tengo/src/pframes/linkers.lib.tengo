@@ -1,0 +1,46 @@
+/**
+ * Linker column utilities.
+ *
+ * Linker columns bridge two axes (e.g. clonotypeKey ↔ clusterId).
+ * These functions build selectors for discovering linkers and their
+ * linked columns via the PBundleBuilder.
+ */
+
+ll := import(":ll")
+pSpec := import(":pframes.spec")
+
+// Builds a single-match selector from a linker column spec.
+// The selector uniquely identifies the column by name, axes (name+type+domain),
+// and column domain.
+linkerSingleMatchQuery := func(spec) {
+	axes := []
+	for axis in spec.axesSpec {
+		entry := { name: axis.name, type: axis.type }
+		domain := pSpec.pickStringDomain(axis.domain)
+		if !is_undefined(domain) {
+			entry.domain = domain
+		}
+		axes = append(axes, entry)
+	}
+	selector := { name: spec.name, axes: axes }
+	colDomain := pSpec.pickStringDomain(spec.domain)
+	if !is_undefined(colDomain) {
+		selector.domain = colDomain
+	}
+	return selector
+}
+
+// Builds a multi-match selector for columns sharing a given axis.
+buildLinkedSelector := func(axisSpec) {
+	entry := { name: axisSpec.name, type: axisSpec.type }
+	domain := pSpec.pickStringDomain(axisSpec.domain)
+	if !is_undefined(domain) {
+		entry.domain = domain
+	}
+	return { axes: [entry] }
+}
+
+export ll.toStrict({
+	linkerSingleMatchQuery: linkerSingleMatchQuery,
+	buildLinkedSelector: buildLinkedSelector
+})

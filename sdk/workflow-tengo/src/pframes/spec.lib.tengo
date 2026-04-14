@@ -588,6 +588,33 @@ getAxisId := func(axisSpec) {
 	return canonical.encode(id)
 }
 
+// Returns only string-valued entries from a domain map, or undefined if empty.
+pickStringDomain := func(domain) {
+	if is_undefined(domain) {
+		return undefined
+	}
+	out := {}
+	for k, v in domain {
+		if is_string(v) {
+			out[k] = v
+		}
+	}
+	if len(out) == 0 {
+		return undefined
+	}
+	return out
+}
+
+// Canonical key for a column spec, suitable for stable label lookups.
+makeColumnKey := func(spec) {
+	keyObj := { name: spec.name }
+	colDomain := pickStringDomain(spec.domain)
+	if !is_undefined(colDomain) {
+		keyObj.domain = colDomain
+	}
+	return canonical.encode(keyObj)
+}
+
 export ll.toStrict({
 	P_UNTYPED_SPEC_SCHEMA: P_UNTYPED_SPEC_SCHEMA,
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
@@ -617,6 +644,9 @@ export ll.toStrict({
 	prepareAxisFiltersAndAxesSpec: prepareAxisFiltersAndAxesSpec,
 	axisSpecToMatcher: axisSpecToMatcher,
 
-	getAxisId: getAxisId
+	getAxisId: getAxisId,
+
+	pickStringDomain: pickStringDomain,
+	makeColumnKey: makeColumnKey
 })
 

@@ -1,0 +1,247 @@
+/**
+ * Label derivation for PColumn specs.
+ *
+ * Port of @platforma-sdk/model deriveDistinctLabels (TypeScript).
+ * Given a list of column specs, produces unique human-readable labels
+ * by analyzing trace entries and finding the minimal set that disambiguates.
+ */
+
+json := import("json")
+text := import("text")
+
+ll := import(":ll")
+maps := import(":maps")
+slices := import(":slices")
+pSpec := import(":pframes.spec")
+
+DISTANCE_PENALTY := 0.001
+LABEL_TYPE := "__LABEL__"
+LABEL_TYPE_FULL := "__LABEL__@1"
+SEPARATOR := " / "
+
+enrichRecord := func(spec, getLabel) {
+	label := getLabel(spec)
+	traceStr := is_undefined(spec.annotations) ? undefined : spec.annotations[pSpec.A_TRACE]
+	baseTrace := []
+	if !is_undefined(traceStr) {
+		parsed := json.decode(traceStr)
+		if is_array(parsed) {
+			baseTrace = parsed
+		}
+	}
+
+	trace := []
+	if !is_undefined(label) {
+		trace = append(trace, { label: label, type: LABEL_TYPE, importance: -2 })
+	}
+	for entry in baseTrace {
+		trace = append(trace, entry)
+	}
+
+	occurrences := {}
+	reversed := []
+	for i := len(trace) - 1; i >= 0; i -= 1 {
+		entry := trace[i]
+		entryType := is_undefined(entry.type) ? "" : entry.type
+		occIdx := is_undefined(occurrences[entryType]) ? 1 : occurrences[entryType] + 1
+		occurrences[entryType] = occIdx
+		reversed = append(reversed, {
+			label: is_undefined(entry.label) ? "" : entry.label,
+			type: entryType,
+			importance: is_undefined(entry.importance) ? 0 : entry.importance,
+			fullType: entryType + "@" + string(occIdx),
+			occurrenceIndex: occIdx
+		})
+	}
+	fullTrace := []
+	for i := len(reversed) - 1; i >= 0; i -= 1 {
+		fullTrace = append(fullTrace, reversed[i])
+	}
+	return { fullTrace: fullTrace }
+}
+
+collectTypeStats := func(records) {
+	importances := {}
+	countByType := {}
+
+	for record in records {
+		traceLen := len(record.fullTrace)
+		for i, ft in record.fullTrace {
+			distance := (traceLen - i) * DISTANCE_PENALTY
+			adjusted := ft.importance - distance
+
+			countByType[ft.fullType] = is_undefined(countByType[ft.fullType]) ? 1 : countByType[ft.fullType] + 1
+
+			current := importances[ft.fullType]
+			if is_undefined(current) || adjusted > current {
+				importances[ft.fullType] = adjusted
+			}
+		}
+	}
+	return { importances: importances, countByType: countByType }
+}
+
+classifyTypes := func(stats, totalRecords) {
+	entries := []
+	for _, typeName in maps.getKeys(stats.importances) {
+		entries = append(entries, { type: typeName, importance: stats.importances[typeName] })
+	}
+	slices.quickSortInPlaceFn(entries, func(a, b) {
+		if a.importance != b.importance {
+			return a.importance > b.importance
+		}
+		return a.type < b.type
+	})
+
+	mainTypes := []
+	secondaryTypes := []
+	for entry in entries {
+		if text.has_suffix(entry.type, "@1") || stats.countByType[entry.type] == totalRecords {
+			mainTypes = append(mainTypes, entry.type)
+		} else {
+			secondaryTypes = append(secondaryTypes, entry.type)
+		}
+	}
+	return { mainTypes: mainTypes, secondaryTypes: secondaryTypes }
+}
+
+buildLabels := func(records, includedTypes, force) {
+	result := []
+	for r in records {
+		parts := []
+		for ft in r.fullTrace {
+			if !is_undefined(includedTypes[ft.fullType]) && includedTypes[ft.fullType] {
+				parts = append(parts, ft.label)
+			}
+		}
+		if len(parts) == 0 {
+			if !force {
+				return undefined
+			}
+			result = append(result, "Unlabeled")
+			continue
+		}
+		result = append(result, text.join(parts, SEPARATOR))
+	}
+	return result
+}
+
+countUnique := func(labels) {
+	if is_undefined(labels) {
+		return 0
+	}
+	seen := {}
+	for label in labels {
+		seen[label] = true
+	}
+	return len(seen)
+}
+
+setWithout := func(set, key) {
+	result := {}
+	for k, v in set {
+		if k != key && v {
+			result[k] = true
+		}
+	}
+	return result
+}
+
+minimizeTypeSet := func(typeSet, records, stats) {
+	initialResult := buildLabels(records, typeSet, false)
+	if is_undefined(initialResult) {
+		return typeSet
+	}
+	targetCardinality := countUnique(initialResult)
+	result := maps.clone(typeSet)
+
+	removable := []
+	for _, typeName in maps.getKeys(result) {
+		if !result[typeName] || typeName == LABEL_TYPE_FULL {
+			continue
+		}
+		imp := is_undefined(stats.importances[typeName]) ? 0 : stats.importances[typeName]
+		removable = append(removable, { type: typeName, importance: imp })
+	}
+	slices.quickSortInPlaceFn(removable, func(a, b) {
+		if a.importance != b.importance {
+			return a.importance < b.importance
+		}
+		return a.type < b.type
+	})
+
+	for entry in removable {
+		candidate := setWithout(result, entry.type)
+		candidateResult := buildLabels(records, candidate, false)
+		if !is_undefined(candidateResult) && countUnique(candidateResult) >= targetCardinality {
+			result = setWithout(result, entry.type)
+		}
+	}
+	return result
+}
+
+/**
+ * Derives unique labels for a list of PColumnSpecs using trace-based disambiguation.
+ *
+ * Port of @platforma-sdk/model deriveDistinctLabels with { includeNativeLabel: true }.
+ *
+ * @param specs: list of PColumnSpec objects
+ * @param getLabel: func(spec) → string|undefined, reads the display label from a spec
+ * @returns: list of distinct label strings (same order as input)
+ */
+deriveDistinctLabels := func(specs, getLabel) {
+	records := slices.map(specs, func(spec) { return enrichRecord(spec, getLabel) })
+	stats := collectTypeStats(records)
+	classified := classifyTypes(stats, len(specs))
+	mainTypes := classified.mainTypes
+	secondaryTypes := classified.secondaryTypes
+
+	build := func(typeSet, force) {
+		return buildLabels(records, typeSet, force)
+	}
+
+	if len(mainTypes) == 0 {
+		typeSet := {}
+		typeSet[LABEL_TYPE_FULL] = true
+		return build(typeSet, true)
+	}
+
+	includedCount := 0
+	additionalType := -1
+	for includedCount < len(mainTypes) {
+		currentSet := {}
+		currentSet[LABEL_TYPE_FULL] = true
+		for i := 0; i < includedCount; i += 1 {
+			currentSet[mainTypes[i]] = true
+		}
+		if additionalType >= 0 {
+			currentSet[mainTypes[additionalType]] = true
+		}
+
+		candidateResult := build(currentSet, false)
+		if !is_undefined(candidateResult) && countUnique(candidateResult) == len(specs) {
+			minimized := minimizeTypeSet(currentSet, records, stats)
+			return build(minimized, false)
+		}
+
+		additionalType += 1
+		if additionalType >= len(mainTypes) {
+			includedCount += 1
+			additionalType = includedCount
+		}
+	}
+
+	fallbackSet := {}
+	for _, t in mainTypes {
+		fallbackSet[t] = true
+	}
+	for _, t in secondaryTypes {
+		fallbackSet[t] = true
+	}
+	minimized := minimizeTypeSet(fallbackSet, records, stats)
+	return build(minimized, true)
+}
+
+export ll.toStrict({
+	deriveDistinctLabels: deriveDistinctLabels
+})
