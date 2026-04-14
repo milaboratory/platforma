@@ -1,0 +1,107 @@
+name: 'Setup platforma environment'
+description: 'Node.js + pnpm + Turbo S3 cache + Docker logins + pnpm install'
+
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '22'
+  npmjs-token:
+    description: 'NPM registry auth token'
+    required: true
+  github-token:
+    description: 'GitHub token for npm.pkg.github.com'
+    required: true
+  aws-iam-role:
+    description: 'AWS IAM role ARN for OIDC. Enables Turbo S3 cache, ECR login.'
+    required: false
+    default: ''
+  aws-region:
+    description: 'AWS region'
+    required: false
+    default: 'eu-central-1'
+  turbo-s3-bucket:
+    description: 'S3 bucket for Turbo remote cache'
+    required: false
+    default: ''
+  turbo-team-id:
+    description: 'Turbo team ID (controls cache directory)'
+    required: false
+    default: 'ci-010101'
+  quay-username:
+    description: 'Quay.io username for Docker login'
+    required: false
+    default: ''
+  quay-robot-token:
+    description: 'Quay.io robot token for Docker login'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Enable pnpm via corepack
+      shell: bash
+      run: corepack enable pnpm
+
+    - name: Get pnpm store directory
+      id: pnpm-cache
+      shell: bash
+      run: echo "store-path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-cache.outputs.store-path }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-store-${{ runner.os }}-
+
+    - name: Configure AWS credentials
+      if: inputs.aws-iam-role != ''
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws-iam-role }}
+        role-duration-seconds: 3600
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Login to ECR
+      if: inputs.aws-iam-role != ''
+      uses: aws-actions/amazon-ecr-login@v2
+      with:
+        mask-password: 'true'
+
+    - name: Login to Quay.io
+      if: inputs.quay-username != ''
+      uses: docker/login-action@v3
+      with:
+        registry: quay.io
+        username: ${{ inputs.quay-username }}
+        password: ${{ inputs.quay-robot-token }}
+
+    - name: Login to containers.pl-open.science
+      if: inputs.quay-username != ''
+      uses: docker/login-action@v3
+      with:
+        registry: containers.pl-open.science
+        username: ${{ inputs.quay-username }}
+        password: ${{ inputs.quay-robot-token }}
+
+    - name: Setup Turbo S3 remote cache
+      if: inputs.turbo-s3-bucket != ''
+      uses: milaboratory/github-ci/actions/turborepo/cache-s3@v4
+      with:
+        storage-provider: 's3'
+        storage-path: ${{ inputs.turbo-s3-bucket }}
+        team-id: ${{ inputs.turbo-team-id }}
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        NPMJS_TOKEN: ${{ inputs.npmjs-token }}
+        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+      run: pnpm install --frozen-lockfile --prefer-offline
