@@ -1,9 +1,10 @@
 /**
  * Label derivation for PColumn specs.
  *
- * Port of @platforma-sdk/model deriveDistinctLabels (TypeScript).
- * Given a list of column specs, produces unique human-readable labels
- * by analyzing trace entries and finding the minimal set that disambiguates.
+ * Full port of @platforma-sdk/model deriveDistinctLabels (TypeScript).
+ * Given a list of entries (specs or enriched entries), produces unique
+ * human-readable labels by analyzing trace entries and finding the
+ * minimal set that disambiguates.
  */
 
 json := import("json")
@@ -17,38 +18,104 @@ pSpec := import(":pframes.spec")
 DISTANCE_PENALTY := 0.001
 LABEL_TYPE := "__LABEL__"
 LABEL_TYPE_FULL := LABEL_TYPE + "@1"
-SEPARATOR := " / "
+DEFAULT_SEPARATOR := " / "
 
-enrichRecord := func(spec, getLabel) {
+A_LINK_LABEL := "pl7.app/linkLabel"
+
+// Detects whether an entry is a bare spec or an enriched { spec, extraTrace?, linkerPath? }.
+extractSpecAndTrace := func(entry) {
+	if !is_undefined(entry.spec) && is_map(entry.spec) {
+		return {
+			spec: entry.spec,
+			extraTrace: entry.extraTrace,
+			linkerPath: entry.linkerPath
+		}
+	}
+	return { spec: entry, extraTrace: undefined, linkerPath: undefined }
+}
+
+extractLinkerLabels := func(entry) {
+	parsed := extractSpecAndTrace(entry)
+	path := parsed.linkerPath
+	if is_undefined(path) || len(path) == 0 {
+		return []
+	}
+	labels := []
+	for step in path {
+		stepSpec := is_undefined(step.spec) ? step : step.spec
+		anns := is_undefined(stepSpec.annotations) ? {} : stepSpec.annotations
+		label := anns[A_LINK_LABEL]
+		if is_undefined(label) {
+			label = anns[pSpec.A_LABEL]
+		}
+		if !is_undefined(label) {
+			trimmed := text.trim_space(label)
+			if trimmed != "" {
+				labels = append(labels, trimmed)
+			}
+		}
+	}
+	return labels
+}
+
+enrichRecord := func(entry, getLabel, options) {
+	parsed := extractSpecAndTrace(entry)
+	spec := parsed.spec
+
 	label := getLabel(spec)
 	traceStr := is_undefined(spec.annotations) ? undefined : spec.annotations[pSpec.A_TRACE]
 	baseTrace := []
 	if !is_undefined(traceStr) {
-		parsed := json.decode(traceStr)
-		if is_array(parsed) {
-			baseTrace = parsed
+		decoded := json.decode(traceStr)
+		if is_array(decoded) {
+			baseTrace = decoded
 		}
 	}
 
-	trace := []
-	if !is_undefined(label) {
-		trace = append(trace, { label: label, type: LABEL_TYPE, importance: -2 })
+	prefixExtra := []
+	suffixExtra := []
+	if !is_undefined(parsed.extraTrace) {
+		for e in parsed.extraTrace {
+			if !is_undefined(e.position) && e.position == "prefix" {
+				prefixExtra = append(prefixExtra, e)
+			} else {
+				suffixExtra = append(suffixExtra, e)
+			}
+		}
 	}
-	for entry in baseTrace {
-		trace = append(trace, entry)
+
+	trace := prefixExtra
+	for e in baseTrace {
+		trace = append(trace, e)
+	}
+	for e in suffixExtra {
+		trace = append(trace, e)
+	}
+
+	if !is_undefined(label) {
+		labelEntry := { label: label, type: LABEL_TYPE, importance: -2 }
+		if !is_undefined(options.addLabelAsSuffix) && options.addLabelAsSuffix {
+			trace = append(trace, labelEntry)
+		} else {
+			newTrace := [labelEntry]
+			for e in trace {
+				newTrace = append(newTrace, e)
+			}
+			trace = newTrace
+		}
 	}
 
 	occurrences := {}
 	reversed := []
 	for i := len(trace) - 1; i >= 0; i -= 1 {
-		entry := trace[i]
-		entryType := is_undefined(entry.type) ? "" : entry.type
+		e := trace[i]
+		entryType := is_undefined(e.type) ? "" : e.type
 		occIdx := is_undefined(occurrences[entryType]) ? 1 : occurrences[entryType] + 1
 		occurrences[entryType] = occIdx
 		reversed = append(reversed, {
-			label: is_undefined(entry.label) ? "" : entry.label,
+			label: is_undefined(e.label) ? "" : e.label,
 			type: entryType,
-			importance: is_undefined(entry.importance) ? 0 : entry.importance,
+			importance: is_undefined(e.importance) ? 0 : e.importance,
 			fullType: entryType + "@" + string(occIdx),
 			occurrenceIndex: occIdx
 		})
@@ -105,12 +172,14 @@ classifyTypes := func(stats, totalRecords) {
 	return { mainTypes: mainTypes, secondaryTypes: secondaryTypes }
 }
 
-buildLabels := func(records, includedTypes, force) {
+buildLabels := func(records, includedTypes, forceTraceElements, separator, force) {
 	result := []
 	for r in records {
 		parts := []
 		for ft in r.fullTrace {
-			if !is_undefined(includedTypes[ft.fullType]) && includedTypes[ft.fullType] {
+			included := !is_undefined(includedTypes[ft.fullType]) && includedTypes[ft.fullType]
+			forced := !is_undefined(forceTraceElements) && !is_undefined(forceTraceElements[ft.type]) && forceTraceElements[ft.type]
+			if included || forced {
 				parts = append(parts, ft.label)
 			}
 		}
@@ -121,7 +190,7 @@ buildLabels := func(records, includedTypes, force) {
 			result = append(result, "Unlabeled")
 			continue
 		}
-		result = append(result, text.join(parts, SEPARATOR))
+		result = append(result, text.join(parts, separator))
 	}
 	return result
 }
@@ -147,8 +216,8 @@ setWithout := func(set, key) {
 	return result
 }
 
-minimizeTypeSet := func(typeSet, records, stats) {
-	initialResult := buildLabels(records, typeSet, false)
+minimizeTypeSet := func(typeSet, records, stats, forceTraceElements, options, separator) {
+	initialResult := buildLabels(records, typeSet, forceTraceElements, separator, false)
 	if is_undefined(initialResult) {
 		return typeSet
 	}
@@ -157,7 +226,14 @@ minimizeTypeSet := func(typeSet, records, stats) {
 
 	removable := []
 	for _, typeName in maps.getKeys(result) {
-		if !result[typeName] || typeName == LABEL_TYPE_FULL {
+		if !result[typeName] {
+			continue
+		}
+		if !is_undefined(options.includeNativeLabel) && options.includeNativeLabel && typeName == LABEL_TYPE_FULL {
+			continue
+		}
+		baseType := text.split(typeName, "@")[0]
+		if !is_undefined(forceTraceElements) && !is_undefined(forceTraceElements[baseType]) && forceTraceElements[baseType] {
 			continue
 		}
 		imp := is_undefined(stats.importances[typeName]) ? 0 : stats.importances[typeName]
@@ -172,7 +248,7 @@ minimizeTypeSet := func(typeSet, records, stats) {
 
 	for entry in removable {
 		candidate := setWithout(result, entry.type)
-		candidateResult := buildLabels(records, candidate, false)
+		candidateResult := buildLabels(records, candidate, forceTraceElements, separator, false)
 		if !is_undefined(candidateResult) && countUnique(candidateResult) >= targetCardinality {
 			result = setWithout(result, entry.type)
 		}
@@ -180,37 +256,81 @@ minimizeTypeSet := func(typeSet, records, stats) {
 	return result
 }
 
+applyLinkerSuffixes := func(labels, suffixes) {
+	result := []
+	for i, label in labels {
+		if is_undefined(suffixes[i]) {
+			result = append(result, label)
+		} else {
+			result = append(result, label + " " + suffixes[i])
+		}
+	}
+	return result
+}
+
 /**
- * Derives unique labels for a list of PColumnSpecs using trace-based disambiguation.
+ * Derives unique labels for a list of entries using trace-based disambiguation.
  *
- * Port of @platforma-sdk/model deriveDistinctLabels with { includeNativeLabel: true }.
+ * Full port of @platforma-sdk/model deriveDistinctLabels.
  *
- * @param specs: list of PColumnSpec objects
+ * @param values: list of PColumnSpec objects or { spec, extraTrace?, linkerPath? } entries
  * @param getLabel: func(spec) → string|undefined, reads the display label from a spec
+ * @param ...opts: optional options map with:
+ *   - separator: string (" / " by default)
+ *   - includeNativeLabel: bool (force inclusion of native column label)
+ *   - addLabelAsSuffix: bool (place label at end instead of beginning)
+ *   - forceTraceElements: [string] (trace types to always include)
+ *   - linkerLabelFormatter: func(linkerLabels, spec, index) → string|undefined
  * @returns: list of distinct label strings (same order as input)
  */
-deriveDistinctLabels := func(specs, getLabel) {
-	records := slices.map(specs, func(spec) { return enrichRecord(spec, getLabel) })
+deriveDistinctLabels := func(values, getLabel, ...opts) {
+	options := len(opts) > 0 ? opts[0] : {}
+	separator := is_undefined(options.separator) ? DEFAULT_SEPARATOR : options.separator
+
+	forceTraceElements := undefined
+	if !is_undefined(options.forceTraceElements) && len(options.forceTraceElements) > 0 {
+		forceTraceElements = {}
+		for elem in options.forceTraceElements {
+			forceTraceElements[elem] = true
+		}
+	}
+
+	linkerSuffixes := slices.map(values, func(v) {
+		parsed := extractSpecAndTrace(v)
+		linkerLabels := extractLinkerLabels(v)
+		if len(linkerLabels) == 0 {
+			return undefined
+		}
+		if !is_undefined(options.linkerLabelFormatter) {
+			return options.linkerLabelFormatter(linkerLabels, parsed.spec, 0)
+		}
+		return "via " + text.join(linkerLabels, " > ")
+	})
+
+	records := slices.map(values, func(v) { return enrichRecord(v, getLabel, options) })
 	stats := collectTypeStats(records)
-	classified := classifyTypes(stats, len(specs))
+	classified := classifyTypes(stats, len(values))
 	mainTypes := classified.mainTypes
 	secondaryTypes := classified.secondaryTypes
 
 	build := func(typeSet, force) {
-		return buildLabels(records, typeSet, force)
+		return buildLabels(records, typeSet, forceTraceElements, separator, force)
 	}
 
 	if len(mainTypes) == 0 {
 		typeSet := {}
 		typeSet[LABEL_TYPE_FULL] = true
-		return build(typeSet, true)
+		result := build(typeSet, true)
+		return applyLinkerSuffixes(result, linkerSuffixes)
 	}
 
 	includedCount := 0
 	additionalType := -1
 	for includedCount < len(mainTypes) {
 		currentSet := {}
-		currentSet[LABEL_TYPE_FULL] = true
+		if !is_undefined(options.includeNativeLabel) && options.includeNativeLabel {
+			currentSet[LABEL_TYPE_FULL] = true
+		}
 		for i := 0; i < includedCount; i += 1 {
 			currentSet[mainTypes[i]] = true
 		}
@@ -219,9 +339,10 @@ deriveDistinctLabels := func(specs, getLabel) {
 		}
 
 		candidateResult := build(currentSet, false)
-		if !is_undefined(candidateResult) && countUnique(candidateResult) == len(specs) {
-			minimized := minimizeTypeSet(currentSet, records, stats)
-			return build(minimized, false)
+		if !is_undefined(candidateResult) && countUnique(candidateResult) == len(values) {
+			minimized := minimizeTypeSet(currentSet, records, stats, forceTraceElements, options, separator)
+			result := build(minimized, false)
+			return applyLinkerSuffixes(result, linkerSuffixes)
 		}
 
 		additionalType += 1
@@ -238,8 +359,9 @@ deriveDistinctLabels := func(specs, getLabel) {
 	for _, t in secondaryTypes {
 		fallbackSet[t] = true
 	}
-	minimized := minimizeTypeSet(fallbackSet, records, stats)
-	return build(minimized, true)
+	minimized := minimizeTypeSet(fallbackSet, records, stats, forceTraceElements, options, separator)
+	result := build(minimized, true)
+	return applyLinkerSuffixes(result, linkerSuffixes)
 }
 
 export ll.toStrict({

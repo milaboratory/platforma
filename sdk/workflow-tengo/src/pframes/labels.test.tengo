@@ -31,51 +31,76 @@ makeLabeledSpec := func(traceEntries) {
 	return makeSpec(traceEntries, "Label")
 }
 
-TestSimple := func() {
+// --- Basic derivation (no options) ---
+
+TestSimpleNoOptions := func() {
 	specs := [
 		makeLabeledSpec([{type: "t1", label: "L1"}]),
 		makeLabeledSpec([{type: "t1", label: "L2"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / L1", "Label / L2"], result)
+	test.isEqual(["L1", "L2"], result)
 }
 
-TestLaterWins := func() {
+TestLaterWinsNoOptions := func() {
 	specs := [
 		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}]),
 		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L2"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / T2L1", "Label / T2L2"], result)
+	test.isEqual(["T2L1", "T2L2"], result)
 }
 
-TestImportanceWins := func() {
+TestImportanceWinsNoOptions := func() {
 	specs := [
 		makeLabeledSpec([{type: "t1", importance: 100, label: "T1L1"}, {type: "t2", label: "T2L1"}]),
 		makeLabeledSpec([{type: "t1", importance: 100, label: "T1L2"}, {type: "t2", label: "T2L2"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / T1L1", "Label / T1L2"], result)
+	test.isEqual(["T1L1", "T1L2"], result)
 }
 
-TestUniquenessWins := func() {
+TestUniquenessWinsNoOptions := func() {
 	specs := [
 		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}]),
 		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L1"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / T1L1", "Label / T1L2"], result)
+	test.isEqual(["T1L1", "T1L2"], result)
 }
 
-TestCombinatoricSolution := func() {
+TestCombinatoricSolutionNoOptions := func() {
 	specs := [
 		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}]),
 		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L2"}]),
 		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L2"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
+	test.isEqual(["T1L1 / T2L1", "T1L1 / T2L2", "T1L2 / T2L2"], result)
+}
+
+// --- includeNativeLabel ---
+
+TestSimpleWithNativeLabel := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "L1"}]),
+		makeLabeledSpec([{type: "t1", label: "L2"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { includeNativeLabel: true })
+	test.isEqual(["Label / L1", "Label / L2"], result)
+}
+
+TestCombinatoricWithNativeLabel := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}]),
+		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L2"}]),
+		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L2"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { includeNativeLabel: true })
 	test.isEqual(["Label / T1L1 / T2L1", "Label / T1L1 / T2L2", "Label / T1L2 / T2L2"], result)
 }
+
+// --- Minimization ---
 
 TestMinimizationRemovesRedundantType := func() {
 	specs := [
@@ -83,7 +108,7 @@ TestMinimizationRemovesRedundantType := func() {
 		makeLabeledSpec([{type: "t1", importance: 10, label: "High2"}, {type: "t2", importance: 1, label: "Low2"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / High1", "Label / High2"], result)
+	test.isEqual(["High1", "High2"], result)
 }
 
 TestMinimizationKeepsBothWhenNeeded := func() {
@@ -93,8 +118,29 @@ TestMinimizationKeepsBothWhenNeeded := func() {
 		makeLabeledSpec([{type: "t1", importance: 10, label: "B"}, {type: "t2", importance: 1, label: "Y"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / A / X", "Label / A / Y", "Label / B / Y"], result)
+	test.isEqual(["A / X", "A / Y", "B / Y"], result)
 }
+
+TestMinimizationRemovesMultipleRedundant := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", importance: 100, label: "Unique1"}, {type: "t2", importance: 10, label: "Same"}, {type: "t3", importance: 1, label: "Same"}]),
+		makeLabeledSpec([{type: "t1", importance: 100, label: "Unique2"}, {type: "t2", importance: 10, label: "Same"}, {type: "t3", importance: 1, label: "Same"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel)
+	test.isEqual(["Unique1", "Unique2"], result)
+}
+
+TestMinimizationFallback := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", importance: 100, label: "A"}, {type: "t2", importance: 10, label: "X"}, {type: "t3", importance: 1, label: "Same"}]),
+		makeLabeledSpec([{type: "t1", importance: 100, label: "A"}, {type: "t2", importance: 10, label: "X"}, {type: "t3", importance: 1, label: "Same"}]),
+		makeLabeledSpec([{type: "t1", importance: 100, label: "B"}, {type: "t2", importance: 10, label: "Y"}, {type: "t3", importance: 1, label: "Same"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel)
+	test.isEqual(["A", "A", "B"], result)
+}
+
+// --- Fallback and edge cases ---
 
 TestFallbackToNativeLabels := func() {
 	specs := [makeLabeledSpec([]), makeLabeledSpec([])]
@@ -105,8 +151,7 @@ TestFallbackToNativeLabels := func() {
 TestSingleValue := func() {
 	specs := [makeLabeledSpec([{type: "t1", label: "Only"}])]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	// Single value: native label alone is unique, no trace suffix needed
-	test.isEqual(["Label"], result)
+	test.isEqual(["Only"], result)
 }
 
 TestUnlabeledFallback := func() {
@@ -121,7 +166,7 @@ TestRepeatedTypeOccurrences := func() {
 		makeLabeledSpec([{type: "t1", label: "First"}, {type: "t1", label: "B"}])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / A", "Label / B"], result)
+	test.isEqual(["A", "B"], result)
 }
 
 TestMixedCommonAndDifferent := func() {
@@ -136,5 +181,174 @@ TestMixedCommonAndDifferent := func() {
 		])
 	]
 	result := labels.deriveDistinctLabels(specs, getLabel)
-	test.isEqual(["Label / Unique entry 1", "Label / Unique entry 2"], result)
+	test.isEqual(["Unique entry 1", "Unique entry 2"], result)
+}
+
+TestSpecWithoutNativeLabel := func() {
+	specs := [
+		makeSpec([{type: "t1", label: "X"}]),
+		makeSpec([{type: "t1", label: "Y"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel)
+	test.isEqual(["X", "Y"], result)
+}
+
+TestIncludeNativeLabelWithNoLabel := func() {
+	specs := [
+		makeSpec([{type: "t1", label: "X"}]),
+		makeSpec([{type: "t1", label: "Y"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { includeNativeLabel: true })
+	test.isEqual(["X", "Y"], result)
+}
+
+// --- addLabelAsSuffix ---
+
+TestAddLabelAsSuffix := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "L1"}]),
+		makeLabeledSpec([{type: "t1", label: "L2"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { includeNativeLabel: true, addLabelAsSuffix: true })
+	test.isEqual(["L1 / Label", "L2 / Label"], result)
+}
+
+// --- custom separator ---
+
+TestCustomSeparator := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "A"}, {type: "t2", label: "X"}]),
+		makeLabeledSpec([{type: "t1", label: "A"}, {type: "t2", label: "Y"}]),
+		makeLabeledSpec([{type: "t1", label: "B"}, {type: "t2", label: "Y"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { separator: " - " })
+	test.isEqual(["A - X", "A - Y", "B - Y"], result)
+}
+
+// --- forceTraceElements ---
+
+TestForceOneElement := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}]),
+		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L2"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { forceTraceElements: ["t1"] })
+	test.isEqual(["T1L1", "T1L2"], result)
+}
+
+TestForceMultipleElements := func() {
+	specs := [
+		makeLabeledSpec([{type: "t1", label: "T1L1"}, {type: "t2", label: "T2L1"}, {type: "t3", label: "T3L1"}]),
+		makeLabeledSpec([{type: "t1", label: "T1L2"}, {type: "t2", label: "T2L2"}, {type: "t3", label: "T3L2"}])
+	]
+	result := labels.deriveDistinctLabels(specs, getLabel, { forceTraceElements: ["t1", "t3"] })
+	test.isEqual(["T1L1 / T3L1", "T1L2 / T3L2"], result)
+}
+
+// --- linkerPath ---
+
+TestLinkerPathDefaultSuffix := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [{ spec: { annotations: { "pl7.app/linkLabel": "MyLinker" } } }]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["Col1 via MyLinker", "Col2"], result)
+}
+
+TestLinkerPathMultipleSteps := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [
+				{ spec: { annotations: { "pl7.app/linkLabel": "L1" } } },
+				{ spec: { annotations: { "pl7.app/linkLabel": "L2" } } }
+			]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["Col1 via L1 > L2", "Col2"], result)
+}
+
+TestLinkerPathFallsBackToLabel := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [{ spec: { annotations: { "pl7.app/label": "FallbackLabel" } } }]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["Col1 via FallbackLabel", "Col2"], result)
+}
+
+TestLinkerPathSkipsEmptyLabels := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [
+				{ spec: { annotations: {} } },
+				{ spec: { annotations: { "pl7.app/linkLabel": "L2" } } }
+			]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["Col1 via L2", "Col2"], result)
+}
+
+TestLinkerPathCustomFormatter := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [{ spec: { annotations: { "pl7.app/linkLabel": "L1" } } }]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	formatter := func(linkerLabels, spec, index) {
+		return "[" + linkerLabels[0] + "]"
+	}
+	result := labels.deriveDistinctLabels(entries, getLabel, { linkerLabelFormatter: formatter })
+	test.isEqual(["Col1 [L1]", "Col2"], result)
+}
+
+TestLinkerPathFormatterReturningUndefined := func() {
+	entries := [
+		{
+			spec: makeSpec([{type: "t1", label: "Col1"}]),
+			linkerPath: [{ spec: { annotations: { "pl7.app/linkLabel": "L1" } } }]
+		},
+		makeSpec([{type: "t1", label: "Col2"}])
+	]
+	formatter := func(linkerLabels, spec, index) {
+		return undefined
+	}
+	result := labels.deriveDistinctLabels(entries, getLabel, { linkerLabelFormatter: formatter })
+	test.isEqual(["Col1", "Col2"], result)
+}
+
+// --- extraTrace ---
+
+TestExtraTraceSuffix := func() {
+	spec := makeSpec([{type: "t1", label: "Base"}])
+	entries := [
+		{ spec: spec, extraTrace: [{type: "suffix", label: "S1"}] },
+		{ spec: spec, extraTrace: [{type: "suffix", label: "S2"}] }
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["S1", "S2"], result)
+}
+
+TestExtraTracePrefix := func() {
+	spec := makeSpec([{type: "t1", label: "Base"}])
+	entries := [
+		{ spec: spec, extraTrace: [{type: "prefix", label: "P1", position: "prefix"}] },
+		{ spec: spec, extraTrace: [{type: "prefix", label: "P2", position: "prefix"}] }
+	]
+	result := labels.deriveDistinctLabels(entries, getLabel)
+	test.isEqual(["P1", "P2"], result)
 }
