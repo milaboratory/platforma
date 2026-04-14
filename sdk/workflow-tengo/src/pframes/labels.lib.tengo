@@ -16,7 +16,7 @@ pSpec := import(":pframes.spec")
 
 DISTANCE_PENALTY := 0.001
 LABEL_TYPE := "__LABEL__"
-LABEL_TYPE_FULL := "__LABEL__@1"
+LABEL_TYPE_FULL := LABEL_TYPE + "@1"
 SEPARATOR := " / "
 
 enrichRecord := func(spec, getLabel) {

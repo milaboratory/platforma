@@ -7,7 +7,7 @@ TestLinkerSingleMatchQuery := func() {
 		kind: "PColumn",
 		name: "pl7.app/linker",
 		valueType: "Int",
-		domain: { "pl7.app/block": "block1", "numericField": 42 },
+		domain: { "pl7.app/block": "block1" },
 		axesSpec: [
 			{ name: "clonotypeKey", type: "String", domain: { "pl7.app/species": "human" } },
 			{ name: "clusterId", type: "String", domain: { "pl7.app/block": "cluster1" } }
@@ -21,7 +21,6 @@ TestLinkerSingleMatchQuery := func() {
 	test.isEqual({ "pl7.app/species": "human" }, result.axes[0].domain)
 	test.isEqual("clusterId", result.axes[1].name)
 	test.isEqual({ "pl7.app/block": "cluster1" }, result.axes[1].domain)
-	// Non-string domain values are filtered out
 	test.isEqual({ "pl7.app/block": "block1" }, result.domain)
 }
 
@@ -30,6 +29,7 @@ TestLinkerSingleMatchQueryNoDomain := func() {
 		kind: "PColumn",
 		name: "pl7.app/linker",
 		valueType: "Int",
+		domain: {},
 		axesSpec: [
 			{ name: "axis1", type: "String" },
 			{ name: "axis2", type: "Int" }

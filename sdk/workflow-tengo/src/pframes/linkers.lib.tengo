@@ -7,12 +7,11 @@
  */
 
 ll := import(":ll")
+validation := import(":validation")
 pSpec := import(":pframes.spec")
 
-// Builds a single-match selector from a linker column spec.
-// The selector uniquely identifies the column by name, axes (name+type+domain),
-// and column domain.
 linkerSingleMatchQuery := func(spec) {
+	validation.assertType(spec, pSpec.P_COLUMN_SPEC_SCHEMA)
 	axes := []
 	for axis in spec.axesSpec {
 		entry := { name: axis.name, type: axis.type }
@@ -30,8 +29,8 @@ linkerSingleMatchQuery := func(spec) {
 	return selector
 }
 
-// Builds a multi-match selector for columns sharing a given axis.
 buildLinkedSelector := func(axisSpec) {
+	validation.assertType(axisSpec, pSpec.P_AXIS_SPEC_SCHEMA)
 	entry := { name: axisSpec.name, type: axisSpec.type }
 	domain := pSpec.pickStringDomain(axisSpec.domain)
 	if !is_undefined(domain) {
