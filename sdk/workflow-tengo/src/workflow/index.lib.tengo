@@ -17,6 +17,7 @@ bobject := import(":workflow.bobject")
 bquery := import(":workflow.bquery")
 resolveUtil := import(":workflow.resolve-util")
 pBundle := import(":pframes.bundle")
+pTableBuilder := import(":pframes.table-builder")
 
 // instance of this
 self := import(":tpl")
@@ -395,6 +396,19 @@ createPBundleBuilder := func() {
 }
 
 /**
+ * Creates a tableBuilder with workflow context injected — required when any
+ * input is unresolved (PlRef or column query spec). Equivalent to
+ * `pframes.tableBuilder(format, ctx)` with `ctx = parent block context`.
+ * See `pframes.tableBuilder` for the full builder API.
+ *
+ * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
+ * @return TableBuilder
+ */
+tableBuilder := func(format) {
+	return pTableBuilder.tableBuilder(format, getParentBCtx())
+}
+
+/**
  * Defines main entry point for current workflow
  */
 body := func(bodyFn) {
@@ -441,5 +455,6 @@ export ll.toStrict({
 	blockId: blockId,
 	getBlockId: getBlockId,
 	validateArgs: validateArgs,
-	createPBundleBuilder: createPBundleBuilder
+	createPBundleBuilder: createPBundleBuilder,
+	tableBuilder: tableBuilder
 })

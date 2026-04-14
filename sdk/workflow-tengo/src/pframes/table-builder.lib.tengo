@@ -1,0 +1,493 @@
+/**
+ * tableBuilder — fluent API for assembling a primary+enrichment table and exporting it.
+ *
+ * Accepts resolved columns, PrimaryRef (with optional filter), or unresolved PlRefs/query
+ * specs (when workflow context is available). The actual resolution, PFrame assembly,
+ * filter-join, and file export run inside the `:pframes.build-table` ephemeral template.
+ *
+ * Spec: docs/text/work/projects/pframes-api/05-filter-column-api.md (R9–R14).
+ *
+ * @example
+ *   wf := import("@platforma-sdk/workflow-tengo:workflow")
+ *   file := import("@platforma-sdk/workflow-tengo:file")
+ *
+ *   wf.body(func(args) {
+ *       table := wf.tableBuilder("tsv").
+ *           addPrimary("main", args.datasetRef).
+ *           addColumn(
+ *               { axes: [{ anchor: "main", name: "pl7.app/sampleId" }] },
+ *               { header: "Count" }).
+ *           addColumns(
+ *               { axes: [{ anchor: "main", name: "pl7.app/sampleId" }] },
+ *               { headerPrefix: "Seq: " }).
+ *           setAxisHeader("pl7.app/sampleId", "Sample").
+ *           build()
+ *
+ *       return { exports: { table: file.exportFile(table) } }
+ *   })
+ */
+
+ll := import(":ll")
+render := import(":render")
+assets := import(":assets")
+maps := import(":maps")
+pSpec := import(":pframes.spec")
+bquery := import(":workflow.bquery")
+
+buildTableTpl := assets.importTemplate(":pframes.build-table")
+
+VALID_FORMATS := {
+	csv: true,
+	tsv: true,
+	ndjson: true,
+	parquet: true
+}
+
+// Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure.
+// Walks iteratively — the input can be arbitrarily nested (PrimaryRef, arrays, plain maps).
+isUnresolved := func(value) {
+	stack := [value]
+	si := 0
+	for si < len(stack) {
+		v := stack[si]
+		si += 1
+		if ll.isMap(v) {
+			for k, child in v {
+				if k == "__isRef" && child == true { return true }
+				stack = append(stack, child)
+			}
+		} else if is_array(v) {
+			for _, child in v {
+				stack = append(stack, child)
+			}
+		}
+	}
+	return false
+}
+
+// A `PColumnResult`: has both `spec` and `data` keys.
+isResolvedColumn := func(value) {
+	if !ll.isMap(value) { return false }
+	hasSpec := false
+	hasData := false
+	for k, _ in value {
+		if k == "spec" { hasSpec = true }
+		if k == "data" { hasData = true }
+	}
+	return hasSpec && hasData
+}
+
+// Identifies PrimaryRef / ResolvedPrimaryRef by the version marker.
+isPrimaryRef := func(value) {
+	return ll.isMap(value) && value.__isPrimaryRef == "v1"
+}
+
+/**
+ * Creates a table builder.
+ *
+ * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
+ * @param ctxArg: (optional) workflow context — required if any input contains PlRefs.
+ *                Use wf.tableBuilder(format) from the workflow module to inject it
+ *                automatically; call pframes.tableBuilder(format) directly only when
+ *                all inputs are pre-resolved.
+ * @return TableBuilder with .addPrimary / .addColumn / .addColumns / .setJoinMode /
+ *         .setAxisHeader / .cpu / .mem / .cacheInputs / .build
+ */
+tableBuilder := func(format, ...ctxArg) {
+	ll.assert(!is_undefined(VALID_FORMATS[format]),
+		"format must be one of [tsv, csv, parquet, ndjson], got '%s'", format)
+
+	_ctx := undefined
+	if len(ctxArg) > 0 {
+		_ctx = ctxArg[0]
+	}
+
+	_primaries := []
+	_columns := []
+	_joinMode := "inner"
+	_axisHeaders := []
+	_cpu := undefined
+	_mem := undefined
+	_cacheInputs := undefined
+	_hasUnresolved := false
+
+	self := undefined
+	self = {
+		/**
+		 * Adds a named primary anchor. The `name` identifies the primary for
+		 * column axis references like `{ anchor: "<name>", name: "pl7.app/sampleId" }`.
+		 *
+		 * @param name: string — anchor name
+		 * @param value: PlRef | PrimaryRef | PColumnResult | ResolvedPrimaryRef
+		 * @param opts: (optional) { header?: string } — column header in exported file
+		 * @return self (for chaining)
+		 */
+		addPrimary: func(name, value, ...opts) {
+			ll.assert(is_string(name), "name must be a string")
+			header := undefined
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				header = opts[0].header
+			}
+
+			unresolved := isUnresolved(value)
+			if !unresolved {
+				ll.assert(
+					isResolvedColumn(value) ||
+						(isPrimaryRef(value) && isResolvedColumn(value.column)),
+					"value must be a resolved column {spec, data}, " +
+					"a resolved PrimaryRef, or a structure containing PlRefs; got: %v",
+					value)
+			}
+			if unresolved {
+				_hasUnresolved = true
+			}
+
+			_primaries = append(_primaries, {
+				name: name,
+				value: value,
+				header: header
+			})
+			return self
+		},
+
+		/**
+		 * Adds a single enrichment column. Expects exactly one match for query specs.
+		 *
+		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
+		 *               PColumnResult | PlRef
+		 * @param opts: (optional) { header?: string } — column header in exported file
+		 * @return self (for chaining)
+		 */
+		addColumn: func(query, ...opts) {
+			header := undefined
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				header = opts[0].header
+			}
+			if isUnresolved(query) {
+				_hasUnresolved = true
+			}
+			_columns = append(_columns, {
+				query: query,
+				header: header,
+				mode: "single"
+			})
+			return self
+		},
+
+		/**
+		 * Adds multiple enrichment columns from a multi-match query or an array
+		 * of pre-resolved columns. Empty match set is allowed (produces no enrichments).
+		 *
+		 * @param query: ColumnQuerySpec | PColumnResult[] | PlRef
+		 * @param opts: (optional) { headerPrefix?: string, headerSuffix?: string }
+		 * @return self (for chaining)
+		 */
+		addColumns: func(query, ...opts) {
+			headerPrefix := undefined
+			headerSuffix := undefined
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				headerPrefix = opts[0].headerPrefix
+				headerSuffix = opts[0].headerSuffix
+			}
+
+			// Array of resolved columns: add each individually
+			if is_array(query) {
+				for col in query {
+					ll.assert(isResolvedColumn(col),
+						"array elements must be resolved columns {spec, data}")
+					_columns = append(_columns, {
+						query: col,
+						headerPrefix: headerPrefix,
+						headerSuffix: headerSuffix,
+						mode: "multi"
+					})
+				}
+				return self
+			}
+
+			if isUnresolved(query) {
+				_hasUnresolved = true
+			}
+			_columns = append(_columns, {
+				query: query,
+				headerPrefix: headerPrefix,
+				headerSuffix: headerSuffix,
+				mode: "multi"
+			})
+			return self
+		},
+
+		/**
+		 * Sets the join mode used to combine multiple primaries into the trunk.
+		 * "inner" (default) keeps only keys present in every primary; "full" keeps
+		 * the union. Filters always inner-join with their primary, regardless of
+		 * this setting; with a single primary, this setting has no effect.
+		 */
+		setJoinMode: func(mode) {
+			ll.assert(mode == "inner" || mode == "full",
+				"mode must be 'inner' or 'full', got '%s'", mode)
+			_joinMode = mode
+			return self
+		},
+
+		/**
+		 * Overrides the axis header label in the exported file.
+		 *
+		 * @param matcher: string (axis name) | AxisSpec (for precise matching)
+		 * @param header: string — the header to display
+		 */
+		setAxisHeader: func(matcher, header) {
+			ll.assert(is_string(header), "header must be a string")
+			processedMatcher := undefined
+			if is_string(matcher) {
+				processedMatcher = { name: matcher }
+			} else if ll.isMap(matcher) {
+				processedMatcher = pSpec.axisSpecToMatcher(matcher)
+			} else {
+				ll.panic("matcher must be a string or AxisSpec map")
+			}
+			_axisHeaders = append(_axisHeaders, [processedMatcher, header])
+			return self
+		},
+
+		/**
+		 * Sets the number of CPU cores requested for the underlying pt execution.
+		 */
+		cpu: func(cores) {
+			_cpu = cores
+			return self
+		},
+
+		/**
+		 * Sets the memory limit for the underlying pt execution.
+		 * Accepts a number (bytes) or a string with a size suffix (e.g. "16GiB").
+		 */
+		mem: func(size) {
+			_mem = size
+			return self
+		},
+
+		/**
+		 * Sets the cache duration for the underlying pt execution's inputs.
+		 * Useful when the builder runs in a sequence that may be re-rendered
+		 * shortly afterward — cached inputs enable recovery without recomputation.
+		 * A duration of ~one minute is typical. Pass a duration from the `times`
+		 * library (e.g. `1 * times.minute`).
+		 *
+		 * @param time: duration (int) — cache TTL
+		 */
+		cacheInputs: func(time) {
+			ll.assert(is_int(time),
+				"time must be an integer duration " +
+				"(did you forget to import the 'times' library?)")
+			_cacheInputs = time
+			return self
+		},
+
+		/**
+		 * Resolves pending inputs, assembles the PFrame, applies filter joins,
+		 * and exports the result file. Returns a future reference to the exported file.
+		 * Panics if no primaries were added or if unresolved inputs lack workflow context.
+		 */
+		build: func() {
+			ll.assert(len(_primaries) > 0,
+				"at least one primary required")
+
+			// Determine whether ctx is needed: any unresolved PlRef, or any column query spec.
+			hasQuerySpec := false
+			for _, c in _columns {
+				if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+					hasQuerySpec = true
+					break
+				}
+			}
+			if _hasUnresolved || hasQuerySpec {
+				ll.assert(!is_undefined(_ctx),
+					"unresolved inputs or column query specs require workflow context. " +
+					"Use wf.tableBuilder() or pass pre-resolved inputs.")
+			}
+
+			// Resolve a column (PlRef or {spec, data}) into {spec, data} futures.
+			resolveColumn := func(value) {
+				if isUnresolved(value) {
+					r := bquery.resolve(value, _ctx)
+					return {
+						spec: r.getFutureInputField("spec"),
+						data: r.getFutureInputField("data")
+					}
+				}
+				return { spec: value.spec, data: value.data }
+			}
+
+			// Resolve primaries: collect {spec, data} and a filters list (0 or 1 entries
+			// today; extensible to N entries when PrimaryRef v2 adds `filters: PlRef[]`).
+			// `primaryPlRefs` tracks the ORIGINAL PlRef for each unresolved primary —
+			// passed as-is to bquery.anchoredQuery as the anchor (it re-resolves
+			// internally), since the result resource's `.ref` field carries an
+			// internal address, not the user's PlRef structure.
+			primaryEntries := []
+			primaryPlRefs := {}
+			for _, p in _primaries {
+				column := p.value
+				rawFilters := []
+				if isPrimaryRef(p.value) {
+					column = p.value.column
+					if !is_undefined(p.value.filter) {
+						rawFilters = append(rawFilters, p.value.filter)
+					}
+				}
+
+				resolvedCol := resolveColumn(column)
+				entry := {
+					name: p.name,
+					header: p.header,
+					spec: resolvedCol.spec,
+					data: resolvedCol.data,
+					filters: []
+				}
+				if isUnresolved(column) {
+					primaryPlRefs[p.name] = column
+				}
+
+				for _, rawFlt in rawFilters {
+					resolvedFlt := resolveColumn(rawFlt)
+					entry.filters = append(entry.filters, {
+						spec: resolvedFlt.spec,
+						data: resolvedFlt.data
+					})
+				}
+
+				primaryEntries = append(primaryEntries, entry)
+			}
+
+			// Run anchored query for column query specs.
+			// `addColumn` uses matchStrategy="expectSingle" — bquery asserts
+			// exactly one match (spec R11: "Expects exactly one match; panics on zero.").
+			// `addColumns` uses matchStrategy="expectMultiple" — bquery returns all
+			// matches as a map resource (spec R11: "Returns empty set on zero matches").
+			singleQueryByIdx := {}
+			multiQueryResultByIdx := {}
+			qMap := {}
+			for idx, c in _columns {
+				if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+					strategy := "expectSingle"
+					if c.mode == "multi" { strategy = "expectMultiple" }
+					qMap["q" + string(idx)] = maps.deepMerge(c.query, {
+						matchStrategy: strategy
+					})
+				}
+			}
+			if len(qMap) > 0 {
+				ll.assert(len(primaryPlRefs) > 0,
+					"column query specs require at least one primary as anchor")
+
+				qResult := bquery.anchoredQuery(_ctx, primaryPlRefs, qMap)
+				for idx, c in _columns {
+					if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+						r := qResult.getResult("q" + string(idx))
+						if c.mode == "multi" {
+							// Template iterates this resource via
+							// bquery.resultUnmarshaller to expand into N columns.
+							multiQueryResultByIdx[string(idx)] = r
+						} else {
+							singleQueryByIdx[string(idx)] = {
+								spec: r.getFutureInputField("spec"),
+								data: r.getFutureInputField("data")
+							}
+						}
+					}
+				}
+			}
+
+			// Resolve enrichment columns. Single entries carry flat {spec, data};
+			// multi entries carry a `multiResult` resource expanded inside the template.
+			columnEntries := []
+			for idx, c in _columns {
+				entry := {
+					mode: c.mode,
+					header: c.header,
+					headerPrefix: c.headerPrefix,
+					headerSuffix: c.headerSuffix
+				}
+				if isResolvedColumn(c.query) {
+					entry.spec = c.query.spec
+					entry.data = c.query.data
+				} else if isUnresolved(c.query) {
+					resolved := resolveColumn(c.query)
+					entry.spec = resolved.spec
+					entry.data = resolved.data
+				} else if c.mode == "multi" {
+					entry.multiResult = multiQueryResultByIdx[string(idx)]
+				} else {
+					qr := singleQueryByIdx[string(idx)]
+					entry.spec = qr.spec
+					entry.data = qr.data
+				}
+				columnEntries = append(columnEntries, entry)
+			}
+
+			// Each primary entry matches v1 ResolvedPrimaryRef exactly
+			// (`__isPrimaryRef: "v1"`, nested `column`, optional singular `filter`)
+			// plus builder metadata (`name`, `header?`). Optional fields are
+			// added only when set — the JSON serializer rejects `undefined`
+			// values inside resource maps.
+			primariesMap := {}
+			for idx, p in primaryEntries {
+				entry := {
+					__isPrimaryRef: "v1",
+					name: p.name,
+					column: { spec: p.spec, data: p.data }
+				}
+				if !is_undefined(p.header) { entry.header = p.header }
+
+				if len(p.filters) > 0 {
+					ll.assert(len(p.filters) == 1,
+						"v1 PrimaryRef supports at most one filter, got %d",
+						len(p.filters))
+					flt := p.filters[0]
+					entry.filter = { spec: flt.spec, data: flt.data }
+				}
+
+				primariesMap[string(idx)] = entry
+			}
+
+			columnsMap := {}
+			for idx, c in columnEntries {
+				entry := { mode: c.mode }
+				if !is_undefined(c.multiResult) {
+					entry.multiResult = c.multiResult
+				} else {
+					entry.spec = c.spec
+					entry.data = c.data
+				}
+				if !is_undefined(c.header) { entry.header = c.header }
+				if !is_undefined(c.headerPrefix) { entry.headerPrefix = c.headerPrefix }
+				if !is_undefined(c.headerSuffix) { entry.headerSuffix = c.headerSuffix }
+				columnsMap[string(idx)] = entry
+			}
+
+			tplInputs := {
+				format: format,
+				joinMode: _joinMode,
+				axisHeaders: _axisHeaders,
+				primaryCount: len(primaryEntries),
+				columnCount: len(columnEntries),
+				primaries: primariesMap,
+				columns: columnsMap
+			}
+
+			metaInputs := {}
+			if !is_undefined(_cpu) { metaInputs.cpu = _cpu }
+			if !is_undefined(_mem) { metaInputs.mem = _mem }
+			if !is_undefined(_cacheInputs) { metaInputs.cacheInputs = _cacheInputs }
+
+			run := render.createEphemeral(buildTableTpl, tplInputs, { metaInputs: metaInputs })
+			return run.output("result")
+		}
+	}
+	return ll.toStrict(self)
+}
+
+export ll.toStrict({
+	tableBuilder: tableBuilder
+})

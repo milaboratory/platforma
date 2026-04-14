@@ -41,8 +41,8 @@ nested PlRefs inside PrimaryRef without changes.
 
 - [x] **Stage A** — Workflow Resolution Layer (R4, R5)
 - [x] **Stage B** — PrimaryRef Types (R1, R2, R3)
-- [ ] **Stage C** — Filter Discovery (R6, R7)
-- [ ] **Stage D** — tableBuilder (R9-R12, R14) — BLOCKED
+- [x] **Stage C** — Filter Discovery (R6, R7)
+- [x] **Stage D** — tableBuilder (R9-R12, R14)
 - [ ] **Stage E** — PlDatasetSelector (R8)
 
 ## Dependencies and Parallelism
@@ -170,16 +170,21 @@ no changes needed.
 — add to `AWAIT_TEMPLATES` map:
 
 ```go
-// Allows ephemeral templates to proceed when only specs
-// are ready (data may still be computing).
+// Matches a v1 ResolvedPrimaryRef shape:
+//   { __isPrimaryRef: "v1", column: {spec, data}, filter?: {spec, data} }
+// Awaits column.spec (required) and filter.spec (optional, regex-matched).
+// The `__isPrimaryRef` marker is ignored — we never descend into it.
 // Usage: tpl.awaitState("primary", "PrimarySpecsReady")
 "PrimarySpecsReady": [
-    [{ wildcard: "*" }, "spec", "ResourceReady"]
+    ["column", "spec", "ResourceReady"],
+    [{ match: "^filter$" }, "spec", "ResourceReady"]
 ]
 ```
 
-Same wildcard pattern as `"PColumnBundle"`. Omits `ref` field
-await since resolved primaries don't carry top-level `ref`.
+A wildcard pattern like `PColumnBundle` does not work here:
+`__isPrimaryRef: "v1"` serializes as a JSON child field, and wildcard
+traversal would panic trying to find `.spec` on a primitive. Explicit
+paths into `column` and optional `filter` match R4's resolved shape.
 
 ### Verification — Stage A
 
@@ -284,27 +289,29 @@ if labels are ambiguous. (spec: flagged as risk)
 
 ### Verification — Stage C
 
-- [ ] Returns only columns with `pl7.app/isSubset: "true"`
-- [ ] Returned filters have axes subset of dataset's axes
-- [ ] Filter labels are human-readable and distinct
-- [ ] Empty result when no filters exist
+- [x] Returns only columns with `pl7.app/isSubset: "true"`
+- [x] Returned filters have axes subset of dataset's axes
+- [x] Filter labels are human-readable and distinct
+      (uses existing `deriveLabels()` — filter-specific
+      algorithm is a follow-up if labels are ambiguous)
+- [x] Empty result when no filters exist
 
 ---
 
-## Stage D: tableBuilder (R9-R12, R14) — BLOCKED — Risk: High
+## Stage D: tableBuilder (R9-R12, R14) — Risk: High
 
-**Depends on:** Stage A | **Status:** blocked
+**Depends on:** Stage A | **Status:** done
 
 **Delivers:** `pframes.tableBuilder(format)` API with
 `.build()` producing a filtered exported file. Builder +
 `:pframes.build-table` ephemeral template as one unit.
 
-Open questions (milaboratory/text#34):
+Resolved questions (milaboratory/text#34, dbolotin 2026-04-08):
 
-1. **Export format:** need `"pframe"` output, or files only?
-   (your question, no CTO response)
-2. **Query language:** legacy format sufficient, or new query
-   language in `pt` needed? +2 days if yes. (unresolved)
+1. **Export format:** files only — tsv/csv/parquet/ndjson.
+   No `"pframe"` output needed.
+2. **Query language:** legacy format sufficient for this stage.
+   Full query language exposure is future work.
 
 **New file:**
 `sdk/workflow-tengo/src/pframes/table-builder.lib.tengo`
@@ -389,18 +396,18 @@ export. Single join regardless of column count. (spec R14)
 
 ### Verification — Stage D
 
-- [ ] `pframes.tableBuilder("tsv")` returns builder
-- [ ] `.addPrimary("main", plRef)` detects unresolved
-- [ ] `.addPrimary("main", { spec, data })` detects resolved
-- [ ] `.addPrimary("main", primaryRef)` detects PrimaryRef
-- [ ] `.addColumn({ axes: [...] })` detects query spec
-- [ ] `.addColumn({ spec, data })` detects resolved column
-- [ ] `.build()` without `.addPrimary()` panics
-- [ ] Chaining works
-- [ ] `.build()` produces filtered TSV with correct rows
-- [ ] Inner-join reduces key space, enrichments contain only
+- [x] `pframes.tableBuilder("tsv")` returns builder
+- [x] `.addPrimary("main", plRef)` detects unresolved
+- [x] `.addPrimary("main", { spec, data })` detects resolved
+- [x] `.addPrimary("main", primaryRef)` detects PrimaryRef
+- [x] `.addColumn({ axes: [...] })` detects query spec
+- [x] `.addColumn({ spec, data })` detects resolved column
+- [x] `.build()` without `.addPrimary()` panics
+- [x] Chaining works
+- [x] `.build()` produces filtered TSV with correct rows
+- [x] Inner-join reduces key space, enrichments contain only
       surviving keys
-- [ ] Existing blocks using `xsvFileBuilder` unaffected
+- [x] Existing blocks using `xsvFileBuilder` unaffected
 
 ---
 

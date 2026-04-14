@@ -64,7 +64,7 @@ tplTest.concurrent(
     const consumer = await helper.renderWorkflow(
       "resolve.e2e-primary",
       false,
-      {},
+      { producerBlockId: "b1", exportKey: "e2" },
       { parent: ctx, blockId: "b2" },
     );
 

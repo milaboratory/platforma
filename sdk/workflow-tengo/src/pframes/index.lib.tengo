@@ -15,6 +15,7 @@ pSpec := import(":pframes.spec")
 validation := import(":validation")
 constants := import(":pframes.constants")
 xsvBuilder := import(":pframes.xsv-builder")
+tableBuilderMod := import(":pframes.table-builder")
 pColumnData := import(":pframes.data")
 
 llProcessTpl := assets.importTemplate(":pframes.process-pcolumn-data")
@@ -1110,5 +1111,6 @@ export ll.toStrict({
 	tsvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("tsv") },
 	csvFileBuilder: func() { return xsvBuilder.xsvFileBuilder("csv") },
 	parquetFileBuilder: func() { return xsvBuilder.xsvFileBuilder("parquet") },
+	tableBuilder: tableBuilderMod.tableBuilder,
 	parseToJson: parseToJson
 })
