@@ -104,11 +104,24 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId, blockId, data }) => {
       const project = await ctx.getOpenedProject(projectId);
-      await project.mutateBlockStorage(
-        blockId,
-        { operation: "update-block-data", value: data },
-        ctx.getAuthorMarker(),
-      );
+
+      // Try V2 (BlockModelV3 storage facade) first, fall back to V1 (legacy setBlockArgs)
+      try {
+        await project.mutateBlockStorage(
+          blockId,
+          { operation: "update-block-data", value: data },
+          ctx.getAuthorMarker(),
+        );
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("Model API version mismatch")) {
+          // V1 block: set args directly
+          const args = data.args ?? data;
+          await project.setBlockArgs(blockId, args, ctx.getAuthorMarker());
+        } else {
+          throw e;
+        }
+      }
       return textResult({ ok: true });
     },
   );
