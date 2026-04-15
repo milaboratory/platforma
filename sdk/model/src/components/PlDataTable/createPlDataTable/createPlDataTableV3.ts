@@ -131,11 +131,10 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
-  const filters = mergeFilters(
-    state.pTableParams.filters,
-    remapFilterColumnIds(options.filters, discovered),
-  );
+  const filters = state.pTableParams.filters;
+  const defaultFilters = remapFilterColumnIds(options.filters, discovered) ?? undefined;
   validateFilters(filters, columnIsAvailable);
+  validateFilters(defaultFilters, columnIsAvailable);
 
   const sorting = resolveSorting(
     state.pTableParams.sorting,
@@ -209,6 +208,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
+    defaultFilters,
   } satisfies PlDataTableModel;
 }
 
@@ -319,17 +319,6 @@ function createColumnValidationById(fullColumns: TableColumn[]) {
   return (id: string): boolean => {
     return validIdSet.has(id as CanonicalizedJson<PTableColumnId>);
   };
-}
-
-/** Merge filters from table state and options into a single filter spec. */
-function mergeFilters(
-  stateFilters: PlDataTableFilters | null,
-  optionsFilters: PlDataTableFilters | null | undefined,
-): Nil | PlDataTableFilters {
-  const normalized = optionsFilters ?? null;
-  return stateFilters !== null && normalized !== null
-    ? { type: "and", filters: [stateFilters, normalized] }
-    : (stateFilters ?? normalized);
 }
 
 /** Validate that all column references in filters exist in the table. */

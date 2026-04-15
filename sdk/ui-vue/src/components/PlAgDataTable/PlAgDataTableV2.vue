@@ -162,11 +162,16 @@ const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
   () => settings.value.sourceId,
   () => gridOptions.value.columnDefs ?? null,
 );
-const { gridState, sheetsState, filtersState, searchString } = useTableState(
+const defaultFilters = computed(() =>
+  settings.value.sourceId !== null ? settings.value.defaultFilters : undefined,
+);
+const { gridState, sheetsState, filtersState, searchString, resetDefaultFilters } = useTableState(
   tableState,
   settings,
   visibleFilterableColumns,
+  defaultFilters,
 );
+const hasDefaultFilters = computed(() => defaultFilters.value !== undefined);
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
   return settingsCopy.sourceId !== null
@@ -536,6 +541,8 @@ watchEffect(() => {
       v-model="filtersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
+      :has-default-filters="hasDefaultFilters"
+      :reset-default-filters="resetDefaultFilters"
     />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">

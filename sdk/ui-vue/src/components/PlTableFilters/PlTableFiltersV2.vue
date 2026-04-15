@@ -26,12 +26,13 @@ import {
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
-import { isNil } from "es-toolkit";
+import { isFunction, isNil } from "es-toolkit";
 
 const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
   pframeHandle: Nil | PFrameHandle;
   columns: PTableColumnSpec[];
+  resetDefaultFilters?: () => void;
 }>();
 
 // Teleport for "Filters" button
@@ -41,11 +42,7 @@ onMounted(() => {
 });
 const teleportTarget = usePlBlockPageTitleTeleportTarget("PlTableFiltersV2");
 const showManager = ref(false);
-
-// Check if any filters are active
-const filtersOn = computed(() => {
-  return model.value.filters.length > 0;
-});
+const hasFilters = computed(() => model.value.filters.length > 0);
 
 function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
   return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
@@ -116,7 +113,7 @@ function handleSuggestOptions(params: {
 
 <template>
   <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost :icon="filtersOn ? 'filter-on' : 'filter'" @click.stop="showManager = true">
+    <PlBtnGhost :icon="hasFilters ? 'filter-on' : 'filter'" @click.stop="showManager = true">
       Filters
     </PlBtnGhost>
   </Teleport>
@@ -130,9 +127,24 @@ function handleSuggestOptions(params: {
         :items="items"
         :supported-filters="supportedFilters"
         :get-suggest-options="handleSuggestOptions"
+        :is-completed-group="(group) => group.source === 'default'"
         :enable-dnd="false"
         :enable-add-group-button="true"
-      />
+        :enable-toggling="true"
+      >
+        <template #group-title="{ item }">
+          <div v-if="item.source === 'default'" :class="$style.defaultGroupTitle">
+            Default Group
+            <PlBtnGhost
+              v-if="isFunction(props.resetDefaultFilters)"
+              icon="restart"
+              :class="$style.restartBtn"
+              @click.stop="props.resetDefaultFilters()"
+            />
+          </div>
+          <template v-else>Custom Group</template>
+        </template>
+      </PlAdvancedFilterComponent>
     </div>
   </PlSlideModal>
 </template>
@@ -142,5 +154,19 @@ function handleSuggestOptions(params: {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.defaultGroupTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.restartBtn {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  --button-width: 24px;
+  --btn-min-width: 24px;
+  --button-height: 24px;
+  --btn-min-height: 24x;
 }
 </style>

@@ -27,6 +27,10 @@ const props = withDefaults(
     enableDnd?: boolean;
     /** If true - "Add group" button is shown below the filter groups */
     enableAddGroupButton?: boolean;
+    /** If true - eye icon is shown per group to toggle suppression */
+    enableToggling?: boolean;
+    /** Function to determine if a group is complete */
+    isCompletedGroup?: (group: NodeFilter, index: number) => boolean;
     /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
     getSuggestOptions: (params: {
       columnId: PlAdvancedFilterColumnId;
@@ -37,10 +41,12 @@ const props = withDefaults(
   }>(),
   {
     supportedFilters: () => SUPPORTED_FILTER_TYPES,
+    isCompletedGroup: () => false,
     getSuggestModel: undefined,
 
     enableDnd: false,
     enableAddGroupButton: false,
+    enableToggling: false,
   },
 );
 
@@ -111,7 +117,10 @@ function inverseRootNode(groupIdx: number) {
     if (group.filter.type !== "and" && group.filter.type !== "or") {
       throw new Error('Invalid group structure, expected "and" or "or" group inside "not"');
     }
-    groups[groupIdx] = group.filter;
+    groups[groupIdx] = {
+      ...groups[groupIdx],
+      ...group.filter,
+    };
   } else {
     const type = groups[groupIdx].type;
     if (type !== "and" && type !== "or" && type !== "not") {
@@ -119,8 +128,8 @@ function inverseRootNode(groupIdx: number) {
     }
 
     groups[groupIdx] = {
+      ...groups[groupIdx],
       id: getNewId(),
-      isExpanded: true,
       type: "not",
       filter: groups[groupIdx],
     };
@@ -186,20 +195,25 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       :item-class-content="$style.filterGroupContent"
       :item-class-title="$style.filterGroupTitle"
       :is-expanded="(filter) => filter.isExpanded === true"
-      :on-expand="
-        (group) => {
-          group.isExpanded = !group.isExpanded;
-        }
-      "
+      :on-expand="(group) => (group.isExpanded = !group.isExpanded)"
+      :isToggled="(item) => item.isSuppressed === true"
+      :onToggle="(item) => (item.isSuppressed = !item.isSuppressed)"
+      :disableToggling="props.enableToggling !== true"
+      :disablePinning="true"
       :disableDragging="false"
       :disableRemoving="false"
-      :disableToggling="true"
-      :disablePinning="true"
     >
-      <template #item-title> Filter group </template>
+      <template #item-title="{ item, index }">
+        <slot name="group-title" :item="item" :index="index">Filter group</slot>
+      </template>
       <template #item-content="{ item, index }">
         <div
-          :class="$style.groupContent"
+          :class="[
+            $style.groupContent,
+            {
+              [$style.suppressedLabel]: item.isSuppressed,
+            },
+          ]"
           dropzone="true"
           @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
@@ -230,7 +244,11 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
           <div v-if="props.enableDnd" :class="$style.dropzone">
             <div>Drop dimensions here</div>
           </div>
-          <PlBtnSecondary v-else icon="add" @click="addColumnToGroup(index, firstColumnId)">
+          <PlBtnSecondary
+            v-else-if="!props.isCompletedGroup(item, index)"
+            icon="add"
+            @click="addColumnToGroup(index, firstColumnId)"
+          >
             Add filter
           </PlBtnSecondary>
         </div>
@@ -263,7 +281,9 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       @drop="handleDropToNewGroup"
       @dragover="dragOver"
     >
-      <template #item-title>Filter group</template>
+      <template #item-title="{ item, index }">
+        <slot name="group-title" :item="item" :index="index">Filter group</slot>
+      </template>
       <template #item-content>
         <div v-if="enableDnd" :class="$style.dropzone">
           <div>Drop dimensions here</div>
@@ -295,6 +315,10 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
 }
 .notCheckbox {
   margin: 4px 0;
+}
+.suppressedLabel {
+  filter: grayscale(100%);
+  pointer-events: none;
 }
 .dropzone {
   border-radius: 6px;

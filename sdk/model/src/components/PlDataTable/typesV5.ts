@@ -62,11 +62,17 @@ export type PlDataTableSheetState = {
 };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
+export type PlDataTableFilterMeta = {
+  id: number;
+  source?: "table-filter" | "table-search" | "default";
+  isExpanded?: boolean;
+  isSuppressed?: boolean;
+};
 export type PlDataTableFilterSpecLeaf = FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>;
 export type PlDataTableFilters = RootFilterSpec<PlDataTableFilterSpecLeaf>;
 export type PlDataTableFiltersWithMeta = RootFilterSpec<
   PlDataTableFilterSpecLeaf,
-  { id: number; isExpanded?: boolean; source?: "table-filter" | "table-search" }
+  PlDataTableFilterMeta
 >;
 
 export type PlDataTableStateV2CacheEntry = {
@@ -115,6 +121,8 @@ export type PlDataTableModel = {
   fullPframeHandle: PFrameHandle;
   /** p-table including only visible columns, used to get the data */
   visibleTableHandle: PTableHandle;
+  /** Default filters from model options, surfaced for UI display */
+  defaultFilters?: PlDataTableFilters;
 };
 
 export type CreatePlDataTableOps = {

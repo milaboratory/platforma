@@ -2,6 +2,7 @@ import {
   type AxisId,
   type CanonicalizedJson,
   type ListOptionBase,
+  type PlDataTableFilters,
   type PlDataTableModel,
   type PlDataTableSheet,
   type PlDataTableSheetState,
@@ -25,6 +26,8 @@ export type PlDataTableSettingsV2Base =
       sheets: PlDataTableSheet[];
       /** Result of `createPlDataTableV2` */
       model: PlDataTableModel | undefined;
+      /** Default filters from the model, applied when no user filters are set */
+      defaultFilters?: PlDataTableFilters;
     };
 
 /** Data table V2 settings */
@@ -78,6 +81,7 @@ export function usePlDataTableSettingsV2<T>(
                 sourceId: canonicalize(sourceIdValue)!,
                 sheets: sheetsValue,
                 model: model.value,
+                defaultFilters: model.value?.defaultFilters,
               }
             : { sourceId: null, pending: !model.stable, error: null };
       } else {
@@ -86,6 +90,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize(sourceIdValue)!,
               sheets: [],
               model: model.value,
+              defaultFilters: model.value?.defaultFilters,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       }
@@ -97,6 +102,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize("static")!,
               sheets: sheetsValue,
               model: model.value,
+              defaultFilters: model.value?.defaultFilters,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       } else {
@@ -105,6 +111,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize("static")!,
               sheets: [],
               model: model.value,
+              defaultFilters: model.value?.defaultFilters,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       }
