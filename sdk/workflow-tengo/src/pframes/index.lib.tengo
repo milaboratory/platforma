@@ -372,7 +372,7 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
 _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	// Validate batch options
 	if is_undefined(opts.batch) {
-		ll.panic("batch option is required when using primary+enrichment input form")
+		ll.panic("batch option is required when using primary+columns input form")
 	}
 	if !is_undefined(opts.aggregate) {
 		ll.panic("aggregate and batch options are mutually exclusive")
@@ -402,9 +402,10 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		isEph = opts.isEphemeral
 	}
 
-	// Normalize column entries
+	// Normalize column entries.
+	// `input.columns` is the outer-joined non-primary input (spec: revised 2026-04-08).
 	primaryEntries := pUtil.normalizeColumnEntries(input.primary)
-	enrichmentEntries := pUtil.normalizeColumnEntries(input.enrichments)
+	secondaryEntries := pUtil.normalizeColumnEntries(input.columns)
 
 	if len(primaryEntries) == 0 {
 		ll.panic("at least one primary column is required")
@@ -548,9 +549,9 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	for entry in primaryEntries {
 		primaryHeaders = append(primaryHeaders, entry.header)
 	}
-	enrichmentHeaders := []
-	for entry in enrichmentEntries {
-		enrichmentHeaders = append(enrichmentHeaders, entry.header)
+	secondaryHeaders := []
+	for entry in secondaryEntries {
+		secondaryHeaders = append(secondaryHeaders, entry.header)
 	}
 
 	batchTemplateParams := {
@@ -563,9 +564,9 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		eph: isEph,
 		outputs: processedOutputs,
 		primaryColumnCount: len(primaryEntries),
-		enrichmentColumnCount: len(enrichmentEntries),
+		secondaryColumnCount: len(secondaryEntries),
 		primaryHeaders: primaryHeaders,
-		enrichmentHeaders: enrichmentHeaders
+		secondaryHeaders: secondaryHeaders
 	}
 
 	// Build render inputs — pass column data as direct named inputs
@@ -583,9 +584,9 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 			renderInputs["__col_primary_" + string(i) + "_filter_spec"] = smart.createJsonResource(entry.filter.spec)
 		}
 	}
-	for i, entry in enrichmentEntries {
-		renderInputs["__col_enrichment_" + string(i) + "_data"] = entry.src.data
-		renderInputs["__col_enrichment_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
+	for i, entry in secondaryEntries {
+		renderInputs["__col_secondary_" + string(i) + "_data"] = entry.src.data
+		renderInputs["__col_secondary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
 	}
 
 	// Forward extra/metaExtra

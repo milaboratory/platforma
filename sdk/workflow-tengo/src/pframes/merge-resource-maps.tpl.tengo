@@ -1,0 +1,67 @@
+// pframes merge resource-maps — unions entries from multiple PColumnData/ResourceMap
+// resources into a single one. All sources must have the same keyLength.
+// Used by batch mode to merge per-batch ResourceMap outputs into a flat result.
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+smart := import(":smart")
+pConstants := import(":pframes.constants")
+text := import("text")
+
+json := import("json")
+
+self.awaitState("InputsLocked")
+// Await each source resource to be ready for input iteration
+self.awaitState({ wildcard: "*" }, "InputsLocked")
+
+self.body(func(inputs) {
+	// Collect source resources via rawInputs (preserves field references — we want
+	// to set the merged resource's fields to the SAME underlying blob/resource, not
+	// copies)
+	sources := []
+	for name, field in self.rawInputs() {
+		if text.has_prefix(name, "src_") {
+			sources = append(sources, field.getValue())
+		}
+	}
+
+	if len(sources) == 0 {
+		ll.panic("merge-resource-maps: no sources provided")
+	}
+
+	// keyLength must match across all sources. Read from the first valid one.
+	keyLength := 0
+	for src in sources {
+		if !src.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+			ll.panic("merge-resource-maps: expected ResourceMap, got %v", src.resourceType.name)
+		}
+		meta := src.getDataAsJson()
+		if !is_undefined(meta.keyLength) {
+			keyLength = meta.keyLength
+			break
+		}
+	}
+
+	merged := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: keyLength })
+	)
+
+	// Batches cover disjoint key ranges so collisions shouldn't occur; if they do,
+	// panic — a non-deterministic merge would hide a real bug upstream.
+	seenKeys := {}
+	for src in sources {
+		for key, field in src.inputs() {
+			if !is_undefined(seenKeys[key]) {
+				ll.panic("merge-resource-maps: duplicate key %v across batches — batches must be disjoint", key)
+			}
+			seenKeys[key] = true
+			merged.createInputField(key).set(field)
+		}
+	}
+
+	return {
+		result: merged.lockAndBuild()
+	}
+})
