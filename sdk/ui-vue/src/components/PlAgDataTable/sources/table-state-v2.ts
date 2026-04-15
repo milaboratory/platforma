@@ -24,10 +24,10 @@ import {
 } from "@platforma-sdk/model";
 import { computed, ref, watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
-import { isJsonEqual, Nil, randomInt } from "@milaboratories/helpers";
+import { isJsonEqual, Nil, randomInt, getField } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
 import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
-import { debounce, isNil, uniqBy } from "es-toolkit";
+import { debounce, isNil } from "es-toolkit";
 
 export function useTableState(
   tableStateDenormalized: Ref<PlDataTableStateV2>,
@@ -149,16 +149,11 @@ export function useTableState(
     const current = filtersState.value;
     const normalizedDefaults = normalizeFiltersState(defaultFilters.value);
     const annotatedDefaults = annotateFiltersWithMeta(normalizedDefaults, "default");
-    const filters = uniqBy(
-      current.filters.flatMap((group) =>
-        group.source === "default" ? annotatedDefaults.filters : [group],
-      ),
-      (group) => (group.source === "default" ? "default" : group.id),
-    );
+    const nonDefaults = current.filters.filter((group) => group.source !== "default");
 
     filtersState.value = {
       ...current,
-      filters,
+      filters: [...annotatedDefaults.filters, ...nonDefaults],
     };
   }
 
@@ -371,7 +366,7 @@ function annotateFiltersWithMeta(
   filters: PlDataTableFilters | PlDataTableFiltersWithMeta,
   source: "default" | "table-filter" | "table-search",
 ): PlDataTableFiltersWithMeta {
-  return annotateFilterNode(filters as FilterNode, source) as PlDataTableFiltersWithMeta;
+  return annotateFilterNode(filters, source) as PlDataTableFiltersWithMeta;
 }
 
 /**
@@ -379,36 +374,36 @@ function annotateFiltersWithMeta(
  * producing a PlDataTableFiltersWithMeta tree.
  */
 function annotateFilterNode(
-  node: FilterNode,
+  node: FilterNode | PlDataTableFilters | PlDataTableFiltersWithMeta,
   source: "default" | "table-filter" | "table-search",
 ): AnnotatedFilterSpec {
   switch (node.type) {
     case "and":
       return {
-        id: randomInt(),
-        isExpanded: true,
+        id: getField(node, "id") ?? randomInt(),
+        isExpanded: getField(node, "isExpanded") ?? true,
         source,
         type: "and" as const,
         filters: node.filters.map((child) => annotateFilterNode(child, source)),
       };
     case "or":
       return {
-        id: randomInt(),
-        isExpanded: true,
+        id: getField(node, "id") ?? randomInt(),
+        isExpanded: getField(node, "isExpanded") ?? true,
         source,
         type: "or" as const,
         filters: node.filters.map((child) => annotateFilterNode(child, source)),
       };
     case "not":
       return {
-        id: randomInt(),
-        isExpanded: true,
+        id: getField(node, "id") ?? randomInt(),
+        isExpanded: getField(node, "isExpanded") ?? true,
         source,
         type: "not" as const,
         filter: annotateFilterNode(node.filter, source),
       };
     default:
-      return { ...node, id: randomInt(), source } as AnnotatedFilterSpec;
+      return { ...node, id: getField(node, "id") ?? randomInt(), source } as AnnotatedFilterSpec;
   }
 }
 
