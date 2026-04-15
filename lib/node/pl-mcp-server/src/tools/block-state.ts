@@ -105,19 +105,23 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     async ({ projectId, blockId, data }) => {
       const project = await ctx.getOpenedProject(projectId);
 
-      // Try V2 (BlockModelV3 storage facade) first, fall back to V1 (legacy setBlockArgs)
+      // V1 state shape: { args, uiState } — callers may pass either the full state
+      // or just the args object. Unwrap once for both V2 and V1 paths.
+      const value = data.args ?? data;
+
+      // Try V2 (BlockModelV3 storage facade) first, fall back to V1 (legacy setBlockArgs).
+      // Prefix must match the error thrown in pl-middle-layer/src/mutator/project.ts setStates().
+      const MODEL_VERSION_MISMATCH = "Model API version mismatch";
       try {
         await project.mutateBlockStorage(
           blockId,
-          { operation: "update-block-data", value: data },
+          { operation: "update-block-data", value },
           ctx.getAuthorMarker(),
         );
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (msg.includes("Model API version mismatch")) {
-          // V1 block: set args directly
-          const args = data.args ?? data;
-          await project.setBlockArgs(blockId, args, ctx.getAuthorMarker());
+        if (msg.startsWith(MODEL_VERSION_MISMATCH)) {
+          await project.setBlockArgs(blockId, value, ctx.getAuthorMarker());
         } else {
           throw e;
         }
