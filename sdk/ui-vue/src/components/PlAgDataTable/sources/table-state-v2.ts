@@ -396,8 +396,8 @@ function annotateFilterNode(
       };
     case "not":
       return {
-        id: getField(node, "id") ?? randomInt(),
-        isExpanded: getField(node, "isExpanded") ?? true,
+        id: randomInt(),
+        isExpanded: true,
         source,
         type: "not" as const,
         filter: annotateFilterNode(node.filter, source),
