@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",

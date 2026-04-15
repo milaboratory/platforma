@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
+import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
@@ -110,8 +111,6 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
       const value = data.args ?? data;
 
       // Try V2 (BlockModelV3 storage facade) first, fall back to V1 (legacy setBlockArgs).
-      // Prefix must match the error thrown in pl-middle-layer/src/mutator/project.ts setStates().
-      const MODEL_VERSION_MISMATCH = "Model API version mismatch";
       try {
         await project.mutateBlockStorage(
           blockId,
@@ -119,8 +118,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           ctx.getAuthorMarker(),
         );
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg.startsWith(MODEL_VERSION_MISMATCH)) {
+        if (e instanceof ModelAPIVersionMismatchError) {
           await project.setBlockArgs(blockId, value, ctx.getAuthorMarker());
         } else {
           throw e;
