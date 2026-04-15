@@ -6,13 +6,26 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
-bodyTpl := assets.importTemplate(":pframes.proc_batch_body")
+bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
+bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
+bodyTplResourceMap := assets.importTemplate(":pframes.proc_batch_body_resource_map")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 	params := inputs.params
+
+	// Select body template:
+	// - params.bodyMode == "resourceMap" → body returns a ResourceMap keyed by batch key
+	// - params.batch.passContent=false   → body treats __value__ as a Blob file ref
+	// - default                          → body reads __value__ as a content string
+	bodyTpl := bodyTplContent
+	if params.bodyMode == "resourceMap" {
+		bodyTpl = bodyTplResourceMap
+	} else if !is_undefined(params.batch.passContent) && !params.batch.passContent {
+		bodyTpl = bodyTplBlob
+	}
 
 	primaryEntries := []
 	for entry in params.primaryEntries {
@@ -25,12 +38,34 @@ self.body(func(inputs) {
 		})
 	}
 
+	secondaryEntries := []
+	if !is_undefined(params.secondaryEntries) {
+		for entry in params.secondaryEntries {
+			secondaryEntries = append(secondaryEntries, {
+				src: {
+					spec: entry.spec,
+					data: inputs[entry.dataInputName]
+				},
+				header: entry.header
+			})
+		}
+	}
+
 	processResult := pframes.processColumn({
 		primary: primaryEntries,
+		columns: secondaryEntries,
 		primaryJoin: params.primaryJoin
 	}, bodyTpl, params.outputs, {
 		batch: params.batch
 	})
+
+	// For ResourceMap outputs, return the raw ResourceMap resource (PFrame export
+	// only makes sense for typed PColumn outputs).
+	if params.bodyMode == "resourceMap" {
+		return {
+			result: processResult.outputData(params.outputs[0].name)
+		}
+	}
 
 	return {
 		result: pframes.exportFrame(processResult.allOutputsFrame())

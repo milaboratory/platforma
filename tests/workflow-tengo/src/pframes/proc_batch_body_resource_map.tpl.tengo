@@ -1,0 +1,71 @@
+// proc_batch_body_resource_map — body template for ResourceMap output tests.
+// Parses the batch TSV content and returns a PColumnData/ResourceMap keyed by
+// the batch key column — each key maps to a JsonObject resource containing the
+// row data. Simulates a body that produces per-key output files (e.g. PDB files
+// in the 3D-structure use case).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+text := import("text")
+json := import("json")
+
+self.defineOutputs(
+	"resMap"
+)
+
+self.body(func(inputs) {
+	batchContent := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(batchContent) {
+		ll.panic("expected string batch content, got: %v", batchContent)
+	}
+
+	// Parse TSV: first line is header, remaining lines are records.
+	lines := text.split(batchContent, "\n")
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) <= 1 {
+		// Empty batch — return empty ResourceMap
+		return {
+			resMap: smart.structBuilder(
+				pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+				json.encode({ keyLength: 1 })
+			).lockAndBuild()
+		}
+	}
+
+	headerFields := text.split(lines[0], "\t")
+	// Key column is the first column (batch key). Body returns ResourceMap keyed
+	// by that column — so keyLength=1 for the body-declared axes.
+	keyColIdx := 0
+
+	rmBuilder := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 1 })
+	)
+
+	for i := 1; i < len(lines); i++ {
+		fields := text.split(lines[i], "\t")
+		if len(fields) < 1 {
+			continue
+		}
+		keyValue := fields[keyColIdx]
+		// Build a small JSON blob per record capturing all column values
+		row := {}
+		for j, h in headerFields {
+			if j < len(fields) {
+				row[h] = fields[j]
+			}
+		}
+		rowResource := smart.createJsonResource(row)
+		rmBuilder.createInputField(json.encode([keyValue])).set(rowResource)
+	}
+
+	return {
+		resMap: rmBuilder.lockAndBuild()
+	}
+})

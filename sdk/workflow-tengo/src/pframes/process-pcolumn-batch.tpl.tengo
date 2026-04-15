@@ -40,7 +40,7 @@ self.body(func(inputs) {
 	eph := params.eph
 	outputs := params.outputs
 	primaryColumnCount := params.primaryColumnCount
-	enrichmentColumnCount := params.enrichmentColumnCount
+	secondaryColumnCount := params.secondaryColumnCount
 
 	// Reconstruct column entries from named inputs
 	// Specs are auto-unmarshalled (JSON → Tengo map), data are raw smart resources
@@ -63,11 +63,11 @@ self.body(func(inputs) {
 		primaryColumns = append(primaryColumns, entry)
 	}
 
-	enrichmentColumns := []
-	for i := 0; i < enrichmentColumnCount; i++ {
-		prefix := "__col_enrichment_" + string(i) + "_"
-		enrichmentColumns = append(enrichmentColumns, {
-			header: params.enrichmentHeaders[i],
+	secondaryColumns := []
+	for i := 0; i < secondaryColumnCount; i++ {
+		prefix := "__col_secondary_" + string(i) + "_"
+		secondaryColumns = append(secondaryColumns, {
+			header: params.secondaryHeaders[i],
 			spec: inputs[prefix + "spec"],
 			data: self.rawInputs()[prefix + "data"]
 		})
@@ -90,7 +90,7 @@ self.body(func(inputs) {
 	batchKeyLength := len(batchKeyIndices)
 	hasIsolation := isolationKeyLength > 0
 
-	// Compute batch header columns: batch key axes, then primary values, then enrichments
+	// Compute batch header columns: batch key axes, then primary values, then secondary (outer-joined) columns
 	// Compute batch key headers for the exported file
 	batchKeyHeaders := []
 	for axSpec in batchKeyAxesSpec {
@@ -101,7 +101,7 @@ self.body(func(inputs) {
 	for col in primaryColumns {
 		allHeaders = append(allHeaders, col.header)
 	}
-	for col in enrichmentColumns {
+	for col in secondaryColumns {
 		allHeaders = append(allHeaders, col.header)
 	}
 
@@ -275,9 +275,9 @@ self.body(func(inputs) {
 		}
 	}
 
-	enrichmentGroups := []
-	for col in enrichmentColumns {
-		enrichmentGroups = append(enrichmentGroups, {
+	secondaryGroups := []
+	for col in secondaryColumns {
+		secondaryGroups = append(secondaryGroups, {
 			header: col.header,
 			spec: col.spec,
 			groups: _groupColumnData(col.data)
@@ -376,21 +376,21 @@ self.body(func(inputs) {
 			joined = pt.p.inner(joined, filterEntry)
 		}
 
-		// Outer-join enrichments
-		if len(enrichmentGroups) > 0 {
-			enrichEntries := []
-			for eg in enrichmentGroups {
-				groupData := eg.groups[sIsolationKey]
+		// Outer-join secondary columns
+		if len(secondaryGroups) > 0 {
+			secondaryJoinEntries := []
+			for sg in secondaryGroups {
+				groupData := sg.groups[sIsolationKey]
 				if is_undefined(groupData) {
 					continue
 				}
-				enrichEntries = append(enrichEntries, pt.p.column(eg.header, {
-					spec: _reducedSpec(eg.spec),
+				secondaryJoinEntries = append(secondaryJoinEntries, pt.p.column(sg.header, {
+					spec: _reducedSpec(sg.spec),
 					data: groupData
 				}))
 			}
-			if len(enrichEntries) > 0 {
-				joined = pt.p.outer(joined, enrichEntries...)
+			if len(secondaryJoinEntries) > 0 {
+				joined = pt.p.outer(joined, secondaryJoinEntries...)
 			}
 		}
 
@@ -417,7 +417,7 @@ self.body(func(inputs) {
 		for col in primaryColumns {
 			selectExprs = append(selectExprs, pt.col(col.header))
 		}
-		for col in enrichmentColumns {
+		for col in secondaryColumns {
 			selectExprs = append(selectExprs, pt.col(col.header))
 		}
 		df = df.select(selectExprs...)
