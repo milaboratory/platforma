@@ -196,12 +196,12 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       :item-class-title="$style.filterGroupTitle"
       :is-expanded="(filter) => filter.isExpanded === true"
       :on-expand="(group) => (group.isExpanded = !group.isExpanded)"
-      :isToggled="(item) => item.isSuppressed === true"
-      :onToggle="(item) => (item.isSuppressed = !item.isSuppressed)"
-      :disableToggling="props.enableToggling !== true"
-      :disablePinning="true"
-      :disableDragging="false"
-      :disableRemoving="false"
+      :is-toggled="(item) => item.isSuppressed === true"
+      :on-toggle="(item) => (item.isSuppressed = !item.isSuppressed)"
+      :disable-toggling="props.enableToggling !== true"
+      :disable-pinning="true"
+      :disable-dragging="false"
+      :disable-removing="false"
     >
       <template #item-title="{ item, index }">
         <slot name="group-title" :item="item" :index="index">Filter group</slot>
