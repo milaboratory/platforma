@@ -82,7 +82,7 @@ jobs:
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ci:test:local-rel
+        run: pnpm run ci:test:local
 
       - name: Upload coverage
         if: always()
