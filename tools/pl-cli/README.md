@@ -21,8 +21,8 @@ ModuleLoadError: Cannot find module '.../pframes_rs_node.node'
 - `admin copy-project` — copy a project between users (requires admin credentials)
 - `project list` — list projects for a user
 - `project info` — show project metadata
-- `project duplicate` — duplicate a project
-- `project rename` — rename a project
-- `project delete` — delete a project
+- `project duplicate` — Create a copy of an existing project
+- `project rename` — Change the name of a project
+- `project delete` — Permanently remove a project
 
 Run `pl-cli <command> --help` for per-command flags.
