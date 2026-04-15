@@ -31,7 +31,7 @@ export const FailExistingPackagesFlag = {
   }),
 };
 
-const devModeValues = ["local"] as const;
+const devModeValues = ["local", "local-rel"] as const;
 export type devModeName = (typeof devModeValues)[number];
 
 export const BuildFlags = {
@@ -209,6 +209,9 @@ export function modeFromFlag(dev?: devModeName): util.BuildMode {
   switch (dev) {
     case "local":
       return "dev-local";
+
+    case "local-rel":
+      return "dev-local-rel";
 
     case undefined:
       return "release";

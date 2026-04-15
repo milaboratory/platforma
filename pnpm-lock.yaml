@@ -53,7 +53,7 @@ catalogs:
       version: 2.0.3
     '@platforma-open/milaboratories.software-test-utils':
       specifier: ^1.1.6
-      version: 1.1.6
+      version: 1.1.1
     '@protobuf-ts/grpc-transport':
       specifier: 2.11.1
       version: 2.11.1
@@ -5224,9 +5224,6 @@ packages:
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.19':
-    resolution: {integrity: sha512-S1g5idMNu3KL2AdWKwivCgd0ZRwXrpCK+TkhAfuXBafezRwHAw0k+A1F62BY7OBA8pOGd5R7yvU2LpMpCnaPOQ==}
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9':
     resolution: {integrity: sha512-pCg5NZREkrzBqx7jXv14MQMGWh2nfB9JJMn4MoF0lYJjLGkXpyFyYSVErW8IIvbNHcFLE5tU1pG7zilP/wSPvg==}
 
@@ -5245,8 +5242,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries@2.0.3':
     resolution: {integrity: sha512-oluTZekUavkbqCnt+2zPGl3tuadRhznp485TxcKT7u7HvlgTXPbJ7KeCvYVTTAFBs5W9KW7GLyX3CtFtpSyg0g==}
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.1':
-    resolution: {integrity: sha512-R5GjUghsz2fFAW5NqK5FcxbXnLWHFoOXy6LecHIvcKLvGTOOavEZ6s1M6JHx41uV9G9yrhntB/kk0zpR3QApNA==}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.0':
+    resolution: {integrity: sha512-LJyDo1kfM2Cw6TE2mIi04ntLCReRYDGtw2pwAdry9fXXtP/EtGQTw3Sfe5Mq7i/d7Pg9oCpF1behBoH4Nly9Jw==}
 
   '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.3':
     resolution: {integrity: sha512-v45++DKXrOFmJQBZBiSymF3H1+IG4tFAwp6NYNOm1Ev2qKBsrXCcm0spRSFLuWm3nbZRYuOpIsqzHaNCErmyvA==}
@@ -11362,10 +11359,6 @@ snapshots:
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1': {}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.19':
-    dependencies:
-      '@milaboratories/pl-model-common': 1.26.0
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9': {}
 
   '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.4': {}
@@ -11383,7 +11376,7 @@ snapshots:
       '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.6.4
       '@platforma-open/milaboratories.software-small-binaries.table-converter': 1.3.4
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.1': {}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.0': {}
 
   '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.3': {}
 
@@ -11405,7 +11398,7 @@ snapshots:
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.1.4
       '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.9
-      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.1.1
+      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.1.0
       '@platforma-open/milaboratories.software-test-utils.guided-command': 1.1.3
       '@platforma-open/milaboratories.software-test-utils.java-stub': 1.0.5
       '@platforma-open/milaboratories.software-test-utils.python-stub': 1.0.5

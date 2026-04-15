@@ -43,12 +43,12 @@ jobs:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
-        run: pnpm run ci:build:local
+        run: pnpm run ci:build:local-rel
 
       - name: Check test cache (dry-run)
         id: dry-run
         run: |
-          pnpm run test:local+dry-run > ./test-dry-run.json || true
+          pnpm run test:local-rel+dry-run > ./test-dry-run.json || true
           SKIP_TESTS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
           echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
           echo "Test cache skip: $SKIP_TESTS"
@@ -82,7 +82,7 @@ jobs:
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ci:test:local
+        run: pnpm run ci:test:local-rel
 
       - name: Upload coverage
         if: always()

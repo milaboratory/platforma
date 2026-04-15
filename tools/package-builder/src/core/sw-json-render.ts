@@ -63,7 +63,7 @@ export class SwJsonRenderer {
       }
 
       const pkg = ep.artifact;
-      if (mode === "dev-local") {
+      if (util.isDevLocalMode(mode)) {
         switch (pkg.type) {
           case "docker": {
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
@@ -71,7 +71,7 @@ export class SwJsonRenderer {
           }
           default:
             this.logger.debug("  rendering 'local' source...");
-            info.local = this.renderLocalPackage(epName, ep, fullDirHash);
+            info.local = this.renderLocalPackage(mode, epName, ep, fullDirHash);
         }
 
         result.set(originEpName, info);
@@ -157,6 +157,7 @@ export class SwJsonRenderer {
   }
 
   private renderLocalPackage(
+    mode: util.BuildMode,
     epName: string,
     ep: entrypoint.PackageEntrypoint,
     fullDirHash: boolean,
@@ -164,6 +165,11 @@ export class SwJsonRenderer {
     const artifact = ep.artifact;
     const rootDir = this.pkgInfo.artifactContentRoot(artifact, util.currentPlatform());
     const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir);
+    // In 'dev-local-rel' mode bake path relative to packageRoot, so the .sw.json stays
+    // portable across machines (e.g. Turbo remote cache with different workspace paths).
+    // Readers (tengo-builder) resolve it back to absolute before sending to Platforma backend.
+    const localPath =
+      mode === "dev-local-rel" ? path.relative(this.pkgInfo.packageRoot, rootDir) : rootDir;
 
     const epType = ep.type;
     switch (epType) {
@@ -195,7 +201,7 @@ export class SwJsonRenderer {
             return {
               type: "binary",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
             };
@@ -204,7 +210,7 @@ export class SwJsonRenderer {
             return {
               type: "java",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: resolveRunEnvironment(
@@ -222,7 +228,7 @@ export class SwJsonRenderer {
             return {
               type: "python",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: resolveRunEnvironment(
@@ -240,7 +246,7 @@ export class SwJsonRenderer {
             return {
               type: "R",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               toolset: "renv",
@@ -263,7 +269,7 @@ export class SwJsonRenderer {
             return {
               type: "conda",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
 
@@ -299,6 +305,7 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
+      case "dev-local-rel":
         throw new Error(`'*.sw.json' generator logic error`);
 
       default:
@@ -435,6 +442,7 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
+      case "dev-local-rel":
         throw util.CLIError(`run environments do not support 'local' dev build mode yet`);
 
       default:
@@ -484,6 +492,7 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
+      case "dev-local-rel":
         throw util.CLIError(`assets do not support 'local' dev build mode yet`);
 
       default:

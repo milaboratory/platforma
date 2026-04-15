@@ -298,7 +298,12 @@ export function currentPlatform(): PlatformType {
 export const AllSoftwareSources = ["archive", "docker"] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
-export type BuildMode = "dev-local" | "release";
+export type BuildMode = "dev-local" | "dev-local-rel" | "release";
+
+/** True for any dev-local flavor (absolute or relative path in .sw.json). */
+export function isDevLocalMode(mode: BuildMode): mode is "dev-local" | "dev-local-rel" {
+  return mode === "dev-local" || mode === "dev-local-rel";
+}
 
 export type artifactID = {
   package: string;

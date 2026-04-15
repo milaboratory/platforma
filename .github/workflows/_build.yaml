@@ -45,4 +45,4 @@ jobs:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
-        run: pnpm run ci:build:local
+        run: pnpm run ci:build:local-rel
