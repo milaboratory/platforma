@@ -66,5 +66,10 @@
         "description": "Manage projects"
       }
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@milaboratories/pframes-rs-node"
+    ]
   }
 }
