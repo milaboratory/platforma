@@ -43,7 +43,10 @@ export async function exportCsv(gridApi: GridApi, completed: () => void) {
         columnDefs:
           gridApi
             .getColumnDefs()
-            ?.filter((def: ColDef | ColGroupDef): def is ColDef => !("children" in def))
+            ?.filter(
+              (def: ColDef | ColGroupDef): def is ColDef =>
+                !("children" in def) && def.hide !== true,
+            )
             .map((def) => ({
               headerName: def.headerName,
               field: def.field,

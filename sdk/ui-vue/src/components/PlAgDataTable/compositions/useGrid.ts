@@ -81,11 +81,14 @@ export function useGrid({
       text: noRowsText,
     } satisfies PlAgOverlayNoRowsParams,
     defaultCsvExportParams: {
-      allColumns: true,
       suppressQuotes: true,
       columnSeparator: "\t",
       fileName: "table.tsv",
     },
+    getContextMenuItems: (params) =>
+      (params.defaultItems ?? []).filter(
+        (item) => item !== "export" && item !== "csvExport" && item !== "excelExport",
+      ),
     onGridReady: (event) => {
       const api = event.api;
       autoSizeRowNumberColumn(api);
