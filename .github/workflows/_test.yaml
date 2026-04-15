@@ -48,7 +48,7 @@ jobs:
       - name: Check test cache (dry-run)
         id: dry-run
         run: |
-          pnpm run test:local-rel+dry-run > ./test-dry-run.json || true
+          pnpm run test:local+dry-run > ./test-dry-run.json || true
           SKIP_TESTS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
           echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
           echo "Test cache skip: $SKIP_TESTS"
