@@ -2,10 +2,11 @@ import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import {
   BlockModelV3,
   DataModelBuilder,
+  buildDatasetOptions,
   createPrimaryRef,
   isPrimaryRef,
 } from "@platforma-sdk/model";
-import type { DatasetOption, PlRef, PrimaryRef } from "@platforma-sdk/model";
+import type { PlRef, PrimaryRef } from "@platforma-sdk/model";
 import { z } from "zod";
 
 export const BlockData = z.object({
@@ -25,9 +26,7 @@ export const platforma = BlockModelV3.create(dataModel)
     return { dataset: primary };
   })
 
-  .output("datasetOptions", (ctx): DatasetOption[] | undefined =>
-    ctx.resultPool.getOptions(() => true, { refsWithEnrichments: true }),
-  )
+  .output("datasetOptions", (ctx) => buildDatasetOptions(ctx))
 
   .output("tableContent", (ctx) => ctx.outputs?.resolve("tableFile")?.getFileContentAsString())
 
