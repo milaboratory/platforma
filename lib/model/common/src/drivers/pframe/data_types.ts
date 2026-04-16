@@ -237,6 +237,21 @@ export type PTableShape = {
   rows: number;
 };
 
+/** Supported formats for PTable file download. */
+export type PTableDownloadFormat = "csv" | "tsv";
+
+/** Options for downloading PTable data to a file. */
+export interface DownloadPTableOptions {
+  path: string;
+  format: PTableDownloadFormat;
+  columnIndices: number[];
+  range?: TableRange;
+  chunkSize?: number;
+  includeHeader?: boolean;
+  bom?: boolean;
+  signal?: AbortSignal;
+}
+
 /** Result of a PTable file download. */
 export interface DownloadPTableResult {
   path: string;
@@ -252,6 +267,6 @@ export interface DownloadPTableResult {
 export interface DownloadPTableCsvOptions {
   defaultFileName?: string;
   columnIndices: number[];
-  format: "csv" | "tsv";
+  format: PTableDownloadFormat;
   range?: TableRange;
 }
