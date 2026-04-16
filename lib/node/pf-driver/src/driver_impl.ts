@@ -8,6 +8,8 @@ import {
   ValueType,
   type CalculateTableDataRequest,
   type CalculateTableDataResponse,
+  type DownloadPTableOptions,
+  type DownloadPTableResult,
   type FindColumnsRequest,
   type FindColumnsResponse,
   type PColumnIdAndSpec,
@@ -36,9 +38,13 @@ import {
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { ConcurrencyLimitingExecutor } from "@milaboratories/ts-helpers";
-import { PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
+import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
+import * as fs from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { streamPTableRows } from "./csv_writer";
 import type { AbstractInternalPFrameDriver } from "./driver_decl";
 import { logPFrames } from "./logging";
 import {
@@ -72,6 +78,8 @@ export type AbstractPFrameDriverOps = PTableCachePerFrameOps &
     pFrameConcurrency: number;
     /** Concurrency limits for `getShape` and `getData` requests */
     pTableConcurrency: number;
+    /** Concurrency limits for `downloadPTable` requests (disk IO bound, serialize to avoid UI starvation) */
+    pTableDownloadConcurrency: number;
   };
 
 export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
@@ -79,6 +87,7 @@ export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
   ...PTableCachePlainOpsDefaults,
   pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
   pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
+  pTableDownloadConcurrency: 1, // serialize downloads — disk IO bound, prevents UI starvation
 };
 
 export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
@@ -106,6 +115,7 @@ export class AbstractPFrameDriver<
 
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
+  private readonly downloadConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
   public async pprofDump(): Promise<Uint8Array> {
     return await PFrameFactory.pprofDump();
@@ -135,6 +145,9 @@ export class AbstractPFrameDriver<
 
     this.frameConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pFrameConcurrency);
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pTableConcurrency);
+    this.downloadConcurrencyLimiter = new ConcurrencyLimitingExecutor(
+      options.pTableDownloadConcurrency,
+    );
 
     this.pFrames = new PFramePool(
       this.localBlobProvider,
@@ -257,6 +270,73 @@ export class AbstractPFrameDriver<
       unref,
       [Symbol.dispose]: unref,
     };
+  }
+
+  public async downloadPTable(
+    handle: PTableHandle,
+    options: DownloadPTableOptions,
+  ): Promise<DownloadPTableResult> {
+    this.logger(
+      "info",
+      `[downloadPTable] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, columns = ${options.columnIndices.length})`,
+    );
+    const startTime = performance.now();
+    const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
+    const pTable = await pTablePromise;
+
+    const combinedSignal = AbortSignal.any(
+      [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
+    );
+
+    return await this.downloadConcurrencyLimiter.run(async () => {
+      const shape = await pTable.getShape({ signal: combinedSignal });
+      const effectiveRange = clipRange(options.range, shape);
+      const specs = pTable.getSpec();
+      const separator = options.format === "tsv" ? "\t" : ",";
+
+      const partPath = options.path + ".part";
+      const writeStream = fs.createWriteStream(partPath, { flags: "w" });
+      const iterable = streamPTableRows(
+        pTable,
+        options.columnIndices,
+        effectiveRange,
+        options.chunkSize ?? 50_000,
+        separator,
+        combinedSignal,
+        specs,
+        options.includeHeader ?? true,
+        options.bom ?? false,
+      );
+
+      try {
+        await pipeline(Readable.from(iterable, { objectMode: false }), writeStream, {
+          signal: combinedSignal,
+        });
+        await fs.promises.rename(partPath, options.path);
+      } catch (error) {
+        await fs.promises.unlink(partPath).catch(() => {});
+        throw error;
+      }
+
+      const overallSize = await pTable.getFootprint({ signal: combinedSignal });
+      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
+
+      // rowsWritten equals the clipped range length — the generator streams the
+      // entire effective range without early termination, so this is accurate.
+      const rowsWritten = effectiveRange.length;
+
+      if (logPFrames()) {
+        const durationMs = Math.round(performance.now() - startTime);
+        this.logger(
+          "info",
+          `downloadPTable complete (handle = ${handle}, columns = ${options.columnIndices.length}, rows = ${rowsWritten}, bytes = ${writeStream.bytesWritten}, duration = ${durationMs}ms)`,
+        );
+      }
+
+      return { path: options.path, rowsWritten, bytesWritten: writeStream.bytesWritten };
+    });
   }
 
   //
@@ -461,6 +541,16 @@ export class AbstractPFrameDriver<
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return data;
   }
+}
+
+/** Clamp range to table shape. When range is undefined, returns full table range. */
+function clipRange(range: undefined | TableRange, shape: PTableShape): TableRange {
+  if (isNil(range)) {
+    return { offset: 0, length: shape.rows };
+  }
+  const clampedOffset = Math.min(range.offset, shape.rows);
+  const clampedLength = Math.min(range.length, shape.rows - clampedOffset);
+  return { offset: clampedOffset, length: clampedLength };
 }
 
 function migrateFilters(

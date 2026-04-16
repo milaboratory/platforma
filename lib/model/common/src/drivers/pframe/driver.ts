@@ -5,7 +5,13 @@ import type { PColumn } from "./spec/spec";
 import type { PColumnValues, DataInfo } from "./data_info";
 import type { PTableDef, PTableDefV2 } from "./table_calculate";
 import type { AddParameterToAllMethods } from "./type_util";
-import type { PTableShape, PTableVector, TableRange } from "./data_types";
+import type {
+  DownloadPTableCsvOptions,
+  DownloadPTableResult,
+  PTableShape,
+  PTableVector,
+  TableRange,
+} from "./data_types";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 import type { PObjectId } from "../../pool";
 import type { PColumnIdAndSpec, PColumnSpec } from "./spec/spec";
@@ -88,6 +94,16 @@ export interface PFrameDriver {
     columnIndices: number[],
     range?: TableRange,
   ): Promise<PTableVector[]>;
+
+  /**
+   * Stream the table to a file on disk. The runtime prompts the user for
+   * a destination path via a native save dialog. Only available in the
+   * desktop-app runtime — absent in web/preview environments.
+   */
+  downloadPTable?(
+    handle: PTableHandle,
+    options: DownloadPTableCsvOptions,
+  ): Promise<DownloadPTableResult | undefined>;
 }
 
 //

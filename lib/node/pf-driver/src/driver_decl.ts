@@ -15,6 +15,12 @@ import type {
   UniqueValuesRequest,
   UniqueValuesResponse,
 } from "@milaboratories/pl-model-common";
+export type {
+  DownloadPTableOptions,
+  DownloadPTableResult,
+  PTableDownloadFormat,
+} from "@milaboratories/pl-model-common";
+import type { DownloadPTableOptions, DownloadPTableResult } from "@milaboratories/pl-model-common";
 import type { PoolEntry } from "@milaboratories/helpers";
 
 /**
@@ -75,4 +81,10 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
     range: TableRange | undefined,
     signal?: AbortSignal,
   ): Promise<PTableVector[]>;
+
+  /** Download PTable data to a file in CSV or TSV format. */
+  downloadPTable(
+    handle: PTableHandle,
+    options: DownloadPTableOptions,
+  ): Promise<DownloadPTableResult>;
 }

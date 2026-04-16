@@ -7,9 +7,10 @@ import type {
   BlockStateV3,
   DriverKit,
   OutputWithStatus,
+  UiServices as AllUiServices,
 } from "@milaboratories/pl-model-common";
 import type { SdkInfo } from "./version";
-import type { ServiceDispatch, UiServices as AllUiServices } from "@milaboratories/pl-model-common";
+import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 import type { BlockStatePatch } from "./block_state_patch";
 import type { PluginRecord } from "./block_model";
 import type { PluginHandle, PluginFactoryLike } from "./plugin_handle";

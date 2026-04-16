@@ -35,8 +35,8 @@ export * from "./components/PlAdvancedFilter";
 
 export * from "./defineApp";
 
-export { usePlugin } from "./usePlugin";
-export type { PluginState } from "./usePlugin";
+export { usePlugin } from "./composition/usePlugin";
+export type { PluginState } from "./composition/usePlugin";
 export type {
   PluginHandle,
   PluginFactoryLike,

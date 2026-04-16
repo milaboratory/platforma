@@ -12,8 +12,9 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
-  InferFactoryUiServices,
   PluginFactoryLike,
+  UiServices as AllUiServices,
+  InferFactoryUiServices,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
@@ -23,7 +24,6 @@ import {
   isPluginOutputKey,
   pluginOutputPrefix,
 } from "@platforma-sdk/model";
-import { type UiServices as AllUiServices } from "@milaboratories/pl-model-common";
 import type { Ref } from "vue";
 import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
@@ -32,7 +32,7 @@ import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
-import type { PluginState, PluginAccess } from "../usePlugin";
+import type { PluginState, PluginAccess } from "../composition/usePlugin";
 import { logDebug, logError } from "./utils";
 import { getServices } from "./getServices";
 
@@ -208,7 +208,7 @@ export function createAppV3<
         .dispose()
         .then(unwrapResult)
         .catch((err) => {
-          error("error in dispose", err);
+          error("platforma error in dispose", err);
         });
     });
 
