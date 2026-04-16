@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.65.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
+### Patch Changes
+
+- Updated dependencies [92ef20f]
+  - @milaboratories/uikit@2.12.0
+  - @platforma-sdk/model@1.65.0
+
 ## 1.64.0
 
 ### Minor Changes
