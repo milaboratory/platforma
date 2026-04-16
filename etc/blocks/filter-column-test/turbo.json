@@ -1,0 +1,16 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "test": {
+      "dependsOn": ["build"],
+      "passThroughEnv": [
+        "PL_ADDRESS",
+        "PL_TEST_PASSWORD",
+        "PL_TEST_USER",
+        "PL_TEST_PROXY",
+        "DEBUG",
+        "PL_DOCKER_REGISTRY_PUSH_TO"
+      ]
+    }
+  }
+}

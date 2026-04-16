@@ -1,0 +1,15 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+wf.body(func(args) {
+	table := wf.tableBuilder("tsv").
+		addPrimary("main", args.dataset).
+		build()
+
+	return {
+		outputs: {
+			tableFile: file.exportFile(table)
+		},
+		exports: {}
+	}
+})

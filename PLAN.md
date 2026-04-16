@@ -43,7 +43,7 @@ nested PlRefs inside PrimaryRef without changes.
 - [x] **Stage B** — PrimaryRef Types (R1, R2, R3)
 - [x] **Stage C** — Filter Discovery (R6, R7)
 - [x] **Stage D** — tableBuilder (R9-R12, R14)
-- [ ] **Stage E** — PlDatasetSelector (R8)
+- [x] **Stage E** — PlDatasetSelector (R8)
 
 ## Dependencies and Parallelism
 
@@ -58,13 +58,13 @@ re-estimate before investing in downstream work.
 
 **Risk ranking:**
 
-| Stage | Risk | Rationale |
-| --- | --- | --- |
-| A (workflow resolution) | High | Core resolve logic change + unproven await pattern on resolved PrimaryRef structures. If deep-walk breaks existing PlRef path or `_toRefOrJson()` doesn't handle mixed structures, blocks everything. |
-| B (PrimaryRef types) | Low | Pure TS types + Zod. Mirrors PlRef. Dependency scanner already deep-scans for `__isRef`. |
-| C (filter discovery) | Low | Uses proven `findColumns()` with verified annotation filtering. |
-| D (tableBuilder) | High | Builder + ephemeral template + Query API inner-join. Blocked by open questions. |
-| E (PlDatasetSelector) | Medium | Vue component, conditional dropdown UX. |
+| Stage                   | Risk   | Rationale                                                                                                                                                                                             |
+| ----------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A (workflow resolution) | High   | Core resolve logic change + unproven await pattern on resolved PrimaryRef structures. If deep-walk breaks existing PlRef path or `_toRefOrJson()` doesn't handle mixed structures, blocks everything. |
+| B (PrimaryRef types)    | Low    | Pure TS types + Zod. Mirrors PlRef. Dependency scanner already deep-scans for `__isRef`.                                                                                                              |
+| C (filter discovery)    | Low    | Uses proven `findColumns()` with verified annotation filtering.                                                                                                                                       |
+| D (tableBuilder)        | High   | Builder + ephemeral template + Query API inner-join. Blocked by open questions.                                                                                                                       |
+| E (PlDatasetSelector)   | Medium | Vue component, conditional dropdown UX.                                                                                                                                                               |
 
 **Recommended execution order:**
 Stage A -> Stage B -> Stage C (A and B in parallel;
@@ -84,12 +84,12 @@ tableBuilder, PlDatasetSelector).
 
 **Merge conflict risk:**
 
-| Stage | Phase 06 overlap | Risk |
-| --- | --- | --- |
-| A (`workflow/`, `tpl/`) | May read/test, shouldn't modify | Low |
-| B (`ref.ts`) | Consumes types, doesn't modify | None |
-| C (`sdk/model/src/columns/`) | Doesn't touch | None |
-| D (`pframes/index.lib.tengo`) | Both add exports here | **High** |
+| Stage                         | Phase 06 overlap                | Risk     |
+| ----------------------------- | ------------------------------- | -------- |
+| A (`workflow/`, `tpl/`)       | May read/test, shouldn't modify | Low      |
+| B (`ref.ts`)                  | Consumes types, doesn't modify  | None     |
+| C (`sdk/model/src/columns/`)  | Doesn't touch                   | None     |
+| D (`pframes/index.lib.tengo`) | Both add exports here           | **High** |
 
 Stage D and phase 06 both modify
 `sdk/workflow-tengo/src/pframes/index.lib.tengo` (adding
@@ -220,14 +220,8 @@ export type PrimaryRef = {
   readonly filter?: PlRef;
 };
 
-export function isPrimaryRef(
-  value: unknown,
-): value is PrimaryRef {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "__isPrimaryRef" in value
-  );
+export function isPrimaryRef(value: unknown): value is PrimaryRef {
+  return typeof value === "object" && value !== null && "__isPrimaryRef" in value;
 }
 
 export type DatasetInput = PlRef | PrimaryRef;
@@ -270,9 +264,7 @@ helper. Domain knowledge stays out of the generic
 //
 // ColumnSelectorInput supports annotations natively
 // (column_selector.test.ts has explicit tests).
-export function findFilterColumns(
-  collection: AnchoredColumnCollection,
-): ColumnMatch[] {
+export function findFilterColumns(collection: AnchoredColumnCollection): ColumnMatch[] {
   return collection.findColumns({
     mode: "enrichment",
     include: {
@@ -413,10 +405,11 @@ export. Single join regardless of column count. (spec R14)
 
 ## Stage E: PlDatasetSelector (R8) — Risk: Medium
 
-**Depends on:** Stage B, Stage C | **Status:** ready
+**Depends on:** Stage B, Stage C | **Status:** done
 
 **Delivers:** Vue component — select dataset + optional filter,
-emit `PrimaryRef`. File: `sdk/ui-vue/src/components/`.
+emit `PrimaryRef`. File:
+`sdk/ui-vue/src/components/PlDatasetSelector/`.
 
 **UX: conditional second dropdown.**
 Spec lists flat vs hierarchical as open question.
@@ -440,42 +433,77 @@ Rationale (per `docs/text/principles/progressive-disclosure.md`):
 [Dataset B          ▼]  ← single dropdown, same as PlDropdownRef
 ```
 
+### Input Data Shape (spec clarification)
+
+`ctx.resultPool.getOptions()` returns `Option[]` — enough for
+the dataset dropdown alone, but not for filters. Filter discovery
+needs `ColumnCollectionBuilder` + `findFilterColumns()` (Stage C)
+per dataset, plus `ColumnMatch → Option` mapping via
+`deriveDistinctLabels()`. That work is model-side (needs
+`ctx.services.pframeSpec`), not UI.
+
+The component therefore consumes an **enriched** option list —
+each dataset entry optionally carries its filter options.
+`DatasetOption` is defined in `lib/model/common/src/ref.ts`
+(model layer, next to `Option`), so block model code can
+construct it with proper typing:
+
+```typescript
+// lib/model/common/src/ref.ts
+type DatasetOption = Option & {
+  readonly filters?: readonly Option[];
+};
+```
+
+The block model builds this list inside an `.output()` that:
+
+1. Calls `ctx.resultPool.getOptions(anchorSpecs, { refsWithEnrichments: true })`
+2. For each option, builds a `ColumnCollectionBuilder` anchored
+   on that dataset's spec and calls `findFilterColumns()`
+3. Derives labels via `deriveDistinctLabels()` and attaches
+   them as `filters: Option[]`
+
+The component accepts `PrimaryRef | PlRef | undefined` as
+`modelValue` (R3 backward compat — plain `PlRef` treated as an
+unfiltered dataset) but always emits `PrimaryRef` (or `undefined`
+when cleared).
+
 ### Verification — Stage E
 
-- [ ] Single dataset dropdown when no filters exist
-- [ ] Filter dropdown appears when selected dataset has filters
-- [ ] Filter dropdown defaults to "No filter"
-- [ ] Filter dropdown hidden when dataset has no filters
-- [ ] Emits `PrimaryRef` with `filter: undefined` when
+- [x] Single dataset dropdown when no filters exist
+- [x] Filter dropdown appears when selected dataset has filters
+- [x] Filter dropdown defaults to "No filter"
+- [x] Filter dropdown hidden when dataset has no filters
+- [x] Emits `PrimaryRef` with `filter: undefined` when
       "No filter" selected or no filters exist
-- [ ] Emits `PrimaryRef` with filter PlRef when filter selected
-- [ ] Switching dataset resets filter to "No filter"
+- [x] Emits `PrimaryRef` with filter PlRef when filter selected
+- [x] Switching dataset resets filter to "No filter"
 
 ## File Index
 
-| File | Stages | Action |
-| --- | --- | --- |
-| `lib/model/common/src/ref.ts` | B | PrimaryRef, isPrimaryRef, DatasetInput |
-| `sdk/workflow-tengo/src/workflow/index.lib.tengo` | A | Extend resolve() with deep-walk |
-| `sdk/workflow-tengo/src/workflow/bquery.lib.tengo` | A | Deep-walk helper if needed |
-| `sdk/workflow-tengo/src/tpl/base.lib.tengo` | A | PrimarySpecsReady await template |
-| `sdk/model/src/columns/` | C | Filter discovery helper |
-| `sdk/model/src/render/util/label.ts` | C | Filter labels if needed |
-| `sdk/workflow-tengo/src/pframes/table-builder.lib.tengo` | D | tableBuilder API + build template |
-| `sdk/workflow-tengo/src/pframes/index.lib.tengo` | D | Export tableBuilder |
-| `sdk/ui-vue/src/components/` | E | PlDatasetSelector |
+| File                                                     | Stages | Action                                                |
+| -------------------------------------------------------- | ------ | ----------------------------------------------------- |
+| `lib/model/common/src/ref.ts`                            | B, E   | PrimaryRef, isPrimaryRef, DatasetInput, DatasetOption |
+| `sdk/workflow-tengo/src/workflow/index.lib.tengo`        | A      | Extend resolve() with deep-walk                       |
+| `sdk/workflow-tengo/src/workflow/bquery.lib.tengo`       | A      | Deep-walk helper if needed                            |
+| `sdk/workflow-tengo/src/tpl/base.lib.tengo`              | A      | PrimarySpecsReady await template                      |
+| `sdk/model/src/columns/`                                 | C      | Filter discovery helper                               |
+| `sdk/model/src/render/util/label.ts`                     | C      | Filter labels if needed                               |
+| `sdk/workflow-tengo/src/pframes/table-builder.lib.tengo` | D      | tableBuilder API + build template                     |
+| `sdk/workflow-tengo/src/pframes/index.lib.tengo`         | D      | Export tableBuilder                                   |
+| `sdk/ui-vue/src/components/PlDatasetSelector/`           | E      | PlDatasetSelector component                           |
 
 ## Edge Cases
 
-| Case | Handling |
-| --- | --- |
-| Primary is `PlRef` (no filter) | No inner-join |
-| `PrimaryRef` with `filter: undefined` | Same as plain PlRef |
-| No `.addPrimary()` before `.build()` | Panic |
-| Zero columns added | Export primary columns only |
-| `addColumn` matches zero | Panic |
-| `addColumns` matches zero | Empty set, no error |
-| Unresolved input without workflow context | Panic |
-| Mix resolved + unresolved columns | Each detected independently |
-| Filter axes not subset of dataset axes | Not in discovery results |
-| No compatible filters for dataset | UI hides filter dropdown |
+| Case                                      | Handling                    |
+| ----------------------------------------- | --------------------------- |
+| Primary is `PlRef` (no filter)            | No inner-join               |
+| `PrimaryRef` with `filter: undefined`     | Same as plain PlRef         |
+| No `.addPrimary()` before `.build()`      | Panic                       |
+| Zero columns added                        | Export primary columns only |
+| `addColumn` matches zero                  | Panic                       |
+| `addColumns` matches zero                 | Empty set, no error         |
+| Unresolved input without workflow context | Panic                       |
+| Mix resolved + unresolved columns         | Each detected independently |
+| Filter axes not subset of dataset axes    | Not in discovery results    |
+| No compatible filters for dataset         | UI hides filter dropdown    |

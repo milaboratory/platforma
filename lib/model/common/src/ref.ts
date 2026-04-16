@@ -60,7 +60,11 @@ export type Option = {
  * @param name - The name of the reference.
  * @param requireEnrichments - Whether the reference requires enrichments.
  */
-export function createPlRef(blockId: string, name: string, requireEnrichments: boolean = false) {
+export function createPlRef(
+  blockId: string,
+  name: string,
+  requireEnrichments: boolean = false,
+): PlRef {
   if (requireEnrichments)
     return {
       __isRef: true,
@@ -97,12 +101,7 @@ export function withEnrichments(ref: PlRef, requireEnrichments: boolean = true):
   }
 }
 
-/**
- * Primary dataset + optional filter, stored in block args.
- * `column` carries `requireEnrichments: true` by convention.
- * The dependency scanner deep-scans for `__isRef: true` and
- * finds nested PlRefs without changes.
- */
+/** Primary dataset reference with an optional filter. */
 export type PrimaryRef = {
   readonly __isPrimaryRef: "v1";
   readonly column: PlRef;
@@ -113,8 +112,18 @@ export function isPrimaryRef(value: unknown): value is PrimaryRef {
   return typeof value === "object" && value !== null && "__isPrimaryRef" in value;
 }
 
+export function createPrimaryRef(column: PlRef, filter?: PlRef): PrimaryRef {
+  if (filter !== undefined) return { __isPrimaryRef: "v1", column, filter };
+  else return { __isPrimaryRef: "v1", column };
+}
+
 /** Block args accept either form — backward compatible. */
 export type DatasetInput = PlRef | PrimaryRef;
+
+/** Dataset option with optional filter choices. */
+export type DatasetOption = Option & {
+  readonly filters?: readonly Option[];
+};
 
 /** Compare two PlRefs and returns true if they are qual */
 export function plRefsEqual(ref1: PlRef, ref2: PlRef, ignoreEnrichments: boolean = false) {
