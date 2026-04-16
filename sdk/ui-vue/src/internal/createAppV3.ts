@@ -12,8 +12,9 @@ import type {
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
-  InferFactoryUiServices,
   PluginFactoryLike,
+  UiServices as AllUiServices,
+  InferFactoryUiServices,
 } from "@platforma-sdk/model";
 import {
   hasAbortError,
@@ -22,11 +23,7 @@ import {
   getPluginData,
   isPluginOutputKey,
   pluginOutputPrefix,
-  createNodeServiceProxy,
-  buildServices,
 } from "@platforma-sdk/model";
-import { type UiServices as AllUiServices } from "@milaboratories/pl-model-common";
-import { createUiServiceRegistry } from "./service_factories";
 import type { Ref } from "vue";
 import { reactive, computed, ref, markRaw } from "vue";
 import type { OutputValues, OutputErrors, AppSettings } from "../types";
@@ -35,7 +32,9 @@ import { ensureOutputHasStableFlag, MultiError } from "../utils";
 import { applyPatch } from "fast-json-patch";
 import { UpdateSerializer } from "./UpdateSerializer";
 import { watchIgnorable } from "@vueuse/core";
-import type { PluginState, PluginAccess } from "../usePlugin";
+import type { PluginState, PluginAccess } from "../composition/usePlugin";
+import { logDebug, logError } from "./utils";
+import { getServices } from "./getServices";
 
 export const patchPoolingDelay = 150;
 
@@ -52,14 +51,6 @@ export const createNextAuthorMarker = (marker: AuthorMarker | undefined): Author
   authorId: marker?.authorId ?? uniqueId(),
   localVersion: (marker?.localVersion ?? 0) + 1,
 });
-
-const stringifyForDebug = (v: unknown) => {
-  try {
-    return JSON.stringify(v, null, 2);
-  } catch (err) {
-    return err instanceof Error ? err.message : String(err);
-  }
-};
 
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
@@ -87,26 +78,6 @@ export function createAppV3<
   platforma: PlatformaExtended<PlatformaV3<Data, Args, Outputs, Href, Plugins, UiServices>>,
   settings: AppSettings,
 ) {
-  const debug = (msg: string, ...rest: unknown[]) => {
-    if (settings.debug) {
-      console.log(
-        `%c>>> %c${msg}`,
-        "color: orange; font-weight: bold",
-        "color: orange",
-        ...rest.map((r) => stringifyForDebug(r)),
-      );
-    }
-  };
-
-  const error = (msg: string, ...rest: unknown[]) => {
-    console.error(
-      `%c>>> %c${msg}`,
-      "color: red; font-weight: bold",
-      "color: red",
-      ...rest.map((r) => stringifyForDebug(r)),
-    );
-  };
-
   const data = {
     isExternalSnapshot: false,
     author: {
@@ -115,6 +86,8 @@ export function createAppV3<
     },
   };
 
+  const debug = settings.debug ? logDebug : () => {};
+  const error = logError;
   const nextAuthorMarker = () => {
     data.author = createNextAuthorMarker(data.author);
     debug("nextAuthorMarker", data.author);
@@ -230,11 +203,12 @@ export function createAppV3<
   (async () => {
     window.addEventListener("beforeunload", () => {
       closedRef.value = true;
-      Promise.allSettled([uiRegistry.dispose(), platforma.dispose().then(unwrapResult)]).catch(
-        (err) => {
-          error("error in dispose", err);
-        },
-      );
+      platforma
+        .dispose()
+        .then(unwrapResult)
+        .catch((err) => {
+          error("platforma error in dispose", err);
+        });
     });
 
     while (!closedRef.value) {
@@ -334,9 +308,7 @@ export function createAppV3<
     },
   };
 
-  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
-  const uiRegistry = createUiServiceRegistry({ proxy });
-  const services = buildServices<UiServices>(platforma.serviceDispatch, uiRegistry);
+  const services = getServices<UiServices>();
 
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(

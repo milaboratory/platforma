@@ -10,7 +10,6 @@ import { resolveRequiredServices } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
-import type { BlockDefaultUiServices } from "./services/service_resolve";
 import { blockServiceNames, BLOCK_SERVICE_FLAGS } from "./services/block_services";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
@@ -42,6 +41,7 @@ import {
   BlockStorageFacadeHandles,
   registerFacadeCallbacks,
 } from "./block_storage_facade";
+import { BlockDefaultUiServices } from "./services";
 
 type SectionsExpectedType = readonly BlockSection[];
 

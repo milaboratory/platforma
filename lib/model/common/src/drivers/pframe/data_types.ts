@@ -236,3 +236,22 @@ export type PTableShape = {
   /** Number of rows */
   rows: number;
 };
+
+/** Result of a PTable file download. */
+export interface DownloadPTableResult {
+  path: string;
+  rowsWritten: number;
+  bytesWritten: number;
+}
+
+/**
+ * Options for the UI-facing PTable download entry point — the runtime
+ * (desktop preload) prompts the user for a destination path via native
+ * save dialog and streams the table to that file.
+ */
+export interface DownloadPTableCsvOptions {
+  defaultFileName?: string;
+  columnIndices: number[];
+  format: "csv" | "tsv";
+  range?: TableRange;
+}

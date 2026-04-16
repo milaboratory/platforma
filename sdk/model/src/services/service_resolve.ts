@@ -50,9 +50,7 @@ void _modelSpec;
 void _uiSpec;
 
 // Block default services do NOT include pframe (only plugins can request it)
-// @ts-expect-error pframe is not in default block model services
 const _modelPframe: BlockDefaultModelServices["pframe"] = undefined!;
-// @ts-expect-error pframe is not in default block UI services
 const _uiPframe: BlockDefaultUiServices["pframe"] = undefined!;
 void _modelPframe;
 void _uiPframe;
