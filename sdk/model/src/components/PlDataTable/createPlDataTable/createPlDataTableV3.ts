@@ -131,10 +131,13 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
   ]);
 
-  const filters = state.pTableParams.filters;
-  const defaultFilters = remapFilterColumnIds(options.filters, discovered) ?? undefined;
+  const optionsDefaults = remapFilterColumnIds(options.filters, discovered) ?? null;
+  const effectiveDefaults =
+    state.pTableParams.sourceId === null
+      ? optionsDefaults // UI hasn't written pTableParams yet → fallback
+      : state.pTableParams.defaultFilters; // UI has written → snapshot
+  const filters = mergeFilters(state.pTableParams.filters, effectiveDefaults);
   validateFilters(filters, columnIsAvailable);
-  validateFilters(defaultFilters, columnIsAvailable);
 
   const sorting = resolveSorting(
     state.pTableParams.sorting,
@@ -208,7 +211,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
-    defaultFilters,
+    defaultFilters: effectiveDefaults ?? undefined,
   } satisfies PlDataTableModel;
 }
 
@@ -334,6 +337,16 @@ function validateFilters(
       `Invalid filter column ${firstInvalid}: column reference does not match the table columns`,
     );
   }
+}
+
+/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil. */
+function mergeFilters(
+  a: Nil | PlDataTableFilters,
+  b: Nil | PlDataTableFilters,
+): Nil | PlDataTableFilters {
+  if (isNil(a)) return b;
+  if (isNil(b)) return a;
+  return { type: "and", filters: [a, b] };
 }
 
 /** Pick user sorting from state if non-empty, otherwise fall back to options default. */

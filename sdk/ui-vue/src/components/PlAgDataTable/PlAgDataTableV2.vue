@@ -165,12 +165,14 @@ const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
 const defaultFilters = computed(() =>
   settings.value.sourceId !== null ? settings.value.defaultFilters : undefined,
 );
-const { gridState, sheetsState, filtersState, searchString, resetDefaultFilters } = useTableState(
-  tableState,
-  settings,
-  visibleFilterableColumns,
-  defaultFilters,
-);
+const {
+  gridState,
+  sheetsState,
+  filtersState,
+  defaultFiltersState,
+  searchString,
+  resetDefaultFilters,
+} = useTableState(tableState, settings, visibleFilterableColumns, defaultFilters);
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
   return settingsCopy.sourceId !== null
@@ -537,7 +539,8 @@ watchEffect(() => {
     <PlAgGridColumnManager v-if="gridApi && !disableColumnsPanel" :api="gridApi" />
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
-      v-model="filtersState"
+      v-model:filters="filtersState"
+      v-model:default-filters="defaultFiltersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
       :reset-default-filters="resetDefaultFilters"

@@ -29,6 +29,8 @@ const props = withDefaults(
     enableAddGroupButton?: boolean;
     /** If true - eye icon is shown per group to toggle suppression */
     enableToggling?: boolean;
+    /** Function to determine if a filter is pinned */
+    isPinned?: (item: NodeFilter, index: number) => boolean;
     /** Function to determine if a group is complete */
     isCompletedGroup?: (group: NodeFilter, index: number) => boolean;
     /** Loading function for unique values for Equal/InSet filters and fixed axes options. */
@@ -42,6 +44,7 @@ const props = withDefaults(
   {
     supportedFilters: () => SUPPORTED_FILTER_TYPES,
     isCompletedGroup: () => false,
+    isPinned: () => false,
     getSuggestModel: undefined,
 
     enableDnd: false,
@@ -198,8 +201,9 @@ function updateFilter(filters: CommonFilter[], idx: number, updatedFilter: Edita
       :on-expand="(group) => (group.isExpanded = !group.isExpanded)"
       :is-toggled="(item) => item.isSuppressed === true"
       :on-toggle="(item) => (item.isSuppressed = !item.isSuppressed)"
+      :is-pinned="(item, index) => props.isPinned?.(item, index) === true"
+      :is-pinnable="() => false"
       :disable-toggling="props.enableToggling !== true"
-      :disable-pinning="true"
       :disable-dragging="false"
       :disable-removing="false"
     >

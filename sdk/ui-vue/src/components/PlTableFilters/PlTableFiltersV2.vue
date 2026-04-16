@@ -16,7 +16,7 @@ import {
   parseJson,
   getPTableColumnId,
 } from "@platforma-sdk/model";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import {
   PlAdvancedFilter,
@@ -28,25 +28,44 @@ import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
 
-const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
+const filtersModel = defineModel<PlDataTableFiltersWithMeta>("filters", { required: true });
+const defaultFiltersModel = defineModel<PlDataTableFiltersWithMeta>("default-filters");
 const props = defineProps<{
   pframeHandle: Nil | PFrameHandle;
   columns: PTableColumnSpec[];
   resetDefaultFilters?: () => void;
 }>();
 
-// Teleport for "Filters" button
-const mounted = ref(false);
-onMounted(() => {
-  mounted.value = true;
-});
 const teleportTarget = usePlBlockPageTitleTeleportTarget("PlTableFiltersV2");
 const showManager = ref(false);
-const hasFilters = computed(() => model.value.filters.length > 0);
+const hasFilters = computed(() => filtersModel.value.filters.length > 0);
+const hasDefaultFilters = computed(
+  () => !isNil(defaultFiltersModel.value) && defaultFiltersModel.value.filters.length > 0,
+);
+const allFilters = computed<PlDataTableFiltersWithMeta>({
+  get: () => {
+    if (isNil(defaultFiltersModel.value) || defaultFiltersModel.value?.filters.length === 0) {
+      return filtersModel.value;
+    }
 
-function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
-  return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
-}
+    console.log(">>debugger get");
+    return {
+      ...filtersModel.value,
+      filters: [...defaultFiltersModel.value.filters, ...filtersModel.value.filters],
+    } as PlDataTableFiltersWithMeta;
+  },
+  set: (value) => {
+    if (isNil(defaultFiltersModel.value)) {
+      filtersModel.value = value;
+    }
+
+    console.log(">>debugger set");
+    const [defaults, ...rest] = value.filters;
+    // @ts-ignore
+    defaultFiltersModel.value = { ...defaultFiltersModel.value, filters: [defaults] };
+    filtersModel.value = { ...filtersModel.value, filters: rest };
+  },
+});
 
 const items = computed<PlAdvancedFilterItem[]>(() => {
   return props.columns.map((col, idx) => {
@@ -109,11 +128,18 @@ function handleSuggestOptions(params: {
     searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
   }).then((v) => v.values);
 }
+
+function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
+  return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
+}
 </script>
 
 <template>
-  <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost :icon="hasFilters ? 'filter-on' : 'filter'" @click.stop="showManager = true">
+  <Teleport v-if="teleportTarget" :to="teleportTarget">
+    <PlBtnGhost
+      :icon="hasFilters || hasDefaultFilters ? 'filter-on' : 'filter'"
+      @click.stop="showManager = true"
+    >
       Filters
     </PlBtnGhost>
   </Teleport>
@@ -123,17 +149,17 @@ function handleSuggestOptions(params: {
 
     <div :class="$style.root">
       <PlAdvancedFilterComponent
-        v-model:filters="model as PlAdvancedFilter"
+        v-model:filters="allFilters as PlAdvancedFilter"
         :items="items"
         :supported-filters="supportedFilters"
         :get-suggest-options="handleSuggestOptions"
-        :is-completed-group="(group) => group.source === 'default'"
+        :is-pinned="(_, index) => hasDefaultFilters && index === 0"
         :enable-dnd="false"
-        :enable-add-group-button="true"
         :enable-toggling="true"
+        :enable-add-group-button="true"
       >
-        <template #group-title="{ item }">
-          <div v-if="item.source === 'default'" :class="$style.defaultGroupTitle">
+        <template #group-title="item">
+          <div :class="$style.defaultGroupTitle">
             Default Group
             <PlBtnGhost
               v-if="isFunction(props.resetDefaultFilters)"
@@ -141,8 +167,8 @@ function handleSuggestOptions(params: {
               :class="$style.restartBtn"
               @click.stop="props.resetDefaultFilters()"
             />
+            Custom Group
           </div>
-          <template v-else>Custom Group</template>
         </template>
       </PlAdvancedFilterComponent>
     </div>

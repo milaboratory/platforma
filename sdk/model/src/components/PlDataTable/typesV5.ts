@@ -64,7 +64,7 @@ export type PlDataTableSheetState = {
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
 export type PlDataTableFilterMeta = {
   id: number;
-  source?: "table-filter" | "table-search" | "default";
+  source?: "table-filter" | "table-search";
   isExpanded?: boolean;
   isSuppressed?: boolean;
 };
@@ -82,8 +82,10 @@ export type PlDataTableStateV2CacheEntry = {
   gridState: PlDataTableGridStateCore;
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
-  /** Filters state (tree-based, compatible with PlAdvancedFilter) */
+  /** User filters state (tree-based, compatible with PlAdvancedFilter) */
   filtersState: null | PlDataTableFiltersWithMeta;
+  /** Default filters state from model (snapshot of defaults) */
+  defaultFiltersState: null | PlDataTableFiltersWithMeta;
   /** Fast search string */
   searchString?: string;
 };
@@ -93,12 +95,14 @@ export type PTableParamsV2 =
       sourceId: null;
       hiddenColIds: null;
       filters: null;
+      defaultFilters: null;
       sorting: [];
     }
   | {
       sourceId: string;
       hiddenColIds: null | PTableColumnId[];
       filters: null | PlDataTableFilters;
+      defaultFilters: null | PlDataTableFilters;
       sorting: PTableSorting[];
     };
 

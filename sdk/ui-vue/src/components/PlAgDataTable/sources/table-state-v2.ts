@@ -24,7 +24,7 @@ import {
 } from "@platforma-sdk/model";
 import { computed, ref, watch, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
-import { isJsonEqual, Nil, randomInt, getField } from "@milaboratories/helpers";
+import { isJsonEqual, randomInt, getField } from "@milaboratories/helpers";
 import { computedCached } from "@milaboratories/uikit";
 import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
 import { debounce, isNil } from "es-toolkit";
@@ -38,6 +38,7 @@ export function useTableState(
   gridState: WritableComputedRef<PlDataTableGridStateCore>;
   sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
   filtersState: Ref<PlDataTableFiltersWithMeta>;
+  defaultFiltersState: Ref<PlDataTableFiltersWithMeta>;
   searchString: WritableComputedRef<string>;
   resetDefaultFilters: () => void;
 } {
@@ -116,15 +117,11 @@ export function useTableState(
     },
   });
 
+  // --- User filters (editable by user) ---
   const filtersState = computed<PlDataTableFiltersWithMeta>({
     get: () => {
       const raw = tableState.value.filtersState;
-      const normalizedRaw = isNil(raw) ? getEmptyGroup() : normalizeFiltersState(raw);
-      const normalizedDefault = isNil(defaultFilters.value)
-        ? undefined
-        : normalizeFiltersState(defaultFilters.value);
-      const withDefaults = ensureDefaultFilters(normalizedRaw, normalizedDefault);
-      return withDefaults;
+      return isNil(raw) ? getEmptyGroup() : normalizeFiltersState(raw);
     },
     set: (filtersState: PlDataTableFiltersWithMeta) => {
       const oldState = tableState.value;
@@ -143,18 +140,42 @@ export function useTableState(
     { deep: true },
   );
 
+  // --- Default filters (from model, separate list) ---
+  const defaultFiltersState = computed<PlDataTableFiltersWithMeta>({
+    get: () => {
+      const raw = tableState.value.defaultFiltersState;
+      if (!isNil(raw)) return normalizeFiltersState(raw);
+      // Initialize from model defaults if cache has no snapshot yet
+      if (!isNil(defaultFilters.value)) {
+        return annotateFiltersWithIds(normalizeFiltersState(defaultFilters.value));
+      }
+      return getEmptyGroup();
+    },
+    set: (defaultFiltersState: PlDataTableFiltersWithMeta) => {
+      const oldState = tableState.value;
+      if (oldState.sourceId) {
+        tableState.value = {
+          ...oldState,
+          defaultFiltersState,
+        };
+      }
+    },
+  });
+  const defaultFiltersStateDeepReactive = ref(defaultFiltersState);
+  watch(
+    () => defaultFiltersStateDeepReactive.value,
+    (newValue) => (defaultFiltersState.value = newValue),
+    { deep: true },
+  );
+
   function resetDefaultFilters(): void {
-    if (isNil(defaultFilters.value)) return;
-
-    const current = filtersState.value;
-    const normalizedDefaults = normalizeFiltersState(defaultFilters.value);
-    const annotatedDefaults = annotateFiltersWithMeta(normalizedDefaults, "default");
-    const nonDefaults = current.filters.filter((group) => group.source !== "default");
-
-    filtersState.value = {
-      ...current,
-      filters: [...annotatedDefaults.filters, ...nonDefaults],
-    };
+    if (isNil(defaultFilters.value)) {
+      defaultFiltersState.value = getEmptyGroup();
+      return;
+    }
+    defaultFiltersState.value = annotateFiltersWithIds(
+      normalizeFiltersState(defaultFilters.value),
+    );
   }
 
   const searchString = computed<string>({
@@ -175,6 +196,7 @@ export function useTableState(
     sheetsState,
     searchString,
     filtersState: filtersStateDeepReactive,
+    defaultFiltersState: defaultFiltersStateDeepReactive,
     resetDefaultFilters,
   };
 }
@@ -188,6 +210,7 @@ type PlDataTableStateV2CacheEntryNullable =
       gridState: Record<string, never>;
       sheetsState: [];
       filtersState: null;
+      defaultFiltersState: null;
       searchString?: string;
     };
 
@@ -200,23 +223,35 @@ function createPTableParams(
   state: PlDataTableStateV2CacheEntry,
   filterableColumns: PTableColumnSpec[],
 ): PTableParamsV2 {
+  // User filters: sheets + user filter state + search
   const searchNode = createSearchFilterNode(filterableColumns, state.searchString);
-  const unsuppressedFilters = isNil(state.filtersState)
+  const unsuppressedUserFilters = isNil(state.filtersState)
     ? null
     : stripSuppressedFilters(state.filtersState);
-  const parts = [
+  const userParts = [
     ...convertPartitionFiltersToFilterSpec(state.sheetsState),
-    ...(isNil(unsuppressedFilters) ? [] : [unsuppressedFilters]),
+    ...(isNil(unsuppressedUserFilters) ? [] : [unsuppressedUserFilters]),
     ...(isNil(searchNode) ? [] : [searchNode]),
   ];
   const filters: null | PlDataTableFilters = distillFilterSpec(
-    parts.length === 0 ? null : parts.length === 1 ? parts[0] : { type: "and", filters: parts },
+    userParts.length === 0
+      ? null
+      : userParts.length === 1
+        ? userParts[0]
+        : { type: "and", filters: userParts },
   );
+
+  // Default filters: separate distilled spec
+  const unsuppressedDefaultFilters = isNil(state.defaultFiltersState)
+    ? null
+    : stripSuppressedFilters(state.defaultFiltersState);
+  const defaultFilters: null | PlDataTableFilters = distillFilterSpec(unsuppressedDefaultFilters);
 
   return {
     sourceId: state.sourceId,
     hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
     filters,
+    defaultFilters,
     sorting: convertAgSortingToPTableSorting(state.gridState.sort),
   };
 }
@@ -287,34 +322,6 @@ function getEmptyGroup() {
   } as PlDataTableFiltersWithMeta;
 }
 
-function ensureDefaultFilters(
-  state: PlDataTableFiltersWithMeta,
-  defaults: Nil | PlDataTableFiltersWithMeta,
-): PlDataTableFiltersWithMeta {
-  const hasDefaults = state.filters.some((f) => f.source === "default");
-
-  if (isNil(defaults)) {
-    if (hasDefaults) {
-      return {
-        ...state,
-        filters: state.filters.filter((f) => f.source !== "default"),
-      };
-    }
-    return state;
-  } else {
-    if (hasDefaults) {
-      return state;
-    }
-
-    const freshDefaults = annotateFiltersWithMeta(defaults, "default");
-
-    return {
-      ...state,
-      filters: [...freshDefaults.filters, ...state.filters],
-    };
-  }
-}
-
 /**
  * Recursively removes nodes where isSuppressed === true from a PlDataTableFiltersWithMeta tree.
  */
@@ -362,48 +369,43 @@ function createSearchFilterNode(
 
 // --- Helpers ---
 
-function annotateFiltersWithMeta(
+/**
+ * Recursively ensures every node in a filter tree has an `id` field.
+ * Does not set `source` meta — defaults are now a separate list.
+ */
+function annotateFiltersWithIds(
   filters: PlDataTableFilters | PlDataTableFiltersWithMeta,
-  source: "default" | "table-filter" | "table-search",
 ): PlDataTableFiltersWithMeta {
-  return annotateFilterNode(filters, source) as PlDataTableFiltersWithMeta;
+  return annotateNodeWithIds(filters) as PlDataTableFiltersWithMeta;
 }
 
-/**
- * Recursively annotates a PlDataTableFilters tree (no meta) with meta fields,
- * producing a PlDataTableFiltersWithMeta tree.
- */
-function annotateFilterNode(
+function annotateNodeWithIds(
   node: FilterNode | PlDataTableFilters | PlDataTableFiltersWithMeta,
-  source: "default" | "table-filter" | "table-search",
 ): AnnotatedFilterSpec {
   switch (node.type) {
     case "and":
       return {
         id: getField(node, "id") ?? randomInt(),
         isExpanded: getField(node, "isExpanded") ?? true,
-        source,
         type: "and" as const,
-        filters: node.filters.map((child) => annotateFilterNode(child, source)),
+        filters: node.filters.map((child) => annotateNodeWithIds(child)),
       };
     case "or":
       return {
         id: getField(node, "id") ?? randomInt(),
         isExpanded: getField(node, "isExpanded") ?? true,
-        source,
         type: "or" as const,
-        filters: node.filters.map((child) => annotateFilterNode(child, source)),
+        filters: node.filters.map((child) => annotateNodeWithIds(child)),
       };
     case "not":
       return {
         id: randomInt(),
         isExpanded: true,
-        source,
         type: "not" as const,
-        filter: annotateFilterNode(node.filter, source),
+        filter: annotateNodeWithIds(node.filter),
       };
     default:
-      return { ...node, id: getField(node, "id") ?? randomInt(), source } as AnnotatedFilterSpec;
+      return { ...node, id: getField(node, "id") ?? randomInt() } as AnnotatedFilterSpec;
   }
 }
 
@@ -445,5 +447,6 @@ function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
     gridState: {},
     sheetsState: [],
     filtersState: null,
+    defaultFiltersState: null,
   };
 }
