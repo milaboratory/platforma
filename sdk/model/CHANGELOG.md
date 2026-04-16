@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.65.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
 ## 1.64.0
 
 ### Minor Changes
