@@ -379,7 +379,8 @@ tableBuilder := func(format, ...ctxArg) {
 			}
 			if len(qMap) > 0 {
 				ll.assert(len(primaryPlRefs) > 0,
-					"column query specs require at least one primary as anchor")
+					"column query specs require at least one primary added as a PlRef " +
+					"or PrimaryRef (pre-resolved primaries cannot anchor column queries)")
 
 				qResult := bquery.anchoredQuery(_ctx, primaryPlRefs, qMap)
 				for idx, c in _columns {
