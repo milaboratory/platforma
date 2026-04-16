@@ -162,11 +162,17 @@ const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
   () => settings.value.sourceId,
   () => gridOptions.value.columnDefs ?? null,
 );
-const { gridState, sheetsState, filtersState, searchString } = useTableState(
-  tableState,
-  settings,
-  visibleFilterableColumns,
+const defaultFilters = computed(() =>
+  settings.value.sourceId !== null ? settings.value.model?.defaultFilters : undefined,
 );
+const {
+  gridState,
+  sheetsState,
+  searchString,
+  filtersState,
+  defaultFiltersState,
+  resetDefaultFilters,
+} = useTableState(tableState, settings, visibleFilterableColumns, defaultFilters);
 const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
   const settingsCopy = { ...settings.value };
   return settingsCopy.sourceId !== null
@@ -371,6 +377,13 @@ watch(
         return;
       }
 
+      if (
+        settings.model?.fullTableHandle === undefined ||
+        settings.model?.visibleTableHandle === undefined
+      ) {
+        return;
+      }
+
       // Data source changed -> show full page loader, clear selection
       if (settings.sourceId !== oldSettings?.sourceId) {
         gridApi.updateGridOptions({
@@ -411,7 +424,8 @@ watch(
       calculateGridOptions({
         generation,
         pfDriver: getRawPlatformaInstance().pFrameDriver,
-        model: settings.model,
+        fullTableHandle: settings.model?.fullTableHandle,
+        visibleTableHandle: settings.model?.visibleTableHandle,
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
         hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
@@ -533,9 +547,13 @@ watchEffect(() => {
     <PlAgGridColumnManager v-if="gridApi && !disableColumnsPanel" :api="gridApi" />
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
-      v-model="filtersState"
+      :filters="filtersState"
+      :default-filters="defaultFiltersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
+      @updateFilters="(v) => (filtersState = v)"
+      @resetDefaultFilters="resetDefaultFilters"
+      @updateDefaultFilters="(v) => (defaultFiltersState = v)"
     />
     <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">

@@ -111,7 +111,6 @@ export const memoize = <F extends AnyFunction>(fn: F) => {
   const cache = new Map();
   return function (...args: Parameters<F>): ReturnType<F> {
     const key = JSON.stringify(args);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return cache.has(key)
       ? cache.get(key)
       : cache.set(key, fn.call(null, ...args)) && cache.get(key);
