@@ -71,7 +71,7 @@ export class SwJsonRenderer {
           }
           default:
             this.logger.debug("  rendering 'local' source...");
-            info.local = this.renderLocalPackage(mode, epName, ep, fullDirHash);
+            info.local = this.renderLocalPackage(epName, ep, fullDirHash);
         }
 
         result.set(originEpName, info);
@@ -157,7 +157,6 @@ export class SwJsonRenderer {
   }
 
   private renderLocalPackage(
-    mode: util.BuildMode,
     epName: string,
     ep: entrypoint.PackageEntrypoint,
     fullDirHash: boolean,
@@ -165,11 +164,7 @@ export class SwJsonRenderer {
     const artifact = ep.artifact;
     const rootDir = this.pkgInfo.artifactContentRoot(artifact, util.currentPlatform());
     const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir);
-    // In 'dev-local-rel' mode bake path relative to packageRoot, so the .sw.json stays
-    // portable across machines (e.g. Turbo remote cache with different workspace paths).
-    // Readers (tengo-builder) resolve it back to absolute before sending to Platforma backend.
-    const localPath =
-      mode === "dev-local-rel" ? path.relative(this.pkgInfo.packageRoot, rootDir) : rootDir;
+    const localPath = rootDir;
 
     const epType = ep.type;
     switch (epType) {
@@ -305,7 +300,6 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
-      case "dev-local-rel":
         throw new Error(`'*.sw.json' generator logic error`);
 
       default:
@@ -442,7 +436,6 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
-      case "dev-local-rel":
         throw util.CLIError(`run environments do not support 'local' dev build mode yet`);
 
       default:
@@ -492,7 +485,6 @@ export class SwJsonRenderer {
         break;
 
       case "dev-local":
-      case "dev-local-rel":
         throw util.CLIError(`assets do not support 'local' dev build mode yet`);
 
       default:

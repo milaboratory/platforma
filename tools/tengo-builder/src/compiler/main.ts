@@ -202,7 +202,7 @@ function loadDependencies(
   }
 
   if (softwareDistExists) {
-    loadSoftwareFromDir(logger, packageId, "dist", softwareDistFolder, packageInfo.root, compiler);
+    loadSoftwareFromDir(logger, packageId, "dist", softwareDistFolder, compiler);
   }
 
   if (assetDistExists) {
@@ -264,7 +264,6 @@ function loadSoftwareFromDir(
   packageId: PackageId,
   mode: CompileMode,
   folder: string,
-  packageRoot: string,
   compiler: TengoTemplateCompiler,
 ) {
   for (const f of fs.readdirSync(folder)) {
@@ -278,36 +277,13 @@ function loadSoftwareFromDir(
       version: packageId.version,
     };
 
-    const rawSource = fs.readFileSync(file).toString();
-    // Resolve relative 'local.path' to absolute — package-builder may emit
-    // a path relative to packageRoot in 'dev-local-rel' mode so .sw.json stays
-    // portable across machines (Turbo remote cache). Platforma backend expects
-    // an absolute path, so we resolve it here before sending it downstream.
-    const source = resolveLocalPath(rawSource, packageRoot);
+    const source = fs.readFileSync(file).toString();
 
     const software = new ArtifactSource(mode, fullName, getSha256(source), source, file, [], []);
 
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addSoftware(software);
   }
-}
-
-function resolveLocalPath(source: string, packageRoot: string): string {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(source);
-  } catch {
-    return source;
-  }
-  if (!parsed || typeof parsed !== "object") return source;
-  const local = (parsed as { local?: { path?: unknown } }).local;
-  if (!local || typeof local !== "object") return source;
-  const localPath = local.path;
-  if (typeof localPath !== "string" || localPath === "" || path.isAbsolute(localPath)) {
-    return source;
-  }
-  local.path = path.resolve(packageRoot, localPath);
-  return JSON.stringify(parsed);
 }
 
 function loadAssetsFromDir(
