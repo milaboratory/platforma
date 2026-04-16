@@ -177,6 +177,9 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
+    immer:
+      specifier: 11.1.4
+      version: 11.1.4
     jsdom:
       specifier: ^25.0.1
       version: 25.0.1
@@ -2890,6 +2893,9 @@ importers:
       fast-json-patch:
         specifier: 'catalog:'
         version: 3.1.1
+      immer:
+        specifier: 'catalog:'
+        version: 11.1.4
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.2
@@ -7463,6 +7469,9 @@ packages:
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
+
+  immer@11.1.4:
+    resolution: {integrity: sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw==}
 
   immutable@5.0.3:
     resolution: {integrity: sha512-P8IdPQHq3lA1xVeBRi5VPqUm5HDgKnx0Ru51wZz5mjxHr5n3RWhjIpOFU7ybkUxfB+5IToy+OLaHYDBIWsv+uw==}
@@ -13935,6 +13944,8 @@ snapshots:
   ieee754@1.2.1: {}
 
   ignore@5.3.2: {}
+
+  immer@11.1.4: {}
 
   immutable@5.0.3: {}
 

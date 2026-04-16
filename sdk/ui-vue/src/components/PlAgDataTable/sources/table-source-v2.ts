@@ -3,6 +3,7 @@ import type {
   PTableColumnId,
   PTableColumnSpecAxis,
   PTableColumnSpecColumn,
+  PTableHandle,
   PTableValue,
 } from "@platforma-sdk/model";
 import {
@@ -13,7 +14,6 @@ import {
   type PlDataTableSheet,
   type PTableVector,
   type AxisId,
-  type PlDataTableModel,
   type PTableColumnSpec,
   type PTableKey,
   type PlTableColumnId,
@@ -86,16 +86,18 @@ function columns2rows(
 export async function calculateGridOptions({
   generation,
   pfDriver,
-  model,
   sheets,
+  fullTableHandle,
+  visibleTableHandle,
   dataRenderedTracker,
   hiddenColIds,
   cellButtonAxisParams,
 }: {
-  generation: Ref<number>;
-  pfDriver: PFrameDriver;
-  model: PlDataTableModel;
   sheets: PlDataTableSheet[];
+  pfDriver: PFrameDriver;
+  generation: Ref<number>;
+  fullTableHandle: PTableHandle;
+  visibleTableHandle: PTableHandle;
   dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
   hiddenColIds?: PlTableColumnIdJson[];
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
@@ -108,8 +110,8 @@ export async function calculateGridOptions({
 
   // get specs of the full table
   const [tableSpecs, visibleTableSpecs] = await Promise.all([
-    pfDriver.getSpec(model.fullTableHandle),
-    pfDriver.getSpec(model.visibleTableHandle),
+    pfDriver.getSpec(fullTableHandle),
+    pfDriver.getSpec(visibleTableHandle),
   ]);
 
   if (stateGeneration !== generation.value) throw new Error("table state generation changed");
@@ -167,7 +169,7 @@ export async function calculateGridOptions({
       if (stateGeneration !== generation.value) return params.fail();
       try {
         if (rowCount === -1) {
-          const ptShape = await pfDriver.getShape(model.visibleTableHandle);
+          const ptShape = await pfDriver.getShape(visibleTableHandle);
           if (stateGeneration !== generation.value || params.api.isDestroyed())
             return params.fail();
           rowCount = ptShape.rows;
@@ -197,7 +199,7 @@ export async function calculateGridOptions({
         ) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
-            const data = await pfDriver.getData(model.visibleTableHandle, requestIndices, {
+            const data = await pfDriver.getData(visibleTableHandle, requestIndices, {
               offset: params.request.startRow,
               length,
             });

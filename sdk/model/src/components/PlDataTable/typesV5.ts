@@ -12,6 +12,7 @@ import type {
   PFrameHandle,
 } from "@milaboratories/pl-model-common";
 import type { FilterSpecLeaf } from "../../filters";
+import { Nil } from "@milaboratories/helpers";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -94,16 +95,16 @@ export type PTableParamsV2 =
   | {
       sourceId: null;
       hiddenColIds: null;
+      sorting: [];
       filters: null;
       defaultFilters: null;
-      sorting: [];
     }
   | {
       sourceId: string;
       hiddenColIds: null | PTableColumnId[];
+      sorting: PTableSorting[];
       filters: null | PlDataTableFilters;
       defaultFilters: null | PlDataTableFilters;
-      sorting: PTableSorting[];
     };
 
 export type PlDataTableStateV2Normalized = {
@@ -118,15 +119,15 @@ export type PlDataTableStateV2Normalized = {
 /** PlAgDataTable model */
 export type PlDataTableModel = {
   /** DataSource identifier for state management */
-  sourceId: string | null;
+  sourceId: null | string;
   /** p-table including all columns, used to show the full specification of the table */
-  fullTableHandle: PTableHandle;
+  fullTableHandle?: PTableHandle;
   /** p-frame handle */
-  fullPframeHandle: PFrameHandle;
+  fullPframeHandle?: PFrameHandle;
   /** p-table including only visible columns, used to get the data */
-  visibleTableHandle: PTableHandle;
+  visibleTableHandle?: PTableHandle;
   /** Default filters from model options, surfaced for UI display */
-  defaultFilters?: PlDataTableFilters;
+  defaultFilters?: Nil | PlDataTableFilters;
 };
 
 export type CreatePlDataTableOps = {
