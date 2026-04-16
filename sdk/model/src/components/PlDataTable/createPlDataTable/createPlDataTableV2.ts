@@ -25,7 +25,7 @@ import type {
 } from "../../../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
-import type { CreatePlDataTableOps, PlDataTableFilters, PlDataTableModel } from "../typesV5";
+import type { CreatePlDataTableOps, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import { getMatchingLabelColumns } from "../labels";
@@ -94,17 +94,20 @@ export function createPlDataTableV2<A, U>(
     fullColumnsIdsSet.has(id as CanonicalizedJson<PTableColumnId>);
 
   // -- Filtering validation --
-  const stateFilters = tableStateNormalized.pTableParams.filters;
-  const opsFilters = options?.filters ?? null;
-  const filters: null | PlDataTableFilters =
-    stateFilters != null && opsFilters != null
-      ? { type: "and", filters: [stateFilters, opsFilters] }
-      : (stateFilters ?? opsFilters);
-  const filterColumns = filters ? collectFilterSpecColumns(filters) : [];
+  const filters = tableStateNormalized.pTableParams.filters;
+  const defaultFilters = options?.filters ?? undefined;
+  const filterColumns = filters !== null ? collectFilterSpecColumns(filters) : [];
   const firstInvalidFilterColumn = filterColumns.find((col) => !isValidColumnId(col));
   if (firstInvalidFilterColumn)
     throw new Error(
       `Invalid filter column ${firstInvalidFilterColumn}: column reference does not match the table columns`,
+    );
+  const defaultFilterColumns =
+    defaultFilters !== undefined ? collectFilterSpecColumns(defaultFilters) : [];
+  const firstInvalidDefaultFilterColumn = defaultFilterColumns.find((col) => !isValidColumnId(col));
+  if (firstInvalidDefaultFilterColumn)
+    throw new Error(
+      `Invalid default filter column ${firstInvalidDefaultFilterColumn}: column reference does not match the table columns`,
     );
 
   // -- Sorting validation --
@@ -202,6 +205,7 @@ export function createPlDataTableV2<A, U>(
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
+    defaultFilters,
   } satisfies PlDataTableModel;
 }
 

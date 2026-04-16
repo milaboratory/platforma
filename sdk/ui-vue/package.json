@@ -38,6 +38,7 @@
     "d3-format": "catalog:",
     "es-toolkit": "catalog:",
     "fast-json-patch": "catalog:",
+    "immer": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"

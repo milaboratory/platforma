@@ -36,39 +36,21 @@ jobs:
   # 2. Check changesets
   # ──────────────────────────────────────────────
   check-changesets:
-    runs-on: ubuntu-latest
-    outputs:
-      has-pending: ${{ steps.check.outputs.has-pending }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check changeset status
-        id: check
-        run: |
-          npx @changesets/cli status --since=origin/main
-
-          NON_README=$(ls .changeset/*.md 2>/dev/null | grep -v README.md || true)
-          if [ -n "$NON_README" ]; then
-            echo "has-pending=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has-pending=false" >> "$GITHUB_OUTPUT"
-          fi
+    uses: ./.github/workflows/_check-changesets.yaml
+    secrets: inherit
 
   # ──────────────────────────────────────────────
-  # 3. Build (reusable)
+  # 3. Check pnpm consistency (reusable)
   # ──────────────────────────────────────────────
-  build:
-    needs: [init]
-    uses: ./.github/workflows/_build.yaml
+  check-pnpm-consistency:
+    uses: ./.github/workflows/_check.yaml
     secrets: inherit
 
   # ──────────────────────────────────────────────
   # 4. Test (reusable)
   # ──────────────────────────────────────────────
   test:
-    needs: [build]
+    needs: [init]
     uses: ./.github/workflows/_test.yaml
     secrets: inherit
 
@@ -77,7 +59,7 @@ jobs:
   # ──────────────────────────────────────────────
   publish:
     runs-on: dev-pl-sdk
-    needs: [init, build, test, check-changesets]
+    needs: [init, check-pnpm-consistency, test, check-changesets]
     if: ${{ !failure() && !cancelled() && needs.check-changesets.outputs.has-pending == 'true' }}
     steps:
       - name: Generate GitHub App token
@@ -146,7 +128,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     if: always()
-    needs: [init, check-changesets, build, test, publish]
+    needs: [init, check-changesets, check-pnpm-consistency, test, publish]
     steps:
       - id: search-tags
         uses: milaboratory/github-ci/actions/strings/json-list@v4
@@ -158,7 +140,7 @@ jobs:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
           job-status: |
-            ${{ needs.build.result }}
+            ${{ needs.check-pnpm-consistency.result }}
             ${{ needs.test.result }}
             ${{ needs.check-changesets.result }}
             ${{ needs.publish.result }}

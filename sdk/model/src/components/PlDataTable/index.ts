@@ -10,6 +10,8 @@ export type {
   PTableParamsV2,
   PlDataTableStateV2Normalized,
   PlDataTableModel,
+  PlDataTableFilterSpecLeaf,
+  PlDataTableFilterMeta,
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
 } from "./typesV5";

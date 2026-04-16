@@ -12,6 +12,7 @@ import type {
   PFrameHandle,
 } from "@milaboratories/pl-model-common";
 import type { FilterSpecLeaf } from "../../filters";
+import { Nil } from "@milaboratories/helpers";
 
 export type PlTableColumnId = {
   /** Original column spec */
@@ -62,11 +63,17 @@ export type PlDataTableSheetState = {
 };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
+export type PlDataTableFilterMeta = {
+  id: number;
+  source?: "table-filter" | "table-search";
+  isExpanded?: boolean;
+  isSuppressed?: boolean;
+};
 export type PlDataTableFilterSpecLeaf = FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>;
 export type PlDataTableFilters = RootFilterSpec<PlDataTableFilterSpecLeaf>;
 export type PlDataTableFiltersWithMeta = RootFilterSpec<
   PlDataTableFilterSpecLeaf,
-  { id: number; isExpanded?: boolean; source?: "table-filter" | "table-search" }
+  PlDataTableFilterMeta
 >;
 
 export type PlDataTableStateV2CacheEntry = {
@@ -76,8 +83,10 @@ export type PlDataTableStateV2CacheEntry = {
   gridState: PlDataTableGridStateCore;
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
-  /** Filters state (tree-based, compatible with PlAdvancedFilter) */
+  /** User filters state (tree-based, compatible with PlAdvancedFilter) */
   filtersState: null | PlDataTableFiltersWithMeta;
+  /** Default filters state from model (snapshot of defaults) */
+  defaultFiltersState: null | PlDataTableFiltersWithMeta;
   /** Fast search string */
   searchString?: string;
 };
@@ -86,14 +95,16 @@ export type PTableParamsV2 =
   | {
       sourceId: null;
       hiddenColIds: null;
-      filters: null;
       sorting: [];
+      filters: null;
+      defaultFilters: null;
     }
   | {
       sourceId: string;
       hiddenColIds: null | PTableColumnId[];
-      filters: null | PlDataTableFilters;
       sorting: PTableSorting[];
+      filters: null | PlDataTableFilters;
+      defaultFilters: null | PlDataTableFilters;
     };
 
 export type PlDataTableStateV2Normalized = {
@@ -108,13 +119,15 @@ export type PlDataTableStateV2Normalized = {
 /** PlAgDataTable model */
 export type PlDataTableModel = {
   /** DataSource identifier for state management */
-  sourceId: string | null;
+  sourceId: null | string;
   /** p-table including all columns, used to show the full specification of the table */
-  fullTableHandle: PTableHandle;
+  fullTableHandle?: PTableHandle;
   /** p-frame handle */
-  fullPframeHandle: PFrameHandle;
+  fullPframeHandle?: PFrameHandle;
   /** p-table including only visible columns, used to get the data */
-  visibleTableHandle: PTableHandle;
+  visibleTableHandle?: PTableHandle;
+  /** Default filters from model options, surfaced for UI display */
+  defaultFilters?: Nil | PlDataTableFilters;
 };
 
 export type CreatePlDataTableOps = {

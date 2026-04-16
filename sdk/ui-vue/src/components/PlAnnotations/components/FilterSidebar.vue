@@ -116,13 +116,14 @@ const supportedFilters = [
     </template>
     <template #body-content>
       <PlAdvancedFilterComponent
-        v-model:filters="step.filter as PlAdvancedFilter"
+        :filters="step.filter as PlAdvancedFilter"
         :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
-        :items="props.columns"
+        :options="props.columns"
         :supported-filters="supportedFilters"
         :get-suggest-options="props.getSuggestOptions"
         :enable-dnd="false"
         :enable-add-group-button="true"
+        @update-filters="(v) => (step = { ...step, filter: v as typeof step.filter })"
       >
         <template #add-group-buttons>
           <div :class="$style.actions">

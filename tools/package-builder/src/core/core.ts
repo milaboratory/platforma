@@ -336,7 +336,7 @@ export class Core {
       }
     }
 
-    if (this.buildMode === "dev-local") {
+    if (util.isDevLocalMode(this.buildMode)) {
       this.logger.info(
         `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
       );

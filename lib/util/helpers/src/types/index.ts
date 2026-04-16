@@ -14,6 +14,8 @@ export type Optional<T> = T | undefined;
 
 export type ValueOf<T> = T[keyof T];
 
+export type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][];
+
 export type OneOrMany<T> = T | T[];
 
 export type Prettify<T> = {

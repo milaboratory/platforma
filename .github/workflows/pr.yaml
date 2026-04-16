@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  BODY_LIMIT: '1048576000'
+  BODY_LIMIT: "1048576000"
 
 jobs:
   init:
@@ -27,25 +27,25 @@ jobs:
           branch-versioning: main
 
   check-changesets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    uses: ./.github/workflows/_check-changesets.yaml
+    secrets: inherit
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Check changeset status
-        run: npx @changesets/cli status --since=origin/main
-
-  build:
-    needs: [init]
-    uses: ./.github/workflows/_build.yaml
+  check-pnpm-consistency:
+    uses: ./.github/workflows/_check.yaml
     secrets: inherit
 
   test:
-    needs: [build]
+    needs: [init]
     uses: ./.github/workflows/_test.yaml
     secrets: inherit
+
+  debug:
+    needs: [check-pnpm-consistency, test]
+    if: ${{ failure() && contains(github.event.pull_request.labels.*.name, 'debug') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interactive debug session (VS Code)
+        uses: fawazahmed0/action-debug-vscode@main
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

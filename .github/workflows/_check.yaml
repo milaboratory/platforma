@@ -1,0 +1,21 @@
+name: _check-pnpm-consistency
+
+on:
+  workflow_call: {}
+
+jobs:
+  check-pnpm-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check pnpm-workspace.yaml consistency
+        run: |
+          if git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-workspace.yaml$'; then
+            if ! git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-lock.yaml$'; then
+              echo "::error::Changes in pnpm-workspace.yaml detected, but no updates in pnpm-lock.yaml"
+              exit 1
+            fi
+          fi
