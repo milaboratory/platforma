@@ -43,28 +43,26 @@ function mouseoutHandler() {
 
 <style lang="scss">
 .ui-lt-container {
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
   position: relative;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   border-radius: 5px;
 
   span {
     display: inline-block;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: 100%;
     vertical-align: bottom;
-    pointer-events: all !important;
   }
 
   .ui-lt-animate {
     position: relative;
+    width: fit-content;
+    overflow: unset;
+    text-overflow: unset;
     animation: left-to-right v-bind(animationTime) infinite alternate linear;
-
-    overflow: unset !important;
-    text-overflow: unset !important;
-    width: fit-content !important;
   }
 }
 

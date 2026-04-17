@@ -125,15 +125,24 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     options.columnsDisplayOptions,
   );
 
+  const primaryColumnIds = new Set<PObjectId>(
+    discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
+  );
+  const primaryColumns = annotated.direct.filter((c) => primaryColumnIds.has(c.id));
+  const secondaryColumns = annotated.direct.filter((c) => !primaryColumnIds.has(c.id));
+
+  if (primaryColumns.length === 0) return undefined;
+
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct,
     ...annotated.linked.flatMap((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
     ...annotated.labels,
   ]);
 
-  const filters = mergeFilters(
+  const remapedDefaultFilters = remapFilterColumnIds(options.filters, discovered);
+  const filters = concatFilters(
     state.pTableParams.filters,
-    remapFilterColumnIds(options.filters, discovered),
+    state.pTableParams.defaultFilters ?? remapedDefaultFilters,
   );
   validateFilters(filters, columnIsAvailable);
 
@@ -142,14 +151,6 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     remapSortingColumnIds(options.sorting, discovered),
   );
   validateSorting(sorting, columnIsAvailable);
-
-  const primaryColumnIds = new Set<PObjectId>(
-    discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
-  );
-  const primaryColumns = annotated.direct.filter((c) => primaryColumnIds.has(c.id));
-  const secondaryColumns = annotated.direct.filter((c) => !primaryColumnIds.has(c.id));
-
-  if (primaryColumns.length === 0) return undefined;
 
   const fullDef = createPTableDefV3({
     primaryJoinType,
@@ -170,10 +171,8 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     ...annotated.labels,
     ...uniqueBy([...annotated.linkers.values()].flat(), (c) => c.id),
   ]);
-  if (!fullHandle || !pframeHandle) return undefined;
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
-
   const hiddenColumnIds = computeHiddenColumns(
     [...annotated.direct, ...annotated.linked],
     sorting,
@@ -202,13 +201,13 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     sorting,
   });
   const visibleHandle = ctx.createPTableV2(visibleDef);
-  if (!visibleHandle) return undefined;
 
   return {
     sourceId: state.pTableParams.sourceId,
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
+    defaultFilters: remapedDefaultFilters,
   } satisfies PlDataTableModel;
 }
 
@@ -321,17 +320,6 @@ function createColumnValidationById(fullColumns: TableColumn[]) {
   };
 }
 
-/** Merge filters from table state and options into a single filter spec. */
-function mergeFilters(
-  stateFilters: PlDataTableFilters | null,
-  optionsFilters: PlDataTableFilters | null | undefined,
-): Nil | PlDataTableFilters {
-  const normalized = optionsFilters ?? null;
-  return stateFilters !== null && normalized !== null
-    ? { type: "and", filters: [stateFilters, normalized] }
-    : (stateFilters ?? normalized);
-}
-
 /** Validate that all column references in filters exist in the table. */
 function validateFilters(
   filters: Nil | PlDataTableFilters,
@@ -345,6 +333,16 @@ function validateFilters(
       `Invalid filter column ${firstInvalid}: column reference does not match the table columns`,
     );
   }
+}
+
+/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil. */
+function concatFilters(
+  a: Nil | PlDataTableFilters,
+  b: Nil | PlDataTableFilters,
+): Nil | PlDataTableFilters {
+  if (isNil(a)) return b;
+  if (isNil(b)) return a;
+  return { ...a, filters: [...a.filters, ...b.filters] };
 }
 
 /** Pick user sorting from state if non-empty, otherwise fall back to options default. */

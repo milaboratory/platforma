@@ -1,7 +1,12 @@
 name: _test
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      no-cache:
+        description: Skip test cache check and run all tests without cache
+        type: boolean
+        default: false
 
 env:
   BODY_LIMIT: "1048576000"
@@ -31,21 +36,8 @@ jobs:
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
-      - name: Restore changeset version state
-        if: >-
-          (github.event_name == 'push' && github.ref_name == 'main')
-          || github.event_name == 'pull_request'
-          || github.event_name == 'merge_group'
-        run: pnpm run version-packages
-
-      - name: Rebuild from Turbo cache
-        env:
-          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
-        run: pnpm run ci:build:local
-
       - name: Check test cache (dry-run)
+        if: ${{ !inputs.no-cache }}
         id: dry-run
         run: |
           pnpm run test:local+dry-run > ./test-dry-run.json || true
@@ -53,15 +45,23 @@ jobs:
           echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
           echo "Test cache skip: $SKIP_TESTS"
 
+      - name: Build
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
+        run: pnpm run ci:build:local
+
       - name: Login to ECR
-        if: steps.dry-run.outputs.skip != 'true'
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: "true"
 
       - name: Start Platforma Docker
-        if: steps.dry-run.outputs.skip != 'true'
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         uses: milaboratory/github-ci/actions/docker/pl-compose@v4
         env:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
@@ -73,7 +73,7 @@ jobs:
           pl-log-level: info
 
       - name: Run tests
-        if: steps.dry-run.outputs.skip != 'true'
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         env:
           PL_ADDRESS: "http://127.0.0.1:6345"
           PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
@@ -82,7 +82,7 @@ jobs:
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ci:test:local
+        run: pnpm run ${{ inputs.no-cache && 'ci:test:local+no-cache' || 'ci:test:local' }}
 
       - name: Upload coverage
         if: always()

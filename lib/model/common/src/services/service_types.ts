@@ -1,3 +1,4 @@
+import { UnionToIntersection } from "@milaboratories/helpers";
 import type { Branded } from "../branding";
 import { ServiceAlreadyRegisteredError, ServiceInvalidIdError } from "../errors";
 import type { Services } from "./service_declarations";
@@ -100,12 +101,6 @@ export type ServiceNameLiterals = {
 export type ServiceRequireFlags = {
   [K in keyof SMap as `requires${K & string}`]?: boolean;
 };
-
-type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
-  k: infer I,
-) => void
-  ? I
-  : never;
 
 export type RequireServices<T extends ServiceName> = UnionToIntersection<
   T extends Branded<infer N extends string, infer S extends ServiceTypesLike>
