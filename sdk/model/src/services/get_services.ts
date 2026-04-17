@@ -5,14 +5,12 @@ import { createServiceProxy } from "./service_bridge";
 
 let cachedServices = new Map<keyof ModelServices, ValueOf<ModelServices>>();
 
-export function getService<Service extends keyof ModelServices>(
-  name: Service,
-): ModelServices[Service] {
+export function getService<T extends keyof ModelServices>(name: T): ModelServices[T] {
   if (!cachedServices.has(name)) {
     const id = name as ServiceName;
     const ctx = getCfgRenderCtx();
-    cachedServices.set(name, createServiceProxy(ctx)(id) as ModelServices[Service]);
+    cachedServices.set(name, createServiceProxy(ctx)(id) as ModelServices[T]);
   }
 
-  return cachedServices.get(name) as ModelServices[Service];
+  return cachedServices.get(name) as ModelServices[T];
 }

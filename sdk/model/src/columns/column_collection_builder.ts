@@ -29,6 +29,7 @@ import { ArrayColumnProvider, toColumnSnapshotProvider } from "./column_snapshot
 import type { PFrameSpecDriver, PoolEntry, SpecFrameHandle } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
 import { uniqBy } from "es-toolkit";
+import { getService } from "../services";
 
 // --- FindColumnsOptions ---
 
@@ -139,7 +140,7 @@ export interface AnchoredBuildOptions extends BuildOptions {
 export class ColumnCollectionBuilder {
   private readonly providers: ColumnSnapshotProvider[] = [];
 
-  constructor(private readonly specDriver: PFrameSpecDriver) {}
+  constructor(private readonly specDriver: PFrameSpecDriver = getService("pframeSpec")) {}
 
   /**
    * Register a column source. Sources added first take precedence for dedup.

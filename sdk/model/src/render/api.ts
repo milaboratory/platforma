@@ -3,6 +3,7 @@ import type {
   AnyFunction,
   AxisId,
   DataInfo,
+  ModelServices,
   Option,
   PColumn,
   PColumnLazy,
@@ -71,6 +72,7 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
+import { getService } from "../services";
 
 /**
  * Helper function to match domain objects
@@ -584,6 +586,10 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
       };
     }
     return this.activeArgsCache.v;
+  }
+
+  public getService<T extends keyof ModelServices>(name: T): ModelServices[T] {
+    return getService(name);
   }
 
   // /** Can be used to determine features provided by the desktop instance. */

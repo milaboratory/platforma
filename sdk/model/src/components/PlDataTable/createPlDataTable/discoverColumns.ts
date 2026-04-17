@@ -6,13 +6,17 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
-import type { ColumnSource, ColumnMatch, RelaxedColumnSelector } from "../../../columns";
+import type {
+  ColumnSource,
+  ColumnMatch,
+  RelaxedColumnSelector,
+  ColumnSnapshotProvider,
+} from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
-import { getService } from "../../../services";
 
 export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
@@ -21,20 +25,22 @@ export type DiscoverTableColumnOptions = {
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverTableColumnSnaphots<A, U>(
-  ctx: RenderCtxBase<A, U>,
+export function discoverTableColumnSnaphots(
+  ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,
 ): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
-  const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
+  const resolvedOptions = {
+    ...options,
+    anchors: resolveAnchors(ctx, options.anchors),
+  };
 
   // Resolve providers
   const providers = resolveProviders(ctx, resolvedOptions.sources);
   if (providers.length === 0) return undefined;
 
   // Build collection (anchored or plain)
-  const pframeSpec = getService("pframeSpec");
-  const collection = new ColumnCollectionBuilder(pframeSpec)
+  const collection = new ColumnCollectionBuilder(ctx.getService("pframeSpec"))
     .addSources(providers)
     .build(resolvedOptions);
   if (collection === undefined) return undefined;
@@ -54,8 +60,8 @@ export function discoverTableColumnSnaphots<A, U>(
 // --- Pure helper functions ---
 
 /** Resolve PlRef values in anchors to PColumnSpec via the result pool. */
-function resolveAnchors<A, U>(
-  ctx: RenderCtxBase<A, U>,
+function resolveAnchors(
+  ctx: RenderCtxBase,
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>,
 ): Record<string, PObjectId | PColumnSpec | RelaxedColumnSelector> {
   const result: Record<string, PObjectId | PColumnSpec | RelaxedColumnSelector> = {};
@@ -74,7 +80,10 @@ function resolveAnchors<A, U>(
 }
 
 /** Resolve column snapshot providers from explicit sources or context. */
-function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | ColumnSource[]) {
+function resolveProviders(
+  ctx: RenderCtxBase,
+  sources: undefined | ColumnSource[],
+): ColumnSnapshotProvider[] {
   return sources !== undefined
     ? sources.map(toColumnSnapshotProvider)
     : collectCtxColumnSnapshotProviders(ctx);

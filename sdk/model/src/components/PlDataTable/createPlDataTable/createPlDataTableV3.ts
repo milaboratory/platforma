@@ -11,6 +11,7 @@ import type {
   PColumnSpec,
   MultiColumnSelector,
   SUniversalPColumnId,
+  PFrameSpecDriver,
 } from "@milaboratories/pl-model-common";
 import {
   canonicalizeJson,
@@ -39,7 +40,6 @@ import {
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
 import { isNil, isPlainObject, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
-import { getService } from "../../../services";
 
 export type createPlDataTableOptionsV3 = {
   tableState?: PlDataTableStateV2;
@@ -87,6 +87,7 @@ export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
+  const pframeSpec = ctx.getService("pframeSpec");
   const state = upgradePlDataTableStateV2(options.tableState);
   const primaryJoinType = options.primaryJoinType ?? "full";
 
@@ -117,6 +118,7 @@ export function createPlDataTableV3<A, U>(
   });
 
   const annotated = annotateColumnGroups({
+    pframeSpec,
     ...resolved,
     labelColumns,
     derivedLabels,
@@ -281,9 +283,10 @@ function annotateColumnGroups(params: {
   linkers: Map<PObjectId, TableColumn[]>;
   derivedLabels: Record<string, string>;
   displayOptions?: ColumnsDisplayOptions;
+  pframeSpec: PFrameSpecDriver;
 }): AnnotatedColumnGroups {
-  const { direct, linked, linkers, labelColumns, derivedLabels, displayOptions } = params;
-  const pframeSpec = getService("pframeSpec");
+  const { direct, linked, linkers, labelColumns, derivedLabels, displayOptions, pframeSpec } =
+    params;
 
   const allColumnsForRules = [
     ...direct,

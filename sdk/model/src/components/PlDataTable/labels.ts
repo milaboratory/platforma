@@ -7,7 +7,6 @@ import {
 } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, RenderCtxBase } from "../../render";
 import { ColumnCollectionBuilder, collectCtxColumnSnapshotProviders } from "../../columns";
-import { getService } from "../../services";
 
 /**
  * Get all label columns visible in the current render context
@@ -16,7 +15,7 @@ import { getService } from "../../services";
 export function getAllLabelColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
 ): PColumn<PColumnDataUniversal>[] {
-  const pframeSpec = getService("pframeSpec");
+  const pframeSpec = ctx.getService("pframeSpec");
   const collection = new ColumnCollectionBuilder(pframeSpec)
     .addSources(collectCtxColumnSnapshotProviders(ctx))
     .build({ allowPartialColumnList: true });
