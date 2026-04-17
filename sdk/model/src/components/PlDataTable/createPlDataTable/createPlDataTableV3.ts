@@ -37,24 +37,19 @@ import {
   withTableVisualAnnotations,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverTableColumnSnaphots, type DiscoveredTableColumnOptions } from "./discoverColumns";
-import { isNil, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
+import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
+import { isNil, isPlainObject, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
 
-export type createPlDataTableOptionsV3 = (
-  | {
-      discoverColumnOptions: DiscoveredTableColumnOptions;
-    }
-  | {
-      columns: Nil | TableColumnSnapshot<SUniversalPColumnId>[];
-    }
-) & {
+export type createPlDataTableOptionsV3 = {
+  tableState?: PlDataTableStateV2;
+
+  columns: Nil | DiscoverTableColumnOptions | TableColumnSnapshot<SUniversalPColumnId>[];
   filters?: PlDataTableFilters;
   sorting?: PTableSorting[];
   primaryJoinType?: "inner" | "full";
 
-  tableState?: PlDataTableStateV2;
   labelsOptions?: DeriveLabelsOptions;
-  columnsDisplayOptions?: ColumnsDisplayOptions;
+  displayOptions?: ColumnsDisplayOptions;
 };
 
 /** Structured source config — selectors/anchors instead of raw ColumnSource. */
@@ -94,10 +89,9 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   const state = upgradePlDataTableStateV2(options.tableState);
   const primaryJoinType = options.primaryJoinType ?? "full";
 
-  const discovered =
-    "discoverColumnOptions" in options
-      ? discoverTableColumnSnaphots(ctx, options.discoverColumnOptions)
-      : options.columns;
+  const discovered = isPlainObject(options.columns)
+    ? discoverTableColumnSnaphots(ctx, options.columns)
+    : options.columns;
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
   const splited = splitDiscoveredColumns(discovered);
@@ -122,7 +116,7 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     resolved,
     labelColumns,
     derivedLabels,
-    options.columnsDisplayOptions,
+    options.displayOptions,
   );
 
   const primaryColumnIds = new Set<PObjectId>(
