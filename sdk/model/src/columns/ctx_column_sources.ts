@@ -17,8 +17,8 @@ import type { ValueOf } from "@milaboratories/helpers";
  *
  * Returns an array of providers suitable for `ColumnCollectionBuilder.addSource()`.
  */
-export function collectCtxColumnSnapshotProviders<A, U, S>(
-  ctx: RenderCtxBase<A, U, S>,
+export function collectCtxColumnSnapshotProviders<A, U>(
+  ctx: RenderCtxBase<A, U>,
 ): ColumnSnapshotProvider[] {
   const providers: ColumnSnapshotProvider[] = [];
 

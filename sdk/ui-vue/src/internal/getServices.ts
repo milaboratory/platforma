@@ -1,7 +1,7 @@
 import {
   BlockDefaultUiServices,
   buildServices,
-  createNodeServiceProxy,
+  createServiceProxy,
   getRawPlatformaInstance,
   PlatformaV3,
   UiServices,
@@ -20,7 +20,7 @@ export function getServices<
   }
 
   const platforma = getRawPlatformaInstance() as PlatformaV3<any, any, any, any, any, Services>;
-  const proxy = createNodeServiceProxy(platforma.serviceDispatch);
+  const proxy = createServiceProxy(platforma.serviceDispatch);
   const uiRegistry = createUiServiceRegistry({ proxy });
   const services = buildServices<Services>(platforma.serviceDispatch, uiRegistry);
 

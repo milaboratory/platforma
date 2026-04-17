@@ -2,8 +2,6 @@ import type {
   PColumnSpec,
   PlRef,
   PObjectId,
-  RequireServices,
-  Services,
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 import { isPlRef } from "@milaboratories/pl-model-common";
@@ -14,20 +12,17 @@ import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provi
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
+import { getService } from "../../../services";
 
 export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>;
-  columnsSelector: ColumnsSelectorConfig;
+  selector: ColumnsSelectorConfig;
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverTableColumnSnaphots<
-  A,
-  U,
-  S extends RequireServices<typeof Services.PFrameSpec>,
->(
-  ctx: RenderCtxBase<A, U, S>,
+export function discoverTableColumnSnaphots<A, U>(
+  ctx: RenderCtxBase<A, U>,
   options: DiscoverTableColumnOptions,
 ): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
@@ -38,15 +33,14 @@ export function discoverTableColumnSnaphots<
   if (providers.length === 0) return undefined;
 
   // Build collection (anchored or plain)
-  const pframeSpec =
-    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for column discovery.");
+  const pframeSpec = getService("pframeSpec");
   const collection = new ColumnCollectionBuilder(pframeSpec)
     .addSources(providers)
     .build(resolvedOptions);
   if (collection === undefined) return undefined;
 
   try {
-    const matched = collection.findColumns(resolvedOptions.columnsSelector ?? undefined);
+    const matched = collection.findColumns(resolvedOptions.selector ?? undefined);
     const anchors = collection.getAnchors();
     return mapToDiscoveredColumns(
       matched,

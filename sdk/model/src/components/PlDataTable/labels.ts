@@ -4,22 +4,19 @@ import {
   isLabelColumn,
   matchAxisId,
   PColumnName,
-  Services,
-  type RequireServices,
 } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, RenderCtxBase } from "../../render";
 import { ColumnCollectionBuilder, collectCtxColumnSnapshotProviders } from "../../columns";
-import { throwError } from "@milaboratories/helpers";
+import { getService } from "../../services";
 
 /**
  * Get all label columns visible in the current render context
  * (result pool + block outputs + prerun).
  */
-export function getAllLabelColumns<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
-  ctx: RenderCtxBase<A, U, S>,
+export function getAllLabelColumns<A, U>(
+  ctx: RenderCtxBase<A, U>,
 ): PColumn<PColumnDataUniversal>[] {
-  const pframeSpec =
-    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for label discovery.");
+  const pframeSpec = getService("pframeSpec");
   const collection = new ColumnCollectionBuilder(pframeSpec)
     .addSources(collectCtxColumnSnapshotProviders(ctx))
     .build({ allowPartialColumnList: true });

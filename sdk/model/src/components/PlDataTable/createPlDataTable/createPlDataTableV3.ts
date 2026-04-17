@@ -3,7 +3,6 @@ import type {
   CanonicalizedJson,
   FilterSpecNode,
   PColumn,
-  PFrameSpecDriver,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
@@ -27,7 +26,6 @@ import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } 
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnMatch, ColumnSelector, ColumnSnapshot, MatchingMode } from "../../../columns";
-import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
@@ -41,6 +39,7 @@ import {
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
 import { isNil, isPlainObject, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
+import { getService } from "../../../services";
 
 export type createPlDataTableOptionsV3 = {
   tableState?: PlDataTableStateV2;
@@ -84,8 +83,8 @@ export type ColumnMatcher = (spec: PColumnSpec) => boolean;
 
 // Main Function
 
-export function createPlDataTableV3<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
-  ctx: RenderCtxBase<A, U, S>,
+export function createPlDataTableV3<A, U>(
+  ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
   const state = upgradePlDataTableStateV2(options.tableState);
@@ -118,9 +117,6 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   });
 
   const annotated = annotateColumnGroups({
-    pframeSpec:
-      ctx.services.pframeSpec ??
-      throwError("PFrameSpec service is required for display rule evaluation."),
     ...resolved,
     labelColumns,
     derivedLabels,
@@ -279,7 +275,6 @@ function resolveDiscoveredColumns(split: SplitDiscoveredColumns): ResolvedColumn
  * column annotations via `withTableVisualAnnotations`.
  */
 function annotateColumnGroups(params: {
-  pframeSpec: PFrameSpecDriver;
   direct: TableColumn[];
   linked: TableColumn[];
   labelColumns: PColumn<PColumnDataUniversal>[];
@@ -287,8 +282,8 @@ function annotateColumnGroups(params: {
   derivedLabels: Record<string, string>;
   displayOptions?: ColumnsDisplayOptions;
 }): AnnotatedColumnGroups {
-  const { pframeSpec, direct, linked, linkers, labelColumns, derivedLabels, displayOptions } =
-    params;
+  const { direct, linked, linkers, labelColumns, derivedLabels, displayOptions } = params;
+  const pframeSpec = getService("pframeSpec");
 
   const allColumnsForRules = [
     ...direct,

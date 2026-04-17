@@ -78,28 +78,32 @@ export interface ServiceDispatch {
 // Auto-derived types from the Services const in service_declarations.ts.
 // Adding a service to Services automatically updates all of these.
 
-type SMap = typeof Services;
+type TServices = typeof Services;
 
 type ExtractServiceName<T> = T extends Branded<infer N extends string, any> ? N : never;
 
 /** Model-side service interfaces keyed by service name literal. */
 export type ModelServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceModel<ServiceBrand<SMap[K]>>;
+  [K in keyof TServices as ExtractServiceName<TServices[K]>]: InferServiceModel<
+    ServiceBrand<TServices[K]>
+  >;
 };
 
 /** UI-side service interfaces keyed by service name literal. */
 export type UiServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceUi<ServiceBrand<SMap[K]>>;
+  [K in keyof TServices as ExtractServiceName<TServices[K]>]: InferServiceUi<
+    ServiceBrand<TServices[K]>
+  >;
 };
 
 /** Map from Services keys to their unbranded string name literals. */
 export type ServiceNameLiterals = {
-  [K in keyof SMap]: ExtractServiceName<SMap[K]>;
+  [K in keyof TServices]: ExtractServiceName<TServices[K]>;
 };
 
 /** Auto-derived requires* feature flags from Services keys. */
 export type ServiceRequireFlags = {
-  [K in keyof SMap as `requires${K & string}`]?: boolean;
+  [K in keyof TServices as `requires${K & string}`]?: boolean;
 };
 
 export type RequireServices<T extends ServiceName> = UnionToIntersection<

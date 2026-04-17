@@ -9,10 +9,10 @@
 
 import { Services, UiServiceRegistry } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
-import type { NodeServiceProxy } from "@platforma-sdk/model";
+import type { ServiceProxy } from "@platforma-sdk/model";
 
 export type UiServiceOptions = {
-  proxy: NodeServiceProxy;
+  proxy: ServiceProxy;
 };
 
 export function createUiServiceRegistry(options: UiServiceOptions) {
