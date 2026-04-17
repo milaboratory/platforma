@@ -1,5 +1,6 @@
 import {
   Annotation,
+  isValueNA,
   readAnnotation,
   ValueType,
   type PTableColumnSpec,
@@ -123,8 +124,7 @@ function serializeValue(vector: PTableVector, rowIndex: number): string {
     return "";
   }
 
-  // NA check via the isNA bitset
-  if (isNaBit(vector, rowIndex)) {
+  if (isValueNA(vector, rowIndex)) {
     return "";
   }
 
@@ -151,14 +151,4 @@ function serializeValue(vector: PTableVector, rowIndex: number): string {
       return String(rawValue);
     }
   }
-}
-
-/** Check the NA bitset for a given row. */
-function isNaBit(vector: PTableVector, rowIndex: number): boolean {
-  if (isNil(vector.isNA)) {
-    return false;
-  }
-  const chunkIndex = Math.floor(rowIndex / 8);
-  const mask = 1 << (7 - (rowIndex % 8));
-  return (vector.isNA[chunkIndex] & mask) > 0;
 }

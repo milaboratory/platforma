@@ -48,7 +48,7 @@ function isBitSet(bitVector: Uint8Array, offset: number): boolean {
   return (bitVector[chunkIndex] & mask) > 0;
 }
 
-function isValueNA(vector: PTableVector, row: number): boolean {
+export function isValueNA(vector: PTableVector, row: number): boolean {
   if (vector.isNA) return isBitSet(vector.isNA, row);
 
   // Check for legacy magic values to support old desktop versions
