@@ -25,8 +25,8 @@ export function getServices<
   const services = buildServices<Services>(platforma.serviceDispatch, uiRegistry);
 
   window.addEventListener("beforeunload", () => {
-    Promise.allSettled([uiRegistry.dispose()]).catch((err) => {
-      logError("error in dispose", err);
+    uiRegistry.dispose().catch((err) => {
+      logError("uiRegistry error in dispose", err);
     });
   });
 
