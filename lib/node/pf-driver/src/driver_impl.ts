@@ -292,23 +292,23 @@ export class AbstractPFrameDriver<
 
     return await this.downloadConcurrencyLimiter.run(async () => {
       const shape = await pTable.getShape({ signal: combinedSignal });
-      const effectiveRange = clipRange(options.range, shape);
+      const clippedRange = clipRange(options.range, shape);
       const specs = pTable.getSpec();
       const separator = options.format === "tsv" ? "\t" : ",";
 
       const partPath = options.path + ".part";
       const writeStream = fs.createWriteStream(partPath, { flags: "w" });
-      const iterable = streamPTableRows(
+      const iterable = streamPTableRows({
         pTable,
-        options.columnIndices,
-        effectiveRange,
-        options.chunkSize ?? 50_000,
-        separator,
-        combinedSignal,
         specs,
-        options.includeHeader ?? true,
-        options.bom ?? false,
-      );
+        columnIndices: options.columnIndices,
+        range: clippedRange,
+        chunkSize: options.chunkSize ?? 50_000,
+        separator,
+        includeHeader: options.includeHeader ?? true,
+        bom: options.bom ?? false,
+        signal: combinedSignal,
+      });
 
       try {
         await pipeline(Readable.from(iterable, { objectMode: false }), writeStream, {
@@ -325,7 +325,7 @@ export class AbstractPFrameDriver<
 
       // rowsWritten equals the clipped range length — the generator streams the
       // entire effective range without early termination, so this is accurate.
-      const rowsWritten = effectiveRange.length;
+      const rowsWritten = clippedRange.length;
 
       if (logPFrames()) {
         const durationMs = Math.round(performance.now() - startTime);
