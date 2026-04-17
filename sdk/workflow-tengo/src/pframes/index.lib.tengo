@@ -388,8 +388,30 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	if is_undefined(batch.format) {
 		batch.format = "tsv"
 	}
+	if batch.format != "tsv" && batch.format != "csv" && batch.format != "ndjson" && batch.format != "parquet" {
+		ll.panic("batch.format must be one of \"tsv\", \"csv\", \"ndjson\", \"parquet\" — got %v", batch.format)
+	}
+	// Parquet is listed in the spec as a supported format but the current
+	// implementation splits text content via Tengo text ops, which only works
+	// for text formats. Reject explicitly to avoid silent TSV fallback.
+	if batch.format == "parquet" {
+		ll.panic("batch.format=\"parquet\" is not yet supported; use \"tsv\", \"csv\", or \"ndjson\"")
+	}
 	if is_undefined(batch.passContent) {
 		batch.passContent = false
+	}
+	if batch.passContent && batch.format == "parquet" {
+		// Unreachable given the panic above, but kept as a spec-guarantee so that
+		// this constraint (spec line 186) survives a future parquet enable.
+		ll.panic("batch.passContent=true is not applicable to batch.format=\"parquet\" (binary format)")
+	}
+	// Default maxBatches=10000. Spec lines 69-79: soft limit on total batch count
+	// to prevent runaway graph growth on high-diversity inputs.
+	if is_undefined(batch.maxBatches) {
+		batch.maxBatches = 10000
+	}
+	if !is_int(batch.maxBatches) || batch.maxBatches <= 0 {
+		ll.panic("batch.maxBatches must be a positive integer, got %v", batch.maxBatches)
 	}
 
 	primaryJoin := input.primaryJoin
@@ -488,10 +510,14 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 				ll.panic("settings are required for Xsv output")
 			}
 
-			// For batch mode Xsv with batchKeyColumns, convert to standard axes format
+			// For batch mode Xsv with batchKeyColumns, convert to standard axes format.
+			// Spec: batchKeyColumns and axes are mutually exclusive within one output.
 			batchKeyColumnsNames := output.settings.batchKeyColumns
 			if is_undefined(batchKeyColumnsNames) {
 				ll.panic("batchKeyColumns is required for Xsv output in batch mode")
+			}
+			if !is_undefined(output.settings.axes) {
+				ll.panic("Xsv output settings cannot set both batchKeyColumns and axes — they are mutually exclusive (batchKeyColumns references existing batch axes; axes defines new ones)")
 			}
 
 			// Build axes from batch key columns
@@ -556,6 +582,7 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 
 	batchTemplateParams := {
 		batchSize: batch.size,
+		maxBatches: batch.maxBatches,
 		batchFormat: batch.format,
 		passContent: batch.passContent,
 		batchKeyIndices: batchKeyIndices,
@@ -566,7 +593,12 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		primaryColumnCount: len(primaryEntries),
 		secondaryColumnCount: len(secondaryEntries),
 		primaryHeaders: primaryHeaders,
-		secondaryHeaders: secondaryHeaders
+		secondaryHeaders: secondaryHeaders,
+		// Global exec resource hints (cpu/mem/queue). Used as fallback when an
+		// Xsv output doesn't specify its own, same convention as standard processColumn.
+		globalCpu: opts.cpu,
+		globalMem: opts.mem,
+		globalQueue: opts.queue
 	}
 
 	// Build render inputs — pass column data as direct named inputs
@@ -589,11 +621,17 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		renderInputs["__col_secondary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
 	}
 
-	// Forward extra/metaExtra
+	// Forward extra/metaExtra (same convention as standard processColumn).
 	extra := opts.extra
 	if !is_undefined(extra) {
 		for k, v in extra {
 			renderInputs["__extra_" + k] = v
+		}
+	}
+	metaExtra := opts.metaExtra
+	if !is_undefined(metaExtra) {
+		for k, v in metaExtra {
+			renderInputs["__meta_" + k] = v
 		}
 	}
 

@@ -29,11 +29,30 @@ self.body(func(inputs) {
 
 	primaryEntries := []
 	for entry in params.primaryEntries {
-		primaryEntries = append(primaryEntries, {
-			src: {
+		// If the entry carries filterDataInputName/filterSpec, build a
+		// ResolvedPrimaryRef shape (exercises the filter path in processColumn).
+		// Otherwise build a plain { spec, data } column.
+		src := undefined
+		if !is_undefined(entry.filterDataInputName) {
+			src = {
+				__isPrimaryRef: "v1",
+				column: {
+					spec: entry.spec,
+					data: inputs[entry.dataInputName]
+				},
+				filter: {
+					spec: entry.filterSpec,
+					data: inputs[entry.filterDataInputName]
+				}
+			}
+		} else {
+			src = {
 				spec: entry.spec,
 				data: inputs[entry.dataInputName]
-			},
+			}
+		}
+		primaryEntries = append(primaryEntries, {
+			src: src,
 			header: entry.header
 		})
 	}

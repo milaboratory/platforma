@@ -32,6 +32,10 @@ self.body(func(inputs) {
 	}
 
 	batchSize := params.batchSize
+	maxBatches := params.maxBatches
+	if is_undefined(maxBatches) {
+		maxBatches = 10000
+	}
 	batchFormat := params.batchFormat
 	passContent := params.passContent
 	batchKeyIndices := params.batchKeyIndices
@@ -292,10 +296,69 @@ self.body(func(inputs) {
 		}
 	}
 
-	// Collect extra inputs to forward to body template
+	// --- Batch count limiting (spec lines 69-79) ---
+	//
+	// Step 1: isolation scope count. Step 2: panic if scope count alone exceeds
+	// maxBatches — inflating batch size cannot help when each scope has ≤1 batch.
+	//
+	// Steps 3-4: estimate total batch count from per-scope record counts using the
+	// first primary column (all primaries share the same key space within a scope;
+	// full join preserves size on key matches, a fuller bound than just using one).
+	// If totalBatches > maxBatches, inflate batch size deterministically.
+	isolationScopeCount := len(allIsolationKeys)
+	if isolationScopeCount > maxBatches {
+		ll.panic(
+			"batch mode: isolation scope count (%v) exceeds batch.maxBatches (%v). "+
+				"This usually means a high-diversity axis is treated as an isolation axis. "+
+				"Move it into batch.keyColumns, or raise batch.maxBatches if the high count is intentional.",
+			isolationScopeCount, maxBatches)
+	}
+
+	// Count records per isolation scope using the first primary's grouping.
+	_recordsInGroup := func(groupRes) {
+		if is_undefined(groupRes) {
+			return 0
+		}
+		if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
+			return len(groupRes.getDataAsJson().data)
+		}
+		if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
+			// .index + .values per partition → halve
+			return len(groupRes.inputs()) / 2
+		}
+		// JsonPartitioned / ParquetPartitioned
+		return len(groupRes.inputs())
+	}
+
+	firstPrimaryGroups := primaryGroups[0].groups
+	totalRecords := 0
+	totalBatches := 0
+	for sIsolationKey in maps.getKeys(allIsolationKeys) {
+		recordsInScope := _recordsInGroup(firstPrimaryGroups[sIsolationKey])
+		totalRecords += recordsInScope
+		// Per-scope batch count = ceil(records / batchSize), at least 1 if non-empty.
+		if recordsInScope > 0 {
+			totalBatches += (recordsInScope + batchSize - 1) / batchSize
+		}
+	}
+
+	// Step 4: if the projected batch count exceeds maxBatches, inflate batch size.
+	// Deterministic: same input → same effective size → same batches (cache-safe).
+	effectiveBatchSize := batchSize
+	if totalBatches > maxBatches && totalRecords > 0 {
+		// ceil(totalRecords / maxBatches)
+		inflated := (totalRecords + maxBatches - 1) / maxBatches
+		if inflated > effectiveBatchSize {
+			effectiveBatchSize = inflated
+		}
+	}
+
+	// Collect extra/meta inputs to forward to body template (via split template).
+	// __extra_*: forwarded as regular inputs
+	// __meta_*:  forwarded as meta inputs (not involved in deduplication)
 	extraInputs := {}
 	for name, field in self.rawInputs() {
-		if text.has_prefix(name, "__extra_") {
+		if text.has_prefix(name, "__extra_") || text.has_prefix(name, "__meta_") {
 			extraInputs[name] = field
 		}
 	}
@@ -429,15 +492,20 @@ self.body(func(inputs) {
 		ptResult := wf.run()
 		joinedContent := ptResult.getFileContent(outFileName)
 
-		// Render the batch-split template for this isolation scope
+		// Render the batch-split template for this isolation scope.
+		// effectiveBatchSize may be larger than batchSize if maxBatches triggered
+		// inflation (spec lines 69-79, step 4).
 		splitInputs := {
 			params: smart.createJsonResource({
-				batchSize: batchSize,
+				batchSize: effectiveBatchSize,
 				passContent: passContent,
 				formatExt: formatExt,
 				eph: eph,
 				outputs: outputs,
-				batchKeyHeaders: batchKeyHeaders
+				batchKeyHeaders: batchKeyHeaders,
+				globalCpu: params.globalCpu,
+				globalMem: params.globalMem,
+				globalQueue: params.globalQueue
 			}),
 			body: body,
 			joinedContent: joinedContent
