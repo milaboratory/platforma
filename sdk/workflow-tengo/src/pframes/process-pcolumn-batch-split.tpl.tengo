@@ -104,11 +104,17 @@ self.body(func(inputs) {
 		}
 	}
 
-	// Collect extra inputs to forward to body template
+	// Collect extra/meta inputs to forward to body template.
+	// extra_: passed as regular body inputs.
+	// meta_: passed as meta inputs (see metaInputs option on render.createUniversal).
 	extraInputs := {}
+	metaInputs := {}
 	for name, field in self.rawInputs() {
 		if text.has_prefix(name, "__extra_") {
-			extraInputs[name] = field
+			// Strip the __extra_ prefix so the body template sees the original name
+			extraInputs[name[8:]] = field
+		} else if text.has_prefix(name, "__meta_") {
+			metaInputs[name[7:]] = field
 		}
 	}
 
@@ -144,12 +150,21 @@ self.body(func(inputs) {
 		renderInputs := {}
 		renderInputs[pConstants.VALUE_FIELD_NAME] = valueInput
 
-		// Forward extra inputs
+		// Forward extra inputs (already de-prefixed)
 		for k, v in extraInputs {
 			renderInputs[k] = v
 		}
 
-		batchResult := render.createUniversal(body, eph, renderInputs)
+		renderOpts := undefined
+		if len(metaInputs) > 0 {
+			renderOpts = { metaInputs: metaInputs }
+		}
+		batchResult := undefined
+		if is_undefined(renderOpts) {
+			batchResult = render.createUniversal(body, eph, renderInputs)
+		} else {
+			batchResult = render.createUniversal(body, eph, renderInputs, renderOpts)
+		}
 
 		// Collect outputs from batch result
 		for output in outputs {
@@ -229,14 +244,25 @@ self.body(func(inputs) {
 				mergedFile = ptResult.getFile(mergedName)
 			}
 
-			// Single xsv.importFile on merged TSV
+			// Single xsv.importFile on merged TSV.
+			// Per-output cpu/mem/queue takes precedence; global opts.cpu/opts.mem/
+			// opts.queue act as fallback (same convention as standard processColumn).
 			importSettings := output.settings
 			importOps := { dataOnly: true }
 			if !is_undefined(output.cpu) {
 				importOps.cpu = output.cpu
+			} else if !is_undefined(params.globalCpu) {
+				importOps.cpu = params.globalCpu
 			}
 			if !is_undefined(output.mem) {
 				importOps.mem = output.mem
+			} else if !is_undefined(params.globalMem) {
+				importOps.mem = params.globalMem
+			}
+			if !is_undefined(output.queue) {
+				importOps.queue = output.queue
+			} else if !is_undefined(params.globalQueue) {
+				importOps.queue = params.globalQueue
 			}
 
 			pf := xsv.importFile(mergedFile, xsvType, importSettings, importOps)

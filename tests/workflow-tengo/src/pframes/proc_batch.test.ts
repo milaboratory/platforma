@@ -665,3 +665,549 @@ eTplTest.concurrent(
     expect(hcContent['["k4"]']).toEqual("EIVL");
   },
 );
+
+// ---- Test 9: batch.format="parquet" must be rejected explicitly ----
+//
+// The split template currently supports only text-based formats (tsv/csv/ndjson).
+// Parquet must panic with a clear message rather than silently falling back to TSV.
+
+eTplTest.concurrent(
+  "batch mode: parquet format is rejected with a clear error",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data1Res = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k1"]': "EVQL", '["k2"]': "QVQL" },
+        }),
+      );
+      tx.lockInputs(data1Res);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              { spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: { size: 2, keyColumns: ["key"], format: "parquet", passContent: true },
+          }),
+        ),
+        data1: data1Res,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    await expect(awaitStableState(r, TIMEOUT)).rejects.toThrow(
+      /batch\.format="parquet" is not yet supported/,
+    );
+  },
+);
+
+// ---- Test 10: Xsv output cannot set both batchKeyColumns and axes ----
+//
+// Spec line 210: "batchKeyColumns and axes are mutually exclusive within one
+// output." Verifies the check panics with a clear message.
+
+const xsvSettingsBadBoth = {
+  // Both set — invalid per spec
+  batchKeyColumns: ["key"],
+  axes: [{ column: "key", spec: { name: "key", type: "String" } }],
+  columns: [
+    {
+      column: "heavyChain",
+      id: "heavyChain",
+      spec: { valueType: "String", name: "heavyChain" },
+    },
+  ],
+  storageFormat: "Json",
+} as const;
+
+eTplTest.concurrent(
+  "batch mode: Xsv output with both batchKeyColumns and axes is rejected",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data1Res = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k1"]': "EVQL", '["k2"]': "QVQL" },
+        }),
+      );
+      tx.lockInputs(data1Res);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              { spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBadBoth }],
+            batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        data1: data1Res,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    await expect(awaitStableState(r, TIMEOUT)).rejects.toThrow(
+      /cannot set both batchKeyColumns and axes/,
+    );
+  },
+);
+
+// ---- Test 11: maxBatches step 2 — isolation scope count > maxBatches panics ----
+
+eTplTest.concurrent(
+  "batch mode: maxBatches step 2 — too many isolation scopes panics",
+  async ({ helper, expect, stHelper }) => {
+    // Input with 2 isolation scopes. Set maxBatches=1 → panic.
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data1Res = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 2,
+          data: {
+            '["A","k1"]': "EVQL",
+            '["B","k1"]': "DIQM",
+          },
+        }),
+      );
+      tx.lockInputs(data1Res);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [{ spec: twoAxisSpec, dataInputName: "data1", header: "heavyChain" }],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsIsolation }],
+            batch: {
+              size: 10,
+              keyColumns: ["key"],
+              format: "tsv",
+              passContent: true,
+              maxBatches: 1,
+            },
+          }),
+        ),
+        data1: data1Res,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    await expect(awaitStableState(r, TIMEOUT)).rejects.toThrow(
+      /isolation scope count \(2\) exceeds batch\.maxBatches \(1\)/,
+    );
+  },
+);
+
+// ---- Test: ResolvedPrimaryRef filter narrows the key space ----
+//
+// Spec line 182: when a primary entry's `src` is a ResolvedPrimaryRef carrying a
+// filter, processColumn inner-joins the filter to reduce the key space before
+// batching. Verifies that only keys present in the filter column reach the body.
+
+const filterSpec: PUniversalColumnSpec = {
+  kind: "PColumn",
+  name: "filter",
+  valueType: "String",
+  axesSpec: [{ name: "key", type: "String" }],
+};
+
+eTplTest.concurrent(
+  "batch mode: ResolvedPrimaryRef filter narrows the key space (inner-join)",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      // Primary has 5 keys.
+      const primary = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: {
+            '["k1"]': "EVQL",
+            '["k2"]': "QVQL",
+            '["k3"]': "DIQM",
+            '["k4"]': "EIVL",
+            '["k5"]': "DVQL",
+          },
+        }),
+      );
+      tx.lockInputs(primary);
+
+      // Filter covers only k2 and k4 → output must be restricted to those two.
+      const filter = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: {
+            '["k2"]': "keep",
+            '["k4"]': "keep",
+          },
+        }),
+      );
+      tx.lockInputs(filter);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              {
+                spec: singleAxisSpec,
+                dataInputName: "primaryData",
+                filterSpec: filterSpec,
+                filterDataInputName: "filterData",
+                header: "heavyChain",
+              },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: { size: 10, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        primaryData: primary,
+        filterData: filter,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const hcBlob = hcData.inputs["[]"];
+    assertBlob(hcBlob);
+    const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+
+    // Only the 2 keys present in the filter should appear — k1, k3, k5 are dropped.
+    expect(Object.keys(hcContent).sort()).toEqual(['["k2"]', '["k4"]']);
+    expect(hcContent['["k2"]']).toEqual("QVQL");
+    expect(hcContent['["k4"]']).toEqual("EIVL");
+  },
+);
+
+// ---- Test 12: maxBatches step 4 — totalBatches > maxBatches inflates batch size ----
+
+eTplTest.concurrent(
+  "batch mode: maxBatches step 4 — batch size inflates when total batch count exceeds limit",
+  async ({ helper, expect, stHelper }) => {
+    // 12 records, size=1 would give 12 batches. maxBatches=3 → effective size
+    // must inflate to ceil(12/3)=4, yielding 3 batches. All 12 records must still
+    // appear in the merged output (algorithm is degradation, not data loss).
+    const records: Record<string, string> = {};
+    const expectedKeys: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const k = `k${i.toString().padStart(2, "0")}`;
+      records[`["${k}"]`] = `SEQ${i}`;
+      expectedKeys.push(k);
+    }
+
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data1Res = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({ keyLength: 1, data: records }),
+      );
+      tx.lockInputs(data1Res);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              { spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: {
+              size: 1, // would normally produce 12 batches …
+              keyColumns: ["key"],
+              format: "tsv",
+              passContent: true,
+              maxBatches: 3, // … but cap is 3, so effective size inflates to 4
+            },
+          }),
+        ),
+        data1: data1Res,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    // All 12 records still present — inflation is graceful, not lossy.
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const hcBlob = hcData.inputs["[]"];
+    assertBlob(hcBlob);
+    const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+    expect(Object.keys(hcContent).length).toEqual(12);
+    for (const expected of expectedKeys) {
+      expect(hcContent).toHaveProperty(`["${expected}"]`);
+    }
+  },
+);
+
+// ---- Test: primaryJoin: "inner" ----
+//
+// Two primary columns with partially overlapping keys. Inner join must keep only
+// the intersection; "full" would keep the union.
+
+const secondaryPrimarySpec: PUniversalColumnSpec = {
+  kind: "PColumn",
+  name: "lightChain",
+  valueType: "String",
+  axesSpec: [{ name: "key", type: "String" }],
+};
+
+const xsvSettingsTwoCols = {
+  batchKeyColumns: ["key"],
+  columns: [
+    { column: "heavyChain", id: "heavyChain", spec: { valueType: "String", name: "heavyChain" } },
+    { column: "lightChain", id: "lightChain", spec: { valueType: "String", name: "lightChain" } },
+  ],
+  storageFormat: "Json",
+} as const;
+
+eTplTest.concurrent(
+  'batch mode: primaryJoin="inner" keeps only key intersection',
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      // Primary A: k1, k2, k3
+      // Primary B: k2, k3, k4
+      // Inner join → only k2, k3 survive.
+      const a = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k1"]': "A1", '["k2"]': "A2", '["k3"]': "A3" },
+        }),
+      );
+      tx.lockInputs(a);
+      const b = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k2"]': "B2", '["k3"]': "B3", '["k4"]': "B4" },
+        }),
+      );
+      tx.lockInputs(b);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              { spec: singleAxisSpec, dataInputName: "a", header: "heavyChain" },
+              { spec: secondaryPrimarySpec, dataInputName: "b", header: "lightChain" },
+            ],
+            primaryJoin: "inner",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsTwoCols }],
+            batch: { size: 10, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        a: a,
+        b: b,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const hcBlob = hcData.inputs["[]"];
+    assertBlob(hcBlob);
+    const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+    // Only intersection (k2, k3). k1 and k4 must be dropped.
+    expect(Object.keys(hcContent).sort()).toEqual(['["k2"]', '["k3"]']);
+  },
+);
+
+// ---- Test: header derivation from spec label ----
+//
+// When an entry omits `header`, processColumn derives it from the PColumn spec:
+// prefers the "pl7.app/label" annotation, falls back to spec.name. Verifies by
+// checking that the resulting Xsv output's pfconv import (which uses the header
+// as the TSV column name) succeeded — if it didn't, the import would fail.
+
+const labeledSpec: PUniversalColumnSpec = {
+  kind: "PColumn",
+  name: "heavyChain", // used as fallback header
+  valueType: "String",
+  axesSpec: [{ name: "key", type: "String" }],
+  annotations: {
+    "pl7.app/label": "heavyChain", // preferred header source
+  },
+};
+
+eTplTest.concurrent(
+  "batch mode: header derived from spec when entry.header omitted",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k1"]': "EVQL", '["k2"]': "QVQL" },
+        }),
+      );
+      tx.lockInputs(data);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              // NOTE: no `header` field — processColumn must derive it from spec.
+              { spec: labeledSpec, dataInputName: "data" },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: { size: 10, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        data: data,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    // If derivation worked, the TSV column is named "heavyChain" and pfconv
+    // import succeeds — giving us tsv.heavyChain.data with 2 entries.
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const hcBlob = hcData.inputs["[]"];
+    assertBlob(hcBlob);
+    const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+    expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]']);
+  },
+);
+
+// ---- Test: CSV format ----
+
+eTplTest.concurrent('batch mode: format="csv"', async ({ helper, expect, stHelper }) => {
+  const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+    const data = tx.createStruct(
+      resourceType("PColumnData/Json", "1"),
+      JSON.stringify({
+        keyLength: 1,
+        data: { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM" },
+      }),
+    );
+    tx.lockInputs(data);
+
+    return {
+      params: tx.createValue(
+        Pl.JsonObject,
+        JSON.stringify({
+          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+          primaryJoin: "full",
+          // Note: xsvType "csv" — body template receives CSV content.
+          outputs: [{ type: "Xsv", name: "tsv", xsvType: "csv", settings: xsvSettings }],
+          batch: { size: 2, keyColumns: ["key"], format: "csv", passContent: true },
+        }),
+      ),
+      data: data,
+    };
+  });
+
+  const r = stHelper.tree(result.resultEntry);
+  const finalResult = await awaitStableState(r, TIMEOUT);
+  assertResource(finalResult);
+  const theResult = finalResult.inputs["result"];
+  assertResource(theResult);
+
+  const hcData = theResult.inputs["tsv.heavyChain.data"];
+  assertResource(hcData);
+  const hcBlob = hcData.inputs["[]"];
+  assertBlob(hcBlob);
+  const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+  expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]', '["k3"]']);
+});
+
+// ---- Test: multi-batch within a single isolation scope ----
+//
+// Existing isolation tests have 1 batch per scope. This one exercises the path
+// where each scope produces multiple batches that must be merged per-scope.
+
+eTplTest.concurrent(
+  "batch mode: isolation + multiple batches per scope",
+  async ({ helper, expect, stHelper }) => {
+    // 2 isolation scopes (A, B) × 6 records each = 12 records total.
+    // batch.size=2 → 3 batches per scope → 6 total batches.
+    const recs: Record<string, string> = {};
+    for (const sample of ["A", "B"]) {
+      for (let i = 0; i < 6; i++) {
+        const k = `k${i}`;
+        recs[`["${sample}","${k}"]`] = `${sample}${i}`;
+      }
+    }
+
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({ keyLength: 2, data: recs }),
+      );
+      tx.lockInputs(data);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [{ spec: twoAxisSpec, dataInputName: "data", header: "heavyChain" }],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsIsolation }],
+            batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        data: data,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    // Output is super-partitioned by sampleId (isolation axis). Each sample's
+    // partition is the inner merged data from 3 batches (6 records).
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    // Super-partitions: one entry per isolation key
+    const superKeys = Object.keys(hcData.inputs);
+    expect(superKeys.sort()).toEqual(['["A"]', '["B"]']);
+    for (const sk of superKeys) {
+      const inner = hcData.inputs[sk];
+      assertResource(inner);
+      // Inner resource is JsonPartitioned(partitionKeyLength=0) with a single "[]"
+      // containing all the records for this sample merged across batches.
+      const innerKeys = Object.keys(inner.inputs);
+      expect(innerKeys).toEqual(["[]"]);
+      const innerBlob = inner.inputs["[]"];
+      assertBlob(innerBlob);
+      const content = JSON.parse(Buffer.from(innerBlob.content).toString());
+      expect(Object.keys(content).length).toEqual(6);
+    }
+  },
+);
