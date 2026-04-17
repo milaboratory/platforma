@@ -39,17 +39,21 @@ export function formatRow(vectors: PTableVector[], rowIndex: number, separator: 
  * to the table shape). When `range` is undefined the generator does nothing
  * beyond emitting an optional BOM and header.
  */
-export async function* streamPTableRows(
-  pTable: PTableDataSource,
-  columnIndices: number[],
-  range: TableRange | undefined,
-  chunkSize: number,
-  separator: string,
-  signal: undefined | AbortSignal,
-  specs: PTableColumnSpec[],
-  includeHeader: boolean,
-  bom: boolean,
-): AsyncIterable<string> {
+export interface StreamPTableRowsOptions {
+  pTable: PTableDataSource;
+  specs: PTableColumnSpec[];
+  columnIndices: number[];
+  range?: TableRange;
+  chunkSize: number;
+  separator: string;
+  includeHeader: boolean;
+  bom: boolean;
+  signal?: AbortSignal;
+}
+export async function* streamPTableRows(options: StreamPTableRowsOptions): AsyncIterable<string> {
+  const { pTable, columnIndices, range, chunkSize, separator, signal, specs, includeHeader, bom } =
+    options;
+
   if (bom) {
     yield "\uFEFF";
   }

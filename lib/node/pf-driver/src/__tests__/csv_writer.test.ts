@@ -8,90 +8,6 @@ import {
 } from "@milaboratories/pl-model-common";
 import { formatHeader, formatRow, streamPTableRows, type PTableDataSource } from "../csv_writer";
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
-function makeAxisSpec(name: string, label?: string): PTableColumnSpec {
-  const annotations: Record<string, string> = {};
-  if (label !== undefined) {
-    annotations["pl7.app/label"] = label;
-  }
-  return {
-    type: "axis",
-    id: { name, type: "Int" },
-    spec: { name, type: "Int", annotations },
-  } as PTableColumnSpec;
-}
-
-function makeColumnSpec(name: string, label?: string): PTableColumnSpec {
-  const annotations: Record<string, string> = {};
-  if (label !== undefined) {
-    annotations["pl7.app/label"] = label;
-  }
-  return {
-    type: "column",
-    id: `col:${name}` as PObjectId,
-    spec: {
-      kind: "PColumn",
-      name,
-      valueType: "String",
-      axesSpec: [],
-      annotations,
-    },
-  } as PTableColumnSpec;
-}
-
-function makeStringVector(values: (null | string)[]): PTableVector {
-  return { type: ValueType.String, data: values };
-}
-
-function makeIntVector(values: number[]): PTableVector {
-  return { type: ValueType.Int, data: new Int32Array(values) };
-}
-
-function makeDoubleVector(values: number[]): PTableVector {
-  return { type: ValueType.Double, data: new Float64Array(values) };
-}
-
-function makeLongVector(values: bigint[]): PTableVector {
-  return { type: ValueType.Long, data: new BigInt64Array(values) };
-}
-
-function makeVectorWithNaBits(
-  type: typeof ValueType.Int,
-  data: number[],
-  naBits: number[],
-): PTableVector {
-  const isNA = new Uint8Array(Math.ceil(data.length / 8));
-  for (const bit of naBits) {
-    const chunkIndex = Math.floor(bit / 8);
-    const mask = 1 << (7 - (bit % 8));
-    isNA[chunkIndex] |= mask;
-  }
-  return { type, data: new Int32Array(data), isNA };
-}
-
-function makeMockPTable(vectorsByChunk: PTableVector[][]): PTableDataSource {
-  let callIndex = 0;
-  return {
-    getData: async (
-      _columnIndices: number[],
-      _options?: { range?: TableRange; signal?: AbortSignal },
-    ) => {
-      const vectors = vectorsByChunk[callIndex];
-      callIndex++;
-      return vectors;
-    },
-  };
-}
-
-async function collectStream(iter: AsyncIterable<string>): Promise<string> {
-  const parts: string[] = [];
-  for await (const chunk of iter) {
-    parts.push(chunk);
-  }
-  return parts.join("");
-}
-
 // ── formatHeader ─────────────────────────────────────────────────────
 
 describe("formatHeader", () => {
@@ -211,7 +127,16 @@ describe("streamPTableRows", () => {
   it("emits BOM when requested", async () => {
     const pTable = makeMockPTable([]);
     const result = await collectStream(
-      streamPTableRows(pTable, [], undefined, 100, ",", undefined, [], false, true),
+      streamPTableRows({
+        pTable,
+        columnIndices: [],
+        range: undefined,
+        chunkSize: 100,
+        separator: ",",
+        specs: [],
+        includeHeader: false,
+        bom: true,
+      }),
     );
     expect(result).toBe("\uFEFF");
   });
@@ -219,7 +144,16 @@ describe("streamPTableRows", () => {
   it("does not emit BOM when not requested", async () => {
     const pTable = makeMockPTable([]);
     const result = await collectStream(
-      streamPTableRows(pTable, [], undefined, 100, ",", undefined, [], false, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [],
+        range: undefined,
+        chunkSize: 100,
+        separator: ",",
+        specs: [],
+        includeHeader: false,
+        bom: false,
+      }),
     );
     expect(result).toBe("");
   });
@@ -231,7 +165,16 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 0, length: 2 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0], range, 100, ",", undefined, specs, false, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0],
+        range,
+        chunkSize: 100,
+        separator: ",",
+        specs,
+        includeHeader: false,
+        bom: false,
+      }),
     );
     expect(result).toBe("1\r\n2\r\n");
   });
@@ -243,7 +186,16 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 0, length: 1 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0], range, 100, ",", undefined, specs, true, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0],
+        range,
+        chunkSize: 100,
+        separator: ",",
+        specs,
+        includeHeader: true,
+        bom: false,
+      }),
     );
     expect(result).toBe("ID\r\n1\r\n");
   });
@@ -256,7 +208,16 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 0, length: 3 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0], range, 2, ",", undefined, specs, false, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0],
+        range,
+        chunkSize: 2,
+        separator: ",",
+        specs,
+        includeHeader: false,
+        bom: false,
+      }),
     );
     expect(result).toBe("10\r\n20\r\n30\r\n");
   });
@@ -273,7 +234,16 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 5, length: 2 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0], range, 100, ",", undefined, specs, false, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0],
+        range,
+        chunkSize: 100,
+        separator: ",",
+        specs,
+        includeHeader: false,
+        bom: false,
+      }),
     );
     expect(result).toBe("50\r\n60\r\n");
   });
@@ -283,7 +253,16 @@ describe("streamPTableRows", () => {
     const pTable = makeMockPTable([]);
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0], undefined, 100, ",", undefined, specs, true, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0],
+        range: undefined,
+        chunkSize: 100,
+        separator: ",",
+        specs,
+        includeHeader: true,
+        bom: false,
+      }),
     );
     expect(result).toBe("Value\r\n");
   });
@@ -297,7 +276,17 @@ describe("streamPTableRows", () => {
 
     await expect(
       collectStream(
-        streamPTableRows(pTable, [0], range, 1, ",", controller.signal, specs, false, false),
+        streamPTableRows({
+          pTable,
+          columnIndices: [0],
+          range,
+          chunkSize: 1,
+          separator: ",",
+          signal: controller.signal,
+          specs,
+          includeHeader: false,
+          bom: false,
+        }),
       ),
     ).rejects.toThrow();
   });
@@ -309,7 +298,16 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 0, length: 1 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0, 1], range, 100, ",", undefined, specs, true, true),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0, 1],
+        range,
+        chunkSize: 100,
+        separator: ",",
+        specs,
+        includeHeader: true,
+        bom: true,
+      }),
     );
     expect(result).toBe("\uFEFFX,Y\r\n1,a\r\n");
   });
@@ -321,8 +319,101 @@ describe("streamPTableRows", () => {
     const range: TableRange = { offset: 0, length: 1 };
 
     const result = await collectStream(
-      streamPTableRows(pTable, [0, 1], range, 100, "\t", undefined, specs, true, false),
+      streamPTableRows({
+        pTable,
+        columnIndices: [0, 1],
+        range,
+        chunkSize: 100,
+        separator: "\t",
+        specs,
+        includeHeader: true,
+        bom: false,
+      }),
     );
     expect(result).toBe("A\tB\r\n1\thello\r\n");
   });
 });
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function makeAxisSpec(name: string, label?: string): PTableColumnSpec {
+  const annotations: Record<string, string> = {};
+  if (label !== undefined) {
+    annotations["pl7.app/label"] = label;
+  }
+  return {
+    type: "axis",
+    id: { name, type: "Int" },
+    spec: { name, type: "Int", annotations },
+  } as PTableColumnSpec;
+}
+
+function makeColumnSpec(name: string, label?: string): PTableColumnSpec {
+  const annotations: Record<string, string> = {};
+  if (label !== undefined) {
+    annotations["pl7.app/label"] = label;
+  }
+  return {
+    type: "column",
+    id: `col:${name}` as PObjectId,
+    spec: {
+      kind: "PColumn",
+      name,
+      valueType: "String",
+      axesSpec: [],
+      annotations,
+    },
+  } as PTableColumnSpec;
+}
+
+function makeStringVector(values: (null | string)[]): PTableVector {
+  return { type: ValueType.String, data: values };
+}
+
+function makeIntVector(values: number[]): PTableVector {
+  return { type: ValueType.Int, data: new Int32Array(values) };
+}
+
+function makeDoubleVector(values: number[]): PTableVector {
+  return { type: ValueType.Double, data: new Float64Array(values) };
+}
+
+function makeLongVector(values: bigint[]): PTableVector {
+  return { type: ValueType.Long, data: new BigInt64Array(values) };
+}
+
+function makeVectorWithNaBits(
+  type: typeof ValueType.Int,
+  data: number[],
+  naBits: number[],
+): PTableVector {
+  const isNA = new Uint8Array(Math.ceil(data.length / 8));
+  for (const bit of naBits) {
+    const chunkIndex = Math.floor(bit / 8);
+    const mask = 1 << (7 - (bit % 8));
+    isNA[chunkIndex] |= mask;
+  }
+  return { type, data: new Int32Array(data), isNA };
+}
+
+function makeMockPTable(vectorsByChunk: PTableVector[][]): PTableDataSource {
+  let callIndex = 0;
+  return {
+    getData: async (
+      _columnIndices: number[],
+      _options?: { range?: TableRange; signal?: AbortSignal },
+    ) => {
+      const vectors = vectorsByChunk[callIndex];
+      callIndex++;
+      return vectors;
+    },
+  };
+}
+
+async function collectStream(iter: AsyncIterable<string>): Promise<string> {
+  const parts: string[] = [];
+  for await (const chunk of iter) {
+    parts.push(chunk);
+  }
+  return parts.join("");
+}
