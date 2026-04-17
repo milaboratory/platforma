@@ -70,7 +70,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
             axes: [{ name: "name" }],
           },
         },
-        columnsSelector: {
+        selector: {
           mode: "related",
           maxHops: 4,
         },
@@ -90,9 +90,9 @@ export const platforma = BlockModelV3.create(blockDataModel)
           // Unmatched columns (score, note) keep their original order
         ],
         visibility: [
-          // "note" hidden by default (user can re-enable in UI)
-          { match: (spec) => spec.name === "note", visibility: "hidden" },
-          // "score" optional — hidden by default but toggleable
+          // "note" hidden by default (user can re-enable in UI) — declarative selector form
+          { match: { name: "^note$" }, visibility: "hidden" },
+          // "score" optional — hidden by default but toggleable (predicate form, escape hatch)
           { match: (spec) => spec.name === "score", visibility: "optional" },
         ],
       },

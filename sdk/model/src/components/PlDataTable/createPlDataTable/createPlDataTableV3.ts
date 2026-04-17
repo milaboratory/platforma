@@ -3,6 +3,7 @@ import type {
   CanonicalizedJson,
   FilterSpecNode,
   PColumn,
+  PFrameSpecDriver,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
@@ -25,24 +26,25 @@ import { isEmpty } from "es-toolkit/compat";
 import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnMatch, ColumnSnapshot, MatchingMode } from "../../../columns";
+import type { ColumnMatch, ColumnSelector, ColumnSnapshot, MatchingMode } from "../../../columns";
 import { Services, type RequireServices } from "@milaboratories/pl-model-common";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
   deriveAllLabels,
+  evaluateRules,
   isColumnHidden,
   isColumnOptional,
   withLabelAnnotations,
   withTableVisualAnnotations,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverTableColumnSnaphots, type DiscoveredTableColumnOptions } from "./discoverColumns";
+import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
 import { isNil, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
 
 export type createPlDataTableOptionsV3 = (
   | {
-      discoverColumnOptions: DiscoveredTableColumnOptions;
+      discoverColumnOptions: DiscoverTableColumnOptions;
     }
   | {
       columns: Nil | TableColumnSnapshot<SUniversalPColumnId>[];
@@ -73,13 +75,13 @@ export type ColumnsDisplayOptions = {
 };
 
 export type ColumnOrderRule = {
-  match: ColumnMatcher;
+  match: ColumnMatcher | ColumnSelector;
   /** Higher number = further left in table */
   priority: number;
 };
 
 export type ColumnVisibilityRule = {
-  match: ColumnMatcher;
+  match: ColumnMatcher | ColumnSelector;
   visibility: "default" | "optional" | "hidden";
 };
 
@@ -101,9 +103,12 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
   const splited = splitDiscoveredColumns(discovered);
-  const resolved = resolveDiscoveredColumns(splited, discovered);
+  const resolved = resolveDiscoveredColumns(splited);
 
-  const labelColumns = getMatchingLabelColumns(resolved.all, getAllLabelColumns(ctx));
+  const labelColumns = getMatchingLabelColumns(
+    [...resolved.direct, ...resolved.linked],
+    getAllLabelColumns(ctx),
+  );
 
   const derivedLabels = deriveAllLabels({
     columns: discovered.map((dc) => ({
@@ -118,12 +123,15 @@ export function createPlDataTableV3<A, U, S extends RequireServices<typeof Servi
     },
   });
 
-  const annotated = annotateColumnGroups(
-    resolved,
+  const annotated = annotateColumnGroups({
+    pframeSpec:
+      ctx.services.pframeSpec ??
+      throwError("PFrameSpec service is required for display rule evaluation."),
+    ...resolved,
     labelColumns,
     derivedLabels,
-    options.columnsDisplayOptions,
-  );
+    displayOptions: options.columnsDisplayOptions,
+  });
 
   const primaryColumnIds = new Set<PObjectId>(
     discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
@@ -229,7 +237,6 @@ type ResolvedColumns = {
   readonly direct: TableColumn[];
   readonly linked: TableColumn[];
   readonly linkers: Map<PObjectId, TableColumn[]>;
-  readonly all: TableColumn[];
 };
 
 type AnnotatedColumnGroups = {
@@ -256,10 +263,8 @@ function splitDiscoveredColumns(
 }
 
 /** Resolve DiscoveredColumn snapshots into PColumn objects with lazily-evaluated data. */
-function resolveDiscoveredColumns(
-  split: SplitDiscoveredColumns,
-  allDiscovered: TableColumnSnapshot<SUniversalPColumnId>[],
-): ResolvedColumns {
+function resolveDiscoveredColumns(split: SplitDiscoveredColumns): ResolvedColumns {
+  const direct = split.direct.map(resolveSnapshot);
   const linked = split.linked.map(resolveSnapshot);
   const linkers = new Map<PObjectId, TableColumn[]>(
     split.linked
@@ -270,35 +275,60 @@ function resolveDiscoveredColumns(
       .map((dc, i) => [linked[i].id, dc.linkerPath.map((s) => resolveSnapshot(s.linker))]),
   );
 
-  return {
-    all: allDiscovered.map(resolveSnapshot),
-    direct: split.direct.map(resolveSnapshot),
-    linked,
-    linkers,
-  };
+  return { direct, linked, linkers };
 }
 
-/** Annotate all column groups with derived labels and display options. */
-function annotateColumnGroups(
-  resolved: ResolvedColumns,
-  labelColumns: PColumn<PColumnDataUniversal>[],
-  derivedLabels: Record<string, string>,
-  displayOptions: ColumnsDisplayOptions | undefined,
-): AnnotatedColumnGroups {
-  const direct = withTableVisualAnnotations(
-    displayOptions,
-    withLabelAnnotations(derivedLabels, resolved.direct),
-  );
-  const linked = withTableVisualAnnotations(
-    displayOptions,
-    withLabelAnnotations(derivedLabels, resolved.linked),
-  );
-  const linkers = new Map<PObjectId, TableColumn[]>(
-    [...resolved.linkers].map(([id, cols]) => [id, withLabelAnnotations(derivedLabels, cols)]),
-  );
-  const labels = withLabelAnnotations(derivedLabels, labelColumns);
+/**
+ * Annotate all column groups with derived labels and display-rule annotations.
+ * Evaluates `displayOptions` rules against all discovered columns (direct,
+ * linked, labels, linkers) and writes the winning visibility/priority into
+ * column annotations via `withTableVisualAnnotations`.
+ */
+function annotateColumnGroups(params: {
+  pframeSpec: PFrameSpecDriver;
+  direct: TableColumn[];
+  linked: TableColumn[];
+  labelColumns: PColumn<PColumnDataUniversal>[];
+  linkers: Map<PObjectId, TableColumn[]>;
+  derivedLabels: Record<string, string>;
+  displayOptions?: ColumnsDisplayOptions;
+}): AnnotatedColumnGroups {
+  const { pframeSpec, direct, linked, linkers, labelColumns, derivedLabels, displayOptions } =
+    params;
 
-  return { direct, linked, linkers, labels };
+  const allColumnsForRules = [
+    ...direct,
+    ...linked,
+    ...labelColumns,
+    ...uniqueBy([...linkers.values()].flat(), (c) => c.id),
+  ];
+  const visibilityByColId = evaluateRules(
+    displayOptions?.visibility ?? [],
+    allColumnsForRules,
+    pframeSpec,
+  );
+  const orderByColId = evaluateRules(
+    displayOptions?.ordering ?? [],
+    allColumnsForRules,
+    pframeSpec,
+  );
+
+  return {
+    direct: withTableVisualAnnotations(
+      visibilityByColId,
+      orderByColId,
+      withLabelAnnotations(derivedLabels, direct),
+    ),
+    linked: withTableVisualAnnotations(
+      visibilityByColId,
+      orderByColId,
+      withLabelAnnotations(derivedLabels, linked),
+    ),
+    linkers: new Map<PObjectId, TableColumn[]>(
+      [...linkers].map(([id, cols]) => [id, withLabelAnnotations(derivedLabels, cols)]),
+    ),
+    labels: withLabelAnnotations(derivedLabels, labelColumns),
+  };
 }
 
 /** Build an index of all valid column IDs (axes + columns) for filter/sorting validation. */

@@ -15,10 +15,10 @@ import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_s
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
 
-export type DiscoveredTableColumnOptions = {
+export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>;
-  columnsSelector: ColumnsSelectorConfig;
+  selector: ColumnsSelectorConfig;
 };
 
 /** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
@@ -28,7 +28,7 @@ export function discoverTableColumnSnaphots<
   S extends RequireServices<typeof Services.PFrameSpec>,
 >(
   ctx: RenderCtxBase<A, U, S>,
-  options: DiscoveredTableColumnOptions,
+  options: DiscoverTableColumnOptions,
 ): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
   const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
@@ -46,7 +46,7 @@ export function discoverTableColumnSnaphots<
   if (collection === undefined) return undefined;
 
   try {
-    const matched = collection.findColumns(resolvedOptions.columnsSelector ?? undefined);
+    const matched = collection.findColumns(resolvedOptions.selector ?? undefined);
     const anchors = collection.getAnchors();
     return mapToDiscoveredColumns(
       matched,
