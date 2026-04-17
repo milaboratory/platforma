@@ -144,7 +144,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .outputWithStatus("blockTableTest", (ctx) => {
     return createPlDataTable(ctx, {
       tableState: ctx.data.tableState,
-      discoverColumnOptions: {
+      columns: {
         anchors: {
           main: {
             kind: "PColumn",
@@ -153,7 +153,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
             axesSpec: [{ type: "String", name: "item" }],
           },
         },
-        columnsSelector: {
+        selector: {
           include: [{ name: [{ type: "exact", value: "mock_score" }] }],
         },
       },
