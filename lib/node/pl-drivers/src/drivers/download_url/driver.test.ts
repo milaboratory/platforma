@@ -41,6 +41,7 @@ test("should download a tar archive and extracts its content and then deleted", 
     expect(indexJsCode).toContain("use strict");
 
     c.resetState();
+    await c.awaitChange();
   });
 }, 45000);
 
