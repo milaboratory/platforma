@@ -82,8 +82,8 @@ function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
 }
 
 function toJoinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
-  return {
-    entry: input,
-    qualifications: [],
-  };
+  // TODO(qualifications): should come from MatchVariant.qualifications on the
+  // originating TableColumnSnapshot. See review.md §3.2 for the structural
+  // rebuild (per-secondary primary duplication).
+  return { entry: input, qualifications: [] };
 }

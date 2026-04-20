@@ -26,7 +26,13 @@ import { isEmpty } from "es-toolkit/compat";
 import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnMatch, ColumnSelector, ColumnSnapshot, MatchingMode } from "../../../columns";
+import type {
+  ColumnSelector,
+  ColumnSnapshot,
+  MatchingMode,
+  MatchQualifications,
+  MatchVariant,
+} from "../../../columns";
 import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
@@ -215,7 +221,10 @@ export function createPlDataTableV3<A, U>(
 export type TableColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> = ColumnSnapshot<Id> & {
   readonly isPrimary?: boolean;
   readonly originalId?: PObjectId;
-  readonly linkerPath?: ColumnMatch["path"];
+  readonly linkerPath?: MatchVariant["path"];
+  /** TODO(qualifications): carried through discovery but not yet consumed by
+   *  createPTableDefV3 — join entries still use `qualifications: []`. See review.md §2. */
+  readonly qualifications?: MatchQualifications;
 };
 
 type TableColumn = PColumn<undefined | PColumnDataUniversal>;

@@ -94,32 +94,22 @@ function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
   anchorColumnIds: readonly PObjectId[],
 ): TableColumnSnapshot<SUniversalPColumnId>[] {
-  const hitCounts = matched.reduce(
-    (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
-    new Map<PObjectId, number>(),
-  );
-
-  const hitIndices = new Map<PObjectId, number>();
-  return matched.map((match) => {
+  return matched.flatMap((match) => {
     const snap = match.column;
+    const multi = match.variants.length > 1;
+    const isPrimary = anchorColumnIds.some(
+      (anchor) => snap.id === anchor || match.originalId === anchor,
+    );
 
-    let id = snap.id;
-    if ((hitCounts.get(match.originalId) ?? 0) > 1) {
-      const idx = hitIndices.get(match.originalId) ?? 0;
-      hitIndices.set(match.originalId, idx + 1);
-      id = `${snap.id}#q${idx}` as SUniversalPColumnId;
-    }
-
-    return {
-      id,
+    return match.variants.map((variant, vi) => ({
+      id: (multi ? `${snap.id}#q${vi}` : snap.id) as SUniversalPColumnId,
       originalId: match.originalId,
       spec: snap.spec,
       data: snap.data,
       dataStatus: snap.dataStatus,
-      isPrimary: anchorColumnIds.some(
-        (anchor) => snap.id === anchor || match.originalId === anchor,
-      ),
-      linkerPath: match.path,
-    };
+      isPrimary,
+      linkerPath: variant.path,
+      qualifications: variant.qualifications,
+    }));
   });
 }
