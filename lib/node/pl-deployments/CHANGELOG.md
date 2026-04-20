@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.17.0
+
+### Minor Changes
+
+- 4be0ab0: Update built-in backend to version 3.2.1
+
 ## 2.16.6
 
 ### Patch Changes
