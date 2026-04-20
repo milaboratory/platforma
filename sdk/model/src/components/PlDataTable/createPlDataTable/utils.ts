@@ -125,10 +125,9 @@ function dedupeById(columns: RuleColumn[]): RuleColumn[] {
  * For each column: writes derived label into Annotation.Label (if present in derivedLabels).
  * For each axis in column specs: writes derived axis label into AxisSpec annotations.
  */
-export function withLabelAnnotations<Data>(
-  derivedLabels: undefined | Record<string, string>,
-  columns: PColumn<Data>[],
-): PColumn<Data>[] {
+export function withLabelAnnotations<
+  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
+>(derivedLabels: undefined | Record<string, string>, columns: T[]): T[] {
   if (derivedLabels === undefined) return columns;
   return columns.map((col) => {
     const colLabel = derivedLabels[col.id];
@@ -146,7 +145,7 @@ export function withLabelAnnotations<Data>(
             : { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } };
         }),
       },
-    };
+    } as T;
   });
 }
 
@@ -154,11 +153,13 @@ export function withLabelAnnotations<Data>(
  * Writes effective display properties (OrderPriority, Visibility) from precomputed rule maps
  * into column annotations. Returns new column objects — originals are not mutated.
  */
-export function withTableVisualAnnotations<Data>(
+export function withTableVisualAnnotations<
+  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
+>(
   visibilityByColId: undefined | Map<PObjectId, ColumnVisibilityRule>,
   orderByColId: undefined | Map<PObjectId, ColumnOrderRule>,
-  columns: PColumn<Data>[],
-): PColumn<Data>[] {
+  columns: T[],
+): T[] {
   if (visibilityByColId === undefined && orderByColId === undefined) return columns;
   return columns.map((col) => {
     const annotations = { ...col.spec.annotations };
@@ -175,21 +176,26 @@ export function withTableVisualAnnotations<Data>(
         ...col.spec,
         annotations: annotations,
       },
-    };
+    } as T;
   });
 }
 
-export function withHidenAxesAnnotations<Data>(columns: PColumn<Data>[]): PColumn<Data>[] {
-  return columns.map((col) => ({
-    ...col,
-    spec: {
-      ...col.spec,
-      axesSpec: col.spec.axesSpec.map((axis) => ({
-        ...axis,
-        annotations: { ...axis.annotations, [Annotation.Table.Visibility]: "hidden" },
-      })),
-    },
-  }));
+export function withHidenAxesAnnotations<T extends { readonly spec: PColumnSpec }>(
+  columns: T[],
+): T[] {
+  return columns.map(
+    (col) =>
+      ({
+        ...col,
+        spec: {
+          ...col.spec,
+          axesSpec: col.spec.axesSpec.map((axis) => ({
+            ...axis,
+            annotations: { ...axis.annotations, [Annotation.Table.Visibility]: "hidden" },
+          })),
+        },
+      }) as T,
+  );
 }
 
 /** Column shape required by label derivation. */

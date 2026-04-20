@@ -13,13 +13,7 @@ import type {
   SUniversalPColumnId,
   PFrameSpecDriver,
 } from "@milaboratories/pl-model-common";
-import {
-  canonicalizeJson,
-  getAxisId,
-  getColumnIdAndSpec,
-  parseJson,
-  uniqueBy,
-} from "@milaboratories/pl-model-common";
+import { canonicalizeJson, getAxisId, parseJson, uniqueBy } from "@milaboratories/pl-model-common";
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
@@ -46,7 +40,7 @@ import {
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
-import { isNil, isPlainObject, RequiredBy, throwError, type Nil } from "@milaboratories/helpers";
+import { isNil, isPlainObject, throwError, type Nil } from "@milaboratories/helpers";
 
 export type createPlDataTableOptionsV3 = {
   tableState?: PlDataTableStateV2;
@@ -104,10 +98,9 @@ export function createPlDataTableV3<A, U>(
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
   const splited = splitDiscoveredColumns(discovered);
-  const resolved = resolveDiscoveredColumns(splited);
 
   const labelColumns = getMatchingLabelColumns(
-    [...resolved.direct, ...resolved.linked],
+    [...splited.direct, ...splited.linked],
     getAllLabelColumns(ctx),
   );
 
@@ -126,7 +119,7 @@ export function createPlDataTableV3<A, U>(
 
   const annotated = annotateColumnGroups({
     pframeSpec,
-    ...resolved,
+    ...splited,
     labelColumns,
     derivedLabels,
     displayOptions: options.displayOptions,
@@ -135,10 +128,10 @@ export function createPlDataTableV3<A, U>(
   const primaryColumnIds = new Set<PObjectId>(
     discovered.filter((dc) => dc.isPrimary).map((dc) => dc.id),
   );
-  const primaryColumns = annotated.direct.filter((c) => primaryColumnIds.has(c.id));
-  const secondaryColumns = annotated.direct.filter((c) => !primaryColumnIds.has(c.id));
+  const primarySnapshots = annotated.direct.filter((c) => primaryColumnIds.has(c.id));
+  const secondarySnapshots = annotated.direct.filter((c) => !primaryColumnIds.has(c.id));
 
-  if (primaryColumns.length === 0) return undefined;
+  if (primarySnapshots.length === 0) return undefined;
 
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct,
@@ -161,10 +154,13 @@ export function createPlDataTableV3<A, U>(
 
   const fullDef = createPTableDefV3({
     primaryJoinType,
-    primaryColumns,
+    primaryColumns: primarySnapshots.map(resolveSnapshot),
     secondaryGroups: [
-      ...secondaryColumns.map((c) => [c]),
-      ...annotated.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
+      ...secondarySnapshots.map((c) => [resolveSnapshot(c)]),
+      ...annotated.linked.map((lc) => [
+        ...(annotated.linkers.get(lc.id) ?? []).map(resolveSnapshot),
+        resolveSnapshot(lc),
+      ]),
       ...annotated.labels.map((c) => [c]),
     ],
     filters,
@@ -173,10 +169,10 @@ export function createPlDataTableV3<A, U>(
 
   const fullHandle = ctx.createPTableV2(fullDef);
   const pframeHandle = ctx.createPFrame([
-    ...annotated.direct,
-    ...annotated.linked,
+    ...annotated.direct.map(resolveSnapshot),
+    ...annotated.linked.map(resolveSnapshot),
     ...annotated.labels,
-    ...uniqueBy([...annotated.linkers.values()].flat(), (c) => c.id),
+    ...uniqueBy([...annotated.linkers.values()].flat(), (c) => c.id).map(resolveSnapshot),
   ]);
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
@@ -190,10 +186,13 @@ export function createPlDataTableV3<A, U>(
   const visible = buildVisibleColumns(annotated, hiddenColumnIds, labelColumns);
   const visibleDef = createPTableDefV3({
     primaryJoinType,
-    primaryColumns,
+    primaryColumns: primarySnapshots.map(resolveSnapshot),
     secondaryGroups: [
-      ...visible.direct.map((c) => [c]),
-      ...visible.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
+      ...visible.direct.map((c) => [resolveSnapshot(c)]),
+      ...visible.linked.map((lc) => [
+        ...(annotated.linkers.get(lc.id) ?? []).map(resolveSnapshot),
+        resolveSnapshot(lc),
+      ]),
       ...visible.labels.map((c) => [c]),
     ],
     filters,
@@ -220,29 +219,22 @@ export type TableColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> = Co
   readonly qualifications?: MatchQualifications;
 };
 
-type TableColumn = PColumn<undefined | PColumnDataUniversal>;
-
 type SplitDiscoveredColumns = {
   readonly direct: TableColumnSnapshot<SUniversalPColumnId>[];
   readonly linked: TableColumnSnapshot<SUniversalPColumnId>[];
-};
-
-type ResolvedColumns = {
-  readonly direct: TableColumn[];
-  readonly linked: TableColumn[];
-  readonly linkers: Map<PObjectId, TableColumn[]>;
+  readonly linkers: Map<SUniversalPColumnId, ColumnSnapshot<PObjectId>[]>;
 };
 
 type AnnotatedColumnGroups = {
-  readonly direct: TableColumn[];
-  readonly linked: TableColumn[];
-  readonly linkers: Map<PObjectId, TableColumn[]>;
-  readonly labels: TableColumn[];
+  readonly direct: TableColumnSnapshot<SUniversalPColumnId>[];
+  readonly linked: TableColumnSnapshot<SUniversalPColumnId>[];
+  readonly linkers: Map<SUniversalPColumnId, ColumnSnapshot<PObjectId>[]>;
+  readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
 type VisibleColumns = {
-  readonly direct: TableColumn[];
-  readonly linked: TableColumn[];
+  readonly direct: TableColumnSnapshot<SUniversalPColumnId>[];
+  readonly linked: TableColumnSnapshot<SUniversalPColumnId>[];
   readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
@@ -250,25 +242,11 @@ type VisibleColumns = {
 function splitDiscoveredColumns(
   columns: TableColumnSnapshot<SUniversalPColumnId>[],
 ): SplitDiscoveredColumns {
-  return {
-    direct: columns.filter((dc) => isNil(dc.linkerPath) || dc.linkerPath.length === 0),
-    linked: columns.filter((dc) => !isNil(dc.linkerPath) && dc.linkerPath.length > 0),
-  };
-}
-
-/** Resolve DiscoveredColumn snapshots into PColumn objects with lazily-evaluated data. */
-function resolveDiscoveredColumns(split: SplitDiscoveredColumns): ResolvedColumns {
-  const direct = split.direct.map(resolveSnapshot);
-  const linked = split.linked.map(resolveSnapshot);
-  const linkers = new Map<PObjectId, TableColumn[]>(
-    split.linked
-      .filter(
-        (dc): dc is RequiredBy<TableColumnSnapshot<SUniversalPColumnId>, "linkerPath"> =>
-          !isNil(dc.linkerPath),
-      )
-      .map((dc, i) => [linked[i].id, dc.linkerPath.map((s) => resolveSnapshot(s.linker))]),
+  const direct = columns.filter((dc) => isNil(dc.linkerPath) || dc.linkerPath.length === 0);
+  const linked = columns.filter((dc) => !isNil(dc.linkerPath) && dc.linkerPath.length > 0);
+  const linkers = new Map<SUniversalPColumnId, ColumnSnapshot<PObjectId>[]>(
+    linked.map((dc) => [dc.id, (dc.linkerPath ?? []).map((lp) => lp.linker)]),
   );
-
   return { direct, linked, linkers };
 }
 
@@ -279,10 +257,10 @@ function resolveDiscoveredColumns(split: SplitDiscoveredColumns): ResolvedColumn
  * column annotations via `withTableVisualAnnotations`.
  */
 function annotateColumnGroups(params: {
-  direct: TableColumn[];
-  linked: TableColumn[];
+  direct: TableColumnSnapshot<SUniversalPColumnId>[];
+  linked: TableColumnSnapshot<SUniversalPColumnId>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
-  linkers: Map<PObjectId, TableColumn[]>;
+  linkers: Map<SUniversalPColumnId, ColumnSnapshot<PObjectId>[]>;
   derivedLabels: Record<string, string>;
   displayOptions?: ColumnsDisplayOptions;
   pframeSpec: PFrameSpecDriver;
@@ -318,7 +296,7 @@ function annotateColumnGroups(params: {
       orderByColId,
       withLabelAnnotations(derivedLabels, linked),
     ),
-    linkers: new Map<PObjectId, TableColumn[]>(
+    linkers: new Map<SUniversalPColumnId, ColumnSnapshot<PObjectId>[]>(
       [...linkers].map(([id, cols]) => [
         id,
         withHidenAxesAnnotations(withLabelAnnotations(derivedLabels, cols)),
@@ -329,7 +307,9 @@ function annotateColumnGroups(params: {
 }
 
 /** Build an index of all valid column IDs (axes + columns) for filter/sorting validation. */
-function createColumnValidationById(fullColumns: TableColumn[]) {
+function createColumnValidationById(
+  fullColumns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
+) {
   const axisIds = uniqueBy(
     fullColumns.flatMap((c) => c.spec.axesSpec.map(getAxisId)),
     (a) => canonicalizeJson<AxisId>(a),
@@ -394,7 +374,7 @@ function validateSorting(sorting: PTableSorting[], isValidColumnId: (id: string)
 
 /** Determine which columns should be hidden based on state or optional-column defaults. */
 function computeHiddenColumns(
-  columns: TableColumn[],
+  columns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
   hiddenSpecs: Nil | PTableColumnId[],
@@ -437,10 +417,7 @@ function buildVisibleColumns(
 ): VisibleColumns {
   const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.id));
   const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.id));
-  const labels = getMatchingLabelColumns(
-    [...direct, ...linked].map(getColumnIdAndSpec),
-    originalLabelColumns,
-  );
+  const labels = getMatchingLabelColumns([...direct, ...linked], originalLabelColumns);
   return { direct, linked, labels };
 }
 
