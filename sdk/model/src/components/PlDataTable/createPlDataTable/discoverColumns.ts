@@ -1,4 +1,5 @@
 import type {
+  PColumnIdAndSpec,
   PColumnSpec,
   PlRef,
   PObjectId,
@@ -48,10 +49,7 @@ export function discoverTableColumnSnaphots(
   try {
     const matched = collection.findColumns(resolvedOptions.selector ?? undefined);
     const anchors = collection.getAnchors();
-    return mapToDiscoveredColumns(
-      matched,
-      Array.from(Array.from(anchors.values()).map((v) => v.columnId)),
-    );
+    return mapToDiscoveredColumns(matched, anchors);
   } finally {
     collection.dispose();
   }
@@ -92,14 +90,17 @@ function resolveProviders(
 /** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
-  anchorColumnIds: readonly PObjectId[],
+  anchors: Map<string, PColumnIdAndSpec>,
 ): TableColumnSnapshot<SUniversalPColumnId>[] {
+  const anchorKeyByColumnId = new Map<PObjectId, string>(
+    Array.from(anchors.entries(), ([key, { columnId }]) => [columnId, key] as const),
+  );
+
   return matched.flatMap((match) => {
     const snap = match.column;
     const multi = match.variants.length > 1;
-    const isPrimary = anchorColumnIds.some(
-      (anchor) => snap.id === anchor || match.originalId === anchor,
-    );
+    const anchorKey = anchorKeyByColumnId.get(match.originalId);
+    const isPrimary = anchorKey !== undefined;
 
     return match.variants.map((variant, vi) => ({
       id: (multi ? `${snap.id}#q${vi}` : snap.id) as SUniversalPColumnId,
@@ -108,6 +109,7 @@ function mapToDiscoveredColumns(
       data: snap.data,
       dataStatus: snap.dataStatus,
       isPrimary,
+      anchorKey,
       linkerPath: variant.path,
       qualifications: variant.qualifications,
     }));

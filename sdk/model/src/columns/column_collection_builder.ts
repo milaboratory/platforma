@@ -4,6 +4,7 @@ import type {
   DiscoverColumnsConstraints,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
+  DiscoverColumnsResponseQualifications,
   MultiColumnSelector,
   NativePObjectId,
   PColumnIdAndSpec,
@@ -108,10 +109,11 @@ export interface MatchVariant {
   }[];
 }
 
-/** Qualifications needed for both query (already-integrated) columns and the hit column. */
+/** Qualifications needed for both already-integrated anchor columns and the hit column. */
 export interface MatchQualifications {
-  /** Qualifications for each query (already-integrated) column set. */
-  readonly forQueries: AxisQualification[][];
+  /** Qualifications for already-integrated anchor columns, keyed by anchor key.
+   *  Anchors sharing the same axes group reference the same `AxisQualification[]` array. */
+  readonly forAnchors: Record<string, AxisQualification[]>;
   /** Qualifications for the hit column. */
   readonly forHit: AxisQualification[];
 }
@@ -277,6 +279,8 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
 
   private readonly idDeriver: AnchoredIdDeriver;
   private readonly uniqAnchorAxes: ColumnAxesWithQualifications[];
+  /** axesGroupIdx (position in uniqAnchorAxes) → anchor keys resolving to that group. */
+  private readonly anchorsByAxesGroup: Map<number, string[]>;
   private readonly idToOriginalIdMap: Map<SUniversalPColumnId, PObjectId>;
   private readonly specFrameEntry: PoolEntry<SpecFrameHandle>;
 
@@ -299,16 +303,44 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
         Array.from(this.anchorsMap.entries()).map(([k, v]) => [k, v.spec] as const),
       ),
     );
+    const axesGroupKey = (axis: ColumnAxesWithQualifications) =>
+      canonicalizeJson(getAxesId(axis.axesSpec)) + canonicalizeJson(axis.qualifications);
     this.uniqAnchorAxes = uniqBy(
       Array.from(this.anchorsMap.values(), ({ spec }) => ({
         axesSpec: spec.axesSpec,
         qualifications: [],
       })),
-      (axis) => canonicalizeJson(getAxesId(axis.axesSpec)) + canonicalizeJson(axis.qualifications),
+      axesGroupKey,
+    );
+    const axesGroupIdxByKey = new Map(
+      this.uniqAnchorAxes.map((axis, i) => [axesGroupKey(axis), i]),
+    );
+    this.anchorsByAxesGroup = Array.from(this.anchorsMap.entries()).reduce<Map<number, string[]>>(
+      (acc, [anchorKey, { spec }]) => {
+        const idx =
+          axesGroupIdxByKey.get(axesGroupKey({ axesSpec: spec.axesSpec, qualifications: [] })) ??
+          throwError(`Anchor "${anchorKey}": axes group missing from uniqAnchorAxes index`);
+        const bucket = acc.get(idx);
+        if (bucket === undefined) acc.set(idx, [anchorKey]);
+        else bucket.push(anchorKey);
+        return acc;
+      },
+      new Map(),
     );
     this.idToOriginalIdMap = new Map(
       options.columns.map((col) => [this.idDeriver.deriveS(col.spec), col.id] as const),
     );
+  }
+
+  private toForAnchors(q: DiscoverColumnsResponseQualifications): MatchQualifications {
+    const forAnchors = q.forQueries.reduce<Record<string, AxisQualification[]>>(
+      (acc, qs, groupIdx) => {
+        for (const key of this.anchorsByAxesGroup.get(groupIdx) ?? []) acc[key] = qs;
+        return acc;
+      },
+      {},
+    );
+    return { forAnchors, forHit: q.forHit };
   }
 
   dispose(): void {
@@ -362,7 +394,11 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
         ),
         qualifications: step.qualifications,
       }));
-      const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({ ...v, path }));
+      const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({
+        path,
+        qualifications: this.toForAnchors(v.qualifications),
+        distinctiveQualifications: this.toForAnchors(v.distinctiveQualifications),
+      }));
       const existing = acc.get(associatedId);
       return acc.set(
         associatedId,

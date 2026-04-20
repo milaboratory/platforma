@@ -395,6 +395,57 @@ describe("AnchoredColumnCollection", () => {
     expect(col1Match.variants).toBeDefined();
   });
 
+  test("variants carry forAnchors keyed by anchor name", () => {
+    const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
+    const snap = createSnapshot("id1", spec);
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([snap, anchorSnap]);
+
+    const collection = builder.build({ anchors: { main: anchorSpec } })!;
+    const matches = collection.findColumns();
+    const col1Match = matches.find((m) => m.column.spec.name === "col1")!;
+
+    expect(col1Match.variants.length).toBeGreaterThan(0);
+    for (const v of col1Match.variants) {
+      expect(v.qualifications.forAnchors).toBeDefined();
+      expect(v.qualifications.forHit).toBeDefined();
+      expect(v.distinctiveQualifications.forAnchors).toBeDefined();
+      expect(v.distinctiveQualifications.forHit).toBeDefined();
+      // forAnchors keys are a subset of anchor names
+      for (const key of Object.keys(v.qualifications.forAnchors)) {
+        expect(["main"]).toContain(key);
+      }
+    }
+  });
+
+  test("anchors sharing same axes group produce forAnchors entries pointing to same array", () => {
+    // Two anchors with identical axesSpec share an axes-group bucket in the reverse index.
+    const sharedAxes = [sampleAxis("sample"), sampleAxis("gene")];
+    const anchorA = createSpec("anchor-a", { axesSpec: sharedAxes });
+    const anchorB = createSpec("anchor-b", { axesSpec: sharedAxes });
+    const anchorASnap = createSnapshot("anchor-a-id", anchorA);
+    const anchorBSnap = createSnapshot("anchor-b-id", anchorB);
+
+    const colSpec = createSpec("c1", { axesSpec: [sampleAxis("sample")] });
+    const colSnap = createSnapshot("c1-id", colSpec);
+
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([colSnap, anchorASnap, anchorBSnap]);
+
+    const collection = builder.build({ anchors: { a: anchorA, b: anchorB } })!;
+    const matches = collection.findColumns();
+    const c1 = matches.find((m) => m.column.spec.name === "c1")!;
+    expect(c1).toBeDefined();
+
+    for (const v of c1.variants) {
+      const forAnchors = v.qualifications.forAnchors;
+      if ("a" in forAnchors && "b" in forAnchors) {
+        // Shared axes group → same reference for both anchor keys.
+        expect(forAnchors.a).toBe(forAnchors.b);
+      }
+    }
+  });
+
   test("findColumns exclude filters out matching columns", () => {
     const snap1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const snap2 = createSnapshot("id2", createSpec("col2", { axesSpec: [sampleAxis("sample")] }));

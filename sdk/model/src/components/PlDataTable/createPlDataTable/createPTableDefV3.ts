@@ -1,4 +1,5 @@
 import type {
+  AxisQualification,
   PColumn,
   PTableColumnId,
   PTableSorting,
@@ -15,31 +16,59 @@ import type { PlDataTableFilters } from "../typesV5";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
 
+/** Primary side — base row grid. `key` links secondary groups to their qualifying anchor. */
+export type PrimaryEntry<Data> = {
+  column: PColumn<Data>;
+  key?: string;
+};
+
+/** Secondary side leaf — the hit column, a linker step, or a label column. */
+export type SecondaryEntry<Data> = {
+  column: PColumn<Data>;
+  /** For hit: `forHit`. For linker step k: `path[k].qualifications`. For label/direct: omit. */
+  qualifications?: AxisQualification[];
+};
+
+/** Secondary group — one join subtree outer-joined onto primary. */
+export type SecondaryGroup<Data> = {
+  entries: SecondaryEntry<Data>[];
+  /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
+   *  Keyed by `PrimaryEntry.key`. Omit → base primary used unqualified (labels, non-variant columns). */
+  forAnchors?: Record<string, AxisQualification[]>;
+};
+
 export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   primaryJoinType: "inner" | "full";
-  primaryColumns: PColumn<Data>[];
-  secondaryGroups: PColumn<Data>[][];
+  primary: PrimaryEntry<Data>[];
+  secondary: SecondaryGroup<Data>[];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
 }): PTableDefV2<PColumn<Data>> {
-  // Build SpecQuery directly from columns
-  const coreJoinQuery: SpecQuery<PColumn<Data>> = {
-    type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: params.primaryColumns.map((c) => toJoinEntry({ type: "column", column: c })),
+  const basePrimary: SpecQueryJoinEntry<PColumn<Data>> = {
+    entry: {
+      type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
+      entries: params.primary.map((a) => toLeaf(a.column, [])),
+    },
+    qualifications: [],
   };
+
+  const secondaries: SpecQueryJoinEntry<PColumn<Data>>[] = params.secondary.map((group) => ({
+    entry: {
+      type: "innerJoin" as const,
+      entries: [
+        ...(group.forAnchors !== undefined ? cloneAnchores(params.primary, group.forAnchors) : []),
+        ...group.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
+      ],
+    },
+    qualifications: [],
+  }));
 
   let query: SpecQuery<PColumn<Data>> = {
     type: "outerJoin",
-    primary: toJoinEntry(coreJoinQuery),
-    secondary: params.secondaryGroups.map((group) =>
-      toJoinEntry({
-        type: "innerJoin" as const,
-        entries: group.map((c) => toJoinEntry({ type: "column" as const, column: c })),
-      }),
-    ),
+    primary: basePrimary,
+    secondary: secondaries,
   };
 
-  // Apply filters
   if (!isNil(params.filters)) {
     const nonEmpty = distillFilterSpec(params.filters);
 
@@ -58,7 +87,6 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
     }
   }
 
-  // Apply sorting
   if (!isNil(params.sorting) && params.sorting.length > 0) {
     query = {
       type: "sort",
@@ -74,16 +102,27 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   return { query };
 }
 
-/** Convert a PTableColumnId to a SpecQueryExpression reference. */
 function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
   return col.type === "axis"
     ? { type: "axisRef", value: col.id as SingleAxisSelector }
     : { type: "columnRef", value: col.id };
 }
 
-function toJoinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
-  // TODO(qualifications): should come from MatchVariant.qualifications on the
-  // originating TableColumnSnapshot. See review.md §3.2 for the structural
-  // rebuild (per-secondary primary duplication).
-  return { entry: input, qualifications: [] };
+function toLeaf<Data>(
+  col: PColumn<Data>,
+  qs: AxisQualification[],
+): SpecQueryJoinEntry<PColumn<Data>> {
+  return {
+    entry: { type: "column", column: col },
+    qualifications: qs,
+  };
+}
+
+function cloneAnchores<Data>(
+  entries: PrimaryEntry<Data>[],
+  forAnchors: Record<string, AxisQualification[]>,
+): SpecQueryJoinEntry<PColumn<Data>>[] {
+  return entries
+    .filter((a): a is PrimaryEntry<Data> & { key: string } => a.key !== undefined)
+    .map((a) => toLeaf(a.column, forAnchors[a.key] ?? []));
 }
