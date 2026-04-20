@@ -91,8 +91,16 @@ export interface ColumnMatch {
   readonly column: ColumnSnapshot<SUniversalPColumnId>;
   /** Provider-native ID — for lookups back to the source provider. */
   readonly originalId: PObjectId;
-  /** Match variants — different paths/qualifications that reach this column. */
+  /** Match variants — different ways (paths/qualifications) to reach this column. */
   readonly variants: MatchVariant[];
+}
+
+/** A single mapping variant describing how a hit column can be integrated. */
+export interface MatchVariant {
+  /** Full qualifications needed for integration. */
+  readonly qualifications: MatchQualifications;
+  /** Distinctive (minimal) qualifications needed for integration. */
+  readonly distinctiveQualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<SUniversalPColumnId>;
@@ -106,14 +114,6 @@ export interface MatchQualifications {
   readonly forQueries: AxisQualification[][];
   /** Qualifications for the hit column. */
   readonly forHit: AxisQualification[];
-}
-
-/** A single mapping variant describing how a hit column can be integrated. */
-export interface MatchVariant {
-  /** Full qualifications needed for integration. */
-  readonly qualifications: MatchQualifications;
-  /** Distinctive (minimal) qualifications needed for integration. */
-  readonly distinctiveQualifications: MatchQualifications;
 }
 
 // --- Build options ---
@@ -345,38 +345,34 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       axes: this.uniqAnchorAxes,
     });
 
-    // Map every WASM discovery hit to a ColumnMatch.
-    // The same physical column may appear multiple times when reachable through
-    // different linker paths — each hit becomes a separate ColumnMatch so that
-    // the caller can expand them into distinct table columns.
-    const results: ColumnMatch[] = [];
-    for (const hit of response.hits) {
+    // Group WASM hits by anchored column id — each physical column appears once;
+    // alternative linker paths become extra entries in `variants`, each carrying
+    // its own `path`. Callers expand variants into distinct table columns.
+    const byColumn = response.hits.reduce<Map<SUniversalPColumnId, ColumnMatch>>((acc, hit) => {
       const origId = hit.hit.columnId as PObjectId;
       const col =
         this.columnsMap.get(origId) ??
         throwError(`Column with id ${origId} not found in collection`);
       const associatedId = this.idDeriver.deriveS(col.spec);
+      const path = hit.path.map((step) => ({
+        linker: remapSnapshot(
+          this.idDeriver.deriveS(step.linker.spec),
+          this.columnsMap.get(step.linker.columnId) ??
+            throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
+        ),
+        qualifications: step.qualifications,
+      }));
+      const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({ ...v, path }));
+      const existing = acc.get(associatedId);
+      return acc.set(
+        associatedId,
+        existing === undefined
+          ? { column: remapSnapshot(associatedId, col), originalId: origId, variants }
+          : { ...existing, variants: [...existing.variants, ...variants] },
+      );
+    }, new Map());
 
-      results.push({
-        path: hit.path.map((step) => {
-          if (step.type !== "linker")
-            throw new Error(`Unexpected discover-columns step type: ${step.type}`);
-          return {
-            linker: remapSnapshot(
-              this.idDeriver.deriveS(step.linker.spec),
-              this.columnsMap.get(step.linker.columnId) ??
-                throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
-            ),
-            qualifications: step.qualifications,
-          };
-        }),
-        column: remapSnapshot(associatedId, col),
-        variants: hit.mappingVariants,
-        originalId: origId,
-      });
-    }
-
-    return results;
+    return Array.from(byColumn.values());
   }
 }
 
