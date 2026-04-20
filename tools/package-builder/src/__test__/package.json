@@ -1,6 +1,7 @@
 {
   "name": "@platforma-open/docker-build-test",
   "version": "0.0.1",
+  "type": "module",
   "dependencies": {
     "@platforma-open/milaboratories.runenv-python-3": "catalog:"
   },

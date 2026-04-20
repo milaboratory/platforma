@@ -4,6 +4,7 @@
   "files": [
     "dist"
   ],
+  "type": "module",
   "exports": {
     "./kalign": {
       "types": "./dist/kalign.d.ts",

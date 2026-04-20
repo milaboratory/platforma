@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-block-model",
+  "type": "module",
   "version": "1.0.167",
   "private": true,
   "scripts": {

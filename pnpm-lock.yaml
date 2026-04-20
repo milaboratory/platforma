@@ -2435,9 +2435,15 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

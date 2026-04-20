@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-blob-url-custom-protocol",
+  "type": "module",
   "version": "1.0.63",
   "private": true,
   "scripts": {

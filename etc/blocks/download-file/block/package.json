@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-download-file",
+  "type": "module",
   "version": "1.0.127",
   "private": true,
   "scripts": {
