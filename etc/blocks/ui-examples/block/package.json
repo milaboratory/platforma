@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples",
+  "type": "module",
   "version": "1.2.13",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",

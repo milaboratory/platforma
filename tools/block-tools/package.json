@@ -12,20 +12,19 @@
     "./src/**/*",
     "./README.md"
   ],
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/lib.d.ts",
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts && node --run fmt",
-    "build": "vite build",
     "readme": "oclif readme",
+    "build": "ts-builder build --target node --build-config ./build.node.config.js",
     "test": "vitest run --coverage",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "formatter:check": "ts-builder formatter --check",
@@ -57,17 +56,13 @@
     "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@rollup/plugin-node-resolve": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "oclif": "catalog:",
-    "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   },
   "oclif": {
@@ -75,7 +70,7 @@
     "commands": {
       "identifier": "COMMANDS",
       "strategy": "explicit",
-      "target": "./dist/cli.js"
+      "target": "./dist/cmd/index.js"
     },
     "dirname": "block-tools",
     "topicSeparator": " "

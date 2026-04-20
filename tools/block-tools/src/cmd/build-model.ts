@@ -1,6 +1,8 @@
 import { Command, Flags } from "@oclif/core";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 async function getFileContent(path: string) {
   try {
@@ -43,8 +45,10 @@ export default class BuildModel extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildModel);
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
+    const require = createRequire(import.meta.url);
+    const resolved = require.resolve(modulePath);
     // eslint-disable-next-line prefer-const, @typescript-eslint/no-unsafe-assignment
-    let { model, platforma } = require(modulePath);
+    let { model, platforma } = await import(pathToFileURL(resolved).href);
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (!model) model = platforma;

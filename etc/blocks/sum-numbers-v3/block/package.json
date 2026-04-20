@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-sum-numbers-v3",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
   "scripts": {

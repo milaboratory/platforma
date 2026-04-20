@@ -7,7 +7,7 @@ export default defineConfig({
     lib: {
       entry: resolve("src", "index.ts"),
       fileName: "index",
-      formats: ["es", "cjs"],
+      formats: ["es"],
     },
     sourcemap: true,
     rolldownOptions: {},

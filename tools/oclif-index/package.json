@@ -14,8 +14,7 @@
     "./dist/"
   ],
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",

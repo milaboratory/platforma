@@ -13,7 +13,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "sources": "./src/index.ts",
-      "require": "./dist/index.cjs",
       "import": "./dist/index.js"
     }
   },

@@ -10,7 +10,7 @@ export interface RolldownNodeConfigProps {
 export function createRolldownNodeConfig(props?: RolldownNodeConfigProps): RolldownOptions[] {
   const input = props?.entry ?? ["./src/index.ts"];
   const output = props?.output ?? "dist";
-  const formats = props?.formats ?? ["es", "cjs"];
+  const formats = props?.formats ?? ["es"];
 
   return formats.map((format) => createBuildEntry(input, output, format));
 }

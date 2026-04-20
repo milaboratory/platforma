@@ -1,5 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers-v3",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
   "scripts": {

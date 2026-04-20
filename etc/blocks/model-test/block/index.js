@@ -1,15 +1,14 @@
-const blockTools = require('@platforma-sdk/block-tools');
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import * as blockTools from '@platforma-sdk/block-tools';
 
-async function loadBlockDescription() {
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+export async function loadBlockDescription() {
   return await blockTools.loadPackDescriptionFromSource(__dirname);
 }
 
-const blockSpec = {
+export const blockSpec = {
   type: 'dev-v2',
   folder: __dirname,
-};
-
-module.exports = {
-  blockSpec,
-  loadBlockDescription,
 };

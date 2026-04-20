@@ -12,9 +12,9 @@
     "README.md",
     "bin/run.cmd",
     "bin/run.js",
-    "./assets/**",
-    "./postinstall.js"
+    "./assets/**"
   ],
+  "type": "module",
   "scripts": {
     "build": "oclif-index && node --run fmt && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",

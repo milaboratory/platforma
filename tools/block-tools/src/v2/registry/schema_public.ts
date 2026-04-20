@@ -1,19 +1,10 @@
-import type { BlockPackId } from "@milaboratories/pl-model-middle-layer";
+import type { BlockPackId, BlockPackIdNoVersion } from "@milaboratories/pl-model-middle-layer";
 import {
   AnyChannel,
-  BlockComponentsManifest,
   BlockPackDescriptionManifest,
-  BlockPackIdNoVersion,
-  BlockPackMeta,
-  ContentRelativeBinary,
-  ContentRelativeText,
-  CreateBlockPackDescriptionSchema,
   Sha256Schema,
-  VersionWithChannels,
 } from "@milaboratories/pl-model-middle-layer";
 import { z } from "zod";
-import type { RelativeContentReader } from "../model";
-import { relativeToExplicitBytes, relativeToExplicitString } from "../model";
 
 export const MainPrefix = "v2/";
 
@@ -79,106 +70,60 @@ export const PackageManifestPattern =
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 
-export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
-  descriptionType: Description,
-) {
-  const universalSchema = z
-    .object({
-      id: BlockPackIdNoVersion,
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      allVersions: z.array(z.string()).optional(),
-      allVersionsWithChannels: z.array(VersionWithChannels).optional(),
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      latest: descriptionType,
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      latestManifestSha256: Sha256Schema,
-      latestByChannel: z
-        .record(
-          z.string(),
-          z
-            .object({
-              description: descriptionType,
-              manifestSha256: Sha256Schema,
-            })
-            .passthrough(),
-        )
-        .default({}),
-    })
-    .passthrough();
-  return universalSchema
-    .transform((o) => {
-      if (o.allVersionsWithChannels) return o;
-      else
-        return {
-          ...o,
-          allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
-        };
-    })
-    .transform((o) =>
-      o.latestByChannel[AnyChannel]
-        ? o
-        : {
-            ...o,
-            latestByChannel: {
-              ...o.latestByChannel,
-              [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! },
-            },
-          },
-    )
-    .pipe(universalSchema.required({ allVersionsWithChannels: true }));
-}
-export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);
-export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
+export type VersionWithChannels = {
+  version: string;
+  channels: string[];
+};
 
-export function GlobalOverview<const Description extends z.ZodTypeAny>(
-  descriptionType: Description,
-) {
-  return z
-    .object({
-      schema: z.literal("v2"),
-      packages: z.array(GlobalOverviewEntry(descriptionType)),
-    })
-    .passthrough();
+export type GlobalOverviewEntry<D> = {
+  id: BlockPackIdNoVersion;
+  /** @deprecated left for compatibility with older versions */
+  allVersions?: string[];
+  allVersionsWithChannels: VersionWithChannels[];
+  /** @deprecated left for compatibility with older versions */
+  latest: D;
+  /** @deprecated left for compatibility with older versions */
+  latestManifestSha256: string;
+  latestByChannel: Record<string, { description: D; manifestSha256: string }>;
+};
+
+export type GlobalOverview<D> = {
+  schema: "v2";
+  packages: GlobalOverviewEntry<D>[];
+};
+
+export type GlobalOverviewEntryReg = GlobalOverviewEntry<BlockPackDescriptionManifest>;
+export type GlobalOverviewReg = GlobalOverview<BlockPackDescriptionManifest>;
+
+function migrateGlobalOverviewEntry<D>(raw: unknown): GlobalOverviewEntry<D> {
+  if (!raw || typeof raw !== "object")
+    throw new Error(`Invalid global overview entry: ${JSON.stringify(raw)}`);
+  const o = raw as Record<string, unknown> & Partial<GlobalOverviewEntry<D>>;
+  const allVersionsWithChannels =
+    o.allVersionsWithChannels ?? (o.allVersions ?? []).map((v) => ({ version: v, channels: [] }));
+  const latestByChannel = { ...(o.latestByChannel ?? {}) };
+  if (!latestByChannel[AnyChannel] && o.latest !== undefined && o.latestManifestSha256) {
+    latestByChannel[AnyChannel] = {
+      description: o.latest as D,
+      manifestSha256: o.latestManifestSha256,
+    };
+  }
+  return {
+    ...o,
+    id: o.id as BlockPackIdNoVersion,
+    allVersionsWithChannels,
+    latest: o.latest as D,
+    latestManifestSha256: (o.latestManifestSha256 ?? "") as string,
+    latestByChannel,
+  };
 }
 
-export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);
-export type GlobalOverviewReg = z.infer<typeof GlobalOverviewReg>;
-
-export function BlockDescriptionToExplicitBinaryBytes(reader: RelativeContentReader) {
-  return CreateBlockPackDescriptionSchema(
-    BlockComponentsManifest,
-    BlockPackMeta(
-      ContentRelativeText.transform(relativeToExplicitString(reader)),
-      ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-    ),
+export function parseGlobalOverviewReg(raw: unknown): GlobalOverviewReg {
+  if (!raw || typeof raw !== "object" || (raw as { schema?: unknown }).schema !== "v2")
+    throw new Error(`Invalid global overview: schema != "v2"`);
+  const o = raw as { schema: "v2"; packages?: unknown[] };
+  const packages = (o.packages ?? []).map((p) =>
+    migrateGlobalOverviewEntry<BlockPackDescriptionManifest>(p),
   );
+  return { schema: "v2", packages };
 }
-export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReader) {
-  return GlobalOverview(
-    CreateBlockPackDescriptionSchema(
-      BlockComponentsManifest,
-      BlockPackMeta(
-        ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-      ),
-    ),
-  );
-}
-export type GlobalOverviewExplicitBinaryBytes = z.infer<
-  ReturnType<typeof GlobalOverviewToExplicitBinaryBytes>
->;
-
-export function GlobalOverviewToExplicitBinaryBase64(reader: RelativeContentReader) {
-  return GlobalOverview(
-    CreateBlockPackDescriptionSchema(
-      BlockComponentsManifest,
-      BlockPackMeta(
-        ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-      ),
-    ),
-  );
-}
-export type GlobalOverviewExplicitBinaryBase64 = z.infer<
-  ReturnType<typeof GlobalOverviewToExplicitBinaryBase64>
->;

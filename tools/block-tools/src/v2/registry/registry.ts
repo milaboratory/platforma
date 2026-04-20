@@ -21,8 +21,9 @@ import {
   globalOverviewSnapshotPath,
   packageOverviewSnapshotPath,
 } from "./schema_internal";
+import type { GlobalOverviewReg } from "./schema_public";
 import {
-  GlobalOverviewReg,
+  parseGlobalOverviewReg,
   GlobalOverviewPath,
   GlobalOverviewGzPath,
   ManifestSuffix,
@@ -184,7 +185,7 @@ export class BlockRegistryV2 {
         ? { schema: "v2", packages: [] }
         : overviewContent === undefined
           ? { schema: "v2", packages: [] }
-          : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
+          : parseGlobalOverviewReg(JSON.parse(overviewContent.toString()));
     let overviewPackages = overview.packages;
     this.logger.info(
       `Global overview ${mode === "force" ? "starting empty (force mode)" : "loaded"}, ${overviewPackages.length} records`,
@@ -381,7 +382,7 @@ export class BlockRegistryV2 {
   public async getGlobalOverview(): Promise<undefined | GlobalOverviewReg> {
     const content = await this.storage.getFile(GlobalOverviewPath);
     if (content === undefined) return undefined;
-    return GlobalOverviewReg.parse(JSON.parse(content.toString()));
+    return parseGlobalOverviewReg(JSON.parse(content.toString()));
   }
 
   private async marchChanged(id: BlockPackId) {
@@ -456,7 +457,7 @@ export class BlockRegistryV2 {
 
     // Validate the data
     try {
-      GlobalOverviewReg.parse(JSON.parse(overviewData));
+      parseGlobalOverviewReg(JSON.parse(overviewData));
     } catch (error) {
       throw new Error(`Invalid snapshot data in ${backupId}: ${String(error)}`);
     }

@@ -16,11 +16,11 @@ import type { FolderReader } from "../../io";
 import canonicalize from "canonicalize";
 import {
   GlobalOverviewFileName,
-  GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
   ManifestSuffix,
   packageContentPrefixInsideV2,
+  parseGlobalOverviewReg,
 } from "./schema_public";
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from "../model";
 import { LRUCache } from "lru-cache";
@@ -121,7 +121,7 @@ export class RegistryV2Reader {
     try {
       return await retry(async () => {
         // const rootContentReader = this.v2RootFolderReader.getContentReader();
-        const globalOverview = GlobalOverviewReg.parse(
+        const globalOverview = parseGlobalOverviewReg(
           JSON.parse(
             Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString(),
           ),
