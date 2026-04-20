@@ -66,5 +66,5 @@
   "engines": {
     "node": ">=22.19.0"
   },
-  "pl-version": "1.46.0"
+  "pl-version": "3.2.1"
 }
