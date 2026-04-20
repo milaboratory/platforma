@@ -40,6 +40,7 @@ import {
   evaluateRules,
   isColumnHidden,
   isColumnOptional,
+  withHidenAxesAnnotations,
   withLabelAnnotations,
   withTableVisualAnnotations,
 } from "./utils";
@@ -187,20 +188,12 @@ export function createPlDataTableV3<A, U>(
   );
 
   const visible = buildVisibleColumns(annotated, hiddenColumnIds, labelColumns);
-  const visibleNonCoreDirect = secondaryColumns.filter((c) => !hiddenColumnIds.has(c.id));
-  const visibleLinkedGroups = buildVisibleLinkedGroups(
-    visible.direct,
-    visible.linked,
-    annotated.linkers,
-    hiddenSpecs,
-  );
-
   const visibleDef = createPTableDefV3({
     primaryJoinType,
     primaryColumns,
     secondaryGroups: [
-      ...visibleNonCoreDirect.map((c) => [c]),
-      ...visibleLinkedGroups,
+      ...visible.direct.map((c) => [c]),
+      ...visible.linked.map((lc) => [...(annotated.linkers.get(lc.id) ?? []), lc]),
       ...visible.labels.map((c) => [c]),
     ],
     filters,
@@ -326,7 +319,10 @@ function annotateColumnGroups(params: {
       withLabelAnnotations(derivedLabels, linked),
     ),
     linkers: new Map<PObjectId, TableColumn[]>(
-      [...linkers].map(([id, cols]) => [id, withLabelAnnotations(derivedLabels, cols)]),
+      [...linkers].map(([id, cols]) => [
+        id,
+        withHidenAxesAnnotations(withLabelAnnotations(derivedLabels, cols)),
+      ]),
     ),
     labels: withLabelAnnotations(derivedLabels, labelColumns),
   };
@@ -411,85 +407,6 @@ function computeHiddenColumns(
   const preserved = collectPreservedColumnIds(sorting, filters);
 
   return new Set(initial.filter((id) => !preserved.has(id)));
-}
-
-/**
- * Build visible linked column groups. Non-hidden groups are included fully;
- * hidden groups are trimmed to only the prefix that brings axes not yet
- * covered by earlier groups (visible or previously trimmed).
- */
-function buildVisibleLinkedGroups(
-  direct: TableColumn[],
-  linked: TableColumn[],
-  linkers: Map<PObjectId, TableColumn[]>,
-  hiddenSpecs: PTableColumnId[] | null,
-): TableColumn[][] {
-  const result: TableColumn[][] = [];
-  const coveredAxisIds = new Set<CanonicalizedJson<AxisId>>();
-
-  const collectAxes = (group: TableColumn[]) => {
-    for (const col of group) {
-      for (const as of col.spec.axesSpec) {
-        coveredAxisIds.add(canonicalizeJson(getAxisId(as)));
-      }
-    }
-  };
-
-  collectAxes(direct);
-
-  for (const lc of linked) {
-    const group = [...(linkers.get(lc.id) ?? []), lc];
-    result.push(group);
-    collectAxes(group);
-  }
-
-  for (const group of linkers.values()) {
-    const trimmed = trimGroupByVisibleAxes(group, hiddenSpecs, coveredAxisIds);
-    if (trimmed.length > 0) {
-      result.push(trimmed);
-      collectAxes(trimmed);
-    }
-  }
-
-  return result;
-}
-
-/**
- * For a linked column group [linker1, ..., linkerN, column], find the rightmost
- * element that has at least one non-hidden and not-yet-covered axis.
- * Return the prefix up to and including that element.
- * If no element has such an axis, return empty array.
- */
-function trimGroupByVisibleAxes(
-  group: TableColumn[],
-  hiddenSpecs: PTableColumnId[] | null,
-  coveredAxisIds: Set<CanonicalizedJson<AxisId>>,
-): TableColumn[] {
-  if (hiddenSpecs === null) return group;
-
-  const hiddenAxisIds = new Set(
-    hiddenSpecs
-      .filter((s): s is PTableColumnIdAxis => s.type === "axis")
-      .map((s) => canonicalizeJson(s.id)),
-  );
-
-  const uncoveredAxisIds = new Set(
-    group
-      .flatMap((c) => c.spec.axesSpec.map((as) => canonicalizeJson(getAxisId(as))))
-      .filter((id) => !hiddenAxisIds.has(id) && !coveredAxisIds.has(id)),
-  );
-
-  let lastNeeded = -1;
-  for (let i = 0; i < group.length; i++) {
-    const newAxes = group[i].spec.axesSpec
-      .map((as) => canonicalizeJson(getAxisId(as)))
-      .filter((id) => uncoveredAxisIds.has(id));
-    if (newAxes.length > 0) {
-      for (const id of newAxes) uncoveredAxisIds.delete(id);
-      lastNeeded = i;
-    }
-  }
-  return lastNeeded === -1 ? [] : group.slice(0, lastNeeded + 1);
 }
 
 /** Collect IDs of columns that must remain visible (sorted, filtered). */

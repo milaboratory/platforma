@@ -179,6 +179,19 @@ export function withTableVisualAnnotations<Data>(
   });
 }
 
+export function withHidenAxesAnnotations<Data>(columns: PColumn<Data>[]): PColumn<Data>[] {
+  return columns.map((col) => ({
+    ...col,
+    spec: {
+      ...col.spec,
+      axesSpec: col.spec.axesSpec.map((axis) => ({
+        ...axis,
+        annotations: { ...axis.annotations, [Annotation.Table.Visibility]: "hidden" },
+      })),
+    },
+  }));
+}
+
 /** Column shape required by label derivation. */
 export type LabelableColumn = {
   readonly id: PObjectId;
