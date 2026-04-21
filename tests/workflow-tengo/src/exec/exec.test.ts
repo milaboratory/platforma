@@ -51,27 +51,26 @@ tplTest.concurrent.for([
 );
 
 /**
- * Verifies that .gpu(N) passes the GPU count through to the system variables.
- * The template echoes {system.gpu},{system.cpu} — we check gpu matches what was requested.
+ * Verifies that .gpu("16GiB") passes through the SDK template chain without breaking.
+ * The template echoes the gpuMemory string back — we check it matches what was requested.
  */
-tplTest.concurrent.for([{ gpuCount: 37 }])(
-  "gpu-limits (gpu=$gpuCount)",
-  async ({ gpuCount }, { helper, expect }) => {
+tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
+  "gpu-limits (gpuMemory=$gpuMemory)",
+  async ({ gpuMemory }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
       "exec.run.hello_gpu_limits",
-      ["gpuCount"],
+      ["gpuMemory"],
       (tx) => ({
-        gpuCount: tx.createValue(Pl.JsonObject, JSON.stringify(gpuCount)),
+        gpuMemory: tx.createValue(Pl.JsonObject, JSON.stringify(gpuMemory)),
       }),
     );
 
     const gpuOut = await result
-      .computeOutput("gpuCount", (a) => a?.getDataAsJson())
+      .computeOutput("gpuMemory", (a) => a?.getDataAsJson())
       .awaitStableValue();
-    console.log(`GPU test output limits: "${gpuOut}"`);
-    // Yes, this test checks nothing except that .gpu() in workflow doesn't breaks anything
-    expect(Number(gpuOut)).eq(gpuCount);
+    console.log(`GPU test output: "${gpuOut}"`);
+    expect(gpuOut).eq(gpuMemory);
   },
 );
 
