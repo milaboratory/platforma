@@ -391,18 +391,12 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	if batch.format != "tsv" && batch.format != "csv" && batch.format != "ndjson" && batch.format != "parquet" {
 		ll.panic("batch.format must be one of \"tsv\", \"csv\", \"ndjson\", \"parquet\" — got %v", batch.format)
 	}
-	// Parquet is listed in the spec as a supported format but the current
-	// implementation splits text content via Tengo text ops, which only works
-	// for text formats. Reject explicitly to avoid silent TSV fallback.
-	if batch.format == "parquet" {
-		ll.panic("batch.format=\"parquet\" is not yet supported; use \"tsv\", \"csv\", or \"ndjson\"")
-	}
 	if is_undefined(batch.passContent) {
 		batch.passContent = false
 	}
 	if batch.passContent && batch.format == "parquet" {
-		// Unreachable given the panic above, but kept as a spec-guarantee so that
-		// this constraint (spec line 186) survives a future parquet enable.
+		// Spec line 186: parquet is binary, so there's no meaningful string payload
+		// to hand to the body when passContent=true.
 		ll.panic("batch.passContent=true is not applicable to batch.format=\"parquet\" (binary format)")
 	}
 	// Default maxBatches=10000. Spec lines 69-79: soft limit on total batch count
@@ -598,7 +592,10 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		// Xsv output doesn't specify its own, same convention as standard processColumn.
 		globalCpu: opts.cpu,
 		globalMem: opts.mem,
-		globalQueue: opts.queue
+		globalQueue: opts.queue,
+		// Optional cache duration applied to each batch's body render output field.
+		// Same semantics as standard processColumn's opts.stepCache.
+		stepCache: opts.stepCache
 	}
 
 	// Build render inputs — pass column data as direct named inputs
