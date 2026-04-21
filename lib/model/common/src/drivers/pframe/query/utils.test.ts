@@ -78,13 +78,13 @@ describe("traverseQuerySpec", () => {
     const q: Q = {
       type: "linkerJoin",
       linker: { column: "l" },
-      secondary: entry(col("a")),
+      secondary: [entry(col("a")), entry(col("b"))],
     };
     const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
     expect(result).toEqual({
       type: "linkerJoin",
       linker: { column: "L" },
-      secondary: entry({ type: "column", column: "A" }),
+      secondary: [entry({ type: "column", column: "A" }), entry({ type: "column", column: "B" })],
     });
   });
 

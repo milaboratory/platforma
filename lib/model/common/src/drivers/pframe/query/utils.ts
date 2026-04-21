@@ -82,7 +82,7 @@ export function traverseQuerySpec<C1, C2>(
       result = {
         ...query,
         linker: { ...query.linker, column: visitor.column(query.linker.column) },
-        secondary: traverseEntry(query.secondary),
+        secondary: query.secondary.map(traverseEntry),
       };
       break;
     case "filter":
@@ -133,10 +133,10 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
           return { ...node, secondary: sorted };
         }
-        case "linkerJoin":
-          // `linker` is a bare column reference and `secondary` is a single entry —
-          // nothing to reorder here.
-          return node;
+        case "linkerJoin": {
+          const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
+          return { ...node, secondary: sorted };
+        }
         case "sliceAxes":
           return {
             ...node,
@@ -214,7 +214,14 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       if (lhs.linker.column !== rhsLinker.linker.column) {
         return lhs.linker.column < rhsLinker.linker.column ? -1 : 1;
       }
-      return cmpQueryJoinEntrySpec(lhs.secondary, rhsLinker.secondary);
+      if (lhs.secondary.length !== rhsLinker.secondary.length) {
+        return lhs.secondary.length - rhsLinker.secondary.length;
+      }
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpQueryJoinEntrySpec(lhs.secondary[i], rhsLinker.secondary[i]);
+        if (cmp !== 0) return cmp;
+      }
+      return 0;
     }
     case "sliceAxes":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);

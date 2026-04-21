@@ -885,19 +885,22 @@ export interface QueryJoinEntry<Q> {
 /**
  * Linker-join query operation.
  *
- * Inner-joins a linker column (`linker`) with a secondary subquery, then projects
- * out the linker's one-side axes from the joined result. Used to traverse a linker
- * relationship: rows on the secondary side are "lifted" onto the linker's many-side
- * axes, with one-side axes collapsed away.
+ * Inner-joins a linker column (`linker`) with one or more secondary subqueries,
+ * then projects out the linker's one-side axes from the joined result. Used to
+ * traverse a linker relationship: rows on the secondary side are "lifted" onto
+ * the linker's many-side axes, with one-side axes collapsed away.
  *
- * Structurally mirrors {@link QueryOuterJoin}'s `{ primary, secondary }` shape,
- * but the linker side is a specialized sub-struct (a plain column reference — never
- * an arbitrary subquery) rather than a full join entry.
+ * Mirrors {@link QueryOuterJoin}'s `{ primary, secondary }` shape (with
+ * `secondary` as an array), but the linker side is a specialized sub-struct —
+ * a plain column reference rather than a full join entry.
  *
  * **Join behavior**:
- * - The linker column is inner-joined with the `secondary` subquery
+ * - The linker column is inner-joined with all `secondary` entries
  * - After the join, the linker's one-side axes are projected out
  * - Result axes = joined axes minus the linker's one-side axes
+ *
+ * **Note**: `secondary` must contain at least one entry (empty has no
+ * well-defined meaning for linker-join).
  *
  * @template L - Linker sub-struct type (layer-specific)
  * @template JE - Join entry type for the secondary side
@@ -907,13 +910,13 @@ export interface QueryJoinEntry<Q> {
  * {
  *   type: 'linkerJoin',
  *   linker: { column: 'l1' },
- *   secondary: { entry: restQuery, ... }
+ *   secondary: [{ entry: restQuery, ... }]
  * }
  */
 export interface QueryLinkerJoin<L, JE extends QueryJoinEntry<unknown>> {
   type: "linkerJoin";
   /** Linker side — column reference plus layer-specific integration data. */
   linker: L;
-  /** Rest side — the subquery joined with the linker. */
-  secondary: JE;
+  /** Rest side — one or more subqueries joined with the linker (at least one). */
+  secondary: JE[];
 }
