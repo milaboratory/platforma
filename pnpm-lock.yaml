@@ -2241,6 +2241,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/pl-errors':
+        specifier: workspace:*
+        version: link:../pl-errors
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../pl-middle-layer
