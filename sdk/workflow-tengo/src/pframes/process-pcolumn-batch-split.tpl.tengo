@@ -1,7 +1,14 @@
-// pframes batch split — receives per-batch file references, renders body per batch,
-// then concatenates batch outputs via pt.concat and does a single xsv.importFile.
-// Batch files are emitted by the orchestrator's pt workflow (one slice per batch),
-// so this template never materializes the joined content in Tengo memory.
+// pframes batch split — renders body per batch, then concatenates batch outputs
+// via pt.concat and does a single xsv.importFile.
+//
+// Two input modes driven by passContent:
+// - passContent=false: orchestrator passes N per-batch Blob refs as separately
+//   named inputs (__batch_<i>__). Each blob flows through to the body unchanged.
+//   Peak Tengo memory is O(1) references.
+// - passContent=true: orchestrator passes a single content-carrying resource
+//   (`joinedContent`). The split template reads it once, slices lines in Tengo,
+//   and wraps each batch in a fresh JsonResource for the body. Memory is
+//   O(scope_size) — the cost the developer accepted by choosing passContent=true.
 
 self := import(":tpl.light")
 
@@ -9,7 +16,6 @@ ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
 pt := import(":pt")
-exec := import(":exec")
 assets := import(":assets")
 pConstants := import(":pframes.constants")
 pUtil := import(":pframes.util")
@@ -17,11 +23,6 @@ xsv := import(":pframes.xsv")
 text := import("text")
 
 json := import("json")
-
-// No-op software used to stage a Blob file into a workdir so we can re-save it
-// as a JsonObject (content-carrying) resource via saveFileContent — required for
-// the passContent=true path.
-_noopSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
 
 mergeResourceMapsTpl := assets.importTemplate(":pframes.merge-resource-maps")
 
@@ -34,6 +35,7 @@ self.body(func(inputs) {
 	body := inputs.body
 
 	batchCount := params.batchCount
+	batchSize := params.batchSize
 	eph := params.eph
 	outputs := params.outputs
 	formatExt := params.formatExt
@@ -77,31 +79,57 @@ self.body(func(inputs) {
 
 	rawInputs := self.rawInputs()
 
+	// Pre-split content lines once for passContent=true mode.
+	// The orchestrator passes the full per-scope joined file; we reconstruct
+	// per-batch content by slicing lines.
+	header := undefined
+	dataLines := undefined
+	if passContent {
+		joinedContent := inputs.joinedContent
+		if is_undefined(joinedContent) {
+			ll.panic("passContent=true but joinedContent input is missing")
+		}
+		contentStr := ""
+		if is_string(joinedContent) {
+			contentStr = joinedContent
+		} else if smart.isResource(joinedContent) {
+			contentStr = joinedContent.getData()
+		} else if smart.isField(joinedContent) {
+			contentStr = joinedContent.getValue().getData()
+		} else {
+			ll.panic("unexpected joinedContent type: %v", joinedContent)
+		}
+		lines := text.split(contentStr, "\n")
+		for len(lines) > 0 && lines[len(lines)-1] == "" {
+			lines = lines[:len(lines)-1]
+		}
+		if len(lines) > 0 {
+			header = lines[0]
+			dataLines = lines[1:]
+		} else {
+			header = ""
+			dataLines = []
+		}
+	}
+
 	// Process each batch
 	for batchIdx := 0; batchIdx < batchCount; batchIdx++ {
-		batchInputName := "__batch_" + string(batchIdx) + "__"
-		batchBlob := rawInputs[batchInputName]
-		if is_undefined(batchBlob) {
-			ll.panic("batch input not found: %v", batchInputName)
-		}
-
-		// Build __value__:
-		// - passContent: true  → JsonObject resource carrying the batch content.
-		//   We stage the Blob into a workdir via addFile, then saveFileContent to
-		//   produce a content-carrying resource. hello-world is a no-op; its only
-		//   role is to provide a runner context.
-		// - passContent: false → Blob file reference (body can use exec.addFile).
 		valueInput := undefined
 		if passContent {
-			batchFileName := "batch." + formatExt
-			fileRun := exec.builder().
-				software(_noopSoftware).
-				cpu(1).ram("50Mi").
-				addFile(batchFileName, batchBlob).
-				saveFileContent(batchFileName).
-				run()
-			valueInput = fileRun.getFileContent(batchFileName)
+			startLine := batchIdx * batchSize
+			endLine := startLine + batchSize
+			if endLine > len(dataLines) {
+				endLine = len(dataLines)
+			}
+			batchLines := dataLines[startLine:endLine]
+			batchContent := header + "\n" + text.join(batchLines, "\n") + "\n"
+			valueInput = smart.createJsonResource(batchContent)
 		} else {
+			batchInputName := "__batch_" + string(batchIdx) + "__"
+			batchBlob := rawInputs[batchInputName]
+			if is_undefined(batchBlob) {
+				ll.panic("batch input not found: %v", batchInputName)
+			}
 			valueInput = batchBlob
 		}
 

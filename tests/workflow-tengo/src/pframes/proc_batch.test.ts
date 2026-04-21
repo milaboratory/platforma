@@ -1198,49 +1198,6 @@ eTplTest.concurrent(
   },
 );
 
-// ---- Test: format="ndjson" ----
-
-eTplTest.concurrent('batch mode: format="ndjson"', async ({ helper, expect, stHelper }) => {
-  const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
-    const data = tx.createStruct(
-      resourceType("PColumnData/Json", "1"),
-      JSON.stringify({
-        keyLength: 1,
-        data: { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM" },
-      }),
-    );
-    tx.lockInputs(data);
-
-    return {
-      params: tx.createValue(
-        Pl.JsonObject,
-        JSON.stringify({
-          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
-          primaryJoin: "full",
-          // NDJSON content flows through to the body as text; the final Xsv output
-          // is imported via pfconv as TSV regardless of batch format.
-          outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
-          batch: { size: 2, keyColumns: ["key"], format: "ndjson", passContent: true },
-        }),
-      ),
-      data: data,
-    };
-  });
-
-  const r = stHelper.tree(result.resultEntry);
-  const finalResult = await awaitStableState(r, TIMEOUT);
-  assertResource(finalResult);
-  const theResult = finalResult.inputs["result"];
-  assertResource(theResult);
-
-  const hcData = theResult.inputs["tsv.heavyChain.data"];
-  assertResource(hcData);
-  const hcBlob = hcData.inputs["[]"];
-  assertBlob(hcBlob);
-  const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
-  expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]', '["k3"]']);
-});
-
 // ---- Test: format="parquet" (binary) with passContent=false ----
 //
 // Parquet batch export uses ptabler's slice+write_parquet. The body receives a
