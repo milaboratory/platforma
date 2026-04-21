@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.65.4
+
+### Patch Changes
+
+- @milaboratories/ptabler-expression-js@1.2.8
+
 ## 1.65.3
 
 ### Patch Changes

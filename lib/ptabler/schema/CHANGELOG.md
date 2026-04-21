@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler.types
 
+## 1.14.8
+
+### Patch Changes
+
+- fd0b5e3: Slice operation support
+
 ## 1.14.7
 
 ### Patch Changes

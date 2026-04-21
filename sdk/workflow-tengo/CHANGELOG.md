@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.3
+
+### Patch Changes
+
+- fd0b5e3: Slice operation support
+- Updated dependencies [fd0b5e3]
+  - @platforma-open/milaboratories.software-ptabler@1.15.2
+
 ## 5.13.2
 
 ### Patch Changes
