@@ -1,5 +1,11 @@
 # @milaboratories/pl-mcp-server
 
+## 2.0.1
+
+### Patch Changes
+
+- 38cae5b: MCP set_block_data: fallback support legacy v1 model blocks
+
 ## 2.0.0
 
 ### Patch Changes
