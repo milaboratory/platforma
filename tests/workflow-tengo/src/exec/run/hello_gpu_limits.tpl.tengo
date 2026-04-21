@@ -14,7 +14,7 @@ self.body(func(inputs) {
 		software(sw).
 		cpu(1).
 		mem("2GiB").
-		gpu(inputs.gpuMemory).
+		gpuMemory(inputs.gpuMemory).
 		arg(inputs.gpuMemory).
 		saveStdoutContent().
 		run()

@@ -444,12 +444,12 @@ builder := func() {
 		 *
 		 * @return builder
 		 */
-		gpu: func(...args) {
-			ll.assert(len(args) <= 1, "exec.builder.gpu: accepts 0 or 1 argument")
+		gpuMemory: func(...args) {
+			ll.assert(len(args) <= 1, "exec.builder.gpuMemory: accepts 0 or 1 argument")
 			if len(args) == 0 {
 				gpuMemory = "1GiB"
 			} else {
-				validation.assertType(args[0], "string", "exec.builder.gpu: argument must be a size string like '16GiB'")
+				validation.assertType(args[0], "string", "exec.builder.gpuMemory: argument must be a size string like '16GiB'")
 				gpuMemory = args[0]
 			}
 			return self

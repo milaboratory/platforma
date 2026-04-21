@@ -106,14 +106,14 @@ quotaBuilder := func() {
 		 *              No args means any GPU with default 1GiB minimum VRAM.
 		 * @return builder
 		 */
-		gpu: func(...args) {
+		gpuMemory: func(...args) {
 			if len(args) == 0 {
 				gpu_request = "1GiB"
 			} else if len(args) == 1 {
-				validation.assertType(args[0], "string", "exec.quota.builder.gpu: argument must be a size string")
+				validation.assertType(args[0], "string", "exec.quota.builder.gpuMemory: argument must be a size string")
 				gpu_request = args[0]
 			} else {
-				ll.panic("exec.quota.builder.gpu: accepts 0 or 1 argument")
+				ll.panic("exec.quota.builder.gpuMemory: accepts 0 or 1 argument")
 			}
 			return self
 		},
