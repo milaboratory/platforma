@@ -102,16 +102,19 @@ function mapToDiscoveredColumns(
     const anchorKey = anchorKeyByColumnId.get(match.originalId);
     const isPrimary = anchorKey !== undefined;
 
-    return match.variants.map((variant, vi) => ({
-      id: (multi ? `${snap.id}#q${vi}` : snap.id) as SUniversalPColumnId,
-      originalId: match.originalId,
-      spec: snap.spec,
-      data: snap.data,
-      dataStatus: snap.dataStatus,
-      isPrimary,
-      anchorKey,
-      linkerPath: variant.path,
-      qualifications: variant.qualifications,
-    }));
+    return match.variants.map(
+      (variant, vi): TableColumnSnapshot<SUniversalPColumnId> => ({
+        id: (multi ? `${snap.id}#q${vi}` : snap.id) as SUniversalPColumnId,
+        originalId: match.originalId,
+        spec: snap.spec,
+        data: snap.data,
+        dataStatus: snap.dataStatus,
+        isPrimary,
+        anchorKey,
+        linkerPath: variant.path,
+        qualifications: variant.qualifications,
+        distinctiveQualifications: variant.distinctiveQualifications,
+      }),
+    );
   });
 }

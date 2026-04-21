@@ -31,12 +31,14 @@ import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
   deriveAllLabels,
+  deriveAllTooltips,
   evaluateRules,
   isColumnHidden,
   isColumnOptional,
   withHidenAxesAnnotations,
   withLabelAnnotations,
   withTableVisualAnnotations,
+  withInfoAnnotations,
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
@@ -118,11 +120,23 @@ export function createPlDataTableV3<A, U>(
     },
   });
 
+  const derivedTooltips = deriveAllTooltips({
+    columns: discovered.map((dc) => ({
+      id: dc.id,
+      originalId: dc.originalId,
+      spec: dc.spec,
+      linkerPath: dc.linkerPath,
+      qualifications: dc.qualifications,
+      distinctiveQualifications: dc.distinctiveQualifications,
+    })),
+  });
+
   const annotated = annotateColumnGroups({
     pframeSpec,
     ...splited,
     labelColumns,
     derivedLabels,
+    derivedTooltips,
     displayOptions: options.displayOptions,
   });
 
@@ -211,6 +225,7 @@ export type TableColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> = Co
   readonly originalId?: PObjectId;
   readonly linkerPath?: MatchVariant["path"];
   readonly qualifications?: MatchQualifications;
+  readonly distinctiveQualifications?: MatchQualifications;
 };
 
 type SplitDiscoveredColumns = {
@@ -260,10 +275,19 @@ function annotateColumnGroups(params: {
   linked: TableColumnSnapshot<SUniversalPColumnId>[];
   labelColumns: PColumn<PColumnDataUniversal>[];
   derivedLabels: Record<string, string>;
+  derivedTooltips: Record<string, string>;
   displayOptions?: ColumnsDisplayOptions;
   pframeSpec: PFrameSpecDriver;
 }): AnnotatedColumnGroups {
-  const { direct, linked, labelColumns, derivedLabels, displayOptions, pframeSpec } = params;
+  const {
+    direct,
+    linked,
+    labelColumns,
+    derivedLabels,
+    derivedTooltips,
+    displayOptions,
+    pframeSpec,
+  } = params;
 
   const allColumnsForRules = [
     ...direct,
@@ -282,20 +306,26 @@ function annotateColumnGroups(params: {
     pframeSpec,
   );
 
-  const linkedAnnotated = withTableVisualAnnotations(
-    visibilityByColId,
-    orderByColId,
-    withLabelAnnotations(derivedLabels, linked),
-  ).map((lc) => ({ ...lc, linkerPath: annotateLinkerPath(derivedLabels, lc.linkerPath) }));
+  const directAnnotated = [
+    withLabelAnnotations.bind(null, derivedLabels),
+    withInfoAnnotations.bind(null, derivedTooltips),
+    withTableVisualAnnotations.bind(null, visibilityByColId, orderByColId),
+  ].reduce((cols, fn) => fn(cols) as TableColumnSnapshot<SUniversalPColumnId>[], direct);
+
+  const linkedAnnotated = [
+    withLabelAnnotations.bind(null, derivedLabels),
+    withInfoAnnotations.bind(null, derivedTooltips),
+    withTableVisualAnnotations.bind(null, visibilityByColId, orderByColId),
+    (cols: TableColumnSnapshot<SUniversalPColumnId>[]) =>
+      cols.map((lc) => ({ ...lc, linkerPath: annotateLinkerPath(derivedLabels, lc.linkerPath) })),
+  ].reduce((cols, fn) => fn(cols) as TableColumnSnapshot<SUniversalPColumnId>[], linked);
+
+  const labelColumnsAnnotated = withLabelAnnotations(derivedLabels, labelColumns);
 
   return {
-    direct: withTableVisualAnnotations(
-      visibilityByColId,
-      orderByColId,
-      withLabelAnnotations(derivedLabels, direct),
-    ),
+    direct: directAnnotated,
     linked: linkedAnnotated,
-    labels: withLabelAnnotations(derivedLabels, labelColumns),
+    labels: labelColumnsAnnotated,
   };
 }
 function annotateLinkerPath(

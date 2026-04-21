@@ -303,22 +303,20 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
         Array.from(this.anchorsMap.entries()).map(([k, v]) => [k, v.spec] as const),
       ),
     );
-    const axesGroupKey = (axis: ColumnAxesWithQualifications) =>
-      canonicalizeJson(getAxesId(axis.axesSpec)) + canonicalizeJson(axis.qualifications);
     this.uniqAnchorAxes = uniqBy(
       Array.from(this.anchorsMap.values(), ({ spec }) => ({
         axesSpec: spec.axesSpec,
         qualifications: [],
       })),
-      axesGroupKey,
+      getAxesGroupKey,
     );
     const axesGroupIdxByKey = new Map(
-      this.uniqAnchorAxes.map((axis, i) => [axesGroupKey(axis), i]),
+      this.uniqAnchorAxes.map((axis, i) => [getAxesGroupKey(axis), i]),
     );
     this.anchorsByAxesGroup = Array.from(this.anchorsMap.entries()).reduce<Map<number, string[]>>(
       (acc, [anchorKey, { spec }]) => {
         const idx =
-          axesGroupIdxByKey.get(axesGroupKey({ axesSpec: spec.axesSpec, qualifications: [] })) ??
+          axesGroupIdxByKey.get(getAxesGroupKey({ axesSpec: spec.axesSpec, qualifications: [] })) ??
           throwError(`Anchor "${anchorKey}": axes group missing from uniqAnchorAxes index`);
         const bucket = acc.get(idx);
         if (bucket === undefined) acc.set(idx, [anchorKey]);
@@ -412,6 +410,10 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
   }
 }
 
+function getAxesGroupKey(axis: ColumnAxesWithQualifications) {
+  return canonicalizeJson(getAxesId(axis.axesSpec)) + canonicalizeJson(axis.qualifications);
+}
+
 /**
  * Collect all columns from all providers, dedup by NativePObjectId.
  * First source wins.
@@ -494,6 +496,7 @@ function resolveAnchorMap(
         maxHops: 0,
         constraints: matchingModeToConstraints("exact"),
       });
+
       if (matched.hits.length === 0) {
         throwError(`Anchor "${key}": no columns matched selector`);
       }

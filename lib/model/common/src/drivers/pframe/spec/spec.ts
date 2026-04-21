@@ -164,6 +164,7 @@ export const Annotation = {
     FontFamily: "pl7.app/table/fontFamily",
     OrderPriority: "pl7.app/table/orderPriority",
     Visibility: "pl7.app/table/visibility",
+    Info: "pl7.app/table/info",
   },
   Trace: "pl7.app/trace",
   VDJ: {
@@ -205,6 +206,7 @@ export type Annotation = Metadata &
     [Annotation.Table.FontFamily]: string;
     [Annotation.Table.OrderPriority]: StringifiedJson<number>;
     [Annotation.Table.Visibility]: "hidden" | "optional" | (string & {});
+    [Annotation.Table.Info]: string;
     [Annotation.Trace]: StringifiedJson<Trace>;
     [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
   }>;

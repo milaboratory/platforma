@@ -14,6 +14,11 @@ import {
   deriveDistinctLabels,
   type DeriveLabelsOptions,
 } from "../../../labels/derive_distinct_labels";
+import {
+  deriveDistinctTooltips,
+  type TooltipEntry,
+} from "../../../labels/derive_distinct_tooltips";
+import type { MatchQualifications, MatchVariant } from "../../../columns";
 import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector } from "../../../columns";
 import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
@@ -180,6 +185,27 @@ export function withTableVisualAnnotations<
   });
 }
 
+/**
+ * Writes derived info annotations into column annotations.
+ * Columns without an info entry are passed through unchanged.
+ */
+export function withInfoAnnotations<
+  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
+>(infoById: undefined | Record<string, string>, columns: T[]): T[] {
+  if (isNil(infoById)) return columns;
+  return columns.map((col) => {
+    const info = infoById[col.id];
+    if (isNil(info)) return col;
+    return {
+      ...col,
+      spec: {
+        ...col.spec,
+        annotations: { ...col.spec.annotations, [Annotation.Table.Info]: info },
+      },
+    } as T;
+  });
+}
+
 export function withHidenAxesAnnotations<T extends { readonly spec: PColumnSpec }>(
   columns: T[],
 ): T[] {
@@ -237,4 +263,50 @@ function deriveAxisLabels(
     result[axisKey] = readAnnotation(source ?? {}, Annotation.Label)?.trim() ?? "Unlabeled";
   }
   return result;
+}
+
+/** Column shape required by tooltip derivation. */
+export type TooltipableColumn = {
+  readonly id: PObjectId;
+  readonly originalId?: PObjectId;
+  readonly spec: PColumnSpec;
+  readonly linkerPath?: MatchVariant["path"];
+  readonly qualifications?: MatchQualifications;
+  readonly distinctiveQualifications?: MatchQualifications;
+};
+
+/** Derive origin tooltips for columns whose qualifications or linker path carry info. */
+export function deriveAllTooltips(options: {
+  columns: TooltipableColumn[];
+}): Record<string, string> {
+  const { columns } = options;
+
+  const variantCountByOriginal = columns.reduce<Map<PObjectId, number>>((acc, c) => {
+    if (isNil(c.originalId)) return acc;
+    acc.set(c.originalId, (acc.get(c.originalId) ?? 0) + 1);
+    return acc;
+  }, new Map());
+  const variantSeen = new Map<PObjectId, number>();
+
+  const entries: TooltipEntry[] = columns.map((c) => {
+    const variantCount = isNil(c.originalId) ? undefined : variantCountByOriginal.get(c.originalId);
+    const variantIndex = isNil(c.originalId)
+      ? undefined
+      : (variantSeen.set(c.originalId, (variantSeen.get(c.originalId) ?? 0) + 1),
+        variantSeen.get(c.originalId));
+    return {
+      spec: c.spec,
+      qualifications: c.qualifications,
+      distinctiveQualifications: c.distinctiveQualifications,
+      linkerPath: c.linkerPath,
+      variantIndex,
+      variantCount,
+    };
+  });
+
+  const tooltips = deriveDistinctTooltips(entries);
+
+  return Object.fromEntries(
+    tooltips.flatMap((t, i) => (isNil(t) ? [] : [[columns[i].id, t] as const])),
+  );
 }

@@ -27,6 +27,20 @@ wf.body(func(args) {
 		"D\tG2\t1\n" +
 		"E\tG1\t1\n"
 
+	// --- Alternate linker: second path "name" -> "group" ---
+	// Exercises multi-variant discovery for group-axis columns (createPlDataTableV3.ts
+	// → deriveAllTooltips → withInfoAnnotations at utils.ts#L192-208).
+	// Two linker columns with same axes pair (name, group) produce two MatchVariants
+	// per hit column on the group axis — each variant gets its own distinctiveQualifications
+	// and linkerPath, so deriveDistinctTooltips emits a distinct tooltip per variant and
+	// withInfoAnnotations writes Annotation.Table.Info for each.
+	linkerAltTsv := "name\tgroup\tlinkAlt\n" +
+		"A\tG1\t1\n" +
+		"B\tG1\t1\n" +
+		"C\tG2\t1\n" +
+		"D\tG2\t1\n" +
+		"E\tG1\t1\n"
+
 	// --- Second-hop linked data: columns on "region" axis ---
 	regionTsv := "region\tregionName\tpopulation\n" +
 		"R1\tNorth\t1000\n" +
@@ -61,6 +75,7 @@ wf.body(func(args) {
 		writeFile("main.tsv", mainTsv).
 		writeFile("group.tsv", groupTsv).
 		writeFile("linker.tsv", linkerTsv).
+		writeFile("linkerAlt.tsv", linkerAltTsv).
 		writeFile("region.tsv", regionTsv).
 		writeFile("linker2.tsv", linker2Tsv).
 		writeFile("nameLabel.tsv", nameLabelTsv).
@@ -69,6 +84,7 @@ wf.body(func(args) {
 		saveFile("main.tsv").
 		saveFile("group.tsv").
 		saveFile("linker.tsv").
+		saveFile("linkerAlt.tsv").
 		saveFile("region.tsv").
 		saveFile("linker2.tsv").
 		saveFile("nameLabel.tsv").
@@ -79,6 +95,7 @@ wf.body(func(args) {
 	mainFile := e.getFile("main.tsv")
 	groupFile := e.getFile("group.tsv")
 	linkerFile := e.getFile("linker.tsv")
+	linkerAltFile := e.getFile("linkerAlt.tsv")
 	regionFile := e.getFile("region.tsv")
 	linker2File := e.getFile("linker2.tsv")
 	nameLabelFile := e.getFile("nameLabel.tsv")
@@ -213,6 +230,34 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
+	// Second linker over the same (name, group) axes pair. Distinct native id
+	// ensures it survives dedup in collectColumns. During discoverColumns this
+	// yields a second MatchVariant for each group-axis hit column, producing
+	// `distinctiveQualifications` and variantCount=2 in deriveAllTooltips.
+	linkerAltSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}, {
+			column: "name",
+			spec: nameAxisSpec
+		}],
+		columns: [{
+			column: "linkAlt",
+			id: "linker_name_group_alt",
+			spec: {
+				name: "linker_name_group_alt",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/linkLabel": "Name-Group Linker (Alt)",
+					"pl7.app/isLinkerColumn": "true"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
 	regionSpec := {
 		axes: [{
 			column: "region",
@@ -331,6 +376,7 @@ wf.body(func(args) {
 	mainPf := xsv.importFile(mainFile, "tsv", mainSpec, importOps)
 	groupPf := xsv.importFile(groupFile, "tsv", groupSpec, importOps)
 	linkerPf := xsv.importFile(linkerFile, "tsv", linkerSpec, importOps)
+	linkerAltPf := xsv.importFile(linkerAltFile, "tsv", linkerAltSpec, importOps)
 	regionPf := xsv.importFile(regionFile, "tsv", regionSpec, importOps)
 	linker2Pf := xsv.importFile(linker2File, "tsv", linker2Spec, importOps)
 	nameLabelPf := xsv.importFile(nameLabelFile, "tsv", nameLabelSpec, importOps)
@@ -346,6 +392,9 @@ wf.body(func(args) {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in linkerPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in linkerAltPf {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in regionPf {

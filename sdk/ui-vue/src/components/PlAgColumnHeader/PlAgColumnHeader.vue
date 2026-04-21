@@ -69,6 +69,7 @@ function showMenu() {
       <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
         <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
         <span>{{ params.displayName }}</span>
+        <PlMaskIcon16 v-if="params.info" name="info" />
         <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
       </div>
     </PlTooltip>
