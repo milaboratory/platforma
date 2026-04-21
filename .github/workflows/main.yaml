@@ -101,6 +101,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL: ${{ secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL }}
         with:
           publish: pnpm -r publish --no-git-checks --access public
 
