@@ -252,7 +252,8 @@ export interface SliceStep {
   offset: number;
 
   /**
-   * The number of rows to extract starting from offset.
+   * The number of rows to extract starting from offset. Must be non-negative.
+   * A length of 0 yields an empty table with the input schema preserved.
    * If offset + length exceeds the input row count, only the available tail rows are returned.
    */
   length: number;

@@ -50,3 +50,8 @@ class SliceTests(unittest.TestCase):
         result = self._run_slice(offset=0, length=5)
         expected = self._make_test_df().collect()
         assert_frame_equal(result, expected)
+
+    def test_length_zero_returns_empty_with_schema(self):
+        result = self._run_slice(offset=0, length=0)
+        self.assertEqual(result.height, 0)
+        self.assertEqual(result.columns, ["id", "value"])

@@ -1442,18 +1442,21 @@ _newDataFrame = func(parentWorkflow, dfName) {
 
 		/**
 		 * Returns rows [offset, offset+length) of the DataFrame.
-		 * Mirrors Polars `slice`. Ranges that extend past end-of-frame are clipped.
+		 * Mirrors Polars `slice`. Ranges that extend past end-of-frame are clipped;
+		 * length=0 yields an empty frame (useful for dynamic chunk sizing / empty
+		 * partition handling).
 		 *
 		 * @param offset {number} - Non-negative, 0-based starting row index.
-		 * @param length {number} - Positive number of rows to extract.
+		 * @param length {number} - Non-negative number of rows to extract.
 		 * @returns {object} - A new DataFrame object.
 		 * @example
 		 *   batch0 := df.slice(0, 100)
 		 *   batch1 := df.slice(100, 100)
+		 *   empty  := df.slice(0, 0)   // empty frame, same schema as df
 		 */
 		slice: func(offset, length) {
 			ll.assert(is_int(offset) && offset >= 0, "slice offset must be a non-negative integer.")
-			ll.assert(is_int(length) && length > 0, "slice length must be a positive integer.")
+			ll.assert(is_int(length) && length >= 0, "slice length must be a non-negative integer.")
 
 			outputDfName := parentWorkflow._newAnonymousDataFrameId()
 			parentWorkflow.addRawStep({
