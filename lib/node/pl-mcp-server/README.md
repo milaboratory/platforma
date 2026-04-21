@@ -49,26 +49,28 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
 
 5. **Open a project** — use `open_project` to start working with a specific project.
 
-## Connecting From Claude Chat (claude.ai)
+## Connecting From Claude Desktop App (Chat)
 
-Claude Chat supports remote MCP servers over HTTP. Since the Platforma MCP server runs on localhost, you need to expose it to the internet first.
+Claude Desktop App uses stdio transport, so it cannot connect to the HTTP MCP endpoint directly. Use `mcp-remote` to bridge the two.
 
-1. **Enable MCP in the Desktop App** — same as step 1 above (Settings -> "Enable MCP Server").
+1. **Enable MCP in the Platforma Desktop App** — same as step 1 above (Settings -> "Enable MCP Server"). Copy the MCP Server URL.
 
-2. **Expose the server URL** — Claude Chat runs in the cloud and cannot reach `localhost`. Use a tunnel to make the MCP endpoint accessible:
+2. **Edit Claude Desktop config** — open `~/Library/Application Support/Claude/claude_desktop_config.json` and add the `mcpServers` entry:
 
-   ```bash
-   # Example with ngrok
-   ngrok http 4200
+   ```json
+   {
+     "mcpServers": {
+       "platforma": {
+         "command": "npx",
+         "args": ["-y", "mcp-remote", "http://127.0.0.1:4200/<your-session-id>/mcp"]
+       }
+     }
+   }
    ```
 
-   This gives you a public URL like `https://xxxx.ngrok-free.app`. The MCP endpoint will be at `https://xxxx.ngrok-free.app/mcp`.
+   Replace the URL with the actual MCP Server URL from the Platforma Desktop App settings.
 
-3. **Add the server in Claude Chat** — go to [Settings -> MCP Servers](https://claude.ai/settings/mcp-servers), click "Add Server", and enter:
-   - **Server name**: `Platforma` (or any display name)
-   - **Server URL**: your public tunnel URL with `/mcp` path
-
-4. **Use it** — the Platforma tools will be available in your Claude Chat sessions. Follow the same workflow: `list_connections` -> `connect_to_server` -> `open_project`.
+3. **Restart Claude Desktop App** — the Platforma tools will appear in your chat sessions. Follow the same workflow: `list_connections` -> `connect_to_server` -> `open_project`.
 
 ## Skill
 
