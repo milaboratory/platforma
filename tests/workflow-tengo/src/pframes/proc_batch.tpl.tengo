@@ -70,13 +70,18 @@ self.body(func(inputs) {
 		}
 	}
 
+	opts := {
+		batch: params.batch
+	}
+	if !is_undefined(params.stepCache) {
+		opts.stepCache = params.stepCache
+	}
+
 	processResult := pframes.processColumn({
 		primary: primaryEntries,
 		columns: secondaryEntries,
 		primaryJoin: params.primaryJoin
-	}, bodyTpl, params.outputs, {
-		batch: params.batch
-	})
+	}, bodyTpl, params.outputs, opts)
 
 	// For ResourceMap outputs, return the raw ResourceMap resource (PFrame export
 	// only makes sense for typed PColumn outputs).

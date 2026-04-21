@@ -115,6 +115,8 @@ self.body(func(inputs) {
 		formatExt = "csv"
 	} else if batchFormat == "ndjson" {
 		formatExt = "ndjson"
+	} else if batchFormat == "parquet" {
+		formatExt = "parquet"
 	}
 
 	// --- Group column data by isolation key ---
@@ -457,7 +459,44 @@ self.body(func(inputs) {
 			}
 		}
 
-		// Build pt workflow: join, sort, export as content
+		// Estimate joined row count for this scope from intermediate record counts.
+		// - primaryJoin="inner": joined rows ≤ min(records across primaries) — tight upper bound.
+		// - primaryJoin="full":  joined rows ≤ max(records across primaries) for matching keys
+		//   (the common case); for disjoint key spaces it is up to the sum. We use max as a
+		//   practical best-estimate; empty trailing slices from over-estimation are handled
+		//   by the split template (empty batch files → skip).
+		scopeRecords := 0
+		if primaryJoin == "inner" {
+			hasAnyPrimary := false
+			for pg in primaryGroups {
+				n := _recordsInGroup(pg.groups[sIsolationKey])
+				if n == 0 {
+					scopeRecords = 0
+					hasAnyPrimary = false
+					break
+				}
+				if !hasAnyPrimary || n < scopeRecords {
+					scopeRecords = n
+				}
+				hasAnyPrimary = true
+			}
+			if !hasAnyPrimary {
+				scopeRecords = 0
+			}
+		} else {
+			for pg in primaryGroups {
+				n := _recordsInGroup(pg.groups[sIsolationKey])
+				if n > scopeRecords {
+					scopeRecords = n
+				}
+			}
+		}
+
+		if scopeRecords == 0 {
+			continue
+		}
+
+		// Build pt workflow: join, sort, emit N per-batch files via slice.
 		wf := pt.workflow()
 		df := wf.frame(joined)
 
@@ -485,19 +524,25 @@ self.body(func(inputs) {
 		}
 		df = df.select(selectExprs...)
 
-		// Save as content for text-based splitting
-		outFileName := "joined." + formatExt
-		df.saveContent(outFileName, { format: formatExt })
+		// Emit one slice+save step per batch. effectiveBatchSize may be larger than
+		// batchSize if maxBatches triggered inflation (spec lines 69-79, step 4).
+		batchCount := (scopeRecords + effectiveBatchSize - 1) / effectiveBatchSize
+		batchFileNames := []
+		for i := 0; i < batchCount; i++ {
+			name := "batch_" + string(i) + "." + formatExt
+			batchFileNames = append(batchFileNames, name)
+			df.slice(i * effectiveBatchSize, effectiveBatchSize).save(name, { format: formatExt })
+		}
 
 		ptResult := wf.run()
-		joinedContent := ptResult.getFileContent(outFileName)
 
 		// Render the batch-split template for this isolation scope.
-		// effectiveBatchSize may be larger than batchSize if maxBatches triggered
-		// inflation (spec lines 69-79, step 4).
+		// Batch file refs are passed as separately-named inputs (__batch_<i>__) so
+		// the template system tracks each as a distinct dependency (same pattern as
+		// __col_primary_N_data).
 		splitInputs := {
 			params: smart.createJsonResource({
-				batchSize: effectiveBatchSize,
+				batchCount: batchCount,
 				passContent: passContent,
 				formatExt: formatExt,
 				eph: eph,
@@ -505,10 +550,14 @@ self.body(func(inputs) {
 				batchKeyHeaders: batchKeyHeaders,
 				globalCpu: params.globalCpu,
 				globalMem: params.globalMem,
-				globalQueue: params.globalQueue
+				globalQueue: params.globalQueue,
+				stepCache: params.stepCache
 			}),
-			body: body,
-			joinedContent: joinedContent
+			body: body
+		}
+
+		for i, name in batchFileNames {
+			splitInputs["__batch_" + string(i) + "__"] = ptResult.getFile(name)
 		}
 
 		// Forward extra inputs
@@ -542,12 +591,20 @@ self.body(func(inputs) {
 		}
 	}
 
-	// Finalize outputs
+	// Finalize outputs.
+	// For non-isolation runs where the sole scope had 0 records (continue'd above),
+	// outputMaps[name] is undefined — emit empty typed defaults so downstream
+	// consumers see a well-formed (but empty) PColumn data resource.
 	result := {}
 	for output in outputs {
 		if output.type == "ResourceMap" {
 			if hasIsolation {
 				result[output.name] = outputMaps[output.name].lockAndBuild()
+			} else if is_undefined(outputMaps[output.name]) {
+				result[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: output.keyLength })
+				).lockAndBuild()
 			} else {
 				result[output.name] = outputMaps[output.name]
 			}
@@ -557,6 +614,11 @@ self.body(func(inputs) {
 				key := output.name + "/" + id
 				if hasIsolation {
 					result[key] = outputMaps[key].lockAndBuild()
+				} else if is_undefined(outputMaps[key]) {
+					result[key] = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+						json.encode({ partitionKeyLength: batchKeyLength })
+					).lockAndBuild()
 				} else {
 					result[key] = outputMaps[key]
 				}

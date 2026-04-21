@@ -666,13 +666,13 @@ eTplTest.concurrent(
   },
 );
 
-// ---- Test 9: batch.format="parquet" must be rejected explicitly ----
+// ---- Test 9: batch.format="parquet" with passContent=true must be rejected ----
 //
-// The split template currently supports only text-based formats (tsv/csv/ndjson).
-// Parquet must panic with a clear message rather than silently falling back to TSV.
+// Parquet is binary; there's no meaningful string to hand to the body template.
+// Spec line 186 mandates this constraint.
 
 eTplTest.concurrent(
-  "batch mode: parquet format is rejected with a clear error",
+  "batch mode: parquet format with passContent=true is rejected",
   async ({ helper, expect, stHelper }) => {
     const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
       const data1Res = tx.createStruct(
@@ -702,7 +702,7 @@ eTplTest.concurrent(
 
     const r = stHelper.tree(result.resultEntry);
     await expect(awaitStableState(r, TIMEOUT)).rejects.toThrow(
-      /batch\.format="parquet" is not yet supported/,
+      /passContent=true is not applicable to batch\.format="parquet"/,
     );
   },
 );
@@ -1143,6 +1143,163 @@ eTplTest.concurrent('batch mode: format="csv"', async ({ helper, expect, stHelpe
   assertBlob(hcBlob);
   const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
   expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]', '["k3"]']);
+});
+
+// ---- Test: opts.stepCache is accepted and workflow completes ----
+//
+// We can't easily observe the setCache metadata on a rendered field from the
+// test harness, so this is a smoke test: verifies opts.stepCache threads
+// through `_processColumnBatch` → orchestrator → split template → body render
+// without breaking anything. A positive stepCache triggers render.output(name,
+// stepCache); this test asserts the final output still carries the expected
+// records.
+
+eTplTest.concurrent(
+  "batch mode: opts.stepCache threads through without regressing output",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const data = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({
+          keyLength: 1,
+          data: { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM" },
+        }),
+      );
+      tx.lockInputs(data);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+            // 60 seconds in nanoseconds (tengo `times` durations are nanoseconds).
+            stepCache: 60_000_000_000,
+          }),
+        ),
+        data: data,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const hcBlob = hcData.inputs["[]"];
+    assertBlob(hcBlob);
+    const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+    expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]', '["k3"]']);
+  },
+);
+
+// ---- Test: format="ndjson" ----
+
+eTplTest.concurrent('batch mode: format="ndjson"', async ({ helper, expect, stHelper }) => {
+  const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+    const data = tx.createStruct(
+      resourceType("PColumnData/Json", "1"),
+      JSON.stringify({
+        keyLength: 1,
+        data: { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM" },
+      }),
+    );
+    tx.lockInputs(data);
+
+    return {
+      params: tx.createValue(
+        Pl.JsonObject,
+        JSON.stringify({
+          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+          primaryJoin: "full",
+          // NDJSON content flows through to the body as text; the final Xsv output
+          // is imported via pfconv as TSV regardless of batch format.
+          outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+          batch: { size: 2, keyColumns: ["key"], format: "ndjson", passContent: true },
+        }),
+      ),
+      data: data,
+    };
+  });
+
+  const r = stHelper.tree(result.resultEntry);
+  const finalResult = await awaitStableState(r, TIMEOUT);
+  assertResource(finalResult);
+  const theResult = finalResult.inputs["result"];
+  assertResource(theResult);
+
+  const hcData = theResult.inputs["tsv.heavyChain.data"];
+  assertResource(hcData);
+  const hcBlob = hcData.inputs["[]"];
+  assertBlob(hcBlob);
+  const hcContent = JSON.parse(Buffer.from(hcBlob.content).toString());
+  expect(Object.keys(hcContent).sort()).toEqual(['["k1"]', '["k2"]', '["k3"]']);
+});
+
+// ---- Test: format="parquet" (binary) with passContent=false ----
+//
+// Parquet batch export uses ptabler's slice+write_parquet. The body receives a
+// Blob file reference to a parquet batch and passes it through; the final Xsv
+// import reads the merged parquet into a Parquet-storage PColumn. `storageFormat:
+// "Parquet"` is required — Json storage is incompatible with parquet xsvType.
+
+const parquetXsvSettings = {
+  batchKeyColumns: ["key"],
+  columns: [
+    {
+      column: "heavyChain",
+      id: "heavyChain",
+      spec: {
+        valueType: "String",
+        name: "heavyChain",
+        annotations: { [Annotation.Label]: "Heavy Chain" } satisfies Annotation,
+      },
+    },
+  ],
+  storageFormat: "Parquet",
+} as const;
+
+eTplTest.concurrent('batch mode: format="parquet"', async ({ helper, stHelper }) => {
+  const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+    const data = tx.createStruct(
+      resourceType("PColumnData/Json", "1"),
+      JSON.stringify({
+        keyLength: 1,
+        data: { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM", '["k4"]': "EIVL" },
+      }),
+    );
+    tx.lockInputs(data);
+
+    return {
+      params: tx.createValue(
+        Pl.JsonObject,
+        JSON.stringify({
+          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+          primaryJoin: "full",
+          outputs: [{ type: "Xsv", name: "tsv", xsvType: "parquet", settings: parquetXsvSettings }],
+          batch: { size: 2, keyColumns: ["key"], format: "parquet", passContent: false },
+        }),
+      ),
+      data: data,
+    };
+  });
+
+  const r = stHelper.tree(result.resultEntry);
+  const finalResult = await awaitStableState(r, TIMEOUT);
+  assertResource(finalResult);
+  const theResult = finalResult.inputs["result"];
+  assertResource(theResult);
+
+  // With Parquet storage we can't parse the blob as JSON. Structural assertion
+  // that the PColumn data resource was created for the heavyChain column is
+  // enough to verify the end-to-end slice → parquet → merge → import path.
+  const hcData = theResult.inputs["tsv.heavyChain.data"];
+  assertResource(hcData);
 });
 
 // ---- Test: multi-batch within a single isolation scope ----

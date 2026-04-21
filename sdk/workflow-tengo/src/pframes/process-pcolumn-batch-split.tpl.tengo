@@ -1,5 +1,7 @@
-// pframes batch split — receives joined content, splits into batches, renders body per batch,
+// pframes batch split — receives per-batch file references, renders body per batch,
 // then concatenates batch outputs via pt.concat and does a single xsv.importFile.
+// Batch files are emitted by the orchestrator's pt workflow (one slice per batch),
+// so this template never materializes the joined content in Tengo memory.
 
 self := import(":tpl.light")
 
@@ -16,22 +18,22 @@ text := import("text")
 
 json := import("json")
 
-// Used as a no-op exec to turn a written string into a saved Blob file resource
-// when `passContent: false` is requested. hello-world exits immediately without
-// modifying the workdir, so `saveFile` captures exactly what `writeFile` wrote.
+// No-op software used to stage a Blob file into a workdir so we can re-save it
+// as a JsonObject (content-carrying) resource via saveFileContent — required for
+// the passContent=true path.
 _noopSoftware := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
 
 mergeResourceMapsTpl := assets.importTemplate(":pframes.merge-resource-maps")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
-self.awaitState("joinedContent", "ResourceReady")
+self.awaitState({ wildcard: "*" }, "ResourceReady")
 
 self.body(func(inputs) {
 	params := inputs.params
 	body := inputs.body
 
-	batchSize := params.batchSize
+	batchCount := params.batchCount
 	eph := params.eph
 	outputs := params.outputs
 	formatExt := params.formatExt
@@ -42,59 +44,15 @@ self.body(func(inputs) {
 	if is_undefined(passContent) {
 		passContent = false
 	}
+	// Optional per-batch cache duration (opts.stepCache in the public API).
+	// Applied to the body render's top-level output field via render.output(name, cache).
+	stepCache := params.stepCache
 
-	// joinedContent is a file content resource (not JSON) — read raw data as string
-	joinedContentResource := inputs.joinedContent
-	contentStr := ""
-	if is_string(joinedContentResource) {
-		contentStr = joinedContentResource
-	} else if smart.isResource(joinedContentResource) {
-		contentStr = joinedContentResource.getData()
-	} else {
-		ll.panic("unexpected joinedContent type: %v", joinedContentResource)
-	}
-
-	// Split content into lines
-	lines := text.split(contentStr, "\n")
-
-	// Remove trailing empty lines
-	for len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-
-	if len(lines) <= 1 {
-		// No data (only header or empty) — return empty outputs
-		result := {}
-		for output in outputs {
-			if output.type == "ResourceMap" {
-				result[output.name] = smart.structBuilder(
-					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-					json.encode({ keyLength: 0 })
-				).lockAndBuild()
-			} else if output.type == "Xsv" {
-				for column in output.settings.columns {
-					id := pUtil.xsvColumnId(column)
-					result[output.name + "/" + id] = smart.structBuilder(
-						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
-						json.encode({ partitionKeyLength: 0 })
-					).lockAndBuild()
-				}
-			}
-		}
-		return result
-	}
-
-	header := lines[0]
-	dataLines := lines[1:]
-	totalRecords := len(dataLines)
-	totalBatches := (totalRecords + batchSize - 1) / batchSize
-
-	// Prepare output collectors
-	// For Xsv outputs: collect per-batch output file refs to concatenate later.
-	// For ResourceMap outputs: collect per-batch body results (each is a ResourceMap
-	// resource) to merge via merge-resource-maps template after all batches render.
-	xsvBatchFiles := {} // { outputName -> [fileRef, ...] }
-	resourceMapBatchResults := {} // { outputName -> [resourceMapRef, ...] }
+	// Prepare output collectors.
+	// Xsv: collect per-batch output file refs to concatenate later via pt.concat.
+	// ResourceMap: collect per-batch body results to merge via merge-resource-maps.
+	xsvBatchFiles := {}
+	resourceMapBatchResults := {}
 
 	for output in outputs {
 		if output.type == "Xsv" {
@@ -105,52 +63,52 @@ self.body(func(inputs) {
 	}
 
 	// Collect extra/meta inputs to forward to body template.
-	// extra_: passed as regular body inputs.
-	// meta_: passed as meta inputs (see metaInputs option on render.createUniversal).
+	// __extra_: passed as regular body inputs (name stripped of prefix).
+	// __meta_:  passed as meta inputs (see metaInputs option on render.createUniversal).
 	extraInputs := {}
 	metaInputs := {}
 	for name, field in self.rawInputs() {
 		if text.has_prefix(name, "__extra_") {
-			// Strip the __extra_ prefix so the body template sees the original name
 			extraInputs[name[8:]] = field
 		} else if text.has_prefix(name, "__meta_") {
 			metaInputs[name[7:]] = field
 		}
 	}
 
+	rawInputs := self.rawInputs()
+
 	// Process each batch
-	for batchIdx := 0; batchIdx < totalBatches; batchIdx++ {
-		startLine := batchIdx * batchSize
-		endLine := startLine + batchSize
-		if endLine > totalRecords {
-			endLine = totalRecords
+	for batchIdx := 0; batchIdx < batchCount; batchIdx++ {
+		batchInputName := "__batch_" + string(batchIdx) + "__"
+		batchBlob := rawInputs[batchInputName]
+		if is_undefined(batchBlob) {
+			ll.panic("batch input not found: %v", batchInputName)
 		}
 
-		batchLines := dataLines[startLine:endLine]
-		batchContent := header + "\n" + text.join(batchLines, "\n") + "\n"
-
 		// Build __value__:
-		// - passContent: true  → string via JsonResource (body reads content directly)
-		// - passContent: false → Blob file reference (body can use exec.addFile)
+		// - passContent: true  → JsonObject resource carrying the batch content.
+		//   We stage the Blob into a workdir via addFile, then saveFileContent to
+		//   produce a content-carrying resource. hello-world is a no-op; its only
+		//   role is to provide a runner context.
+		// - passContent: false → Blob file reference (body can use exec.addFile).
 		valueInput := undefined
 		if passContent {
-			valueInput = smart.createJsonResource(batchContent)
-		} else {
 			batchFileName := "batch." + formatExt
 			fileRun := exec.builder().
 				software(_noopSoftware).
 				cpu(1).ram("50Mi").
-				writeFile(batchFileName, batchContent).
-				saveFile(batchFileName).
+				addFile(batchFileName, batchBlob).
+				saveFileContent(batchFileName).
 				run()
-			valueInput = fileRun.getFile(batchFileName)
+			valueInput = fileRun.getFileContent(batchFileName)
+		} else {
+			valueInput = batchBlob
 		}
 
 		// Build render inputs for body template
 		renderInputs := {}
 		renderInputs[pConstants.VALUE_FIELD_NAME] = valueInput
 
-		// Forward extra inputs (already de-prefixed)
 		for k, v in extraInputs {
 			renderInputs[k] = v
 		}
@@ -173,20 +131,30 @@ self.body(func(inputs) {
 				outputPath = [output.name]
 			}
 
+			// First path step targets the render's top-level output field — apply
+			// stepCache here (render.output(name, cache)). Further steps navigate
+			// into the field via field.output() and do not take cache.
+			applyCache := !is_undefined(stepCache) && stepCache > 0
 			batchOutputRef := batchResult
-			for step in outputPath {
+			for idx, step in outputPath {
 				if is_string(step) {
-					batchOutputRef = batchOutputRef.output(step)
+					if idx == 0 && applyCache {
+						batchOutputRef = batchOutputRef.output(step, stepCache)
+					} else {
+						batchOutputRef = batchOutputRef.output(step)
+					}
 				} else if is_map(step) && step.optional {
-					batchOutputRef = batchOutputRef.output(step.name)
+					if idx == 0 && applyCache {
+						batchOutputRef = batchOutputRef.output(step.name, stepCache)
+					} else {
+						batchOutputRef = batchOutputRef.output(step.name)
+					}
 				}
 			}
 
 			if output.type == "Xsv" {
-				// Collect batch output file ref for later concatenation
 				xsvBatchFiles[output.name] = append(xsvBatchFiles[output.name], batchOutputRef)
 			} else if output.type == "ResourceMap" {
-				// Collect batch output ResourceMap ref for later merge
 				resourceMapBatchResults[output.name] = append(resourceMapBatchResults[output.name], batchOutputRef)
 			}
 		}
@@ -198,9 +166,7 @@ self.body(func(inputs) {
 	for output in outputs {
 		if output.type == "ResourceMap" {
 			// Merge per-batch ResourceMap outputs into a flat ResourceMap whose keys
-			// are the union of all batch-returned keys. Axes match the declared spec
-			// = isolation + batchKey + bodyAxes (isolation handled in the orchestrator
-			// via outer super-partitioning; here we flatten across batches).
+			// are the union of all batch-returned keys.
 			batchRMs := resourceMapBatchResults[output.name]
 			if len(batchRMs) == 0 {
 				result[output.name] = smart.structBuilder(
