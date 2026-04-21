@@ -524,25 +524,23 @@ self.body(func(inputs) {
 		}
 		df = df.select(selectExprs...)
 
-		// Emit one slice+save step per batch. effectiveBatchSize may be larger than
-		// batchSize if maxBatches triggered inflation (spec lines 69-79, step 4).
+		// Two strategies, driven by passContent:
+		//
+		// passContent=false (streaming): emit N slice+save steps, one per batch. Each
+		//   batch is a Blob file ref; the split template hands it to the body directly
+		//   (body uses exec.addFile). Peak Tengo memory is O(1) references.
+		//
+		// passContent=true (convenience): block developer opted to receive batch
+		//   content as a string. Save the full per-scope TSV as a single content
+		//   resource; the split template reads it once and slices lines in Tengo,
+		//   matching the original design. Memory is O(scope_size) in Tengo — the
+		//   cost the developer accepted by picking passContent=true.
 		batchCount := (scopeRecords + effectiveBatchSize - 1) / effectiveBatchSize
-		batchFileNames := []
-		for i := 0; i < batchCount; i++ {
-			name := "batch_" + string(i) + "." + formatExt
-			batchFileNames = append(batchFileNames, name)
-			df.slice(i * effectiveBatchSize, effectiveBatchSize).save(name, { format: formatExt })
-		}
 
-		ptResult := wf.run()
-
-		// Render the batch-split template for this isolation scope.
-		// Batch file refs are passed as separately-named inputs (__batch_<i>__) so
-		// the template system tracks each as a distinct dependency (same pattern as
-		// __col_primary_N_data).
 		splitInputs := {
 			params: smart.createJsonResource({
 				batchCount: batchCount,
+				batchSize: effectiveBatchSize,
 				passContent: passContent,
 				formatExt: formatExt,
 				eph: eph,
@@ -556,8 +554,22 @@ self.body(func(inputs) {
 			body: body
 		}
 
-		for i, name in batchFileNames {
-			splitInputs["__batch_" + string(i) + "__"] = ptResult.getFile(name)
+		if passContent {
+			joinedName := "joined." + formatExt
+			df.saveContent(joinedName, { format: formatExt })
+			ptResult := wf.run()
+			splitInputs.joinedContent = ptResult.getFileContent(joinedName)
+		} else {
+			batchFileNames := []
+			for i := 0; i < batchCount; i++ {
+				name := "batch_" + string(i) + "." + formatExt
+				batchFileNames = append(batchFileNames, name)
+				df.slice(i * effectiveBatchSize, effectiveBatchSize).save(name, { format: formatExt })
+			}
+			ptResult := wf.run()
+			for i, name in batchFileNames {
+				splitInputs["__batch_" + string(i) + "__"] = ptResult.getFile(name)
+			}
 		}
 
 		// Forward extra inputs
