@@ -49,6 +49,27 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
 
 5. **Open a project** — use `open_project` to start working with a specific project.
 
+## Connecting From Claude Chat (claude.ai)
+
+Claude Chat supports remote MCP servers over HTTP. Since the Platforma MCP server runs on localhost, you need to expose it to the internet first.
+
+1. **Enable MCP in the Desktop App** — same as step 1 above (Settings -> "Enable MCP Server").
+
+2. **Expose the server URL** — Claude Chat runs in the cloud and cannot reach `localhost`. Use a tunnel to make the MCP endpoint accessible:
+
+   ```bash
+   # Example with ngrok
+   ngrok http 4200
+   ```
+
+   This gives you a public URL like `https://xxxx.ngrok-free.app`. The MCP endpoint will be at `https://xxxx.ngrok-free.app/mcp`.
+
+3. **Add the server in Claude Chat** — go to [Settings -> MCP Servers](https://claude.ai/settings/mcp-servers), click "Add Server", and enter:
+   - **Server name**: `Platforma` (or any display name)
+   - **Server URL**: your public tunnel URL with `/mcp` path
+
+4. **Use it** — the Platforma tools will be available in your Claude Chat sessions. Follow the same workflow: `list_connections` -> `connect_to_server` -> `open_project`.
+
 ## Skill
 
 There is a `mcp-desktop-testing` skill for Claude in ecosystem overlay. Should be found and used automatically if overlay enabled.
