@@ -86,12 +86,14 @@ export type ColorProof = ResourceSignature;
 
 /** Encode resource signature to base64url for embedding in URL-based handles. */
 export function signatureToBase64Url(sig?: ResourceSignature): string {
-  return sig ? Buffer.from(sig).toString("base64url") : "";
+  return sig && sig.length > 0 ? Buffer.from(sig).toString("base64url") : "";
 }
 
 /** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
-export function toResourceSignature(raw?: Uint8Array): ResourceSignature | undefined {
-  return raw && raw.length > 0 ? (raw as ResourceSignature) : undefined;
+export function toResourceSignature(raw?: Uint8Array): ResourceSignature {
+  return raw && raw.length > 0
+    ? (raw as ResourceSignature)
+    : (new Uint8Array(0) as ResourceSignature);
 }
 
 /** Decode base64url-encoded string back to a branded ResourceSignature. */
@@ -288,7 +290,7 @@ export function bigintToResourceId(globalId: bigint, signature?: ResourceSignatu
 
 export function parseSignedResourceId(resourceId: ResourceId): {
   globalId: GlobalResourceId;
-  signature: ResourceSignature | undefined;
+  signature: ResourceSignature;
 } {
   if (typeof resourceId !== "string") {
     throw new Error(`Not a signed resource id: ${resourceId}`);
@@ -304,8 +306,9 @@ export function parseSignedResourceId(resourceId: ResourceId): {
   if (globalId === undefined || isNullResourceId(globalId) || isLocalResourceId(globalId))
     throw new Error(`Invalid global id portion in signed resource id: ${globalIdStr}`);
 
-  const signature =
-    signatureHex.length > 0 ? toResourceSignature(Buffer.from(signatureHex, "hex")) : undefined;
+  const signature: ResourceSignature = (
+    signatureHex.length > 0 ? Buffer.from(signatureHex, "hex") : new Uint8Array(0)
+  ) as ResourceSignature;
 
   return { globalId: globalId as GlobalResourceId, signature };
 }

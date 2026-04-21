@@ -129,13 +129,15 @@ export async function toGlobalFieldId(ref: AnyFieldRef): Promise<FieldId> {
 
 export interface ResourceIdWithSignature {
   resourceId: bigint;
-  resourceSignature?: ResourceSignature;
+  resourceSignature: ResourceSignature;
 }
+
+const emptySignature = toResourceSignature(new Uint8Array(0));
 
 function toResourceIdAndSignature(ref: AnyResourceRef): ResourceIdWithSignature {
   if (isResourceRef(ref)) {
     // Local ID — no signature yet
-    return { resourceId: ref.localId };
+    return { resourceId: ref.localId, resourceSignature: emptySignature };
   }
   if (typeof ref === "string") {
     // SignedResourceId — decompose
@@ -143,7 +145,7 @@ function toResourceIdAndSignature(ref: AnyResourceRef): ResourceIdWithSignature 
     return { resourceId: globalId as bigint, resourceSignature: signature };
   }
   // Raw bigint (LocalResourceId)
-  return { resourceId: ref };
+  return { resourceId: ref as bigint, resourceSignature: emptySignature };
 }
 
 export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
@@ -313,7 +315,7 @@ export class PlTransaction {
 
   private toSignedFieldId(fId: AnyFieldRef): {
     resourceId: bigint;
-    resourceSignature?: ResourceSignature;
+    resourceSignature: ResourceSignature;
     fieldName: string;
   } {
     const base = toFieldId(fId);
@@ -327,7 +329,7 @@ export class PlTransaction {
 
   private toSignedErrorRef(rId: AnyResourceRef): {
     errorResourceId: bigint;
-    errorResourceSignature?: ResourceSignature;
+    errorResourceSignature: ResourceSignature;
   } {
     const { resourceId, resourceSignature } = this.toSignedResourceId(rId);
     return { errorResourceId: resourceId, errorResourceSignature: resourceSignature };
@@ -423,7 +425,7 @@ export class PlTransaction {
           id: localId,
           data: Buffer.from(name),
           errorIfExists,
-          colorProof: color,
+          colorProof: color ?? emptySignature,
         },
       }),
       (r) => r.resourceCreateSingleton.resourceId,
@@ -494,7 +496,7 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
-          colorProof: color,
+          colorProof: color ?? emptySignature,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -518,7 +520,7 @@ export class PlTransaction {
           id: localId,
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
-          colorProof: color,
+          colorProof: color ?? emptySignature,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -543,7 +545,7 @@ export class PlTransaction {
           id: localId,
           data: typeof data === "string" ? Buffer.from(data) : data,
           errorIfExists,
-          colorProof: color,
+          colorProof: color ?? emptySignature,
         },
       }),
       (r) => r.resourceCreateValue.resourceId,

@@ -29,9 +29,9 @@ export interface StreamingAPI_ReadBinary {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 3
+     * @generated from protobuf field: bytes resource_signature = 3
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * <offset> makes the streamer perform a seek operation to the given offset before sending the data.
      *
@@ -61,9 +61,9 @@ export interface StreamingAPI_ReadText {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 3
+     * @generated from protobuf field: bytes resource_signature = 3
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
      * This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
@@ -115,9 +115,9 @@ export interface StreamingAPI_LastLines {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 4
+     * @generated from protobuf field: bytes resource_signature = 4
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
      * This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
@@ -226,7 +226,7 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
     constructor() {
         super("MiLaboratories.Controller.Shared.StreamingAPI.ReadBinary", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "offset", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 11, name: "chunk_size", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
@@ -234,6 +234,7 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
     create(value?: PartialMessage<StreamingAPI_ReadBinary>): StreamingAPI_ReadBinary {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.offset = 0n;
         if (value !== undefined)
             reflectionMergePartial<StreamingAPI_ReadBinary>(this, message, value);
@@ -247,7 +248,7 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 3:
+                case /* bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* int64 offset */ 2:
@@ -274,8 +275,8 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
         /* int64 offset = 2; */
         if (message.offset !== 0n)
             writer.tag(2, WireType.Varint).int64(message.offset);
-        /* optional bytes resource_signature = 3; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 3; */
+        if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* optional uint32 chunk_size = 11; */
         if (message.chunkSize !== undefined)
@@ -295,7 +296,7 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
     constructor() {
         super("MiLaboratories.Controller.Shared.StreamingAPI.ReadText", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "offset", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 20, name: "read_limit", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 21, name: "search", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
@@ -305,6 +306,7 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
     create(value?: PartialMessage<StreamingAPI_ReadText>): StreamingAPI_ReadText {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.offset = 0n;
         if (value !== undefined)
             reflectionMergePartial<StreamingAPI_ReadText>(this, message, value);
@@ -318,7 +320,7 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 3:
+                case /* bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* int64 offset */ 2:
@@ -351,8 +353,8 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
         /* int64 offset = 2; */
         if (message.offset !== 0n)
             writer.tag(2, WireType.Varint).int64(message.offset);
-        /* optional bytes resource_signature = 3; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 3; */
+        if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* optional int64 read_limit = 20; */
         if (message.readLimit !== undefined)
@@ -378,7 +380,7 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
     constructor() {
         super("MiLaboratories.Controller.Shared.StreamingAPI.LastLines", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "offset", kind: "scalar", opt: true, T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "line_count", kind: "scalar", opt: true, T: 5 /*ScalarType.INT32*/ },
             { no: 21, name: "search", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ },
@@ -388,6 +390,7 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
     create(value?: PartialMessage<StreamingAPI_LastLines>): StreamingAPI_LastLines {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<StreamingAPI_LastLines>(this, message, value);
         return message;
@@ -400,7 +403,7 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 4:
+                case /* bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* optional int64 offset */ 2:
@@ -436,8 +439,8 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
         /* optional int32 line_count = 3; */
         if (message.lineCount !== undefined)
             writer.tag(3, WireType.Varint).int32(message.lineCount);
-        /* optional bytes resource_signature = 4; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 4; */
+        if (message.resourceSignature.length)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         /* optional string search = 21; */
         if (message.search !== undefined)

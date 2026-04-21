@@ -35,7 +35,10 @@ export function protoToResource(proto: Resource): ResourceData {
   if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
   return {
     id: bigintToResourceId(proto.resourceId, toResourceSignature(proto.resourceSignature)),
-    originalResourceId: protoIdToOptionalResourceId(proto.originalResourceId),
+    originalResourceId: protoIdToOptionalResourceId(
+      proto.originalResourceId,
+      proto.originalResourceSignature,
+    ),
     type: notEmpty(proto.type),
     data: proto.data,
     inputsLocked: proto.inputsLocked,

@@ -5,17 +5,22 @@ import { test, expect } from "vitest";
 
 import { isTimeoutOrCancelError } from "./errors";
 import { Aborted } from "@milaboratories/ts-helpers";
-import type { LLPlClient } from "./ll_client";
 
-/** Get root resource signature from ListUserResources for use as color proof in tests. */
-async function getRootSignature(client: LLPlClient): Promise<Uint8Array> {
+/** Cached root signature — fetched once, shared across tests. */
+let cachedRootSig: Uint8Array | undefined;
+
+async function getRootSignature(): Promise<Uint8Array> {
+  if (cachedRootSig !== undefined) return cachedRootSig;
+  const client = await getTestLLClient();
   const responses = await client.listUserResources({ limit: 1 });
   for (const msg of responses) {
     if (msg.entry.oneofKind === "userRoot" && msg.entry.userRoot.resourceSignature) {
-      return msg.entry.userRoot.resourceSignature;
+      cachedRootSig = msg.entry.userRoot.resourceSignature;
+      return cachedRootSig;
     }
   }
-  return new Uint8Array(0);
+  cachedRootSig = new Uint8Array(0);
+  return cachedRootSig;
 }
 
 test("check successful transaction", async () => {
@@ -92,7 +97,7 @@ test("check timeout error type (passive)", async () => {
 
 test("check timeout error type (active)", async () => {
   const client = await getTestLLClient();
-  const rootSig = await getRootSignature(client);
+  const rootSig = await getRootSignature();
   const tx = client.createTx(true, { timeout: 500 });
 
   try {
@@ -131,6 +136,7 @@ test("check timeout error type (active)", async () => {
         oneofKind: "resourceCreateValue",
         resourceCreateValue: {
           id: createLocalResourceId(false, 1, 1),
+          colorProof: new Uint8Array(0),
           type: { name: "TestValue", version: "1" },
           data: rData,
           errorIfExists: false,
@@ -164,7 +170,7 @@ test("check timeout error type (active)", async () => {
 
 test("check is abort error (active)", async () => {
   const client = await getTestLLClient();
-  const rootSig = await getRootSignature(client);
+  const rootSig = await getRootSignature();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
   try {
@@ -205,6 +211,7 @@ test("check is abort error (active)", async () => {
           id: createLocalResourceId(false, 1, 1),
           type: { name: "TestValue", version: "1" },
           data: rData,
+          colorProof: new Uint8Array(0),
           errorIfExists: false,
         },
       },
