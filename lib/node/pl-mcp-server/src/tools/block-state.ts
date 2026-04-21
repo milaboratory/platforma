@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
+import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
@@ -104,11 +105,25 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     },
     async ({ projectId, blockId, data }) => {
       const project = await ctx.getOpenedProject(projectId);
-      await project.mutateBlockStorage(
-        blockId,
-        { operation: "update-block-data", value: data },
-        ctx.getAuthorMarker(),
-      );
+
+      // V1 state shape: { args, uiState } — callers may pass either the full state
+      // or just the args object. Unwrap once for both V2 and V1 paths.
+      const value = data.args ?? data;
+
+      // Try V2 (BlockModelV3 storage facade) first, fall back to V1 (legacy setBlockArgs).
+      try {
+        await project.mutateBlockStorage(
+          blockId,
+          { operation: "update-block-data", value },
+          ctx.getAuthorMarker(),
+        );
+      } catch (e: unknown) {
+        if (e instanceof ModelAPIVersionMismatchError) {
+          await project.setBlockArgs(blockId, value, ctx.getAuthorMarker());
+        } else {
+          throw e;
+        }
+      }
       return textResult({ ok: true });
     },
   );
