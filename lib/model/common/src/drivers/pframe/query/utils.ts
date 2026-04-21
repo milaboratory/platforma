@@ -78,6 +78,13 @@ export function traverseQuerySpec<C1, C2>(
         secondary: query.secondary.map(traverseEntry),
       };
       break;
+    case "linkerJoin":
+      result = {
+        ...query,
+        linker: { ...query.linker, column: visitor.column(query.linker.column) },
+        secondary: traverseEntry(query.secondary),
+      };
+      break;
     case "filter":
     case "sort":
     case "sliceAxes":
@@ -126,6 +133,10 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
           return { ...node, secondary: sorted };
         }
+        case "linkerJoin":
+          // `linker` is a bare column reference and `secondary` is a single entry —
+          // nothing to reorder here.
+          return node;
         case "sliceAxes":
           return {
             ...node,
@@ -197,6 +208,13 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
         if (cmp !== 0) return cmp;
       }
       return 0;
+    }
+    case "linkerJoin": {
+      const rhsLinker = rhs as typeof lhs;
+      if (lhs.linker.column !== rhsLinker.linker.column) {
+        return lhs.linker.column < rhsLinker.linker.column ? -1 : 1;
+      }
+      return cmpQueryJoinEntrySpec(lhs.secondary, rhsLinker.secondary);
     }
     case "sliceAxes":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);

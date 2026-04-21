@@ -74,6 +74,20 @@ describe("traverseQuerySpec", () => {
     });
   });
 
+  it("transforms columns inside linkerJoin", () => {
+    const q: Q = {
+      type: "linkerJoin",
+      linker: { column: "l" },
+      secondary: entry(col("a")),
+    };
+    const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
+    expect(result).toEqual({
+      type: "linkerJoin",
+      linker: { column: "L" },
+      secondary: entry({ type: "column", column: "A" }),
+    });
+  });
+
   it("transforms columns inside filter", () => {
     const q: Q = {
       type: "filter",
