@@ -1,5 +1,73 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.3.19
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.5
+- @milaboratories/milaboratories.monetization-test.model@1.1.10
+- @milaboratories/milaboratories.monetization-test.ui@1.2.15
+
+## 1.3.18
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.14
+- @milaboratories/milaboratories.monetization-test.model@1.1.9
+
+## 1.3.17
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.13
+- @milaboratories/milaboratories.monetization-test.model@1.1.8
+
+## 1.3.16
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.4
+
+## 1.3.15
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.7
+- @milaboratories/milaboratories.monetization-test.ui@1.2.12
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.3
+
+## 1.3.14
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.3
+
+## 1.3.13
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.2
+
+## 1.3.12
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.6
+- @milaboratories/milaboratories.monetization-test.ui@1.2.11
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.1
+
+## 1.3.11
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.1
+
+## 1.3.10
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.ui@1.2.10
+
 ## 1.3.9
 
 ### Patch Changes

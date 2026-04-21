@@ -63,7 +63,7 @@ export class SwJsonRenderer {
       }
 
       const pkg = ep.artifact;
-      if (mode === "dev-local") {
+      if (util.isDevLocalMode(mode)) {
         switch (pkg.type) {
           case "docker": {
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
@@ -164,6 +164,7 @@ export class SwJsonRenderer {
     const artifact = ep.artifact;
     const rootDir = this.pkgInfo.artifactContentRoot(artifact, util.currentPlatform());
     const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir);
+    const localPath = rootDir;
 
     const epType = ep.type;
     switch (epType) {
@@ -195,7 +196,7 @@ export class SwJsonRenderer {
             return {
               type: "binary",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
             };
@@ -204,7 +205,7 @@ export class SwJsonRenderer {
             return {
               type: "java",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: resolveRunEnvironment(
@@ -222,7 +223,7 @@ export class SwJsonRenderer {
             return {
               type: "python",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               runEnv: resolveRunEnvironment(
@@ -240,7 +241,7 @@ export class SwJsonRenderer {
             return {
               type: "R",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
               toolset: "renv",
@@ -263,7 +264,7 @@ export class SwJsonRenderer {
             return {
               type: "conda",
               hash: hash.digest().toString("hex"),
-              path: rootDir,
+              path: localPath,
               cmd: ep.cmd,
               envVars: ep.env,
 

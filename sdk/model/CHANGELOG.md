@@ -1,5 +1,32 @@
 # @platforma-sdk/model
 
+## 1.65.3
+
+### Patch Changes
+
+- @milaboratories/ptabler-expression-js@1.2.7
+
+## 1.65.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
+## 1.64.0
+
+### Minor Changes
+
+- 559d124: Support display options and lables options for createPlDataTableV3
+
+## 1.63.12
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+  - @milaboratories/pl-model-middle-layer@1.16.4
+  - @milaboratories/ptabler-expression-js@1.2.6
+
 ## 1.63.1
 
 ### Patch Changes

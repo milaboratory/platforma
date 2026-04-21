@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.63.1",
+  "version": "1.65.3",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -38,6 +38,7 @@
     "d3-format": "catalog:",
     "es-toolkit": "catalog:",
     "fast-json-patch": "catalog:",
+    "immer": "catalog:",
     "lru-cache": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"

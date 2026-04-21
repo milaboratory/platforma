@@ -1,5 +1,64 @@
 # @platforma-sdk/ui-vue
 
+## 1.65.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+- @milaboratories/uikit@2.12.1
+
+## 1.65.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
+### Patch Changes
+
+- Updated dependencies [92ef20f]
+  - @milaboratories/uikit@2.12.0
+  - @platforma-sdk/model@1.65.0
+
+## 1.64.0
+
+### Minor Changes
+
+- 559d124: Support display options and lables options for createPlDataTableV3
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/model@1.64.0
+  - @milaboratories/uikit@2.11.9
+
+## 1.63.12
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+  - @milaboratories/pf-spec-driver@1.2.5
+  - @platforma-sdk/model@1.63.12
+  - @milaboratories/uikit@2.11.8
+
+## 1.63.8
+
+### Patch Changes
+
+- Updated dependencies [cad9688]
+  - @milaboratories/uikit@2.11.7
+  - @milaboratories/pl-model-common@1.31.1
+  - @milaboratories/pf-spec-driver@1.2.4
+  - @platforma-sdk/model@1.63.1
+
+## 1.63.5
+
+### Patch Changes
+
+- Updated dependencies [5a6ce18]
+  - @milaboratories/pf-spec-driver@1.2.4
+  - @platforma-sdk/model@1.63.1
+
 ## 1.63.1
 
 ### Patch Changes

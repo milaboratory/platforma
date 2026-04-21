@@ -146,13 +146,13 @@ _createAbstractRunCommandPlan := func(state, returnSelfFn) {
 		/**
 		 * Sets the command, e.g. /usr/bin/env or sh.
 		 *
-		 * @param commandName: string | { type: ArgType, value: string } - the name of the command.
+		 * @param cmd: string | { type: ArgType, value: string } - the name of the command.
 		 */
-		cmd: func(commandName) {
-			if ll.isMap(commandName) {
-				self.cmdTyped(commandName.type, commandName.value)
+		cmd: func(cmd) {
+			if ll.isMap(cmd) {
+				self.cmdTyped(cmd.type, cmd.value)
 			} else {
-				state.options.cmd = simpleArg(commandName)
+				state.options.cmd = simpleArg(cmd)
 			}
 			return returnSelfFn()
 		},
@@ -548,11 +548,25 @@ builder := func(workdir, ...initialState) {
 	cpu := undefined
 	ram := undefined
 
+	commandName := ""
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 	nErrorLines := 200
 
 	self = oop.inherit(_createAbstractRunCommandPlan(state, func() { return self }), {
+		/**
+		 * Sets a human-readable name for this command.
+		 * Shown in error messages when the command fails.
+		 *
+		 * @param name: string - the command name.
+		 */
+		name: func(name) {
+			validation.assertType(name, "string", "runcmd.builder.name: name must be a string")
+
+			commandName = name
+			return self
+		},
+
 		/**
 		 * Use given compute allocation for command execution.
 		 *
@@ -744,6 +758,7 @@ builder := func(workdir, ...initialState) {
 			runRes.getField(_FIELD_CMD).set(cmdRes)
 
 			buildOptions := {
+				name: commandName,
 				queueName: queue,
 				errorLines: nErrorLines,
 				redirectStdout: stdout,

@@ -1,0 +1,57 @@
+{
+  "name": "@milaboratories/pl-mcp-server",
+  "version": "2.0.1",
+  "description": "MCP server for Platforma Desktop",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
+    "quickjs-emscripten": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-errors": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@milaboratories/pl-middle-layer": ">=1.55.12",
+    "@platforma-sdk/model": ">=1.65.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

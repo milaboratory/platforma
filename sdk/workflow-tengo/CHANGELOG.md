@@ -1,5 +1,37 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.2
+
+### Patch Changes
+
+- 54f60b7: Slice operation support
+- Updated dependencies [54f60b7]
+  - @platforma-open/milaboratories.software-ptabler@1.15.1
+
+## 5.13.1
+
+### Patch Changes
+
+- 495939e: fix: xsv converter can be launched in k8s installations.
+
+## 5.13.0
+
+### Minor Changes
+
+- aeee41f: GPU minimal support in tengo workflow
+
+## 5.12.1
+
+### Patch Changes
+
+- f0ef695: No functional changes. Better assertion error text
+
+## 5.12.0
+
+### Minor Changes
+
+- faa2923: Add support of custom command names in workflows. Custom command name is shown in error message if command fails and in logs of backend
+
 ## 5.11.0
 
 ### Minor Changes

@@ -53,6 +53,7 @@ builder := func() {
 	ramRequest := undefined
 	gpuMemory := undefined
 
+	commandName := ""
 	cache := 0
 	inputCache := 0
 	nErrorLines := 200
@@ -598,6 +599,19 @@ builder := func() {
 		},
 
 		/**
+		 * Sets a human-readable name for this command.
+		 * Shown in error messages when the command fails.
+		 *
+		 * @param name: string - the command name.
+		 */
+		name: func(name) {
+			validation.assertType(name, "string", "exec.builder.name: name must be a string")
+
+			commandName = name
+			return self
+		},
+
+		/**
 		 * Sets the number of error lines to be captured.
 		 *
 		 * @param lines: number - the number of error lines.
@@ -1042,6 +1056,12 @@ builder := func() {
 			// that were created before this feature existed.
 			if monetization.shouldRun(mnz) {
 				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
+			}
+
+			// We add name only when it is explicitly set
+			// to not break deduplication of exec's created before this feature existed.
+			if commandName != "" {
+				pureExecInputs.runOptions.name = commandName
 			}
 
 			// We add new argsTyped and envsTyped only when they were added

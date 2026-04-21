@@ -50,6 +50,7 @@ import {
   getServiceTemplateField,
   FieldsToDuplicate,
 } from "../model/project_model";
+import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
 import { BlockPackTemplateField, createBlockPack } from "./block-pack/block_pack";
 import type { BlockGraph, ProductionGraphBlockInfo } from "../model/project_model_util";
 import { allBlocks, graphDiff, productionGraph, stagingGraph } from "../model/project_model_util";
@@ -751,6 +752,17 @@ export class ProjectMutator {
     const initialStorageJson = this.projectHelper.getInitialStorageInVM(blockConfig);
     this.setBlockStorageRaw(blockId, initialStorageJson);
 
+    // Derive prerunArgs first — always derived independently of args validation
+    const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+      blockConfig,
+      initialStorageJson,
+    );
+    if (prerunArgs !== undefined) {
+      this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+    } else {
+      this.deleteBlockFields(blockId, "currentPrerunArgs");
+    }
+
     // Derive args from storage - set or clear currentArgs based on derivation result
     const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
       blockConfig,
@@ -762,24 +774,8 @@ export class ProjectMutator {
         "currentArgs",
         this.createJsonFieldValue(deriveArgsResult.value),
       );
-      // Derive prerunArgs from storage
-      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-        blockConfig,
-        initialStorageJson,
-      );
-      if (prerunArgs !== undefined) {
-        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
-      } else {
-        this.deleteBlockFields(blockId, "currentPrerunArgs");
-      }
     } else {
-      if (info.fields.currentPrerunArgs !== undefined) {
-        this.projectHelper.logger.warn(
-          `[staging] ${blockId}: currentPrerunArgs cleared (args derivation failed)`,
-        );
-      }
       this.deleteBlockFields(blockId, "currentArgs");
-      this.deleteBlockFields(blockId, "currentPrerunArgs");
     }
   }
 
@@ -795,8 +791,10 @@ export class ProjectMutator {
       // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
 
       if (req.modelAPIVersion !== blockConfig.modelAPIVersion) {
-        throw new Error(
-          `Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`,
+        throw new ModelAPIVersionMismatchError(
+          req.blockId,
+          req.modelAPIVersion,
+          blockConfig.modelAPIVersion,
         );
       }
 
@@ -823,22 +821,18 @@ export class ProjectMutator {
           this.createGzJsonFieldValueFromContent(updatedStorageJson),
         );
 
-        // Derive args directly from storage (VM extracts data internally)
+        // Derive prerunArgs first — always derived independently of args validation
+        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+          blockConfig,
+          updatedStorageJson,
+        );
+
+        // Derive args from storage (VM extracts data internally)
         const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
           blockConfig,
           updatedStorageJson,
         );
-        if (derivedArgsResult.error) {
-          args = undefined;
-          prerunArgs = undefined;
-        } else {
-          args = derivedArgsResult.value;
-          // Derive prerunArgs from storage, or fall back to args
-          prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-            blockConfig,
-            updatedStorageJson,
-          );
-        }
+        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1118,18 +1112,15 @@ export class ProjectMutator {
       // Model API v2+: get initial storage and derive args from it
       storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
 
-      // Derive args directly from storage (VM extracts data internally)
+      // Derive prerunArgs first — always derived independently of args validation
+      prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
+
+      // Derive args from storage (VM extracts data internally)
       const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
         blockConfig,
         storageToWrite,
       );
-      if (deriveArgsResult.error) {
-        args = undefined;
-        prerunArgs = undefined;
-      } else {
-        args = deriveArgsResult.value;
-        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
-      }
+      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1406,6 +1397,15 @@ export class ProjectMutator {
     const applyStorageAndDeriveArgs = (storageJson: string) => {
       persistBlockPack();
       this.setBlockStorageRaw(blockId, storageJson);
+
+      // Derive prerunArgs first — always derived independently of args validation
+      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
+      if (prerunArgs !== undefined) {
+        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
+      } else {
+        this.deleteBlockFields(blockId, "currentPrerunArgs");
+      }
+
       const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
       if (!deriveArgsResult.error) {
         this.setBlockFieldObj(
@@ -1413,19 +1413,8 @@ export class ProjectMutator {
           "currentArgs",
           this.createJsonFieldValue(deriveArgsResult.value),
         );
-        const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
-        if (prerunArgs !== undefined) {
-          this.setBlockFieldObj(
-            blockId,
-            "currentPrerunArgs",
-            this.createJsonFieldValue(prerunArgs),
-          );
-        } else {
-          this.deleteBlockFields(blockId, "currentPrerunArgs");
-        }
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
-        this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
     };
 

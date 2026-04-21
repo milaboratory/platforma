@@ -11,6 +11,8 @@ import { computed, shallowRef, watch } from "vue";
 import PlElementListItem from "./PlElementListItem.vue";
 import { moveElements } from "./utils.ts";
 
+type ItemEntry = [idx: number, item: T];
+
 const itemsRef = defineModel<T[]>("items", { required: true });
 
 const props = withDefaults(
@@ -99,11 +101,17 @@ const dndSortingEnabled = computed((): boolean => {
   return props.disableDragging !== true;
 });
 
-const pinnedItemsRef = computed(() => itemsRef.value.filter(isPinnedItem));
+const pinnedItemsRef = computed(() =>
+  itemsRef.value
+    .map((item, index) => [index, item] as ItemEntry)
+    .filter(([index, item]) => isPinnedItem(item, index)),
+);
 const hasPinnedItems = computed(() => pinnedItemsRef.value.length > 0);
 
 const unpinnedItemsRef = computed(() =>
-  itemsRef.value.filter((item, index) => !isPinnedItem(item, index)),
+  itemsRef.value
+    .map((item, index) => [index, item] as ItemEntry)
+    .filter(([index, item]) => !isPinnedItem(item, index)),
 );
 const hasUnpinnedItems = computed(() => unpinnedItemsRef.value.length > 0);
 
@@ -112,8 +120,8 @@ const pinnedContainerRef = shallowRef<HTMLElement>();
 const unpinnedContainerRef = shallowRef<HTMLElement>();
 
 // version fix problem with sync between data and rendered values
-const getKey = (item: T, index: number) => {
-  return `${versionRef.value}-${props.getItemKey(item, index)}`;
+const getKey = (entry: ItemEntry) => {
+  return `${versionRef.value}-${props.getItemKey(entry[1], entry[0])}`;
 };
 const pinnedKeysRef = computed(() => pinnedItemsRef.value.map(getKey));
 const unpinnedKeysRef = computed(() => unpinnedItemsRef.value.map(getKey));
@@ -151,7 +159,7 @@ createSortable(
 function createSortable(
   toggler: ShallowRef<boolean>,
   elRef: ShallowRef<undefined | HTMLElement>,
-  itemsRef: ShallowRef<T[]>,
+  itemsRef: ShallowRef<ItemEntry[]>,
   getOffset: () => number,
 ) {
   const sortable = useSortable(elRef, itemsRef, {
@@ -195,7 +203,7 @@ function moveItems(oldIndex: number, newIndex: number, afterUpdateDom: boolean) 
   const preventDefault = props.onSort?.(oldIndex, newIndex) === false;
 
   if (!preventDefault) {
-    moveElements(itemsRef.value, oldIndex, newIndex);
+    itemsRef.value = moveElements(itemsRef.value, oldIndex, newIndex);
   }
 }
 
@@ -258,7 +266,8 @@ function handlePin(item: T, index: number) {
     throw new Error("Pinnable item not found");
   }
 
-  const alreadyPinned = pinnedItemsRef.value.includes(item);
+  const alreadyPinned =
+    pinnedItemsRef.value.findIndex(([originalIndex]) => originalIndex === index) !== -1;
 
   if (props.onPin?.(item, index) === false) return;
 
@@ -267,7 +276,7 @@ function handlePin(item: T, index: number) {
 
 function handleRemove(item: T, index: number) {
   if (props.onRemove?.(item, index) === false) return;
-  itemsRef.value.splice(index, 1);
+  itemsRef.value = [...itemsRef.value.slice(0, index), ...itemsRef.value.slice(index + 1)];
 }
 
 function getClassFunction(
@@ -291,26 +300,26 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
   <div :class="$style.root">
     <div ref="pinnedContainerRef" :class="$style.list">
       <PlElementListItem
-        v-for="(pinnedItem, pinnedIndex) in pinnedItemsRef"
+        v-for="([originalIndex, item], pinnedIndex) in pinnedItemsRef"
         :key="pinnedKeysRef[pinnedIndex]"
-        :class="[$style.item, getItemClass(pinnedItem, pinnedIndex)]"
-        :titleClass="getItemClassTitle(pinnedItem, pinnedIndex)"
-        :contentClass="getItemClassContent(pinnedItem, pinnedIndex)"
-        :beforeClass="getItemClassBefore(pinnedItem, pinnedIndex)"
-        :afterClass="getItemClassAfter(pinnedItem, pinnedIndex)"
-        :index="pinnedIndex"
-        :item="pinnedItem"
+        :class="[$style.item, getItemClass(item, originalIndex)]"
+        :titleClass="getItemClassTitle(item, originalIndex)"
+        :contentClass="getItemClassContent(item, originalIndex)"
+        :beforeClass="getItemClassBefore(item, originalIndex)"
+        :afterClass="getItemClassAfter(item, originalIndex)"
+        :index="originalIndex"
+        :item="item"
         :showDragHandle="dndSortingEnabled"
-        :isActive="isActiveItem(pinnedItem, pinnedIndex)"
-        :isDraggable="isDraggableItem(pinnedItem, pinnedIndex)"
-        :isRemovable="isRemovableItem(pinnedItem, pinnedIndex)"
-        :isToggable="isToggableItem(pinnedItem, pinnedIndex)"
-        :isToggled="isToggledItem(pinnedItem, pinnedIndex)"
-        :isPinnable="isPinnableItem(pinnedItem, pinnedIndex)"
+        :isActive="isActiveItem(item, originalIndex)"
+        :isDraggable="isDraggableItem(item, originalIndex)"
+        :isRemovable="isRemovableItem(item, originalIndex)"
+        :isToggable="isToggableItem(item, originalIndex)"
+        :isToggled="isToggledItem(item, originalIndex)"
+        :isPinnable="isPinnableItem(item, originalIndex)"
         :isPinned="true"
-        :isExpandable="isExpandableItem(pinnedItem, pinnedIndex)"
-        :isExpanded="isExpandedItem(pinnedItem, pinnedIndex)"
-        @click="emits('itemClick', pinnedItem)"
+        :isExpandable="isExpandableItem(item, originalIndex)"
+        :isExpanded="isExpandedItem(item, originalIndex)"
+        @click="emits('itemClick', item)"
         @remove="handleRemove"
         @toggle="handleToggle"
         @pin="handlePin"
@@ -332,26 +341,26 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
     </div>
     <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
       <PlElementListItem
-        v-for="(unpinnedItem, unpinnedIndex) in unpinnedItemsRef"
+        v-for="([originalIndex, item], unpinnedIndex) in unpinnedItemsRef"
         :key="unpinnedKeysRef[unpinnedIndex]"
-        :class="[$style.item, getItemClass(unpinnedItem, unpinnedIndex)]"
-        :titleClass="getItemClassTitle(unpinnedItem, unpinnedIndex)"
-        :contentClass="getItemClassContent(unpinnedItem, unpinnedIndex)"
-        :beforeClass="getItemClassBefore(unpinnedItem, unpinnedIndex)"
-        :afterClass="getItemClassAfter(unpinnedItem, unpinnedIndex)"
-        :index="unpinnedIndex + (pinnedItemsRef?.length ?? 0)"
-        :item="unpinnedItem"
+        :class="[$style.item, getItemClass(item, originalIndex)]"
+        :titleClass="getItemClassTitle(item, originalIndex)"
+        :contentClass="getItemClassContent(item, originalIndex)"
+        :beforeClass="getItemClassBefore(item, originalIndex)"
+        :afterClass="getItemClassAfter(item, originalIndex)"
+        :index="originalIndex"
+        :item="item"
         :showDragHandle="dndSortingEnabled"
-        :isActive="isActiveItem(unpinnedItem, unpinnedIndex)"
-        :isDraggable="isDraggableItem(unpinnedItem, unpinnedIndex)"
-        :isRemovable="isRemovableItem(unpinnedItem, unpinnedIndex)"
-        :isToggable="isToggableItem(unpinnedItem, unpinnedIndex)"
-        :isToggled="isToggledItem(unpinnedItem, unpinnedIndex)"
-        :isPinnable="isPinnableItem(unpinnedItem, unpinnedIndex)"
+        :isActive="isActiveItem(item, originalIndex)"
+        :isDraggable="isDraggableItem(item, originalIndex)"
+        :isRemovable="isRemovableItem(item, originalIndex)"
+        :isToggable="isToggableItem(item, originalIndex)"
+        :isToggled="isToggledItem(item, originalIndex)"
+        :isPinnable="isPinnableItem(item, originalIndex)"
         :isPinned="false"
-        :isExpandable="isExpandableItem(unpinnedItem, unpinnedIndex)"
-        :isExpanded="isExpandedItem(unpinnedItem, unpinnedIndex)"
-        @click="emits('itemClick', unpinnedItem)"
+        :isExpandable="isExpandableItem(item, originalIndex)"
+        :isExpanded="isExpandedItem(item, originalIndex)"
+        @click="emits('itemClick', item)"
         @remove="handleRemove"
         @toggle="handleToggle"
         @pin="handlePin"

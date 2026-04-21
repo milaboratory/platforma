@@ -13,7 +13,7 @@ export default {
   generic="
     R extends true | false,
     V extends undefined | string,
-    C extends Exclude<V, R extends true ? undefined : never>
+    C extends Exclude<V, [R] extends [true] ? undefined : never>
   "
 >
 import { computed, ref, useSlots } from "vue";
@@ -37,13 +37,10 @@ const model = defineModel<V>({
 });
 
 const props = defineProps<{
+  /** The string specifies whether the field should be a password or not, value could be "password" or undefined. */
+  type?: "password";
   /** The label to display above the input field. */
   label?: string;
-  /**
-   * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
-   * If a function, calls it to get the reset value.
-   */
-  clearable?: (R extends true ? never : boolean) | (() => C);
   /** If `true`, the input field is marked as required and will show an error if left empty. */
   required?: R;
   /** An error message to display below the input field. */
@@ -58,10 +55,13 @@ const props = defineProps<{
   dashed?: boolean;
   /** A prefix text to display inside the input field before the value. */
   prefix?: string;
+  /**
+   * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
+   * If a function, calls it to get the reset value.
+   */
+  clearable?: ([R] extends [true] ? never : boolean) | (() => C);
   /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: V) => string | undefined;
-  /** The string specifies whether the field should be a password or not, value could be "password" or undefined. */
-  type?: "password";
   /** Makes some of corners not rounded */
   groupPosition?:
     | "top"

@@ -1,5 +1,18 @@
 # @milaboratories/pl-client
 
+## 3.1.1
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+
+## 3.1.0
+
+### Minor Changes
+
+- 96b0516: Support ListUserResources API method for getting user's root
+
 ## 3.0.0
 
 ### Major Changes

@@ -46,6 +46,7 @@ self.validateInputs({
 
 	"dirsToCreate,?": ["string"],
 	runOptions: {
+		"name,?": "string",
 		"software,?": pkg.softwareInfoScheme,
 		"cmd,?": "string",
 		args: ["string"],

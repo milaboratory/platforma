@@ -300,6 +300,11 @@ export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
 export type BuildMode = "dev-local" | "release";
 
+/** True for dev-local build mode. */
+export function isDevLocalMode(mode: BuildMode): mode is "dev-local" {
+  return mode === "dev-local";
+}
+
 export type artifactID = {
   package: string;
   name: string;

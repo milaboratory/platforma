@@ -546,7 +546,7 @@ export function convertOrParsePColumnData(
 }
 
 export function isPColumnReady(
-  c: PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
+  c: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): c is PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal> {
   const isValues = (d: PColumnDataUniversal): d is PColumnValues => Array.isArray(d);
   const isAccessor = (d: PColumnDataUniversal): d is TreeNodeAccessor =>
@@ -561,14 +561,16 @@ export function isPColumnReady(
   } else if (isDataInfo(data)) {
     visitDataInfo(data, (v) => (ready &&= v.getIsReadyOrError()));
   } else if (!isValues(data)) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     throw Error(`unsupported column data type: ${data satisfies never}`);
   }
   return ready;
 }
 
 export function allPColumnsReady(
-  columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
+  columns: (
+    | PColumn<undefined | PColumnDataUniversal>
+    | PColumnLazy<undefined | PColumnDataUniversal>
+  )[],
 ): columns is (PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>)[] {
   return columns.every(isPColumnReady);
 }

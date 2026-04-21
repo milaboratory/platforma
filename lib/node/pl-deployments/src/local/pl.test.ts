@@ -133,6 +133,7 @@ async function prepareDirForTestConfig() {
   await fs.mkdir(upath.join(dir, "storages", "work"), { recursive: true });
   await fs.mkdir(upath.join(dir, "storages", "main"), { recursive: true });
   await fs.mkdir(upath.join(dir, "packages"), { recursive: true });
+  await fs.writeFile(upath.join(dir, "users.htpasswd"), "testuser:testpassword");
 
   return dir;
 }

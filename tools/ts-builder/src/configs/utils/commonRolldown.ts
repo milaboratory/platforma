@@ -4,6 +4,7 @@ import type { RolldownOptions, RolldownPluginOption } from "rolldown";
 const useSources = process.env.USE_SOURCES === "1";
 
 const dtsPlugin = dts({
+  sourcemap: true,
   ...(useSources && {
     compilerOptions: {
       customConditions: ["sources"],
@@ -26,8 +27,9 @@ export function createBuildEntry(input: string[], output: string, format: Format
   return {
     input,
     plugins,
-    external: (id: string) =>
-      id.startsWith("node:") || (/^[^./]/.test(id) && !id.startsWith("@oxc-project/runtime")),
+    external: (id: string, _importer: string | undefined, isResolved: boolean) =>
+      !isResolved &&
+      (id.startsWith("node:") || (/^[^./]/.test(id) && !id.startsWith("@oxc-project/runtime"))),
     ...(useSources && {
       resolve: { conditionNames: ["sources"] },
     }),

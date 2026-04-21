@@ -1,10 +1,11 @@
 {
-  "version": "1.2.2",
   "name": "@milaboratories/ts-configs",
+  "version": "1.2.3",
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
     "./node": "./src/tsconfig.node.json",
+    "./isomorphic": "./src/tsconfig.isomorphic.json",
     "./block/model": "./src/blocks/tsconfig.model.json",
     "./block/ui": "./src/blocks/tsconfig.ui.json",
     "./block/test": "./src/blocks/tsconfig.test.json",

@@ -1,5 +1,28 @@
 # @milaboratories/pl-drivers
 
+## 1.12.11
+
+### Patch Changes
+
+- 646fee3: Fix flaky test teardown error in download_url driver test
+
+## 1.12.10
+
+### Patch Changes
+
+- Updated dependencies [9c3b6c2]
+  - @milaboratories/pl-model-common@1.31.2
+  - @milaboratories/pl-client@3.1.1
+  - @milaboratories/pl-tree@1.9.9
+
+## 1.12.9
+
+### Patch Changes
+
+- Updated dependencies [96b0516]
+  - @milaboratories/pl-client@3.1.0
+  - @milaboratories/pl-tree@1.9.8
+
 ## 1.12.8
 
 ### Patch Changes

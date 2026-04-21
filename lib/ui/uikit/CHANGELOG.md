@@ -1,5 +1,43 @@
 # @milaboratories/uikit
 
+## 2.12.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+
+## 2.12.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
+### Patch Changes
+
+- Updated dependencies [92ef20f]
+  - @platforma-sdk/model@1.65.0
+
+## 2.11.9
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/model@1.64.0
+
+## 2.11.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.63.12
+
+## 2.11.7
+
+### Patch Changes
+
+- cad9688: Fix "go to definition" + update build deps
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/model@1.63.1
+
 ## 2.11.6
 
 ### Patch Changes

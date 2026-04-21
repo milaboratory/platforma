@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "3.0.0",
+  "version": "3.1.1",
   "description": "New TS/JS client for Platform API",
   "files": [
     "./dist/**/*",
