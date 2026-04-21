@@ -51,7 +51,7 @@ tplTest.concurrent.for([
 );
 
 /**
- * Verifies that .gpu("16GiB") passes through the SDK template chain without breaking.
+ * Verifies that .gpuMemory("16GiB") passes through the SDK template chain without breaking.
  * The template echoes the gpuMemory string back — we check it matches what was requested.
  */
 tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(

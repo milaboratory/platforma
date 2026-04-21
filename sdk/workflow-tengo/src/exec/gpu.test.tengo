@@ -9,7 +9,7 @@ Test_gpu_no_args := func() {
 		mem("2GiB").
 		gpuMemory()
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() should return builder with run method")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() should return builder with run method")
 }
 
 Test_gpu_with_size_string := func() {
@@ -19,7 +19,7 @@ Test_gpu_with_size_string := func() {
 		mem("2GiB").
 		gpuMemory("16GiB")
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu('16GiB') should return builder with run method")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory('16GiB') should return builder with run method")
 }
 
 Test_gpu_chaining := func() {
@@ -30,7 +30,7 @@ Test_gpu_chaining := func() {
 		gpuMemory("4GiB").
 		arg("--flag")
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() should not break the builder chain")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() should not break the builder chain")
 }
 
 Test_gpu_override := func() {
@@ -41,5 +41,5 @@ Test_gpu_override := func() {
 		gpuMemory("2GiB").
 		gpuMemory("16GiB")
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() override should return valid builder")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() override should return valid builder")
 }
