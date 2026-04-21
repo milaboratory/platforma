@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
-import { DefaultFinalResourceDataPredicate, ResourceId } from "@milaboratories/pl-client";
+import { bigintToResourceId, DefaultFinalResourceDataPredicate } from "@milaboratories/pl-client";
 import { z } from "zod";
 import { InferSnapshot, makeResourceSnapshot, rsSchema } from "./snapshot";
 import { PlTreeState } from "./state";
@@ -97,6 +97,4 @@ test("simple snapshot test", async () => {
   expect(c1.isChanged()).toBeFalsy();
 });
 
-function rid(id: bigint): ResourceId {
-  return id as ResourceId;
-}
+const rid = bigintToResourceId;

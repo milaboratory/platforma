@@ -4,19 +4,27 @@
 import type { Signer } from "@milaboratories/ts-helpers";
 import type { OnDemandBlobResourceSnapshot } from "../types";
 import type { RemoteBlobHandle } from "@milaboratories/pl-model-common";
-import { bigintToResourceId } from "@milaboratories/pl-client";
+import {
+  bigintToResourceId,
+  parseSignedResourceId,
+  signatureToBase64Url,
+  base64UrlToSignature,
+} from "@milaboratories/pl-client";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 import { getSize } from "../types";
 
 // https://regex101.com/r/Q4YdTa/5
+// resourceSig segment is base64url-encoded signature (may be empty)
 const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?)\/(?<size>\d+?))#(?<signature>.*)$/;
+  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.+)\/(?<resourceVersion>.+?)\/(?<resourceId>\d+?)\/(?<resourceSig>[A-Za-z0-9_-]*)\/(?<size>\d+?))#(?<signature>.*)$/;
 
 export function newRemoteHandle(
   rInfo: OnDemandBlobResourceSnapshot,
   signer: Signer,
 ): RemoteBlobHandle {
-  let content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}/${getSize(rInfo)}`;
+  const { globalId, signature: resourceSig } = parseSignedResourceId(rInfo.id);
+  const sigSegment = signatureToBase64Url(resourceSig);
+  let content = `${rInfo.type.name}/${rInfo.type.version}/${globalId}/${sigSegment}/${getSize(rInfo)}`;
 
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;
 }
@@ -37,13 +45,16 @@ export function parseRemoteHandle(
     throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
   }
 
-  const { content, resourceType, resourceVersion, resourceId, size, signature } = parsed.groups!;
+  const { content, resourceType, resourceVersion, resourceId, resourceSig, size, signature } =
+    parsed.groups!;
 
   signer.verify(content, signature, `Signature verification failed for ${handle}`);
 
+  const sig = resourceSig ? base64UrlToSignature(resourceSig) : undefined;
+
   return {
     info: {
-      id: bigintToResourceId(BigInt(resourceId)),
+      id: bigintToResourceId(BigInt(resourceId), sig),
       type: { name: resourceType, version: resourceVersion },
     },
     size: Number(size),

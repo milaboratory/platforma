@@ -5,7 +5,7 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import type { BlockRenderingMode } from "@platforma-sdk/model";
 
-export interface ProjectListEntry extends ProjectListEntryFromModel {
+export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "rid"> {
   /** Project resource ID. */
   rid: ResourceId;
 }

@@ -220,6 +220,7 @@ export class MiddleLayer {
 
   private async projectIdToResourceId(id: string): Promise<ResourceId> {
     return await this.pl.withReadTx("Project id to resource id", async (tx) => {
+      // TODO: it would fail without signature. Where to take it?
       const rid = (await tx.getField(field(this.projectListResourceId, id))).value;
       if (isNullResourceId(rid)) throw new Error("Unexpected project list structure.");
       return rid;
@@ -227,8 +228,10 @@ export class MiddleLayer {
   }
 
   private async ensureProjectRid(id: ResourceId | string): Promise<ResourceId> {
+    // SignedResourceId contains '|', plain project IDs don't
+    if (typeof id === "string" && id.includes("|")) return id as ResourceId;
     if (typeof id === "string") return await this.projectIdToResourceId(id);
-    else return id;
+    return id;
   }
 
   /** Opens a project, and starts corresponding project maintenance loop. */

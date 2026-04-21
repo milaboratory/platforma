@@ -25,6 +25,18 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
   return false;
 }
 
+export function isPermissionDenied(err: unknown, nested: boolean = false): boolean {
+  if (err === undefined || err === null) return false;
+
+  if (err instanceof PermissionDeniedError) return true;
+  if ((err as any).name == "RpcError" && (err as any).code == "PERMISSION_DENIED") return true;
+  if ((err as any).name == "RESTError" && (err as any).status.code == Code.PERMISSION_DENIED)
+    return true;
+  if ((err as any).cause !== undefined && !nested)
+    return isPermissionDenied((err as any).cause, true);
+  return false;
+}
+
 export function isTimeoutError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
@@ -125,6 +137,13 @@ export class UnauthenticatedError extends Error {
   }
 }
 
+export class PermissionDeniedError extends Error {
+  name = "PermissionDeniedError";
+  constructor(message: string) {
+    super("PermissionDenied: " + message);
+  }
+}
+
 export class DisconnectedError extends Error {
   name = "DisconnectedError";
   constructor(message: string) {
@@ -143,6 +162,10 @@ export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = fals
   if (isUnauthenticated(error)) {
     if (error instanceof UnauthenticatedError) throw error;
     throw new UnauthenticatedError(error.message);
+  }
+  if (isPermissionDenied(error)) {
+    if (error instanceof PermissionDeniedError) throw error;
+    throw new PermissionDeniedError(error.message);
   }
   if (isConnectionProblem(error)) {
     if (error instanceof DisconnectedError) throw error;

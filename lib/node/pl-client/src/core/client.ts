@@ -10,7 +10,10 @@ import {
   ensureResourceIdNotNull,
   isNullResourceId,
   NullResourceId,
+  parseSignedResourceId,
+  toResourceSignature,
 } from "./types";
+import type { ColorProof } from "./types";
 import { ClientRoot } from "../helpers/pl";
 import { isUnimplementedError } from "./errors";
 import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
@@ -236,7 +239,10 @@ export class PlClient {
       const responses = await this._ll.listUserResources({ limit: 1 });
       for (const msg of responses) {
         if (msg.entry.oneofKind === "userRoot") {
-          rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
+          rootFromServer = bigintToResourceId(
+            msg.entry.userRoot.resourceId,
+            toResourceSignature(msg.entry.userRoot.resourceSignature),
+          );
           break;
         }
       }
@@ -349,6 +355,14 @@ export class PlClient {
           this.finalPredicate,
           this.resourceDataCache,
         );
+
+        // Auto-set default color proof from the client root's signature
+        if (!isNullResourceId(clientRoot) && writable) {
+          const parsed = parseSignedResourceId(clientRoot);
+          if (parsed.signature) {
+            tx.setDefaultColor(parsed.signature as ColorProof);
+          }
+        }
 
         let ok = false;
         let result: T | undefined = undefined;

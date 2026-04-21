@@ -1,6 +1,6 @@
 import type * as sdk from "@milaboratories/pl-model-common";
 import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
-import { bigintToResourceId } from "@milaboratories/pl-client";
+import { bigintToResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
@@ -71,7 +71,8 @@ export function isRemoteStorageHandle(
 }
 
 export function createRemoteStorageHandle(name: string, rId: ResourceId): sdk.StorageHandleRemote {
-  return `remote://${name}/${BigInt(rId)}`;
+  const { globalId } = parseSignedResourceId(rId);
+  return `remote://${name}/${globalId}`;
 }
 
 function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
