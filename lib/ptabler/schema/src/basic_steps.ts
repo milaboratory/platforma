@@ -222,3 +222,38 @@ export interface LimitStep {
    */
   n: number;
 }
+
+/**
+ * Defines a step that extracts a contiguous row range from a table
+ * and outputs the result to a new table in the tablespace.
+ * This operation is similar to Polars' `slice` method.
+ * Rows that extend past the end of the frame are silently omitted.
+ */
+export interface SliceStep {
+  /**
+   * The type identifier for this step.
+   * Must be 'slice'.
+   */
+  type: "slice";
+
+  /**
+   * The name of the input table in the tablespace from which rows will be sliced.
+   */
+  inputTable: string;
+
+  /**
+   * The name for the resulting sliced table that will be added to the tablespace.
+   */
+  outputTable: string;
+
+  /**
+   * The starting row index (0-based, non-negative).
+   */
+  offset: number;
+
+  /**
+   * The number of rows to extract starting from offset.
+   * If offset + length exceeds the input row count, only the available tail rows are returned.
+   */
+  length: number;
+}

@@ -1441,6 +1441,32 @@ _newDataFrame = func(parentWorkflow, dfName) {
 		},
 
 		/**
+		 * Returns rows [offset, offset+length) of the DataFrame.
+		 * Mirrors Polars `slice`. Ranges that extend past end-of-frame are clipped.
+		 *
+		 * @param offset {number} - Non-negative, 0-based starting row index.
+		 * @param length {number} - Positive number of rows to extract.
+		 * @returns {object} - A new DataFrame object.
+		 * @example
+		 *   batch0 := df.slice(0, 100)
+		 *   batch1 := df.slice(100, 100)
+		 */
+		slice: func(offset, length) {
+			ll.assert(is_int(offset) && offset >= 0, "slice offset must be a non-negative integer.")
+			ll.assert(is_int(length) && length > 0, "slice length must be a positive integer.")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "slice",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				offset: offset,
+				length: length
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
 		 * Sorts the DataFrame by one or more columns or expressions.
 		 * Sorting is always stable (maintains relative order of equivalent rows).
 		 *
