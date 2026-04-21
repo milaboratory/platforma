@@ -16,24 +16,34 @@ import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
 } from "./delete_column";
-import type { DiscoverColumnsRequestV2, DiscoverColumnsResponse } from "./discover_columns";
+import type {
+  DiscoverColumnsRequestV2,
+  DiscoverColumnsResponse,
+  DiscoverColumnsResponseV2,
+} from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 /**
- * V2 PFrame interface with include/exclude column filtering in discoverColumns.
+ * V3 PFrame interface: same surface as V2 except `discoverColumns` returns
+ * {@link DiscoverColumnsResponseV2}, which includes a per-hit ready-to-execute
+ * {@link SpecQuery} alongside the existing fields.
  */
-export interface PFrameWasmV2 extends Disposable {
+export interface PFrameWasmV3 extends Disposable {
   /**
    * Deletes columns from a columns specification.
    */
   deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
 
   /**
-   * Discovers columns compatible with a given axes integration,
-   * with separate include and exclude filters.
-   * Exclude filter is applied after include, removing matching columns from results.
+   * Discovers columns compatible with a given axes integration, with separate
+   * include and exclude filters. Exclude filter is applied after include,
+   * removing matching columns from results.
+   *
+   * Each hit also carries a {@link SpecQuery} materializing its traversal
+   * path — direct hits produce a plain column reference; linker-path hits
+   * produce a nested `linkerJoin` chain ready to be evaluated.
    */
-  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponseV2;
 
   /**
    * Finds columns in the PFrame matching the given filter criteria.
@@ -52,13 +62,13 @@ export interface PFrameWasmV2 extends Disposable {
 }
 
 /**
- * V2 PFrame API factory with createPFrame returning PFrameWasmV2.
+ * V3 PFrame API factory with createPFrame returning {@link PFrameWasmV3}.
  */
-export interface PFrameWasmAPIV2 {
+export interface PFrameWasmAPIV3 {
   /**
-   * Creates a new V2 PFrame from a map of column IDs to column specifications.
+   * Creates a new V3 PFrame from a map of column IDs to column specifications.
    */
-  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV2;
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV3;
 
   /**
    * Expands an {@link AxesSpec} into {@link AxesId}s with parent information
@@ -85,6 +95,49 @@ export interface PFrameWasmAPIV2 {
 }
 
 /**
+ * V2 PFrame interface. Superseded by {@link PFrameWasmV3}, which adds a per-hit
+ * {@link SpecQuery} to `discoverColumns` responses. Will be removed in a future
+ * PFrames update.
+ */
+export interface PFrameWasmV2 extends Disposable {
+  /** @see PFrameWasmV3.deleteColumns */
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
+
+  /** @see PFrameWasmV3.discoverColumns — V2 response lacks the per-hit `query` field. */
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
+
+  /** @see PFrameWasmV3.findColumns */
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
+
+  /** @see PFrameWasmV3.evaluateQuery */
+  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
+
+  /** @see PFrameWasmV3.rewriteLegacyQuery */
+  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
+}
+
+/**
+ * V2 PFrame API factory. Superseded by {@link PFrameWasmAPIV3}; will be removed
+ * in a future PFrames update.
+ */
+export interface PFrameWasmAPIV2 {
+  /** @see PFrameWasmAPIV3.createPFrame */
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV2;
+
+  /** @see PFrameWasmAPIV3.expandAxes */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /** @see PFrameWasmAPIV3.collapseAxes */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /** @see PFrameWasmAPIV3.findAxis */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /** @see PFrameWasmAPIV3.findTableColumn */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+}
+
+/**
  * Response from evaluating a query against a PFrame.
  */
 export type EvaluateQueryResponse = {
@@ -103,7 +156,7 @@ export type EvaluateQueryResponse = {
 /**
  * Represents a legacy (V4) query format used before the unified SpecQuery.
  *
- * This type is used with {@link PFrameWasmV2.rewriteLegacyQuery} to upgrade
+ * This type is used with {@link PFrameWasmV3.rewriteLegacyQuery} to upgrade
  * older query structures to the current {@link SpecQuery} format.
  */
 export type LegacyQuery = {

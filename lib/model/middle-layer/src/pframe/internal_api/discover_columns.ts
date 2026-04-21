@@ -3,6 +3,7 @@ import type {
   ColumnValueType,
   DiscoverColumnsStepInfo,
   PColumnIdAndSpec,
+  SpecQuery,
 } from "@milaboratories/pl-model-common";
 import type { AxisQualification, ColumnAxesWithQualifications } from "./common";
 
@@ -89,18 +90,51 @@ export interface DiscoverColumnsMappingVariant {
   distinctiveQualifications: DiscoverColumnsResponseQualifications;
 }
 
-/** A single hit in the discover columns response */
-export interface DiscoverColumnsResponseHit {
+/**
+ * A single hit in the discover columns response. Carries the matched column
+ * along with its integration metadata, the linker path traversed to reach it,
+ * and a ready-to-execute {@link SpecQuery}: for direct hits a plain column
+ * reference, for linker-path hits a nested `linkerJoin` chain that joins the
+ * linker(s) with the hit column and projects out the one-side axes.
+ */
+export interface DiscoverColumnsResponseHitV2 {
   /** The column that was found compatible */
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
   /** Linker steps traversed to reach this hit; empty for direct matches */
   path: DiscoverColumnsStepInfo[];
+  /** Query that materializes this hit's traversal path and the hit itself. */
+  query: SpecQuery;
 }
 
-/** Response from discover columns */
-export interface DiscoverColumnsResponse {
+/**
+ * Response from discover columns — each hit carries a per-hit {@link SpecQuery}
+ * alongside its match metadata.
+ */
+export interface DiscoverColumnsResponseV2 {
   /** Columns that could be integrated and possible ways to integrate them */
+  hits: DiscoverColumnsResponseHitV2[];
+}
+
+/**
+ * Legacy hit shape without the per-hit query. Superseded by
+ * {@link DiscoverColumnsResponseHitV2}; will be removed in a future PFrames update.
+ */
+export interface DiscoverColumnsResponseHit {
+  /** @see DiscoverColumnsResponseHitV2.hit */
+  hit: PColumnIdAndSpec;
+  /** @see DiscoverColumnsResponseHitV2.mappingVariants */
+  mappingVariants: DiscoverColumnsMappingVariant[];
+  /** @see DiscoverColumnsResponseHitV2.path */
+  path: DiscoverColumnsStepInfo[];
+}
+
+/**
+ * Legacy response shape. Superseded by {@link DiscoverColumnsResponseV2}; will
+ * be removed in a future PFrames update.
+ */
+export interface DiscoverColumnsResponse {
+  /** @see DiscoverColumnsResponseV2.hits */
   hits: DiscoverColumnsResponseHit[];
 }
