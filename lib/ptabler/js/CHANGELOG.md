@@ -1,5 +1,12 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [fd0b5e3]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.14.8
+
 ## 1.2.7
 
 ### Patch Changes
