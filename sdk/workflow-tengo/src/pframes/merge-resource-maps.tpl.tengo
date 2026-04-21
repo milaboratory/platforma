@@ -34,7 +34,7 @@ self.body(func(inputs) {
 	keyLength := 0
 	for src in sources {
 		if !src.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
-			ll.panic("merge-resource-maps: expected ResourceMap, got %v", src.resourceType.name)
+			ll.panic("merge-resource-maps: expected ResourceMap, got %v", src.info().Type.Name)
 		}
 		meta := src.getDataAsJson()
 		if !is_undefined(meta.keyLength) {

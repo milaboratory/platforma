@@ -79,27 +79,30 @@ self.body(func(inputs) {
 
 	rawInputs := self.rawInputs()
 
+	// Extract raw content from a resource/field/string input, without double-copy.
+	_readContent := func(x) {
+		if is_string(x) {
+			return x
+		}
+		if smart.isField(x) {
+			return x.getValue().getData()
+		}
+		if smart.isResource(x) {
+			return x.getData()
+		}
+		ll.panic("expected string/field/resource, got: %v", x)
+	}
+
 	// Pre-split content lines once for passContent=true mode.
 	// The orchestrator passes the full per-scope joined file; we reconstruct
 	// per-batch content by slicing lines.
 	header := undefined
 	dataLines := undefined
 	if passContent {
-		joinedContent := inputs.joinedContent
-		if is_undefined(joinedContent) {
+		if is_undefined(inputs.joinedContent) {
 			ll.panic("passContent=true but joinedContent input is missing")
 		}
-		contentStr := ""
-		if is_string(joinedContent) {
-			contentStr = joinedContent
-		} else if smart.isResource(joinedContent) {
-			contentStr = joinedContent.getData()
-		} else if smart.isField(joinedContent) {
-			contentStr = joinedContent.getValue().getData()
-		} else {
-			ll.panic("unexpected joinedContent type: %v", joinedContent)
-		}
-		lines := text.split(contentStr, "\n")
+		lines := text.split(_readContent(inputs.joinedContent), "\n")
 		for len(lines) > 0 && lines[len(lines)-1] == "" {
 			lines = lines[:len(lines)-1]
 		}
@@ -152,32 +155,23 @@ self.body(func(inputs) {
 			batchResult = render.createUniversal(body, eph, renderInputs, renderOpts)
 		}
 
-		// Collect outputs from batch result
+		// Collect outputs from batch result.
+		// render.resolveOutput handles both string path elements and `{name, optional}`
+		// maps — no manual per-step traversal. Optional-missing outputs resolve to a
+		// null field and are skipped (avoids feeding undefined refs into pt.concat etc.).
+		applyCache := !is_undefined(stepCache) && stepCache > 0
 		for output in outputs {
 			outputPath := output.path
 			if is_undefined(outputPath) || len(outputPath) == 0 {
 				outputPath = [output.name]
 			}
 
-			// First path step targets the render's top-level output field — apply
-			// stepCache here (render.output(name, cache)). Further steps navigate
-			// into the field via field.output() and do not take cache.
-			applyCache := !is_undefined(stepCache) && stepCache > 0
-			batchOutputRef := batchResult
-			for idx, step in outputPath {
-				if is_string(step) {
-					if idx == 0 && applyCache {
-						batchOutputRef = batchOutputRef.output(step, stepCache)
-					} else {
-						batchOutputRef = batchOutputRef.output(step)
-					}
-				} else if is_map(step) && step.optional {
-					if idx == 0 && applyCache {
-						batchOutputRef = batchOutputRef.output(step.name, stepCache)
-					} else {
-						batchOutputRef = batchOutputRef.output(step.name)
-					}
-				}
+			batchOutputRef := batchResult.resolveOutput(outputPath)
+			if is_undefined(batchOutputRef) {
+				continue
+			}
+			if applyCache {
+				batchOutputRef.setCache(stepCache)
 			}
 
 			if output.type == "Xsv" {
@@ -238,28 +232,22 @@ self.body(func(inputs) {
 				mergedFile = ptResult.getFile(mergedName)
 			}
 
-			// Single xsv.importFile on merged TSV.
-			// Per-output cpu/mem/queue takes precedence; global opts.cpu/opts.mem/
-			// opts.queue act as fallback (same convention as standard processColumn).
-			importSettings := output.settings
+			// Single xsv.importFile on the merged file. Per-output cpu/mem/queue
+			// take precedence; opts.cpu/mem/queue act as fallbacks (same convention
+			// as standard processColumn).
 			importOps := { dataOnly: true }
-			if !is_undefined(output.cpu) {
-				importOps.cpu = output.cpu
-			} else if !is_undefined(params.globalCpu) {
-				importOps.cpu = params.globalCpu
+			_applyHint := func(opsKey, perOutput, global) {
+				if !is_undefined(perOutput) {
+					importOps[opsKey] = perOutput
+				} else if !is_undefined(global) {
+					importOps[opsKey] = global
+				}
 			}
-			if !is_undefined(output.mem) {
-				importOps.mem = output.mem
-			} else if !is_undefined(params.globalMem) {
-				importOps.mem = params.globalMem
-			}
-			if !is_undefined(output.queue) {
-				importOps.queue = output.queue
-			} else if !is_undefined(params.globalQueue) {
-				importOps.queue = params.globalQueue
-			}
+			_applyHint("cpu", output.cpu, params.globalCpu)
+			_applyHint("mem", output.mem, params.globalMem)
+			_applyHint("queue", output.queue, params.globalQueue)
 
-			pf := xsv.importFile(mergedFile, xsvType, importSettings, importOps)
+			pf := xsv.importFile(mergedFile, xsvType, output.settings, importOps)
 
 			for column in output.settings.columns {
 				id := pUtil.xsvColumnId(column)

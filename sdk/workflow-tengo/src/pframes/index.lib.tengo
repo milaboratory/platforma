@@ -365,6 +365,189 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 
 __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": true, "String": true, "Bytes": true }
 
+// Factory for the processColumn return object. Both the standard and batch
+// `processColumn` paths expose the same interface (outputSpec/outputData/output/
+// xsvOutputFrame/allOutputsFrame/addAllOutputsToBuilder/listOutputs/…), so they
+// share one implementation here. `Xsv` and `TsvContent` share the "columnar"
+// dispatch; batch mode never registers `TsvContent` so that branch is dead
+// there but harmless.
+_createProcessColumnResult := func(renderResult, outputsMap, outputSpecs) {
+	_isColumnar := func(output) {
+		return output.type == "Xsv" || output.type == "TsvContent"
+	}
+	_requireOutput := func(name) {
+		output := outputsMap[name]
+		if is_undefined(output) {
+			ll.panic("unknown output: " + name)
+		}
+		return output
+	}
+
+	self := undefined
+	self = ll.toStrict({
+		renderResult: renderResult,
+
+		/**
+		 * Returns the spec for a given output (and column, for columnar outputs).
+		 */
+		outputSpec: func(name, ...column) {
+			output := _requireOutput(name)
+			spec := outputSpecs[name]
+			if _isColumnar(output) {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for " + output.type + " output")
+				}
+				spec = spec[column[0]]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + column[0])
+				}
+				return spec
+			}
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv/TsvContent output")
+			}
+			return spec
+		},
+
+		/**
+		 * Returns the data resource for a given output (and column, for columnar outputs).
+		 */
+		outputData: func(name, ...column) {
+			output := _requireOutput(name)
+			if _isColumnar(output) {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for " + output.type + " output")
+				}
+				return renderResult.output(name + "/" + column[0])
+			}
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv/TsvContent output")
+			}
+			return renderResult.output(name)
+		},
+
+		/**
+		 * Returns `{ data, spec }` for a given output (and column, for columnar outputs).
+		 */
+		output: func(name, ...column) {
+			output := _requireOutput(name)
+			if _isColumnar(output) {
+				if len(column) != 1 {
+					ll.panic("column name must be provided for " + output.type + " output")
+				}
+				columnName := column[0]
+				spec := outputSpecs[name][columnName]
+				if is_undefined(spec) {
+					ll.panic("unknown column: " + columnName)
+				}
+				return {
+					data: renderResult.output(name + "/" + columnName),
+					spec: spec
+				}
+			}
+			if len(column) > 0 {
+				ll.panic("column name should not be provided for non-Xsv/TsvContent output")
+			}
+			return {
+				data: renderResult.output(name),
+				spec: outputSpecs[name]
+			}
+		},
+
+		/**
+		 * Returns a PFrame containing all columns from a columnar (Xsv/TsvContent) output.
+		 */
+		xsvOutputFrame: func(name) {
+			output := _requireOutput(name)
+			if !_isColumnar(output) {
+				ll.panic("xsvOutputFrame can only be used with Xsv or TsvContent outputs")
+			}
+			pf := builder.pFrameBuilder()
+			for columnName, spec in outputSpecs[name] {
+				pf.add(columnName, spec, renderResult.output(name + "/" + columnName))
+			}
+			return pf.build()
+		},
+
+		/**
+		 * Adds all outputs to the given pframe builder. Columnar outputs are
+		 * flattened using `separator` (default ".").
+		 */
+		addAllOutputsToBuilder: func(builder, ...separator) {
+			sep := "."
+			if len(separator) > 0 {
+				sep = separator[0]
+			}
+			maps.forEach(outputsMap, func(name, output) {
+				if _isColumnar(output) {
+					for columnName, spec in outputSpecs[name] {
+						builder.add(
+							name + sep + columnName,
+							spec,
+							renderResult.output(name + "/" + columnName)
+						)
+					}
+				} else {
+					builder.add(name, outputSpecs[name], renderResult.output(name))
+				}
+			})
+			return builder
+		},
+
+		/**
+		 * Returns a PFrame containing all outputs (columnar ones flattened).
+		 */
+		allOutputsFrame: func(...xsvNameSeparator) {
+			pf := builder.pFrameBuilder()
+			self.addAllOutputsToBuilder(pf, xsvNameSeparator...)
+			return pf.build()
+		},
+
+		/**
+		 * Sorted list of registered output names.
+		 */
+		listOutputs: func() {
+			return maps.getKeys(outputsMap)
+		},
+
+		/**
+		 * Whether the given output is columnar (Xsv) — kept named `isXsvOutput`
+		 * for API compatibility; returns true for both Xsv and TsvContent.
+		 */
+		isXsvOutput: func(name) {
+			return _isColumnar(_requireOutput(name))
+		},
+
+		/**
+		 * Sorted column names for a columnar output.
+		 */
+		listXsvColumns: func(name) {
+			output := _requireOutput(name)
+			if !_isColumnar(output) {
+				ll.panic("output is not Xsv or TsvContent: " + name)
+			}
+			return maps.getKeys(outputSpecs[name])
+		},
+
+		/**
+		 * Adds all columns of a columnar output to the given pframe builder with
+		 * a per-column name prefix.
+		 */
+		addXsvOutputToBuilder: func(builder, outputName, prefix) {
+			for columnName in self.listXsvColumns(outputName) {
+				builder.add(
+					prefix + columnName,
+					self.outputSpec(outputName, columnName),
+					self.outputData(outputName, columnName)
+				)
+			}
+			return builder
+		}
+	})
+
+	return self
+}
+
 /**
  * Internal implementation for processColumn batch mode.
  * See processColumn docs for the public API.
@@ -382,8 +565,11 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	if is_undefined(batch.size) || !is_int(batch.size) || batch.size <= 0 {
 		ll.panic("batch.size must be a positive integer")
 	}
-	if is_undefined(batch.keyColumns) {
-		ll.panic("batch.keyColumns is required")
+	if is_undefined(batch.keyColumns) || !is_array(batch.keyColumns) || len(batch.keyColumns) == 0 {
+		// Empty keyColumns would collapse every record into one group, making
+		// batching degenerate. Reject explicitly rather than let it propagate
+		// into calculateGroupAxesIndices as a no-op.
+		ll.panic("batch.keyColumns is required and must be a non-empty array")
 	}
 	if is_undefined(batch.format) {
 		batch.format = "tsv"
@@ -445,6 +631,29 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	batchKeyAxesSpec := []
 	for i in batchKeyIndices {
 		batchKeyAxesSpec = append(batchKeyAxesSpec, allAxesSpec[i])
+	}
+
+	// Reject header/axis-name collisions: the orchestrator aliases batch-key
+	// axis columns to their axis name AND selects value columns by `header`. If
+	// a column header equals a batch-key axis name (or another column's header),
+	// the exported file would have ambiguous/duplicate column names.
+	reservedNames := {}
+	for axSpec in batchKeyAxesSpec {
+		reservedNames[axSpec.name] = "batch-key axis"
+	}
+	for entry in primaryEntries {
+		if !is_undefined(reservedNames[entry.header]) {
+			ll.panic("primary column header %q collides with %s; choose a different header",
+				entry.header, reservedNames[entry.header])
+		}
+		reservedNames[entry.header] = "primary column"
+	}
+	for entry in secondaryEntries {
+		if !is_undefined(reservedNames[entry.header]) {
+			ll.panic("non-primary column header %q collides with %s; choose a different header",
+				entry.header, reservedNames[entry.header])
+		}
+		reservedNames[entry.header] = "non-primary column"
 	}
 
 	// iterationAxesSpec for batch mode = isolation axes (the outer iteration level)
@@ -535,11 +744,14 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 			}
 
 			// Create modified settings with proper axes instead of batchKeyColumns.
-			// partitionKeyLength MUST be < len(axes), so we use 0 — pfconv embeds
-			// all rows as a single "[]" partition with JSON {axis_value: column_value} mapping.
+			// Explicitly pin partitionKeyLength=0 so any value on output.settings
+			// cannot leak through. pfconv MUST have partitionKeyLength < len(axes);
+			// with 0 it embeds all rows as a single "[]" partition whose JSON maps
+			// axis_value → column_value.
 			modifiedSettings := maps.merge(output.settings, {
 				axes: batchAxes,
-				batchKeyColumns: undefined
+				batchKeyColumns: undefined,
+				partitionKeyLength: 0
 			})
 
 			decomposition := pUtil.decomposePfconvImportCfg(modifiedSettings, {
@@ -633,172 +845,9 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	}
 
 	renderResult := render.createEphemeral(llBatchProcessTpl, renderInputs)
-
-	// Build return object (same interface as standard processColumn)
-	self := undefined
-	self = ll.toStrict({
-		renderResult: renderResult,
-
-		outputSpec: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			spec := outputSpecs[name]
-			if output.type == "Xsv" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
-				}
-				columnName := column[0]
-				spec = spec[columnName]
-				if is_undefined(spec) {
-					ll.panic("unknown column: " + columnName)
-				}
-				return spec
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
-				}
-				return spec
-			}
-		},
-
-		outputData: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			if output.type == "Xsv" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
-				}
-				return renderResult.output(name + "/" + column[0])
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
-				}
-				return renderResult.output(name)
-			}
-		},
-
-		output: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			if output.type == "Xsv" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for Xsv output")
-				}
-				columnName := column[0]
-				spec := outputSpecs[name][columnName]
-				if is_undefined(spec) {
-					ll.panic("unknown column: " + columnName)
-				}
-				return {
-					data: renderResult.output(name + "/" + columnName),
-					spec: spec
-				}
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv output")
-				}
-				return {
-					data: renderResult.output(name),
-					spec: outputSpecs[name]
-				}
-			}
-		},
-
-		xsvOutputFrame: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-			if output.type != "Xsv" {
-				ll.panic("xsvOutputFrame can only be used with Xsv outputs")
-			}
-
-			pf := builder.pFrameBuilder()
-			for columnName, spec in outputSpecs[name] {
-				pf.add(columnName, spec, renderResult.output(name + "/" + columnName))
-			}
-			return pf.build()
-		},
-
-		addAllOutputsToBuilder: func(builder, ...separator) {
-			sep := "."
-			if len(separator) > 0 {
-				sep = separator[0]
-			}
-
-			maps.forEach(outputsMap, func(name, output) {
-				if output.type == "Xsv" {
-					for columnName, spec in outputSpecs[name] {
-						builder.add(
-							name + sep + columnName,
-							spec,
-							renderResult.output(name + "/" + columnName)
-						)
-					}
-				} else {
-					builder.add(
-						name,
-						outputSpecs[name],
-						renderResult.output(name)
-					)
-				}
-			})
-
-			return builder
-		},
-
-		allOutputsFrame: func(...xsvNameSeparator) {
-			pf := builder.pFrameBuilder()
-			self.addAllOutputsToBuilder(pf, xsvNameSeparator...)
-			return pf.build()
-		},
-
-		listOutputs: func() {
-			return maps.getKeys(outputsMap)
-		},
-
-		isXsvOutput: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-			return output.type == "Xsv"
-		},
-
-		listXsvColumns: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-			if output.type != "Xsv" {
-				ll.panic("output is not Xsv: " + name)
-			}
-			return maps.getKeys(outputSpecs[name])
-		},
-
-		addXsvOutputToBuilder: func(builder, outputName, prefix) {
-			for columnName in self.listXsvColumns(outputName) {
-				builder.add(
-					prefix + columnName,
-					self.outputSpec(outputName, columnName),
-					self.outputData(outputName, columnName)
-				)
-			}
-			return builder
-		}
-	})
-
-	return self
+	return _createProcessColumnResult(renderResult, outputsMap, outputSpecs)
 }
+
 
 /**
  * Constructs a mapping or aggregation pipeline for a given input PColumn and returns a specialized
@@ -1295,255 +1344,9 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	}
 
 	renderResult := render.createEphemeral(llProcessTpl, renderInputs)
-
-	self := undefined
-	self = ll.toStrict({
-		renderResult: renderResult,
-
-		/**
-		 * Returns output spec for the given output name and optional column name
-		 *
-		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
-		 * only the output name should be provided.
-		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
-		 *
-		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
-		 * @returns Output spec
-		 */
-		outputSpec: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			spec := outputSpecs[name]
-			if output.type == "Xsv" || output.type == "TsvContent" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for " + output.type + " output")
-				}
-				columnName := column[0]
-				spec = spec[columnName]
-				if is_undefined(spec) {
-					ll.panic("unknown column: " + columnName)
-				}
-				return spec
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
-				}
-				return spec
-			}
-		},
-
-		/**
-		 * Returns data resource for the given output name and optional column name
-		 *
-		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
-		 * only the output name should be provided.
-		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
-		 *
-		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
-		 * @returns data resource
-		 */
-		outputData: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			if output.type == "Xsv" || output.type == "TsvContent" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for " + output.type + " output")
-				}
-				return renderResult.output(name + "/" + column[0])
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
-				}
-				return renderResult.output(name)
-			}
-		},
-
-		/**
-		 * Returns both data resource and spec for the given output name and optional column name
-		 *
-		 * For normal outputs (Resource, ResourceMap, BinaryPartitioned, JsonPartitioned),
-		 * only the output name should be provided.
-		 * For Xsv and TsvContent outputs, both output name and column name should be provided.
-		 *
-		 * @param name - Name of the output
-		 * @param column - Optional. For Xsv and TsvContent outputs, name of the column
-		 * @returns {data: Resource, spec: PColumnSpec} Object containing both data resource and spec
-		 */
-		output: func(name, ...column) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			if output.type == "Xsv" || output.type == "TsvContent" {
-				if len(column) != 1 {
-					ll.panic("column name must be provided for " + output.type + " output")
-				}
-				columnName := column[0]
-				spec := outputSpecs[name][columnName]
-				if is_undefined(spec) {
-					ll.panic("unknown column: " + columnName)
-				}
-				return {
-					data: renderResult.output(name + "/" + columnName),
-					spec: spec
-				}
-			} else {
-				if len(column) > 0 {
-					ll.panic("column name should not be provided for non-Xsv/TsvContent output")
-				}
-				return {
-					data: renderResult.output(name),
-					spec: outputSpecs[name]
-				}
-			}
-		},
-
-		/**
-		 * Returns a PFrame containing all columns from an Xsv or TsvContent output
-		 *
-		 * @param name - Name of the Xsv or TsvContent output
-		 * @returns PFrame containing all columns from the output
-		 */
-		xsvOutputFrame: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-
-			if output.type != "Xsv" && output.type != "TsvContent" {
-				ll.panic("outputFrame can only be used with Xsv or TsvContent outputs")
-			}
-
-			builder := builder.pFrameBuilder()
-			for columnName, spec in outputSpecs[name] {
-				builder.add(columnName, spec, renderResult.output(name + "/" + columnName))
-			}
-			return builder.build()
-		},
-
-		/**
-		 * Adds all outputs to the provided pframe builder
-		 *
-		 * @param builder - The pframe builder to which outputs will be added
-		 * @param ...separator - Optional separator for joining Xsv output and column names, defaults to "."
-		 * @returns The provided builder for chaining
-		 */
-		addAllOutputsToBuilder: func(builder, ...separator) {
-			sep := "."
-			if len(separator) > 0 {
-				sep = separator[0]
-			}
-
-			maps.forEach(outputsMap, func(name, output) {
-				if output.type == "Xsv" || output.type == "TsvContent" {
-					// For Xsv and TsvContent outputs, add each column with name prefixed
-					for columnName, spec in outputSpecs[name] {
-						builder.add(
-							name + sep + columnName,
-							spec,
-							renderResult.output(name + "/" + columnName)
-						)
-					}
-				} else {
-					// For other outputs, add directly
-					builder.add(
-						name,
-						outputSpecs[name],
-						renderResult.output(name)
-					)
-				}
-			})
-
-			return builder
-		},
-
-		/**
-		 * Returns a PFrame containing all results, flattening Xsv and TsvContent outputs using the provided separator
-		 *
-		 * @param ...xsvNameSeparator - Optional separator for joining Xsv and TsvContent output and column names, defaults to "."
-		 * @returns PFrame containing all results
-		 */
-		allOutputsFrame: func(...xsvNameSeparator) {
-			builder := builder.pFrameBuilder()
-			self.addAllOutputsToBuilder(builder, xsvNameSeparator...)
-			return builder.build()
-		},
-
-		/**
-		 * Returns sorted list of all available output names
-		 *
-		 * @returns Array of output names
-		 */
-		listOutputs: func() {
-			return maps.getKeys(outputsMap)
-		},
-
-		/**
-		 * Checks if given output is of Xsv type
-		 *
-		 * @param name - Output name to check
-		 * @returns true if output is Xsv, false otherwise
-		 */
-		isXsvOutput: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-			return output.type == "Xsv"
-		},
-
-		/**
-		 * Returns sorted list of column names for given Xsv or TsvContent output
-		 *
-		 * @param name - Xsv or TsvContent output name
-		 * @returns Array of column names
-		 */
-		listXsvColumns: func(name) {
-			output := outputsMap[name]
-			if is_undefined(output) {
-				ll.panic("unknown output: " + name)
-			}
-			if output.type != "Xsv" && output.type != "TsvContent" {
-				ll.panic("output is not Xsv or TsvContent: " + name)
-			}
-
-			return maps.getKeys(outputSpecs[name])
-		},
-
-		/**
-		 * Adds all columns from an Xsv or TsvContent output to the provided pframe builder with a prefix
-		 *
-		 * @param builder - The pframe builder to which columns will be added
-		 * @param outputName - Name of the Xsv or TsvContent output to use
-		 * @param prefix - Prefix to add to each column name (can be empty string)
-		 * @returns The provided builder for chaining
-		 */
-		addXsvOutputToBuilder: func(builder, outputName, prefix) {
-			for columnName in self.listXsvColumns(outputName) {
-				builder.add(
-					prefix + columnName,
-					self.outputSpec(outputName, columnName),
-					self.outputData(outputName, columnName)
-				)
-			}
-
-			return builder
-		}
-
-
-	})
-
-	return self
+	return _createProcessColumnResult(renderResult, outputsMap, outputSpecs)
 }
+
 
 export ll.toStrict({
 	parseData: pColumnData.parseData,
