@@ -226,6 +226,52 @@ eTplTest.concurrent(
   },
 );
 
+// ---- Test: empty input (no records) — non-isolation fallback ----
+//
+// Exercises the orchestrator finalize path that emits empty typed PColumn data
+// when the sole scope has zero records (no isolation axis, no partitions to
+// iterate). Must produce a well-formed but empty PFrame rather than erroring.
+
+eTplTest.concurrent(
+  "batch mode: empty input emits empty PColumn data (no isolation)",
+  async ({ helper, expect, stHelper }) => {
+    const result = await helper.renderTemplate(true, "pframes.proc_batch", ["result"], (tx) => {
+      const empty = tx.createStruct(
+        resourceType("PColumnData/Json", "1"),
+        JSON.stringify({ keyLength: 1, data: {} }),
+      );
+      tx.lockInputs(empty);
+
+      return {
+        params: tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({
+            primaryEntries: [
+              { spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" },
+            ],
+            primaryJoin: "full",
+            outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettings }],
+            batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+          }),
+        ),
+        data1: empty,
+      };
+    });
+
+    const r = stHelper.tree(result.resultEntry);
+    const finalResult = await awaitStableState(r, TIMEOUT);
+    assertResource(finalResult);
+    const theResult = finalResult.inputs["result"];
+    assertResource(theResult);
+    expect(theResult.resourceType.name).toEqual("PFrame");
+
+    // Data resource exists (empty, but well-formed PColumnData/JsonPartitioned).
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    expect(hcData.resourceType.name).toEqual("PColumnData/JsonPartitioned");
+  },
+);
+
 // ---- Test 4: Two primary columns joined ----
 
 const singleAxisSpec2: PUniversalColumnSpec = {
