@@ -67,7 +67,7 @@ tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
     );
 
     const gpuOut = await result
-      .computeOutput("gpuMemory", (a) => a?.getDataAsJson())
+      .computeOutput("gpuMemory", (a) => a?.getDataAsString()?.trim())
       .awaitStableValue();
     console.log(`GPU test output: "${gpuOut}"`);
     expect(gpuOut).eq(gpuMemory);
