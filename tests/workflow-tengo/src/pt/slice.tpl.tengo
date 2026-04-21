@@ -1,0 +1,42 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs(
+	"out_basic",
+	"out_tail",
+	"out_past_end",
+	"out_zero_length"
+)
+
+self.body(func(inputs){
+	tsvInput := inputs.inputTsv
+
+	wf := pt.workflow()
+
+	df := wf.frame(tsvInput, {
+		xsvType: "tsv"
+	})
+
+	// Basic slice: rows [1, 3)
+	df.slice(1, 2).save("out_basic.tsv")
+
+	// Past end of frame is clipped — offset=3 with length=10 on a 5-row frame
+	// returns rows [3, 5) (the last two).
+	df.slice(3, 10).save("out_tail.tsv")
+
+	// Offset past the end returns an empty frame (schema preserved).
+	df.slice(100, 5).save("out_past_end.tsv")
+
+	// length=0 must be accepted and yield an empty frame with the input schema.
+	df.slice(0, 0).save("out_zero_length.tsv")
+
+	ptablerResult := wf.run()
+
+	return {
+		out_basic: file.exportFile(ptablerResult.getFile("out_basic.tsv")),
+		out_tail: file.exportFile(ptablerResult.getFile("out_tail.tsv")),
+		out_past_end: file.exportFile(ptablerResult.getFile("out_past_end.tsv")),
+		out_zero_length: file.exportFile(ptablerResult.getFile("out_zero_length.tsv"))
+	}
+})
