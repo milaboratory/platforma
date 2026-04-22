@@ -85,8 +85,12 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case ResourceTypeName.ClientRoot:
       return false;
     default:
-      if (r.type.name.startsWith(ResourceTypePrefix.Blob)) return true;
-      else if (
+      if (
+        r.type.name.startsWith(ResourceTypePrefix.Blob) ||
+        r.type.name.startsWith(ResourceTypePrefix.LS)
+      ) {
+        return true;
+      } else if (
         r.type.name.startsWith(ResourceTypePrefix.BlobUpload) ||
         r.type.name.startsWith(ResourceTypePrefix.BlobIndex)
       ) {

@@ -1,5 +1,5 @@
 import type * as sdk from "@milaboratories/pl-model-common";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { ResourceId } from "@milaboratories/pl-client";
 import { bigintToResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
@@ -45,9 +45,9 @@ function parseLocalStorageHandle(handle: string): LocalStorageHandleData {
   const { name, path } = parsed.groups!;
 
   return {
+    isRemote: false,
     rootPath: decodeURIComponent(path),
     name,
-    isRemote: false,
   };
 }
 
@@ -59,7 +59,6 @@ export type RemoteStorageHandleData = {
   isRemote: true;
   name: string;
   id: ResourceId;
-  type: ResourceType;
 };
 
 const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;
@@ -81,13 +80,8 @@ function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
   const { name, resourceId } = parsed.groups!;
 
   return {
-    id: bigintToResourceId(BigInt(resourceId)),
-    type: storageType(name),
-    name,
     isRemote: true,
+    id: bigintToResourceId(BigInt(resourceId)),
+    name,
   };
-}
-
-function storageType(name: string): ResourceType {
-  return { name: `LS/${name}`, version: "1" };
 }

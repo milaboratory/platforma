@@ -40,6 +40,7 @@ export const ResourceTypeName = {
 /** Resource type name prefix constants. */
 export const ResourceTypePrefix = {
   Blob: "Blob/",
+  LS: "LS/",
   BlobUpload: "BlobUpload/",
   BlobIndex: "BlobIndex/",
   PColumnData: "PColumnData/",
