@@ -92,6 +92,8 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	if is_undefined(primaryJoin) {
 		primaryJoin = "full"
 	}
+	ll.assert(primaryJoin == "full" || primaryJoin == "inner",
+		"input.primaryJoin must be \"full\" or \"inner\"; got %v", primaryJoin)
 
 	isEph := false
 	if !is_undefined(opts.isEphemeral) {

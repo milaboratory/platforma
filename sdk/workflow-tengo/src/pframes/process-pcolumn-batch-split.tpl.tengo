@@ -224,6 +224,25 @@ self.body(func(inputs) {
 				xsvType = formatExt
 			}
 
+			// No batch produced this (optional) output in this scope — emit an
+			// empty typed data resource per declared column so downstream
+			// consumers still see a well-formed (empty) PColumn. Skip the
+			// concat+import path entirely (pt.concat([]) would panic).
+			// partitionKeyLength matches the batch-key shape (same convention
+			// as the orchestrator's empty-scope fallback), and no partitions
+			// are added.
+			if len(batchFiles) == 0 {
+				batchKeyLength := len(params.batchKeyHeaders)
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					result[output.name + "/" + id] = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+						json.encode({ partitionKeyLength: batchKeyLength })
+					).lockAndBuild()
+				}
+				continue
+			}
+
 			mergedFile := undefined
 			if len(batchFiles) == 1 {
 				// Single batch — pass-through
