@@ -825,16 +825,10 @@ export ll.toStrict({
 	isStructuredPfMap: isStructuredPfMap,
 	validateXsvType: validateXsvType,
 
-	// @deprecated Moved to :pframes.process-column-common.
-	// Update imports: `pCommon := import(":pframes.process-column-common")`
-	// then use `pCommon.deriveHeaderFromSpec`.
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.deriveHeaderFromSpec from that module.
 	deriveHeaderFromSpec: pCommon.deriveHeaderFromSpec,
-	// @deprecated Moved to :pframes.process-column-common.
-	// Update imports: `pCommon := import(":pframes.process-column-common")`
-	// then use `pCommon.resolveColumnSrc`.
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.resolveColumnSrc from that module.
 	resolveColumnSrc: pCommon.resolveColumnSrc,
-	// @deprecated Moved to :pframes.process-column-common.
-	// Update imports: `pCommon := import(":pframes.process-column-common")`
-	// then use `pCommon.normalizeColumnEntries`.
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.normalizeColumnEntries from that module.
 	normalizeColumnEntries: pCommon.normalizeColumnEntries
 })
