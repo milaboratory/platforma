@@ -32,7 +32,7 @@ function createReadySnapshot(
   columnSpec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): ColumnSnapshot {
+): ColumnSnapshot<PObjectId> {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
@@ -48,7 +48,7 @@ function createReadySnapshot(
   };
 }
 
-function createComputingSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot {
+function createComputingSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
   return {
     id: id as PObjectId,
     spec: columnSpec,
@@ -59,7 +59,7 @@ function createComputingSnapshot(id: string, columnSpec: PColumnSpec): ColumnSna
   };
 }
 
-function createAbsentSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot {
+function createAbsentSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
   return {
     id: id as PObjectId,
     spec: columnSpec,
@@ -74,7 +74,7 @@ interface Trace {
   importance: number;
 }
 
-function extractTrace(snapshot: ColumnSnapshot): Trace[] {
+function extractTrace(snapshot: ColumnSnapshot<PObjectId>): Trace[] {
   const raw = snapshot.spec.annotations?.["pl7.app/trace"];
   return raw ? (JSON.parse(raw) as Trace[]) : [];
 }

@@ -117,17 +117,14 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     labels: ["Unique entry 1", "Unique entry 2"],
   },
 ])("test label derivation: $name", ({ traces, labels }) => {
-  expect(deriveDistinctLabels(tracesToSpecs(traces)).map((r) => r.label)).toEqual(labels);
-  expect(
-    deriveDistinctLabels(tracesToSpecs(traces), { includeNativeLabel: true }).map((r) => r.label),
-  ).toEqual(labels.map((l) => "Label / " + l));
+  expect(deriveDistinctLabels(tracesToSpecs(traces))).toEqual(labels);
+  expect(deriveDistinctLabels(tracesToSpecs(traces), { includeNativeLabel: true })).toEqual(
+    labels.map((l) => "Label / " + l),
+  );
 });
 
 test("test fallback to native labels in label derivation", () => {
-  expect(deriveDistinctLabels(tracesToSpecs([[], []])).map((r) => r.label)).toEqual([
-    "Label",
-    "Label",
-  ]);
+  expect(deriveDistinctLabels(tracesToSpecs([[], []]))).toEqual(["Label", "Label"]);
 });
 
 test.each<{ name: string; traces: Trace[]; labels: string[] }>([
@@ -208,7 +205,7 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
     labels: ["A", "A", "B"],
   },
 ])("test label minimization: $name", ({ traces, labels }) => {
-  expect(deriveDistinctLabels(tracesToSpecs(traces)).map((r) => r.label)).toEqual(labels);
+  expect(deriveDistinctLabels(tracesToSpecs(traces))).toEqual(labels);
 });
 
 test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements: string[] }>([
@@ -274,72 +271,173 @@ test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements:
 ])(
   "test label derivation with forceTraceElements: $name",
   ({ name, traces, labels, forceTraceElements }) => {
-    expect(
-      deriveDistinctLabels(tracesToSpecs(traces), { forceTraceElements }).map((r) => r.label),
-    ).toEqual(labels);
+    expect(deriveDistinctLabels(tracesToSpecs(traces), { forceTraceElements })).toEqual(labels);
 
     if (name === "force element with includeNativeLabel") {
       expect(
         deriveDistinctLabels(tracesToSpecs(traces), {
           forceTraceElements,
           includeNativeLabel: true,
-        }).map((r) => r.label),
+        }),
       ).toEqual(labels.map((l) => "Label / " + l));
     }
   },
 );
 
-// --- Entry with { spec, prefixTrace, suffixTrace } ---
+// --- Entry with { spec, extraTrace } ---
 
-test("Entry with prefixTrace prepends to labels", () => {
+test("Entry with extraTrace (suffix, default) appends to labels", () => {
   const spec = createSpec({
     annotations: {
       [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Base" }]),
     },
   });
   const entries: Entry[] = [
-    { spec, prefixTrace: [{ type: "prefix", label: "P1" }] },
-    { spec, prefixTrace: [{ type: "prefix", label: "P2" }] },
+    { spec, extraTrace: [{ type: "suffix", label: "S1" }] },
+    { spec, extraTrace: [{ type: "suffix", label: "S2" }] },
   ];
-  const labels = deriveDistinctLabels(entries).map((r) => r.label);
-  expect(labels).toEqual(["P1", "P2"]);
-});
-
-test("Entry with suffixTrace appends to labels", () => {
-  const spec = createSpec({
-    annotations: {
-      [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Base" }]),
-    },
-  });
-  const entries: Entry[] = [
-    { spec, suffixTrace: [{ type: "suffix", label: "S1" }] },
-    { spec, suffixTrace: [{ type: "suffix", label: "S2" }] },
-  ];
-  const labels = deriveDistinctLabels(entries).map((r) => r.label);
+  const labels = deriveDistinctLabels(entries);
   expect(labels).toEqual(["S1", "S2"]);
 });
 
-test("Entry with both prefixTrace and suffixTrace", () => {
-  const spec1 = createSpec({
+test("Entry with extraTrace position prefix prepends to labels", () => {
+  const spec = createSpec({
     annotations: {
-      [Annotation.Trace]: JSON.stringify([{ type: "base", label: "Same" }]),
+      [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Base" }]),
     },
   });
   const entries: Entry[] = [
+    { spec, extraTrace: [{ type: "prefix", label: "P1", position: "prefix" }] },
+    { spec, extraTrace: [{ type: "prefix", label: "P2", position: "prefix" }] },
+  ];
+  const labels = deriveDistinctLabels(entries);
+  expect(labels).toEqual(["P1", "P2"]);
+});
+
+// --- linkerPath ---
+
+test("linkerPath appends default 'via' suffix", () => {
+  const entries: Entry[] = [
     {
-      spec: spec1,
-      prefixTrace: [{ type: "pfx", label: "Pre1" }],
-      suffixTrace: [{ type: "sfx", label: "Suf1" }],
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [
+        {
+          spec: createSpec({
+            annotations: { [Annotation.LinkLabel]: "MyLinker" },
+          }),
+        },
+      ],
     },
     {
-      spec: spec1,
-      prefixTrace: [{ type: "pfx", label: "Pre2" }],
-      suffixTrace: [{ type: "sfx", label: "Suf2" }],
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
     },
   ];
-  const labels = deriveDistinctLabels(entries).map((r) => r.label);
-  // suffix is later in the trace (higher positional importance), so it wins over prefix
-  expect(labels).toEqual(["Suf1", "Suf2"]);
+  const labels = deriveDistinctLabels(entries);
+  expect(labels).toEqual(["Col1 via MyLinker", "Col2"]);
+});
+
+test("linkerPath with multiple steps joins with ' > '", () => {
+  const entries: Entry[] = [
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [
+        { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) },
+        { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L2" } }) },
+      ],
+    },
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
+    },
+  ];
+  const labels = deriveDistinctLabels(entries);
+  expect(labels).toEqual(["Col1 via L1 > L2", "Col2"]);
+});
+
+test("linkerPath skips steps without labels", () => {
+  const entries: Entry[] = [
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [
+        { spec: createSpec() },
+        { spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L2" } }) },
+      ],
+    },
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
+    },
+  ];
+  const labels = deriveDistinctLabels(entries);
+  expect(labels).toEqual(["Col1 via L2", "Col2"]);
+});
+
+test("linkerPath with custom linkerLabelFormatter", () => {
+  const entries: Entry[] = [
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
+    },
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
+    },
+  ];
+  const labels = deriveDistinctLabels(entries, {
+    linkerLabelFormatter: (linkerLabels) => `[${linkerLabels.join(", ")}]`,
+  });
+  expect(labels).toEqual(["Col1 [L1]", "Col2"]);
+});
+
+test("linkerPath with linkerLabelFormatter returning undefined suppresses suffix", () => {
+  const entries: Entry[] = [
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
+    },
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
+    },
+  ];
+  const labels = deriveDistinctLabels(entries, {
+    linkerLabelFormatter: () => undefined,
+  });
+  expect(labels).toEqual(["Col1", "Col2"]);
+});
+
+test("linkerPath falls back to Label when LinkLabel is absent", () => {
+  const entries: Entry[] = [
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+      }),
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.Label]: "FallbackLabel" } }) }],
+    },
+    {
+      spec: createSpec({
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+      }),
+    },
+  ];
+  const labels = deriveDistinctLabels(entries);
+  expect(labels).toEqual(["Col1 via FallbackLabel", "Col2"]);
 });
 
 // --- addLabelAsSuffix ---
@@ -349,7 +447,7 @@ test("addLabelAsSuffix places native label at the end", () => {
   const labels = deriveDistinctLabels(specs, {
     includeNativeLabel: true,
     addLabelAsSuffix: true,
-  }).map((r) => r.label);
+  });
   expect(labels).toEqual(["L1 / Label", "L2 / Label"]);
 });
 
@@ -370,7 +468,7 @@ test("custom separator is used between label parts", () => {
       { type: "t2", label: "Y" },
     ],
   ]);
-  const labels = deriveDistinctLabels(specs, { separator: " - " }).map((r) => r.label);
+  const labels = deriveDistinctLabels(specs, { separator: " - " });
   expect(labels).toEqual(["A - X", "A - Y", "B - Y"]);
 });
 
@@ -378,7 +476,7 @@ test("custom separator is used between label parts", () => {
 
 test("single value gets its trace label", () => {
   const specs = tracesToSpecs([[{ type: "t1", label: "Only" }]]);
-  const labels = deriveDistinctLabels(specs).map((r) => r.label);
+  const labels = deriveDistinctLabels(specs);
   expect(labels).toEqual(["Only"]);
 });
 
@@ -395,13 +493,13 @@ test("Unlabeled fallback when no trace entries match", () => {
   delete spec.annotations![Annotation.Label];
 
   const result = deriveDistinctLabels([spec, spec]);
-  expect(result.every((r) => r.label === "Same")).toBe(true);
+  expect(result.every((r) => r === "Same")).toBe(true);
 });
 
 test("Unlabeled when no traces and no label", () => {
   const spec = createSpec();
   const result = deriveDistinctLabels([spec, spec]);
-  expect(result.every((r) => r.label === "Unlabeled")).toBe(true);
+  expect(result.every((r) => r === "Unlabeled")).toBe(true);
 });
 
 // --- repeated type occurrences (secondaryTypes path) ---
@@ -418,7 +516,7 @@ test("repeated type occurrences are used as secondary types", () => {
       { type: "t1", label: "B" },
     ],
   ]);
-  const labels = deriveDistinctLabels(specs).map((r) => r.label);
+  const labels = deriveDistinctLabels(specs);
   // t1@1 has label "First" for both (same), t1@2 has "A" vs "B" (distinguishing)
   // t1@2 is secondary since it only appears when there are 2 occurrences
   expect(labels).toEqual(["A", "B"]);
@@ -439,7 +537,7 @@ test("spec without native label uses only trace entries", () => {
       },
     }),
   ];
-  const labels = deriveDistinctLabels(specs).map((r) => r.label);
+  const labels = deriveDistinctLabels(specs);
   expect(labels).toEqual(["X", "Y"]);
 });
 
@@ -456,6 +554,6 @@ test("includeNativeLabel with no native label does not break", () => {
       },
     }),
   ];
-  const labels = deriveDistinctLabels(specs, { includeNativeLabel: true }).map((r) => r.label);
+  const labels = deriveDistinctLabels(specs, { includeNativeLabel: true });
   expect(labels).toEqual(["X", "Y"]);
 });

@@ -3,6 +3,7 @@ import type {
   AxisFilterValue,
   AxisId,
   PartitionedDataInfoEntries,
+  PObjectId,
 } from "@milaboratories/pl-model-common";
 import {
   canonicalizeAxisId,
@@ -30,7 +31,7 @@ export interface ExpandByPartitionOpts {
 
 export interface ExpandByPartitionResult {
   /** Expanded snapshots (one per key combination per original snapshot). */
-  readonly items: ColumnSnapshot[];
+  readonly items: ColumnSnapshot<PObjectId>[];
   /** False if any column's data was not ready for splitting. */
   readonly complete: boolean;
 }
@@ -49,7 +50,7 @@ export interface ExpandByPartitionResult {
  * is not ready (status !== 'ready' or partition data unavailable).
  */
 export function expandByPartition(
-  snapshots: ColumnSnapshot[],
+  snapshots: ColumnSnapshot<PObjectId>[],
   splitAxes: SplitAxis[],
   opts?: ExpandByPartitionOpts,
 ): ExpandByPartitionResult {
@@ -58,7 +59,7 @@ export function expandByPartition(
   }
 
   const splitAxisIdxs = splitAxes.map((a) => a.idx).sort((a, b) => a - b);
-  const result: ColumnSnapshot[] = [];
+  const result: ColumnSnapshot<PObjectId>[] = [];
 
   for (const snapshot of snapshots) {
     if (snapshot.dataStatus !== "ready" || snapshot.data === undefined) {

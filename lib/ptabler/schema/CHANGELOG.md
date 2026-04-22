@@ -1,5 +1,24 @@
 # @platforma-open/software-ptabler.types
 
+## 1.14.9
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+
+## 1.14.8
+
+### Patch Changes
+
+- fd0b5e3: Slice operation support
+
+## 1.14.7
+
+### Patch Changes
+
+- 54f60b7: Slice operation support
+
 ## 1.14.6
 
 ### Patch Changes

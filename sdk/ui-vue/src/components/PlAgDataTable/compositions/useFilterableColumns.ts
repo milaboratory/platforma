@@ -32,13 +32,13 @@ export function useFilterableColumns(
       const dataColDefs = getDataColDefs(columnDefs);
       const cols = dataColDefs
         .filter((def): def is typeof def & { colId: string } => !isNil(def.colId))
-        .flatMap((def) => ({
-          id: parseJson(def.colId satisfies string as PlTableColumnIdJson).labeled,
+        .map((def) => ({
+          item: parseJson(def.colId satisfies string as PlTableColumnIdJson).labeled,
           hide: def.hide,
         }));
 
-      filterableColumns.value = cols.map((c) => c.id);
-      visibleFilterableColumns.value = cols.filter((c) => !c.hide).map((c) => c.id);
+      filterableColumns.value = cols.map((c) => c.item);
+      visibleFilterableColumns.value = cols.filter((c) => !c.hide).map((c) => c.item);
     },
     { immediate: true },
   );

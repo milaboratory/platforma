@@ -3,7 +3,7 @@ import type { FilterSpecMetadataRecord } from "./types";
 
 export const filterUiMetadata = {
   equal: {
-    label: "Col = X (Equal)",
+    label: "Equals (=)",
     form: {
       column: {
         label: "Column",
@@ -24,7 +24,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   notEqual: {
-    label: "Col ≠ X (Not Equal)",
+    label: "Not Equal To (≠)",
     form: {
       column: {
         label: "Column",
@@ -45,7 +45,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   lessThan: {
-    label: "Col < X (Less Than)",
+    label: "Below (<)",
     form: {
       column: {
         label: "Column",
@@ -66,7 +66,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   greaterThan: {
-    label: "Col > X (Greater Than)",
+    label: "Above (>)",
     form: {
       column: {
         label: "Column",
@@ -87,7 +87,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   lessThanOrEqual: {
-    label: "Col ≤ X (Less Than or Equal)",
+    label: "At Most (≤)",
     form: {
       column: {
         label: "Column",
@@ -108,7 +108,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   greaterThanOrEqual: {
-    label: "Col ≥ X (Greater Than or Equal)",
+    label: "At Least (≥)",
     form: {
       column: {
         label: "Column",
@@ -308,7 +308,7 @@ export const filterUiMetadata = {
     supportedFor: isNumericValueType,
   },
   patternContainSubsequence: {
-    label: "Col ~ Seq (Contain Subsequence)",
+    label: "Contains (~)",
     form: {
       column: {
         label: "Column",
@@ -329,7 +329,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   patternNotContainSubsequence: {
-    label: "Col ≁ Seq (Not Contain Subsequence)",
+    label: "Does Not Contain (≁)",
     form: {
       column: {
         label: "Column",
@@ -350,7 +350,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   patternEquals: {
-    label: "Col = Seq (Equals)",
+    label: "Equals (=)",
     form: {
       column: {
         label: "Column",
@@ -371,7 +371,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   patternNotEquals: {
-    label: "Col ≠ Seq (Not Equal)",
+    label: "Not Equal To (≠)",
     form: {
       column: {
         label: "Column",
@@ -392,7 +392,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   isNA: {
-    label: "Is NA",
+    label: "Is Empty (NA)",
     form: {
       column: {
         label: "Column",
@@ -408,7 +408,7 @@ export const filterUiMetadata = {
     supportedFor: () => true,
   },
   isNotNA: {
-    label: "Is Not NA",
+    label: "Is Not Empty (≠ NA)",
     form: {
       column: {
         label: "Column",
@@ -472,7 +472,7 @@ export const filterUiMetadata = {
     supportedFor: () => false,
   },
   patternMatchesRegularExpression: {
-    label: "Col ~ X (Matches Regular Expression)",
+    label: "Matches Regex (.*)",
     form: {
       column: {
         label: "Column",
@@ -493,7 +493,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   patternFuzzyContainSubsequence: {
-    label: "Col ~ Seq (Fuzzy Contain Subsequence)",
+    label: "Contains Approximately (Fuzzy ~)",
     form: {
       column: {
         label: "Column",
@@ -514,7 +514,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   inSet: {
-    label: "Col ∈ Set (In Set)",
+    label: "In List (∈)",
     form: {
       column: {
         label: "Column",
@@ -535,7 +535,7 @@ export const filterUiMetadata = {
     supportedFor: isStringValueType,
   },
   notInSet: {
-    label: "Col ∉ Set (Not In Set)",
+    label: "Not In List (∉)",
     form: {
       column: {
         label: "Column",

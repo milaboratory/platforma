@@ -145,6 +145,7 @@ export const Annotation = {
   IsScore: "pl7.app/isScore",
   IsSubset: "pl7.app/isSubset",
   Label: "pl7.app/label",
+  LinkLabel: "pl7.app/linkLabel",
   Max: "pl7.app/max",
   Min: "pl7.app/min",
   MultipliesBy: "pl7.app/multipliesBy",
@@ -204,9 +205,23 @@ export type Annotation = Metadata &
     [Annotation.Table.FontFamily]: string;
     [Annotation.Table.OrderPriority]: StringifiedJson<number>;
     [Annotation.Table.Visibility]: "hidden" | "optional" | (string & {});
-    [Annotation.Trace]: StringifiedJson<Record<string, unknown>>;
+    [Annotation.Trace]: StringifiedJson<Trace>;
     [Annotation.VDJ.IsAssemblingFeature]: StringifiedJson<boolean>;
   }>;
+
+/// One step in a column's derivation lineage. Only `type` and `label` are part
+/// of the typed public surface; writers may add fields (e.g. `id`, `importance`)
+/// passed through opaquely as `unknown`, accessed via explicit narrowing.
+const TraceEntrySchema = z
+  .object({
+    type: z.string(),
+    label: z.string(),
+  })
+  .catchall(z.unknown());
+
+export type TraceEntry = z.infer<typeof TraceEntrySchema>;
+
+export type Trace = TraceEntry[];
 
 // export const AxisSpec = z.object({
 //   type: z.nativeEnum(ValueType),
@@ -256,7 +271,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
   [Annotation.Sequence.IsAnnotation]: z.boolean(),
   [Annotation.Table.OrderPriority]: z.number(),
-  [Annotation.Trace]: z.record(z.string(), z.unknown()),
+  [Annotation.Trace]: z.array(TraceEntrySchema),
   [Annotation.VDJ.IsAssemblingFeature]: z.boolean(),
 };
 
@@ -527,11 +542,9 @@ export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
 
 /** Create list of regular axisSpec from normalized (parents are indexes, inside of current axes list) */
 export function getDenormalizedAxesList(axesSpec: AxisSpecNormalized[]): AxisSpec[] {
-  const idsList = axesSpec.map((axisSpec) => canonicalizeJson(getAxisId(axisSpec)));
+  const idsList = axesSpec.map(canonicalizeAxisId);
   return axesSpec.map((axisSpec) => {
-    const parentsIds = axisSpec.parentAxesSpec.map((axisSpec) =>
-      canonicalizeJson(getAxisId(axisSpec)),
-    );
+    const parentsIds = axisSpec.parentAxesSpec.map(canonicalizeAxisId);
     const parentIdxs = parentsIds.map((id) => idsList.indexOf(id));
     const { parentAxesSpec: _, ...copiedRest } = axisSpec;
     if (parentIdxs.length) {

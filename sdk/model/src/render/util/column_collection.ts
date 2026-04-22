@@ -126,8 +126,8 @@ type IntermediateDirectEntry = {
 // Union type for intermediate processing
 type IntermediateColumnEntry = IntermediateSplitEntry | IntermediateDirectEntry;
 
-function splitFiltersToTrace(splitFilters?: AxisFilterInfo[]) {
-  if (!splitFilters) return undefined;
+function splitFiltersToExtraTrace(splitFilters?: AxisFilterInfo[]) {
+  if (splitFilters === undefined) return undefined;
   return splitFilters.map((filter) => ({
     type: `split:${canonicalizeAxisId(filter.axisId)}`,
     label: filter.label,
@@ -467,7 +467,8 @@ export class PColumnCollection {
       intermediateResults,
       (entry) => ({
         spec: entry.spec,
-        suffixTrace: entry.type === "split" ? splitFiltersToTrace(entry.axisFilters) : undefined,
+        extraTrace:
+          entry.type === "split" ? splitFiltersToExtraTrace(entry.axisFilters) : undefined,
       }),
       labelOps,
     );

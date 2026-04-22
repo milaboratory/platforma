@@ -12,11 +12,11 @@ import {
   Domain,
   readAnnotation,
   readDomain,
-  getAxisId,
   getUniqueSourceValuesWithLabels,
   parseJson,
+  getPTableColumnId,
 } from "@platforma-sdk/model";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import {
   PlAdvancedFilter,
@@ -26,36 +26,47 @@ import {
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
-import { isNil } from "es-toolkit";
+import { isFunction, isNil } from "es-toolkit";
 
-const model = defineModel<PlDataTableFiltersWithMeta>({ required: true });
 const props = defineProps<{
-  pframeHandle: Nil | PFrameHandle;
   columns: PTableColumnSpec[];
+  pframeHandle: Nil | PFrameHandle;
+  filters: PlDataTableFiltersWithMeta;
+  defaultFilters: Nil | PlDataTableFiltersWithMeta;
+  onUpdateFilters: (value: PlDataTableFiltersWithMeta) => void;
+  onResetDefaultFilters?: () => void;
+  onUpdateDefaultFilters?: (value: PlDataTableFiltersWithMeta) => void;
 }>();
 
-// Teleport for "Filters" button
-const mounted = ref(false);
-onMounted(() => {
-  mounted.value = true;
-});
 const teleportTarget = usePlBlockPageTitleTeleportTarget("PlTableFiltersV2");
 const showManager = ref(false);
+const hasFilters = computed(() => props.filters.filters.length > 0);
+const hasDefaultFilters = computed(
+  () => !isNil(props.defaultFilters) && props.defaultFilters.filters.length > 0,
+);
+const filters = computed<PlDataTableFiltersWithMeta>(() => {
+  if (isNil(props.defaultFilters) || props.defaultFilters?.filters.length === 0) {
+    return props.filters;
+  }
 
-// Check if any filters are active
-const filtersOn = computed(() => {
-  return model.value.filters.length > 0;
+  return {
+    ...props.filters,
+    filters: [...(props.defaultFilters?.filters ?? []), ...props.filters.filters],
+  };
 });
+const onUpdateFilters = (_value: PlAdvancedFilter) => {
+  const value = _value as PlDataTableFiltersWithMeta;
 
-function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
-  const id: PTableColumnId =
-    spec.type === "axis"
-      ? { type: "axis", id: getAxisId(spec.spec) }
-      : { type: "column", id: spec.id };
-  return canonicalizeJson<PTableColumnId>(id);
-}
+  if (isNil(props.defaultFilters)) {
+    return props.onUpdateFilters(value);
+  }
 
-const items = computed<PlAdvancedFilterItem[]>(() => {
+  const [defaults, ...rest] = value.filters;
+  props.onUpdateFilters({ ...value, filters: rest });
+  props.onUpdateDefaultFilters?.({ ...props.defaultFilters, filters: [defaults] });
+};
+
+const options = computed<PlAdvancedFilterItem[]>(() => {
   return props.columns.map((col, idx) => {
     const id = makeFilterColumnId(col);
     const label =
@@ -116,11 +127,18 @@ function handleSuggestOptions(params: {
     searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
   }).then((v) => v.values);
 }
+
+function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
+  return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
+}
 </script>
 
 <template>
-  <Teleport v-if="mounted && teleportTarget" :to="teleportTarget">
-    <PlBtnGhost :icon="filtersOn ? 'filter-on' : 'filter'" @click.stop="showManager = true">
+  <Teleport v-if="teleportTarget" :to="teleportTarget">
+    <PlBtnGhost
+      :icon="hasFilters || hasDefaultFilters ? 'filter-on' : 'filter'"
+      @click.stop="showManager = true"
+    >
       Filters
     </PlBtnGhost>
   </Teleport>
@@ -130,13 +148,31 @@ function handleSuggestOptions(params: {
 
     <div :class="$style.root">
       <PlAdvancedFilterComponent
-        v-model:filters="model as PlAdvancedFilter"
-        :items="items"
+        :filters="filters as PlAdvancedFilter"
+        :options="options"
         :supported-filters="supportedFilters"
         :get-suggest-options="handleSuggestOptions"
+        :is-pinned="(_, index) => hasDefaultFilters && index === 0"
+        :is-removable="(_, index) => (hasDefaultFilters ? index > 0 : true)"
+        :is-draggable="(_, index) => (hasDefaultFilters ? index > 0 : true)"
         :enable-dnd="false"
+        :enable-toggling="true"
         :enable-add-group-button="true"
-      />
+        @update-filters="onUpdateFilters"
+      >
+        <template #group-title="{ index }">
+          <div v-if="hasDefaultFilters && index === 0" :class="$style.defaultGroupTitle">
+            Default Group
+            <PlBtnGhost
+              v-if="isFunction(props.onResetDefaultFilters)"
+              icon="restart"
+              :class="$style.restartBtn"
+              @click.stop="props.onResetDefaultFilters()"
+            />
+          </div>
+          <div v-else>Custom Group</div>
+        </template>
+      </PlAdvancedFilterComponent>
     </div>
   </PlSlideModal>
 </template>
@@ -146,5 +182,19 @@ function handleSuggestOptions(params: {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+.defaultGroupTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.restartBtn {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  --button-width: 24px;
+  --btn-min-width: 24px;
+  --button-height: 24px;
+  --btn-min-height: 24x;
 }
 </style>

@@ -1,25 +1,23 @@
-import { computed, type MaybeRefOrGetter, toValue } from "vue";
+import { Ref, computed, toValue } from "vue";
 
-export function useFilteredItems<T>(
-  props: MaybeRefOrGetter<{
-    items: T[];
-    query: string;
-    getStrings: (item: T) => Iterable<string>;
-  }>,
-) {
+export function useFilteredItems<T>(props: {
+  items: Ref<T[]>;
+  query: Ref<string>;
+  getStrings: (item: T) => Iterable<string>;
+}) {
   const result = computed(() => {
     const { items, query, getStrings } = toValue(props);
     const filteredItems: T[] = [];
     const segments = new Map<string, StringSegment[]>();
-    for (const item of items) {
+    for (const item of items.value) {
       let kept = false;
       for (const string of getStrings(item)) {
         let stringSegments = segments.get(string);
         if (!stringSegments) {
-          stringSegments = matchSubstrings(string, query);
+          stringSegments = matchSubstrings(string, query.value);
           segments.set(string, stringSegments);
         }
-        if (!kept && (!query || stringSegments.some(({ match }) => match))) {
+        if (!kept && (!query.value || stringSegments.some(({ match }) => match))) {
           filteredItems.push(item);
           kept = true;
         }

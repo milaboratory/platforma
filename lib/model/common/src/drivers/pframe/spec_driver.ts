@@ -1,5 +1,6 @@
 import type { Branded } from "@milaboratories/helpers";
 import type { PoolEntry } from "../../pool_entry";
+import type { PObjectId } from "../../pool";
 import type {
   AxisSpec,
   AxesSpec,
@@ -111,8 +112,48 @@ export interface DiscoverColumnsLinkerStep {
   qualifications: AxisQualification[];
 }
 
+/**
+ * Filter step: intersects the current subquery with a filter column on shared
+ * axes. Filter columns carry `pl7.app/isSubset: "true"` with axes ⊆ dataset
+ * axes, so the inner-join narrows the key space to rows where the filter is
+ * present.
+ */
+export interface DiscoverColumnsFilterStep {
+  type: "filter";
+  /** The filter column applied in this step */
+  filter: PColumnIdAndSpec;
+}
+
 /** A step traversed during path-based column discovery. Discriminated by `type`. */
-export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep;
+export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep | DiscoverColumnsFilterStep;
+
+/**
+ * Input to {@link PFrameWasmV4.buildQuery}: a terminal column plus an ordered
+ * path of wrapping steps (linker hops, filter joins). Produces a
+ * {@link SpecQueryJoinEntry} ready to be plugged into an
+ * `innerJoin`/`fullJoin`/`outerJoin` entry list.
+ *
+ * Path ordering: `path[0]` is outermost (first applied), `path[N-1]` is
+ * closest to `column`. Omit or pass `[]` for a direct column with no
+ * wrapping.
+ *
+ * Columns are referenced by id — specs are resolved later at
+ * {@link PFrameWasmV4.evaluateQuery} against the registered specs of the
+ * PFrame, so the caller cannot disagree with the frame about spec content.
+ *
+ * Qualifications annotate the resulting outermost entry; they do not
+ * propagate into the inner query.
+ */
+export type BuildQueryInput = {
+  /** Shape version marker — bumped only on breaking structural changes. */
+  readonly version: "v1";
+  /** Terminal column id — the column actually returning data. */
+  readonly column: PObjectId;
+  /** Ordered path from source integration to `column`. Outermost first. */
+  readonly path?: DiscoverColumnsStepInfo[];
+  /** Axis qualifications attached to the resulting join entry. */
+  readonly qualifications?: AxisQualification[];
+};
 
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {

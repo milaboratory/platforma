@@ -1,5 +1,47 @@
 # @milaboratories/milaboratories.monetization-test.ui
 
+## 1.2.17
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.6
+- @platforma-sdk/ui-vue@1.65.6
+- @milaboratories/milaboratories.monetization-test.model@1.1.12
+
+## 1.2.16
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.4
+- @milaboratories/milaboratories.monetization-test.model@1.1.11
+- @platforma-sdk/ui-vue@1.65.4
+
+## 1.2.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+- @milaboratories/milaboratories.monetization-test.model@1.1.10
+- @platforma-sdk/ui-vue@1.65.3
+
+## 1.2.14
+
+### Patch Changes
+
+- Updated dependencies [92ef20f]
+  - @platforma-sdk/ui-vue@1.65.0
+  - @platforma-sdk/model@1.65.0
+  - @milaboratories/milaboratories.monetization-test.model@1.1.9
+
+## 1.2.13
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/ui-vue@1.64.0
+  - @platforma-sdk/model@1.64.0
+  - @milaboratories/milaboratories.monetization-test.model@1.1.8
+
 ## 1.2.12
 
 ### Patch Changes

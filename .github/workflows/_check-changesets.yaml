@@ -1,0 +1,30 @@
+name: _check-changesets
+
+on:
+  workflow_call:
+    outputs:
+      has-pending:
+        description: Whether there are pending changesets
+        value: ${{ jobs.check-changesets.outputs.has-pending }}
+
+jobs:
+  check-changesets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-pending: ${{ steps.check.outputs.has-pending }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changeset status
+        id: check
+        run: |
+          npx @changesets/cli status --since=origin/main
+
+          NON_README=$(ls .changeset/*.md 2>/dev/null | grep -v README.md || true)
+          if [ -n "$NON_README" ]; then
+            echo "has-pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-pending=false" >> "$GITHUB_OUTPUT"
+          fi

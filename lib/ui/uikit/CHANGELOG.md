@@ -1,5 +1,41 @@
 # @milaboratories/uikit
 
+## 2.12.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.6
+
+## 2.12.2
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.4
+
+## 2.12.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+
+## 2.12.0
+
+### Minor Changes
+
+- 92ef20f: Default filters available from UI
+
+### Patch Changes
+
+- Updated dependencies [92ef20f]
+  - @platforma-sdk/model@1.65.0
+
+## 2.11.9
+
+### Patch Changes
+
+- Updated dependencies [559d124]
+  - @platforma-sdk/model@1.64.0
+
 ## 2.11.8
 
 ### Patch Changes

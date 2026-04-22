@@ -6,10 +6,11 @@ import {
   PlSlideModal,
   usePlBlockPageTitleTeleportTarget,
 } from "@milaboratories/uikit";
-import { type Column, type DisplayedColumnsChangedEvent, type GridApi } from "ag-grid-enterprise";
-import { computed, ref, toRefs, watch } from "vue";
+import { type GridApi } from "ag-grid-enterprise";
+import { computed, ref } from "vue";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable/sources/row-number";
 import { useFilteredItems } from "./useFilteredItems";
+import { useGridColumns } from "./useGridColumns";
 
 const props = defineProps<{
   /**
@@ -25,44 +26,25 @@ const props = defineProps<{
   width?: string;
 }>();
 
-const { api: gridApi } = toRefs(props);
-
-const columns = ref<Column[]>([]);
-watch(
-  () => gridApi.value,
-  (gridApi) => {
-    if (gridApi.isDestroyed()) return;
-
-    gridApi.addEventListener("displayedColumnsChanged", (event: DisplayedColumnsChangedEvent) => {
-      columns.value = event.api.getAllGridColumns();
-    });
-
-    columns.value = gridApi.getAllGridColumns();
-    if (columns.value.length > 0) {
-      gridApi.moveColumns(columns.value, 0);
-    }
-  },
-  { immediate: true },
-);
-
-const items = computed(() => {
-  return columns.value.map((col) => ({
-    column: col,
-    id: col.getId(),
-    label: col.getColDef().headerName!,
-  }));
-});
-
 const query = ref("");
-
 const slideModal = ref(false);
 const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgGridColumnManager");
 
-const { filteredItems, segments } = useFilteredItems(() => ({
-  items: items.value,
-  query: query.value,
+const columns = useGridColumns(props);
+
+const items = computed(() => {
+  return columns.value.map((col, i) => ({
+    column: col,
+    id: col.getId(),
+    label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
+  }));
+});
+
+const { filteredItems, segments } = useFilteredItems({
+  items,
+  query,
   getStrings: (item) => [item.label],
-}));
+});
 </script>
 
 <template>
@@ -79,17 +61,17 @@ const { filteredItems, segments } = useFilteredItems(() => ({
       :is-draggable="(item) => !item.column.getColDef().lockPosition"
       :on-sort="
         (fromIndex, toIndex) => {
-          if (!gridApi.isDestroyed()) {
+          if (!props.api.isDestroyed()) {
             const columnToMove = columns[fromIndex];
-            gridApi.moveColumns([columnToMove], toIndex);
+            props.api.moveColumns([columnToMove], toIndex);
           }
           return true; // Let PlElementList handle the visual update
         }
       "
       :on-toggle="
         (item) => {
-          if (!gridApi.isDestroyed()) {
-            gridApi.setColumnsVisible([item.column], !item.column.isVisible());
+          if (!props.api.isDestroyed()) {
+            props.api.setColumnsVisible([item.column], !item.column.isVisible());
           }
         }
       "

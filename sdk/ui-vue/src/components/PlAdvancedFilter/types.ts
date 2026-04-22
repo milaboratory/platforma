@@ -18,7 +18,12 @@ export type PlAdvancedFilterColumnId =
   | CanonicalizedJson<AxisId>
   | CanonicalizedJson<PTableColumnId>;
 
-export type RequiredMeta = { id: number; isExpanded?: boolean };
+export type RequiredMeta = {
+  id: number;
+  isExpanded?: boolean;
+  isSuppressed?: boolean;
+  source?: string;
+};
 
 export type FilterLeafContent = Extract<
   FilterSpecLeaf<PlAdvancedFilterColumnId>,

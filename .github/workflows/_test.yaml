@@ -1,0 +1,92 @@
+name: _test
+
+on:
+  workflow_call:
+    inputs:
+      no-cache:
+        description: Skip test cache check and run all tests without cache
+        type: boolean
+        default: false
+
+env:
+  BODY_LIMIT: "1048576000"
+
+jobs:
+  test:
+    runs-on: dev-pl-sdk
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Check test cache (dry-run)
+        if: ${{ !inputs.no-cache }}
+        id: dry-run
+        run: |
+          pnpm run test:local+dry-run > ./test-dry-run.json || true
+          SKIP_TESTS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
+          echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
+          echo "Test cache skip: $SKIP_TESTS"
+
+      - name: Build
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
+        run: pnpm run ci:build:local
+
+      - name: Login to ECR
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: "true"
+
+      - name: Start Platforma Docker
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        env:
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+        with:
+          pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
+          pl-docker-tag: main
+          pl-test-assets-dir: assets
+          pl-log-level: info
+
+      - name: Run tests
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        env:
+          PL_ADDRESS: "http://127.0.0.1:6345"
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm run ${{ inputs.no-cache && 'ci:test:local+no-cache' || 'ci:test:local' }}
+
+      - name: Upload coverage
+        if: always()
+        uses: milaboratory/github-ci/actions/node/upload-coverage@v4
+        with:
+          test-coverage-reports: "**/coverage/lcov.info"
+          test-results-reports: "**/test-report.junit.xml"

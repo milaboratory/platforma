@@ -173,6 +173,7 @@ function migrateV4toV5(
       gridState: entry.gridState,
       sheetsState: entry.sheetsState,
       filtersState,
+      defaultFiltersState: null,
     };
   });
 
@@ -188,8 +189,11 @@ function migrateV4toV5(
       currentCache && oldSourceId
         ? {
             sourceId: oldSourceId,
-            hiddenColIds: state.pTableParams.hiddenColIds,
+            hiddenColIds:
+              state.pTableParams.hiddenColIds?.map((id) => ({ type: "column" as const, id })) ??
+              null,
             filters: distillFilterSpec(currentCache.filtersState),
+            defaultFilters: null,
             sorting: state.pTableParams.sorting,
           }
         : createDefaultPTableParams(),
@@ -272,6 +276,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
     sourceId: null,
     hiddenColIds: null,
     filters: null,
+    defaultFilters: null,
     sorting: [],
   };
 }

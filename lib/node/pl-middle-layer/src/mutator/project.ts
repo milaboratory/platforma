@@ -50,6 +50,7 @@ import {
   getServiceTemplateField,
   FieldsToDuplicate,
 } from "../model/project_model";
+import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
 import { BlockPackTemplateField, createBlockPack } from "./block-pack/block_pack";
 import type { BlockGraph, ProductionGraphBlockInfo } from "../model/project_model_util";
 import { allBlocks, graphDiff, productionGraph, stagingGraph } from "../model/project_model_util";
@@ -790,8 +791,10 @@ export class ProjectMutator {
       // modelAPIVersion === 2 means BlockModelV3 with .args() lambda for deriving args
 
       if (req.modelAPIVersion !== blockConfig.modelAPIVersion) {
-        throw new Error(
-          `Model API version mismatch for block ${req.blockId}: ${req.modelAPIVersion} !== ${blockConfig.modelAPIVersion}`,
+        throw new ModelAPIVersionMismatchError(
+          req.blockId,
+          req.modelAPIVersion,
+          blockConfig.modelAPIVersion,
         );
       }
 

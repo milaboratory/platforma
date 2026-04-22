@@ -1,0 +1,61 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: "1048576000"
+
+jobs:
+  # ──────────────────────────────────────────────
+  # 1. Init
+  # ──────────────────────────────────────────────
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.context.outputs.is-release }}
+      current-version: ${{ steps.context.outputs.current-version }}
+    steps:
+      - id: context
+        uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+
+  # ──────────────────────────────────────────────
+  # 2. Test (no cache — force re-run all tests)
+  # ──────────────────────────────────────────────
+  test:
+    needs: [init]
+    uses: ./.github/workflows/_test.yaml
+    with:
+      no-cache: true
+    secrets: inherit
+
+  # ──────────────────────────────────────────────
+  # 3. Notify
+  # ──────────────────────────────────────────────
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test]
+    steps:
+      - id: search-tags
+        uses: milaboratory/github-ci/actions/strings/json-list@v4
+        with:
+          input: nightly
+
+      - uses: milaboratory/github-ci/blocks/notify/slack/release@v4
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_PL_SDK_CHANNEL }}
+          job-status: |
+            ${{ needs.test.result }}
+          product-name: Platforma SDK (nightly)
+          search-tags: ${{ steps.search-tags.outputs.result }}

@@ -5,7 +5,8 @@ license:
 logging:
   level: "info"
   destinations:
-    - path: "platforma.log"
+    - type: "file"
+      path: "platforma.log"
 
 monitoring:
   listen: "127.0.0.1:11235"
@@ -18,15 +19,19 @@ core:
     extendedInfo: true
     dumpResourceData: true
 
+  tls:
+    enabled: false
   grpc:
     listen: "127.0.0.1:11234"
-    tlsEnabled: false
-
   http:
     listen: "127.0.0.1:11233"
 
-  authEnabled: false
-  auth: []
+  authEnabled: true
+  auth:
+    - driver: jwt
+      key: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    - driver: htpasswd
+      path: "users.htpasswd"
   db:
     path: "./db"
 
