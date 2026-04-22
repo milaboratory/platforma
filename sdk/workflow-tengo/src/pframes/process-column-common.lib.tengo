@@ -1,0 +1,366 @@
+/**
+ * Shared helpers for the standard and batch `processColumn` paths.
+ *
+ * Both paths build output specs from the same trace-injection rules and return
+ * the same public accessor interface; those shared pieces live here so the two
+ * callers stay lock-step. Also hosts column-entry normalization used by the
+ * batch input form (re-exported from `:pframes.util` for back-compat).
+ *
+ * Exports:
+ *   - buildOutputTrace          — derives per-output trace-injection info
+ *   - createProcessColumnResult — wraps renderResult as the public result object
+ *   - deriveHeaderFromSpec      — label-or-name header derivation
+ *   - resolveColumnSrc          — normalizes a single column entry
+ *   - normalizeColumnEntries    — normalizes any of the accepted overload forms
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+slices := import(":slices")
+pSpec := import(":pframes.spec")
+builder := import(":pframes.builder")
+
+/**
+ * Derives per-output trace-injection info from the processColumn options, the
+ * output config, and the seeding input spec. Combines the global `opts.traceSteps`
+ * with the output-level `output.traceSteps` and decides whether existing trace
+ * annotations on downstream specs should be overridden (explicit
+ * `output.overrideTrace` wins; otherwise overrides when any trace steps are
+ * provided).
+ *
+ * Called by both the standard and batch dispatch paths in `processColumn`.
+ * Standard mode passes the single input column spec as `inputSpec`; batch mode
+ * passes the first primary column's spec (no single canonical input exists
+ * across multiple primaries).
+ *
+ * @param opts        processColumn opts (may carry `traceSteps`)
+ * @param output      output config (may carry `traceSteps`, `overrideTrace`)
+ * @param inputSpec   PColumn spec seeding the trace
+ * @returns { trace: TraceInjector | undefined, overrideTrace: boolean }
+ */
+buildOutputTrace := func(opts, output, inputSpec) {
+	hasOutputTrace := !is_undefined(output.traceSteps)
+	hasGlobalTrace := !is_undefined(opts.traceSteps)
+	hasInputTrace := !is_undefined(inputSpec.annotations) && !is_undefined(inputSpec.annotations[pSpec.A_TRACE])
+
+	outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
+
+	trace := undefined
+	if len(outputTraceSteps) > 0 || hasInputTrace {
+		trace = pSpec.makeTrace(inputSpec, outputTraceSteps...)
+	}
+
+	outputOverrideTrace := output.overrideTrace
+	if is_undefined(outputOverrideTrace) {
+		outputOverrideTrace = hasOutputTrace || hasGlobalTrace
+	}
+
+	return { trace: trace, overrideTrace: outputOverrideTrace }
+}
+
+/**
+ * Builds the object returned from `processColumn` — the public handle callers
+ * use to inspect and wire up processing results.
+ *
+ * The returned object exposes the same interface for both the standard and
+ * batch dispatch paths: per-output spec/data accessors, PFrame builders over
+ * Xsv/TsvContent outputs, and enumeration helpers. `Xsv` and `TsvContent`
+ * share the "columnar" branch (spec is a map of columnName → PColumnSpec);
+ * other output types have a single spec/data pair.
+ *
+ * @param renderResult  the underlying render() result
+ * @param outputsMap    map of outputName → output config (type, settings, …)
+ * @param outputSpecs   map of outputName → processed PColumnSpec (or column map)
+ * @returns processColumn result object with these methods:
+ *   - outputSpec(name, ...column)                 → PColumnSpec
+ *   - outputData(name, ...column)                 → data resource ref
+ *   - output(name, ...column)                     → { data, spec }
+ *   - xsvOutputFrame(name)                        → PFrame (columnar output)
+ *   - addAllOutputsToBuilder(pfBuilder, ...sep)   → pfBuilder
+ *   - allOutputsFrame(...xsvNameSeparator)        → PFrame (all outputs)
+ *   - listOutputs()                               → string[]
+ *   - isXsvOutput(name)                           → boolean
+ *   - listXsvColumns(name)                        → string[]
+ *   - addXsvOutputToBuilder(pfBuilder, name, prefix) → pfBuilder
+ */
+createProcessColumnResult := func(renderResult, outputsMap, outputSpecs) {
+	_isColumnar := func(output) {
+		return output.type == "Xsv" || output.type == "TsvContent"
+	}
+	_requireOutput := func(name) {
+		output := outputsMap[name]
+		ll.assert(!is_undefined(output), "unknown output: %v", name)
+		return output
+	}
+	// Validates the variadic `column` arg against the output's kind and returns
+	// the column name (or undefined for non-columnar outputs).
+	_requireColumnArg := func(output, column) {
+		if _isColumnar(output) {
+			ll.assert(len(column) == 1,
+				"column name must be provided for %s output", output.type)
+			return column[0]
+		}
+		ll.assert(len(column) == 0,
+			"column name should not be provided for non-Xsv/TsvContent output")
+		return undefined
+	}
+	_requireColumnSpec := func(name, columnName) {
+		spec := outputSpecs[name][columnName]
+		ll.assert(!is_undefined(spec), "unknown column: %v", columnName)
+		return spec
+	}
+
+	self := undefined
+	self = ll.toStrict({
+		renderResult: renderResult,
+
+		/**
+		 * Returns the spec for a given output (and column, for columnar outputs).
+		 */
+		outputSpec: func(name, ...column) {
+			output := _requireOutput(name)
+			columnName := _requireColumnArg(output, column)
+			if _isColumnar(output) {
+				return _requireColumnSpec(name, columnName)
+			}
+			return outputSpecs[name]
+		},
+
+		/**
+		 * Returns the data resource for a given output (and column, for columnar outputs).
+		 */
+		outputData: func(name, ...column) {
+			output := _requireOutput(name)
+			columnName := _requireColumnArg(output, column)
+			if _isColumnar(output) {
+				return renderResult.output(name + "/" + columnName)
+			}
+			return renderResult.output(name)
+		},
+
+		/**
+		 * Returns `{ data, spec }` for a given output (and column, for columnar outputs).
+		 */
+		output: func(name, ...column) {
+			output := _requireOutput(name)
+			columnName := _requireColumnArg(output, column)
+			if _isColumnar(output) {
+				return {
+					data: renderResult.output(name + "/" + columnName),
+					spec: _requireColumnSpec(name, columnName)
+				}
+			}
+			return {
+				data: renderResult.output(name),
+				spec: outputSpecs[name]
+			}
+		},
+
+		/**
+		 * Returns a PFrame containing all columns from a columnar (Xsv/TsvContent) output.
+		 */
+		xsvOutputFrame: func(name) {
+			output := _requireOutput(name)
+			ll.assert(_isColumnar(output),
+				"xsvOutputFrame can only be used with Xsv or TsvContent outputs")
+			pf := builder.pFrameBuilder()
+			for columnName, spec in outputSpecs[name] {
+				pf.add(columnName, spec, renderResult.output(name + "/" + columnName))
+			}
+			return pf.build()
+		},
+
+		/**
+		 * Adds all outputs to the given pframe builder. Columnar outputs are
+		 * flattened using `separator` (default ".").
+		 */
+		addAllOutputsToBuilder: func(bld, ...separator) {
+			sep := "."
+			if len(separator) > 0 {
+				sep = separator[0]
+			}
+			maps.forEach(outputsMap, func(name, output) {
+				if _isColumnar(output) {
+					for columnName, spec in outputSpecs[name] {
+						bld.add(
+							name + sep + columnName,
+							spec,
+							renderResult.output(name + "/" + columnName)
+						)
+					}
+				} else {
+					bld.add(name, outputSpecs[name], renderResult.output(name))
+				}
+			})
+			return bld
+		},
+
+		/**
+		 * Returns a PFrame containing all outputs (columnar ones flattened).
+		 */
+		allOutputsFrame: func(...xsvNameSeparator) {
+			pf := builder.pFrameBuilder()
+			self.addAllOutputsToBuilder(pf, xsvNameSeparator...)
+			return pf.build()
+		},
+
+		/**
+		 * Sorted list of registered output names.
+		 */
+		listOutputs: func() {
+			return maps.getKeys(outputsMap)
+		},
+
+		/**
+		 * Whether the given output is columnar (Xsv) — kept named `isXsvOutput`
+		 * for API compatibility; returns true for both Xsv and TsvContent.
+		 */
+		isXsvOutput: func(name) {
+			return _isColumnar(_requireOutput(name))
+		},
+
+		/**
+		 * Sorted column names for a columnar output.
+		 */
+		listXsvColumns: func(name) {
+			output := _requireOutput(name)
+			ll.assert(_isColumnar(output), "output is not Xsv or TsvContent: %v", name)
+			return maps.getKeys(outputSpecs[name])
+		},
+
+		/**
+		 * Adds all columns of a columnar output to the given pframe builder with
+		 * a per-column name prefix.
+		 */
+		addXsvOutputToBuilder: func(bld, outputName, prefix) {
+			for columnName in self.listXsvColumns(outputName) {
+				bld.add(
+					prefix + columnName,
+					self.outputSpec(outputName, columnName),
+					self.outputData(outputName, columnName)
+				)
+			}
+			return bld
+		}
+	})
+
+	return self
+}
+
+/**
+ * Derives a column header string from a PColumn spec.
+ *
+ * Prefers the `pl7.app/label` annotation when present and non-empty, then falls
+ * back to `spec.name`. Used to auto-name columns in batch mode when the caller
+ * passes a bare `{ spec, data }` entry without an explicit `header`.
+ *
+ * Panics if neither source yields a non-empty string — a column without a
+ * usable header cannot be joined/selected in the downstream pt workflow.
+ *
+ * @param spec  PColumn spec
+ * @returns string — the derived header
+ */
+deriveHeaderFromSpec := func(spec) {
+	if !is_undefined(spec.annotations) {
+		label := spec.annotations[pSpec.A_LABEL]
+		if is_string(label) && label != "" {
+			return label
+		}
+	}
+	if is_string(spec.name) && spec.name != "" {
+		return spec.name
+	}
+	ll.panic("cannot derive header from spec: no label annotation or name found")
+}
+
+/**
+ * Resolves a single `{ src, header? }` column entry into the internal normalized
+ * form used by the batch path.
+ *
+ * `src` may be either a plain `{ spec, data }` pair or a `ResolvedPrimaryRef`
+ * (carrying `column` + optional `filter`, tagged `__isPrimaryRef == "v1"`); the
+ * latter is flattened into a top-level `filter` on the result. `header` is
+ * auto-derived from the spec via `deriveHeaderFromSpec` when omitted.
+ *
+ * `normalizeColumnEntries` delegates here per entry. Exposed so callers with
+ * a pre-wrapped single entry can reuse the same resolution rules.
+ *
+ * @param entry   { src, header? } — src is { spec, data } or a ResolvedPrimaryRef
+ * @returns { src: { spec, data }, header: string, filter?: { spec, data } }
+ */
+resolveColumnSrc := func(entry) {
+	src := entry.src
+	filter := undefined
+
+	if is_map(src) && src.__isPrimaryRef == "v1" {
+		filter = src.filter
+		src = src.column
+	}
+
+	ll.assert(is_map(src) && !is_undefined(src.spec) && !is_undefined(src.data),
+		"column src must be { spec, data }, got: %v", src)
+
+	header := entry.header
+	if is_undefined(header) {
+		header = deriveHeaderFromSpec(src.spec)
+	}
+
+	result := { src: src, header: header }
+	if !is_undefined(filter) {
+		result.filter = filter
+	}
+	return result
+}
+
+/**
+ * Normalizes the batch-mode `input.primary` / `input.columns` argument from any
+ * of its accepted overload forms into a uniform array of internal entries.
+ *
+ * Each output entry has the shape `{ src: { spec, data }, header: string,
+ * filter?: { spec, data } }`. Accepts single values or arrays; each element can
+ * be a bare `{ spec, data }`, a `ResolvedPrimaryRef` (`__isPrimaryRef == "v1"`),
+ * or a `{ src, header }` pair. `undefined` normalizes to `[]` so callers can
+ * pass optional inputs through unchanged.
+ *
+ * Panics on unrecognized shapes — silently accepting malformed input would
+ * leak into template params with an opaque downstream failure.
+ *
+ * @param input   column entries in any supported overload form (or undefined)
+ * @returns array of normalized entries
+ */
+normalizeColumnEntries := func(input) {
+	if is_undefined(input) {
+		return []
+	}
+
+	// An entry is either already the internal `{ src, header? }` form, a bare
+	// `{ spec, data }` column, or a ResolvedPrimaryRef. The latter two need to
+	// be wrapped as `{ src: entry }` before delegating to resolveColumnSrc.
+	_isBareColumn := func(m) { return !is_undefined(m.spec) && !is_undefined(m.data) }
+	_isPrimaryRef := func(m) { return m.__isPrimaryRef == "v1" }
+	_normalizeEntry := func(entry) {
+		ll.assert(is_map(entry), "unrecognized column entry: %v", entry)
+		if !is_undefined(entry.src) {
+			return resolveColumnSrc(entry)
+		}
+		ll.assert(_isBareColumn(entry) || _isPrimaryRef(entry),
+			"unrecognized column entry: %v", entry)
+		return resolveColumnSrc({ src: entry })
+	}
+
+	// Accept a single entry as shorthand for a one-element array.
+	if is_map(input) {
+		input = [input]
+	}
+	ll.assert(is_array(input), "column entries must be an array, got: %v", input)
+
+	return slices.map(input, _normalizeEntry)
+}
+
+export ll.toStrict({
+	buildOutputTrace: buildOutputTrace,
+	createProcessColumnResult: createProcessColumnResult,
+	deriveHeaderFromSpec: deriveHeaderFromSpec,
+	resolveColumnSrc: resolveColumnSrc,
+	normalizeColumnEntries: normalizeColumnEntries
+})

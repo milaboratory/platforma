@@ -9,13 +9,13 @@ render := import(":render")
 smart := import(":smart")
 pt := import(":pt")
 pConstants := import(":pframes.constants")
-pUtil := import(":pframes.util")
 text := import("text")
 assets := import(":assets")
 maps := import(":maps")
 
 json := import("json")
 
+batchHelpers := import(":pframes.process-pcolumn-batch")
 batchSplitTpl := assets.importTemplate(":pframes.process-pcolumn-batch-split")
 
 self.awaitState("InputsLocked")
@@ -23,70 +23,14 @@ self.awaitState("params", "ResourceReady")
 // Await all column data inputs to have their inputs locked (iterable).
 self.awaitState({ wildcard: "*" }, "InputsLocked")
 
-// Unwrap a raw-input field into its backing resource.
-_resolveData := func(data) {
-	if smart.isField(data) {
-		return data.getValue()
-	}
-	return data
-}
-
-// Classify the intermediate data resource.
-_determineIntermediateType := func(res) {
-	if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
-		return { type: pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED, isBinary: true }
-	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) {
-		return { type: pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED, isBinary: false }
-	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED) {
-		return { type: pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED, isBinary: false }
-	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
-		return { type: pConstants.RTYPE_P_COLUMN_DATA_JSON, isBinary: false, isJson: true }
-	}
-	ll.panic("Unsupported data type for batch mode grouping: %v", res)
-}
-
-// Count records in a per-scope intermediate resource.
-_recordsInGroup := func(groupRes) {
-	if is_undefined(groupRes) {
-		return 0
-	}
-	if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
-		return len(groupRes.getDataAsJson().data)
-	}
-	if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
-		// .index + .values per partition → halve
-		return len(groupRes.inputs()) / 2
-	}
-	// JsonPartitioned / ParquetPartitioned
-	return len(groupRes.inputs())
-}
-
-// For each output.type × xsv.column pair, yield one `(output, dataKey)` pair so
-// code that builds/collects/finalizes output resources runs one dispatch shape
-// instead of three hand-rolled copies.
-_forEachOutputField := func(outputDefs, fn) {
-	for output in outputDefs {
-		if output.type == "ResourceMap" {
-			fn(output, output.name)
-		} else if output.type == "Xsv" {
-			for column in output.settings.columns {
-				id := pUtil.xsvColumnId(column)
-				fn(output, output.name + "/" + id)
-			}
-		}
-	}
-}
-
 self.body(func(inputs) {
 	params := inputs.params
 	body := inputs.body
 
-	if !is_map(params) {
-		ll.panic("Params have wrong type or not ready yet: %v", params)
-	}
+	ll.assert(is_map(params), "Params have wrong type or not ready yet: %v", params)
 
 	batchSize := params.batchSize
-	maxBatches := params.maxBatches   // validated and defaulted in _processColumnBatch
+	maxBatches := params.maxBatches   // validated and defaulted in processColumnBatch
 	batchFormat := params.batchFormat // validated ∈ {tsv,csv,ndjson,parquet}
 	passContent := params.passContent
 	batchKeyIndices := params.batchKeyIndices
@@ -97,8 +41,8 @@ self.body(func(inputs) {
 	primaryColumnCount := params.primaryColumnCount
 	secondaryColumnCount := params.secondaryColumnCount
 
-	// --- Reconstruct column entries from named inputs ---
-	// Specs are auto-unmarshalled (JSON → Tengo map); data is a raw smart field.
+	// Reconstruct column entries from named inputs. Specs are auto-unmarshalled
+	// (JSON → Tengo map); data is a raw smart field.
 	rawInputs := self.rawInputs()
 
 	_readColumnEntry := func(prefix, header) {
@@ -153,101 +97,11 @@ self.body(func(inputs) {
 	// Format extension mirrors the validated batch format 1:1.
 	formatExt := batchFormat
 
-	// --- Group column data by isolation key ---
-	// Same structural grouping pattern as process-pcolumn-data.tpl.tengo.
-	// For each column, iterate partition keys, split into isolation key + in-group
-	// key, build intermediate resources per isolation group.
+	// Group column data by isolation key. Same structural grouping pattern as
+	// process-pcolumn-data.tpl.tengo; delegated to the helpers lib with the
+	// per-scope context bound once.
 	_groupColumnData := func(data) {
-		res := _resolveData(data)
-		if !hasIsolation {
-			return { "[]": res }
-		}
-		typeInfo := _determineIntermediateType(res)
-		groups := {}
-
-		if typeInfo.isJson {
-			meta := res.getDataAsJson()
-			for sKey, value in meta.data {
-				keyArray := json.decode(sKey)
-
-				isolationKey := []
-				for i in isolationIndices {
-					isolationKey = append(isolationKey, keyArray[i])
-				}
-				inGroupKey := []
-				for i in batchKeyIndices {
-					inGroupKey = append(inGroupKey, keyArray[i])
-				}
-
-				sIsolationKey := json.encode(isolationKey)
-				sInGroupKey := json.encode(inGroupKey)
-
-				group := groups[sIsolationKey]
-				if is_undefined(group) {
-					group = {}
-					groups[sIsolationKey] = group
-				}
-				group[sInGroupKey] = value
-			}
-			for sIsolationKey, groupData in groups {
-				groups[sIsolationKey] = smart.structBuilder(
-					pConstants.RTYPE_P_COLUMN_DATA_JSON,
-					json.encode({ keyLength: batchKeyLength, data: groupData })
-				).lockAndBuild()
-			}
-		} else {
-			// Partitioned types (JsonPartitioned, BinaryPartitioned, ParquetPartitioned).
-			// Iterate in sorted key order so every run inserts fields into the
-			// intermediate structBuilder in the same sequence — the built
-			// resource's hash is content-addressed, but stable insertion order
-			// is cheap defense-in-depth against any hashing regressions and
-			// keeps cache behavior reproducible.
-			resInputs := res.inputs()
-			for sKey in maps.getKeys(resInputs) {
-				field := resInputs[sKey]
-				sKeyP := sKey
-				suffix := ""
-				if typeInfo.isBinary {
-					dotIdx := text.last_index(sKey, ".")
-					if dotIdx == -1 {
-						ll.panic("BinaryPartitioned key must contain a dot: %v", sKey)
-					}
-					suffix = sKey[dotIdx:]
-					sKeyP = sKey[:dotIdx]
-				}
-				keyArray := json.decode(sKeyP)
-
-				isolationKey := []
-				for i in isolationIndices {
-					isolationKey = append(isolationKey, keyArray[i])
-				}
-				inGroupKey := []
-				for i in batchKeyIndices {
-					if len(keyArray) <= i {
-						ll.panic("malformed partition key %v: fewer components than the axes spec (index %v out of range)", sKeyP, i)
-					}
-					inGroupKey = append(inGroupKey, keyArray[i])
-				}
-
-				sIsolationKey := json.encode(isolationKey)
-				sInGroupKey := json.encode(inGroupKey)
-
-				group := groups[sIsolationKey]
-				if is_undefined(group) {
-					group = smart.structBuilder(
-						typeInfo.type,
-						json.encode({ partitionKeyLength: batchKeyLength })
-					)
-					groups[sIsolationKey] = group
-				}
-				group.createInputField(sInGroupKey + suffix).set(field)
-			}
-			for sIsolationKey in maps.getKeys(groups) {
-				groups[sIsolationKey] = groups[sIsolationKey].lockAndBuild()
-			}
-		}
-
-		return groups
+		return batchHelpers.groupColumnData(data, isolationIndices, batchKeyIndices, batchKeyLength, hasIsolation)
 	}
 
 	// Build reduced spec with only batch key axes (isolation axes removed).
@@ -292,29 +146,25 @@ self.body(func(inputs) {
 		}
 	}
 
-	// --- Batch count limiting (spec lines 69-79) ---
-	//
-	// Step 2: panic if scope count alone exceeds maxBatches — inflating batch
-	// size can't help when each scope has ≤1 batch.
-	// Steps 3-4: estimate total batch count from per-scope upper-bound record
-	// counts (inner: min across primaries; full: sum across primaries), then
-	// inflate batch size deterministically if totalBatches > maxBatches. Same
-	// upper-bound convention as the per-scope loop below, so the soft limit
-	// consistently bounds the resulting batch count.
+	// Enforce maxBatches. Panic if the isolation scope count alone exceeds
+	// maxBatches — inflating batch size can't help when each scope has ≤1
+	// batch. Otherwise estimate total batch count from per-scope upper-bound
+	// record counts (inner: min across primaries; full: sum across primaries)
+	// and inflate batch size deterministically when the estimate exceeds
+	// maxBatches. Same upper-bound convention as the per-scope loop below, so
+	// the limit consistently bounds the resulting batch count.
 	isolationScopeCount := len(allIsolationKeys)
-	if isolationScopeCount > maxBatches {
-		ll.panic(
-			"batch mode: isolation scope count (%v) exceeds batch.maxBatches (%v). "+
-				"This usually means a high-diversity axis is treated as an isolation axis. "+
-				"Move it into batch.keyColumns, or raise batch.maxBatches if the high count is intentional.",
-			isolationScopeCount, maxBatches)
-	}
+	ll.assert(isolationScopeCount <= maxBatches,
+		"batch mode: isolation scope count (%v) exceeds batch.maxBatches (%v). "+
+			"A high-diversity axis is being treated as an isolation axis. "+
+			"Move it into batch.keyColumns, or raise batch.maxBatches if the high count is intentional.",
+		isolationScopeCount, maxBatches)
 
 	_scopeUpperBound := func(sIsolationKey) {
 		if primaryJoin == "inner" {
 			minRec := -1
 			for pg in primaryGroups {
-				n := _recordsInGroup(pg.groups[sIsolationKey])
+				n := batchHelpers.recordsInGroup(pg.groups[sIsolationKey])
 				if n == 0 {
 					return 0
 				}
@@ -329,7 +179,7 @@ self.body(func(inputs) {
 		}
 		s := 0
 		for pg in primaryGroups {
-			s += _recordsInGroup(pg.groups[sIsolationKey])
+			s += batchHelpers.recordsInGroup(pg.groups[sIsolationKey])
 		}
 		return s
 	}
@@ -364,7 +214,7 @@ self.body(func(inputs) {
 
 	// Pre-allocate super-partitioned output containers when isolation is active.
 	outputMaps := {}
-	_forEachOutputField(outputDefs, func(output, key) {
+	batchHelpers.forEachOutputField(outputDefs, func(output, key) {
 		if !hasIsolation {
 			return
 		}
@@ -387,7 +237,8 @@ self.body(func(inputs) {
 		}
 	})
 
-	// --- Process each isolation scope ---
+	// Process each isolation scope: join primaries, apply filters, outer-join
+	// secondaries, then slice into batches and forward to the split template.
 	for sIsolationKey in maps.getKeys(allIsolationKeys) {
 		primaryPEntries := []
 		for pg in primaryGroups {
@@ -457,6 +308,9 @@ self.body(func(inputs) {
 
 		// Build pt workflow: join, sort, select, then branch on passContent.
 		wf := pt.workflow()
+		if !is_undefined(params.cacheInputs) {
+			wf.cacheInputs(params.cacheInputs)
+		}
 		df := wf.frame(joined)
 
 		if len(batchKeyAxesSpec) > 0 {
@@ -527,7 +381,7 @@ self.body(func(inputs) {
 
 		// Collect per-scope outputs into the super-partitioned containers (or
 		// directly into the result map when there's no isolation).
-		_forEachOutputField(outputDefs, func(output, key) {
+		batchHelpers.forEachOutputField(outputDefs, func(output, key) {
 			ref := splitResult.output(key)
 			if hasIsolation {
 				outputMaps[key].createInputField(sIsolationKey).set(ref)
@@ -537,12 +391,12 @@ self.body(func(inputs) {
 		})
 	}
 
-	// --- Finalize outputs ---
-	// For non-isolation runs where the sole scope had 0 records (continue'd above),
-	// outputMaps[key] is undefined — emit empty typed defaults so downstream
-	// consumers still see a well-formed (empty) PColumn data resource.
+	// Finalize outputs. For non-isolation runs where the sole scope had 0 records
+	// (continue'd above), outputMaps[key] is undefined — emit empty typed
+	// defaults so downstream consumers still see a well-formed (empty) PColumn
+	// data resource.
 	result := {}
-	_forEachOutputField(outputDefs, func(output, key) {
+	batchHelpers.forEachOutputField(outputDefs, func(output, key) {
 		if hasIsolation {
 			result[key] = outputMaps[key].lockAndBuild()
 			return
