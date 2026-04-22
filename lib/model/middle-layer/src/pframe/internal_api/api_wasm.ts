@@ -1,6 +1,7 @@
 import type {
   AxesId,
   AxesSpec,
+  BuildQueryInput,
   JoinEntry,
   PColumnSpec,
   PObjectId,
@@ -10,23 +11,18 @@ import type {
   PTableSorting,
   DataQuery,
   SpecQuery,
+  SpecQueryJoinEntry,
   SingleAxisSelector,
 } from "@milaboratories/pl-model-common";
 import type {
   DeleteColumnFromColumnsRequest,
   DeleteColumnFromColumnsResponse,
 } from "./delete_column";
-import type {
-  DiscoverColumnsRequestV2,
-  DiscoverColumnsResponse,
-  DiscoverColumnsResponseV2,
-} from "./discover_columns";
+import type { DiscoverColumnsRequestV2, DiscoverColumnsResponse } from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 
 /**
- * V3 PFrame interface: same surface as V2 except `discoverColumns` returns
- * {@link DiscoverColumnsResponseV2}, which includes a per-hit ready-to-execute
- * {@link SpecQuery} alongside the existing fields.
+ * V3 PFrame interface: adds {@link PFrameWasmV3.buildQuery} on top of V2.
  */
 export interface PFrameWasmV3 extends Disposable {
   /**
@@ -35,15 +31,13 @@ export interface PFrameWasmV3 extends Disposable {
   deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
 
   /**
-   * Discovers columns compatible with a given axes integration, with separate
-   * include and exclude filters. Exclude filter is applied after include,
-   * removing matching columns from results.
-   *
-   * Each hit also carries a {@link SpecQuery} materializing its traversal
-   * path — direct hits produce a plain column reference; linker-path hits
-   * produce a nested `linkerJoin` chain ready to be evaluated.
+   * Discovers columns compatible with a given axes integration. Include and
+   * exclude filters are applied in order (exclude removes matches from the
+   * include set). Each hit carries its traversal `path`; feed the hit's
+   * column id and `path` into {@link buildQuery} to materialize it as a
+   * {@link SpecQueryJoinEntry}.
    */
-  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponseV2;
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
 
   /**
    * Finds columns in the PFrame matching the given filter criteria.
@@ -59,6 +53,22 @@ export interface PFrameWasmV3 extends Disposable {
    * Rewrites a legacy query format (V4) to the current SpecQuery format.
    */
   rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
+
+  /**
+   * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
+   * ordered path of wrapping steps (linker hops, filter joins).
+   *
+   * Right-fold over `path` starting from `Column(column)`: each `linker` step
+   * wraps the current subquery as `linkerJoin`, each `filter` step as
+   * `innerJoin` with the filter column. `qualifications` annotate the
+   * outermost entry only.
+   *
+   * Pure over its input — column ids are resolved later in
+   * {@link evaluateQuery}. Throws only on malformed input: shape violations
+   * and unknown step tags (so v1 callers are shielded from step variants
+   * added in later versions).
+   */
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
 }
 
 /**
@@ -95,15 +105,14 @@ export interface PFrameWasmAPIV3 {
 }
 
 /**
- * V2 PFrame interface. Superseded by {@link PFrameWasmV3}, which adds a per-hit
- * {@link SpecQuery} to `discoverColumns` responses. Will be removed in a future
- * PFrames update.
+ * V2 PFrame interface. Superseded by {@link PFrameWasmV3}, which adds
+ * {@link PFrameWasmV3.buildQuery}. Will be removed in a future PFrames update.
  */
 export interface PFrameWasmV2 extends Disposable {
   /** @see PFrameWasmV3.deleteColumns */
   deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
 
-  /** @see PFrameWasmV3.discoverColumns — V2 response lacks the per-hit `query` field. */
+  /** @see PFrameWasmV3.discoverColumns */
   discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
 
   /** @see PFrameWasmV3.findColumns */
