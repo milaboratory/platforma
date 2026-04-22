@@ -50,6 +50,7 @@
         "PL_TEST_USER",
         "PL_TEST_PROXY",
         "PL_TEST_STORAGE_ID",
+        "PL_TEST_USE_DOCKER",
         "DEBUG",
         "MI_LICENSE",
         "PL_DOCKER_REGISTRY_PUSH_TO",
