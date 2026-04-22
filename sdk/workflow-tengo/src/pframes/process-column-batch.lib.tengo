@@ -274,6 +274,8 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	primaryHeaders := slices.map(primaryEntries, func(e) { return e.header })
 	secondaryHeaders := slices.map(secondaryEntries, func(e) { return e.header })
 
+	// Content-affecting params — anything that changes what the orchestrator
+	// produces (batch structure, joined columns, declared outputs).
 	batchTemplateParams := {
 		batchSize: batch.size,
 		maxBatches: batch.maxBatches,
@@ -287,27 +289,13 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		primaryColumnCount: len(primaryEntries),
 		secondaryColumnCount: len(secondaryEntries),
 		primaryHeaders: primaryHeaders,
-		secondaryHeaders: secondaryHeaders,
-		// Global exec resource hints (cpu/mem/queue). Used as fallback when an
-		// Xsv output doesn't specify its own, same convention as standard processColumn.
-		globalCpu: opts.cpu,
-		globalMem: opts.mem,
-		globalQueue: opts.queue,
-		// Optional cache duration applied to each batch's body render output field.
-		// Same semantics as standard processColumn's opts.stepCache.
-		stepCache: opts.stepCache,
-		// Optional duration forwarded to `wf.cacheInputs(...)` on the internal
-		// pt workflow. Tests set a short TTL so re-runs don't reuse stale caches.
-		cacheInputs: opts.cacheInputs
+		secondaryHeaders: secondaryHeaders
 	}
 
-	// Build render inputs — pass column data as direct named inputs
 	renderInputs := {
 		params: smart.createJsonResource(batchTemplateParams),
 		body: bodyTpl
 	}
-
-	// Pass each column's data and spec as named inputs
 	for i, entry in primaryEntries {
 		renderInputs["__col_primary_" + string(i) + "_data"] = entry.src.data
 		renderInputs["__col_primary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
@@ -321,7 +309,6 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		renderInputs["__col_secondary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
 	}
 
-	// Forward extra/metaExtra (same convention as standard processColumn).
 	extra := opts.extra
 	if !is_undefined(extra) {
 		for k, v in extra {
@@ -335,7 +322,17 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		}
 	}
 
-	renderResult := render.createEphemeral(llBatchProcessTpl, renderInputs)
+	// Meta inputs — resource/cache hints that must NOT contribute to the
+	// rendered resource's content hash. Same convention as pt's `runMetaInputs`.
+	renderMetaInputs := {
+		globalCpu: opts.cpu,
+		globalMem: opts.mem,
+		globalQueue: opts.queue,
+		stepCache: opts.stepCache,
+		cacheInputs: opts.cacheInputs
+	}
+
+	renderResult := render.createEphemeral(llBatchProcessTpl, renderInputs, { metaInputs: renderMetaInputs })
 	return pCommon.createProcessColumnResult(renderResult, outputsMap, outputSpecs)
 }
 

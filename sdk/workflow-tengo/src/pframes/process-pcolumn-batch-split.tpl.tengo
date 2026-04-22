@@ -46,9 +46,10 @@ self.body(func(inputs) {
 	if is_undefined(passContent) {
 		passContent = false
 	}
-	// Optional per-batch cache duration (opts.stepCache in the public API).
+	// Optional per-batch cache duration (opts.stepCache in the public API),
+	// passed as a meta input so it doesn't affect the split template's hash.
 	// Applied to the body render's top-level output field via render.output(name, cache).
-	stepCache := params.stepCache
+	stepCache := inputs.stepCache
 
 	// Prepare output collectors.
 	// Xsv: collect per-batch output file refs to concatenate later via pt.concat.
@@ -252,9 +253,9 @@ self.body(func(inputs) {
 					importOps[opsKey] = global
 				}
 			}
-			_applyHint("cpu", output.cpu, params.globalCpu)
-			_applyHint("mem", output.mem, params.globalMem)
-			_applyHint("queue", output.queue, params.globalQueue)
+			_applyHint("cpu", output.cpu, inputs.globalCpu)
+			_applyHint("mem", output.mem, inputs.globalMem)
+			_applyHint("queue", output.queue, inputs.globalQueue)
 
 			pf := xsv.importFile(mergedFile, xsvType, output.settings, importOps)
 
