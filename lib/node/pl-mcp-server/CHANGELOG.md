@@ -1,5 +1,11 @@
 # @milaboratories/pl-mcp-server
 
+## 2.1.0
+
+### Minor Changes
+
+- d6de877: Add optional `projectId` and `blockId` to the `execute_js` MCP tool. When both are provided, the JS runs inside the cached block webview, where `window.platforma` is accessible. Errors with "has no loaded webview" if the block isn't loaded — callers should `select_block` first. Behavior without those args is unchanged.
+
 ## 2.0.1
 
 ### Patch Changes
