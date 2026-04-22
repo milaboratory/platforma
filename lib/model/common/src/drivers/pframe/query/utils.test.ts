@@ -74,6 +74,20 @@ describe("traverseQuerySpec", () => {
     });
   });
 
+  it("transforms columns inside linkerJoin", () => {
+    const q: Q = {
+      type: "linkerJoin",
+      linker: { column: "l" },
+      secondary: [entry(col("a")), entry(col("b"))],
+    };
+    const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
+    expect(result).toEqual({
+      type: "linkerJoin",
+      linker: { column: "L" },
+      secondary: [entry({ type: "column", column: "A" }), entry({ type: "column", column: "B" })],
+    });
+  });
+
   it("transforms columns inside filter", () => {
     const q: Q = {
       type: "filter",
@@ -195,6 +209,15 @@ describe("collectSpecQueryColumns", () => {
     } as unknown as Q;
     expect(collectSpecQueryColumns(q)).toEqual([]);
   });
+
+  it("collects linker and secondary columns from linkerJoin", () => {
+    const q: Q = {
+      type: "linkerJoin",
+      linker: { column: "l" },
+      secondary: [entry(col("a")), entry(col("b"))],
+    };
+    expect(collectSpecQueryColumns(q)).toEqual(["l", "a", "b"]);
+  });
 });
 
 describe("sortSpecQuery", () => {
@@ -217,6 +240,20 @@ describe("sortSpecQuery", () => {
     expect(result).toEqual({
       type: "outerJoin",
       primary: pentry(pcol("p")),
+      secondary: [pentry(pcol("a")), pentry(pcol("b")), pentry(pcol("c"))],
+    });
+  });
+
+  it("sorts linkerJoin secondary entries (linker column unchanged)", () => {
+    const q: SpecQuery = {
+      type: "linkerJoin",
+      linker: { column: pid("l") },
+      secondary: [pentry(pcol("c")), pentry(pcol("a")), pentry(pcol("b"))],
+    };
+    const result = sortSpecQuery(q);
+    expect(result).toEqual({
+      type: "linkerJoin",
+      linker: { column: "l" },
       secondary: [pentry(pcol("a")), pentry(pcol("b")), pentry(pcol("c"))],
     });
   });

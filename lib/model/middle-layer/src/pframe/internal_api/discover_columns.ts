@@ -89,17 +89,22 @@ export interface DiscoverColumnsMappingVariant {
   distinctiveQualifications: DiscoverColumnsResponseQualifications;
 }
 
-/** A single hit in the discover columns response */
+/**
+ * A single hit in the discover columns response. Carries the matched column
+ * along with its integration metadata and the path traversed to reach it.
+ * To materialize the hit as an executable query, feed `hit.columnId` and
+ * `path` into the PFrame's `buildQuery`.
+ */
 export interface DiscoverColumnsResponseHit {
   /** The column that was found compatible */
   hit: PColumnIdAndSpec;
   /** Possible ways to integrate this column with the existing set */
   mappingVariants: DiscoverColumnsMappingVariant[];
-  /** Linker steps traversed to reach this hit; empty for direct matches */
+  /** Steps traversed to reach this hit; empty for direct matches */
   path: DiscoverColumnsStepInfo[];
 }
 
-/** Response from discover columns */
+/** Response from discover columns. */
 export interface DiscoverColumnsResponse {
   /** Columns that could be integrated and possible ways to integrate them */
   hits: DiscoverColumnsResponseHit[];
