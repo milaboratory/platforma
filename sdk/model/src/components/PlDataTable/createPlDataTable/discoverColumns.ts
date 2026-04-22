@@ -1,23 +1,19 @@
-import type {
-  PColumnIdAndSpec,
-  PColumnSpec,
-  PlRef,
-  PObjectId,
-  SUniversalPColumnId,
-} from "@milaboratories/pl-model-common";
-import { isPlRef } from "@milaboratories/pl-model-common";
+import type { PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
+import { createDiscoveredPColumnId, isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
   ColumnMatch,
   RelaxedColumnSelector,
   ColumnSnapshotProvider,
+  ColumnSnapshot,
 } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
+import { isNil } from "es-toolkit";
 
 export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
@@ -29,7 +25,7 @@ export type DiscoverTableColumnOptions = {
 export function discoverTableColumnSnaphots(
   ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,
-): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
+): TableColumnSnapshot[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
   const resolvedOptions = {
     ...options,
@@ -47,9 +43,19 @@ export function discoverTableColumnSnaphots(
   if (collection === undefined) return undefined;
 
   try {
-    const matched = collection.findColumns(resolvedOptions.selector ?? undefined);
+    const columns = collection.findColumns({
+      ...(resolvedOptions.selector ?? {}),
+      exclude: [
+        ...(Array.isArray(resolvedOptions.selector?.exclude)
+          ? resolvedOptions.selector.exclude
+          : !isNil(resolvedOptions.selector.exclude)
+            ? [resolvedOptions.selector.exclude]
+            : []),
+        { name: "pl7.app/label" },
+      ],
+    });
     const anchors = collection.getAnchors();
-    return mapToDiscoveredColumns(matched, anchors);
+    return mapToDiscoveredColumns(columns, anchors);
   } finally {
     collection.dispose();
   }
@@ -90,31 +96,36 @@ function resolveProviders(
 /** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
 function mapToDiscoveredColumns(
   matched: readonly ColumnMatch[],
-  anchors: Map<string, PColumnIdAndSpec>,
-): TableColumnSnapshot<SUniversalPColumnId>[] {
-  const anchorKeyByColumnId = new Map<PObjectId, string>(
-    Array.from(anchors.entries(), ([key, { columnId }]) => [columnId, key] as const),
+  anchors: Map<string, ColumnSnapshot<PObjectId>>,
+): TableColumnSnapshot[] {
+  const columnIdToAnchorName = new Map<PObjectId, string>(
+    Array.from(anchors.entries(), ([key, { id }]) => [id, key] as const),
   );
 
   return matched.flatMap((match) => {
     const snap = match.column;
-    const multi = match.variants.length > 1;
-    const anchorKey = anchorKeyByColumnId.get(match.originalId);
-    const isPrimary = anchorKey !== undefined;
+    const isPrimary = columnIdToAnchorName.get(match.column.id) !== undefined;
 
-    return match.variants.map(
-      (variant, vi): TableColumnSnapshot<SUniversalPColumnId> => ({
-        id: (multi ? `${snap.id}#q${vi}` : snap.id) as SUniversalPColumnId,
-        originalId: match.originalId,
+    return match.variants.map((variant): TableColumnSnapshot => {
+      const discoveredId = createDiscoveredPColumnId(
+        snap.id,
+        variant.path.map((p) => ({ column: p.linker.id, qualifications: p.qualifications })),
+        variant.qualifications.forHit,
+        Object.values(variant.qualifications.forQueries),
+      );
+      return {
+        id: discoveredId,
+        isPrimary,
+
+        originalId: snap.id,
         spec: snap.spec,
         data: snap.data,
         dataStatus: snap.dataStatus,
-        isPrimary,
-        anchorKey,
+
         linkerPath: variant.path,
         qualifications: variant.qualifications,
         distinctiveQualifications: variant.distinctiveQualifications,
-      }),
-    );
+      };
+    });
   });
 }

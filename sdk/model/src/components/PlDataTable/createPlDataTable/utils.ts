@@ -6,6 +6,7 @@ import {
   Annotation,
   canonicalizeAxisId,
   canonicalizeJson,
+  DiscoveredPColumnId,
   getAxisId,
   readAnnotation,
   readAnnotationJson,
@@ -267,9 +268,9 @@ function deriveAxisLabels(
 
 /** Column shape required by tooltip derivation. */
 export type TooltipableColumn = {
-  readonly id: PObjectId;
-  readonly originalId?: PObjectId;
+  readonly id: DiscoveredPColumnId;
   readonly spec: PColumnSpec;
+  readonly originalId: PObjectId;
   readonly linkerPath?: MatchVariant["path"];
   readonly qualifications?: MatchQualifications;
   readonly distinctiveQualifications?: MatchQualifications;
@@ -278,31 +279,33 @@ export type TooltipableColumn = {
 /** Derive origin tooltips for columns whose qualifications or linker path carry info. */
 export function deriveAllTooltips(options: {
   columns: TooltipableColumn[];
-}): Record<string, string> {
+}): Record<DiscoveredPColumnId, string> {
   const { columns } = options;
 
   const variantCountByOriginal = columns.reduce<Map<PObjectId, number>>((acc, c) => {
-    if (isNil(c.originalId)) return acc;
-    acc.set(c.originalId, (acc.get(c.originalId) ?? 0) + 1);
-    return acc;
+    return acc.set(c.originalId, (acc.get(c.originalId) ?? 0) + 1);
   }, new Map());
-  const variantSeen = new Map<PObjectId, number>();
 
-  const entries: TooltipEntry[] = columns.map((c) => {
-    const variantCount = isNil(c.originalId) ? undefined : variantCountByOriginal.get(c.originalId);
-    const variantIndex = isNil(c.originalId)
-      ? undefined
-      : (variantSeen.set(c.originalId, (variantSeen.get(c.originalId) ?? 0) + 1),
+  const { entries } = columns.reduce(
+    ({ entries, variantSeen }, c) => {
+      const variantCount = variantCountByOriginal.get(c.originalId);
+      const variantIndex =
+        (variantSeen.set(c.originalId, (variantSeen.get(c.originalId) ?? 0) + 1),
         variantSeen.get(c.originalId));
-    return {
-      spec: c.spec,
-      qualifications: c.qualifications,
-      distinctiveQualifications: c.distinctiveQualifications,
-      linkerPath: c.linkerPath,
-      variantIndex,
-      variantCount,
-    };
-  });
+
+      entries.push({
+        spec: c.spec,
+        linkerPath: c.linkerPath,
+        qualifications: c.qualifications,
+        distinctiveQualifications: c.distinctiveQualifications,
+        variantIndex,
+        variantCount,
+      });
+
+      return { entries, variantSeen };
+    },
+    { entries: [] as TooltipEntry[], variantSeen: new Map<PObjectId, number>() },
+  );
 
   const tooltips = deriveDistinctTooltips(entries);
 

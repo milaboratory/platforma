@@ -1,5 +1,6 @@
 import {
   Annotation,
+  PObjectId,
   readAnnotation,
   type AxisQualification,
   type PColumnSpec,
@@ -79,12 +80,12 @@ function formatOriginPath(entry: TooltipEntry): undefined | string {
 
 function formatAnchors(q: undefined | MatchQualifications): undefined | string {
   if (isNil(q)) return undefined;
-  const keys = Object.keys(q.forAnchors);
+  const keys = Object.keys(q.forQueries);
   if (keys.length === 0) return undefined;
 
   const lines = ["Anchors (bound via this variant)"];
   for (const key of keys) {
-    const axisQs = q.forAnchors[key];
+    const axisQs = q.forQueries[key as PObjectId];
     const rendered = formatAxisQualifications(axisQs);
     lines.push(`  • ${key}${rendered !== undefined ? `   ${rendered}` : ""}`);
   }
@@ -101,8 +102,8 @@ function formatHit(q: undefined | MatchQualifications): undefined | string {
 function formatDistinctive(q: undefined | MatchQualifications): undefined | string {
   if (isNil(q)) return undefined;
   const bullets: string[] = [];
-  for (const key of Object.keys(q.forAnchors)) {
-    for (const item of q.forAnchors[key])
+  for (const key of Object.keys(q.forQueries)) {
+    for (const item of q.forQueries[key as PObjectId])
       bullets.push(`  • ${key}: ${formatOneQualification(item)}`);
   }
   for (const item of q.forHit) bullets.push(`  • hit: ${formatOneQualification(item)}`);

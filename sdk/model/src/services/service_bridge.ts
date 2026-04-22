@@ -64,7 +64,7 @@ export function createServiceProxy(dispatch: ServiceDispatch): ServiceProxy {
           .getServiceMethods(serviceId)
           .map((method) => [
             method,
-            async (...args: unknown[]) => dispatch.callServiceMethod(serviceId, method, ...args),
+            (...args: unknown[]) => dispatch.callServiceMethod(serviceId, method, ...args),
           ]),
       ),
     )) as ServiceProxy;

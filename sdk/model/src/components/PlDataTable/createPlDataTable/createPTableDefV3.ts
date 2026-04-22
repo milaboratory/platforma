@@ -8,6 +8,7 @@ import type {
   SpecQuery,
   SpecQueryExpression,
   SpecQueryJoinEntry,
+  PObjectId,
 } from "@milaboratories/pl-model-common";
 import { isBooleanExpression } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../../../render";
@@ -19,7 +20,6 @@ import type { Nil } from "@milaboratories/helpers";
 /** Primary side — base row grid. `key` links secondary groups to their qualifying anchor. */
 export type PrimaryEntry<Data> = {
   column: PColumn<Data>;
-  key?: string;
 };
 
 /** Secondary side leaf — the hit column, a linker step, or a label column. */
@@ -33,8 +33,8 @@ export type SecondaryEntry<Data> = {
 export type SecondaryGroup<Data> = {
   entries: SecondaryEntry<Data>[];
   /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
-   *  Keyed by `PrimaryEntry.key`. Omit → base primary used unqualified (labels, non-variant columns). */
-  forAnchors?: Record<string, AxisQualification[]>;
+   *  Keyed by `PrimaryEntry.anchorName`. Omit → base primary used unqualified (labels, non-variant columns). */
+  primaryQualifications?: Record<PObjectId, AxisQualification[]>;
 };
 
 export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
@@ -56,7 +56,9 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
     entry: {
       type: "innerJoin" as const,
       entries: [
-        ...(group.forAnchors !== undefined ? cloneAnchores(params.primary, group.forAnchors) : []),
+        ...(group.primaryQualifications !== undefined
+          ? getQuilifiedPrimary(params.primary, group.primaryQualifications)
+          : []),
         ...group.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
       ],
     },
@@ -118,11 +120,9 @@ function toLeaf<Data>(
   };
 }
 
-function cloneAnchores<Data>(
+function getQuilifiedPrimary<Data>(
   entries: PrimaryEntry<Data>[],
-  forAnchors: Record<string, AxisQualification[]>,
+  forAnchors: Record<PObjectId, AxisQualification[]>,
 ): SpecQueryJoinEntry<PColumn<Data>>[] {
-  return entries
-    .filter((a): a is PrimaryEntry<Data> & { key: string } => a.key !== undefined)
-    .map((a) => toLeaf(a.column, forAnchors[a.key] ?? []));
+  return entries.map((a) => toLeaf(a.column, forAnchors[a.column.id] ?? []));
 }
