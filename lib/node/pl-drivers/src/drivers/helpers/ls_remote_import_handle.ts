@@ -3,11 +3,11 @@ import type { Signer } from "@milaboratories/ts-helpers";
 import { ImportFileHandleIndexData, ImportFileHandleUploadData } from "../types";
 
 export function createIndexImportHandle(
-  storageName: string,
+  storageId: string,
   path: string,
 ): sdk.ImportFileHandleIndex {
   const data: ImportFileHandleIndexData = {
-    storageId: storageName,
+    storageId: storageId,
     path: path,
   };
 

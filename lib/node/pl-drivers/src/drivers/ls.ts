@@ -190,7 +190,7 @@ export class LsDriver implements InternalLsDriver {
     const remoteStorages = [...dataLibraries.values()].map((info) => ({
       id: info.storageId,
       name: info.storageName,
-      handle: createRemoteStorageHandle(info.storageId, info.resourceId),
+      handle: createRemoteStorageHandle(info),
       initialFullPath: "",
     }));
 
@@ -217,7 +217,7 @@ export class LsDriver implements InternalLsDriver {
           type: e.isDir ? "dir" : "file",
           name: e.name,
           fullPath: e.fullName,
-          handle: createIndexImportHandle(storageData.name, e.fullName),
+          handle: createIndexImportHandle(storageData.storageId, e.fullName),
         })),
       };
     }
@@ -266,7 +266,7 @@ export class LsDriver implements InternalLsDriver {
         type: e.isDir ? "dir" : "file",
         name: e.name,
         fullPath: e.fullName,
-        handle: createIndexImportHandle(storageData.name, e.fullName),
+        handle: createIndexImportHandle(storageData.storageId, e.fullName),
         size: Number(e.size),
       })),
     };
@@ -276,12 +276,7 @@ export class LsDriver implements InternalLsDriver {
   private async resolveRemoteStorageResourceInfo(
     storageData: RemoteStorageHandleData,
   ): Promise<ResourceInfo> {
-    const dataLibraries = await this.userResources.getDataLibraries();
-    const info = dataLibraries.get(storageData.name);
-    if (!info) {
-      throw new Error(`Unknown remote storage: ${storageData.name}`);
-    }
-    return { id: storageData.id, type: info.resourceType };
+    return { id: storageData.resourceId, type: storageData.resourceType };
   }
 
   public async fileToImportHandle(_file: sdk.FileLike): Promise<sdk.ImportFileHandle> {

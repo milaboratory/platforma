@@ -77,6 +77,11 @@ export function resourceTypeToString(rt: ResourceType): string {
   return `${rt.name}:${rt.version}`;
 }
 
+export function parseResourceType(str: string): ResourceType {
+  const [name, version] = str.split(":");
+  return { name, version };
+}
+
 export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): boolean {
   return type1.name === type2.name && type1.version === type2.version;
 }
@@ -288,7 +293,7 @@ export function bigintToResourceId(globalId: bigint, signature?: ResourceSignatu
   return `${idStr}|${sigHex}` as SignedResourceId;
 }
 
-export function parseSignedResourceId(resourceId: ResourceId): {
+export function parseSignedResourceId(resourceId: SignedResourceId): {
   globalId: GlobalResourceId;
   signature: ResourceSignature;
 } {

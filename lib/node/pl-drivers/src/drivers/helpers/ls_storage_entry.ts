@@ -1,6 +1,11 @@
 import type * as sdk from "@milaboratories/pl-model-common";
-import type { ResourceId } from "@milaboratories/pl-client";
-import { bigintToResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
+import type {
+  ResourceId,
+  ResourceType,
+  SignedResourceId,
+  StorageInfo,
+} from "@milaboratories/pl-client";
+import { resourceTypeToString, parseResourceType } from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
@@ -57,11 +62,12 @@ function parseLocalStorageHandle(handle: string): LocalStorageHandleData {
 
 export type RemoteStorageHandleData = {
   isRemote: true;
-  name: string;
-  id: ResourceId;
+  storageId: string;
+  resourceType: ResourceType;
+  resourceId: ResourceId;
 };
 
-const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;
+const remoteHandleRegex = /^remote:\/\/(?<storageId>.*)\/(?<resourceType>.*)\/(?<resourceId>.*)$/;
 
 export function isRemoteStorageHandle(
   handle: sdk.StorageHandle,
@@ -69,19 +75,21 @@ export function isRemoteStorageHandle(
   return remoteHandleRegex.test(handle);
 }
 
-export function createRemoteStorageHandle(name: string, rId: ResourceId): sdk.StorageHandleRemote {
-  const { globalId } = parseSignedResourceId(rId);
-  return `remote://${name}/${globalId}`;
+export function createRemoteStorageHandle(info: StorageInfo): sdk.StorageHandleRemote {
+  return `remote://${info.storageId}/${encodeURIComponent(resourceTypeToString(info.resourceType))}/${encodeURIComponent(info.resourceId)}`;
 }
 
 function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
   const parsed = handle.match(remoteHandleRegex);
   if (parsed == null) throw new Error(`Remote list handle wasn't parsed: ${handle}`);
-  const { name, resourceId } = parsed.groups!;
+  const { storageId, resourceType: encodedRType, resourceId: encodedRId } = parsed.groups!;
 
+  const resourceType = parseResourceType(decodeURIComponent(encodedRType));
+  const resourceId = decodeURIComponent(encodedRId) as SignedResourceId;
   return {
     isRemote: true,
-    id: bigintToResourceId(BigInt(resourceId)),
-    name,
+    storageId,
+    resourceType: resourceType,
+    resourceId: resourceId,
   };
 }
