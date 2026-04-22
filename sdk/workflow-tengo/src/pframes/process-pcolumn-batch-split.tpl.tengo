@@ -102,9 +102,8 @@ self.body(func(inputs) {
 	dataLines := undefined
 	hasHeader := passContent && formatExt != "ndjson"
 	if passContent {
-		if is_undefined(inputs.joinedContent) {
-			ll.panic("passContent=true but joinedContent input is missing")
-		}
+		ll.assert(!is_undefined(inputs.joinedContent),
+			"passContent=true but joinedContent input is missing")
 		lines := text.split(_readContent(inputs.joinedContent), "\n")
 		for len(lines) > 0 && lines[len(lines)-1] == "" {
 			lines = lines[:len(lines)-1]
@@ -142,11 +141,8 @@ self.body(func(inputs) {
 			valueInput = smart.createJsonResource(batchContent)
 		} else {
 			batchInputName := "__batch_" + string(batchIdx) + "__"
-			batchBlob := rawInputs[batchInputName]
-			if is_undefined(batchBlob) {
-				ll.panic("batch input not found: %v", batchInputName)
-			}
-			valueInput = batchBlob
+			valueInput = rawInputs[batchInputName]
+			ll.assert(!is_undefined(valueInput), "batch input not found: %v", batchInputName)
 		}
 
 		// Build render inputs for body template

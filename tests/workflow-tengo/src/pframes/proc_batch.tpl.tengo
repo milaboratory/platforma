@@ -5,6 +5,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+times := import("times")
 
 bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
 bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
@@ -79,6 +80,13 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(params.stepCache) {
 		opts.stepCache = params.stepCache
+	}
+	// Always set a short (1 second) cache on the internal pt workflow so
+	// repeated test runs don't reuse stale cached executions on the backend.
+	// Tests can override via params.cacheInputs, but the default is 1s.
+	opts.cacheInputs = times.second
+	if !is_undefined(params.cacheInputs) {
+		opts.cacheInputs = params.cacheInputs
 	}
 	// Allow tests to inject additional opts (e.g. `aggregate` to exercise the
 	// aggregate+batch mutual-exclusion check).

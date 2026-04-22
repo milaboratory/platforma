@@ -6,6 +6,7 @@ text := import("text")
 smart := import(":smart")
 constants := import(":pframes.constants")
 pSpec := import(":pframes.spec")
+pCommon := import(":pframes.process-column-common")
 path := import(":path")
 json := import("json")
 sets := import(":sets")
@@ -809,111 +810,6 @@ validateXsvType := func(xsvType) {
 		"xsvType must be one of [csv, tsv, parquet], found: %v", xsvType)
 }
 
-/**
- * Derives a column header string from a PColumn spec.
- * Uses the label annotation if present, otherwise falls back to the spec name.
- *
- * @param spec - PColumn spec
- * @returns string - the derived header
- */
-deriveHeaderFromSpec := func(spec) {
-	if !is_undefined(spec.annotations) {
-		label := spec.annotations[pSpec.A_LABEL]
-		if is_string(label) && label != "" {
-			return label
-		}
-	}
-	if is_string(spec.name) && spec.name != "" {
-		return spec.name
-	}
-	ll.panic("cannot derive header from spec: no label annotation or name found")
-}
-
-/**
- * Resolves a column entry's src field, extracting the column { spec, data },
- * optional filter, and header.
- *
- * @param entry - { src, header? } where src is either { spec, data } or ResolvedPrimaryRef
- * @returns { src: { spec, data }, header: string, filter?: { spec, data } }
- */
-resolveColumnSrc := func(entry) {
-	src := entry.src
-	filter := undefined
-
-	if is_map(src) && src.__isPrimaryRef == "v1" {
-		filter = src.filter
-		src = src.column
-	}
-
-	ll.assert(is_map(src) && !is_undefined(src.spec) && !is_undefined(src.data),
-		"column src must be { spec, data }, got: %v", src)
-
-	header := entry.header
-	if is_undefined(header) {
-		header = deriveHeaderFromSpec(src.spec)
-	}
-
-	result := { src: src, header: header }
-	if !is_undefined(filter) {
-		result.filter = filter
-	}
-	return result
-}
-
-/**
- * Normalizes column entries from the various overload forms into a uniform
- * array of { src: { spec, data }, header: string, filter?: { spec, data } }.
- *
- * Accepts:
- *   - undefined → []
- *   - bare { spec, data } → [{ src: { spec, data }, header: derived }]
- *   - ResolvedPrimaryRef → [{ src: column, header: derived, filter: filter }]
- *   - { src, header } → [{ src: resolved, header, filter? }]
- *   - array of any above → normalized array
- *
- * @param input - column entries in any supported form
- * @returns array of normalized entries
- */
-normalizeColumnEntries := func(input) {
-	if is_undefined(input) {
-		return []
-	}
-
-	// Wrap single entries into an array
-	if is_map(input) {
-		// Bare column { spec, data }
-		if !is_undefined(input.spec) && !is_undefined(input.data) && is_undefined(input.src) {
-			input = [{ src: input }]
-		// ResolvedPrimaryRef
-		} else if input.__isPrimaryRef == "v1" {
-			input = [{ src: input }]
-		// Single { src, header } entry
-		} else if !is_undefined(input.src) {
-			input = [input]
-		} else {
-			ll.panic("unrecognized column entry format: %v", input)
-		}
-	}
-
-	ll.assert(is_array(input), "column entries must be an array, got: %v", input)
-
-	result := []
-	for entry in input {
-		if is_map(entry) && !is_undefined(entry.src) {
-			result = append(result, resolveColumnSrc(entry))
-		} else if is_map(entry) && !is_undefined(entry.spec) && !is_undefined(entry.data) {
-			// Bare column value in array
-			result = append(result, resolveColumnSrc({ src: entry }))
-		} else if is_map(entry) && entry.__isPrimaryRef == "v1" {
-			// ResolvedPrimaryRef in array
-			result = append(result, resolveColumnSrc({ src: entry }))
-		} else {
-			ll.panic("unrecognized column entry in array: %v", entry)
-		}
-	}
-	return result
-}
-
 export ll.toStrict({
 	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
 	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
@@ -928,7 +824,17 @@ export ll.toStrict({
 	isFlatPfMap: isFlatPfMap,
 	isStructuredPfMap: isStructuredPfMap,
 	validateXsvType: validateXsvType,
-	deriveHeaderFromSpec: deriveHeaderFromSpec,
-	resolveColumnSrc: resolveColumnSrc,
-	normalizeColumnEntries: normalizeColumnEntries
+
+	// @deprecated Moved to :pframes.process-column-common.
+	// Update imports: `pCommon := import(":pframes.process-column-common")`
+	// then use `pCommon.deriveHeaderFromSpec`.
+	deriveHeaderFromSpec: pCommon.deriveHeaderFromSpec,
+	// @deprecated Moved to :pframes.process-column-common.
+	// Update imports: `pCommon := import(":pframes.process-column-common")`
+	// then use `pCommon.resolveColumnSrc`.
+	resolveColumnSrc: pCommon.resolveColumnSrc,
+	// @deprecated Moved to :pframes.process-column-common.
+	// Update imports: `pCommon := import(":pframes.process-column-common")`
+	// then use `pCommon.normalizeColumnEntries`.
+	normalizeColumnEntries: pCommon.normalizeColumnEntries
 })
