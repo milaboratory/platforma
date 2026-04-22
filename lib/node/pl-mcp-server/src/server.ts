@@ -25,8 +25,16 @@ export interface PlMcpServerCallbacks {
   captureScreenshot?: () => Promise<string>;
   /** Send an input event to the application window. */
   sendInputEvent?: (event: unknown) => Promise<void>;
-  /** Execute JavaScript in the renderer and return the result. */
-  executeJavaScript?: (code: string) => Promise<unknown>;
+  /**
+   * Execute JavaScript in a renderer and return the result.
+   * With no `target`, runs in the topmost webContents (usually the main app).
+   * With `target`, runs in the specified block's webview (where `window.platforma` is
+   * exposed) — the block must already be loaded (e.g. via `select_block`).
+   */
+  executeJavaScript?: (
+    code: string,
+    target?: { projectId: string; blockId: string },
+  ) => Promise<unknown>;
   /** List available blocks from all configured registries. */
   listAvailableBlocks?: (query?: string) => Promise<unknown[]>;
   /** Navigate the desktop UI to show a specific block. */
