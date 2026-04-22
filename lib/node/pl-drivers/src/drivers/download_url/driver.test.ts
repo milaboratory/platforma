@@ -41,6 +41,7 @@ test("should download a tar archive and extracts its content and then deleted", 
     expect(indexJsCode).toContain("use strict");
 
     c.resetState();
+    await driver.releaseAll();
   });
 }, 45000);
 
@@ -68,6 +69,7 @@ test(
       expect(url2).not.toBeUndefined();
       expect(url2?.error).not.toBeUndefined();
       expect(url2?.url).toBeUndefined();
+      await driver.releaseAll();
     });
   },
   60000,
@@ -93,6 +95,7 @@ test("should abort a downloading process when we reset a state of a computable",
 
     const url2 = await c.getValue();
     expect(url2).toBeUndefined();
+    await driver.releaseAll();
   });
 });
 
