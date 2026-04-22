@@ -1,5 +1,27 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.13.3
+
+### Patch Changes
+
+- fd0b5e3: Slice operation support
+- Updated dependencies [fd0b5e3]
+  - @platforma-open/milaboratories.software-ptabler@1.15.2
+
+## 5.13.2
+
+### Patch Changes
+
+- 54f60b7: Slice operation support
+- Updated dependencies [54f60b7]
+  - @platforma-open/milaboratories.software-ptabler@1.15.1
+
+## 5.13.1
+
+### Patch Changes
+
+- 495939e: fix: xsv converter can be launched in k8s installations.
+
 ## 5.13.0
 
 ### Minor Changes

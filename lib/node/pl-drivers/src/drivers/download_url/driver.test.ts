@@ -42,6 +42,7 @@ test("should download a tar archive and extracts its content and then deleted", 
 
     c.resetState();
     await driver.releaseAll();
+    await c.awaitChange();
   });
 }, 45000);
 

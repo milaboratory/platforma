@@ -53,7 +53,7 @@ catalogs:
       version: 2.0.3
     '@platforma-open/milaboratories.software-test-utils':
       specifier: ^1.1.6
-      version: 1.1.6
+      version: 1.1.1
     '@protobuf-ts/grpc-transport':
       specifier: 2.11.1
       version: 2.11.1
@@ -177,6 +177,9 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
+    immer:
+      specifier: 11.1.4
+      version: 11.1.4
     jsdom:
       specifier: ^25.0.1
       version: 25.0.1
@@ -2238,6 +2241,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
+      '@milaboratories/pl-errors':
+        specifier: workspace:*
+        version: link:../pl-errors
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../pl-middle-layer
@@ -2890,6 +2896,9 @@ importers:
       fast-json-patch:
         specifier: 'catalog:'
         version: 3.1.1
+      immer:
+        specifier: 'catalog:'
+        version: 11.1.4
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.2
@@ -5224,9 +5233,6 @@ packages:
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.19':
-    resolution: {integrity: sha512-S1g5idMNu3KL2AdWKwivCgd0ZRwXrpCK+TkhAfuXBafezRwHAw0k+A1F62BY7OBA8pOGd5R7yvU2LpMpCnaPOQ==}
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9':
     resolution: {integrity: sha512-pCg5NZREkrzBqx7jXv14MQMGWh2nfB9JJMn4MoF0lYJjLGkXpyFyYSVErW8IIvbNHcFLE5tU1pG7zilP/wSPvg==}
 
@@ -7466,6 +7472,9 @@ packages:
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
+
+  immer@11.1.4:
+    resolution: {integrity: sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw==}
 
   immutable@5.0.3:
     resolution: {integrity: sha512-P8IdPQHq3lA1xVeBRi5VPqUm5HDgKnx0Ru51wZz5mjxHr5n3RWhjIpOFU7ybkUxfB+5IToy+OLaHYDBIWsv+uw==}
@@ -11362,10 +11371,6 @@ snapshots:
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1': {}
 
-  '@platforma-open/milaboratories.software-ptabler.schema@1.13.19':
-    dependencies:
-      '@milaboratories/pl-model-common': 1.26.0
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9': {}
 
   '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.4': {}
@@ -13942,6 +13947,8 @@ snapshots:
   ieee754@1.2.1: {}
 
   ignore@5.3.2: {}
+
+  immer@11.1.4: {}
 
   immutable@5.0.3: {}
 

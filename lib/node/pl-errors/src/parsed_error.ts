@@ -1,3 +1,18 @@
+/**
+ * Thrown when MCP or middle layer attempts an operation with a model API version
+ * that doesn't match the block's actual version (e.g., V2 operation on a V1 block).
+ */
+export class ModelAPIVersionMismatchError extends Error {
+  constructor(
+    public readonly blockId: string,
+    public readonly expected: number,
+    public readonly actual: number,
+  ) {
+    super(`Model API version mismatch for block ${blockId}: ${expected} !== ${actual}`);
+    this.name = "ModelAPIVersionMismatchError";
+  }
+}
+
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
 import { z } from "zod";

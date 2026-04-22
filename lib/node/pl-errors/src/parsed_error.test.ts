@@ -4,6 +4,7 @@ import {
   stringifyWithResourceId,
 } from "@milaboratories/pl-client";
 import {
+  ModelAPIVersionMismatchError,
   parsePlError,
   parseSubErrors,
   PlMonetizationError,
@@ -159,6 +160,18 @@ at @platforma-sdk/workflow-tengo:ll:25:1
     expect(result[1].message).toBe(`Monetizaiton error:
 2025/03/13 17:25:18 get API error: VALIDATION_ERR Invalid /mnz/run-spec body: field productKey -> Invalid product key
 `);
+  });
+});
+
+describe("ModelAPIVersionMismatchError", () => {
+  it("should format message with block id and versions", () => {
+    const err = new ModelAPIVersionMismatchError("block-123", 2, 1);
+    expect(err.message).toBe("Model API version mismatch for block block-123: 2 !== 1");
+    expect(err.name).toBe("ModelAPIVersionMismatchError");
+    expect(err.blockId).toBe("block-123");
+    expect(err.expected).toBe(2);
+    expect(err.actual).toBe(1);
+    expect(err).toBeInstanceOf(Error);
   });
 });
 

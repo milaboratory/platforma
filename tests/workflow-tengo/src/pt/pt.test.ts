@@ -299,6 +299,61 @@ tplTest.concurrent(
   },
 );
 
+tplTest.concurrent(
+  "pt slice test - offset+length, tail clipping, past-end and zero-length",
+  async ({ helper, expect, driverKit }) => {
+    const inputTsvData = dedent`
+      id	value
+      1	A
+      2	B
+      3	C
+      4	D
+      5	E
+    `;
+
+    // slice(1, 2) → rows [1, 3): id 2 and 3.
+    const expectedBasic = dedent`
+      id	value
+      2	B
+      3	C
+    `;
+
+    // slice(3, 10) on a 5-row frame → rows [3, 5), only 2 rows available.
+    const expectedTail = dedent`
+      id	value
+      4	D
+      5	E
+    `;
+
+    // Past-end and zero-length slices must both produce header-only frames
+    // preserving the input schema.
+    const expectedEmptyWithHeader = dedent`
+      id	value
+    `;
+
+    const result = await helper.renderTemplate(
+      false,
+      "pt.slice",
+      ["out_basic", "out_tail", "out_past_end", "out_zero_length"],
+      (tx) => ({
+        inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+      }),
+    );
+
+    const [basic, tail, pastEnd, zeroLength] = await Promise.all([
+      getFileContent(result, "out_basic", driverKit),
+      getFileContent(result, "out_tail", driverKit),
+      getFileContent(result, "out_past_end", driverKit),
+      getFileContent(result, "out_zero_length", driverKit),
+    ]);
+
+    expect(normalizeTsv(basic)).toEqual(normalizeTsv(expectedBasic));
+    expect(normalizeTsv(tail)).toEqual(normalizeTsv(expectedTail));
+    expect(normalizeTsv(pastEnd)).toEqual(normalizeTsv(expectedEmptyWithHeader));
+    expect(normalizeTsv(zeroLength)).toEqual(normalizeTsv(expectedEmptyWithHeader));
+  },
+);
+
 tplTest.concurrent("pt ex3 test - join operations", async ({ helper, expect, driverKit }) => {
   // No input files needed as data is defined in the template as strings
 

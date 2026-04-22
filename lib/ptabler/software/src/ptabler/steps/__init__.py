@@ -11,6 +11,7 @@ from .io import (
 from .basics import AddColumns, Select, Unique, WithColumns, WithoutColumns
 from .filter import Filter
 from .limit import Limit
+from .slice import Slice
 from .join import Join
 from .aggregate import Aggregate
 from .concatenate import Concatenate
@@ -34,6 +35,7 @@ type AnyPStep = Union[
     WithoutColumns,
     Filter,
     Limit,
+    Slice,
     Join,
     Aggregate,
     Concatenate,
@@ -57,6 +59,7 @@ __all__ = [
     "WithoutColumns",
     "Filter",
     "Limit",
+    "Slice",
     "Join",
     "Aggregate",
     "Concatenate",

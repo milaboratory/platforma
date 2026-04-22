@@ -14,18 +14,20 @@ export type Optional<T> = T | undefined;
 
 export type ValueOf<T> = T[keyof T];
 
+export type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][];
+
 export type OneOrMany<T> = T | T[];
 
 export type Prettify<T> = {
   [K in keyof T]: Prettify<T[K]>;
 } & {};
 
-export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
-
 export type Expect<T extends true> = T;
 
 export type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;
+
+export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
@@ -40,9 +42,6 @@ export type CallEvent<T extends Record<string, AnyFunction>> = {
   };
 }[keyof T];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type Shift<A extends ReadonlyArray<unknown>> = A extends [infer V, ...infer L] ? L : never;
-
 export type AsyncReturnType<T extends AnyFunction> = Promise<Awaited<ReturnType<T>>>;
 
 export type AsyncReturnTypeOptional<T extends AnyFunction> = Promise<
@@ -52,10 +51,6 @@ export type AsyncReturnTypeOptional<T extends AnyFunction> = Promise<
 export type NonEmpty<T> = T extends null | undefined ? never : T;
 
 export type Values<T> = T[keyof T];
-
-export type ReturnValues<O extends Record<string, AnyFunction>> = Values<{
-  [P in keyof O]: ReturnType<O[P]>;
-}>;
 
 export type Option<T = unknown> = {
   text: string;

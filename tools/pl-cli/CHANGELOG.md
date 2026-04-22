@@ -1,5 +1,60 @@
 # @platforma-sdk/pl-cli
 
+## 0.2.33
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.2
+- @milaboratories/pl-middle-layer@1.55.15
+
+## 0.2.32
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.14
+
+## 0.2.31
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.13
+
+## 0.2.30
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.12
+
+## 0.2.29
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.11
+
+## 0.2.28
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.10
+
+## 0.2.27
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.9
+
+## 0.2.26
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.8
+
+## 0.2.25
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.7
+
 ## 0.2.24
 
 ### Patch Changes

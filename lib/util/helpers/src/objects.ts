@@ -1,6 +1,6 @@
 /**/
 
-import type { PartialBy, PlainObject } from "./types";
+import type { PartialBy, PlainObject, UnionToIntersection } from "./types";
 import { isNil } from "./utils";
 
 /**
@@ -247,4 +247,23 @@ export function deepPatch<T extends PlainObject | unknown[]>(target: T, source: 
   });
 
   return target;
+}
+
+/**
+ * Reads a property from a union-typed object where the key may exist only on some members of the union.
+ *
+ * `K` is constrained to keys of the union's intersection, so any key present on at least one union
+ * member is accepted. The return type resolves to `T[K]` when `K` is a key of `T`, otherwise `undefined`
+ * — matching the runtime behavior of reading a missing property.
+ *
+ * @param obj - source object (may be a union of shapes)
+ * @param prop - property name, must be a key of at least one union member
+ * @returns the property value if present, otherwise `undefined`
+ */
+export function getField<T extends object, K extends keyof UnionToIntersection<T>>(
+  obj: T,
+  prop: K,
+): K extends keyof T ? T[K] : undefined {
+  // @ts-expect-error - we want this to be a compile-time error when prop is not in T, but at runtime we just return undefined
+  return obj[prop];
 }

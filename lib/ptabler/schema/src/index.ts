@@ -13,6 +13,7 @@ import type {
   FilterStep,
   LimitStep,
   SelectStep,
+  SliceStep,
   UniqueKeepStrategy,
   UniqueStep,
   WithColumnsStep,
@@ -35,6 +36,7 @@ export type PTablerStep =
   | AddColumnsStep
   | FilterStep
   | LimitStep
+  | SliceStep
   | AggregateStep
   | AnyJoinStep
   | ConcatenateStep
@@ -59,9 +61,11 @@ export type {
   BaseFileWriteStep,
   ConcatenateStep,
   FilterStep,
+  LimitStep,
   ReadCsvStep,
   ReadNdjsonStep,
   SelectStep,
+  SliceStep,
   SortStep,
   UniqueKeepStrategy,
   UniqueStep,

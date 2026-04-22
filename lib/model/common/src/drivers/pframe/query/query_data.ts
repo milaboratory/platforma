@@ -21,6 +21,7 @@ import type {
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
+  QueryLinkerJoin,
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
@@ -69,6 +70,24 @@ export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<PObjectId, C
 export type DataQuerySymmetricJoin = QuerySymmetricJoin<DataQueryJoinEntry>;
 /** @see QueryOuterJoin */
 export type DataQueryOuterJoin = QueryOuterJoin<DataQueryJoinEntry>;
+/**
+ * Linker side of a data-layer linker-join.
+ *
+ * Carries the linker column id along with integration-derived artifacts needed
+ * for execution:
+ * - `axesMapping` — how the linker's axes map into the joined result
+ * - `oneSideAxesIndices` — which axis indices in the joined result to project out
+ */
+export type DataQueryLinkerJoinLinker = {
+  /** Linker column reference. */
+  column: PObjectId;
+  /** Linker's axes mapped into the joined result. */
+  axesMapping: number[];
+  /** Axis indices (in the joined result) to project out — the linker's one-side axes. */
+  oneSideAxesIndices: number[];
+};
+/** @see QueryLinkerJoin */
+export type DataQueryLinkerJoin = QueryLinkerJoin<DataQueryLinkerJoinLinker, DataQueryJoinEntry>;
 /** @see QuerySliceAxes */
 export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, QueryAxisSelector<number>>;
 /** @see QuerySort */
@@ -93,6 +112,7 @@ export type DataQuery =
   | DataQuerySparseToDenseColumn
   | DataQuerySymmetricJoin
   | DataQueryOuterJoin
+  | DataQueryLinkerJoin
   | DataQuerySliceAxes
   | DataQuerySort
   | DataQueryFilter;
