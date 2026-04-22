@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.12.12
+
+### Patch Changes
+
+- @milaboratories/pl-tree@1.9.10
+
 ## 1.12.11
 
 ### Patch Changes
