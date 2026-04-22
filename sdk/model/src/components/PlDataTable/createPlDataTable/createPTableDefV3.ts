@@ -44,32 +44,23 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
 }): PTableDefV2<PColumn<Data>> {
-  const basePrimary: SpecQueryJoinEntry<PColumn<Data>> = {
-    entry: {
-      type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
-      entries: params.primary.map((a) => toLeaf(a.column, [])),
-    },
-    qualifications: [],
-  };
-
-  const secondaries: SpecQueryJoinEntry<PColumn<Data>>[] = params.secondary.map((group) => ({
-    entry: {
-      type: "innerJoin" as const,
-      entries: [
-        ...(group.primaryQualifications !== undefined
-          ? getQuilifiedPrimary(params.primary, group.primaryQualifications)
-          : []),
-        ...group.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
-      ],
-    },
-    qualifications: [],
-  }));
-
   let query: SpecQuery<PColumn<Data>> = {
-    type: "outerJoin",
-    primary: basePrimary,
-    secondary: secondaries,
+    type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
+    entries: params.primary.map((a) => toLeaf(a.column, [])),
   };
+
+  for (const group of params.secondary) {
+    query = {
+      type: "outerJoin",
+      primary: {
+        entry: query,
+        qualifications: params.primary.flatMap((p) => {
+          return group.primaryQualifications?.[p.column.id] ?? [];
+        }),
+      },
+      secondary: group.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
+    };
+  }
 
   if (!isNil(params.filters)) {
     const nonEmpty = distillFilterSpec(params.filters);
@@ -118,11 +109,4 @@ function toLeaf<Data>(
     entry: { type: "column", column: col },
     qualifications: qs,
   };
-}
-
-function getQuilifiedPrimary<Data>(
-  entries: PrimaryEntry<Data>[],
-  forAnchors: Record<PObjectId, AxisQualification[]>,
-): SpecQueryJoinEntry<PColumn<Data>>[] {
-  return entries.map((a) => toLeaf(a.column, forAnchors[a.column.id] ?? []));
 }
