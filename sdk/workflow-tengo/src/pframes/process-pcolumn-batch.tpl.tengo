@@ -308,8 +308,8 @@ self.body(func(inputs) {
 
 		// Build pt workflow: join, sort, select, then branch on passContent.
 		wf := pt.workflow()
-		if !is_undefined(params.cacheInputs) {
-			wf.cacheInputs(params.cacheInputs)
+		if !is_undefined(inputs.cacheInputs) {
+			wf.cacheInputs(inputs.cacheInputs)
 		}
 		df := wf.frame(joined)
 
@@ -343,13 +343,15 @@ self.body(func(inputs) {
 				formatExt: formatExt,
 				eph: eph,
 				outputs: outputDefs,
-				batchKeyHeaders: batchKeyHeaders,
-				globalCpu: params.globalCpu,
-				globalMem: params.globalMem,
-				globalQueue: params.globalQueue,
-				stepCache: params.stepCache
+				batchKeyHeaders: batchKeyHeaders
 			}),
 			body: body
+		}
+		splitMetaInputs := {
+			globalCpu: inputs.globalCpu,
+			globalMem: inputs.globalMem,
+			globalQueue: inputs.globalQueue,
+			stepCache: inputs.stepCache
 		}
 
 		// Two strategies driven by passContent (see split template header comment).
@@ -377,7 +379,7 @@ self.body(func(inputs) {
 			splitInputs[k] = v
 		}
 
-		splitResult := render.createEphemeral(batchSplitTpl, splitInputs)
+		splitResult := render.createEphemeral(batchSplitTpl, splitInputs, { metaInputs: splitMetaInputs })
 
 		// Collect per-scope outputs into the super-partitioned containers (or
 		// directly into the result map when there's no isolation).

@@ -588,15 +588,13 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("too many arguments")
 	}
 
-	// --- Batch mode detection ---
+	// Batch mode: input.primary is the marker; dispatch to the batch lib.
 	isBatchMode := is_map(input) && !is_undefined(input.primary)
-
 	if isBatchMode {
 		return pColumnBatch.processColumnBatch(input, bodyTpl, outputs, opts)
 	}
 
-	// --- Standard mode (mapping / aggregation) ---
-
+	// Standard mode: mapping / aggregation over a single input column.
 	if is_undefined(input.spec) {
 		ll.panic("no input spec provided")
 	}
