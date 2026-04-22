@@ -21,6 +21,7 @@ import type {
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
+  QueryLinkerJoin,
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
@@ -81,6 +82,21 @@ export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColu
 export type SpecQuerySymmetricJoin<C = PObjectId> = QuerySymmetricJoin<SpecQueryJoinEntry<C>>;
 /** @see QueryOuterJoin */
 export type SpecQueryOuterJoin<C = PObjectId> = QueryOuterJoin<SpecQueryJoinEntry<C>>;
+/**
+ * Linker side of a spec-layer linker-join.
+ *
+ * At the spec layer the linker is just a column reference — integration artifacts
+ * (axes mapping, one-side indices) are derived during spec→data conversion.
+ */
+export type SpecQueryLinkerJoinLinker<C = PObjectId> = {
+  /** Linker column reference. */
+  column: C;
+};
+/** @see QueryLinkerJoin */
+export type SpecQueryLinkerJoin<C = PObjectId> = QueryLinkerJoin<
+  SpecQueryLinkerJoinLinker<C>,
+  SpecQueryJoinEntry<C>
+>;
 /** @see QuerySliceAxes */
 export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<
   SpecQuery<C>,
@@ -112,6 +128,7 @@ export type SpecQuery<C = PObjectId> =
   | SpecQuerySparseToDenseColumn<C>
   | SpecQuerySymmetricJoin<C>
   | SpecQueryOuterJoin<C>
+  | SpecQueryLinkerJoin<C>
   | SpecQuerySliceAxes<C>
   | SpecQuerySort<C>
   | SpecQueryFilter<C>;

@@ -357,14 +357,18 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       const associatedId = this.idDeriver.deriveS(col.spec);
 
       results.push({
-        path: hit.path.map((step) => ({
-          linker: remapSnapshot(
-            this.idDeriver.deriveS(step.linker.spec),
-            this.columnsMap.get(step.linker.columnId) ??
-              throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
-          ),
-          qualifications: step.qualifications,
-        })),
+        path: hit.path.map((step) => {
+          if (step.type !== "linker")
+            throw new Error(`Unexpected discover-columns step type: ${step.type}`);
+          return {
+            linker: remapSnapshot(
+              this.idDeriver.deriveS(step.linker.spec),
+              this.columnsMap.get(step.linker.columnId) ??
+                throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
+            ),
+            qualifications: step.qualifications,
+          };
+        }),
         column: remapSnapshot(associatedId, col),
         variants: hit.mappingVariants,
         originalId: origId,

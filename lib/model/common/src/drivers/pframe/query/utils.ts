@@ -78,6 +78,13 @@ export function traverseQuerySpec<C1, C2>(
         secondary: query.secondary.map(traverseEntry),
       };
       break;
+    case "linkerJoin":
+      result = {
+        ...query,
+        linker: { ...query.linker, column: visitor.column(query.linker.column) },
+        secondary: query.secondary.map(traverseEntry),
+      };
+      break;
     case "filter":
     case "sort":
     case "sliceAxes":
@@ -123,6 +130,10 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           return { ...node, entries: sorted };
         }
         case "outerJoin": {
+          const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
+          return { ...node, secondary: sorted };
+        }
+        case "linkerJoin": {
           const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
           return { ...node, secondary: sorted };
         }
@@ -194,6 +205,20 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       }
       for (let i = 0; i < lhs.secondary.length; i++) {
         const cmp = cmpQueryJoinEntrySpec(lhs.secondary[i], rhsOuter.secondary[i]);
+        if (cmp !== 0) return cmp;
+      }
+      return 0;
+    }
+    case "linkerJoin": {
+      const rhsLinker = rhs as typeof lhs;
+      if (lhs.linker.column !== rhsLinker.linker.column) {
+        return lhs.linker.column < rhsLinker.linker.column ? -1 : 1;
+      }
+      if (lhs.secondary.length !== rhsLinker.secondary.length) {
+        return lhs.secondary.length - rhsLinker.secondary.length;
+      }
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpQueryJoinEntrySpec(lhs.secondary[i], rhsLinker.secondary[i]);
         if (cmp !== 0) return cmp;
       }
       return 0;
