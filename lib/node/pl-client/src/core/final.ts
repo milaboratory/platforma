@@ -79,6 +79,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case ResourceTypeName.Null:
     case ResourceTypeName.Binary:
     case ResourceTypeName.LSProvider:
+    case ResourceTypeName.WorkingDirectory:
       return true;
     case ResourceTypeName.UserProject:
     case ResourceTypeName.Projects:
@@ -87,7 +88,9 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     default:
       if (
         r.type.name.startsWith(ResourceTypePrefix.Blob) ||
-        r.type.name.startsWith(ResourceTypePrefix.LS)
+        r.type.name.startsWith(ResourceTypePrefix.LS) ||
+        r.type.name.startsWith(ResourceTypePrefix.WorkingDirectory) ||
+        r.type.name.startsWith(ResourceTypePrefix.StorageSpaceAllocation)
       ) {
         return true;
       } else if (

@@ -32,6 +32,7 @@ export const ResourceTypeName = {
   Null: "Null",
   Binary: "binary",
   LSProvider: "LSProvider",
+  WorkingDirectory: "WorkingDirectory",
   UserProject: "UserProject",
   Projects: "Projects",
   ClientRoot: "ClientRoot",
@@ -41,6 +42,8 @@ export const ResourceTypeName = {
 export const ResourceTypePrefix = {
   Blob: "Blob/",
   LS: "LS/",
+  WorkingDirectory: "WorkingDirectory/",
+  StorageSpaceAllocation: "StorageSpaceAllocation/",
   BlobUpload: "BlobUpload/",
   BlobIndex: "BlobIndex/",
   PColumnData: "PColumnData/",
