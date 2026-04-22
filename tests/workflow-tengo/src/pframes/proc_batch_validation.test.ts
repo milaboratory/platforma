@@ -150,6 +150,21 @@ eTplTest.concurrent(
 );
 
 eTplTest.concurrent(
+  "batch mode: unknown primaryJoin value is rejected",
+  async ({ helper, stHelper, expect }) => {
+    // Typos or unsupported values must fail fast rather than silently
+    // falling through to "full" semantics.
+    await expectBatchPanic(
+      helper,
+      stHelper,
+      expect,
+      { primaryJoin: "outer" },
+      /primaryJoin must be "full" or "inner"/,
+    );
+  },
+);
+
+eTplTest.concurrent(
   "batch mode: non-primitive primary valueType is rejected",
   async ({ helper, stHelper, expect }) => {
     // File is non-primitive — batch mode routes through pt which only handles
