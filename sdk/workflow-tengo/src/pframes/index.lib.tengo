@@ -365,6 +365,30 @@ pColumnResourceMapDataBuilder := func(keyLength) {
 
 __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": true, "String": true, "Bytes": true }
 
+// Builds the trace-injection info for an output, shared between the standard
+// and batch paths. `inputSpec` is the PColumn spec whose trace annotations and
+// lineage seed the output (standard mode uses the single input column spec;
+// batch mode uses the first primary column's spec).
+_buildOutputTrace := func(opts, output, inputSpec) {
+	hasOutputTrace := !is_undefined(output.traceSteps)
+	hasGlobalTrace := !is_undefined(opts.traceSteps)
+	hasInputTrace := !is_undefined(inputSpec.annotations) && !is_undefined(inputSpec.annotations[pSpec.A_TRACE])
+
+	outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
+
+	trace := undefined
+	if len(outputTraceSteps) > 0 || hasInputTrace {
+		trace = pSpec.makeTrace(inputSpec, outputTraceSteps...)
+	}
+
+	outputOverrideTrace := output.overrideTrace
+	if is_undefined(outputOverrideTrace) {
+		outputOverrideTrace = hasOutputTrace || hasGlobalTrace
+	}
+
+	return { trace: trace, overrideTrace: outputOverrideTrace }
+}
+
 // Factory for the processColumn return object. Both the standard and batch
 // `processColumn` paths expose the same interface (outputSpec/outputData/output/
 // xsvOutputFrame/allOutputsFrame/addAllOutputsToBuilder/listOutputs/…), so they
@@ -613,6 +637,24 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		ll.panic("at least one primary column is required")
 	}
 
+	// Batch mode uses pt/ReadFrame to load and join columns — that path only
+	// supports primitive-valued PColumns (spec: "Joining of primitive-value
+	// PColumns via pt library"). Reject non-primitive inputs up front with a
+	// clear message rather than let them fail deep in pt.
+	_assertPrimitive := func(role, header, spec) {
+		vt := spec.valueType
+		if !__primitiveValueTypes[vt] {
+			ll.panic("batch mode %s column %q has non-primitive valueType %q; only primitive types (Int/Long/Float/Double/String/Bytes) are supported",
+				role, header, vt)
+		}
+	}
+	for entry in primaryEntries {
+		_assertPrimitive("primary", entry.header, entry.src.spec)
+	}
+	for entry in secondaryEntries {
+		_assertPrimitive("non-primary", entry.header, entry.src.spec)
+	}
+
 	// Get axes spec from first primary column
 	allAxesSpec := primaryEntries[0].src.spec.axesSpec
 	if is_undefined(allAxesSpec) {
@@ -664,33 +706,13 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 	outputSpecs := {}
 	outputsMap := {}
 
-	createOutputTrace := func(output) {
-		hasOutputTrace := !is_undefined(output.traceSteps)
-		hasGlobalTrace := !is_undefined(opts.traceSteps)
-
-		// For batch mode, we don't have a single input spec for trace
-		// Use the first primary's spec
-		inputSpec := primaryEntries[0].src.spec
-		hasInputTrace := !is_undefined(inputSpec.annotations) && !is_undefined(inputSpec.annotations[pSpec.A_TRACE])
-
-		outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
-
-		trace := undefined
-		if len(outputTraceSteps) > 0 || hasInputTrace {
-			trace = pSpec.makeTrace(inputSpec, outputTraceSteps...)
-		}
-
-		outputOverrideTrace := output.overrideTrace
-		if is_undefined(outputOverrideTrace) {
-			outputOverrideTrace = hasOutputTrace || hasGlobalTrace
-		}
-
-		return { trace: trace, overrideTrace: outputOverrideTrace }
-	}
+	// Batch mode seeds trace from the first primary column's spec (no single
+	// canonical input spec exists across multiple inputs).
+	batchTraceInputSpec := primaryEntries[0].src.spec
 
 	for output in outputs {
 		outputsMap[output.name] = output
-		traceInfo := createOutputTrace(output)
+		traceInfo := _buildOutputTrace(opts, output, batchTraceInputSpec)
 
 		if output.type == "Resource" {
 			ll.panic("Resource output type is not supported in batch mode. Use ResourceMap or Xsv instead.")
@@ -711,6 +733,21 @@ _processColumnBatch := func(input, bodyTpl, outputs, opts) {
 		} else if output.type == "Xsv" {
 			if is_undefined(output.settings) {
 				ll.panic("settings are required for Xsv output")
+			}
+
+			// Xsv importFile only supports csv|tsv|parquet. If batch.format is
+			// ndjson, the body must still produce one of the importable formats
+			// and declare it via output.xsvType — the batch format applies to the
+			// file handed to the body, not to the body's output. Reject ambiguity
+			// here rather than let xsv.importFile fail with an opaque message.
+			if is_undefined(output.xsvType) {
+				if batch.format == "ndjson" {
+					ll.panic("Xsv output %q requires explicit xsvType when batch.format=\"ndjson\" (xsv.importFile accepts csv|tsv|parquet only)",
+						output.name)
+				}
+			} else if output.xsvType != "csv" && output.xsvType != "tsv" && output.xsvType != "parquet" {
+				ll.panic("Xsv output %q has invalid xsvType %q (must be one of csv|tsv|parquet)",
+					output.name, output.xsvType)
 			}
 
 			// For batch mode Xsv with batchKeyColumns, convert to standard axes format.
@@ -1114,26 +1151,6 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 		ll.panic("can't use passAggregationAxesSpec, passAggregationAxesNames or passDistilledAggregationSpec without aggregate")
 	}
 
-	createOutputTrace := func(output) {
-		hasOutputTrace := !is_undefined(output.traceSteps)
-		hasGlobalTrace := !is_undefined(opts.traceSteps)
-		hasInputTrace := !is_undefined(input.spec.annotations[pSpec.A_TRACE])
-
-		outputTraceSteps := slices.normalize(opts.traceSteps) + slices.normalize(output.traceSteps)
-
-		trace := undefined
-		if len(outputTraceSteps) > 0 || hasInputTrace {
-			trace = pSpec.makeTrace(input.spec, outputTraceSteps...)
-		}
-
-		outputOverrideTrace := output.overrideTrace
-		if is_undefined(outputOverrideTrace) {
-			outputOverrideTrace = hasOutputTrace || hasGlobalTrace
-		}
-
-		return { trace: trace, overrideTrace: outputOverrideTrace }
-	}
-
 	processTemplateParams := {
 		eph: opts.isEphemeral,
 		passKey: opts.passKey
@@ -1254,7 +1271,7 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	for output in outputs {
 		// map output name to output settings provided in input
 		outputsMap[output.name] = output
-		traceInfo := createOutputTrace(output)
+		traceInfo := _buildOutputTrace(opts, output, input.spec)
 		if output.type == "Resource" || output.type == "BinaryPartitioned" || output.type == "JsonPartitioned" {
 			spec := maps.merge(output.spec, { axesSpec: copy(iterationAxesSpec) + slices.normalize(output.spec.axesSpec) })
 			if !is_undefined(traceInfo.trace) {

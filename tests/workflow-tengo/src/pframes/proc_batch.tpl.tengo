@@ -9,6 +9,7 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
 bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
 bodyTplResourceMap := assets.importTemplate(":pframes.proc_batch_body_resource_map")
+bodyTplNdjson := assets.importTemplate(":pframes.proc_batch_body_ndjson")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -18,11 +19,14 @@ self.body(func(inputs) {
 
 	// Select body template:
 	// - params.bodyMode == "resourceMap" → body returns a ResourceMap keyed by batch key
+	// - params.bodyMode == "ndjson"      → body parses NDJSON content via pt, writes parquet
 	// - params.batch.passContent=false   → body treats __value__ as a Blob file ref
 	// - default                          → body reads __value__ as a content string
 	bodyTpl := bodyTplContent
 	if params.bodyMode == "resourceMap" {
 		bodyTpl = bodyTplResourceMap
+	} else if params.bodyMode == "ndjson" {
+		bodyTpl = bodyTplNdjson
 	} else if !is_undefined(params.batch.passContent) && !params.batch.passContent {
 		bodyTpl = bodyTplBlob
 	}
@@ -76,16 +80,30 @@ self.body(func(inputs) {
 	if !is_undefined(params.stepCache) {
 		opts.stepCache = params.stepCache
 	}
+	// Allow tests to inject additional opts (e.g. `aggregate` to exercise the
+	// aggregate+batch mutual-exclusion check).
+	if !is_undefined(params.opts) {
+		for k, v in params.opts {
+			opts[k] = v
+		}
+	}
+
+	// Tests can set `singlePrimary: true` to pass primaryEntries[0] directly
+	// (unwrapped) — exercises the `primary: { src, header }` overload path.
+	primaryArg := primaryEntries
+	if params.singlePrimary {
+		primaryArg = primaryEntries[0]
+	}
 
 	processResult := pframes.processColumn({
-		primary: primaryEntries,
+		primary: primaryArg,
 		columns: secondaryEntries,
 		primaryJoin: params.primaryJoin
 	}, bodyTpl, params.outputs, opts)
 
 	// For ResourceMap outputs, return the raw ResourceMap resource (PFrame export
 	// only makes sense for typed PColumn outputs).
-	if params.bodyMode == "resourceMap" {
+	if params.bodyMode == "resourceMap" || params.bodyMode == "ndjson" {
 		return {
 			result: processResult.outputData(params.outputs[0].name)
 		}

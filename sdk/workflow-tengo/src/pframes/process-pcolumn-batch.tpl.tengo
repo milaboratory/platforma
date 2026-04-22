@@ -217,7 +217,7 @@ self.body(func(inputs) {
 				inGroupKey := []
 				for i in batchKeyIndices {
 					if len(keyArray) <= i {
-						continue
+						ll.panic("malformed partition key %v: fewer components than the axes spec (index %v out of range)", sKeyP, i)
 					}
 					inGroupKey = append(inGroupKey, keyArray[i])
 				}
@@ -289,10 +289,11 @@ self.body(func(inputs) {
 	//
 	// Step 2: panic if scope count alone exceeds maxBatches — inflating batch
 	// size can't help when each scope has ≤1 batch.
-	// Steps 3-4: estimate total batch count from per-scope record counts using
-	// the first primary column (practical estimate; per-scope loop re-counts
-	// across all primaries for correctness). If totalBatches > maxBatches,
-	// inflate batch size deterministically.
+	// Steps 3-4: estimate total batch count from per-scope upper-bound record
+	// counts (inner: min across primaries; full: sum across primaries), then
+	// inflate batch size deterministically if totalBatches > maxBatches. Same
+	// upper-bound convention as the per-scope loop below, so the soft limit
+	// consistently bounds the resulting batch count.
 	isolationScopeCount := len(allIsolationKeys)
 	if isolationScopeCount > maxBatches {
 		ll.panic(
@@ -302,11 +303,34 @@ self.body(func(inputs) {
 			isolationScopeCount, maxBatches)
 	}
 
-	firstPrimaryGroups := primaryGroups[0].groups
+	_scopeUpperBound := func(sIsolationKey) {
+		if primaryJoin == "inner" {
+			minRec := -1
+			for pg in primaryGroups {
+				n := _recordsInGroup(pg.groups[sIsolationKey])
+				if n == 0 {
+					return 0
+				}
+				if minRec < 0 || n < minRec {
+					minRec = n
+				}
+			}
+			if minRec < 0 {
+				return 0
+			}
+			return minRec
+		}
+		s := 0
+		for pg in primaryGroups {
+			s += _recordsInGroup(pg.groups[sIsolationKey])
+		}
+		return s
+	}
+
 	totalRecords := 0
 	totalBatches := 0
 	for sIsolationKey in maps.getKeys(allIsolationKeys) {
-		recordsInScope := _recordsInGroup(firstPrimaryGroups[sIsolationKey])
+		recordsInScope := _scopeUpperBound(sIsolationKey)
 		totalRecords += recordsInScope
 		if recordsInScope > 0 {
 			totalBatches += (recordsInScope + batchSize - 1) / batchSize
@@ -416,35 +440,10 @@ self.body(func(inputs) {
 			}
 		}
 
-		// Estimate joined row count for this scope. For primaryJoin="inner"
-		// it's ≤ min(records across primaries); for "full" it's ≤ max for
-		// matching keys (common case) and up to sum for disjoint keys — using
-		// max gives a practical estimate. Over-counting yields empty trailing
-		// slices, which the split template handles.
-		scopeRecords := 0
-		if primaryJoin == "inner" {
-			minRec := -1
-			for pg in primaryGroups {
-				n := _recordsInGroup(pg.groups[sIsolationKey])
-				if n == 0 {
-					minRec = 0
-					break
-				}
-				if minRec < 0 || n < minRec {
-					minRec = n
-				}
-			}
-			if minRec > 0 {
-				scopeRecords = minRec
-			}
-		} else {
-			for pg in primaryGroups {
-				n := _recordsInGroup(pg.groups[sIsolationKey])
-				if n > scopeRecords {
-					scopeRecords = n
-				}
-			}
-		}
+		// Same upper-bound as used for the maxBatches estimate — ensures every
+		// joined row fits into some slice. Over-counting only yields empty
+		// trailing slices, which the split template tolerates.
+		scopeRecords := _scopeUpperBound(sIsolationKey)
 		if scopeRecords == 0 {
 			continue
 		}

@@ -96,8 +96,11 @@ self.body(func(inputs) {
 	// Pre-split content lines once for passContent=true mode.
 	// The orchestrator passes the full per-scope joined file; we reconstruct
 	// per-batch content by slicing lines.
+	// NDJSON has no header row — each line is an independent record. TSV/CSV
+	// have a single leading header that must be prepended to every batch.
 	header := undefined
 	dataLines := undefined
+	hasHeader := passContent && formatExt != "ndjson"
 	if passContent {
 		if is_undefined(inputs.joinedContent) {
 			ll.panic("passContent=true but joinedContent input is missing")
@@ -106,12 +109,17 @@ self.body(func(inputs) {
 		for len(lines) > 0 && lines[len(lines)-1] == "" {
 			lines = lines[:len(lines)-1]
 		}
-		if len(lines) > 0 {
-			header = lines[0]
-			dataLines = lines[1:]
+		if hasHeader {
+			if len(lines) > 0 {
+				header = lines[0]
+				dataLines = lines[1:]
+			} else {
+				header = ""
+				dataLines = []
+			}
 		} else {
 			header = ""
-			dataLines = []
+			dataLines = lines
 		}
 	}
 
@@ -125,7 +133,12 @@ self.body(func(inputs) {
 				endLine = len(dataLines)
 			}
 			batchLines := dataLines[startLine:endLine]
-			batchContent := header + "\n" + text.join(batchLines, "\n") + "\n"
+			batchContent := ""
+			if hasHeader {
+				batchContent = header + "\n" + text.join(batchLines, "\n") + "\n"
+			} else {
+				batchContent = text.join(batchLines, "\n") + "\n"
+			}
 			valueInput = smart.createJsonResource(batchContent)
 		} else {
 			batchInputName := "__batch_" + string(batchIdx) + "__"
