@@ -30,17 +30,26 @@ self.body(func(inputs) {
 		ll.panic("merge-resource-maps: no sources provided")
 	}
 
-	// keyLength must match across all sources. Read from the first valid one.
-	keyLength := 0
+	// All sources must be ResourceMap with matching keyLength. Bad inputs
+	// would silently merge into a structurally-invalid output — a real bug
+	// upstream — so validate both properties explicitly.
+	keyLength := undefined
 	for src in sources {
 		if !src.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
 			ll.panic("merge-resource-maps: expected ResourceMap, got %v", src.info().Type.Name)
 		}
 		meta := src.getDataAsJson()
-		if !is_undefined(meta.keyLength) {
-			keyLength = meta.keyLength
-			break
+		if is_undefined(meta.keyLength) {
+			continue
 		}
+		if is_undefined(keyLength) {
+			keyLength = meta.keyLength
+		} else if keyLength != meta.keyLength {
+			ll.panic("merge-resource-maps: keyLength mismatch across sources — %v vs %v", keyLength, meta.keyLength)
+		}
+	}
+	if is_undefined(keyLength) {
+		keyLength = 0
 	}
 
 	merged := smart.structBuilder(
