@@ -196,8 +196,15 @@ self.body(func(inputs) {
 				).lockAndBuild()
 			}
 		} else {
-			// Partitioned types (JsonPartitioned, BinaryPartitioned, ParquetPartitioned)
-			for sKey, field in res.inputs() {
+			// Partitioned types (JsonPartitioned, BinaryPartitioned, ParquetPartitioned).
+			// Iterate in sorted key order so every run inserts fields into the
+			// intermediate structBuilder in the same sequence — the built
+			// resource's hash is content-addressed, but stable insertion order
+			// is cheap defense-in-depth against any hashing regressions and
+			// keeps cache behavior reproducible.
+			resInputs := res.inputs()
+			for sKey in maps.getKeys(resInputs) {
+				field := resInputs[sKey]
 				sKeyP := sKey
 				suffix := ""
 				if typeInfo.isBinary {
@@ -235,8 +242,8 @@ self.body(func(inputs) {
 				}
 				group.createInputField(sInGroupKey + suffix).set(field)
 			}
-			for sIsolationKey, groupBuilder in groups {
-				groups[sIsolationKey] = groupBuilder.lockAndBuild()
+			for sIsolationKey in maps.getKeys(groups) {
+				groups[sIsolationKey] = groups[sIsolationKey].lockAndBuild()
 			}
 		}
 

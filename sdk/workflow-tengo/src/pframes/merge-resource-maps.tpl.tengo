@@ -8,6 +8,7 @@ ll := import(":ll")
 smart := import(":smart")
 pConstants := import(":pframes.constants")
 text := import("text")
+maps := import(":maps")
 
 json := import("json")
 
@@ -16,13 +17,15 @@ self.awaitState("InputsLocked")
 self.awaitState({ wildcard: "*" }, "InputsLocked")
 
 self.body(func(inputs) {
-	// Collect source resources via rawInputs (preserves field references — we want
-	// to set the merged resource's fields to the SAME underlying blob/resource, not
-	// copies)
+	// Collect source resources via rawInputs (preserves field references — we
+	// want to set the merged resource's fields to the SAME underlying blob/
+	// resource, not copies). Iterate names in sorted order (maps.getKeys)
+	// so the merge is deterministic across runs — critical for backend caching.
+	rawInputs := self.rawInputs()
 	sources := []
-	for name, field in self.rawInputs() {
+	for name in maps.getKeys(rawInputs) {
 		if text.has_prefix(name, "src_") {
-			sources = append(sources, field.getValue())
+			sources = append(sources, rawInputs[name].getValue())
 		}
 	}
 
@@ -57,16 +60,19 @@ self.body(func(inputs) {
 		json.encode({ keyLength: keyLength })
 	)
 
-	// Batches cover disjoint key ranges so collisions shouldn't occur; if they do,
-	// panic — a non-deterministic merge would hide a real bug upstream.
+	// Batches cover disjoint key ranges so collisions shouldn't occur; if they
+	// do, panic — a non-deterministic merge would hide a real bug upstream.
+	// Iterate per-source keys in sorted order (maps.getKeys) for deterministic
+	// createInputField insertion sequence.
 	seenKeys := {}
 	for src in sources {
-		for key, field in src.inputs() {
+		srcInputs := src.inputs()
+		for key in maps.getKeys(srcInputs) {
 			if !is_undefined(seenKeys[key]) {
 				ll.panic("merge-resource-maps: duplicate key %v across batches — batches must be disjoint", key)
 			}
 			seenKeys[key] = true
-			merged.createInputField(key).set(field)
+			merged.createInputField(key).set(srcInputs[key])
 		}
 	}
 
