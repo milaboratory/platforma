@@ -109,7 +109,12 @@ export type PrimaryRef = {
 };
 
 export function isPrimaryRef(value: unknown): value is PrimaryRef {
-  return typeof value === "object" && value !== null && "__isPrimaryRef" in value;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { __isPrimaryRef?: unknown }).__isPrimaryRef === "v1" &&
+    "column" in value
+  );
 }
 
 export function createPrimaryRef(column: PlRef, filter?: PlRef): PrimaryRef {

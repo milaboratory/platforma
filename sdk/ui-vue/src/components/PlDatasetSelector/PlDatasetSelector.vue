@@ -17,7 +17,7 @@ export default {
 
 <script lang="ts" setup>
 import type { DatasetOption, PlRef, PrimaryRef } from "@platforma-sdk/model";
-import { createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import { createPrimaryRef, isPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown, PlDropdownRef } from "@milaboratories/uikit";
 import { computed } from "vue";
@@ -26,14 +26,14 @@ const slots = defineSlots<{
   tooltip?: () => unknown;
 }>();
 
-const emit = defineEmits<{
-  (e: "update:modelValue", value: PrimaryRef | undefined): void;
-}>();
+/**
+ * v-model value. Accepts `PrimaryRef`, plain `PlRef` (treated as unfiltered),
+ * or `undefined`. Writes always emit `PrimaryRef` or `undefined`.
+ */
+const model = defineModel<PrimaryRef | PlRef | undefined>();
 
 const props = withDefaults(
   defineProps<{
-    /** Current value. Accepts `PrimaryRef`, plain `PlRef`, or `undefined`. */
-    modelValue: PrimaryRef | PlRef | undefined;
     /** Available datasets, each optionally carrying compatible filter choices. */
     options?: Readonly<DatasetOption[]>;
     /** Label above the dataset dropdown. */
@@ -76,15 +76,14 @@ const props = withDefaults(
 );
 
 const selectedDataset = computed<PlRef | undefined>(() => {
-  const v = props.modelValue;
+  const v = model.value;
   if (v === undefined) return undefined;
-  return "__isPrimaryRef" in v ? v.column : v;
+  return isPrimaryRef(v) ? v.column : v;
 });
 
 const selectedFilter = computed<PlRef | undefined>(() => {
-  const v = props.modelValue;
-  if (v === undefined) return undefined;
-  return "__isPrimaryRef" in v ? v.filter : undefined;
+  const v = model.value;
+  return isPrimaryRef(v) ? v.filter : undefined;
 });
 
 const currentDatasetOption = computed<DatasetOption | undefined>(() => {
@@ -111,11 +110,7 @@ const filterOptions = computed<ListOption<PlRef | null>[]>(() => {
 const filterValue = computed<PlRef | null>(() => selectedFilter.value ?? null);
 
 function emitValue(dataset: PlRef | undefined, filter: PlRef | undefined) {
-  if (dataset === undefined) {
-    emit("update:modelValue", undefined);
-    return;
-  }
-  emit("update:modelValue", createPrimaryRef(dataset, filter));
+  model.value = dataset === undefined ? undefined : createPrimaryRef(dataset, filter);
 }
 
 function onDatasetChange(dataset: PlRef | undefined) {

@@ -1,14 +1,24 @@
 import { Annotation } from "@milaboratories/pl-model-common";
 import type { Option, PlRef, PObjectId } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
-import type { AnchoredColumnCollection, ColumnMatch } from "./column_collection_builder";
+import type {
+  AnchoredColumnCollection,
+  ColumnMatch,
+} from "../../columns/column_collection_builder";
 import {
   deriveDistinctLabels,
   type DeriveLabelsOptions,
   type Entry,
-} from "../labels/derive_distinct_labels";
+} from "../../labels/derive_distinct_labels";
 
-/** Matches columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes. */
+/**
+ * Matches columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes.
+ *
+ * The axes-subset constraint is enforced by `mode: "enrichment"`, which sets
+ * `allowFloatingHitAxes: false` — every axis of the matched column must be
+ * present in the anchor's axes. See `matchingModeToConstraints()` in
+ * `column_collection_builder.ts`.
+ */
 export function findFilterColumns(collection: AnchoredColumnCollection): ColumnMatch[] {
   return collection.findColumns({
     mode: "enrichment",

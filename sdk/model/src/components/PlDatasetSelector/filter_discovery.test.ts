@@ -3,8 +3,8 @@ import type { AxisSpec, PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import canonicalize from "canonicalize";
 import { afterEach, describe, expect, test } from "vitest";
-import type { ColumnSnapshot } from "./column_snapshot";
-import { ColumnCollectionBuilder } from "./column_collection_builder";
+import type { ColumnSnapshot } from "../../columns/column_snapshot";
+import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 
 const drivers: SpecDriver[] = [];

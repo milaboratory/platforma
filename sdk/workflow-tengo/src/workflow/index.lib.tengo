@@ -254,7 +254,8 @@ _resolveOne := func(ref, ...options) {
  *
  * // Options propagate to all refs
  * resolve(primaryRef, { data: false })
- * // -> { __isPrimaryRef: "v1", column: { spec } }
+ * // -> { __isPrimaryRef: "v1", column: { spec }, filter: { spec } }
+ * //    (filter key is absent if primaryRef.filter was undefined)
  *
  * // Panics if no PlRefs found in non-PlRef input
  * resolve({ noRefs: "here" }) // panics

@@ -5,10 +5,10 @@ import type {
   RequireServices,
   Services,
 } from "@milaboratories/pl-model-common";
-import type { DeriveLabelsOptions } from "../labels/derive_distinct_labels";
-import type { RenderCtxBase } from "../render";
-import { ColumnCollectionBuilder } from "./column_collection_builder";
-import { collectCtxColumnSnapshotProviders } from "./ctx_column_sources";
+import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
+import type { RenderCtxBase } from "../../render";
+import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
+import { collectCtxColumnSnapshotProviders } from "../../columns/ctx_column_sources";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 
 export type BuildDatasetOptions = {
