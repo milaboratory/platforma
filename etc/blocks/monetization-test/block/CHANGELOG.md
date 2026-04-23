@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.3.25
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.model@1.1.15
+- @milaboratories/milaboratories.monetization-test.ui@1.2.20
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.7
+
 ## 1.3.24
 
 ### Patch Changes

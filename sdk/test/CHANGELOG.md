@@ -1,5 +1,14 @@
 # @platforma-sdk/test
 
+## 1.65.10
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.5
+- @milaboratories/pl-middle-layer@1.55.19
+- @platforma-sdk/model@1.65.10
+- @milaboratories/pl-tree@1.9.14
+
 ## 1.65.9
 
 ### Patch Changes
