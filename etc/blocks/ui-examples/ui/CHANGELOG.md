@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.10.0
+
+### Minor Changes
+
+- 0237f1b: fix broken annotations
+
 ## 1.9.15
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.66.0
+
+### Minor Changes
+
+- 0237f1b: fix broken annotations
+
 ## 1.65.10
 
 ### Patch Changes
