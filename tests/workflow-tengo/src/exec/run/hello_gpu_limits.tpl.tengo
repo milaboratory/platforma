@@ -2,24 +2,24 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
-self.defineOutputs(["gpuCount"])
+self.defineOutputs(["gpuMemory"])
 
 sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
 
 self.body(func(inputs) {
 	/* Checks, that custom limits applied to the command do not
-	 * break anything it its execution. We can't check what _controller_ saw,
+	 * break anything in its execution. We can't check what _controller_ saw,
 	 * but we at least know SDK does not get broken when custom limits are applied. */
 	run := exec.builder().
 		software(sw).
 		cpu(1).
-        mem("2GiB").
-        gpu(inputs.gpuCount).
-		arg(string(inputs.gpuCount)).
+		mem("2GiB").
+		gpuMemory(inputs.gpuMemory).
+		arg(inputs.gpuMemory).
 		saveStdoutContent().
 		run()
 
 	return {
-		gpuCount: run.getStdoutContent()
+		gpuMemory: run.getStdoutContent()
 	}
 })
