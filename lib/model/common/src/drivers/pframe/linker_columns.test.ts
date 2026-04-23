@@ -99,7 +99,7 @@ describe("Linker columns", () => {
     };
 
     testCase({ from: [axis2], to: [axis3], expected: [] });
-    testCase({ from: [axis1], to: [axis2], expected: ["c12"] });
+    testCase({ from: [axis2], to: [axis1], expected: ["c12"] });
     testCase({ from: [axis1], to: [axis4], expected: [] });
   });
 
@@ -126,8 +126,8 @@ describe("Linker columns", () => {
     };
 
     testCase({
-      from: getNormalizedAxesList([axisA, axisB]),
-      to: getNormalizedAxesList([axisC]),
+      from: getNormalizedAxesList([axisC]),
+      to: getNormalizedAxesList([axisA, axisB]),
       expected: ["abc"],
     });
   });
@@ -239,13 +239,13 @@ describe("Linker columns", () => {
 
     const linkersMap = LinkerMap.fromColumns([linker1, linker2]);
 
-    // Forward-only: from group2 we only reach group3 (no back edge to group1)
+    // Reversed edges: from group2 we reach group1 (no forward edge to group3)
     expect(
       new Set(
         linkersMap.getReachableByLinkersAxesFromAxesNormalized(group2Normalized).map((a) => a.name),
       ),
-    ).toEqual(new Set([...group3].map((a) => a.name)));
-    // Non-root axes (axisDn, axisBn) don't match linker map keys, so no forward reachability
+    ).toEqual(new Set(group1.map((a) => a.name)));
+    // Non-root axes (axisDn, axisBn) don't match linker map keys, so no reachability
     expect(linkersMap.getReachableByLinkersAxesFromAxesNormalized([axisDn])).toEqual([]);
     expect(linkersMap.getReachableByLinkersAxesFromAxesNormalized([axisBn])).toEqual([]);
   });
@@ -257,13 +257,17 @@ describe("Linker columns", () => {
     const axisC2 = makeTestAxis({ name: "c", parents: [axisB, axisA] });
     const axisD = makeTestAxis({ name: "d" });
 
-    const [, , c1, c2] = getNormalizedAxesList([axisA, axisB, axisC1, axisC2, axisD]);
+    const [, , c1, c2, dn] = getNormalizedAxesList([axisA, axisB, axisC1, axisC2, axisD]);
     const linkerMap = LinkerMap.fromColumns([
       makeLinkerColumn({ name: "linker1", from: [axisA, axisB, axisC1], to: [axisD] }),
     ]);
 
-    expect(linkerMap.getReachableByLinkersAxesFromAxesNormalized([c2])).not.toHaveLength(0);
-    expect(linkerMap.getReachableByLinkersAxesFromAxesNormalized([c1])).not.toHaveLength(0);
+    expect(
+      linkerMap.getLinkerColumnsForAxes({ from: [dn], to: [c2], throwWhenNoLinkExists: false }),
+    ).not.toHaveLength(0);
+    expect(
+      linkerMap.getLinkerColumnsForAxes({ from: [dn], to: [c1], throwWhenNoLinkExists: false }),
+    ).not.toHaveLength(0);
   });
 
   test("Non-linkable axes", () => {
@@ -284,7 +288,7 @@ describe("Linker columns", () => {
           getNormalizedAxesList([axisA, axisB, axisC, axisE]),
         )
         .map((v) => v.name),
-    ).toEqual(["a", "b", "c", "e"]);
+    ).toEqual(["a", "b", "e"]);
 
     expect(
       linkerMap
@@ -304,9 +308,9 @@ describe("Linker columns", () => {
       makeLinkerColumn({ name: "linker3", from: [axisC], to: [axisD] }),
     ]);
 
-    expect(linkerMap.getReachableByLinkersAxesFromAxes([axisA])).toEqual(
-      getNormalizedAxesList([axisB, axisC, axisD]),
+    expect(linkerMap.getReachableByLinkersAxesFromAxes([axisD])).toEqual(
+      getNormalizedAxesList([axisC, axisB, axisA]),
     );
-    expect(linkerMap.getReachableByLinkersAxesFromAxes([axisD])).toEqual([]);
+    expect(linkerMap.getReachableByLinkersAxesFromAxes([axisA])).toEqual([]);
   });
 });
