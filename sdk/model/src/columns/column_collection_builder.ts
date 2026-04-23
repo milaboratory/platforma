@@ -343,7 +343,7 @@ function collectColumns(providers: ColumnSnapshotProvider[]): ColumnSnapshot<POb
 
 // --- Shared snapshot helpers ---
 
-/** Normalize SDK ColumnSelectorInput to MultiColumnSelector[]. */
+/** Normalize ColumnSelector (relaxed, single or array) to MultiColumnSelector[]. */
 function toMultiColumnSelectors(input: ColumnSelector): MultiColumnSelector[] {
   return convertColumnSelectorToMultiColumnSelector(input);
 }
@@ -351,9 +351,13 @@ function toMultiColumnSelectors(input: ColumnSelector): MultiColumnSelector[] {
 // --- Anchor resolution ---
 
 /**
- * Resolve each anchor value to a PColumnSpec.
- * - PColumnSpec: used directly
- * - PObjectId (string): looked up in the collected column map
+ * Resolve each anchor entry to a ColumnSnapshot from the collected columns.
+ * - PObjectId (string): looked up by id in the collected columns
+ * - PColumnSpec: matched by deriveNativeId against collected columns
+ * - RelaxedColumnSelector: resolved via discoverColumns in "exact" mode;
+ *   must match exactly one column
+ * Throws on unresolved, ambiguous, or duplicated matches. Requires at least one
+ * anchor to resolve.
  */
 function resolveAnchorMap(
   anchors: Record<string, AnchorEntry>,

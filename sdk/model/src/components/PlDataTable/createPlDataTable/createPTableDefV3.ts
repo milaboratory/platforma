@@ -17,7 +17,7 @@ import type { PlDataTableFilters } from "../typesV5";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
 
-/** Primary side — base row grid. `key` links secondary groups to their qualifying anchor. */
+/** Primary side — base row grid. */
 export type PrimaryEntry<Data> = {
   column: PColumn<Data>;
 };
@@ -33,7 +33,7 @@ export type SecondaryEntry<Data> = {
 export type SecondaryGroup<Data> = {
   entries: SecondaryEntry<Data>[];
   /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
-   *  Keyed by `PrimaryEntry.anchorName`. Omit → base primary used unqualified (labels, non-variant columns). */
+   *  Keyed by `PrimaryEntry.column.id`. Omit → base primary used unqualified (labels, non-variant columns). */
   primaryQualifications?: Record<PObjectId, AxisQualification[]>;
 };
 

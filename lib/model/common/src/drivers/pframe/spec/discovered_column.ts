@@ -68,5 +68,8 @@ export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPCo
 }
 
 export function stringifyDiscoveredPColumnId(id: DiscoveredPColumn): DiscoveredPColumnId {
-  return canonicalize(id) as DiscoveredPColumnId;
+  return (
+    (canonicalize(id) as undefined | DiscoveredPColumnId) ??
+    throwError("Failed to stringify DiscoveredPColumnId")
+  );
 }

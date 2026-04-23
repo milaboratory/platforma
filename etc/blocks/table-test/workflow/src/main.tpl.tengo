@@ -458,9 +458,9 @@ wf.body(func(args) {
 	for k, v in linkerPf {
 		pf.add(k, v.spec, v.data)
 	}
-	// for k, v in linkerAltPf {
-	// 	pf.add(k, v.spec, v.data)
-	// }
+	for k, v in linkerAltPf {
+		pf.add(k, v.spec, v.data)
+	}
 	for k, v in regionPf {
 		pf.add(k, v.spec, v.data)
 	}
