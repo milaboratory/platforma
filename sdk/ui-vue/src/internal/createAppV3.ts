@@ -424,7 +424,27 @@ export function createAppV3<
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
+    platforma.blockModelInfo.pluginIds.map((id) => {
+      const rawDef = platforma.blockModelInfo.pluginPublicOutputs?.[id as string] ?? {};
+      const keys = Object.keys(rawDef);
+      if (keys.length === 0) {
+        return [id, { handle: id as PluginHandle, publicOutputs: {} }];
+      }
+      const state = pluginAccess.getOrCreatePluginState(id as PluginHandle);
+      const publicOutputs = Object.fromEntries(
+        keys.map((key) => {
+          const { getter } = rawDef[key];
+          return [
+            key,
+            computed(() => {
+              const data = state.model.data;
+              return data != null ? getter(data) : undefined;
+            }),
+          ];
+        }),
+      );
+      return [id, { handle: id as PluginHandle, publicOutputs }];
+    }),
   ) as InferPluginHandles<Plugins>;
 
   const getters = {
