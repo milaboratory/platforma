@@ -209,6 +209,16 @@ export class PlClient {
     return this._serverInfo!;
   }
 
+  /** Returns true if the connected server advertises the given capability
+   * (see MaintenanceAPI.Ping.Response.capabilities). Unknown / old servers
+   * return false. Capability tokens use the form "<feature>:<version>",
+   * e.g. "loadSubtree:v1". */
+  public hasServerCapability(capability: string): boolean {
+    const caps = this._serverInfo?.capabilities;
+    if (!caps || caps.length === 0) return false;
+    return caps.includes(capability);
+  }
+
   /** Discovers or creates the user's root resource.
    *  Tries ListUserResources RPC first (new backend), falls back to
    *  legacy named-resource lookup for older backends. */
