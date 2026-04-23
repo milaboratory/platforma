@@ -188,4 +188,95 @@ describe("distillFilterSpec", () => {
     const filter: F = { type: "and", filters: [a, b] };
     expect(distillFilterSpec(filter)).toBeNull();
   });
+
+  // --- per-type required-field checks ---
+
+  it("keeps patternFuzzyContainSubsequence without optional fields", () => {
+    const filter: F = { type: "patternFuzzyContainSubsequence", column: "c1", value: "abc" };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("keeps patternFuzzyContainSubsequence when optional fields undefined", () => {
+    const filter: F = {
+      type: "patternFuzzyContainSubsequence",
+      column: "c1",
+      value: "abc",
+      maxEdits: undefined,
+      substitutionsOnly: undefined,
+      wildcard: undefined,
+    };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("preserves optional fields on patternFuzzyContainSubsequence when filled", () => {
+    const filter: F = {
+      type: "patternFuzzyContainSubsequence",
+      column: "c1",
+      value: "abc",
+      maxEdits: 2,
+      substitutionsOnly: true,
+      wildcard: "*",
+    };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("keeps lessThanColumn without optional minDiff", () => {
+    const filter: F = { type: "lessThanColumn", column: "c1", rhs: "c2" };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("returns null for lessThanColumn with missing required rhs", () => {
+    const filter: F = {
+      type: "lessThanColumn",
+      column: "c1",
+      rhs: undefined as unknown as string,
+    };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
+
+  it("returns null for ifNa with missing required replacement", () => {
+    const filter: F = {
+      type: "ifNa",
+      column: "c1",
+      replacement: undefined as unknown as string,
+    };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
+
+  // --- isFilledValue edge cases ---
+
+  it("returns null for empty-string value after trim", () => {
+    const filter: F = { type: "patternEquals", column: "c1", value: "   " };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
+
+  it("returns null for inSet with empty array", () => {
+    const filter: F = { type: "inSet", column: "c1", value: [] };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
+
+  it("returns null for inSet with array containing empty string", () => {
+    const filter: F = { type: "inSet", column: "c1", value: ["a", "  "] };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
+
+  it("keeps inSet with non-empty string items", () => {
+    const filter: F = { type: "inSet", column: "c1", value: ["a", "b"] };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("keeps equal with x=0 (falsy but filled)", () => {
+    const filter: F = { type: "equal", column: "c1", x: 0 };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("keeps isNA (single required column)", () => {
+    const filter: F = { type: "isNA", column: "c1" };
+    expect(distillFilterSpec(filter)).toEqual(filter);
+  });
+
+  it("returns null for isNA with missing column", () => {
+    const filter: F = { type: "isNA", column: undefined as unknown as string };
+    expect(distillFilterSpec(filter)).toBeNull();
+  });
 });
