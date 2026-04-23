@@ -1,5 +1,15 @@
 # @milaboratories/pl-model-common
 
+## 1.34.0
+
+### Minor Changes
+
+- 8eb112a: update linker connection order
+
+### Patch Changes
+
+- 8eb112a: update tests
+
 ## 1.33.0
 
 ### Minor Changes
