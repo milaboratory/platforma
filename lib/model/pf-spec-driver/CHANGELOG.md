@@ -1,5 +1,28 @@
 # @milaboratories/pf-spec-driver
 
+## 1.2.7
+
+### Patch Changes
+
+- 49485fd: Correct `PFrameWasmV3` shape:
+
+  - Move `buildQuery` from the per-frame interface to the API factory
+    (`PFrameWasmAPIV3`). It is pure over its input and does not consult
+    frame state, so it should not require a frame instance.
+  - Add the missing `listColumns(): PColumnInfo[]` on the per-frame
+    interface, mirroring `PFrameReadApi.listColumns` on the data layer.
+
+  `PFrameWasmV2` / `PFrameWasmAPIV2` are kept as legacy shims until the V3
+  surface is implemented on the pframes-rs side and `pframes-rs-wasm`
+  stops returning V2 from its top-level exports.
+
+  Requires a matching `pframes-rs-wasm` release that exposes `buildQuery`
+  as a top-level export and `listColumns` on the frame resource.
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-middle-layer@1.18.0
+  - @milaboratories/pl-model-common@1.32.1
+
 ## 1.2.6
 
 ### Patch Changes
