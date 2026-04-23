@@ -107,12 +107,16 @@ function mapToDiscoveredColumns(
     const isPrimary = columnIdToAnchorName.get(match.column.id) !== undefined;
 
     return match.variants.map((variant): TableColumnSnapshot => {
-      const discoveredId = createDiscoveredPColumnId(
-        snap.id,
-        variant.path.map((p) => ({ column: p.linker.id, qualifications: p.qualifications })),
-        variant.qualifications.forHit,
-        Object.values(variant.qualifications.forQueries),
-      );
+      const discoveredId = createDiscoveredPColumnId({
+        column: snap.id,
+        path: variant.path.map((p) => ({
+          type: "linker",
+          column: p.linker.id,
+          qualifications: p.qualifications,
+        })),
+        columnQualifications: variant.qualifications.forHit,
+        queriesQualifications: variant.qualifications.forQueries,
+      });
       return {
         id: discoveredId,
         isPrimary,

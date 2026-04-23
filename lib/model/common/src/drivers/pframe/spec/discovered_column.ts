@@ -1,19 +1,20 @@
 import { Branded, throwError } from "@milaboratories/helpers";
 import { PObjectId } from "../../../pool";
 import { AxisQualification } from "../spec_driver";
-import canonicalize from "canonicalize";
+import { canonicalizeJson } from "../../../json";
 
 export type DiscoveredPColumn = {
   path: PathItem[];
   column: PObjectId;
   columnQualifications: AxisQualification[];
   // queriesAxes???
-  queriesQualifications: AxisQualification[][];
+  queriesQualifications: Record<PObjectId, AxisQualification[]>;
 };
 
-export type DiscoveredPColumnId = Branded<PObjectId, DiscoveredPColumn>;
+export type DiscoveredPColumnId = Branded<PObjectId, "DiscoveredPColumnId">; // CanonicalizedJson<DiscoveredPColumn>;
 
 type PathItem = {
+  type: "linker";
   column: PObjectId;
   qualifications: AxisQualification[];
 };
@@ -29,29 +30,22 @@ export function isDiscoveredPColumn(obj: unknown): obj is DiscoveredPColumn {
   );
 }
 
-export function createDiscoveredPColumn(
-  column: PObjectId,
-  path: PathItem[],
-  columnQualifications: AxisQualification[],
-  queriesQualifications: AxisQualification[][],
-): DiscoveredPColumn {
-  return {
-    column,
-    path,
-    columnQualifications,
-    queriesQualifications,
-  };
+export function createDiscoveredPColumn(props: {
+  column: PObjectId;
+  path: PathItem[];
+  columnQualifications: AxisQualification[];
+  queriesQualifications: Record<PObjectId, AxisQualification[]>;
+}): DiscoveredPColumn {
+  return structuredClone(props);
 }
 
-export function createDiscoveredPColumnId(
-  column: PObjectId,
-  path: PathItem[],
-  columnQualifications: AxisQualification[],
-  queriesQualifications: AxisQualification[][],
-): DiscoveredPColumnId {
-  return stringifyDiscoveredPColumnId(
-    createDiscoveredPColumn(column, path, columnQualifications, queriesQualifications),
-  );
+export function createDiscoveredPColumnId(props: {
+  column: PObjectId;
+  path: PathItem[];
+  columnQualifications: AxisQualification[];
+  queriesQualifications: Record<PObjectId, AxisQualification[]>;
+}): DiscoveredPColumnId {
+  return stringifyDiscoveredPColumnId(createDiscoveredPColumn(props));
 }
 
 export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPColumn {
@@ -67,9 +61,6 @@ export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPCo
   }
 }
 
-export function stringifyDiscoveredPColumnId(id: DiscoveredPColumn): DiscoveredPColumnId {
-  return (
-    (canonicalize(id) as undefined | DiscoveredPColumnId) ??
-    throwError("Failed to stringify DiscoveredPColumnId")
-  );
+export function stringifyDiscoveredPColumnId(id: DiscoveredPColumn) {
+  return canonicalizeJson<DiscoveredPColumn>(id) as string as DiscoveredPColumnId;
 }
