@@ -62,6 +62,7 @@ function updateFilter(filter: PlAdvancedFilter) {
 }
 
 function addFilterPlaceholder() {
+  if (props.columns.length === 0) return;
   produceStepUpdate((draft) => {
     draft.filter.filters.push({
       id: randomInt(),

@@ -153,20 +153,18 @@ export function mergeFilterForTypeChange(
   oldFilter: EditableFilter,
   newType: SupportedFilterTypes,
 ): EditableFilter {
-  const defaultFilter = DEFAULT_FILTERS[newType];
-  const oldRecord = oldFilter as Record<string, unknown>;
+  const oldDefault = DEFAULT_FILTERS[oldFilter.type] as Record<string, unknown>;
+  const newDefault = DEFAULT_FILTERS[newType];
 
-  const merged = Object.entries(defaultFilter).reduce<Record<string, unknown>>(
-    (res, [key, val]) => {
-      if (key === "type") {
-        res[key] = newType;
-      } else {
-        res[key] = oldRecord[key] ?? val;
-      }
-      return res;
-    },
-    {},
-  );
+  const stripped = { ...oldFilter } as Record<string, unknown>;
+  for (const key of Object.keys(oldDefault)) {
+    if (key === "type" || key === "column") continue;
+    delete stripped[key];
+  }
 
-  return merged as EditableFilter;
+  return {
+    ...newDefault,
+    ...stripped,
+    type: newType,
+  } as EditableFilter;
 }

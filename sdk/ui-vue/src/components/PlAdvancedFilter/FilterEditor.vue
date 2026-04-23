@@ -33,6 +33,7 @@ import {
   isPositionFilter,
   mergeFilterForTypeChange,
 } from "./utils";
+import { isNil } from "es-toolkit";
 
 const props = defineProps<{
   filter: EditableFilter;
@@ -93,7 +94,7 @@ async function getMultiSuggestOptionsFn(
 }
 
 function changeFilterType(newType?: EditableFilter["type"]) {
-  if (!newType) return;
+  if (isNil(newType)) return;
   props.onUpdateFilter(mergeFilterForTypeChange(props.filter, newType));
 }
 

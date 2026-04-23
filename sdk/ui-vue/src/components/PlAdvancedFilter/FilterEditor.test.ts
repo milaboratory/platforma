@@ -127,7 +127,7 @@ describe("FilterEditor.vue: changeFilterType", () => {
     expect(onUpdateFilter.mock.calls[0][0]).not.toHaveProperty("value");
   });
 
-  it("changing between numeric filters preserves `x`", () => {
+  it("changing between numeric filters resets `x` to default (data fields are not preserved)", () => {
     const onUpdateFilter = vi.fn();
     const wrapper = mountEditor(
       { type: "greaterThan", column: columnA, x: 42 },
@@ -139,7 +139,7 @@ describe("FilterEditor.vue: changeFilterType", () => {
     expect(onUpdateFilter).toHaveBeenCalledWith({
       type: "lessThan",
       column: columnA,
-      x: 42,
+      x: 0,
     });
   });
 
@@ -162,6 +162,45 @@ describe("FilterEditor.vue: changeFilterType", () => {
     findDropdowns(wrapper)[1].vm.$emit("update:modelValue", undefined);
 
     expect(onUpdateFilter).not.toHaveBeenCalled();
+  });
+
+  it("preserves meta fields (id, isExpanded, isSuppressed, source) across type change", () => {
+    const onUpdateFilter = vi.fn();
+    const wrapper = mountEditor(
+      {
+        type: "patternEquals",
+        column: columnA,
+        value: "foo",
+        id: 777,
+        isExpanded: true,
+        isSuppressed: false,
+        source: "abc",
+      } as unknown as EditableFilter,
+      { onUpdateFilter },
+    );
+
+    findDropdowns(wrapper)[1].vm.$emit("update:modelValue", "greaterThan");
+
+    expect(onUpdateFilter).toHaveBeenCalledWith({
+      type: "greaterThan",
+      column: columnA,
+      x: 0,
+      id: 777,
+      isExpanded: true,
+      isSuppressed: false,
+      source: "abc",
+    });
+  });
+
+  it("does not carry over unknown data fields from the old filter", () => {
+    const onUpdateFilter = vi.fn();
+    const wrapper = mountEditor({ type: "topN", column: columnA, n: 7 }, { onUpdateFilter });
+
+    findDropdowns(wrapper)[1].vm.$emit("update:modelValue", "isNA");
+
+    const emitted = onUpdateFilter.mock.calls[0][0];
+    expect(emitted).toEqual({ type: "isNA", column: columnA });
+    expect(emitted).not.toHaveProperty("n");
   });
 });
 
