@@ -100,16 +100,21 @@ quotaBuilder := func() {
 		},
 
 		/**
-		 * Number of GPU devices to request.
+		 * Request GPU resources with optional minimum VRAM size.
 		 *
-		 * @param amount: number - number of GPUs.
+		 * @param args: ...string - optional minimum VRAM size string (e.g. "16GiB").
+		 *              No args means any GPU with default 1GiB minimum VRAM.
 		 * @return builder
 		 */
-		gpu: func(amount) {
-			validation.assertType(amount, ["or", "number", "null"], "exec.quota.builder.gpu: GPU amount should be a number")
-			ll.assert(is_undefined(amount) || amount > 0, "exec.quota.builder.gpu: amount should be greater than 0")
-			gpu_request = amount
-
+		gpuMemory: func(...args) {
+			if len(args) == 0 {
+				gpu_request = "1GiB"
+			} else if len(args) == 1 {
+				validation.assertType(args[0], "string", "exec.quota.builder.gpuMemory: argument must be a size string")
+				gpu_request = args[0]
+			} else {
+				ll.panic("exec.quota.builder.gpuMemory: accepts 0 or 1 argument")
+			}
 			return self
 		},
 
@@ -130,8 +135,8 @@ quotaBuilder := func() {
 			if !is_undefined(ram_request) {
 				data.memory = ram_request
 			}
-			if !is_undefined(gpu_request) && gpu_request > 0 {
-				data.gpu = gpu_request
+			if !is_undefined(gpu_request) {
+				data.gpuMemory = gpu_request
 			}
 
 			return smart.ephemeralBuilder(_RTYPE_QUOTA, json.encode(data)).lockAndBuild()

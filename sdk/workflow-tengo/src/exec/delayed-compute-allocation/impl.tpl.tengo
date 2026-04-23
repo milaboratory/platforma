@@ -17,8 +17,8 @@ self.body(func(inputs) {
 		queue(request.queue).
 		cpu(request.cpu).
 		ram(request.ram)
-	if !is_undefined(request.gpu) && request.gpu > 0 {
-		qb.gpu(request.gpu)
+	if !is_undefined(request.gpuMemory) {
+		qb.gpuMemory(request.gpuMemory)
 	}
 	quotaRef := qb.build()
 

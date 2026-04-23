@@ -22,7 +22,7 @@ create := func(workdir, req) {
 		"queue": "string",
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
-		"gpu,?": "number"
+		"gpuMemory,?": "string"
 	}, "request must be a valid request")
 
 	reqMap := { queue: req.queue }
@@ -32,8 +32,8 @@ create := func(workdir, req) {
 	if !is_undefined(req.ram) {
 		reqMap.ram = req.ram
 	}
-	if !is_undefined(req.gpu) && req.gpu > 0 {
-		reqMap.gpu = req.gpu
+	if !is_undefined(req.gpuMemory) {
+		reqMap.gpuMemory = req.gpuMemory
 	}
 
 	delayedComputeAllocation := render.createEphemeral(tpl, {
