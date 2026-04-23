@@ -6,13 +6,14 @@ import type {
   AxesSpec,
   AxesId,
   PColumnIdAndSpec,
+  PColumnInfo,
   PColumnSpec,
   SingleAxisSelector,
   AxisValueType,
   ColumnValueType,
 } from "./spec";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
-import { DataQuery, SpecQuery } from "./query";
+import { DataQuery, SpecQuery, SpecQueryJoinEntry } from "./query";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -228,6 +229,9 @@ export interface PFrameSpecDriver {
   /** Create a spec-only PFrame from column specs. Returns a pool entry with handle and unref. */
   createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle>;
 
+  /** List all columns currently registered in the frame. */
+  listColumns(handle: SpecFrameHandle): PColumnInfo[];
+
   /** Discover columns compatible with given axes integration. */
   discoverColumns(
     handle: SpecFrameHandle,
@@ -239,6 +243,15 @@ export interface PFrameSpecDriver {
 
   /** Evaluates a query specification against this PFrame */
   evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse;
+
+  /**
+   * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
+   * ordered path of wrapping steps (linker hops, filter joins).
+   *
+   * Pure over its input — no frame handle is needed. Column ids are resolved
+   * later at {@link evaluateQuery} against the registered specs.
+   */
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
 
   /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
   expandAxes(spec: AxesSpec): AxesId;

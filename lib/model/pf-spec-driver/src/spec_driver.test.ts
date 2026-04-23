@@ -1,4 +1,4 @@
-import type { AxisSpec, PColumnSpec } from "@milaboratories/pl-model-common";
+import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import { SpecDriver } from "./spec_driver";
 
@@ -198,5 +198,111 @@ describe("SpecDriver", () => {
     const linkedNames = linkedHits.map((h) => h.hit.spec.name);
     expect(linkedNames).toContain("description");
     expect(linkedNames).toContain("priority");
+  });
+
+  test("listColumns returns all registered columns", async () => {
+    await using driver = new SpecDriver();
+    const { key: handle } = driver.createSpecFrame({
+      col1: createSpec("col1"),
+      col2: createSpec("col2"),
+    });
+
+    const columns = driver.listColumns(handle);
+
+    const ids = columns.map((c) => c.columnId).sort();
+    expect(ids).toEqual(["col1", "col2"]);
+    for (const c of columns) {
+      expect(c.hasData).toBe(false);
+    }
+  });
+
+  test("buildQuery wraps a bare column with no path (no handle needed)", async () => {
+    await using driver = new SpecDriver();
+    const columnId = "c1" as PObjectId;
+
+    const entry = driver.buildQuery({ version: "v1", column: columnId });
+
+    expect(entry.entry).toEqual({ type: "column", column: columnId });
+  });
+
+  test("discoverColumns: parallel linkers with cd-disambiguated one-side axes yield 4 variants", async () => {
+    // Port of pframes-rs-spec case 42: trunk [a1] reaches hit [a3, a2] through
+    // each of two parallel linkers whose one-side exposes a2[cd=d:1] and
+    // a2[cd=d:2]. Expected: 2 path entries x 2 cd variants = 4 total variants.
+    await using driver = new SpecDriver();
+
+    const linkerAxes: AxisSpec[] = [
+      { type: "Int", name: "a3" } as AxisSpec,
+      {
+        type: "Int",
+        name: "a2",
+        parentAxes: [0],
+        contextDomain: { d: "1" },
+      } as AxisSpec,
+      {
+        type: "Int",
+        name: "a2",
+        parentAxes: [0],
+        contextDomain: { d: "2" },
+      } as AxisSpec,
+      { type: "Int", name: "a1" } as AxisSpec,
+    ];
+    const lClosest: PColumnSpec = {
+      kind: "PColumn",
+      name: "linker",
+      valueType: "Int",
+      axesSpec: linkerAxes,
+      domain: { algo: "closest" },
+      annotations: { "pl7.app/isLinkerColumn": "true" },
+    } as PColumnSpec;
+    const lFuel: PColumnSpec = {
+      kind: "PColumn",
+      name: "linker",
+      valueType: "Int",
+      axesSpec: linkerAxes,
+      domain: { algo: "fuelOpt" },
+      annotations: { "pl7.app/isLinkerColumn": "true" },
+    } as PColumnSpec;
+    const hitSpec: PColumnSpec = {
+      kind: "PColumn",
+      name: "hit",
+      valueType: "Int",
+      axesSpec: [
+        { type: "Int", name: "a3" } as AxisSpec,
+        { type: "Int", name: "a2", parentAxes: [0] } as AxisSpec,
+      ],
+      annotations: {},
+    } as PColumnSpec;
+
+    const { key: handle } = driver.createSpecFrame({
+      l_closest: lClosest,
+      l_fuel: lFuel,
+      hit: hitSpec,
+    });
+
+    const response = driver.discoverColumns(handle, {
+      axes: [{ axesSpec: [{ type: "Int", name: "a1" } as AxisSpec], qualifications: [] }],
+      maxHops: 1,
+      constraints: {
+        allowFloatingSourceAxes: true,
+        allowFloatingHitAxes: false,
+        allowSourceQualifications: false,
+        allowHitQualifications: true,
+      },
+    });
+
+    expect(response.hits).toHaveLength(2);
+    const paths = response.hits
+      .map((h) => h.path.map((s) => (s.type === "linker" ? s.linker.columnId : s.filter.columnId)))
+      .sort();
+    expect(paths).toEqual([["l_closest"], ["l_fuel"]]);
+    for (const hit of response.hits) {
+      expect(hit.hit.spec.name).toBe("hit");
+      expect(hit.mappingVariants).toHaveLength(2);
+      const cdValues = hit.mappingVariants
+        .map((v) => v.qualifications.forHit[0]?.contextDomain?.d)
+        .sort();
+      expect(cdValues).toEqual(["1", "2"]);
+    }
   });
 });
