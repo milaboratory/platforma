@@ -86,9 +86,9 @@ export class LinkerMap implements LinkersData {
           result.set(keyRight, { keyAxesSpec: spec, linkWith: new Map() });
         }
       }
-      for (const [keyLeft] of leftKeyVariants) {
-        for (const [keyRight] of rightKeyVariants) {
-          result.get(keyLeft)?.linkWith.set(keyRight, linker);
+      for (const [keyRight] of rightKeyVariants) {
+        for (const [keyLeft] of leftKeyVariants) {
+          result.get(keyRight)?.linkWith.set(keyLeft, linker);
         }
       }
     }
