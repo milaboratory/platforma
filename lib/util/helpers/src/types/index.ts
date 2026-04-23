@@ -31,6 +31,8 @@ export type RequiredBy<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
+export type NullableBy<T, K extends keyof T> = Omit<T, K> & { [P in K]: null | T[P] };
+
 export type MethodOf<T> = {
   [K in keyof T]: T[K] extends AnyFunction ? K : never;
 }[keyof T];

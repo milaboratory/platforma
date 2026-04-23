@@ -1,41 +1,38 @@
 <script setup lang="ts">
 import { PlPureSlideModal } from "@milaboratories/uikit";
-import { effect, shallowRef } from "vue";
 
-import type { Annotation } from "../types";
 import type { Props } from "./PlAnnotations.vue";
 import PlAnnotations from "./PlAnnotations.vue";
 
-// Models
-const annotation = defineModel<Annotation>("annotation", { required: true });
-const opened = defineModel<boolean>("opened", { required: true });
-// Props
-const props = defineProps<Props>();
-// State
-const selectedStepId = shallowRef<number | undefined>(undefined);
-// Watchers
-effect(function setDefaultStepId() {
-  if (selectedStepId.value === undefined && annotation.value.steps.length > 0) {
-    selectedStepId.value = annotation.value.steps[0].id;
+const props = defineProps<
+  Props & {
+    opened: boolean;
+    onUpdateOpened: (opened: boolean) => void;
   }
-});
-// Actions
+>();
+
 async function handleDeleteSchema() {
-  opened.value = false;
+  props.onUpdateOpened(false);
   props.onDeleteSchema?.();
 }
 </script>
 
 <template>
-  <PlPureSlideModal v-model="opened" :class="$style.modal" width="768px">
+  <PlPureSlideModal
+    :model-value="props.opened"
+    :class="$style.modal"
+    width="768px"
+    @update:model-value="props.onUpdateOpened"
+  >
     <PlAnnotations
-      v-model:annotation="annotation"
       :class="$style.content"
       :columns="props.columns"
-      :get-suggest-options="props.getSuggestOptions"
+      :annotation="props.annotation"
+      :on-update-annotation="props.onUpdateAnnotation"
+      :on-delete-schema="handleDeleteSchema"
       :has-selected-columns="props.hasSelectedColumns"
-      :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
-      @delete-schema="handleDeleteSchema"
+      :get-suggest-options="props.getSuggestOptions"
+      :get-values-for-selected-columns="props.getValuesForSelectedColumns"
     />
   </PlPureSlideModal>
 </template>
