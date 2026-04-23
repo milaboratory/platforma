@@ -148,3 +148,25 @@ export function isValidColumnId(id: unknown): id is PlAdvancedFilterColumnId {
     return false;
   }
 }
+
+export function mergeFilterForTypeChange(
+  oldFilter: EditableFilter,
+  newType: SupportedFilterTypes,
+): EditableFilter {
+  const defaultFilter = DEFAULT_FILTERS[newType];
+  const oldRecord = oldFilter as Record<string, unknown>;
+
+  const merged = Object.entries(defaultFilter).reduce<Record<string, unknown>>(
+    (res, [key, val]) => {
+      if (key === "type") {
+        res[key] = newType;
+      } else {
+        res[key] = oldRecord[key] ?? val;
+      }
+      return res;
+    },
+    {},
+  );
+
+  return merged as EditableFilter;
+}

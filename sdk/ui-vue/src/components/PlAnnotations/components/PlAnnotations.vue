@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { Props as BaseProps } from "./FilterSidebar.vue";
-export type Props = BaseProps & {
+export type Props = Omit<BaseProps, "step" | "onUpdateStep"> & {
+  annotation: Annotation;
+  onUpdateAnnotation: (annotation: Annotation) => void;
   onDeleteSchema?: () => void;
 };
 </script>
@@ -9,43 +11,56 @@ export type Props = BaseProps & {
 import { computed, effect, shallowRef } from "vue";
 
 import { isNil } from "@milaboratories/helpers";
+import { produce } from "immer";
 import { PlSidebarGroup, useConfirm } from "@milaboratories/uikit";
 
-import type { Annotation } from "../types";
+import type { Annotation, Filter } from "../types";
 import AnnotationsSidebar from "./AnnotationsSidebar.vue";
 import FilterSidebar from "./FilterSidebar.vue";
 
-// Models
-const annotation = defineModel<Annotation>("annotation", { required: true });
-// Props
 const props = defineProps<Props>();
-// State
-const selectedStepId = shallowRef<number | undefined>(undefined);
+
+const selectedStepId = shallowRef<undefined | number>(undefined);
+
 const selectedStep = computed(() => {
-  return isNil(selectedStepId.value) || isNil(annotation.value)
+  return isNil(selectedStepId.value) || isNil(props.annotation)
     ? undefined
-    : annotation.value.steps.find((step) => step.id === selectedStepId.value);
+    : props.annotation.steps.find((step) => step.id === selectedStepId.value);
 });
 
-// Watchers
 effect(function setDefaultStepId() {
-  if (selectedStepId.value === undefined && annotation.value.steps.length > 0) {
-    selectedStepId.value = annotation.value.steps[0].id;
+  if (selectedStepId.value === undefined && props.annotation.steps.length > 0) {
+    selectedStepId.value = props.annotation.steps[0].id;
   }
 });
-// Hooks
+
 const confirmResetSchema = useConfirm({
   title: "Reset Schema",
   message: "Are you sure you want to reset the schema? This action cannot be undone.",
   confirmLabel: "Yes, reset",
   cancelLabel: "No, cancel",
 });
-// Actions
+
 async function handleDeleteSchema() {
   if (await confirmResetSchema()) {
     selectedStepId.value = undefined;
     props.onDeleteSchema?.();
   }
+}
+
+function updateSelectedStepId(id: undefined | number) {
+  selectedStepId.value = id;
+}
+
+function updateSelectedStep(step: Filter) {
+  props.onUpdateAnnotation(
+    produce(props.annotation, (draft) => {
+      const idx = draft.steps.findIndex((s) => s.id === step.id);
+      if (idx !== -1) {
+        draft.steps[idx] = step;
+      }
+    }),
+  );
 }
 </script>
 
@@ -53,21 +68,22 @@ async function handleDeleteSchema() {
   <PlSidebarGroup>
     <template #item-0>
       <AnnotationsSidebar
-        v-model:annotation="annotation"
-        v-model:selectedStepId="selectedStepId"
+        :annotation="props.annotation"
+        :selected-step-id="selectedStepId"
+        :on-update-annotation="props.onUpdateAnnotation"
+        :on-update-selected-step-id="updateSelectedStepId"
         :class="$style.sidebarItem"
-        :columns="props.columns"
         @delete-schema="handleDeleteSchema"
       />
     </template>
     <template #item-1>
       <FilterSidebar
         v-if="selectedStep"
-        v-model:step="selectedStep"
+        :step="selectedStep"
+        :on-update-step="updateSelectedStep"
         :class="$style.sidebarItem"
         :columns="props.columns"
         :get-suggest-options="props.getSuggestOptions"
-        :selectedStepId="selectedStepId"
         :hasSelectedColumns="props.hasSelectedColumns"
         :getValuesForSelectedColumns="props.getValuesForSelectedColumns"
       />

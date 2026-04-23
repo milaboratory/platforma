@@ -26,8 +26,13 @@ import type { SUPPORTED_FILTER_TYPES } from "./constants";
 import { DEFAULT_FILTER_TYPE, DEFAULT_FILTERS } from "./constants";
 import OperandButton from "./OperandButton.vue";
 import type { EditableFilter, Operand, PlAdvancedFilterColumnId, SourceOptionInfo } from "./types";
-import { getFilterInfo, getNormalizedSpec, isNumericFilter, isPositionFilter } from "./utils";
-import { Entries } from "@milaboratories/helpers";
+import {
+  getFilterInfo,
+  getNormalizedSpec,
+  isNumericFilter,
+  isPositionFilter,
+  mergeFilterForTypeChange,
+} from "./utils";
 
 const props = defineProps<{
   filter: EditableFilter;
@@ -87,21 +92,9 @@ async function getMultiSuggestOptionsFn(
   throw new Error("Invalid arguments combination");
 }
 
-function changeFilterType(newType: EditableFilter["type"]) {
-  const defaultFilter = DEFAULT_FILTERS[newType];
-
-  props.onUpdateFilter(
-    (Object.entries(defaultFilter) as Entries<EditableFilter>).reduce(
-      (res, [key, val]) => {
-        res[key] = props.filter[key] ?? val;
-        return res;
-      },
-      { ...props.filter, type: newType } as Record<
-        keyof EditableFilter,
-        EditableFilter[keyof EditableFilter]
-      >,
-    ) as EditableFilter,
-  );
+function changeFilterType(newType?: EditableFilter["type"]) {
+  if (!newType) return;
+  props.onUpdateFilter(mergeFilterForTypeChange(props.filter, newType));
 }
 
 function changeSourceId(newSourceId?: PlAdvancedFilterColumnId) {
@@ -333,7 +326,7 @@ const stringMatchesError = computed(() => {
         :group-position="
           props.filter.type === 'isNA' || props.filter.type === 'isNotNA' ? 'bottom' : 'middle'
         "
-        @update:model-value="(v) => changeFilterType(v!)"
+        @update:model-value="changeFilterType"
       />
     </div>
 

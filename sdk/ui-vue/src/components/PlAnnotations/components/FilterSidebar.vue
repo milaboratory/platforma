@@ -17,6 +17,7 @@ export type Props = {
 </script>
 <script setup lang="ts">
 import { computed } from "vue";
+import { produce } from "immer";
 import { randomInt } from "@milaboratories/helpers";
 import { PlBtnSecondary, PlEditableTitle, PlSidebarItem } from "@milaboratories/uikit";
 import type { ListOptionBase, PObjectId, SUniversalPColumnId } from "@platforma-sdk/model";
@@ -29,33 +30,53 @@ import type {
   PlAdvancedFilter,
 } from "../../PlAdvancedFilter";
 import type { Filter } from "../types";
-
-import $commonStyle from "./style.module.css";
 import { validateTitle } from "../utils";
 
-// Models
-const step = defineModel<Filter>("step", { required: true });
-// Props
-const props = defineProps<Props>();
-// State
+import $commonStyle from "./style.module.css";
+
+const props = defineProps<
+  Props & {
+    step: Filter;
+    onUpdateStep: (step: Filter) => void;
+  }
+>();
+
 const withSelection = computed(() => {
   return props.hasSelectedColumns !== undefined && props.getValuesForSelectedColumns !== undefined;
 });
-// Actions
-const addFilterPlaceholder = () => {
-  step.value.filter.filters.push({
-    id: randomInt(),
-    isExpanded: true,
-    type: "or",
-    filters: [
-      {
-        id: randomInt(),
-        type: "isNA",
-        column: props.columns[0].id as SUniversalPColumnId,
-      },
-    ],
+
+function produceStepUpdate(updater: (draft: Filter) => void) {
+  props.onUpdateStep(produce(props.step, updater));
+}
+
+function updateLabel(label: string) {
+  produceStepUpdate((draft) => {
+    draft.label = label;
   });
-};
+}
+
+function updateFilter(filter: PlAdvancedFilter) {
+  produceStepUpdate((draft) => {
+    draft.filter = filter as typeof draft.filter;
+  });
+}
+
+function addFilterPlaceholder() {
+  produceStepUpdate((draft) => {
+    draft.filter.filters.push({
+      id: randomInt(),
+      isExpanded: true,
+      type: "or",
+      filters: [
+        {
+          id: randomInt(),
+          type: "isNA",
+          column: props.columns[0].id as SUniversalPColumnId,
+        },
+      ],
+    });
+  });
+}
 
 async function addFilterFromSelected() {
   if (props.hasSelectedColumns === undefined || props.getValuesForSelectedColumns === undefined)
@@ -68,17 +89,19 @@ async function addFilterFromSelected() {
   const shortReminder =
     values.slice(0, 3).join(", ") + (values.length > 3 ? ` and ${values.length - 3} more` : "");
 
-  step.value.filter.filters.push({
-    id: randomInt(),
-    name: `Selected list (${shortReminder})`,
-    isExpanded: false,
-    type: "or",
-    filters: values.map((value, i) => ({
-      id: i,
-      type: "patternEquals",
-      column: columnId as SUniversalPColumnId,
-      value,
-    })),
+  produceStepUpdate((draft) => {
+    draft.filter.filters.push({
+      id: randomInt(),
+      name: `Selected list (${shortReminder})`,
+      isExpanded: false,
+      type: "or",
+      filters: values.map((value, i) => ({
+        id: i,
+        type: "patternEquals",
+        column: columnId as SUniversalPColumnId,
+        value,
+      })),
+    });
   });
 }
 
@@ -101,29 +124,30 @@ const supportedFilters = [
 </script>
 
 <template>
-  <PlSidebarItem v-if="step">
+  <PlSidebarItem v-if="props.step">
     <template #header-content>
       <PlEditableTitle
-        :key="step.id"
-        v-model="step.label"
-        :class="{ [$commonStyle.flashing]: step.label.length === 0 }"
+        :key="props.step.id"
+        :model-value="props.step.label"
+        :class="{ [$commonStyle.flashing]: props.step.label.length === 0 }"
         :max-length="40"
         max-width="600px"
         placeholder="Label"
-        :autofocus="step.label.length === 0"
+        :autofocus="props.step.label.length === 0"
         :validate="validateTitle"
+        @update:model-value="updateLabel"
       />
     </template>
     <template #body-content>
       <PlAdvancedFilterComponent
-        :filters="step.filter as PlAdvancedFilter"
-        :class="[$style.root, { [$commonStyle.disabled]: step.label.length === 0 }]"
+        :class="[$style.root, { [$commonStyle.disabled]: props.step.label.length === 0 }]"
         :options="props.columns"
+        :filters="props.step.filter as PlAdvancedFilter"
+        :on-update-filters="updateFilter"
         :supported-filters="supportedFilters"
         :get-suggest-options="props.getSuggestOptions"
         :enable-dnd="false"
         :enable-add-group-button="true"
-        @update-filters="(v) => (step = { ...step, filter: v as typeof step.filter })"
       >
         <template #add-group-buttons>
           <div :class="$style.actions">
@@ -131,7 +155,7 @@ const supportedFilters = [
             <PlBtnSecondary
               v-if="withSelection"
               icon="add"
-              :disabled="!props.hasSelectedColumns"
+              :disabled="props.hasSelectedColumns !== true"
               @click="addFilterFromSelected"
             >
               From selection

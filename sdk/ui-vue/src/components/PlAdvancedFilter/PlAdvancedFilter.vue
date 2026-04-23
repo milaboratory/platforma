@@ -252,12 +252,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
       </template>
       <template #item-content="{ item, index }">
         <div
-          :class="[
-            $style.groupContent,
-            {
-              [$style.suppressedLabel]: item.isSuppressed,
-            },
-          ]"
+          :class="[$style.groupContent, { [$style.suppressedLabel]: item.isSuppressed }]"
           dropzone="true"
           @drop="(event) => handleDropToExistingGroup(index, event)"
           @dragover="dragOver"
