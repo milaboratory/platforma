@@ -68,13 +68,13 @@ function formatOriginPath(entry: TooltipEntry): undefined | string {
       readAnnotation(step.linker.spec, Annotation.LinkLabel) ??
       readAnnotation(step.linker.spec, Annotation.Label) ??
       step.linker.spec.name;
-    lines.push(`  • linker ${i + 1}: ${label}`);
+    lines.push(`linker ${i + 1}: ${label}`);
     const qs = formatAxisQualifications(step.qualifications);
     if (qs !== undefined) lines.push(`      qualifies: ${qs}`);
   });
   const hitName = readAnnotation(entry.spec, Annotation.Label) ?? entry.spec.name;
-  lines.push(`  • hit column: ${hitName}`);
-  return lines.join("\n");
+  lines.push(`hit column: ${hitName}`);
+  return lines.join("\n  • ");
 }
 
 function formatAnchors(q: undefined | MatchQualifications): undefined | string {
@@ -87,10 +87,10 @@ function formatAnchors(q: undefined | MatchQualifications): undefined | string {
     const item = q.forQueries[id as PObjectId];
     if (item.length === 0) continue;
     const rendered = formatAxisQualifications(item);
-    lines.push(`  • ${id}${rendered !== undefined ? `   ${rendered}` : ""}`);
+    lines.push(`${id}${rendered !== undefined ? `   ${rendered}` : ""}`);
   }
   return lines.length > 0
-    ? ["Anchors (bound via this variant)"].concat(lines).join("\n")
+    ? ["Anchors (bound via this variant)"].concat(lines).join("\n  • ")
     : undefined;
 }
 
@@ -98,7 +98,7 @@ function formatHit(q: undefined | MatchQualifications): undefined | string {
   if (isNil(q) || q.forHit.length === 0) return undefined;
   const rendered = formatAxisQualifications(q.forHit);
   if (rendered === undefined) return undefined;
-  return ["Hit column qualifications", `  • ${rendered}`].join("\n");
+  return ["Hit column qualifications", rendered].join("\n  • ");
 }
 
 function formatDistinctive(q: undefined | MatchQualifications): undefined | string {
@@ -106,11 +106,11 @@ function formatDistinctive(q: undefined | MatchQualifications): undefined | stri
   const bullets: string[] = [];
   for (const id of Object.keys(q.forQueries)) {
     for (const item of q.forQueries[id as PObjectId])
-      bullets.push(`  • ${id}: ${formatQualification(item)}`);
+      bullets.push(`${id}: ${formatQualification(item)}`);
   }
-  for (const item of q.forHit) bullets.push(`  • hit: ${formatQualification(item)}`);
+  for (const item of q.forHit) bullets.push(`hit: ${formatQualification(item)}`);
   if (bullets.length === 0) return undefined;
-  return ["Distinctive (what separates this variant)", ...bullets].join("\n");
+  return ["Distinctive (what separates this variant)", ...bullets].join("\n  • ");
 }
 
 function formatAxisQualifications(qs: AxisQualification[]): undefined | string {
