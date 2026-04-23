@@ -214,8 +214,8 @@ describe("PFrameForGraph", () => {
       valueType: "String",
       annotations: { [Annotation.IsLinkerColumn]: "true" },
       axesSpec: [
-        { type: "String", name: "axis1" },
         { type: "String", name: "axis3" },
+        { type: "String", name: "axis1" },
       ],
     };
 
@@ -240,8 +240,8 @@ describe("PFrameForGraph", () => {
       valueType: "String",
       annotations: { [Annotation.IsLinkerColumn]: "true" },
       axesSpec: [
-        { type: "String", name: "axis1" },
         { type: "String", name: "axis2" },
+        { type: "String", name: "axis1" },
       ],
     };
     const linkerColumn23: PColumnSpec = {
@@ -250,8 +250,8 @@ describe("PFrameForGraph", () => {
       valueType: "String",
       annotations: { [Annotation.IsLinkerColumn]: "true" },
       axesSpec: [
-        { type: "String", name: "axis2" },
         { type: "String", name: "axis3" },
+        { type: "String", name: "axis2" },
       ],
     };
     const linkerColumn34: PColumnSpec = {
@@ -260,8 +260,8 @@ describe("PFrameForGraph", () => {
       valueType: "String",
       annotations: { [Annotation.IsLinkerColumn]: "true" },
       axesSpec: [
-        { type: "String", name: "axis3" },
         { type: "String", name: "axis4" },
+        { type: "String", name: "axis3" },
       ],
     };
 
