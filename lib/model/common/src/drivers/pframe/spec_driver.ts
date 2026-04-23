@@ -128,7 +128,7 @@ export interface DiscoverColumnsFilterStep {
 export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep | DiscoverColumnsFilterStep;
 
 /**
- * Input to {@link PFrameWasmV4.buildQuery}: a terminal column plus an ordered
+ * Input to `buildQuery`: a terminal column plus an ordered
  * path of wrapping steps (linker hops, filter joins). Produces a
  * {@link SpecQueryJoinEntry} ready to be plugged into an
  * `innerJoin`/`fullJoin`/`outerJoin` entry list.
@@ -138,8 +138,8 @@ export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep | DiscoverColumn
  * wrapping.
  *
  * Columns are referenced by id — specs are resolved later at
- * {@link PFrameWasmV4.evaluateQuery} against the registered specs of the
- * PFrame, so the caller cannot disagree with the frame about spec content.
+ * `evaluateQuery` against the registered specs of the PFrame, so the
+ * caller cannot disagree with the frame about spec content.
  *
  * Qualifications annotate the resulting outermost entry; they do not
  * propagate into the inner query.
