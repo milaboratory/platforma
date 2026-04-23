@@ -19,24 +19,21 @@ wf.body(func(args) {
 		"G1\tFirst group\t1\n" +
 		"G2\tSecond group\t2\n"
 
-	// --- Linker: maps "name" -> "group" ---
+	// --- Linker A: maps "name" -> "group" (group axis domain: source=primary) ---
+	// Partial coverage — maps A,B,C only.
 	linkerTsv := "name\tgroup\tlink\n" +
 		"A\tG1\t1\n" +
 		"B\tG1\t1\n" +
-		"C\tG2\t1\n" +
-		"D\tG2\t1\n" +
-		"E\tG1\t1\n"
+		"C\tG2\t1\n"
 
-	// --- Alternate linker: second path "name" -> "group" ---
-	// Exercises multi-variant discovery for group-axis columns (createPlDataTableV3.ts
-	// → deriveAllTooltips → withInfoAnnotations at utils.ts#L192-208).
-	// Two linker columns with same axes pair (name, group) produce two MatchVariants
-	// per hit column on the group axis — each variant gets its own distinctiveQualifications
-	// and linkerPath, so deriveDistinctTooltips emits a distinct tooltip per variant and
-	// withInfoAnnotations writes Annotation.Table.Info for each.
+	// --- Linker B: second path "name" -> "group" (group axis domain: source=secondary) ---
+	// Partial coverage — maps C,D,E only. Different group-axis domain than linker A.
+	// Two linkers over the same (name, group) axis pair but with DIFFERENT group-axis
+	// domains produce MatchVariants whose qualifications on the hit's group axis carry
+	// distinct contextDomain values — populating `distinctiveQualifications` (non-empty
+	// forHit) for each group-axis hit column. Feeds formatDistinctive in
+	// deriveDistinctTooltips and withInfoAnnotations per-variant records.
 	linkerAltTsv := "name\tgroup\tlinkAlt\n" +
-		"A\tG1\t1\n" +
-		"B\tG1\t1\n" +
 		"C\tG2\t1\n" +
 		"D\tG2\t1\n" +
 		"E\tG1\t1\n"
@@ -110,12 +107,67 @@ wf.body(func(args) {
 		}
 	}
 
+	nameAxisSpecPrimary := {
+		name: "name",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Name"
+		},
+		domain: {
+			"pl7.app/source": "primary"
+		}
+	}
+
+	nameAxisSpecSecondary := {
+		name: "name",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Name"
+		},
+		domain: {
+			"pl7.app/source": "secondary"
+		}
+	}
+
 	groupAxisSpec := {
 		name: "group",
 		type: "String",
 		annotations: {
 			"pl7.app/label": "Group"
 		}
+	}
+
+	groupAxisSpecHit := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group hit"
+		},
+		parentAxes: [0]
+	}
+
+	groupAxisSpecPrimary := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group primary"
+		},
+		domain: {
+			"pl7.app/source": "primary"
+		},
+		parentAxes: [0]
+	}
+
+	groupAxisSpecSecondary := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group secondary"
+		},
+		domain: {
+			"pl7.app/source": "secondary"
+		},
+		parentAxes: [0]
 	}
 
 	regionAxisSpec := {
@@ -180,6 +232,9 @@ wf.body(func(args) {
 		axes: [{
 			column: "group",
 			spec: groupAxisSpec
+		}, {
+			column: "group",
+			spec: groupAxisSpecHit
 		}],
 		columns: [{
 			column: "description",
@@ -206,10 +261,17 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
+	// Linker A: group axis domain=source:primary. Carries rows A,B,C only.
 	linkerSpec := {
 		axes: [{
 			column: "group",
 			spec: groupAxisSpec
+		}, {
+			column: "group",
+			spec: groupAxisSpecPrimary
+		}, {
+			column: "group",
+			spec: groupAxisSpecSecondary
 		}, {
 			column: "name",
 			spec: nameAxisSpec
@@ -221,7 +283,7 @@ wf.body(func(args) {
 				name: "linker_name_group",
 				valueType: "Int",
 				annotations: {
-					"pl7.app/linkLabel": "Name-Group Linker",
+					"pl7.app/linkLabel": "Name-Group Linker (primary)",
 					"pl7.app/isLinkerColumn": "true"
 				}
 			}
@@ -230,10 +292,12 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
-	// Second linker over the same (name, group) axes pair. Distinct native id
-	// ensures it survives dedup in collectColumns. During discoverColumns this
-	// yields a second MatchVariant for each group-axis hit column, producing
-	// `distinctiveQualifications` and variantCount=2 in deriveAllTooltips.
+	// Linker B: group axis domain=source:secondary. Carries rows C,D,E only.
+	// Same (name, group) axis pair as linker A by name/type but with a distinct
+	// axis `domain` — discoverColumns emits a MatchVariant whose hit-axis
+	// qualification carries contextDomain={pl7.app/source: secondary}, which
+	// differs from linker A's variant. That delta populates
+	// `distinctiveQualifications.forHit` on both variants.
 	linkerAltSpec := {
 		axes: [{
 			column: "group",
@@ -249,7 +313,7 @@ wf.body(func(args) {
 				name: "linker_name_group_alt",
 				valueType: "Int",
 				annotations: {
-					"pl7.app/linkLabel": "Name-Group Linker (Alt)",
+					"pl7.app/linkLabel": "Name-Group Linker (secondary)",
 					"pl7.app/isLinkerColumn": "true"
 				}
 			}
@@ -394,9 +458,9 @@ wf.body(func(args) {
 	for k, v in linkerPf {
 		pf.add(k, v.spec, v.data)
 	}
-	for k, v in linkerAltPf {
-		pf.add(k, v.spec, v.data)
-	}
+	// for k, v in linkerAltPf {
+	// 	pf.add(k, v.spec, v.data)
+	// }
 	for k, v in regionPf {
 		pf.add(k, v.spec, v.data)
 	}

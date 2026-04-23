@@ -49,7 +49,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
           },
         },
         selector: {
-          mode: "related",
+          mode: "enrichment",
           maxHops: 4,
         },
       },
