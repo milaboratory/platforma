@@ -116,6 +116,51 @@ export interface PFrameWasmAPIV3 {
 }
 
 /**
+ * V2 PFrame interface. Kept as a legacy shim while pframes-rs-wasm still
+ * exposes this as the return type of `createPFrame`; will be removed once
+ * the V3 surface (with `listColumns` and factory-level `buildQuery`) is
+ * implemented on the pframes-rs side.
+ */
+export interface PFrameWasmV2 extends Disposable {
+  /** @see PFrameWasmV3.deleteColumns */
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
+
+  /** @see PFrameWasmV3.discoverColumns */
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
+
+  /** @see PFrameWasmV3.findColumns */
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
+
+  /** @see PFrameWasmV3.evaluateQuery */
+  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
+
+  /** @see PFrameWasmV3.rewriteLegacyQuery */
+  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
+}
+
+/**
+ * V2 PFrame API factory. Kept as a legacy shim while pframes-rs-wasm still
+ * returns this from its top-level exports; will be removed once the V3
+ * surface is implemented on the pframes-rs side.
+ */
+export interface PFrameWasmAPIV2 {
+  /** @see PFrameWasmAPIV3.createPFrame */
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV2;
+
+  /** @see PFrameWasmAPIV3.expandAxes */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /** @see PFrameWasmAPIV3.collapseAxes */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /** @see PFrameWasmAPIV3.findAxis */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /** @see PFrameWasmAPIV3.findTableColumn */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+}
+
+/**
  * Response from evaluating a query against a PFrame.
  */
 export type EvaluateQueryResponse = {
