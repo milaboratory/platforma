@@ -116,10 +116,8 @@ export interface PFrameWasmAPIV3 {
 }
 
 /**
- * V2 PFrame interface. Kept as a legacy shim while pframes-rs-wasm still
- * exposes this as the return type of `createPFrame`; will be removed once
- * the V3 surface (with `listColumns` and factory-level `buildQuery`) is
- * implemented on the pframes-rs side.
+ * V2 PFrame interface. Superseded by {@link PFrameWasmV3}; will be removed
+ * in a future PFrames update.
  */
 export interface PFrameWasmV2 extends Disposable {
   /** @see PFrameWasmV3.deleteColumns */
@@ -139,9 +137,8 @@ export interface PFrameWasmV2 extends Disposable {
 }
 
 /**
- * V2 PFrame API factory. Kept as a legacy shim while pframes-rs-wasm still
- * returns this from its top-level exports; will be removed once the V3
- * surface is implemented on the pframes-rs side.
+ * V2 PFrame API factory. Superseded by {@link PFrameWasmAPIV3}; will be removed
+ * in a future PFrames update.
  */
 export interface PFrameWasmAPIV2 {
   /** @see PFrameWasmAPIV3.createPFrame */
