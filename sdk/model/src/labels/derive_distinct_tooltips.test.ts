@@ -2,7 +2,7 @@ import {
   Annotation,
   type AxisQualification,
   type PColumnSpec,
-  type SUniversalPColumnId,
+  type PObjectId,
 } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import { deriveDistinctTooltips, type TooltipEntry } from "./derive_distinct_tooltips";
@@ -25,9 +25,9 @@ function axisQualification(
   return { axis: { name: axisName }, contextDomain };
 }
 
-function linkerSnapshot(name: string, label?: string): ColumnSnapshot<SUniversalPColumnId> {
+function linkerSnapshot(name: string, label?: string): ColumnSnapshot<PObjectId> {
   return {
-    id: `linker-${name}` as SUniversalPColumnId,
+    id: `linker-${name}` as PObjectId,
     spec: createSpec(name, label),
     dataStatus: "ready",
     data: undefined,
@@ -70,21 +70,20 @@ describe("deriveDistinctTooltips", () => {
     ];
     const [tooltip] = deriveDistinctTooltips(entries);
     expect(tooltip).toBeDefined();
-    expect(tooltip).toContain("Column: Hit Col");
     expect(tooltip).toContain("Origin path");
     expect(tooltip).toContain("linker 1: Linker A");
     expect(tooltip).toContain("qualifies: sample context: batch=A");
     expect(tooltip).toContain("hit column: Hit Col");
   });
 
-  test("qualifications.forAnchors produces Anchors section", () => {
+  test("qualifications.forQueries produces Anchors section", () => {
     const entries: TooltipEntry[] = [
       {
         spec: createSpec("col1", "Col 1"),
         qualifications: {
-          forAnchors: {
-            main: [axisQualification("sample", { batch: "A" })],
-            other: [axisQualification("gene", { source: "X" })],
+          forQueries: {
+            ["main" as PObjectId]: [axisQualification("sample", { batch: "A" })],
+            ["other" as PObjectId]: [axisQualification("gene", { source: "X" })],
           },
           forHit: [],
         },
@@ -101,7 +100,7 @@ describe("deriveDistinctTooltips", () => {
       {
         spec: createSpec("col1", "Col 1"),
         qualifications: {
-          forAnchors: {},
+          forQueries: {},
           forHit: [axisQualification("sample", { batch: "B" })],
         },
       },
@@ -116,7 +115,7 @@ describe("deriveDistinctTooltips", () => {
       {
         spec: createSpec("col1", "Col 1"),
         distinctiveQualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "A" })] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "A" })] },
           forHit: [axisQualification("gene", { source: "Y" })],
         },
       },
@@ -134,7 +133,7 @@ describe("deriveDistinctTooltips", () => {
         variantIndex: 1,
         variantCount: 2,
         qualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "A" })] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "A" })] },
           forHit: [],
         },
       },
@@ -143,26 +142,12 @@ describe("deriveDistinctTooltips", () => {
     expect(tooltip).toContain("Variant: 1 of 2");
   });
 
-  test("fallback to spec.name when no label annotation", () => {
-    const entries: TooltipEntry[] = [
-      {
-        spec: createSpec("raw_name"),
-        qualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "A" })] },
-          forHit: [],
-        },
-      },
-    ];
-    const [tooltip] = deriveDistinctTooltips(entries);
-    expect(tooltip).toContain("Column: raw_name");
-  });
-
   test("axis qualification with empty contextDomain shows only axis name", () => {
     const entries: TooltipEntry[] = [
       {
         spec: createSpec("col1", "Col 1"),
         qualifications: {
-          forAnchors: { main: [axisQualification("sample", {})] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", {})] },
           forHit: [],
         },
       },
@@ -172,11 +157,11 @@ describe("deriveDistinctTooltips", () => {
     expect(tooltip).not.toContain("context:");
   });
 
-  test("empty forAnchors object → no Anchors section", () => {
+  test("empty forQueries object → no Anchors section", () => {
     const entries: TooltipEntry[] = [
       {
         spec: createSpec("col1", "Col 1"),
-        qualifications: { forAnchors: {}, forHit: [] },
+        qualifications: { forQueries: {}, forHit: [] },
         linkerPath: [pathStep("linker_a", [], "Linker A")],
       },
     ];
@@ -207,11 +192,11 @@ describe("deriveDistinctTooltips", () => {
         variantCount: 2,
         linkerPath: [pathStep("linker_a", [axisQualification("sample", { batch: "B" })], "LA")],
         qualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "B" })] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "B" })] },
           forHit: [axisQualification("sample", { batch: "B" })],
         },
         distinctiveQualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "B" })] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "B" })] },
           forHit: [],
         },
       },
@@ -220,7 +205,6 @@ describe("deriveDistinctTooltips", () => {
     expect(tooltip).toBeDefined();
     const sections = tooltip!.split("\n\n");
     expect(sections.length).toBe(5);
-    expect(sections[0]).toContain("Column: Hit");
     expect(sections[0]).toContain("Variant: 2 of 2");
     expect(sections[1]).toContain("Origin path");
     expect(sections[2]).toContain("Anchors");
@@ -234,7 +218,7 @@ describe("deriveDistinctTooltips", () => {
       {
         spec: createSpec("b", "B"),
         qualifications: {
-          forAnchors: { main: [axisQualification("sample", { batch: "A" })] },
+          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "A" })] },
           forHit: [],
         },
       },
