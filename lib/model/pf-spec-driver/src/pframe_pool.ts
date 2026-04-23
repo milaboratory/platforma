@@ -15,7 +15,7 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 export class PFramePool extends RefCountPoolBase<
   Record<string, PColumnSpec>,
   SpecFrameHandle,
-  PFrameInternal.PFrameWasmV2
+  PFrameInternal.PFrameWasmV3
 > {
   constructor(private readonly logger: MiLogger) {
     super();
@@ -30,14 +30,14 @@ export class PFramePool extends RefCountPoolBase<
   protected createNewResource(
     params: Record<string, PColumnSpec>,
     key: SpecFrameHandle,
-  ): PFrameInternal.PFrameWasmV2 {
+  ): PFrameInternal.PFrameWasmV3 {
     if (logPFrames()) {
       this.logger.info(`Creating SpecFrame for handle = ${key}, columns: ` + stringifyJson(params));
     }
     return createPFrame(params);
   }
 
-  public getByKey(key: SpecFrameHandle): PFrameInternal.PFrameWasmV2 {
+  public getByKey(key: SpecFrameHandle): PFrameInternal.PFrameWasmV3 {
     const resource = super.tryGetByKey(key);
     if (!resource) {
       const error = new PFrameDriverError(`Invalid SpecFrame handle`);

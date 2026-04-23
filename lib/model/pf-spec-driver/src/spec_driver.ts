@@ -1,4 +1,5 @@
 import {
+  buildQuery,
   expandAxes,
   collapseAxes,
   findAxis,
@@ -7,12 +8,15 @@ import {
 import type {
   AxesId,
   AxesSpec,
+  BuildQueryInput,
+  PColumnInfo,
   PColumnSpec,
   PFrameSpecDriver,
   PTableColumnId,
   PTableColumnSpec,
   SingleAxisSelector,
   SpecFrameHandle,
+  SpecQueryJoinEntry,
   PoolEntry,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
@@ -60,6 +64,33 @@ export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`createSpecFrame failed`);
       error.cause = ensureError(err);
+      throw error;
+    }
+  }
+
+  listColumns(handle: SpecFrameHandle): PColumnInfo[] {
+    const pframe = this.frames.getByKey(handle);
+    try {
+      if (logPFrames()) {
+        this.logger.info(`listColumns: handle = ${handle}`);
+      }
+      return pframe.listColumns();
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`listColumns failed`);
+      error.cause = new Error(`handle: ${handle}, ` + `error:\n${ensureError(err)}`);
+      throw error;
+    }
+  }
+
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry {
+    try {
+      if (logPFrames()) {
+        this.logger.info(`buildQuery: input: ${JSON.stringify(input)}`);
+      }
+      return buildQuery(input);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`buildQuery failed`);
+      error.cause = new Error(`input: ${JSON.stringify(input)}, ` + `error:\n${ensureError(err)}`);
       throw error;
     }
   }
