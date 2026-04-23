@@ -1,5 +1,43 @@
 # @milaboratories/pl-middle-layer
 
+## 1.55.18
+
+### Patch Changes
+
+- 1411dea: Expose `buildQuery` and `listColumns` on `PFrameSpecDriver`:
+
+  - `buildQuery(input: BuildQueryInput): SpecQueryJoinEntry` — pure
+    spec-layer assembler that turns a terminal column plus an ordered
+    path of wrapping steps (linker hops, filter joins) into a
+    ready-to-compose `SpecQueryJoinEntry`. No frame handle is required
+    (wires directly to the top-level export from `pframes-rs-wasm`).
+  - `listColumns(handle: SpecFrameHandle): PColumnInfo[]` — enumerates
+    every column registered in the spec frame. `hasData` is always
+    `false` for spec-only frames.
+
+  Both are also routed through the QuickJS service injector, so block
+  models can call `ctx.services.pframeSpec.buildQuery(...)` and
+  `ctx.services.pframeSpec.listColumns(handle)`.
+
+  Bumps `@milaboratories/pframes-rs-wasm` to 1.1.26 (corrected V3:
+  `buildQuery` at top level, `listColumns` on the frame resource). The
+  pool type switches from `PFrameWasmV2` to `PFrameWasmV3`.
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pf-spec-driver@1.3.0
+  - @milaboratories/pl-model-middle-layer@1.18.1
+  - @milaboratories/pf-driver@1.3.8
+  - @milaboratories/pl-client@3.1.4
+  - @milaboratories/pl-deployments@2.17.3
+  - @milaboratories/pl-drivers@1.12.15
+  - @platforma-sdk/model@1.65.9
+  - @platforma-sdk/block-tools@2.7.10
+  - @milaboratories/pl-model-backend@1.2.11
+  - @milaboratories/pl-errors@1.3.3
+  - @milaboratories/pl-tree@1.9.13
+  - @platforma-sdk/workflow-tengo@5.14.0
+
 ## 1.55.17
 
 ### Patch Changes
