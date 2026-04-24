@@ -15,7 +15,9 @@ sets := import(":sets")
 oop := import(":oop")
 bobject := import(":workflow.bobject")
 bquery := import(":workflow.bquery")
+resolveUtil := import(":workflow.resolve-util")
 pBundle := import(":pframes.bundle")
+pTableBuilder := import(":pframes.table-builder")
 
 // instance of this
 self := import(":tpl")
@@ -216,29 +218,61 @@ query := func(spec, ...options) {
 	return bquery.create(spec, getParentBCtx(), options...)
 }
 
-/**
- * Query results pool to find spec & data for a given ref.
- *
- * @param ref: a ref object ({blockId: name:})
- * @param options: optional query options
- * @return result: a {ref: spec: data:} object
- *
- * This is a simplified way to access data from a specific block output by its ID.
- * It internally calls bquery.resolve with the parent context.
- *
- * Example:
- * ```
- * // Get the RNA-seq count matrix from block "abc123"
- * countMatrix = resolve({blockId: "abc123", name: "matrix"}).data
- * ```
- */
-resolve := func(ref, ...options) {
+// Resolve a single PlRef into { spec, data }
+_resolveOne := func(ref, ...options) {
 	r := bquery.resolve(ref, getParentBCtx(), options...)
-
 	return ll.toStrict(oop.inherit(r, {
 		spec: r.getFutureInputField("spec"),
 		data: r.getFutureInputField("data")
 	}))
+}
+
+/**
+ * Universal resolve: deep-walks any structure containing PlRefs,
+ * resolving each into { spec, data }.
+ *
+ * @param input: PlRef, PrimaryRef, or arbitrary nested structure with PlRefs
+ * @param options: optional query options (propagated to every PlRef)
+ * @return result: resolved structure with PlRefs replaced by { spec, data }
+ *
+ * Examples:
+ * ```
+ * // Single PlRef — backward compatible
+ * resolve(plRef)                    // -> { spec, data }
+ *
+ * // PrimaryRef with filter
+ * resolve({
+ *     __isPrimaryRef: "v1",
+ *     column: plRef,
+ *     filter: filterPlRef
+ * })
+ * // -> { __isPrimaryRef: "v1", column: { spec, data }, filter: { spec, data } }
+ *
+ * // Arbitrary nested structure
+ * resolve({ a: plRef1, b: [plRef2] })
+ * // -> { a: { spec, data }, b: [{ spec, data }] }
+ *
+ * // Options propagate to all refs
+ * resolve(primaryRef, { data: false })
+ * // -> { __isPrimaryRef: "v1", column: { spec }, filter: { spec } }
+ * //    (filter key is absent if primaryRef.filter was undefined)
+ *
+ * // Panics if no PlRefs found in non-PlRef input
+ * resolve({ noRefs: "here" }) // panics
+ * ```
+ */
+resolve := func(input, ...options) {
+	// Single PlRef — backward compatible path. Accepts either the modern
+	// `{__isRef: true, blockId, name}` marker form or the legacy plain
+	// `{blockId, name}` shape (as documented by `bquery.resolve`).
+	if ll.isMap(input) && (input.__isRef == true || (is_string(input.blockId) && is_string(input.name))) {
+		return _resolveOne(input, options...)
+	}
+
+	// Deep-walk for structures containing PlRefs (panics if none found)
+	return resolveUtil.deepResolve(input, func(ref) {
+		return _resolveOne(ref, options...)
+	})
 }
 
 /**
@@ -365,6 +399,19 @@ createPBundleBuilder := func() {
 }
 
 /**
+ * Creates a tableBuilder with workflow context injected — required when any
+ * input is unresolved (PlRef or column query spec). Equivalent to
+ * `pframes.tableBuilder(format, ctx)` with `ctx = parent block context`.
+ * See `pframes.tableBuilder` for the full builder API.
+ *
+ * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
+ * @return TableBuilder
+ */
+tableBuilder := func(format) {
+	return pTableBuilder.tableBuilder(format, getParentBCtx())
+}
+
+/**
  * Defines main entry point for current workflow
  */
 body := func(bodyFn) {
@@ -411,5 +458,6 @@ export ll.toStrict({
 	blockId: blockId,
 	getBlockId: getBlockId,
 	validateArgs: validateArgs,
-	createPBundleBuilder: createPBundleBuilder
+	createPBundleBuilder: createPBundleBuilder,
+	tableBuilder: tableBuilder
 })

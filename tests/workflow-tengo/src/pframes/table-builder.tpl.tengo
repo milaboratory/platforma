@@ -1,0 +1,124 @@
+// Reusable ephemeral test runner for `pframes.tableBuilder`. Every test case
+// for the ephemeral path (no result-pool, all columns pre-resolved via xsv
+// import) reuses this template by supplying different declarative args from TS.
+//
+// args:
+//   format       — "tsv" | "csv" | "parquet" | "ndjson"
+//   imports      — { [name]: { csv: string, spec: pfconvImportSpec } }
+//                  Each entry is imported via xsv.importFile; resulting
+//                  columns are picked by name in the primaries/columns args.
+//   primaries    — array of {
+//                    name: string,                 // anchor name
+//                    sourceImport: string,         // pick column from this import
+//                    sourceColumn?: string,        // colId; first if omitted
+//                    filterImport?: string,        // optional → ResolvedPrimaryRef
+//                    filterColumn?: string,
+//                    header?: string
+//                  }
+//   columns?     — array of {
+//                    mode: "single" | "multi",
+//                    sourceImport: string,
+//                    sourceColumn?: string,
+//                    opts?: { header?, headerPrefix?, headerSuffix? }
+//                  }
+//   joinMode?    — "inner" | "full"
+//   axisHeaders? — [[axisName: string, header: string], ...]
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+file := import("@platforma-sdk/workflow-tengo:file")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+util := import("@platforma-sdk/workflow-tengo:pframes.util")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+times := import("times")
+
+self.defineOutputs("result")
+
+self.body(func(inputs) {
+	// Phase 1: import each declared CSV → name → columns map.
+	importedColumns := {}
+	for importName, def in inputs.imports {
+		e := exec.builder().
+			cpu(1).ram("50Mi").
+			cmd("env").
+			writeFile("data.csv", def.csv).
+			saveFile("data.csv").
+			run()
+		pf := xsv.importFile(e.getFile("data.csv"), "csv", def.spec)
+		importedColumns[importName] = util.pFrameToColumnsMap(pf)
+	}
+
+	// Pick a single column from an import. If `columnId` is omitted, returns
+	// the first column (deterministic for single-column imports).
+	pickColumn := func(importName, columnId) {
+		cols := importedColumns[importName]
+		ll.assert(!is_undefined(cols), "import not found: %s", importName)
+		if !is_undefined(columnId) {
+			ll.assert(!is_undefined(cols[columnId]),
+				"column %s not found in import %s", columnId, importName)
+			return cols[columnId]
+		}
+		first := undefined
+		maps.forEach(cols, func(_, col) {
+			if is_undefined(first) { first = col }
+		})
+		ll.assert(!is_undefined(first), "import %s has no columns", importName)
+		return first
+	}
+
+	// Phase 2: drive tableBuilder declaratively.
+	builder := pframes.tableBuilder(inputs.format)
+
+	if !is_undefined(inputs.joinMode) {
+		builder = builder.setJoinMode(inputs.joinMode)
+	}
+	if !is_undefined(inputs.axisHeaders) {
+		for h in inputs.axisHeaders {
+			builder = builder.setAxisHeader(h[0], h[1])
+		}
+	}
+
+	for p in inputs.primaries {
+		col := pickColumn(p.sourceImport, p.sourceColumn)
+		value := col
+		if !is_undefined(p.filterImport) {
+			value = {
+				__isPrimaryRef: "v1",
+				column: col,
+				filter: pickColumn(p.filterImport, p.filterColumn)
+			}
+		}
+		if !is_undefined(p.header) {
+			builder = builder.addPrimary(p.name, value, { header: p.header })
+		} else {
+			builder = builder.addPrimary(p.name, value)
+		}
+	}
+
+	if !is_undefined(inputs.columns) {
+		for c in inputs.columns {
+			col := pickColumn(c.sourceImport, c.sourceColumn)
+			if c.mode == "multi" {
+				if !is_undefined(c.opts) {
+					builder = builder.addColumns(col, c.opts)
+				} else {
+					builder = builder.addColumns(col)
+				}
+			} else {
+				if !is_undefined(c.opts) {
+					builder = builder.addColumn(col, c.opts)
+				} else {
+					builder = builder.addColumn(col)
+				}
+			}
+		}
+	}
+
+	builder.cacheInputs(1 * times.minute)
+
+	return {
+		result: file.exportFile(builder.build())
+	}
+})

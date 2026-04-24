@@ -1,8 +1,7 @@
 util := import(":pframes.util")
-canonical := import(":canonical")
 execConstants := import(":exec.constants")
 pframesSpec := import(":pframes.spec")
-slices := import(":slices")
+exportUtil := import(":pframes.export-util")
 pt := import(":pt")
 ll := import(":ll")
 maps := import(":maps")
@@ -27,7 +26,7 @@ self.body(func(inputs) {
 	rawColumns := []
 	maps.forEach(util.pFrameToColumnsMap(pf), func(frameUniqueColumnId, columnInfo) {
 		columnEntries = append(columnEntries, pt.p.column(frameUniqueColumnId, columnInfo))
-		rawColumns = append(rawColumns, { id: frameUniqueColumnId, spec: columnInfo.spec })
+		rawColumns = append(rawColumns, { frameKey: frameUniqueColumnId, spec: columnInfo.spec })
 	})
 
 	frameInput := undefined
@@ -46,44 +45,21 @@ self.body(func(inputs) {
 		stringSelector = stringSelector.fillNull(params.nullStr)
 	}
 
-	labelsMap := {}
+	// Strict label policy: every axis/column spec must carry pl7.app/label.
 	getLabel := func(spec) {
-		label := spec.annotations["pl7.app/label"]
-		ll.assert(is_string(label) && label != "", "label must be a non-empty string, got %v", label)
-		ll.assert(is_undefined(labelsMap[label]),
-			"label '%s' is not unique, it is used for %v, and now %v",
-			label, labelsMap[label], spec)
-		labelsMap[label] = spec
+		label := spec.annotations[pframesSpec.A_LABEL]
+		ll.assert(is_string(label) && label != "",
+			"spec missing required '%s' annotation: %v",
+			pframesSpec.A_LABEL, spec)
 		return label
 	}
 
-	specDistiller := pframesSpec.createSpecDistiller(slices.map(rawColumns, func(c) { return c.spec }))
-	canonicalMap := {}
-	uniqueAxes := []
-	for column in rawColumns {
-		for axis in column.spec.axesSpec {
-			distilledAxis := specDistiller.distill(axis)
-			canonicalizedAxisSpec := canonical.encode(distilledAxis)
-			if is_undefined(canonicalMap[canonicalizedAxisSpec]) {
-				canonicalMap[canonicalizedAxisSpec] = true
-				distilledAxis.label = getLabel(axis)
-				uniqueAxes = append(uniqueAxes, distilledAxis)
-			}
-		}
-	}
-
-	sortSelectors := []
-	columnSelectors := []
-	for axis in uniqueAxes {
-		label := axis.label
-		delete(axis, "label")
-		sortSelectors = append(sortSelectors, pt.axis(axis))
-		columnSelectors = append(columnSelectors, pt.axis(axis).alias(label))
-	}
-	for column in rawColumns {
-		label := getLabel(column.spec)
-		columnSelectors = append(columnSelectors, pt.col(column.id).alias(label))
-	}
+	selectors := exportUtil.buildExportSelectors(rawColumns, {
+		axisLabel: getLabel,
+		columnLabel: func(c) { return getLabel(c.spec) }
+	})
+	sortSelectors := selectors.sortSelectors
+	columnSelectors := selectors.columnSelectors
 
 	wf := pt.workflow()
 	if queue == execConstants.LIGHT_QUEUE {

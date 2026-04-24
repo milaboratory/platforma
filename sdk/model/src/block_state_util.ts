@@ -24,7 +24,8 @@ export function wrapOutputs<Outputs extends BlockOutputsBase>(
   outputs: Outputs,
 ): SimpleOutputs<Outputs> {
   return new Proxy(outputs, {
-    get(target, key: string) {
+    get(target, key, receiver) {
+      if (typeof key === "symbol" || !(key in target)) return Reflect.get(target, key, receiver);
       return readOutput(target[key]);
     },
   }) as SimpleOutputs<Outputs>;

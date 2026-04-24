@@ -442,3 +442,66 @@ tplTest.concurrent(
     expect(async () => await mainResult.awaitStableValue()).rejects.toThrow(/the_test_error/);
   },
 );
+
+tplTest.concurrent(
+  "PrimarySpecsReady: body runs when specs ready, data still computing",
+  async ({ pl, helper, expect }) => {
+    let inputResource: ResourceId = 0n as ResourceId;
+    let columnResource: ResourceId = 0n as ResourceId;
+
+    const result = await helper.renderTemplate(
+      true,
+      Templates["tpl.primary-specs-ready"],
+      ["main"],
+      async (tx) => {
+        inputResource = await toGlobalResourceId(
+          tx.createEphemeral(resourceType("TestPrimary", "1")),
+        );
+        return { input1: inputResource };
+      },
+    );
+
+    const mainResult = result.computeOutput("main", (a) => a?.getDataAsJson());
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    // Create column sub-resource with spec and data fields;
+    // data points to an unfinished resource (simulates "still computing")
+    await pl.withWriteTx("Test", async (tx) => {
+      columnResource = await toGlobalResourceId(tx.createEphemeral(resourceType("TestCol", "1")));
+      tx.createField(field(columnResource, "spec"), "Input");
+      tx.createField(field(columnResource, "data"), "Input");
+
+      // data -> unfinished resource (never becomes ready)
+      const computing = await toGlobalResourceId(
+        tx.createEphemeral(resourceType("Computing", "1")),
+      );
+      tx.setField(field(columnResource, "data"), computing);
+
+      // Wire column into input and lock
+      tx.createField(field(inputResource, "column"), "Input");
+      tx.setField(field(inputResource, "column"), columnResource);
+      tx.lockInputs(inputResource);
+
+      await tx.commit();
+    });
+
+    // spec not set yet — body should not run
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    // Set spec to a ready value and lock column inputs
+    await pl.withWriteTx("Test", async (tx) => {
+      tx.setField(
+        field(columnResource, "spec"),
+        tx.createValue(Pl.JsonObject, JSON.stringify({ name: "col" })),
+      );
+      tx.lockInputs(columnResource);
+      await tx.commit();
+    });
+
+    // spec is ready, data is still computing — body should run
+    await mainResult.refreshState();
+    expect(await mainResult.awaitStableValue()).eq("specs_ready");
+  },
+);

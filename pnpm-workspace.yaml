@@ -82,6 +82,12 @@ packages:
   - etc/blocks/sum-numbers-v3/ui
   - etc/blocks/sum-numbers-v3/block
 
+  - etc/blocks/filter-column-test/workflow
+  - etc/blocks/filter-column-test/model
+  - etc/blocks/filter-column-test/ui
+  - etc/blocks/filter-column-test/block
+  - etc/blocks/filter-column-test/test
+
   - etc/blocks/upload-file/workflow
   - etc/blocks/upload-file/model
   - etc/blocks/upload-file/ui
@@ -286,6 +292,8 @@ catalog:
   "@platforma-open/milaboratories.software-test-utils": ^1.1.6
   "@platforma-open/milaboratories.software-conda-empty": ^1.0.1
   "@platforma-open/milaboratories.runenv-python-3": 1.7.4
+
+  "shx": ^0.4.0
 
   # Test
 

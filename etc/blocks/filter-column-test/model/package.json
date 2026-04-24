@@ -1,0 +1,37 @@
+{
+  "name": "@milaboratories/milaboratories.test-filter-column.model",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Block model",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "build": "ts-builder build --target block-model && block-tools build-model",
+    "watch": "ts-builder build --target block-model --watch",
+    "check": "ts-builder check --target block-model",
+    "types:check": "ts-builder type-check --target block-model",
+    "linter:check": "ts-builder linter --check",
+    "formatter:check": "ts-builder formatter --check",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
