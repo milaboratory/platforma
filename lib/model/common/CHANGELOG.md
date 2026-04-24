@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.35.0
+
+### Minor Changes
+
+- 10eec21: Add `PrimaryRef` type (dataset + optional filter), `createPrimaryRef` factory, `isPrimaryRef` type guard, `DatasetInput` union, and `DatasetOption` type for dataset selection with filter choices. Fix `createPlRef` return type to properly narrow `__isRef` literal.
+
 ## 1.34.1
 
 ### Patch Changes
