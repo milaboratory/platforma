@@ -19,9 +19,23 @@ type NodeServiceKeys = {
     : never;
 }[keyof typeof Services];
 
-/** Auto-derived map of node service keys to their UI-side driver interfaces. */
+type MainServiceKeys = {
+  [K in keyof typeof Services]: InferServiceKind<ServiceBrand<(typeof Services)[K]>> extends "main"
+    ? K
+    : never;
+}[keyof typeof Services];
+
+type InjectableServiceKeys = NodeServiceKeys | MainServiceKeys;
+
+/**
+ * Auto-derived map of injectable service keys (node + main) to their UI-side
+ * driver interfaces. Node services are fulfilled by real driver wrappers;
+ * main services only need method-name introspection here — the runtime calls
+ * are forwarded via IPC by the desktop app's ServiceProxy, so the bodies
+ * can be stubs that throw.
+ */
 export type UiServiceInjectorMap = {
-  [K in NodeServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
+  [K in InjectableServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
 };
 
 let cachedKit: DriverKit | undefined;
@@ -62,7 +76,7 @@ export const SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> = (() => {
   const result: Record<string, string[]> = {};
   for (const key of Object.keys(Services) as (keyof typeof Services)[]) {
     const serviceId = Services[key];
-    const injector = injectors[key as NodeServiceKeys];
+    const injector = injectors[key as InjectableServiceKeys];
     result[serviceId] = injector ? getMethodNames(injector) : [];
   }
   return result;
