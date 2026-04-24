@@ -42,18 +42,24 @@ export function filterMatchesToOptions(
 ): Option[] {
   if (matches.length === 0) return [];
 
-  const entries: Entry[] = matches.map((m) => ({
-    spec: m.column.spec,
-    linkerPath: m.path.map((p) => ({ spec: p.linker.spec })),
+  // Each ColumnMatch can be reached via multiple variants (different linker
+  // paths / qualifications). We emit one Option per variant so the user can
+  // pick a specific path — `deriveDistinctLabels` disambiguates labels by
+  // path.
+  const flattened = matches.flatMap((m) => m.variants.map((v) => ({ match: m, variant: v })));
+
+  const entries: Entry[] = flattened.map(({ match, variant }) => ({
+    spec: match.column.spec,
+    linkerPath: variant.path.map((p) => ({ spec: p.linker.spec })),
   }));
 
   const labels = deriveDistinctLabels(entries, labelOptions);
 
-  return matches.map((m, i) => {
-    const ref = refsByObjectId.get(m.originalId);
+  return flattened.map(({ match }, i) => {
+    const ref = refsByObjectId.get(match.column.id);
     if (ref === undefined)
       throw new Error(
-        `no PlRef found for filter column ${m.column.spec.name} (originalId: ${m.originalId})`,
+        `no PlRef found for filter column ${match.column.spec.name} (id: ${match.column.id})`,
       );
     return { ref, label: labels[i] };
   });

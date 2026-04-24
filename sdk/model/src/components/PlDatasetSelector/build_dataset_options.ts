@@ -1,9 +1,8 @@
 import type {
   DatasetOption,
+  Option,
   PColumnSelector,
   PObjectSpec,
-  RequireServices,
-  Services,
 } from "@milaboratories/pl-model-common";
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
@@ -24,8 +23,8 @@ export type BuildDatasetOptions = {
  * .output("datasetOptions", (ctx) => buildDatasetOptions(ctx))
  * ```
  */
-export function buildDatasetOptions<A, U, S extends RequireServices<typeof Services.PFrameSpec>>(
-  ctx: RenderCtxBase<A, U, S>,
+export function buildDatasetOptions(
+  ctx: RenderCtxBase,
   opts?: BuildDatasetOptions,
 ): DatasetOption[] | undefined {
   const predicate = opts?.selector ?? (() => true);
@@ -34,9 +33,9 @@ export function buildDatasetOptions<A, U, S extends RequireServices<typeof Servi
 
   const columnSources = collectCtxColumnSnapshotProviders(ctx);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
-  const pframeSpec = ctx.services.pframeSpec;
+  const pframeSpec = ctx.getService("pframeSpec");
 
-  return options.map((o) => {
+  return options.map((o: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(o.ref);
     if (!datasetSpec) return o;
 
