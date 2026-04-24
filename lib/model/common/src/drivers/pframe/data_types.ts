@@ -241,7 +241,7 @@ export type PTableShape = {
 export type PTableDownloadFormat = "csv" | "tsv";
 
 /** Options for downloading PTable data to a file. */
-export interface DownloadPTableOptions {
+export interface WritePTableToFsOptions {
   path: string;
   format: PTableDownloadFormat;
   columnIndices: number[];
@@ -253,20 +253,8 @@ export interface DownloadPTableOptions {
 }
 
 /** Result of a PTable file download. */
-export interface DownloadPTableResult {
+export interface WritePTableToFsResult {
   path: string;
   rowsWritten: number;
   bytesWritten: number;
-}
-
-/**
- * Options for the UI-facing PTable download entry point — the runtime
- * (desktop preload) prompts the user for a destination path via native
- * save dialog and streams the table to that file.
- */
-export interface DownloadPTableCsvOptions {
-  defaultFileName?: string;
-  columnIndices: number[];
-  format: PTableDownloadFormat;
-  range?: TableRange;
 }

@@ -5,6 +5,7 @@ import type {
   PTableColumnSpec,
   PTableColumnId,
   CanonicalizedJson,
+  WritePTableToFsResult,
 } from "@platforma-sdk/model";
 import { canonicalizeJson, getPTableColumnId } from "@platforma-sdk/model";
 import { isNil } from "es-toolkit";
@@ -21,39 +22,39 @@ export interface ExportOptions {
  * CSV export via the platforma desktop runtime.
  * Returns true if the native path was used, false if unavailable.
  */
-export async function exportCsv(gridApi: GridApi, nativeOptions: ExportOptions): Promise<boolean> {
+export async function exportCsv(
+  gridApi: GridApi,
+  nativeOptions: ExportOptions,
+): Promise<undefined | WritePTableToFsResult> {
   const { pframe } = getServices();
   if (isNil(pframe)) {
     throw new Error("pframe service is not available");
   }
 
-  const downloadPTable = pframe.downloadPTable;
-  if (isNil(downloadPTable)) {
-    return false;
+  if (isNil(pframe.writePTableToFs)) {
+    throw new Error("pframe.writePTableToFs is not available in the current environment");
   }
 
   const specs = await pframe.getSpec(nativeOptions.tableHandle);
   const columnIndices = collectVisibleColumnIndices(gridApi, specs);
   if (isNil(columnIndices)) {
-    return false;
+    return undefined;
   }
 
-  void downloadPTable.call(pframe, nativeOptions.tableHandle, {
+  return pframe.writePTableToFs(nativeOptions.tableHandle, {
     columnIndices,
     format: nativeOptions.format,
   });
-
-  return true;
 }
 
 /**
  * Checks whether the native CSV export capability is available in the current
  * platforma runtime environment. Returns true only in the desktop app where
- * the preload wires `pframe.downloadPTable` to the save-dialog task.
+ * the preload wires `pframe.writePTableToFs` to the save-dialog task.
  */
 export function isCsvExportAvailable(): boolean {
   try {
-    return !isNil(getServices()?.pframe?.downloadPTable);
+    return !isNil(getServices()?.pframe?.writePTableToFs);
   } catch {
     return false;
   }
@@ -69,6 +70,7 @@ export function collectVisibleColumnIndices(
   gridApi: GridApi,
   specs: PTableColumnSpec[],
 ): Nil | number[] {
+  // @todo: pframeSpec.findTableColumn;
   const columnDefs = gridApi.getColumnDefs();
   if (isNil(columnDefs)) {
     return;

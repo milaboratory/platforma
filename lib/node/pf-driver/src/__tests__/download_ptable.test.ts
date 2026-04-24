@@ -12,6 +12,7 @@ import {
   type TableRange,
 } from "@milaboratories/pl-model-common";
 import { isNil } from "@milaboratories/helpers";
+import { createPathAtomically, type MiLogger } from "@milaboratories/ts-helpers";
 import { parseString } from "fast-csv";
 import { streamPTableRows, type PTableDataSource } from "../csv_writer";
 
@@ -493,8 +494,6 @@ async function downloadPTableFromSource(
   const specs = pTable.getSpec();
   const separator = options.format === "tsv" ? "\t" : ",";
 
-  const partPath = options.path + ".part";
-  const writeStream = fs.createWriteStream(partPath, { flags: "w" });
   const iterable = streamPTableRows({
     pTable,
     columnIndices: options.columnIndices,
@@ -504,23 +503,28 @@ async function downloadPTableFromSource(
     signal: options.signal,
     specs,
     includeHeader: options.includeHeader ?? true,
-    bom: options.bom ?? false,
+    bom: options.bom ?? true,
   });
 
-  try {
+  const noopLogger: MiLogger = {
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  };
+
+  let bytesWritten = 0;
+  await createPathAtomically(noopLogger, options.path, async (tempPath) => {
+    const writeStream = fs.createWriteStream(tempPath, { flags: "wx" });
     await pipeline(Readable.from(iterable, { objectMode: false }), writeStream, {
       signal: options.signal,
     });
-    await fs.promises.rename(partPath, options.path);
-  } catch (error) {
-    await fs.promises.unlink(partPath).catch(() => {});
-    throw error;
-  }
+    bytesWritten = writeStream.bytesWritten;
+  });
 
   return {
     path: options.path,
     rowsWritten: effectiveRange.length,
-    bytesWritten: writeStream.bytesWritten,
+    bytesWritten,
   };
 }
 

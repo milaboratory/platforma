@@ -14,14 +14,16 @@ import type {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
 } from "@milaboratories/pl-model-common";
+import type { PoolEntry } from "@milaboratories/helpers";
+
 export type {
-  DownloadPTableOptions,
-  DownloadPTableResult,
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
   PTableDownloadFormat,
 } from "@milaboratories/pl-model-common";
-import type { DownloadPTableOptions, DownloadPTableResult } from "@milaboratories/pl-model-common";
-import type { PoolEntry } from "@milaboratories/helpers";
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -83,8 +85,8 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
   ): Promise<PTableVector[]>;
 
   /** Download PTable data to a file in CSV or TSV format. */
-  downloadPTable(
+  writePTableToFs(
     handle: PTableHandle,
-    options: DownloadPTableOptions,
-  ): Promise<DownloadPTableResult>;
+    options: WritePTableToFsOptions,
+  ): Promise<WritePTableToFsResult>;
 }

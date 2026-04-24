@@ -8,8 +8,6 @@ import {
   ValueType,
   type CalculateTableDataRequest,
   type CalculateTableDataResponse,
-  type DownloadPTableOptions,
-  type DownloadPTableResult,
   type FindColumnsRequest,
   type FindColumnsResponse,
   type PColumnIdAndSpec,
@@ -37,7 +35,11 @@ import {
   resolveAnnotationParents,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { ConcurrencyLimitingExecutor } from "@milaboratories/ts-helpers";
+import {
+  ConcurrencyLimitingExecutor,
+  createPathAtomically,
+  type MiLogger,
+} from "@milaboratories/ts-helpers";
 import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
@@ -45,7 +47,11 @@ import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { streamPTableRows } from "./csv_writer";
-import type { AbstractInternalPFrameDriver } from "./driver_decl";
+import type {
+  AbstractInternalPFrameDriver,
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
+} from "./driver_decl";
 import { logPFrames } from "./logging";
 import {
   PFramePool,
@@ -78,8 +84,6 @@ export type AbstractPFrameDriverOps = PTableCachePerFrameOps &
     pFrameConcurrency: number;
     /** Concurrency limits for `getShape` and `getData` requests */
     pTableConcurrency: number;
-    /** Concurrency limits for `downloadPTable` requests (disk IO bound, serialize to avoid UI starvation) */
-    pTableDownloadConcurrency: number;
   };
 
 export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
@@ -87,7 +91,6 @@ export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
   ...PTableCachePlainOpsDefaults,
   pFrameConcurrency: 1, // 1 join is executed in parallel and utilize all RAM and CPU cores
   pTableConcurrency: 1, // 1 joined table is read from disk at a time, which matches 1 table the user can view in the UI
-  pTableDownloadConcurrency: 1, // serialize downloads — disk IO bound, prevents UI starvation
 };
 
 export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
@@ -115,7 +118,6 @@ export class AbstractPFrameDriver<
 
   private readonly frameConcurrencyLimiter: ConcurrencyLimitingExecutor;
   private readonly tableConcurrencyLimiter: ConcurrencyLimitingExecutor;
-  private readonly downloadConcurrencyLimiter: ConcurrencyLimitingExecutor;
 
   public async pprofDump(): Promise<Uint8Array> {
     return await PFrameFactory.pprofDump();
@@ -145,9 +147,6 @@ export class AbstractPFrameDriver<
 
     this.frameConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pFrameConcurrency);
     this.tableConcurrencyLimiter = new ConcurrencyLimitingExecutor(options.pTableConcurrency);
-    this.downloadConcurrencyLimiter = new ConcurrencyLimitingExecutor(
-      options.pTableDownloadConcurrency,
-    );
 
     this.pFrames = new PFramePool(
       this.localBlobProvider,
@@ -272,13 +271,13 @@ export class AbstractPFrameDriver<
     };
   }
 
-  public async downloadPTable(
+  public async writePTableToFs(
     handle: PTableHandle,
-    options: DownloadPTableOptions,
-  ): Promise<DownloadPTableResult> {
+    options: WritePTableToFsOptions,
+  ): Promise<WritePTableToFsResult> {
     this.logger(
       "info",
-      `[downloadPTable] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, columns = ${options.columnIndices.length})`,
+      `[WritePTableToFs] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, columns = ${options.columnIndices.length})`,
     );
     const startTime = performance.now();
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
@@ -290,14 +289,12 @@ export class AbstractPFrameDriver<
       [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
-    return await this.downloadConcurrencyLimiter.run(async () => {
+    return await this.tableConcurrencyLimiter.run(async () => {
       const shape = await pTable.getShape({ signal: combinedSignal });
       const clippedRange = clipRange(options.range, shape);
       const specs = pTable.getSpec();
       const separator = options.format === "tsv" ? "\t" : ",";
 
-      const partPath = options.path + ".part";
-      const writeStream = fs.createWriteStream(partPath, { flags: "w" });
       const iterable = streamPTableRows({
         pTable,
         specs,
@@ -306,19 +303,24 @@ export class AbstractPFrameDriver<
         chunkSize: options.chunkSize ?? 50_000,
         separator,
         includeHeader: options.includeHeader ?? true,
-        bom: options.bom ?? false,
+        bom: options.bom ?? true,
         signal: combinedSignal,
       });
 
-      try {
+      const miLogger: MiLogger = {
+        info: (msg) => this.logger("info", String(msg)),
+        warn: (msg) => this.logger("warn", String(msg)),
+        error: (msg) => this.logger("error", String(msg)),
+      };
+
+      let bytesWritten = 0;
+      await createPathAtomically(miLogger, options.path, async (tempPath) => {
+        const writeStream = fs.createWriteStream(tempPath, { flags: "wx" });
         await pipeline(Readable.from(iterable, { objectMode: false }), writeStream, {
           signal: combinedSignal,
         });
-        await fs.promises.rename(partPath, options.path);
-      } catch (error) {
-        await fs.promises.unlink(partPath).catch(() => {});
-        throw error;
-      }
+        bytesWritten = writeStream.bytesWritten;
+      });
 
       const overallSize = await pTable.getFootprint({ signal: combinedSignal });
       this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
@@ -331,11 +333,11 @@ export class AbstractPFrameDriver<
         const durationMs = Math.round(performance.now() - startTime);
         this.logger(
           "info",
-          `downloadPTable complete (handle = ${handle}, columns = ${options.columnIndices.length}, rows = ${rowsWritten}, bytes = ${writeStream.bytesWritten}, duration = ${durationMs}ms)`,
+          `[WritePTableToFs] complete (handle = ${handle}, columns = ${options.columnIndices.length}, rows = ${rowsWritten}, bytes = ${bytesWritten}, duration = ${durationMs}ms)`,
         );
       }
 
-      return { path: options.path, rowsWritten, bytesWritten: writeStream.bytesWritten };
+      return { path: options.path, rowsWritten, bytesWritten };
     });
   }
 

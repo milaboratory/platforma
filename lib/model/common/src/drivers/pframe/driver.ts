@@ -6,8 +6,8 @@ import type { PColumnValues, DataInfo } from "./data_info";
 import type { PTableDef, PTableDefV2 } from "./table_calculate";
 import type { AddParameterToAllMethods } from "./type_util";
 import type {
-  DownloadPTableCsvOptions,
-  DownloadPTableResult,
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
   PTableShape,
   PTableVector,
   TableRange,
@@ -100,10 +100,10 @@ export interface PFrameDriver {
    * a destination path via a native save dialog. Only available in the
    * desktop-app runtime — absent in web/preview environments.
    */
-  downloadPTable?(
+  writePTableToFs?(
     handle: PTableHandle,
-    options: DownloadPTableCsvOptions,
-  ): Promise<DownloadPTableResult | undefined>;
+    options: WritePTableToFsOptions,
+  ): Promise<WritePTableToFsResult | undefined>;
 }
 
 //
