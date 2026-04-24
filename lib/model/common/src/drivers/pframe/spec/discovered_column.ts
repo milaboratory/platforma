@@ -35,7 +35,7 @@ export function createDiscoveredPColumn(props: {
   columnQualifications: AxisQualification[];
   queriesQualifications: Record<PObjectId, AxisQualification[]>;
 }): DiscoveredPColumn {
-  return structuredClone(props);
+  return JSON.parse(JSON.stringify(props));
 }
 
 export function createDiscoveredPColumnId(props: {

@@ -9,7 +9,6 @@ import {
   type InferHrefType,
   type InferOutputsType,
   type InferPluginNames,
-  getService,
 } from "@platforma-sdk/model";
 
 // =============================================================================
@@ -79,13 +78,13 @@ export const counterPlugin = PluginModel.define({
   .output("isEven", (ctx) => {
     return ctx.data.count % 2 === 0;
   })
-  .output("specFrameTest", () => {
-    const entry = getService("pframeSpec").createSpecFrame({});
+  .output("specFrameTest", (ctx) => {
+    const entry = ctx.getService("pframeSpec").createSpecFrame({});
     entry.unref();
     return `specFrame: created and manually disposed`;
   })
-  .output("pframeTest", () => {
-    const handle = getService("pframe").createPFrame([]);
+  .output("pframeTest", (ctx) => {
+    const handle = ctx.getService("pframe").createPFrame([]);
     return `pframe: created handle ${handle}`;
   })
   .build();
@@ -137,8 +136,8 @@ export const platforma = BlockModelV3.create(blockDataModel)
     ctx.outputs?.resolve("delayedContent")?.getDataAsString(),
   )
 
-  .output("blockSpecFrameTest", () => {
-    getService("pframeSpec").createSpecFrame({});
+  .output("blockSpecFrameTest", (ctx) => {
+    ctx.getService("pframeSpec").createSpecFrame({});
     return `blockSpecFrame: created (auto-disposed)`;
   })
 
