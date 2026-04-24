@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.34.1
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+
 ## 1.34.0
 
 ### Minor Changes

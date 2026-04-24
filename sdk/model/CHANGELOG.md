@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.66.2
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @milaboratories/pl-model-middle-layer@1.18.3
+  - @milaboratories/ptabler-expression-js@1.2.13
+
 ## 1.65.10
 
 ### Patch Changes
