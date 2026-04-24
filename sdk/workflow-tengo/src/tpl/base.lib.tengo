@@ -97,6 +97,15 @@ AWAIT_TEMPLATES := {
 		[{ wildcard: "*" }, "spec", "ResourceReady"],
 		[{ wildcard: "*" }, "data", "InputsLocked"],
 		[{ wildcard: "*" }, "data", { match: "^\\{.*\\}$" }, "InputsLocked"] // for multi-hit BQuery results; key is always ref
+	],
+	// Matches a v1 ResolvedPrimaryRef shape: { __isPrimaryRef: "v1",
+	// column: {spec, data}, filter?: {spec, data} }. Awaits the column's
+	// spec (required) and filter's spec (optional, regex-matched so the
+	// absence of `filter` is fine). The `__isPrimaryRef` marker is
+	// ignored — we never descend into it.
+	"PrimarySpecsReady": [
+		["column", "spec", "ResourceReady"],
+		[{ match: "^filter$" }, "spec", "ResourceReady"]
 	]
 }
 

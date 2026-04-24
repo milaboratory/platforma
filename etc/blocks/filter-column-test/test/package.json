@@ -1,0 +1,30 @@
+{
+  "name": "@milaboratories/milaboratories.test-filter-column.test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Block integration tests for filter column API (Stage E)",
+  "keywords": [],
+  "files": [],
+  "scripts": {
+    "test": "vitest",
+    "check": "ts-builder check --target block-test",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-test",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.test-enter-numbers-v3": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
+    "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "this-block": "workspace:@milaboratories/milaboratories.test-filter-column@*"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

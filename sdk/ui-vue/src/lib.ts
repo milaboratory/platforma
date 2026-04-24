@@ -33,6 +33,8 @@ export * from "./components/PlBtnExportArchive";
 
 export * from "./components/PlAdvancedFilter";
 
+export * from "./components/PlDatasetSelector";
+
 export * from "./defineApp";
 
 export { usePlugin } from "./usePlugin";
