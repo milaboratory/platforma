@@ -15,6 +15,7 @@
  * - sdk/model/src/services/block_service_flags.ts — only if default-required by all blocks
  */
 
+import type { DialogService } from "../dialog";
 import type { PFrameDriver, PFrameModelDriver } from "../drivers/pframe/driver";
 import type { PFrameSpecDriver } from "../drivers/pframe/spec_driver";
 import { service } from "./service_types";
@@ -22,4 +23,5 @@ import { service } from "./service_types";
 export const Services = {
   PFrameSpec: service<PFrameSpecDriver, PFrameSpecDriver>()({ type: "wasm", name: "pframeSpec" }),
   PFrame: service<PFrameModelDriver, PFrameDriver>()({ type: "node", name: "pframe" }),
+  Dialog: service<Record<string, never>, DialogService>()({ type: "main", name: "dialog" }),
 };

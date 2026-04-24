@@ -4,6 +4,7 @@ export * from "./bmodel";
 export * from "./branding";
 export * from "./common_types";
 export * from "./driver_kit";
+export * from "./dialog";
 export * from "./drivers";
 export * from "./errors";
 export * from "./flags";

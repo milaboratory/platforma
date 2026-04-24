@@ -22,6 +22,7 @@ export function createUiServiceInjectors(driverKit: DriverKit): UiServiceInjecto
       getShape: (handle) => pFrameDriver.getShape(handle),
       getSpec: (handle) => pFrameDriver.getSpec(handle),
       getData: (handle, columnIndices, range) => pFrameDriver.getData(handle, columnIndices, range),
+      writePTableToFs: (handle, options) => pFrameDriver.writePTableToFs(handle, options),
     },
   };
 }

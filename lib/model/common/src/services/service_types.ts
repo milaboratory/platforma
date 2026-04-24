@@ -22,11 +22,11 @@ export type InferServiceKind<S extends ServiceTypesLike> =
 
 export type ServiceName<S extends ServiceTypesLike = ServiceTypesLike> = Branded<string, S>;
 
-export type ServiceType = "node" | "wasm";
+export type ServiceType = "node" | "wasm" | "main";
 
 const SERVICE_ID_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*$/;
 
-export const { service, isNodeService } = (() => {
+export const { service, isNodeService, isWasmService, isMainService, getServiceKind } = (() => {
   const typeMap = new Map<string, ServiceType>();
   return {
     service<Model, Ui>() {
@@ -49,6 +49,15 @@ export const { service, isNodeService } = (() => {
     },
     isNodeService(id: ServiceName): boolean {
       return typeMap.get(id) === "node";
+    },
+    isWasmService(id: ServiceName): boolean {
+      return typeMap.get(id) === "wasm";
+    },
+    isMainService(id: ServiceName): boolean {
+      return typeMap.get(id) === "main";
+    },
+    getServiceKind(id: ServiceName): ServiceType | undefined {
+      return typeMap.get(id);
     },
   };
 })();

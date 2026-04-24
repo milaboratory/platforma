@@ -96,14 +96,13 @@ export interface PFrameDriver {
   ): Promise<PTableVector[]>;
 
   /**
-   * Stream the table to a file on disk. The runtime prompts the user for
-   * a destination path via a native save dialog. Only available in the
-   * desktop-app runtime — absent in web/preview environments.
+   * Stream the table to a file at the given path. Caller is responsible
+   * for producing the destination path (e.g. via the `Dialog` service).
    */
-  writePTableToFs?(
+  writePTableToFs(
     handle: PTableHandle,
     options: WritePTableToFsOptions,
-  ): Promise<WritePTableToFsResult | undefined>;
+  ): Promise<WritePTableToFsResult>;
 }
 
 //
@@ -118,4 +117,4 @@ type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriver
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<_T extends never>() {}
 
-assert<TypeEqualityGuard<PFrameDriver, ExpectedPFrameDriverType>>();
+assert<TypeEqualityGuard<Omit<PFrameDriver, "writePTableToFs">, ExpectedPFrameDriverType>>();
