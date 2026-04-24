@@ -326,7 +326,10 @@ _SPEC_QUERY_SCHEMA = [`or`,
 
 _SPEC_QUERY_JOIN_ENTRY_SCHEMA = {
 	`entry`: _SPEC_QUERY_SCHEMA,
-	`qualifications,?`: [{ any: `any` }]
+	`qualifications,?`: [{
+		`axis`: _SINGLE_AXIS_SELECTOR_SCHEMA,
+		`contextDomain`: { any: `string` }
+	}]
 }
 
 _renameSpecQuery := undefined

@@ -132,9 +132,9 @@ _asJoinEntries := func(specQueries) {
 _buildAxisSelector := undefined
 _buildAxisSelector = func(axesSpec, idx) {
 	axis := axesSpec[idx]
-	selector := {
-		name: axis.name,
-		type: axis.type
+	selector := { name: axis.name }
+	if !is_undefined(axis.type) {
+		selector.type = axis.type
 	}
 	if !is_undefined(axis.domain) && len(axis.domain) > 0 {
 		selector.domain = maps.clone(axis.domain)
@@ -256,6 +256,7 @@ p := ll.toStrict({
 	 * @returns {object} - A join builder entry object.
 	 */
 	outer: func(primary, ...secondary) {
+		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
 		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
 		merged := _mergePEntries(append([primary], secondary...))
 		return _newPEntry(merged.columns, {
