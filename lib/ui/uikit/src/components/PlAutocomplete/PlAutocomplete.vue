@@ -32,6 +32,7 @@ import { getErrorMessage } from "../../helpers/error.ts";
 import type { ListOptionBase } from "@platforma-sdk/model";
 import { PlSvg } from "../PlSvg";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { isNil } from "@milaboratories/helpers";
 
 /**
  * The current selected value.
@@ -319,23 +320,18 @@ const searchDebounced = refDebounced(search, 300, { maxWait: 1000 });
 
 const optionsRequest = useWatchFetch(
   () => searchDebounced.value,
-  async (v) => {
-    if (v !== null) {
-      // search is null when dropdown is closed;
-      return props.optionsSearch(v, "label");
-    }
-    return undefined;
-  },
+  async (v) => (isNil(v) ? undefined : props.optionsSearch(v, "label")),
 );
 
 const modelOptionRequest = useWatchFetch(
   () => model.value,
   async (v) => {
-    if (v != null && !deepEqual(modelOptionRef.value?.value, v)) {
-      // load label for selected value if it was updated from outside the component
-      return (await props.optionsSearch(String(v), "value"))?.[0];
+    if (isNil(v) || deepEqual(modelOptionRef.value?.value, v)) {
+      return modelOptionRef.value;
     }
-    return modelOptionRef.value;
+
+    const options = await props.optionsSearch(String(v), "value");
+    return options.find((o) => String(o.value) === String(v));
   },
 );
 
