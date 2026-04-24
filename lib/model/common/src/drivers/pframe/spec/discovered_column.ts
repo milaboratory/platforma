@@ -7,7 +7,6 @@ export type DiscoveredPColumn = {
   path: PathItem[];
   column: PObjectId;
   columnQualifications: AxisQualification[];
-  // queriesAxes???
   queriesQualifications: Record<PObjectId, AxisQualification[]>;
 };
 
