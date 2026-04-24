@@ -1,5 +1,20 @@
 # @platforma-sdk/ui-vue
 
+## 1.67.0
+
+### Minor Changes
+
+- 10eec21: Add `PlDatasetSelector` component for dataset + optional filter selection. Emits `PrimaryRef`; filter dropdown appears only when the selected dataset has compatible filters (progressive disclosure). Accepts both `PrimaryRef` and plain `PlRef` as input for backward compatibility.
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/uikit@2.12.9
+  - @milaboratories/pf-spec-driver@1.3.3
+
 ## 1.66.2
 
 ### Patch Changes

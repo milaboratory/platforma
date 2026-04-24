@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.15.0
+
+### Minor Changes
+
+- 10eec21: Add `tableBuilder` API (`wf.tableBuilder(format)`) for declarative table construction with primary-level filtering. Extend `wf.resolve()` to deep-walk any structure containing PlRefs (universal resolve). Add `PrimarySpecsReady` predefined await template for spec-only awaiting in ephemeral templates.
+
 ## 5.14.0
 
 ### Minor Changes
