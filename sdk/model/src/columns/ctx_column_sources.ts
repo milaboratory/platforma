@@ -17,9 +17,7 @@ import type { ValueOf } from "@milaboratories/helpers";
  *
  * Returns an array of providers suitable for `ColumnCollectionBuilder.addSource()`.
  */
-export function collectCtxColumnSnapshotProviders<A, U, S>(
-  ctx: RenderCtxBase<A, U, S>,
-): ColumnSnapshotProvider[] {
+export function collectCtxColumnSnapshotProviders(ctx: RenderCtxBase): ColumnSnapshotProvider[] {
   const providers: ColumnSnapshotProvider[] = [];
 
   // ResultPool — all upstream columns

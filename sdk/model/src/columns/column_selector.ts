@@ -36,7 +36,7 @@ export interface RelaxedColumnSelector {
   partialAxesMatch?: boolean;
 }
 
-/** Input that normalizes to ColumnSelector[]. */
+/** One or many relaxed column selectors; normalizes to MultiColumnSelector[]. */
 export type ColumnSelector = RelaxedColumnSelector | RelaxedColumnSelector[];
 
 // --- Normalization ---

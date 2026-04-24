@@ -13,7 +13,10 @@ export type ColumnDataStatus = "ready" | "computing" | "absent";
  * - `data` holds an active object when data exists (ready or computing),
  *   or `undefined` when data is permanently absent.
  */
-export interface ColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> {
+export interface ColumnSnapshot<
+  Id extends PObjectId | SUniversalPColumnId,
+  Data = PColumnDataUniversal,
+> {
   readonly id: Id;
   readonly spec: PColumnSpec;
   readonly dataStatus: ColumnDataStatus;
@@ -24,7 +27,7 @@ export interface ColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> {
    * - `'computing'`: `data.get()` returns `undefined`, marks context unstable.
    * - `'absent'`: `data` is `undefined` — no active object, no instability.
    */
-  readonly data: ColumnData | undefined;
+  readonly data: ColumnData<Data> | undefined;
 }
 
 // --- ColumnData ---
@@ -33,8 +36,8 @@ export interface ColumnSnapshot<Id extends PObjectId | SUniversalPColumnId> {
  * Active object wrapping lazy column data access.
  * Accessing data on a computing column marks the render context unstable.
  */
-export interface ColumnData {
-  get(): PColumnDataUniversal | undefined;
+export interface ColumnData<Data = PColumnDataUniversal> {
+  get(): Data | undefined;
 }
 
 /** Creates a ColumnData active object for a ready column. */

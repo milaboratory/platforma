@@ -3,6 +3,7 @@ import type {
   AnyFunction,
   AxisId,
   DataInfo,
+  ModelServices,
   Option,
   PColumn,
   PColumnLazy,
@@ -23,7 +24,6 @@ import type {
   PlRef,
   ResolveAnchorsOptions,
   ResultCollection,
-  ServiceName,
   SUniversalPColumnId,
   ValueOrError,
 } from "@milaboratories/pl-model-common";
@@ -55,11 +55,8 @@ import type {
   PluginHandle,
   PluginFactoryLike,
   InferFactoryData,
-  InferFactoryModelServices,
   InferFactoryParams,
 } from "../plugin_handle";
-import type { BlockDefaultModelServices } from "../services/service_resolve";
-import type { ModelServices as AllModelServices } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor, ifDef } from "./accessor";
 import type { FutureRef } from "./future";
 import type { AccessorHandle, GlobalCfgRenderCtx } from "./internal";
@@ -75,6 +72,7 @@ import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
 import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
+import { getService } from "../services";
 
 /**
  * Helper function to match domain objects
@@ -554,40 +552,11 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
-export abstract class RenderCtxBase<
-  Args = unknown,
-  Data = unknown,
-  ModelServices = Partial<AllModelServices>,
-> {
+export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   protected readonly ctx: GlobalCfgRenderCtx;
-  private readonly requiredServiceNames: ServiceName[];
-  private cachedServices?: ModelServices;
 
-  constructor(requiredServiceNames: ServiceName[] = []) {
+  constructor() {
     this.ctx = getCfgRenderCtx();
-    this.requiredServiceNames = requiredServiceNames;
-  }
-
-  get services(): ModelServices {
-    if (this.cachedServices) return this.cachedServices;
-    const ctx = this.ctx;
-    const services = Object.freeze(
-      Object.fromEntries(
-        this.requiredServiceNames.map((id) => [
-          id,
-          Object.freeze(
-            Object.fromEntries(
-              (ctx.getServiceMethods(id) as string[]).map((method) => [
-                method,
-                (...args: unknown[]) => ctx.callServiceMethod(id, method, ...args),
-              ]),
-            ),
-          ),
-        ]),
-      ),
-    ) as ModelServices;
-    this.cachedServices = services;
-    return services;
   }
 
   private dataCache?: { v: Data };
@@ -617,6 +586,10 @@ export abstract class RenderCtxBase<
       };
     }
     return this.activeArgsCache.v;
+  }
+
+  public getService<T extends keyof ModelServices>(name: T): ModelServices[T] {
+    return getService(name);
   }
 
   // /** Can be used to determine features provided by the desktop instance. */
@@ -771,11 +744,7 @@ export abstract class RenderCtxBase<
 }
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) for v3+ blocks */
-export class BlockRenderCtx<
-  Args = unknown,
-  Data = unknown,
-  ModelServices = BlockDefaultModelServices,
-> extends RenderCtxBase<Args, Data, ModelServices> {
+export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBase<Args, Data> {
   private argsCache?: { v: Args | undefined };
   public get args(): Args | undefined {
     if (this.argsCache === undefined) {
@@ -824,19 +793,15 @@ export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCt
  *
  * @typeParam F - PluginFactoryLike phantom carrying data/params/outputs types
  */
-export class PluginRenderCtx<
-  F extends PluginFactoryLike = PluginFactoryLike,
-  ModelServices = InferFactoryModelServices<F>,
-> extends RenderCtxBase<unknown, InferFactoryData<F>, ModelServices> {
+export class PluginRenderCtx<F extends PluginFactoryLike = PluginFactoryLike> extends RenderCtxBase<
+  unknown,
+  InferFactoryData<F>
+> {
   private readonly handle: PluginHandle<F>;
   private readonly wrappedInputs: Record<string, () => unknown>;
 
-  constructor(
-    handle: PluginHandle<F>,
-    wrappedInputs: Record<string, () => unknown>,
-    requiredServiceNames: ServiceName[] = [],
-  ) {
-    super(requiredServiceNames);
+  constructor(handle: PluginHandle<F>, wrappedInputs: Record<string, () => unknown>) {
+    super();
     this.handle = handle;
     this.wrappedInputs = wrappedInputs;
   }

@@ -3,4 +3,5 @@ export type PlAgHeaderComponentType = "Text" | "Number" | "File" | "Date" | "Dur
 export type PlAgHeaderComponentParams = {
   type?: PlAgHeaderComponentType;
   tooltip?: string;
+  info?: string;
 };
