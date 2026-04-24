@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.12.7
+
+### Patch Changes
+
+- 4964b89: Choose correct label from options
+
 ## 2.12.6
 
 ### Patch Changes
