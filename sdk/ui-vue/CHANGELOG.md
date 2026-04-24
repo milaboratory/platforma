@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.66.2
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @platforma-sdk/model@1.66.2
+  - @milaboratories/pf-spec-driver@1.3.2
+  - @milaboratories/uikit@2.12.8
+
 ## 1.66.1
 
 ### Patch Changes
