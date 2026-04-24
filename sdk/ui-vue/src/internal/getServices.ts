@@ -12,14 +12,16 @@ import { logError } from "./utils";
 
 let cachedServices: null | Partial<UiServices> = null;
 
-export function getServices<
-  Services extends Partial<UiServices> = BlockDefaultUiServices,
->(): Services {
+export function getServices<Services extends Partial<UiServices> = BlockDefaultUiServices>(deps?: {
+  platforma?: PlatformaV3<any, any, any, any, any, Services>;
+}): Services {
   if (!isNil(cachedServices)) {
     return cachedServices as Services;
   }
 
-  const platforma = getRawPlatformaInstance() as PlatformaV3<any, any, any, any, any, Services>;
+  const platforma =
+    deps?.platforma ??
+    (getRawPlatformaInstance() as PlatformaV3<any, any, any, any, any, Services>);
   const proxy = createServiceProxy(platforma.serviceDispatch);
   const uiRegistry = createUiServiceRegistry({ proxy });
   const services = buildServices<Services>(platforma.serviceDispatch, uiRegistry);

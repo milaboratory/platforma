@@ -309,7 +309,7 @@ export function createAppV3<
     },
   };
 
-  const services = getServices<UiServices>();
+  const services = getServices<UiServices>({ platforma });
 
   /** Creates a lazily-cached per-plugin reactive state. */
   const createPluginState = <F extends PluginFactoryLike>(
