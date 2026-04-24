@@ -189,220 +189,271 @@ validateAxisFilters := func(axisFilter) {
 	validation.assertType(axisFilter, [_AXIS_FILTER_SCHEMA])
 }
 
-// Validation of recursive schema requires forward declaration
-_JOIN_ENTRY_SCHEMA := undefined
-// Validation of recursive schema requires lazy evaluation
-_JOIN_LEAF_SCHEMA := func(js, _, _) {
-	return validation.checkJson(js, _JOIN_ENTRY_SCHEMA)
+// Schemas for the `SpecQuery` / `SpecQueryJoinEntry` / `SpecQueryExpression`
+// subset pt supports — see
+// `lib/model/common/src/drivers/pframe/query/query_spec.ts`. Data-carrying
+// variants (`inlineColumn`, `sparseToDenseColumn`) and `sort` / `transformColumns`
+// are rejected here; pt doesn't produce or pass them through.
+
+_SINGLE_AXIS_SELECTOR_SCHEMA := undefined
+_PARENT_AXES_LAZY := func(js, _, _) {
+	return validation.checkJson(js, [_SINGLE_AXIS_SELECTOR_SCHEMA])
 }
-_JOIN_SUBTREE_SCHEMA := func(js, _, _) {
-	return validation.checkJson(js, [_JOIN_ENTRY_SCHEMA])
+_SINGLE_AXIS_SELECTOR_SCHEMA = {
+	`name`: `string`,
+	`type,?`: `string,regex=Int|Long|String`,
+	`domain,?`: { any: `string` },
+	`contextDomain,?`: { any: `string` },
+	`parentAxes,?`: _PARENT_AXES_LAZY
 }
-// Validation of recursive schema instantiation
-_JOIN_ENTRY_SCHEMA = [`or`,
-    {
-		// Node type discriminator
-		`type`: `string,regex=column`,
-		// Column id
-		`columnId`: `string`
-	},
-    {
-        // Node type discriminator
-        `type`: `string,regex=slicedColumn`,
-        // Column id
-		`columnId`: `string`,
-        // New column id
-        `newId`: `string`,
-        // Non-empty list of axis filters
-        `axisFilters`: [_AXIS_FILTER_SCHEMA]
-    },
-    {
-        // Node type discriminator
-        `type`: `string,regex=artificialColumn`,
-        // Column id
-		`columnId`: `string`,
-        // New column id
-        `newId`: `string`,
-        // Non-empty list of axis indices
-        `axesIndices`: [`number`]
-    },
-    {
-        // Node type discriminator
-        `type`: `string,regex=inlineColumn`,
-        // New column id
-        `newId`: `string`,
-        // Column spec
-        `spec`: spec.P_COLUMN_STRICT_SPEC_SCHEMA,
-        // Data info
-        `dataInfo`: {
-            // Type discriminator
-            `type`: `string,regex=Json`,
-            // Key length
-            `keyLength`: `number`,
-            // Data
-            `data`: {
-                any: [`or`, `null`, `number`, `string`]
-            }
-        }
-    },
+
+_SLICE_AXIS_FILTER_SCHEMA := {
+	`axisSelector`: _SINGLE_AXIS_SELECTOR_SCHEMA,
+	`constant`: [`or`, `number`, `string`]
+}
+
+// Forward decls for recursive SpecQuery / SpecQueryJoinEntry / SpecQueryExpression.
+_SPEC_QUERY_SCHEMA := undefined
+_SPEC_QUERY_JOIN_ENTRY_SCHEMA := undefined
+_SPEC_EXPRESSION_SCHEMA := undefined
+_SPEC_QUERY_LAZY := func(js, _, _) {
+	return validation.checkJson(js, _SPEC_QUERY_SCHEMA)
+}
+_SPEC_QUERY_JOIN_ENTRY_LAZY := func(js, _, _) {
+	return validation.checkJson(js, _SPEC_QUERY_JOIN_ENTRY_SCHEMA)
+}
+_SPEC_QUERY_JOIN_ENTRY_LIST_LAZY := func(js, _, _) {
+	return validation.checkJson(js, [_SPEC_QUERY_JOIN_ENTRY_SCHEMA])
+}
+_SPEC_EXPRESSION_LAZY := func(js, _, _) {
+	return validation.checkJson(js, _SPEC_EXPRESSION_SCHEMA)
+}
+_SPEC_EXPRESSION_LIST_LAZY := func(js, _, _) {
+	return validation.checkJson(js, [_SPEC_EXPRESSION_SCHEMA])
+}
+
+_SPEC_EXPRESSION_SCHEMA = [`or`,
+	{ `type`: `string,regex=columnRef`, `value`: `string` },
+	{ `type`: `string,regex=axisRef`,   `value`: _SINGLE_AXIS_SELECTOR_SCHEMA },
+	{ `type`: `string,regex=constant`,  `value`: [`or`, `string`, `number`, `bool`] },
 	{
-		// Node type discriminator
-		`type`: `string,regex=inner`,
-		// Child nodes to be inner joined
-		`entries`: _JOIN_SUBTREE_SCHEMA
+		`type`: `string,regex=numericUnary`,
+		`operand`: `string,regex=abs|ceil|floor|round|sqrt|log|log2|log10|exp|negate`,
+		`input`: _SPEC_EXPRESSION_LAZY
 	},
 	{
-		// Node type discriminator
-		`type`: `string,regex=full`,
-		// Child nodes to be full joined
-		`entries`: _JOIN_SUBTREE_SCHEMA
+		`type`: `string,regex=numericBinary`,
+		`operand`: `string,regex=add|sub|mul|div|mod`,
+		`left`: _SPEC_EXPRESSION_LAZY,
+		`right`: _SPEC_EXPRESSION_LAZY
 	},
 	{
-		// Node type discriminator
-		`type`: `string,regex=outer`,
-		// Primes the join operation (left part of LEFT OUTER JOIN chain)
-		`primary`: _JOIN_LEAF_SCHEMA,
-		// Driven nodes, giving their values only if primary node have corresponding
-		// nodes (right parts of LEFT OUTER JOIN chain)
-		`secondary`: _JOIN_SUBTREE_SCHEMA
+		`type`: `string,regex=numericComparison`,
+		`operand`: `string,regex=eq|ne|lt|le|gt|ge`,
+		`left`: _SPEC_EXPRESSION_LAZY,
+		`right`: _SPEC_EXPRESSION_LAZY
+	},
+	{
+		`type`: `string,regex=stringEquals`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`value`: `string`,
+		`caseInsensitive`: `bool`
+	},
+	{
+		`type`: `string,regex=stringContains`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`value`: `string`,
+		`caseInsensitive`: `bool`
+	},
+	{
+		`type`: `string,regex=stringRegex`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`value`: `string`
+	},
+	{
+		`type`: `string,regex=stringContainsFuzzy`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`value`: `string`,
+		`maxEdits`: `number`,
+		`caseInsensitive`: `bool`,
+		`substitutionsOnly`: `bool`,
+		`wildcard,?`: [`or`, `null`, `string`]
+	},
+	{ `type`: `string,regex=isNull`, `input`: _SPEC_EXPRESSION_LAZY },
+	{
+		`type`: `string,regex=ifNull`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`replacement`: _SPEC_EXPRESSION_LAZY
+	},
+	{ `type`: `string,regex=not`, `input`: _SPEC_EXPRESSION_LAZY },
+	{ `type`: `string,regex=and|or`, `input`: _SPEC_EXPRESSION_LIST_LAZY },
+	{
+		`type`: `string,regex=isIn`,
+		`input`: _SPEC_EXPRESSION_LAZY,
+		`set`: [`or`, [`string`], [`number`]],
+		`negate,?`: `bool`
 	}]
 
-// Validation of recursive schema requires forward declaration
-_PREDICATE_SCHEMA := undefined
-// Validation of recursive schema requires lazy evaluation
-_PREDICATE_LEAF_SCHEMA := func(js, _, _) {
-	return validation.checkJson(js, _PREDICATE_SCHEMA)
-}
-_PREDICATE_SUBTREE_SCHEMA := func(js, _, _) {
-	return validation.checkJson(js, [_PREDICATE_SCHEMA])
-}
-_PREDICATE_SCHEMA = [`or`,
-    {
-		// Node type discriminator
-		`operator`: `string,regex=IsNA`
+_SPEC_QUERY_SCHEMA = [`or`,
+	{
+		`type`: `string,regex=column`,
+		`column`: `string`
 	},
-    {
-		// Node type discriminator
-		`operator`: `string,regex=Equal|Less|LessOrEqual|Greater|GreaterOrEqual`,
-        // Reference value
-        `reference`: [`or`, `number`, `string`]
+	{
+		`type`: `string,regex=sliceAxes`,
+		`input`: _SPEC_QUERY_LAZY,
+		`axisFilters`: [_SLICE_AXIS_FILTER_SCHEMA]
 	},
-    {
-        // Node type discriminator
-		`operator`: `string,regex=InSet`,
-        // Set values
-        `values`: [`or`, [`number`], [`string`]]
-    },
-    {
-		// Node type discriminator
-		`operator`: `string,regex=IEqual`,
-        // Reference value
-        `reference`: `string`
+	{
+		`type`: `string,regex=innerJoin|fullJoin`,
+		`entries`: _SPEC_QUERY_JOIN_ENTRY_LIST_LAZY
 	},
-    {
-		// Node type discriminator
-		`operator`: `string,regex=StringContains|StringIContains`,
-        // Substring value
-        `substring`: `string`
+	{
+		`type`: `string,regex=outerJoin`,
+		`primary`: _SPEC_QUERY_JOIN_ENTRY_LAZY,
+		`secondary`: _SPEC_QUERY_JOIN_ENTRY_LIST_LAZY
 	},
-    {
-		// Node type discriminator
-		`operator`: `string,regex=Matches`,
-        // Regular expression
-        `regex`: `string`
+	{
+		`type`: `string,regex=linkerJoin`,
+		`linker`: { `column`: `string` },
+		`secondary`: _SPEC_QUERY_JOIN_ENTRY_LIST_LAZY
 	},
-    {
-		// Node type discriminator
-		`operator`: `string,regex=StringContainsFuzzy|StringIContainsFuzzy`,
-        // Reference value
-        `reference`: `string`,
-        // Maximum number of edits allowed to be considered a match
-        `maxEdits`: `number`,
-        // Wildcard character to use
-        `wildcard,?`: `string`,
-        // If true, only substitutions are allowed (deletions and insertions are also allowed by default)
-        `substitutionsOnly,?`: `bool`
-	},
-    {
-        // Node type discriminator
-		`operator`: `string,regex=Not`,
-        // Operand
-        `operand`: _PREDICATE_LEAF_SCHEMA
-    },
-    {
-        // Node type discriminator
-		`operator`: `string,regex=And|Or`,
-        // Operands
-        `operands`: [_PREDICATE_SUBTREE_SCHEMA]
-    }]
+	{
+		`type`: `string,regex=filter`,
+		`input`: _SPEC_QUERY_LAZY,
+		`predicate`: _SPEC_EXPRESSION_SCHEMA
+	}]
 
-_P_TABLE_COLUMN_ID_SCHEMA := [`or`,
-    {
-        // Node type discriminator
-        `type`: `string,regex=column`,
-        // Column id
-        `id`: `string`
-    },
-    {
-        // Node type discriminator
-        `type`: `string,regex=axis`,
-        // Axis id
-        `axisId`: {
-            `name`: `string`,
-            `type`: `string,regex=Int|Long|String`,
-            `domain,?`: { any: `string` },
-            `contextDomain,?`: { any: `string` }
+_SPEC_QUERY_JOIN_ENTRY_SCHEMA = {
+	`entry`: _SPEC_QUERY_SCHEMA,
+	`qualifications,?`: [{ any: `any` }]
+}
+
+_renameSpecQuery := undefined
+_renameExpression := undefined
+
+// Rename column refs inside a SpecQueryJoinEntry; `qualifications` passes
+// through, and an empty/absent list stays absent in the output.
+_renameJoinEntry := func(joinEntry, rename) {
+    result := { entry: _renameSpecQuery(joinEntry.entry, rename) }
+    if !is_undefined(joinEntry.qualifications) && len(joinEntry.qualifications) > 0 {
+        result.qualifications = joinEntry.qualifications
+    }
+    return result
+}
+
+_renameJoinEntries := func(entries, rename) {
+    return slices.map(entries, func(e) { return _renameJoinEntry(e, rename) })
+}
+
+_renameExpressions := func(exprs, rename) {
+    return slices.map(exprs, func(e) { return _renameExpression(e, rename) })
+}
+
+// Rename every `columnRef.value` leaf in a SpecQueryExpression via the rename
+// map. `axisRef` / `constant` pass through; structural variants recurse.
+_renameExpression = func(expr, rename) {
+    t := expr.type
+    if t == "columnRef" {
+        return { type: "columnRef", value: rename[expr.value] }
+    } else if t == "axisRef" || t == "constant" {
+        return expr
+    } else if t == "numericUnary" {
+        return { type: t, operand: expr.operand, input: _renameExpression(expr.input, rename) }
+    } else if t == "numericBinary" || t == "numericComparison" {
+        return {
+            type: t, operand: expr.operand,
+            left: _renameExpression(expr.left, rename),
+            right: _renameExpression(expr.right, rename)
         }
-    }]
-
-_FILTER_SCHEMA := {
-    // Column id or axis id
-    `column`: _P_TABLE_COLUMN_ID_SCHEMA,
-    // Filter predicate
-    `predicate`: _PREDICATE_SCHEMA
-}
-
-// Validation of recursive schema instantiation
-_JOIN_REQUEST_SCHEMA := {
-    `__options__,closed`: true,
-    // Source
-    `src`: _JOIN_ENTRY_SCHEMA,
-    // Filters
-    `filters`: [_FILTER_SCHEMA]
-}
-
-_renameJoinEntry := func(entry, rename) {
-    if entry.type == "column" || entry.type == "slicedColumn" || entry.type == "artificialColumn" {
-        entry.columnId = rename[entry.columnId]
-    } else if entry.type == "inner" || entry.type == "full" {
-        entry.entries = slices.map(entry.entries, func(entry) {
-            return _renameJoinEntry(entry, rename)
-        })
-    } else if entry.type == "outer" {
-        entry.primary = _renameJoinEntry(entry.primary, rename)
-        entry.secondary = slices.map(entry.secondary, func(entry) {
-            return _renameJoinEntry(entry, rename)
-        })
+    } else if t == "stringEquals" || t == "stringContains" {
+        return {
+            type: t,
+            input: _renameExpression(expr.input, rename),
+            value: expr.value,
+            caseInsensitive: expr.caseInsensitive
+        }
+    } else if t == "stringRegex" {
+        return { type: t, input: _renameExpression(expr.input, rename), value: expr.value }
+    } else if t == "stringContainsFuzzy" {
+        result := {
+            type: t,
+            input: _renameExpression(expr.input, rename),
+            value: expr.value,
+            maxEdits: expr.maxEdits,
+            caseInsensitive: expr.caseInsensitive,
+            substitutionsOnly: expr.substitutionsOnly
+        }
+        if !is_undefined(expr.wildcard) { result.wildcard = expr.wildcard }
+        return result
+    } else if t == "isNull" || t == "not" {
+        return { type: t, input: _renameExpression(expr.input, rename) }
+    } else if t == "ifNull" {
+        return {
+            type: "ifNull",
+            input: _renameExpression(expr.input, rename),
+            replacement: _renameExpression(expr.replacement, rename)
+        }
+    } else if t == "and" || t == "or" {
+        return { type: t, input: _renameExpressions(expr.input, rename) }
+    } else if t == "isIn" {
+        result := {
+            type: "isIn",
+            input: _renameExpression(expr.input, rename),
+            set: expr.set
+        }
+        if !is_undefined(expr.negate) { result.negate = expr.negate }
+        return result
     }
-    return entry
+    ll.panic("renameSpecQueryColumns: unsupported expression variant %q", t)
 }
 
-_renameJoinFilter := func(filter, rename) {
-    if filter.column.type == "column" {
-        filter.column.id = rename[filter.column.id]
+_renameSpecQuery = func(query, rename) {
+    t := query.type
+    if t == "column" {
+        return { type: "column", column: rename[query.column] }
+    } else if t == "sliceAxes" {
+        return {
+            type: "sliceAxes",
+            input: _renameSpecQuery(query.input, rename),
+            axisFilters: query.axisFilters
+        }
+    } else if t == "innerJoin" || t == "fullJoin" {
+        return { type: t, entries: _renameJoinEntries(query.entries, rename) }
+    } else if t == "outerJoin" {
+        return {
+            type: "outerJoin",
+            primary: _renameJoinEntry(query.primary, rename),
+            secondary: _renameJoinEntries(query.secondary, rename)
+        }
+    } else if t == "linkerJoin" {
+        return {
+            type: "linkerJoin",
+            linker: { column: rename[query.linker.column] },
+            secondary: _renameJoinEntries(query.secondary, rename)
+        }
+    } else if t == "filter" {
+        return {
+            type: "filter",
+            input: _renameSpecQuery(query.input, rename),
+            predicate: _renameExpression(query.predicate, rename)
+        }
     }
-    return filter
+    ll.panic("renameSpecQueryColumns: unsupported SpecQuery variant %q", t)
 }
 
-renameJoinColumns := func(request, rename) {
-    validation.assertType(request, _JOIN_REQUEST_SCHEMA)
+/**
+ * Rename every `column` / `linker.column` leaf in a SpecQuery via the
+ * `rename` map. Takes a bare `SpecQuery`, not a wrapping `SpecQueryJoinEntry`.
+ *
+ * @param query: SpecQuery — pre-rename column ids.
+ * @param rename: map<string, string> — old id -> new id.
+ * @return SpecQuery — renamed.
+ */
+renameSpecQueryColumns := func(query, rename) {
+    validation.assertType(query, _SPEC_QUERY_SCHEMA)
     validation.assertType(rename, {any: `string`})
-    return {
-        src: _renameJoinEntry(request.src, rename),
-        filters: slices.map(request.filters, func(filter) {
-            return _renameJoinFilter(filter, rename)
-        })
-    }
+    return _renameSpecQuery(query, rename)
 }
 
 export ll.toStrict({
@@ -411,6 +462,6 @@ export ll.toStrict({
     makeFrameColumnInfo: makeFrameColumnInfo,
     makeWriteFrameStep: makeWriteFrameStep,
     makeFrameColumnRef: makeFrameColumnRef,
-    renameJoinColumns: renameJoinColumns,
+    renameSpecQueryColumns: renameSpecQueryColumns,
     validateAxisFilters: validateAxisFilters
 })
