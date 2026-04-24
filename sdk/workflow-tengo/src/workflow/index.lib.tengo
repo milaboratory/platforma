@@ -262,8 +262,10 @@ _resolveOne := func(ref, ...options) {
  * ```
  */
 resolve := func(input, ...options) {
-	// Single PlRef — backward compatible path
-	if ll.isMap(input) && input.__isRef == true {
+	// Single PlRef — backward compatible path. Accepts either the modern
+	// `{__isRef: true, blockId, name}` marker form or the legacy plain
+	// `{blockId, name}` shape (as documented by `bquery.resolve`).
+	if ll.isMap(input) && (input.__isRef == true || (is_string(input.blockId) && is_string(input.name))) {
 		return _resolveOne(input, options...)
 	}
 
