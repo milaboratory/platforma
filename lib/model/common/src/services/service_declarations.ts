@@ -8,7 +8,7 @@
  * - lib/node/pl-middle-layer/src/middle_layer/middle_layer.ts — ModelServiceRegistry factory
  *
  * UI side:
- * - lib/model/common/src/services/service_injector_factory.ts — driver method wrappers (node services only)
+ * - lib/model/common/src/services/node_service_handlers.ts — driver method wrappers (node services only)
  * - sdk/ui-vue/src/internal/createAppV3.ts — UiServiceRegistry factory
  *
  * Optional:

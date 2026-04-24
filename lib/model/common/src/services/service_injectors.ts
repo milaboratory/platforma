@@ -1,17 +1,18 @@
 /**
- * UI service injectors — auto-derived types, method map, and service info builder.
+ * Service dispatch glue — auto-derived types, method map, and service info builder.
  *
- * The factory (createUiServiceInjectors) lives in service_injector_factory.ts —
- * that's the only file to edit when adding a new node service.
+ * The worker-side handler factory (createNodeServiceHandlers) lives in
+ * node_service_handlers.ts — that's the only file to edit when adding a
+ * new node service.
  */
 
 import type { InferServiceKind, InferServiceUi, ServiceBrand, ServiceName } from "./service_types";
 import type { DriverKit } from "../driver_kit";
 import { Services } from "./service_declarations";
 import { getMethodNames, resolveRequiredServices } from "./service_capabilities";
-import { createUiServiceInjectors } from "./service_injector_factory";
+import { createNodeServiceHandlers } from "./node_service_handlers";
 
-export { createUiServiceInjectors } from "./service_injector_factory";
+export { createNodeServiceHandlers } from "./node_service_handlers";
 
 type NodeServiceKeys = {
   [K in keyof typeof Services]: InferServiceKind<ServiceBrand<(typeof Services)[K]>> extends "node"
@@ -25,59 +26,62 @@ type MainServiceKeys = {
     : never;
 }[keyof typeof Services];
 
-type InjectableServiceKeys = NodeServiceKeys | MainServiceKeys;
+type DispatchableServiceKeys = NodeServiceKeys | MainServiceKeys;
 
 /**
- * Auto-derived map of injectable service keys (node + main) to their UI-side
- * driver interfaces. Node services are fulfilled by real driver wrappers;
- * main services only need method-name introspection here — the runtime calls
- * are forwarded via IPC by the desktop app's ServiceProxy, so the bodies
- * can be stubs that throw.
+ * Auto-derived map of dispatchable service keys (node + main) to their
+ * UI-facing interfaces. Node entries are fulfilled by real driver wrappers
+ * in the worker; main entries are stubs — their method names are needed
+ * only so the UI-side ServiceProxy can build forwarders; runtime calls
+ * are routed via IPC by the Electron main-process router.
  */
-export type UiServiceInjectorMap = {
-  [K in InjectableServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
+export type NodeServiceHandlerMap = {
+  [K in DispatchableServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
 };
 
 let cachedKit: DriverKit | undefined;
-let cachedInjectors: UiServiceInjectorMap | undefined;
+let cachedHandlers: NodeServiceHandlerMap | undefined;
 
-function getOrCreateInjectors(driverKit: DriverKit): UiServiceInjectorMap {
-  if (!cachedInjectors || cachedKit !== driverKit) {
+function getOrCreateHandlers(driverKit: DriverKit): NodeServiceHandlerMap {
+  if (!cachedHandlers || cachedKit !== driverKit) {
     cachedKit = driverKit;
-    cachedInjectors = createUiServiceInjectors(driverKit);
+    cachedHandlers = createNodeServiceHandlers(driverKit);
   }
-  return cachedInjectors;
+  return cachedHandlers;
 }
 
-/** Resolve the injector for a given service ID. Caches injectors per DriverKit reference. */
-export function resolveUiInjector(
+/**
+ * Resolve the worker-side handler object for a given service ID. Caches
+ * per DriverKit reference. Called from the worker's IPC dispatch path.
+ */
+export function resolveNodeServiceHandler(
   driverKit: DriverKit,
   serviceId: ServiceName,
-): UiServiceInjectorMap[keyof UiServiceInjectorMap] | null {
-  const injectors = getOrCreateInjectors(driverKit);
+): NodeServiceHandlerMap[keyof NodeServiceHandlerMap] | null {
+  const handlers = getOrCreateHandlers(driverKit);
   const key = Object.keys(Services).find(
     (k) => Services[k as keyof typeof Services] === serviceId,
   ) as NodeServiceKeys | undefined;
   if (!key) return null;
-  return injectors[key];
+  return handlers[key];
 }
 
 /**
- * Static map of ServiceName → method names, auto-derived from the injector shape.
+ * Static map of ServiceName → method names, auto-derived from the handler shape.
  * Computed once at module load. The stub DriverKit is never called — it only
- * provides a target so the closures in createUiServiceInjectors have own-property
+ * provides a target so the closures in createNodeServiceHandlers have own-property
  * keys that getMethodNames can introspect.
  */
 export const SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> = (() => {
   const stubKit = new Proxy({} as DriverKit, {
     get: () => new Proxy({}, { get: () => () => {} }),
   });
-  const injectors = createUiServiceInjectors(stubKit);
+  const handlers = createNodeServiceHandlers(stubKit);
   const result: Record<string, string[]> = {};
   for (const key of Object.keys(Services) as (keyof typeof Services)[]) {
     const serviceId = Services[key];
-    const injector = injectors[key as InjectableServiceKeys];
-    result[serviceId] = injector ? getMethodNames(injector) : [];
+    const handler = handlers[key as DispatchableServiceKeys];
+    result[serviceId] = handler ? getMethodNames(handler) : [];
   }
   return result;
 })();
