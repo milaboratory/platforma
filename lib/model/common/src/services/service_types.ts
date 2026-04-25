@@ -26,15 +26,32 @@ export type ServiceType = "node" | "wasm" | "main";
 
 const SERVICE_ID_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*$/;
 
-export const { service, isNodeService, isWasmService, isMainService, getServiceKind } = (() => {
+export const {
+  service,
+  isNodeService,
+  isWasmService,
+  isMainService,
+  getServiceKind,
+  getServiceModelMethods,
+  getServiceUiMethods,
+} = (() => {
   const typeMap = new Map<string, ServiceType>();
+  const modelMethodsMap = new Map<string, readonly string[]>();
+  const uiMethodsMap = new Map<string, readonly string[]>();
   return {
     service<Model, Ui>() {
-      return <K extends ServiceType, N extends string>(options: {
+      return <
+        K extends ServiceType,
+        N extends string,
+        MM extends readonly (keyof Model & string)[],
+        UM extends readonly (keyof Ui & string)[],
+      >(options: {
         readonly type: K;
         readonly name: N;
+        readonly modelMethods: MM;
+        readonly uiMethods: UM;
       }): Branded<N, ServiceTypesLike<Model, Ui, K>> => {
-        const { name, type } = options;
+        const { name, type, modelMethods, uiMethods } = options;
         if (!SERVICE_ID_PATTERN.test(name)) {
           throw new ServiceInvalidIdError(
             `Invalid service ID "${name}": must match ${SERVICE_ID_PATTERN}`,
@@ -44,6 +61,8 @@ export const { service, isNodeService, isWasmService, isMainService, getServiceK
           throw new ServiceAlreadyRegisteredError(`Service "${name}" already registered`);
         }
         typeMap.set(name, type);
+        modelMethodsMap.set(name, modelMethods);
+        uiMethodsMap.set(name, uiMethods);
         return name as Branded<N, ServiceTypesLike<Model, Ui, K>>;
       };
     },
@@ -58,6 +77,12 @@ export const { service, isNodeService, isWasmService, isMainService, getServiceK
     },
     getServiceKind(id: ServiceName): ServiceType | undefined {
       return typeMap.get(id);
+    },
+    getServiceModelMethods(id: ServiceName): readonly string[] {
+      return modelMethodsMap.get(id) ?? [];
+    },
+    getServiceUiMethods(id: ServiceName): readonly string[] {
+      return uiMethodsMap.get(id) ?? [];
     },
   };
 })();
