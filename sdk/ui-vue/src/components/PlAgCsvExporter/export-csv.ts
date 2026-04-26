@@ -42,10 +42,9 @@ export async function exportCsv(
     return undefined;
   }
 
-  const format = nativeOptions.format;
   const { canceled, path } = await dialog.showSaveDialog({
-    defaultFileName: nativeOptions.defaultFileName,
-    filters: [{ name: format.toUpperCase(), extensions: [format] }],
+    defaultFileName:
+      (nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`) + `.gz`,
   });
   if (canceled || isNil(path)) {
     return undefined;
@@ -53,9 +52,18 @@ export async function exportCsv(
 
   return pframe.writePTableToFs(nativeOptions.tableHandle, {
     path,
-    format,
+    format: nativeOptions.format,
     columnIndices,
+    compression: { type: "gzip" },
   });
+}
+
+function formatTimestamp(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}` +
+    `_${pad(d.getHours())}:${pad(d.getMinutes())}.${pad(d.getSeconds())}`
+  );
 }
 
 /**

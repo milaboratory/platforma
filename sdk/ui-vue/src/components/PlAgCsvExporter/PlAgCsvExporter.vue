@@ -9,7 +9,6 @@ import type { ExportOptions } from "./export-csv";
 
 const props = defineProps<{
   api: GridApi;
-  /** PTable handle for native export (when available in the desktop runtime). */
   tableHandle?: PTableHandle;
 }>();
 const { api: gridApi } = toRefs(props);
