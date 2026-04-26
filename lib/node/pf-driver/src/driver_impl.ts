@@ -46,6 +46,7 @@ import { tmpdir } from "node:os";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import * as zlib from "node:zlib";
 import { streamPTableRows } from "./csv_writer";
 import type {
   AbstractInternalPFrameDriver,
@@ -277,7 +278,7 @@ export class AbstractPFrameDriver<
   ): Promise<WritePTableToFsResult> {
     this.logger(
       "info",
-      `[WritePTableToFs] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, columns = ${options.columnIndices.length})`,
+      `[WritePTableToFs] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, compression = ${options.compression ?? "auto"}, columns = ${options.columnIndices.length})`,
     );
     const startTime = performance.now();
     const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
@@ -316,9 +317,13 @@ export class AbstractPFrameDriver<
       let bytesWritten = 0;
       await createPathAtomically(miLogger, options.path, async (tempPath) => {
         const writeStream = fs.createWriteStream(tempPath, { flags: "wx" });
-        await pipeline(Readable.from(iterable, { objectMode: false }), writeStream, {
-          signal: combinedSignal,
-        });
+        const source = Readable.from(iterable, { objectMode: false });
+        if (options.compression?.type === "gzip") {
+          const gzip = zlib.createGzip({ level: options.compression.level ?? 6 });
+          await pipeline(source, gzip, writeStream, { signal: combinedSignal });
+        } else {
+          await pipeline(source, writeStream, { signal: combinedSignal });
+        }
         bytesWritten = writeStream.bytesWritten;
       });
 

@@ -240,6 +240,9 @@ export type PTableShape = {
 /** Supported formats for PTable file download. */
 export type PTableDownloadFormat = "csv" | "tsv";
 
+/** Compression applied to the written file. */
+export type PTableDownloadCompression = "none" | "gzip";
+
 /** Options for downloading PTable data to a file. */
 export interface WritePTableToFsOptions {
   path: string;
@@ -249,6 +252,10 @@ export interface WritePTableToFsOptions {
   chunkSize?: number;
   includeHeader?: boolean;
   bom?: boolean;
+  compression?: {
+    type: "gzip";
+    level?: number;
+  };
   signal?: AbortSignal;
 }
 
