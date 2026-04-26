@@ -1,5 +1,18 @@
 # @milaboratories/pl-model-common
 
+## 1.36.0
+
+### Minor Changes
+
+- 5420fea: Add PTableDownloadFormat, DownloadPTableOptions, and DownloadPTableResult types for PTable file export support
+- 5420fea: Expose native PTable download via `PFrameDriver.downloadPTable(handle, options)` (optional, present only in the desktop runtime). `DownloadPTableCsvOptions` moved to `@milaboratories/pl-model-common`. The earlier `PlatformaV3.downloadPTableCsv` bridge is removed in favor of the driver-level method.
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+
 ## 1.35.0
 
 ### Minor Changes

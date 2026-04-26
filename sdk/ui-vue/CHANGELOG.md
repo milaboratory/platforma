@@ -1,5 +1,27 @@
 # @platforma-sdk/ui-vue
 
+## 1.68.0
+
+### Minor Changes
+
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+
+### Patch Changes
+
+- 5420fea: Add native CSV/TSV export path in PlAgCsvExporter that delegates to downloadPTableCsv when available in desktop runtime, with automatic fallback to browser-based export
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @platforma-sdk/model@1.68.0
+  - @milaboratories/pf-spec-driver@1.3.4
+  - @milaboratories/uikit@2.12.10
+
 ## 1.67.0
 
 ### Minor Changes
