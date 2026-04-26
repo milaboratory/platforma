@@ -554,8 +554,13 @@ watchEffect(() => {
       @updateFilters="(v) => (filtersState = v)"
       @resetDefaultFilters="resetDefaultFilters"
       @updateDefaultFilters="(v) => (defaultFiltersState = v)"
+      v-model="filtersState"
     />
-    <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
+    <PlAgCsvExporter
+      v-if="gridApi && showExportButton"
+      :api="gridApi"
+      :table-handle="'model' in settings ? settings?.model?.visibleTableHandle : undefined"
+    />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">
       <template v-if="$slots['before-sheets']" #before>
         <slot name="before-sheets" />

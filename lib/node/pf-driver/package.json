@@ -46,6 +46,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "fast-csv": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

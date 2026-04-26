@@ -48,7 +48,7 @@ function isBitSet(bitVector: Uint8Array, offset: number): boolean {
   return (bitVector[chunkIndex] & mask) > 0;
 }
 
-function isValueNA(vector: PTableVector, row: number): boolean {
+export function isValueNA(vector: PTableVector, row: number): boolean {
   if (vector.isNA) return isBitSet(vector.isNA, row);
 
   // Check for legacy magic values to support old desktop versions
@@ -236,3 +236,32 @@ export type PTableShape = {
   /** Number of rows */
   rows: number;
 };
+
+/** Supported formats for PTable file download. */
+export type PTableDownloadFormat = "csv" | "tsv";
+
+/** Compression applied to the written file. */
+export type PTableDownloadCompression = "none" | "gzip";
+
+/** Options for downloading PTable data to a file. */
+export interface WritePTableToFsOptions {
+  path: string;
+  format: PTableDownloadFormat;
+  columnIndices: number[];
+  range?: TableRange;
+  chunkSize?: number;
+  includeHeader?: boolean;
+  bom?: boolean;
+  compression?: {
+    type: "gzip";
+    level?: number;
+  };
+  signal?: AbortSignal;
+}
+
+/** Result of a PTable file download. */
+export interface WritePTableToFsResult {
+  path: string;
+  rowsWritten: number;
+  bytesWritten: number;
+}

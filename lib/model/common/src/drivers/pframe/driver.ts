@@ -5,7 +5,13 @@ import type { PColumn } from "./spec/spec";
 import type { PColumnValues, DataInfo } from "./data_info";
 import type { PTableDef, PTableDefV2 } from "./table_calculate";
 import type { AddParameterToAllMethods } from "./type_util";
-import type { PTableShape, PTableVector, TableRange } from "./data_types";
+import type {
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
+  PTableShape,
+  PTableVector,
+  TableRange,
+} from "./data_types";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
 import type { PObjectId } from "../../pool";
 import type { PColumnIdAndSpec, PColumnSpec } from "./spec/spec";
@@ -88,6 +94,15 @@ export interface PFrameDriver {
     columnIndices: number[],
     range?: TableRange,
   ): Promise<PTableVector[]>;
+
+  /**
+   * Stream the table to a file at the given path. Caller is responsible
+   * for producing the destination path (e.g. via the `Dialog` service).
+   */
+  writePTableToFs(
+    handle: PTableHandle,
+    options: WritePTableToFsOptions,
+  ): Promise<WritePTableToFsResult>;
 }
 
 //
@@ -102,4 +117,4 @@ type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriver
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<_T extends never>() {}
 
-assert<TypeEqualityGuard<PFrameDriver, ExpectedPFrameDriverType>>();
+assert<TypeEqualityGuard<Omit<PFrameDriver, "writePTableToFs">, ExpectedPFrameDriverType>>();

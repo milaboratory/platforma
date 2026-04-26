@@ -35,11 +35,24 @@ import {
   resolveAnnotationParents,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { ConcurrencyLimitingExecutor } from "@milaboratories/ts-helpers";
-import { PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
+import {
+  ConcurrencyLimitingExecutor,
+  createPathAtomically,
+  type MiLogger,
+} from "@milaboratories/ts-helpers";
+import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
 import { tmpdir } from "node:os";
-import type { AbstractInternalPFrameDriver } from "./driver_decl";
+import * as fs from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import * as zlib from "node:zlib";
+import { streamPTableRows } from "./csv_writer";
+import type {
+  AbstractInternalPFrameDriver,
+  WritePTableToFsOptions,
+  WritePTableToFsResult,
+} from "./driver_decl";
 import { logPFrames } from "./logging";
 import {
   PFramePool,
@@ -259,6 +272,80 @@ export class AbstractPFrameDriver<
     };
   }
 
+  public async writePTableToFs(
+    handle: PTableHandle,
+    options: WritePTableToFsOptions,
+  ): Promise<WritePTableToFsResult> {
+    this.logger(
+      "info",
+      `[WritePTableToFs] ENTER (handle = ${handle}, path = ${options.path}, format = ${options.format}, compression = ${options.compression ?? "auto"}, columns = ${options.columnIndices.length})`,
+    );
+    const startTime = performance.now();
+    const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
+    const pTable = await pTablePromise;
+
+    const combinedSignal = AbortSignal.any(
+      [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
+    );
+
+    return await this.tableConcurrencyLimiter.run(async () => {
+      const shape = await pTable.getShape({ signal: combinedSignal });
+      const clippedRange = clipRange(options.range, shape);
+      const specs = pTable.getSpec();
+      const separator = options.format === "tsv" ? "\t" : ",";
+
+      const iterable = streamPTableRows({
+        pTable,
+        specs,
+        columnIndices: options.columnIndices,
+        range: clippedRange,
+        chunkSize: options.chunkSize ?? 50_000,
+        separator,
+        includeHeader: options.includeHeader ?? true,
+        bom: options.bom ?? true,
+        signal: combinedSignal,
+      });
+
+      const miLogger: MiLogger = {
+        info: (msg) => this.logger("info", String(msg)),
+        warn: (msg) => this.logger("warn", String(msg)),
+        error: (msg) => this.logger("error", String(msg)),
+      };
+
+      let bytesWritten = 0;
+      await createPathAtomically(miLogger, options.path, async (tempPath) => {
+        const writeStream = fs.createWriteStream(tempPath, { flags: "wx" });
+        const source = Readable.from(iterable, { objectMode: false });
+        if (options.compression?.type === "gzip") {
+          const gzip = zlib.createGzip({ level: options.compression.level ?? 6 });
+          await pipeline(source, gzip, writeStream, { signal: combinedSignal });
+        } else {
+          await pipeline(source, writeStream, { signal: combinedSignal });
+        }
+        bytesWritten = writeStream.bytesWritten;
+      });
+
+      const overallSize = await pTable.getFootprint({ signal: combinedSignal });
+      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
+
+      // rowsWritten equals the clipped range length — the generator streams the
+      // entire effective range without early termination, so this is accurate.
+      const rowsWritten = clippedRange.length;
+
+      if (logPFrames()) {
+        const durationMs = Math.round(performance.now() - startTime);
+        this.logger(
+          "info",
+          `[WritePTableToFs] complete (handle = ${handle}, columns = ${options.columnIndices.length}, rows = ${rowsWritten}, bytes = ${bytesWritten}, duration = ${durationMs}ms)`,
+        );
+      }
+
+      return { path: options.path, rowsWritten, bytesWritten };
+    });
+  }
+
   //
   // PFrame instance methods
   //
@@ -461,6 +548,16 @@ export class AbstractPFrameDriver<
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return data;
   }
+}
+
+/** Clamp range to table shape. When range is undefined, returns full table range. */
+function clipRange(range: undefined | TableRange, shape: PTableShape): TableRange {
+  if (isNil(range)) {
+    return { offset: 0, length: shape.rows };
+  }
+  const clampedOffset = Math.min(range.offset, shape.rows);
+  const clampedLength = Math.min(range.length, shape.rows - clampedOffset);
+  return { offset: clampedOffset, length: clampedLength };
 }
 
 function migrateFilters(

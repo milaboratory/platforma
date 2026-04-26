@@ -10,6 +10,8 @@ import { resolveRequiredServices } from "@milaboratories/pl-model-common";
  */
 export const BLOCK_SERVICE_FLAGS = {
   requiresPFrameSpec: true,
+  requiresPFrame: true,
+  requiresDialog: true,
 } as const satisfies Partial<ServiceRequireFlags>;
 
 export type BlockServiceFlags = typeof BLOCK_SERVICE_FLAGS;

@@ -1,5 +1,5 @@
 import { inject, type Reactive } from "vue";
-import { pluginDataKey } from "./defineApp";
+import { pluginDataKey } from "../defineApp";
 import type {
   PluginHandle,
   InferFactoryData,

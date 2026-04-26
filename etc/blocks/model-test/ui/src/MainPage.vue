@@ -17,9 +17,6 @@ try {
   blockSpecResult.value = `error: ${e}`;
 }
 
-// @ts-expect-error pframe is NOT available at block level (only via plugins)
-void app.services.pframe;
-
 async function optionsSearch(s: string | string[], type: "label" | "value") {
   if (type === "value" && Array.isArray(s)) {
     return s.map((v) => ({ value: v, label: v }));

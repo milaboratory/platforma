@@ -396,11 +396,11 @@ function selectDisplayableIndices(
     .filter(([, spec]) => {
       switch (spec.type) {
         case "axis":
-          return !isPartitionedAxis(spec.id);
+          return !isColumnHidden(spec.spec) && !isPartitionedAxis(spec.id);
         case "column":
           return (
-            !isLabelColumnSpec(spec.spec) &&
             !isColumnHidden(spec.spec) &&
+            !isLabelColumnSpec(spec.spec) &&
             !isLinkerColumnSpec(spec.spec)
           );
       }

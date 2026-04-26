@@ -18,5 +18,6 @@ export function createModelServiceRegistry(options: ModelServiceOptions) {
   return new ModelServiceRegistry(Services, {
     PFrameSpec: () => new SpecDriver({ logger: options.logger }),
     PFrame: null,
+    Dialog: null,
   });
 }
