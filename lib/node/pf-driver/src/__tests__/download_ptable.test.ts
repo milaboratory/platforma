@@ -248,6 +248,7 @@ describe("downloadPTable integration", () => {
       path: filePath,
       format: "tsv",
       columnIndices: [0, 1],
+      bom: false,
     });
 
     expect(result.rowsWritten).toBe(3);
