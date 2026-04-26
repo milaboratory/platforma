@@ -3,11 +3,10 @@ import type {
   PTableHandle,
   PTableDownloadFormat,
   PTableColumnSpec,
-  PTableColumnId,
-  CanonicalizedJson,
+  PFrameSpecDriver,
   WritePTableToFsResult,
 } from "@platforma-sdk/model";
-import { canonicalizeJson, getPTableColumnId } from "@platforma-sdk/model";
+import { getPTableColumnId } from "@platforma-sdk/model";
 import { isNil } from "es-toolkit";
 import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
@@ -28,23 +27,27 @@ export async function exportCsv(
   gridApi: GridApi,
   nativeOptions: ExportOptions,
 ): Promise<undefined | WritePTableToFsResult> {
-  const { dialog, pframe } = getServices();
+  const { dialog, pframe, pframeSpec } = getServices();
   if (isNil(dialog)) {
     throw new Error("dialog service is not available in the current environment");
   }
   if (isNil(pframe)) {
     throw new Error("pframe service is not available");
   }
+  if (isNil(pframeSpec)) {
+    throw new Error("pframeSpec service is not available");
+  }
 
   const specs = await pframe.getSpec(nativeOptions.tableHandle);
-  const columnIndices = collectVisibleColumnIndices(gridApi, specs);
+  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
   if (isNil(columnIndices)) {
     return undefined;
   }
 
   const { canceled, path } = await dialog.showSaveDialog({
     defaultFileName:
-      (nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`) + `.gz`,
+      (nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`) +
+      `.${nativeOptions.format}.gz`,
   });
   if (canceled || isNil(path)) {
     return undefined;
@@ -89,16 +92,12 @@ export function isCsvExportAvailable(): boolean {
 export function collectVisibleColumnIndices(
   gridApi: GridApi,
   specs: PTableColumnSpec[],
+  pframeSpec: PFrameSpecDriver,
 ): Nil | number[] {
-  // @todo: pframeSpec.findTableColumn;
   const columnDefs = gridApi.getColumnDefs();
   if (isNil(columnDefs)) {
     return;
   }
-
-  const indexById = new Map<CanonicalizedJson<PTableColumnId>, number>(
-    specs.map((spec, index) => [canonicalizeJson(getPTableColumnId(spec)), index] as const),
-  );
 
   return columnDefs
     .filter(
@@ -106,7 +105,7 @@ export function collectVisibleColumnIndices(
         !("children" in def) && def.hide !== true && !isNil(def.context),
     )
     .map((def) =>
-      indexById.get(canonicalizeJson(getPTableColumnId(def.context as PTableColumnSpec))),
+      pframeSpec.findTableColumn(specs, getPTableColumnId(def.context as PTableColumnSpec)),
     )
-    .filter((index): index is number => !isNil(index));
+    .filter((index): index is number => index !== -1);
 }
