@@ -1,5 +1,11 @@
 # @milaboratories/pl-errors
 
+## 1.3.7
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.8
+
 ## 1.3.6
 
 ### Patch Changes
