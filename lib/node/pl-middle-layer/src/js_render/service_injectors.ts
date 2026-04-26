@@ -130,6 +130,10 @@ export function getServiceInjectors(): ServiceInjectorMap {
       };
     },
 
+    // Dialog has no model-side surface — workflow scripts cannot open save dialogs.
+    // Declared as an empty injector to satisfy the exhaustive ServiceInjectorMap.
+    Dialog: () => ({}) as Record<never, VmMethod>,
+
     PFrame: ({ host, vm }: ServiceInjectorContext) => ({
       createPFrame: (def: QuickJSHandle) =>
         vm.exportSingleValue(

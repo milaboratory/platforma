@@ -281,6 +281,7 @@ catalog:
   "sortablejs": ^1.15.6
   "@types/sortablejs": ^1.15.6
 
+  "fast-csv": 5.0.5
   "@zip.js/zip.js": ^2.8.2
 
   "@noble/hashes": ^2.0.1

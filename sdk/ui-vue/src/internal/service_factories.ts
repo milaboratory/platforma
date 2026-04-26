@@ -19,5 +19,6 @@ export function createUiServiceRegistry(options: UiServiceOptions) {
   return new UiServiceRegistry(Services, {
     PFrameSpec: () => new SpecDriver(),
     PFrame: () => options.proxy(Services.PFrame),
+    Dialog: () => options.proxy(Services.Dialog),
   });
 }

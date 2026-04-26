@@ -308,6 +308,7 @@ function annotateColumnGroups(params: {
   const linkedAnnotated = [
     withLabelAnnotations.bind(null, derivedLabels),
     withInfoAnnotations.bind(null, derivedTooltips),
+    withHidenAxesAnnotations.bind(null),
     withTableVisualAnnotations.bind(null, visibilityByColId, orderByColId),
     (cols: TableColumnSnapshot[]) =>
       cols.map((lc) => ({ ...lc, linkerPath: annotateLinkerPath(derivedLabels, lc.linkerPath) })),

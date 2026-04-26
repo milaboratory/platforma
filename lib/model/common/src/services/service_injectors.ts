@@ -1,17 +1,21 @@
 /**
- * UI service injectors — auto-derived types, method map, and service info builder.
+ * Service dispatch glue — auto-derived types, method maps, and service info builder.
  *
- * The factory (createUiServiceInjectors) lives in service_injector_factory.ts —
- * that's the only file to edit when adding a new node service.
+ * The worker-side handler factory (createNodeServiceHandlers) lives in
+ * node_service_handlers.ts — that's the only file to edit when adding a
+ * new node service. Method-name registries for UI and model sides are
+ * derived directly from the `uiMethods` / `modelMethods` declarations in
+ * service_declarations.ts — no factory introspection, no stubs.
  */
 
 import type { InferServiceKind, InferServiceUi, ServiceBrand, ServiceName } from "./service_types";
 import type { DriverKit } from "../driver_kit";
 import { Services } from "./service_declarations";
-import { getMethodNames, resolveRequiredServices } from "./service_capabilities";
-import { createUiServiceInjectors } from "./service_injector_factory";
+import { getServiceModelMethods, getServiceUiMethods } from "./service_types";
+import { resolveRequiredServices } from "./service_capabilities";
+import { createNodeServiceHandlers } from "./node_service_handlers";
 
-export { createUiServiceInjectors } from "./service_injector_factory";
+export { createNodeServiceHandlers } from "./node_service_handlers";
 
 type NodeServiceKeys = {
   [K in keyof typeof Services]: InferServiceKind<ServiceBrand<(typeof Services)[K]>> extends "node"
@@ -19,54 +23,66 @@ type NodeServiceKeys = {
     : never;
 }[keyof typeof Services];
 
-/** Auto-derived map of node service keys to their UI-side driver interfaces. */
-export type UiServiceInjectorMap = {
+/**
+ * Auto-derived map of node service keys to their UI-facing interfaces.
+ * Fulfilled by real driver wrappers in the worker. Main services are
+ * dispatched by the Electron main-process router and never reach this
+ * map; wasm services are instantiated locally on each consumer.
+ */
+export type NodeServiceHandlerMap = {
   [K in NodeServiceKeys]: InferServiceUi<ServiceBrand<(typeof Services)[K]>>;
 };
 
 let cachedKit: DriverKit | undefined;
-let cachedInjectors: UiServiceInjectorMap | undefined;
+let cachedHandlers: NodeServiceHandlerMap | undefined;
 
-function getOrCreateInjectors(driverKit: DriverKit): UiServiceInjectorMap {
-  if (!cachedInjectors || cachedKit !== driverKit) {
+function getOrCreateHandlers(driverKit: DriverKit): NodeServiceHandlerMap {
+  if (!cachedHandlers || cachedKit !== driverKit) {
     cachedKit = driverKit;
-    cachedInjectors = createUiServiceInjectors(driverKit);
+    cachedHandlers = createNodeServiceHandlers(driverKit);
   }
-  return cachedInjectors;
+  return cachedHandlers;
 }
 
-/** Resolve the injector for a given service ID. Caches injectors per DriverKit reference. */
-export function resolveUiInjector(
+/**
+ * Resolve the worker-side handler object for a given service ID. Caches
+ * per DriverKit reference. Called from the worker's IPC dispatch path.
+ */
+export function resolveNodeServiceHandler(
   driverKit: DriverKit,
   serviceId: ServiceName,
-): UiServiceInjectorMap[keyof UiServiceInjectorMap] | null {
-  const injectors = getOrCreateInjectors(driverKit);
+): NodeServiceHandlerMap[keyof NodeServiceHandlerMap] | null {
+  const handlers = getOrCreateHandlers(driverKit);
   const key = Object.keys(Services).find(
     (k) => Services[k as keyof typeof Services] === serviceId,
   ) as NodeServiceKeys | undefined;
   if (!key) return null;
-  return injectors[key];
+  return handlers[key];
+}
+
+function buildMethodMap(
+  pick: (id: ServiceName) => readonly string[],
+): Readonly<Record<string, string[]>> {
+  const result: Record<string, string[]> = {};
+  for (const id of Object.values(Services)) {
+    result[id as string] = [...pick(id)];
+  }
+  return result;
 }
 
 /**
- * Static map of ServiceName → method names, auto-derived from the injector shape.
- * Computed once at module load. The stub DriverKit is never called — it only
- * provides a target so the closures in createUiServiceInjectors have own-property
- * keys that getMethodNames can introspect.
+ * UI-side method names per service. Drives ServiceProxy forwarder
+ * construction in the renderer.
  */
-export const SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> = (() => {
-  const stubKit = new Proxy({} as DriverKit, {
-    get: () => new Proxy({}, { get: () => () => {} }),
-  });
-  const injectors = createUiServiceInjectors(stubKit);
-  const result: Record<string, string[]> = {};
-  for (const key of Object.keys(Services) as (keyof typeof Services)[]) {
-    const serviceId = Services[key];
-    const injector = injectors[key as NodeServiceKeys];
-    result[serviceId] = injector ? getMethodNames(injector) : [];
-  }
-  return result;
-})();
+export const SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> =
+  buildMethodMap(getServiceUiMethods);
+
+/**
+ * Model-side method names per service. Drives the workflow VM bridge
+ * (see pl-middle-layer js_render).
+ */
+export const MODEL_SERVICE_METHOD_MAP: Readonly<Record<string, string[]>> =
+  buildMethodMap(getServiceModelMethods);
 
 /** Build service info for a block from its feature flags. */
 export function buildServiceInfo(
