@@ -5,9 +5,21 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import type { BlockRenderingMode } from "@platforma-sdk/model";
 
-export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "rid"> {
-  /** Project resource ID. */
+/**
+ * Opaque identifier for a project, safe to persist and reuse across sessions.
+ * Internally this is a string derived from resource ID without signature.
+ * Unlike ResourceId, this does not carry cryptographic signatures and can be
+ * safely persisted, serialized, and reused across ML sessions.
+ * Absence of signature guarantees this ID cannot be used in transactions 'as-is',
+ * requiring the caller to operate with special types and helpers.
+ */
+declare const __projectIdBrand: unique symbol;
+export type ProjectId = string & { readonly __projectIdBrand: typeof __projectIdBrand };
+
+export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "id" | "rid"> {
   rid: ResourceId;
+  /** Unique project identifier in middle layer. Use to operate with given project. */
+  id: ProjectId;
 }
 
 /** Entry representing a single block in block structure */

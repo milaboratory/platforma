@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
-import { type MiddleLayer, resourceIdToString } from "@milaboratories/pl-middle-layer";
+import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
 import type { Branded } from "@milaboratories/pl-model-common";
 import type { ToolContext } from "./tools/types";
 import { registerPingTool } from "./tools/ping";
@@ -252,20 +252,20 @@ export class PlMcpServer {
     return this.ml;
   }
 
-  /** Resolves a project from the list by its projectId (resourceIdToString format). */
+  /** Resolves a project from the list by its projectId. */
   private async resolveProject(projectId: string) {
     const ml = this.requireMl();
     await ml.projectList.refreshState();
     const projects = await ml.projectList.awaitStableValue();
-    const entry = projects.find((p) => resourceIdToString(p.rid) === projectId);
+    const entry = projects.find((p) => p.id === projectId);
     if (!entry) throw new Error(`Project ${projectId} not found`);
     return entry;
   }
 
-  /** Gets an opened project by projectId. Resolves via project list → rid → getOpenedProject. */
+  /** Gets an opened project by projectId. */
   private async getOpenedProject(projectId: string) {
     const ml = this.requireMl();
     const entry = await this.resolveProject(projectId);
-    return ml.getOpenedProject(entry.rid);
+    return ml.getOpenedProject(entry.id);
   }
 }

@@ -87,7 +87,11 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
     });
   }
 
-  public get rid(): GlobalResourceId {
+  public get rid(): ResourceId {
+    return this._rid;
+  }
+
+  public get ridNoSignature(): GlobalResourceId {
     return parseSignedResourceId(this._rid).globalId;
   }
 

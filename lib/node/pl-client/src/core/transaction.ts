@@ -1,7 +1,6 @@
 // TODO: fix this
 /* eslint-disable no-prototype-builtins */
 import type {
-  AnyResourceId,
   ColorProof,
   LocalResourceId,
   OptionalResourceId,
@@ -17,6 +16,7 @@ import type {
 import {
   bigintToResourceId,
   createLocalResourceId,
+  isLocalResourceId,
   ensureResourceIdNotNull,
   MaxTxId,
   extractBasicResourceData,
@@ -85,7 +85,7 @@ export type FieldRef = _FieldId<ResourceRef>;
 export type LocalFieldId = _FieldId<LocalResourceId>;
 export type AnyFieldId = FieldId | LocalFieldId;
 
-export type AnyResourceRef = ResourceRef | AnyResourceId | ResourceId;
+export type AnyResourceRef = ResourceRef | LocalResourceId | ResourceId;
 export type AnyFieldRef = _FieldId<AnyResourceRef>; // FieldRef | FieldId
 export type AnyRef = AnyResourceRef | AnyFieldRef;
 
@@ -150,7 +150,7 @@ function toResourceIdAndSignature(ref: AnyResourceRef): ResourceIdWithSignature 
 
 export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
   if (isResourceRef(ref)) return await ref.globalId;
-  if (typeof ref === "bigint") return bigintToResourceId(ref); // legacy path: loose security mode in backend
+  if (isLocalResourceId(ref)) return bigintToResourceId(ref); // legacy path: loose security mode in backend
   return ref;
 }
 
