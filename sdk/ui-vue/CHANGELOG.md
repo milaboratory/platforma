@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.68.1
+
+### Patch Changes
+
+- ca3cf14: export labeled columns
+
 ## 1.68.0
 
 ### Minor Changes
