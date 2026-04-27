@@ -5,11 +5,13 @@ import type {
   PTableColumnSpec,
   PFrameSpecDriver,
   WritePTableToFsResult,
+  PlTableColumnIdJson,
 } from "@platforma-sdk/model";
-import { getPTableColumnId } from "@platforma-sdk/model";
+import { getPTableColumnId, parseJson } from "@platforma-sdk/model";
 import { isNil } from "es-toolkit";
 import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
+import { PlAgDataTableRowNumberColId } from "../PlAgDataTable";
 
 /** Options for the native CSV export path. */
 export interface ExportOptions {
@@ -88,6 +90,11 @@ export function isCsvExportAvailable(): boolean {
  * ag-grid column defs, remapped onto the provided PTable spec array so the
  * indices match the current table handle (ColDef.field indices may be stale
  * or diverge from the spec order).
+ *
+ * Each grid column carries a `PlTableColumnId` ({ source, labeled }). When
+ * the labeled spec differs from the source (axis replaced by a label
+ * column), both indices are emitted so the export contains the raw axis
+ * value alongside its human-readable label.
  */
 export function collectVisibleColumnIndices(
   gridApi: GridApi,
@@ -99,13 +106,17 @@ export function collectVisibleColumnIndices(
     return;
   }
 
-  return columnDefs
-    .filter(
-      (def: ColDef | ColGroupDef): def is ColDef =>
-        !("children" in def) && def.hide !== true && !isNil(def.context),
-    )
-    .map((def) =>
-      pframeSpec.findTableColumn(specs, getPTableColumnId(def.context as PTableColumnSpec)),
-    )
-    .filter((index): index is number => index !== -1);
+  const findIndex = (spec: PTableColumnSpec) =>
+    pframeSpec.findTableColumn(specs, getPTableColumnId(spec));
+
+  const specsForDef = (def: ColDef | ColGroupDef): PTableColumnSpec[] => {
+    if ("children" in def) return [];
+    if (def.hide === true) return [];
+    if (isNil(def.colId)) return [];
+    if (def.colId === PlAgDataTableRowNumberColId) return [];
+    const { labeled } = parseJson(def.colId as PlTableColumnIdJson);
+    return [labeled];
+  };
+
+  return [...new Set(columnDefs.flatMap(specsForDef).map(findIndex))].filter((idx) => idx !== -1);
 }
