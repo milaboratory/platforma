@@ -239,7 +239,7 @@ describe("deriveAxisLabels via deriveAllLabels", () => {
       makeLabelableColumn(
         "c1",
         { name: "shared", annotations: { [Annotation.Label]: "Cluster size" } },
-        [{ spec: linkerSpec }],
+        [{ linker: { id: "lk" as PObjectId, spec: linkerSpec } as never, qualifications: [] }],
       ),
       makeLabelableColumn("c2", {
         name: "shared",

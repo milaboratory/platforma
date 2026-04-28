@@ -55,6 +55,9 @@ export interface AnchoredColumnCollection extends Disposable {
 
   /** Axis-aware column discovery. */
   findColumns(options?: AnchoredFindColumnsOptions): ColumnMatch[];
+
+  /** Variant discovery with detailed mapping info for each hit. */
+  findColumnVariants(options?: AnchoredFindColumnsOptions): ColumnVariant[];
 }
 
 /** Controls axis matching behavior for anchored discovery. */
@@ -76,12 +79,22 @@ export interface ColumnMatch {
   readonly variants: MatchVariant[];
 }
 
+export interface ColumnVariant<Id extends PObjectId = PObjectId> {
+  /** Column snapshot with anchored SUniversalPColumnId. */
+  readonly column: ColumnSnapshot<Id>;
+  /** Full qualifications needed for integration. */
+  readonly qualifications: MatchQualifications;
+  /** Linker steps traversed to reach this hit; empty for direct matches. */
+  readonly path: {
+    linker: ColumnSnapshot<PObjectId>;
+    qualifications: AxisQualification[];
+  }[];
+}
+
 /** A single mapping variant describing how a hit column can be integrated. */
 export interface MatchVariant {
   /** Full qualifications needed for integration. */
   readonly qualifications: MatchQualifications;
-  /** Distinctive (minimal) qualifications needed for integration. */
-  readonly distinctiveQualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<PObjectId>;
@@ -312,7 +325,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({
         path,
         qualifications: remapFromIdxToId(v.qualifications, anchors),
-        distinctiveQualifications: remapFromIdxToId(v.distinctiveQualifications, anchors),
       }));
       const existing = acc.get(origId);
       return acc.set(
@@ -324,6 +336,17 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
     }, new Map());
 
     return Array.from(byColumn.values());
+  }
+
+  findColumnVariants(options?: AnchoredFindColumnsOptions): ColumnVariant[] {
+    const matches = this.findColumns(options);
+    return matches.flatMap((match) =>
+      match.variants.map((variant) => ({
+        column: match.column,
+        path: variant.path,
+        qualifications: variant.qualifications,
+      })),
+    );
   }
 }
 
