@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.68.7
+
+### Patch Changes
+
+- e1bb3ba: hide axes from label columns
+
 ## 1.68.6
 
 ### Patch Changes
