@@ -123,11 +123,10 @@ function mapToTableColumnVariants(
         data: snap.data,
         dataStatus: snap.dataStatus,
       },
-      originalId: snap.id,
-      isPrimary,
       path: variant.path,
       qualifications: variant.qualifications,
-      distinctiveQualifications: variant.distinctiveQualifications,
+      originalId: snap.id,
+      isPrimary,
     };
   });
 }

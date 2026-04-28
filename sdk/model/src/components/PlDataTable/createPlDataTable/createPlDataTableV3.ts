@@ -106,7 +106,7 @@ export function createPlDataTableV3<A, U>(
       id: dc.column.id,
       spec: dc.column.spec,
       linkerPath: dc.path,
-      qualifications: dc.distinctiveQualifications,
+      qualifications: dc.qualifications,
     })),
     labelColumns,
     deriveLabelsOptions: {

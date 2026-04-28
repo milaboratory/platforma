@@ -289,8 +289,6 @@ test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements:
   },
 );
 
-// --- Entry with { spec, extraTrace } ---
-
 test("Entry with extraTrace (suffix, default) appends to labels", () => {
   const spec = createSpec({
     annotations: {
@@ -318,8 +316,6 @@ test("Entry with extraTrace position prefix prepends to labels", () => {
   const labels = deriveDistinctLabels(entries);
   expect(labels).toEqual(["P1", "P2"]);
 });
-
-// --- linkerPath ---
 
 test("linkerPath appends default 'via' suffix when needed for uniqueness", () => {
   const entries: Entry[] = [
@@ -438,8 +434,6 @@ test("linkerPath falls back to Label when LinkLabel is absent", () => {
   const labels = deriveDistinctLabels(entries);
   expect(labels).toEqual(["Col", "Col via FallbackLabel"]);
 });
-
-// --- formatters: nativeLabel / hitQualification / anchorQualification / linkerStepQualification ---
 
 test("formatters.native customizes label rendering", () => {
   const s = ((label: string) =>
@@ -562,8 +556,6 @@ test("formatters.linkerStepQualification controls inline step quals", () => {
   expect(labels).toEqual(["Counts via Mapper (X)", "Counts via Mapper (Y)"]);
 });
 
-// --- addLabelAsSuffix ---
-
 test("addLabelAsSuffix places native label at the end", () => {
   const specs = tracesToSpecs([[{ type: "t1", label: "L1" }], [{ type: "t1", label: "L2" }]]);
   const labels = deriveDistinctLabels(specs, {
@@ -572,8 +564,6 @@ test("addLabelAsSuffix places native label at the end", () => {
   });
   expect(labels).toEqual(["L1 / Label", "L2 / Label"]);
 });
-
-// --- separator ---
 
 test("custom separator is used between label parts", () => {
   const specs = tracesToSpecs([
@@ -594,15 +584,11 @@ test("custom separator is used between label parts", () => {
   expect(labels).toEqual(["A - X", "A - Y", "B - Y"]);
 });
 
-// --- single value ---
-
 test("single value gets its trace label", () => {
   const specs = tracesToSpecs([[{ type: "t1", label: "Only" }]]);
   const labels = deriveDistinctLabels(specs);
   expect(labels).toEqual(["Only"]);
 });
-
-// --- Unlabeled fallback ---
 
 test("Unlabeled fallback when no trace entries match", () => {
   // Two identical specs with identical traces — fallback path
@@ -624,8 +610,6 @@ test("Unlabeled when no traces and no label", () => {
   expect(result.every((r) => r === "Unlabeled")).toBe(true);
 });
 
-// --- repeated type occurrences (secondaryTypes path) ---
-
 test("repeated type occurrences are used as secondary types", () => {
   // Two records where "t1" appears twice in each, with different labels on 2nd occurrence
   const specs = tracesToSpecs([
@@ -643,8 +627,6 @@ test("repeated type occurrences are used as secondary types", () => {
   // t1@2 is secondary since it only appears when there are 2 occurrences
   expect(labels).toEqual(["A", "B"]);
 });
-
-// --- spec without Annotation.Label (only Trace) ---
 
 test("spec without native label uses only trace entries", () => {
   const specs = [
@@ -679,10 +661,6 @@ test("includeNativeLabel with no native label does not break", () => {
   const labels = deriveDistinctLabels(specs, { includeNativeLabel: true });
   expect(labels).toEqual(["X", "Y"]);
 });
-
-// ---------------------------------------------------------------------------
-// v2: linker path + qualifications as additional disambiguation layers
-// ---------------------------------------------------------------------------
 
 describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
   function labeledSpec(label: string, name = "col"): PColumnSpec {

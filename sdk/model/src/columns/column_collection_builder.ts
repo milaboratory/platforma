@@ -84,8 +84,6 @@ export interface ColumnVariant<Id extends PObjectId = PObjectId> {
   readonly column: ColumnSnapshot<Id>;
   /** Full qualifications needed for integration. */
   readonly qualifications: MatchQualifications;
-  /** Distinctive (minimal) qualifications needed for integration. */
-  readonly distinctiveQualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<PObjectId>;
@@ -97,8 +95,6 @@ export interface ColumnVariant<Id extends PObjectId = PObjectId> {
 export interface MatchVariant {
   /** Full qualifications needed for integration. */
   readonly qualifications: MatchQualifications;
-  /** Distinctive (minimal) qualifications needed for integration. */
-  readonly distinctiveQualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<PObjectId>;
@@ -329,7 +325,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
       const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({
         path,
         qualifications: remapFromIdxToId(v.qualifications, anchors),
-        distinctiveQualifications: remapFromIdxToId(v.distinctiveQualifications, anchors),
       }));
       const existing = acc.get(origId);
       return acc.set(
@@ -350,7 +345,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
         column: match.column,
         path: variant.path,
         qualifications: variant.qualifications,
-        distinctiveQualifications: variant.distinctiveQualifications,
       })),
     );
   }

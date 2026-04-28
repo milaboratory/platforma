@@ -404,8 +404,6 @@ describe("AnchoredColumnCollection", () => {
     for (const v of col1Match.variants) {
       expect(v.qualifications.forQueries).toBeDefined();
       expect(v.qualifications.forHit).toBeDefined();
-      expect(v.distinctiveQualifications.forQueries).toBeDefined();
-      expect(v.distinctiveQualifications.forHit).toBeDefined();
       // forQueries keys are a subset of anchor ids
       for (const key of Object.keys(v.qualifications.forQueries)) {
         expect([anchorSnap.id]).toContain(key);
