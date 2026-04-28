@@ -4,7 +4,7 @@
   "description": "CLI for Platforma server state manipulation",
   "license": "UNLICENSED",
   "bin": {
-    "pl-cli": "./bin/run.js"
+    "pl-cli": "./bin/run.mjs"
   },
   "files": [
     "./bin/*",
