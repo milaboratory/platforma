@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test.ui",
-  "version": "1.2.28",
+  "version": "1.2.29",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target block-ui",
