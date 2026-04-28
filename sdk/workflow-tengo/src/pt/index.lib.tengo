@@ -119,16 +119,12 @@ _asJoinEntries := func(specQueries) {
 	return slices.map(specQueries, _asJoinEntry)
 }
 
-// Build a `SingleAxisSelector` (full-info, over-specified but always
-// correct) for `axesSpec[idx]`. Mirrors the Rust upgrader's use of
-// `AxesSpec::selector(idx)` at `pframes-rs/packages/spec/src/axes/axes_spec.rs:162`,
-// except we include every disambiguator unconditionally (simpler than
-// replicating the minimal-selector algorithm, and still uniquely matches
-// via the `find()` semantics in `axes_spec.rs:400`). Fields `domain` /
-// `contextDomain` / `parentAxes` are emitted only when non-empty so the
-// JSON stays canonical. `parentAxes` is resolved recursively — required
-// for multi-layer columns where axes may share name/type/domain and
-// differ only in their parent hierarchy.
+// Build a `SingleAxisSelector` for `axesSpec[idx]`. Over-specified
+// (every disambiguator included) — simpler than the Rust minimal-
+// selector algorithm at `pframes-rs/packages/spec/src/axes/axes_spec.rs:162`
+// and still uniquely matches via `find()`. Empty fields are omitted to
+// keep the JSON canonical; `parentAxes` recurse for multi-layer columns
+// where axes share name/type/domain and differ only in parent hierarchy.
 _buildAxisSelector := func(axesSpec, idx) {
 	axis := axesSpec[idx]
 	selector := { name: axis.name }
