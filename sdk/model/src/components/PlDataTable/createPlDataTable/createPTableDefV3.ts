@@ -16,7 +16,6 @@ import { isNil } from "es-toolkit";
 import type { PlDataTableFilters } from "../typesV5";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
-import { getCfgRenderCtx } from "../../../internal";
 
 /** Primary side — base row grid. */
 export type PrimaryEntry<Data> = {
@@ -64,8 +63,6 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
       ),
     };
   }
-
-  getCfgRenderCtx().logInfo(JSON.stringify(query));
 
   if (!isNil(params.filters)) {
     const nonEmpty = distillFilterSpec(params.filters);
