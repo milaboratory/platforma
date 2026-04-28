@@ -112,6 +112,8 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
   const labelForced =
     (options.includeNativeLabel === true || hasAnySynthetic) &&
     stats.countByType.has(LABEL_TYPE_FULL);
+  // Tied to labeled-step presence, not path presence: entries with a non-empty linkerPath
+  // but no labeled steps contribute no LINKER_TYPE trace entry, so they do not count here.
   const linkerForced = stats.countByType.get(LINKER_TYPE_FULL) === values.length;
 
   const forcedSet = new Set<string>();

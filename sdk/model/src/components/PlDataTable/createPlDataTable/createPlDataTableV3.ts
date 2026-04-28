@@ -322,6 +322,10 @@ function withVariantColumns<V extends { readonly column: ColumnSnapshot<Discover
   fn: (cols: ColumnSnapshot<DiscoveredPColumnId>[]) => ColumnSnapshot<DiscoveredPColumnId>[],
 ): V[] {
   const cols = fn(variants.map((v) => v.column));
+  if (cols.length !== variants.length)
+    throw new Error(
+      `withVariantColumns: fn must preserve array length (got ${cols.length}, expected ${variants.length})`,
+    );
   return variants.map((v, i) => ({ ...v, column: cols[i] }));
 }
 
