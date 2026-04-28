@@ -38,6 +38,7 @@ import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
 import { isNil, isPlainObject, throwError, type Nil } from "@milaboratories/helpers";
+import { flow } from "es-toolkit";
 
 export type createPlDataTableOptionsV3 = {
   tableState?: PlDataTableStateV2;
@@ -294,25 +295,29 @@ function annotateColumnGroups(params: {
     pframeSpec,
   );
 
-  const directAnnotated = withVariantColumns(direct, (cols) =>
-    withTableVisualAnnotations(
-      visibilityByColId,
-      orderByColId,
-      withInfoAnnotations(derivedTooltips, withLabelAnnotations(derivedLabels, cols)),
+  const directAnnotated = liftToVariantColumns(
+    direct,
+    flow(
+      (cols) => withLabelAnnotations(derivedLabels, cols),
+      (cols) => withInfoAnnotations(derivedTooltips, cols),
+      (cols) => withTableVisualAnnotations(visibilityByColId, orderByColId, cols),
     ),
   );
 
-  const linkedAnnotated = withVariantColumns(linked, (cols) =>
-    withTableVisualAnnotations(
-      visibilityByColId,
-      orderByColId,
-      withHidenAxesAnnotations(
-        withInfoAnnotations(derivedTooltips, withLabelAnnotations(derivedLabels, cols)),
-      ),
+  const linkedAnnotated = liftToVariantColumns(
+    linked,
+    flow(
+      (cols) => withHidenAxesAnnotations(cols),
+      (cols) => withLabelAnnotations(derivedLabels, cols),
+      (cols) => withInfoAnnotations(derivedTooltips, cols),
+      (cols) => withTableVisualAnnotations(visibilityByColId, orderByColId, cols),
     ),
   ).map((lc) => ({ ...lc, path: annotateLinkerPath(derivedLabels, lc.path) }));
 
-  const labelColumnsAnnotated = withLabelAnnotations(derivedLabels, labelColumns);
+  const labelColumnsAnnotated = flow(
+    (cols: PColumn<PColumnDataUniversal>[]) => withHidenAxesAnnotations(cols),
+    (cols) => withLabelAnnotations(derivedLabels, cols),
+  )(labelColumns);
 
   return {
     direct: directAnnotated,
@@ -321,15 +326,15 @@ function annotateColumnGroups(params: {
   };
 }
 
-/** Apply a snapshot-array transformation to the inner `column` of each variant. */
-function withVariantColumns<V extends { readonly column: ColumnSnapshot<DiscoveredPColumnId> }>(
+/** Lift a snapshot-array transform so it runs on the inner `column` of each variant. */
+function liftToVariantColumns<V extends { readonly column: ColumnSnapshot<DiscoveredPColumnId> }>(
   variants: V[],
   fn: (cols: ColumnSnapshot<DiscoveredPColumnId>[]) => ColumnSnapshot<DiscoveredPColumnId>[],
 ): V[] {
   const cols = fn(variants.map((v) => v.column));
   if (cols.length !== variants.length)
     throw new Error(
-      `withVariantColumns: fn must preserve array length (got ${cols.length}, expected ${variants.length})`,
+      `liftToVariantColumns: fn must preserve array length (got ${cols.length}, expected ${variants.length})`,
     );
   return variants.map((v, i) => ({ ...v, column: cols[i] }));
 }
