@@ -129,8 +129,7 @@ _asJoinEntries := func(specQueries) {
 // JSON stays canonical. `parentAxes` is resolved recursively — required
 // for multi-layer columns where axes may share name/type/domain and
 // differ only in their parent hierarchy.
-_buildAxisSelector := undefined
-_buildAxisSelector = func(axesSpec, idx) {
+_buildAxisSelector := func(axesSpec, idx) {
 	axis := axesSpec[idx]
 	selector := { name: axis.name }
 	if !is_undefined(axis.type) {
