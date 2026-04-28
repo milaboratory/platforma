@@ -84,6 +84,8 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
 const EMBEDDED_REF_RE = /^(?<pre>[\\"]*)\{[\s\S]*?__isRef[\s\S]*\}(?<suf>[\\"]*)$/;
 
 function unwrapEmbeddedRef(s: string, onParsed: (value: unknown) => void) {
+  const c0 = s.charCodeAt(0);
+  if (c0 !== 0x7b /* { */ && c0 !== 0x22 /* " */) return;
   const m = EMBEDDED_REF_RE.exec(s);
   if (m === null) return;
   if (m.groups!.pre.length !== m.groups!.suf.length) return;
