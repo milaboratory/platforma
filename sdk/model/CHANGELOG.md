@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.68.6
+
+### Patch Changes
+
+- 557d174: Adopt labels for usage qualifications
+
 ## 1.68.5
 
 ### Patch Changes
