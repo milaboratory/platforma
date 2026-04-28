@@ -49,16 +49,18 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
     entries: params.primary.map((a) => toLeaf(a.column, [])),
   };
 
-  for (const group of params.secondary) {
+  if (params.secondary.length > 0) {
     query = {
       type: "outerJoin",
       primary: {
         entry: query,
-        qualifications: params.primary.flatMap((p) => {
-          return group.primaryQualifications?.[p.column.id] ?? [];
-        }),
+        qualifications: params.secondary.flatMap((g) =>
+          params.primary.flatMap((p) => g.primaryQualifications?.[p.column.id] ?? []),
+        ),
       },
-      secondary: group.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
+      secondary: params.secondary.flatMap((g) =>
+        g.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
+      ),
     };
   }
 

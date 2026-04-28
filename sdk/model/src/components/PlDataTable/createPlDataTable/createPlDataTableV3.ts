@@ -167,10 +167,15 @@ export function createPlDataTableV3<A, U>(
   const primaryEntries: PrimaryEntry<undefined | PColumnDataUniversal>[] = primarySnapshots.map(
     (snap) => ({ column: resolveSnapshot(snap) }),
   );
+  const secondaryGroups: SecondaryGroup<undefined | PColumnDataUniversal>[] = buildSecondaryGroups(
+    secondarySnapshots,
+    annotated.linked,
+    annotated.labels,
+  );
   const fullDef = createPTableDefV3({
     primaryJoinType,
     primary: primaryEntries,
-    secondary: buildSecondaryGroups(secondarySnapshots, annotated.linked, annotated.labels),
+    secondary: secondaryGroups,
     filters,
     sorting,
   });
