@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.12.21
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pl-client@3.2.1
+  - @milaboratories/pl-tree@1.9.19
+
 ## 1.12.20
 
 ### Patch Changes
