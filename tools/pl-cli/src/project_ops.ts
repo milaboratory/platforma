@@ -1,5 +1,5 @@
 import type { PlClient, ResourceId, PlTransaction } from "@milaboratories/pl-client";
-import { field, isNullResourceId } from "@milaboratories/pl-client";
+import { field, isNullResourceId, isUnimplementedError } from "@milaboratories/pl-client";
 import {
   ProjectMetaKey,
   ProjectCreatedTimestamp,
@@ -219,23 +219,37 @@ export async function getProjectListRid(pl: PlClient): Promise<ResourceId> {
 
 /**
  * Navigates to a specific user's project list resource ID.
- * Computes SHA256(username) to find the user's root, then reads the "projects" field.
+ * Tries ListUserResources first (new backend), falls back to SHA256 named resource lookup.
  */
 export async function navigateToUserRoot(
   pl: PlClient,
   username: string,
 ): Promise<{ userRoot: ResourceId; projectListRid: ResourceId }> {
-  const rootName = createHash("sha256").update(username).digest("hex");
+  let userRootRid: ResourceId | undefined;
 
+  // Try new ListUserResources API first
+  try {
+    userRootRid = await pl.getUserRoot({ login: username });
+  } catch (err) {
+    if (!isUnimplementedError(err)) throw err;
+    // Backend doesn't support ListUserResources — fall through to legacy
+  }
+
+  // Legacy fallback: SHA256 named resource lookup
+  if (userRootRid === undefined) {
+    const rootName = createHash("sha256").update(username).digest("hex");
+    userRootRid = await pl.withReadTx("navigateToUserRoot:legacy", async (tx) => {
+      if (!(await tx.checkResourceNameExists(rootName))) {
+        throw new Error(`User "${username}" not found on this server (no root resource).`);
+      }
+      return await tx.getResourceByName(rootName);
+    });
+  }
+
+  // Read the projects field from the resolved user root
   return await pl.withReadTx("navigateToUserRoot", async (tx) => {
-    if (!(await tx.checkResourceNameExists(rootName))) {
-      throw new Error(`User "${username}" not found on this server (no root resource).`);
-    }
-
-    const userRootRid = await tx.getResourceByName(rootName);
-
     const projectsFieldData = await tx.getField({
-      resourceId: userRootRid,
+      resourceId: userRootRid!,
       fieldName: ProjectsField,
     });
 
@@ -243,7 +257,7 @@ export async function navigateToUserRoot(
       throw new Error(`User "${username}" has no project list.`);
     }
 
-    return { userRoot: userRootRid, projectListRid: projectsFieldData.value };
+    return { userRoot: userRootRid!, projectListRid: projectsFieldData.value };
   });
 }
 
