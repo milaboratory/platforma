@@ -3448,12 +3448,18 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:*
         version: link:../../lib/util/helpers
+      '@milaboratories/pf-spec-driver':
+        specifier: workspace:*
+        version: link:../../lib/model/pf-spec-driver
       '@milaboratories/pl-drivers':
         specifier: workspace:*
         version: link:../../lib/node/pl-drivers
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../lib/model/common
       '@milaboratories/pl-tree':
         specifier: workspace:*
         version: link:../../lib/node/pl-tree

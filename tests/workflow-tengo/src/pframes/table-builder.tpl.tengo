@@ -116,7 +116,9 @@ self.body(func(inputs) {
 		}
 	}
 
-	builder.cacheInputs(1 * times.minute)
+	// 1s cacheInputs so test runs don't poison the backend cache
+	// (longer caches survive across invocations of the same fixture).
+	builder.cacheInputs(1 * times.second)
 
 	return {
 		result: file.exportFile(builder.build())
