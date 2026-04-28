@@ -463,9 +463,10 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public async getJwtToken(
     ttlSeconds: bigint,
-    options?: { authorization?: string },
+    options?: { authorization?: string; role?: AuthAPI_GetJWTToken_Role },
   ): Promise<string> {
     const cl = this.clientProvider.get();
+    const role = options?.role ?? AuthAPI_GetJWTToken_Role.ROLE_UNSPECIFIED;
 
     if (cl instanceof GrpcPlApiClient) {
       const meta: Record<string, string> = {};
@@ -474,7 +475,7 @@ export class LLPlClient implements WireClientProviderFactory {
         await cl.getJWTToken(
           {
             expiration: { seconds: ttlSeconds, nanos: 0 },
-            requestedRole: AuthAPI_GetJWTToken_Role.USER,
+            requestedRole: role,
           },
           { meta },
         ).response
@@ -483,7 +484,7 @@ export class LLPlClient implements WireClientProviderFactory {
       const headers: Record<string, string> = {};
       if (options?.authorization) headers.authorization = options.authorization;
       const resp = cl.POST("/v1/auth/jwt-token", {
-        body: { expiration: `${ttlSeconds}s`, requestedRole: AuthAPI_GetJWTToken_Role.USER },
+        body: { expiration: `${ttlSeconds}s`, requestedRole: role },
         headers,
       });
       return notEmpty((await resp).data, "REST: empty response for JWT token request").token;
