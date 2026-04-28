@@ -1,5 +1,12 @@
 # @milaboratories/pl-errors
 
+## 1.3.8
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+
 ## 1.3.7
 
 ### Patch Changes
