@@ -1,0 +1,17 @@
+// Runs `pframes.build-query.buildQuery` on a TS-supplied BuildQueryInput
+// and emits the result as a Json resource. Used by build-query.test.ts
+// to cross-check the tengo and wasm implementations.
+
+self := import("@platforma-sdk/workflow-tengo:tpl.light")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+bq := import("@platforma-sdk/workflow-tengo:pframes.build-query")
+
+self.defineOutputs("result")
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	return {
+		result: smart.createJsonResource(bq.buildQuery(inputs.params))
+	}
+})

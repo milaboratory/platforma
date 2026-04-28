@@ -1,0 +1,128 @@
+/**
+ * Pure spec-assembly mirroring pframes-rs `BuildQuery`
+ * (packages/spec/src/requests/build_query/logic.rs). Right-folds the
+ * step path over `Column(column)`:
+ *   - linker step → LinkerJoin(linker.id, [current])
+ *   - filter step → InnerJoin([current, Column(filter.id)])
+ * `qualifications` annotate the outermost entry only; step-level linker
+ * qualifications are discarded (they're discovery metadata).
+ *
+ * Cross-checked byte-for-byte against the wasm impl by tests. To be
+ * replaced with a wasm call once the backend exposes one.
+ */
+
+ll := import(":ll")
+
+// Empty `qualifications` is omitted to mirror the wasm side's
+// `skip_serializing_if = "BTreeSetOrd::is_empty"`.
+columnEntry := func(columnId, qualifications) {
+	entry := { entry: { type: "column", column: columnId } }
+	if !is_undefined(qualifications) && len(qualifications) > 0 {
+		entry.qualifications = qualifications
+	}
+	return entry
+}
+
+linkerJoinEntry := func(linkerId, secondary, qualifications) {
+	entry := {
+		entry: {
+			type: "linkerJoin",
+			linker: { column: linkerId },
+			secondary: secondary
+		}
+	}
+	if !is_undefined(qualifications) && len(qualifications) > 0 {
+		entry.qualifications = qualifications
+	}
+	return entry
+}
+
+innerJoinEntry := func(entries, qualifications) {
+	entry := { entry: { type: "innerJoin", entries: entries } }
+	if !is_undefined(qualifications) && len(qualifications) > 0 {
+		entry.qualifications = qualifications
+	}
+	return entry
+}
+
+wrapLinker := func(currentEntry, linkerId) {
+	return linkerJoinEntry(linkerId, [currentEntry], [])
+}
+
+wrapFilter := func(currentEntry, filterId) {
+	return innerJoinEntry([currentEntry, columnEntry(filterId, [])], [])
+}
+
+stepColumnId := func(step) {
+	if step.type == "linker" {
+		ll.assert(!is_undefined(step.linker), "linker step missing 'linker' field")
+		ll.assert(!is_undefined(step.linker.columnId),
+			"linker step's linker missing 'columnId' field")
+		return step.linker.columnId
+	}
+	if step.type == "filter" {
+		ll.assert(!is_undefined(step.filter), "filter step missing 'filter' field")
+		ll.assert(!is_undefined(step.filter.columnId),
+			"filter step's filter missing 'columnId' field")
+		return step.filter.columnId
+	}
+	ll.panic("unknown step type: %v", step.type)
+}
+
+/**
+ * Assembles a SpecQueryJoinEntry from a BuildQueryInput-shaped map:
+ *   - version: "v1" — required.
+ *   - column: string — terminal column id.
+ *   - path?: step entries; path[0] is outermost. Each step is
+ *     {type: "linker", linker: {columnId, ...}} or
+ *     {type: "filter", filter: {columnId, ...}}.
+ *   - qualifications?: AxisQualification list attached to the outermost
+ *     emitted entry.
+ */
+buildQuery := func(input) {
+	ll.assert(ll.isMap(input), "buildQuery: input must be a map, got %v", input)
+	version := input.version
+	ll.assert(version == "v1",
+		"buildQuery: unsupported version %v (expected \"v1\")", version)
+
+	column := input.column
+	ll.assert(is_string(column),
+		"buildQuery: 'column' must be a string, got %v", column)
+
+	path := input.path
+	if is_undefined(path) {
+		path = []
+	}
+	ll.assert(is_array(path), "buildQuery: 'path' must be an array")
+
+	qualifications := input.qualifications
+	if is_undefined(qualifications) {
+		qualifications = []
+	}
+	ll.assert(is_array(qualifications),
+		"buildQuery: 'qualifications' must be an array")
+
+	current := columnEntry(column, [])
+	for i := len(path) - 1; i >= 0; i-- {
+		step := path[i]
+		colId := stepColumnId(step)
+		if step.type == "linker" {
+			current = wrapLinker(current, colId)
+		} else {
+			current = wrapFilter(current, colId)
+		}
+	}
+
+	if len(qualifications) == 0 {
+		return current
+	}
+	current.qualifications = qualifications
+	return current
+}
+
+export ll.toStrict({
+	buildQuery: buildQuery,
+	columnEntry: columnEntry,
+	linkerJoinEntry: linkerJoinEntry,
+	innerJoinEntry: innerJoinEntry
+})

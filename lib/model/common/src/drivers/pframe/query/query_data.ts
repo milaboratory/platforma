@@ -15,7 +15,6 @@ import type {
   ExprStringEquals,
   ExprStringRegex,
   ExprNumericUnary,
-  QueryAxisSelector,
   QueryColumn,
   QuerySparseToDenseColumn,
   QueryFilter,
@@ -40,7 +39,7 @@ type ColumnIdAndTypeSpec = {
   /** Unique identifier of the column */
   id: PObjectId;
   /** Type specification defining axes and column types */
-  typeSpec: TypeSpec;
+  spec: TypeSpec;
 };
 
 /**
@@ -89,7 +88,7 @@ export type DataQueryLinkerJoinLinker = {
 /** @see QueryLinkerJoin */
 export type DataQueryLinkerJoin = QueryLinkerJoin<DataQueryLinkerJoinLinker, DataQueryJoinEntry>;
 /** @see QuerySliceAxes */
-export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, QueryAxisSelector<number>>;
+export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, number>;
 /** @see QuerySort */
 export type DataQuerySort = QuerySort<DataQuery, DataQueryExpression>;
 /** @see QueryFilter */

@@ -1,0 +1,151 @@
+test := import(":test")
+pt := import(":pt")
+
+// Dummy data placeholder — _validateColumn only checks that `data` is defined,
+// never inspects the value.
+_data := "DATA"
+
+_col := func(axesSpec) {
+	return {
+		spec: {
+			kind: "PColumn",
+			name: "c",
+			valueType: "Int",
+			axesSpec: axesSpec
+		},
+		data: _data
+	}
+}
+
+TestSlicedColumnSimpleAxis := func() {
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "sample", type: "String" }
+	]), [{ axisIndex: 0, constant: "S1" }])
+	test.isEqual({
+		type: "sliceAxes",
+		input: { type: "column", column: "out" },
+		axisFilters: [
+			{ axisSelector: { name: "sample", type: "String" }, constant: "S1" }
+		]
+	}, entry._getSpecQuery())
+}
+
+TestSlicedColumnWithDomain := func() {
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "sample", type: "String", domain: { "pl7.app/label": "s1" } }
+	]), [{ axisIndex: 0, constant: "S1" }])
+	test.isEqual({
+		axisSelector: {
+			name: "sample",
+			type: "String",
+			domain: { "pl7.app/label": "s1" }
+		},
+		constant: "S1"
+	}, entry._getSpecQuery().axisFilters[0])
+}
+
+TestSlicedColumnWithContextDomain := func() {
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "sample", type: "String", contextDomain: { scope: "run42" } }
+	]), [{ axisIndex: 0, constant: "S1" }])
+	test.isEqual({
+		axisSelector: {
+			name: "sample",
+			type: "String",
+			contextDomain: { scope: "run42" }
+		},
+		constant: "S1"
+	}, entry._getSpecQuery().axisFilters[0])
+}
+
+TestSlicedColumnEmptyDomainOmitted := func() {
+	// Empty domain/contextDomain maps must not appear in the emitted selector —
+	// otherwise downstream `find()` semantics differ from the "absent" form.
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "sample", type: "String", domain: {}, contextDomain: {} }
+	]), [{ axisIndex: 0, constant: "S1" }])
+	selector := entry._getSpecQuery().axisFilters[0].axisSelector
+	test.isEqual({ name: "sample", type: "String" }, selector)
+	test.isTrue(is_undefined(selector.domain), "empty domain must be omitted")
+	test.isTrue(is_undefined(selector.contextDomain), "empty contextDomain must be omitted")
+}
+
+TestSlicedColumnWithParentAxes := func() {
+	// Two-layer axesSpec: "donor" (idx 0) is parent of "sample" (idx 1).
+	// Slicing on "sample" must produce a selector with parentAxes resolved
+	// to the parent's own selector (name/type).
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "donor", type: "String" },
+		{ name: "sample", type: "String", parentAxes: [0] }
+	]), [{ axisIndex: 1, constant: "S1" }])
+	test.isEqual({
+		axisSelector: {
+			name: "sample",
+			type: "String",
+			parentAxes: [
+				{ name: "donor", type: "String" }
+			]
+		},
+		constant: "S1"
+	}, entry._getSpecQuery().axisFilters[0])
+}
+
+TestSlicedColumnParentAxesTransitive := func() {
+	// Three-layer chain: "a" → "b" → "c". Selector for "c" must nest "b",
+	// and "b" must in turn nest "a" — verifies recursive construction.
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "a", type: "String" },
+		{ name: "b", type: "String", parentAxes: [0] },
+		{ name: "c", type: "String", parentAxes: [1] }
+	]), [{ axisIndex: 2, constant: "X" }])
+	test.isEqual({
+		name: "c",
+		type: "String",
+		parentAxes: [
+			{
+				name: "b",
+				type: "String",
+				parentAxes: [
+					{ name: "a", type: "String" }
+				]
+			}
+		]
+	}, entry._getSpecQuery().axisFilters[0].axisSelector)
+}
+
+TestSlicedColumnMultipleFiltersOrdered := func() {
+	// Filters are emitted in the order the user provides — stable on the wire.
+	entry := pt.p.slicedColumn("out", _col([
+		{ name: "a", type: "String" },
+		{ name: "b", type: "Int" }
+	]), [
+		{ axisIndex: 1, constant: 42 },
+		{ axisIndex: 0, constant: "X" }
+	])
+	filters := entry._getSpecQuery().axisFilters
+	test.isEqual(2, len(filters))
+	test.isEqual("b", filters[0].axisSelector.name)
+	test.isEqual(42, filters[0].constant)
+	test.isEqual("a", filters[1].axisSelector.name)
+	test.isEqual("X", filters[1].constant)
+}
+
+TestSlicedColumnRegistersColumnMap := func() {
+	// The column is registered under the output name, not the original id —
+	// pt assigns the workflow-unique id later at emission time.
+	entry := pt.p.slicedColumn("renamed", _col([
+		{ name: "a", type: "String" }
+	]), [{ axisIndex: 0, constant: "X" }])
+	columns := entry._getColumnsMap()
+	test.isTrue(!is_undefined(columns["renamed"]), "column must be keyed by output name")
+	test.isEqual(_data, columns["renamed"].data)
+}
+
+TestSlicedColumnInputRefersToSameName := func() {
+	// sliceAxes.input must reference the same name used as the column map key
+	// so that the rename pass at emission substitutes both sides consistently.
+	entry := pt.p.slicedColumn("renamed", _col([
+		{ name: "a", type: "String" }
+	]), [{ axisIndex: 0, constant: "X" }])
+	test.isEqual({ type: "column", column: "renamed" }, entry._getSpecQuery().input)
+}

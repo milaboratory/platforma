@@ -1,0 +1,436 @@
+test := import(":test")
+util := import(":pt.util")
+
+TestRenameColumnNode := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "column", column: "old" },
+		{ old: "new" }
+	)
+	test.isEqual({ type: "column", column: "new" }, renamed)
+}
+
+TestRenameInnerJoin := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "innerJoin", entries: [
+			{ entry: { type: "column", column: "a" } },
+			{ entry: { type: "column", column: "b" } }
+		] },
+		{ a: "A", b: "B" }
+	)
+	test.isEqual({ type: "innerJoin", entries: [
+		{ entry: { type: "column", column: "A" } },
+		{ entry: { type: "column", column: "B" } }
+	] }, renamed)
+}
+
+TestRenameOuterJoin := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "outerJoin",
+			primary: { entry: { type: "column", column: "p" } },
+			secondary: [{ entry: { type: "column", column: "s" } }]
+		},
+		{ p: "P", s: "S" }
+	)
+	test.isEqual({ type: "outerJoin",
+		primary: { entry: { type: "column", column: "P" } },
+		secondary: [{ entry: { type: "column", column: "S" } }]
+	}, renamed)
+}
+
+TestRenameLinkerJoin := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "linkerJoin",
+			linker: { column: "l" },
+			secondary: [{ entry: { type: "column", column: "s" } }]
+		},
+		{ l: "L", s: "S" }
+	)
+	test.isEqual({ type: "linkerJoin",
+		linker: { column: "L" },
+		secondary: [{ entry: { type: "column", column: "S" } }]
+	}, renamed)
+}
+
+TestRenameSliceAxes := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "sliceAxes",
+			input: { type: "column", column: "c" },
+			axisFilters: [
+				{ axisSelector: { name: "a" }, constant: "X" }
+			]
+		},
+		{ c: "C" }
+	)
+	test.isEqual({ type: "sliceAxes",
+		input: { type: "column", column: "C" },
+		axisFilters: [{ axisSelector: { name: "a" }, constant: "X" }]
+	}, renamed)
+}
+
+TestRenameFilterWithColumnRefPredicate := func() {
+	// predicate: colRef("x") < constant(42)
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "numericComparison", operand: "lt",
+				left: { type: "columnRef", value: "x" },
+				right: { type: "constant", value: 42 }
+			}
+		},
+		{ c: "C", x: "X" }
+	)
+	test.isEqual({ type: "filter",
+		input: { type: "column", column: "C" },
+		predicate: {
+			type: "numericComparison", operand: "lt",
+			left: { type: "columnRef", value: "X" },
+			right: { type: "constant", value: 42 }
+		}
+	}, renamed)
+}
+
+TestRenameFilterDeepExpression := func() {
+	// predicate: and(isNull(colRef("a")), or(stringEquals(colRef("b"), "y", true), not(colRef("c"))))
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "t" },
+			predicate: {
+				type: "and",
+				input: [
+					{ type: "isNull", input: { type: "columnRef", value: "a" } },
+					{ type: "or", input: [
+						{ type: "stringEquals",
+							input: { type: "columnRef", value: "b" },
+							value: "y",
+							caseInsensitive: true
+						},
+						{ type: "not", input: { type: "columnRef", value: "c" } }
+					]}
+				]
+			}
+		},
+		{ t: "T", a: "A", b: "B", c: "C" }
+	)
+	test.isEqual({ type: "filter",
+		input: { type: "column", column: "T" },
+		predicate: {
+			type: "and",
+			input: [
+				{ type: "isNull", input: { type: "columnRef", value: "A" } },
+				{ type: "or", input: [
+					{ type: "stringEquals",
+						input: { type: "columnRef", value: "B" },
+						value: "y",
+						caseInsensitive: true
+					},
+					{ type: "not", input: { type: "columnRef", value: "C" } }
+				]}
+			]
+		}
+	}, renamed)
+}
+
+TestRenameFilterPassesAxisRefUnchanged := func() {
+	// axisRef references an axis selector (not a column id) — must not be renamed.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "stringEquals",
+				input: { type: "axisRef", value: { name: "sample" } },
+				value: "S1",
+				caseInsensitive: false
+			}
+		},
+		{ c: "C", sample: "WRONG_IF_APPLIED" }
+	)
+	test.isEqual({ type: "filter",
+		input: { type: "column", column: "C" },
+		predicate: {
+			type: "stringEquals",
+			input: { type: "axisRef", value: { name: "sample" } },
+			value: "S1",
+			caseInsensitive: false
+		}
+	}, renamed)
+}
+
+TestRenameIsInPreservesNegate := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "isIn",
+				input: { type: "columnRef", value: "status" },
+				set: ["a", "b", "c"],
+				negate: true
+			}
+		},
+		{ c: "C", status: "STATUS" }
+	)
+	test.isEqual({ type: "filter",
+		input: { type: "column", column: "C" },
+		predicate: {
+			type: "isIn",
+			input: { type: "columnRef", value: "STATUS" },
+			set: ["a", "b", "c"],
+			negate: true
+		}
+	}, renamed)
+}
+
+TestRenameStringContainsFuzzyOmitsAbsentWildcard := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "stringContainsFuzzy",
+				input: { type: "columnRef", value: "n" },
+				value: "color",
+				maxEdits: 1,
+				caseInsensitive: true,
+				substitutionsOnly: false
+			}
+		},
+		{ c: "C", n: "N" }
+	)
+	// wildcard is absent in input; must stay absent in output.
+	test.isTrue(is_undefined(renamed.predicate.wildcard),
+		"wildcard must remain absent when not present in input")
+	test.isEqual("N", renamed.predicate.input.value)
+}
+
+TestRenameStringContainsFuzzyPreservesWildcard := func() {
+	// wildcard present in input (incl. explicit null) must flow through unchanged.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "stringContainsFuzzy",
+				input: { type: "columnRef", value: "n" },
+				value: "color",
+				maxEdits: 1,
+				caseInsensitive: false,
+				substitutionsOnly: true,
+				wildcard: "*"
+			}
+		},
+		{ c: "C", n: "N" }
+	)
+	test.isEqual("*", renamed.predicate.wildcard)
+	test.isEqual("N", renamed.predicate.input.value)
+}
+
+TestRenameNumericUnary := func() {
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "t" },
+			predicate: {
+				type: "numericComparison", operand: "gt",
+				left: {
+					type: "numericUnary", operand: "abs",
+					input: { type: "columnRef", value: "x" }
+				},
+				right: { type: "constant", value: 0 }
+			}
+		},
+		{ t: "T", x: "X" }
+	)
+	test.isEqual({ type: "columnRef", value: "X" },
+		renamed.predicate.left.input)
+	test.isEqual("abs", renamed.predicate.left.operand)
+}
+
+TestRenameNumericBinary := func() {
+	// (x + y) * 2 > 10 — verifies recursion through both sides of a binary op.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "t" },
+			predicate: {
+				type: "numericComparison", operand: "gt",
+				left: {
+					type: "numericBinary", operand: "mul",
+					left: {
+						type: "numericBinary", operand: "add",
+						left: { type: "columnRef", value: "x" },
+						right: { type: "columnRef", value: "y" }
+					},
+					right: { type: "constant", value: 2 }
+				},
+				right: { type: "constant", value: 10 }
+			}
+		},
+		{ t: "T", x: "X", y: "Y" }
+	)
+	mul := renamed.predicate.left
+	test.isEqual("mul", mul.operand)
+	test.isEqual({ type: "columnRef", value: "X" }, mul.left.left)
+	test.isEqual({ type: "columnRef", value: "Y" }, mul.left.right)
+	test.isEqual({ type: "constant", value: 2 }, mul.right)
+}
+
+TestRenameStringContainsAndRegex := func() {
+	// Covers stringContains (caseInsensitive carried through) and stringRegex
+	// (no caseInsensitive field) in a single `or` predicate.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "t" },
+			predicate: {
+				type: "or",
+				input: [
+					{
+						type: "stringContains",
+						input: { type: "columnRef", value: "s" },
+						value: "foo",
+						caseInsensitive: true
+					},
+					{
+						type: "stringRegex",
+						input: { type: "columnRef", value: "s" },
+						value: "^bar.*"
+					}
+				]
+			}
+		},
+		{ t: "T", s: "S" }
+	)
+	contains := renamed.predicate.input[0]
+	regex := renamed.predicate.input[1]
+	test.isEqual("S", contains.input.value)
+	test.isEqual(true, contains.caseInsensitive)
+	test.isEqual("S", regex.input.value)
+	test.isEqual("^bar.*", regex.value)
+	test.isTrue(is_undefined(regex.caseInsensitive),
+		"stringRegex has no caseInsensitive field")
+}
+
+TestRenameIfNullBothBranches := func() {
+	// ifNull rename must recurse into BOTH input and replacement — regression
+	// guard: an earlier draft only renamed one branch.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "t" },
+			predicate: {
+				type: "numericComparison", operand: "eq",
+				left: {
+					type: "ifNull",
+					input: { type: "columnRef", value: "primary" },
+					replacement: { type: "columnRef", value: "fallback" }
+				},
+				right: { type: "constant", value: 0 }
+			}
+		},
+		{ t: "T", primary: "PRIMARY", fallback: "FALLBACK" }
+	)
+	ifn := renamed.predicate.left
+	test.isEqual("PRIMARY", ifn.input.value)
+	test.isEqual("FALLBACK", ifn.replacement.value)
+}
+
+TestRenameIsInWithoutNegate := func() {
+	// Mirror of TestRenameIsInPreservesNegate: when `negate` is absent in
+	// input it must remain absent in output (not materialized to `false`).
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: { type: "column", column: "c" },
+			predicate: {
+				type: "isIn",
+				input: { type: "columnRef", value: "status" },
+				set: [1, 2, 3]
+			}
+		},
+		{ c: "C", status: "STATUS" }
+	)
+	test.isEqual("STATUS", renamed.predicate.input.value)
+	test.isTrue(is_undefined(renamed.predicate.negate),
+		"negate must remain absent when not present in input")
+}
+
+TestRenameFilterNestedInFilter := func() {
+	// A filter-of-a-filter: outer predicate references a column that is
+	// shared with the inner subquery's input — rename must rewrite both.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "filter",
+			input: {
+				type: "filter",
+				input: { type: "column", column: "c" },
+				predicate: {
+					type: "isNull",
+					input: { type: "columnRef", value: "x" }
+				}
+			},
+			predicate: {
+				type: "not",
+				input: {
+					type: "isNull",
+					input: { type: "columnRef", value: "x" }
+				}
+			}
+		},
+		{ c: "C", x: "X" }
+	)
+	test.isEqual("C", renamed.input.input.column)
+	test.isEqual("X", renamed.input.predicate.input.value)
+	test.isEqual("X", renamed.predicate.input.input.value)
+}
+
+TestRenameFilterInsideJoinEntry := func() {
+	// A filter node inside a join entry's `entry` must have its predicate
+	// rewritten — covers the recursion path from join entry → SpecQuery → filter.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "innerJoin", entries: [
+			{ entry: { type: "column", column: "a" } },
+			{ entry: {
+				type: "filter",
+				input: { type: "column", column: "b" },
+				predicate: {
+					type: "stringEquals",
+					input: { type: "columnRef", value: "b" },
+					value: "hit",
+					caseInsensitive: false
+				}
+			}}
+		]},
+		{ a: "A", b: "B" }
+	)
+	test.isEqual({ type: "column", column: "A" }, renamed.entries[0].entry)
+	filterEntry := renamed.entries[1].entry
+	test.isEqual("B", filterEntry.input.column)
+	test.isEqual("B", filterEntry.predicate.input.value)
+}
+
+TestRenameFilterQualificationsPassThrough := func() {
+	// A join entry's `qualifications` must flow through rename verbatim —
+	// it carries axis selectors and context domain constants that are never
+	// column ids.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "innerJoin", entries: [
+			{
+				entry: { type: "column", column: "a" },
+				qualifications: [
+					{ axis: { name: "sample" }, contextDomain: { scope: "run1" } }
+				]
+			}
+		]},
+		{ a: "A", sample: "WRONG_IF_APPLIED", scope: "WRONG_IF_APPLIED" }
+	)
+	test.isEqual("A", renamed.entries[0].entry.column)
+	test.isEqual([
+		{ axis: { name: "sample" }, contextDomain: { scope: "run1" } }
+	], renamed.entries[0].qualifications)
+}
+
+TestRenameFilterQualificationsAbsentStaysAbsent := func() {
+	// Absent `qualifications` is canonical empty — rename must not
+	// materialize an empty list in the output.
+	renamed := util.renameSpecQueryColumns(
+		{ type: "innerJoin", entries: [
+			{ entry: { type: "column", column: "a" } }
+		]},
+		{ a: "A" }
+	)
+	test.isTrue(is_undefined(renamed.entries[0].qualifications),
+		"absent qualifications must stay absent after rename")
+}
+

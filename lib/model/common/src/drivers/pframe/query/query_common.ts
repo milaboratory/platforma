@@ -632,23 +632,31 @@ export interface QueryOuterJoin<JE extends QueryJoinEntry<unknown>> {
  * @template A - Axis selector type
  *
  * @example
- * // Slice 3D data [sample, gene, condition] to 1D [gene]
+ * // Spec layer: axisSelector is a SingleAxisSelector.
  * {
  *   type: 'sliceAxes',
  *   input: fullDataQuery,
  *   axisFilters: [
- *     { type: 'constant', axisSelector: { type: 'axis', id: 'sample' }, constant: 'Sample1' },
- *     { type: 'constant', axisSelector: { type: 'axis', id: 'condition' }, constant: 'Treatment' }
+ *     { axisSelector: { name: 'sample' }, constant: 'Sample1' },
+ *     { axisSelector: { name: 'condition' }, constant: 'Treatment' }
  *   ]
  * }
+ *
+ * @example
+ * // Data layer: axisSelector is the axis index.
+ * {
+ *   type: 'sliceAxes',
+ *   input: fullDataQuery,
+ *   axisFilters: [{ axisSelector: 0, constant: 'Sample1' }]
+ * }
  */
-export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
+export interface QuerySliceAxes<Q, A> {
   type: "sliceAxes";
   /** Input query to slice */
   input: Q;
   /** List of axis filters to apply (at least one required) */
   axisFilters: {
-    /** Selector identifying which axis to filter */
+    /** Axis to filter. `SingleAxisSelector` at the spec layer; axis index at the data layer. */
     axisSelector: A;
     /** The constant value to filter the axis to */
     constant: string | number;

@@ -1,4 +1,4 @@
-import type { PTableDef, PObjectId } from "@milaboratories/pl-model-common";
+import type { PTableDefV2, PObjectId } from "@milaboratories/pl-model-common";
 
 /**
  * Represents the configuration for a step that reads data from a PFrame directory into the tablespace.
@@ -9,8 +9,8 @@ export interface ReadFrameStep {
   type: "read_frame";
   /** The name assigned to the loaded DataFrame in the tablespace. */
   name: string;
-  /** Request to create the table from the PFrame. */
-  request: PTableDef<PObjectId>;
+  /** Request to create the table — the `SpecQuery` is forwarded to `polars_pf.pframe_source`. */
+  request: PTableDefV2<PObjectId>;
   /**
    * Translation from PFrame column ids (file names) into Polars column names
    * (which will be referenced via pt.col(...)).

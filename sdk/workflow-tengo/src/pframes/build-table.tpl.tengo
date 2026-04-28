@@ -9,6 +9,7 @@ pframesSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 util := import(":pframes.util")
 exportUtil := import(":pframes.export-util")
+bquery := import(":pframes.build-query")
 
 // `:tpl` (not `:tpl.light`) registers `bquery.resultUnmarshaller` by default,
 // so a BQueryResult resource passed via `inputs.columns.*.multiResult` is
@@ -138,20 +139,48 @@ self.body(func(inputs) {
 		return pt.p.column(key, columnsMap[key])
 	}
 
-	// Step 1: Inner-join each primary with all of its filters (if any).
-	// With multiple filters, the inner-join intersects every filter's key set.
+	// Step 1: per-primary filter wrap. `pframes.build-query.buildQuery`
+	// is the same logic the wasm pf-spec-driver runs; we translate its
+	// SpecQueryJoinEntry tree into pt operations.
+	translateQueryEntry := undefined
+	translateQueryEntry = func(entryWrap) {
+		node := entryWrap.entry
+		if node.type == "column" {
+			return ptEntry(node.column)
+		}
+		if node.type == "innerJoin" {
+			args := []
+			for child in node.entries {
+				args = append(args, translateQueryEntry(child))
+			}
+			return pt.p.inner(args...)
+		}
+		if node.type == "linkerJoin" {
+			ll.assert(len(node.secondary) == 1,
+				"build-table: linkerJoin must have exactly one secondary entry, got %d",
+				len(node.secondary))
+			return pt.p.linkerJoin(
+				ptEntry(node.linker.column),
+				translateQueryEntry(node.secondary[0]))
+		}
+		ll.panic("build-table: unsupported query node type: %v", node.type)
+	}
+
 	filteredPrimaries := []
 	for p in primaries {
-		primaryEntry := ptEntry(p.pFrameKey)
-		if len(p.filters) == 0 {
-			filteredPrimaries = append(filteredPrimaries, primaryEntry)
-		} else {
-			joinArgs := [primaryEntry]
-			for flt in p.filters {
-				joinArgs = append(joinArgs, ptEntry(flt.pFrameKey))
-			}
-			filteredPrimaries = append(filteredPrimaries, pt.p.inner(joinArgs...))
+		path := []
+		for flt in p.filters {
+			path = append(path, {
+				type: "filter",
+				filter: { columnId: flt.pFrameKey }
+			})
 		}
+		queryEntry := bquery.buildQuery({
+			version: "v1",
+			column: p.pFrameKey,
+			path: path
+		})
+		filteredPrimaries = append(filteredPrimaries, translateQueryEntry(queryEntry))
 	}
 
 	// Step 2: Combine primaries into a single trunk using the configured join
