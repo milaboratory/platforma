@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.68.5
+
+### Patch Changes
+
+- c1baeb8: fix broken table query
+
 ## 1.68.4
 
 ### Patch Changes
