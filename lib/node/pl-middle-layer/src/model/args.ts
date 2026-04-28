@@ -75,15 +75,18 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
  * Detect a PlRef carried inside a string and hand the decoded value to `onParsed`.
  *
  * A PlRef-as-string is canonical `{...}` optionally wrapped by N `JSON.stringify`
- * passes. Each pass adds a symmetric prefix/suffix of quotes and backslashes, so
- * the first `{` and last `}` sit at mirrored offsets. We use that as a cheap
- * shape gate before paying for `JSON.parse`. One pass is peeled per call —
- * deeper nesting is unwrapped via recursion in the caller.
+ * passes. Each pass adds a symmetric prefix/suffix made only of `"` and `\`
+ * chars (the escape padding) of equal length. The regex below is the strict
+ * shape gate — non-ref strings fail at the very first character, so we never
+ * scan their body. One pass is peeled per call; deeper nesting is unwrapped
+ * via recursion in the caller.
  */
+const EMBEDDED_REF_RE = /^(?<pre>[\\"]*)\{[\s\S]*?__isRef[\s\S]*\}(?<suf>[\\"]*)$/;
+
 function unwrapEmbeddedRef(s: string, onParsed: (value: unknown) => void) {
-  const i = s.indexOf("{");
-  if (i < 0 || s.charCodeAt(s.length - 1 - i) !== 0x7d /* } */) return;
-  if (s.indexOf("__isRef", i) < 0) return;
+  const m = EMBEDDED_REF_RE.exec(s);
+  if (m === null) return;
+  if (m.groups!.pre.length !== m.groups!.suf.length) return;
   let parsed: unknown;
   try {
     parsed = JSON.parse(s);
