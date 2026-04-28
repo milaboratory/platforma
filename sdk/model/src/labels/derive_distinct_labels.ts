@@ -2,23 +2,43 @@ import {
   Annotation,
   parseJson,
   readAnnotation,
+  type AxisQualification,
+  type PObjectId,
   type PObjectSpec,
   type StringifiedJson,
   type Trace,
 } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
+import type { MatchQualifications } from "../columns/column_collection_builder";
 
 export type { Trace, TraceEntry } from "@milaboratories/pl-model-common";
 
 const DISTANCE_PENALTY = 0.001;
 const LABEL_TYPE = "__LABEL__";
 const LABEL_TYPE_FULL = "__LABEL__@1";
+const LINKER_TYPE = "__LINKER__";
+const LINKER_TYPE_FULL = "__LINKER__@1";
+const HIT_QUAL_TYPE = "__HIT_QUAL__";
+const ANCHOR_QUAL_TYPE_PREFIX = "__ANCHOR_QUAL__:";
+
+function isAnchorQualType(t: string): boolean {
+  return t.startsWith(ANCHOR_QUAL_TYPE_PREFIX);
+}
+
+function isSyntheticType(t: string): boolean {
+  return t === LINKER_TYPE || t === HIT_QUAL_TYPE || isAnchorQualType(t);
+}
 
 /** SDK-internal trace shape — adds fields used by this algorithm only, not part of the on-disk contract. */
 type ExtendedTraceEntry = Trace[number] & {
   importance?: number;
   position?: "prefix" | "suffix";
+};
+
+export type LinkerStep = {
+  spec: PObjectSpec;
+  qualifications?: AxisQualification[];
 };
 
 export type Entry =
@@ -27,27 +47,55 @@ export type Entry =
       spec: PObjectSpec;
       /** Extra trace entries merged with the base trace from annotations. */
       extraTrace?: ExtendedTraceEntry[];
-      /** Linker steps traversed to discover this column; used to append "via $linkLabel" to derived labels. */
-      linkerPath?: { spec: PObjectSpec }[];
+      /** Linker steps traversed to discover this column; rendered as "via …" only when needed for uniqueness. */
+      linkerPath?: LinkerStep[];
+      /** Axis qualifications applied to the hit column / already-bound anchors; rendered as "[…]" suffixes. */
+      qualifications?: MatchQualifications;
     };
 
-export type DeriveLabelsOptions = {
-  /** Separator to use between label parts (" / " by default) */
-  separator?: string;
-  /** If true, label will be added as suffix (at the end of the generated label). By default label added as a prefix. */
-  addLabelAsSuffix?: boolean;
-  /** Force inclusion of native column label */
-  includeNativeLabel?: boolean;
-  /** Trace elements list that will be forced to be included in the label. */
-  forceTraceElements?: string[];
-  /** Custom formatter for linker path suffix. Receives the array of linker labels from the full traversal chain,
-   *  the column spec, and the column index.
-   *  If returns undefined, no linker suffix is appended. By default labels are joined with " > " and prefixed with "via ". */
-  linkerLabelFormatter?: (
-    linkerLabels: string[],
+/**
+ * Per-zone formatters. Each one receives raw inputs and returns the rendered text for that zone,
+ * or `undefined` to suppress the zone entirely (no synthetic injection → no minimization, no render).
+ */
+export type DeriveLabelsFormatters = {
+  /** Native column label. Default: identity. `undefined` → label entry not added (treated as if spec had no label). */
+  native?: (label: string, spec: PObjectSpec, index: number) => string | undefined;
+  /** Linker zone (whole "via …" piece). Receives step labels with step-quals already inlined.
+   *  Default: `via ${steps.join(" > ")}`. */
+  linker?: (linkerLabels: string[], spec: PObjectSpec, index: number) => string | undefined;
+  /** Per-step linker qualifications inlined into the step base label.
+   *  Default: `[${formatQualifications(qs)}]`. `undefined` → step rendered without quals. */
+  linkerStepQualification?: (
+    qualifications: AxisQualification[],
+    stepIndex: number,
+    stepSpec: PObjectSpec,
+  ) => string | undefined;
+  /** Hit-axis qualifications block. Default: `[${formatQualifications(qs)}]`. */
+  hitQualification?: (
+    qualifications: AxisQualification[],
     spec: PObjectSpec,
     index: number,
   ) => string | undefined;
+  /** Per-anchor qualifications block. Default: `[${anchorId}: ${formatQualifications(qs)}]`. */
+  anchorQualification?: (
+    anchorId: PObjectId,
+    qualifications: AxisQualification[],
+    spec: PObjectSpec,
+    index: number,
+  ) => string | undefined;
+};
+
+export type DeriveLabelsOptions = {
+  /** Separator to use between label parts (" / " by default). */
+  separator?: string;
+  /** If true, native label is appended at the end of the trace zone. By default it is prepended (label is the most important name). */
+  addLabelAsSuffix?: boolean;
+  /** Force inclusion of native column label even when not needed for uniqueness. */
+  includeNativeLabel?: boolean;
+  /** Trace types that must be included in the label. */
+  forceTraceElements?: string[];
+  /** Per-zone custom formatters. Returning `undefined` from any formatter suppresses the corresponding zone. */
+  formatters?: DeriveLabelsFormatters;
 };
 
 export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptions = {}): string[] {
@@ -57,23 +105,21 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
       : undefined;
   const separator = options.separator ?? " / ";
 
-  // Collect per-entry linker suffixes before disambiguation
-  const linkerSuffixes = values.map((v, i) => {
-    const spec = "spec" in v && typeof v.spec === "object" ? v.spec : (v as PObjectSpec);
-    const linkerLabels = extractLinkerLabels(v);
-    if (linkerLabels.length === 0) return undefined;
-    return isFunction(options.linkerLabelFormatter)
-      ? options.linkerLabelFormatter(linkerLabels, spec, i)
-      : `via ${linkerLabels.join(" > ")}`;
-  });
-
-  // Phase 1: enrich each value with parsed trace
-  const records = values.map((v) => enrichRecord(v, options));
-
-  // Phase 2: collect global type statistics
+  const records = values.map((v, i) => enrichRecord(v, i, options));
   const stats = collectTypeStats(records);
 
-  // Phase 3: classify types into main (present everywhere) and secondary
+  const hasAnySynthetic = records.some((r) => r.fullTrace.some((ft) => isSyntheticType(ft.type)));
+  const labelForced =
+    (options.includeNativeLabel === true || hasAnySynthetic) &&
+    stats.countByType.has(LABEL_TYPE_FULL);
+  // Tied to labeled-step presence, not path presence: entries with a non-empty linkerPath
+  // but no labeled steps contribute no LINKER_TYPE trace entry, so they do not count here.
+  const linkerForced = stats.countByType.get(LINKER_TYPE_FULL) === values.length;
+
+  const forcedSet = new Set<string>();
+  if (labelForced) forcedSet.add(LABEL_TYPE_FULL);
+  if (linkerForced) forcedSet.add(LINKER_TYPE_FULL);
+
   const { mainTypes, secondaryTypes } = classifyTypes(stats, values.length);
 
   const build = (typeSet: Set<string>, force: boolean) =>
@@ -83,28 +129,16 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
     if (secondaryTypes.length !== 0)
       throw new Error("Non-empty secondary types list while main types list is empty.");
 
-    return applyLinkerSuffixes(
-      build(new Set(LABEL_TYPE_FULL), true) ??
-        throwError("Failed to derive labels using native column labels"),
-      linkerSuffixes,
+    return (
+      build(new Set([LABEL_TYPE_FULL]), true) ??
+      throwError("Failed to derive labels using native column labels")
     );
   }
 
-  // Phase 4: search for minimal type set that produces unique labels
-  //
-  // includedCount = 2
-  // *  *
-  // T0 T1 T2 T3 T4 T5
-  //          *
-  // additionalType = 3
-  //
-  // Resulting set: T0, T1, T3
-  //
   let includedCount = 0;
   let additionalType = -1;
   while (includedCount < mainTypes.length) {
-    const currentSet = new Set<string>();
-    if (options.includeNativeLabel) currentSet.add(LABEL_TYPE_FULL);
+    const currentSet = new Set<string>(forcedSet);
     for (let i = 0; i < includedCount; ++i) currentSet.add(mainTypes[i]);
     if (additionalType >= 0) currentSet.add(mainTypes[additionalType]);
 
@@ -115,13 +149,10 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
         records,
         stats,
         forceTraceElements,
-        options,
+        forcedSet,
         separator,
       );
-      return applyLinkerSuffixes(
-        build(minimized, false) ?? throwError("Failed to derive unique labels"),
-        linkerSuffixes,
-      );
+      return build(minimized, false) ?? throwError("Failed to derive unique labels");
     }
 
     additionalType++;
@@ -131,42 +162,16 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
     }
   }
 
-  // Fallback: include all types, then minimize
-  const fallbackSet = new Set([...mainTypes, ...secondaryTypes]);
+  const fallbackSet = new Set([...forcedSet, ...mainTypes, ...secondaryTypes]);
   const minimized = minimizeTypeSet(
     fallbackSet,
     records,
     stats,
     forceTraceElements,
-    options,
+    forcedSet,
     separator,
   );
-  return applyLinkerSuffixes(
-    build(minimized, true) ?? throwError("Failed to derive unique labels"),
-    linkerSuffixes,
-  );
-}
-
-/** Apply pre-formatted linker suffixes to labels that have them. */
-function applyLinkerSuffixes(labels: string[], suffixes: (string | undefined)[]): string[] {
-  return labels.map((label, i) => (isNil(suffixes[i]) ? label : `${label} ${suffixes[i]}`));
-}
-
-/** Extract linker labels from every step of the linkers path. */
-function extractLinkerLabels(entry: Entry): string[] {
-  if (!("spec" in entry) || typeof entry.spec !== "object") return [];
-  const path = entry.linkerPath;
-  if (path === undefined || path.length === 0) return [];
-  const labels: string[] = [];
-  for (const step of path) {
-    const label = (
-      readAnnotation(step.spec, Annotation.LinkLabel) ?? readAnnotation(step.spec, Annotation.Label)
-    )?.trim();
-    if (label !== undefined && label.length > 0) {
-      labels.push(label);
-    }
-  }
-  return labels;
+  return build(minimized, true) ?? throwError("Failed to derive unique labels");
 }
 
 // --- Pure helpers ---
@@ -176,17 +181,55 @@ type EnrichedRecord = {
   fullTrace: FullTraceEntry[];
 };
 
-function extractSpecAndTrace(entry: Entry): {
+function extractEntryParts(entry: Entry): {
   spec: PObjectSpec;
   extraTrace: ExtendedTraceEntry[] | undefined;
-  linkerPath: { spec: PObjectSpec }[] | undefined;
+  linkerPath: LinkerStep[] | undefined;
+  qualifications: MatchQualifications | undefined;
 } {
   const isEnriched = "spec" in entry && typeof entry.spec === "object";
+  if (!isEnriched) {
+    return {
+      spec: entry as PObjectSpec,
+      extraTrace: undefined,
+      linkerPath: undefined,
+      qualifications: undefined,
+    };
+  }
   return {
-    spec: isEnriched ? entry.spec : (entry as PObjectSpec),
-    extraTrace: isEnriched ? entry.extraTrace : undefined,
-    linkerPath: isEnriched ? entry.linkerPath : undefined,
+    spec: entry.spec,
+    extraTrace: entry.extraTrace,
+    linkerPath: entry.linkerPath,
+    qualifications: entry.qualifications,
   };
+}
+
+function formatQualification(q: AxisQualification): string {
+  const ctx = q.contextDomain ?? {};
+  const keys = Object.keys(ctx);
+  if (keys.length === 0) return q.axis.name;
+  const pairs = keys.map((k) => `${k}=${ctx[k]}`).join(", ");
+  return Object.prototype.hasOwnProperty.call(ctx, q.axis.name) ? pairs : `${q.axis.name} ${pairs}`;
+}
+
+function formatQualifications(qs: AxisQualification[]): string {
+  return qs.map(formatQualification).join("; ");
+}
+
+function computeStepLabel(
+  step: LinkerStep,
+  stepIndex: number,
+  formatters: DeriveLabelsFormatters | undefined,
+): string | undefined {
+  const base = (
+    readAnnotation(step.spec, Annotation.LinkLabel) ?? readAnnotation(step.spec, Annotation.Label)
+  )?.trim();
+  if (isNil(base) || base.length === 0) return undefined;
+  if (step.qualifications === undefined || step.qualifications.length === 0) return base;
+  const qualText = isFunction(formatters?.linkerStepQualification)
+    ? formatters.linkerStepQualification(step.qualifications, stepIndex, step.spec)
+    : `[${formatQualifications(step.qualifications)}]`;
+  return isNil(qualText) ? base : `${base} ${qualText}`;
 }
 
 function buildFullTrace(trace: ExtendedTraceEntry[]): FullTraceEntry[] {
@@ -208,22 +251,65 @@ function buildFullTrace(trace: ExtendedTraceEntry[]): FullTraceEntry[] {
   return result;
 }
 
-function enrichRecord(value: Entry, options: DeriveLabelsOptions): EnrichedRecord {
-  const { spec, extraTrace } = extractSpecAndTrace(value);
+function enrichRecord(value: Entry, index: number, options: DeriveLabelsOptions): EnrichedRecord {
+  const { spec, extraTrace, linkerPath, qualifications } = extractEntryParts(value);
+  const formatters = options.formatters;
 
-  const label = readAnnotation(spec, Annotation.Label);
+  const rawLabel = readAnnotation(spec, Annotation.Label);
   const traceStr = readAnnotation(spec, Annotation.Trace);
   const baseTrace = traceStr
     ? (parseJson(traceStr as StringifiedJson<ExtendedTraceEntry[]>) ?? [])
     : [];
   const prefixExtra = extraTrace?.filter((e) => e.position === "prefix") ?? [];
   const suffixExtra = extraTrace?.filter((e) => e.position !== "prefix") ?? [];
-  const trace = [...prefixExtra, ...baseTrace, ...suffixExtra];
+  const trace: ExtendedTraceEntry[] = [...prefixExtra, ...baseTrace, ...suffixExtra];
 
-  if (label !== undefined) {
-    const labelEntry = { label, type: LABEL_TYPE, importance: -2 };
-    if (options.addLabelAsSuffix) trace.push(labelEntry);
-    else trace.splice(0, 0, labelEntry);
+  if (!isNil(rawLabel)) {
+    const label = isFunction(formatters?.native)
+      ? formatters.native(rawLabel, spec, index)
+      : rawLabel;
+    if (!isNil(label)) {
+      const labelEntry = { label, type: LABEL_TYPE, importance: -2 };
+      if (options.addLabelAsSuffix === true) trace.push(labelEntry);
+      else trace.splice(0, 0, labelEntry);
+    }
+  }
+
+  if (linkerPath !== undefined && linkerPath.length > 0) {
+    const stepLabels = linkerPath
+      .map((step, i) => computeStepLabel(step, i, formatters))
+      .filter((s): s is string => !isNil(s));
+    if (stepLabels.length > 0) {
+      const linkerText = isFunction(formatters?.linker)
+        ? formatters.linker(stepLabels, spec, index)
+        : `via ${stepLabels.join(" > ")}`;
+      if (!isNil(linkerText)) {
+        trace.push({ type: LINKER_TYPE, label: linkerText, importance: -10 });
+      }
+    }
+  }
+
+  if (qualifications !== undefined) {
+    for (const [anchorId, qs] of Object.entries(qualifications.forQueries)) {
+      if (qs.length === 0) continue;
+      const anchorText = isFunction(formatters?.anchorQualification)
+        ? formatters.anchorQualification(anchorId as PObjectId, qs, spec, index)
+        : `[${anchorId}: ${formatQualifications(qs)}]`;
+      if (isNil(anchorText)) continue;
+      trace.push({
+        type: `${ANCHOR_QUAL_TYPE_PREFIX}${anchorId}`,
+        label: anchorText,
+        importance: -11,
+      });
+    }
+    if (qualifications.forHit.length > 0) {
+      const hitText = isFunction(formatters?.hitQualification)
+        ? formatters.hitQualification(qualifications.forHit, spec, index)
+        : `[${formatQualifications(qualifications.forHit)}]`;
+      if (!isNil(hitText)) {
+        trace.push({ type: HIT_QUAL_TYPE, label: hitText, importance: -12 });
+      }
+    }
   }
 
   return { fullTrace: buildFullTrace(trace) };
@@ -283,20 +369,40 @@ function buildLabels(
   const result: string[] = [];
 
   for (const r of records) {
-    const parts: string[] = [];
+    const traceParts: string[] = [];
+    const anchorParts: string[] = [];
+    let linkerLabel: string | undefined;
+    let hitLabel: string | undefined;
+
     for (const ft of r.fullTrace) {
-      if (includedTypes.has(ft.fullType) || forceTraceElements?.has(ft.type)) {
-        parts.push(ft.label);
-      }
+      if (!(includedTypes.has(ft.fullType) || forceTraceElements?.has(ft.type))) continue;
+      if (ft.type === LINKER_TYPE) linkerLabel = ft.label;
+      else if (ft.type === HIT_QUAL_TYPE) hitLabel = ft.label;
+      else if (isAnchorQualType(ft.type)) anchorParts.push(ft.label);
+      else traceParts.push(ft.label);
     }
 
-    if (parts.length === 0) {
+    const isEmpty =
+      traceParts.length === 0 &&
+      anchorParts.length === 0 &&
+      linkerLabel === undefined &&
+      hitLabel === undefined;
+
+    if (isEmpty) {
       if (!force) return undefined;
       result.push("Unlabeled");
       continue;
     }
 
-    result.push(parts.join(separator));
+    let label = traceParts.join(separator);
+    const append = (part: string) => {
+      label = label.length === 0 ? part : `${label} ${part}`;
+    };
+    if (linkerLabel !== undefined) append(linkerLabel);
+    for (const a of anchorParts) append(a);
+    if (hitLabel !== undefined) append(hitLabel);
+
+    result.push(label);
   }
 
   return result;
@@ -312,7 +418,7 @@ function minimizeTypeSet(
   records: EnrichedRecord[],
   stats: TypeStats,
   forceTraceElements: Set<string> | undefined,
-  options: DeriveLabelsOptions,
+  forcedSet: Set<string>,
   separator: string,
 ): Set<string> {
   const initialResult = buildLabels(records, typeSet, forceTraceElements, separator, false);
@@ -322,11 +428,7 @@ function minimizeTypeSet(
   const result = new Set(typeSet);
 
   const removable = [...result]
-    .filter(
-      (t) =>
-        !forceTraceElements?.has(t.split("@")[0]) &&
-        !(options.includeNativeLabel && t === LABEL_TYPE_FULL),
-    )
+    .filter((t) => !forceTraceElements?.has(t.split("@")[0]) && !forcedSet.has(t))
     .sort((a, b) => (stats.importances.get(a) ?? 0) - (stats.importances.get(b) ?? 0));
 
   for (const typeToRemove of removable) {

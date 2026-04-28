@@ -11,10 +11,8 @@ import type { MatchQualifications, MatchVariant } from "../columns";
 export type TooltipEntry = {
   /** Main column spec — used for column-name fallback when no label. */
   spec: PColumnSpec;
-  /** Full qualifications carried by this variant. */
+  /** Qualifications carried by this variant. */
   qualifications?: MatchQualifications;
-  /** Minimal qualifications that separate this variant from its siblings. */
-  distinctiveQualifications?: MatchQualifications;
   /** Linker steps traversed to reach the hit column. */
   linkerPath?: MatchVariant["path"];
   /** Position of this variant within the same physical column (1-based). */
@@ -42,9 +40,6 @@ function formatTooltip(entry: TooltipEntry): undefined | string {
 
   const hit = formatHit(entry.qualifications);
   if (hit !== undefined) sections.push(hit);
-
-  const distinctive = formatDistinctive(entry.distinctiveQualifications);
-  if (distinctive !== undefined) sections.push(distinctive);
 
   if (sections.length <= 1) return undefined;
   return sections.join("\n\n");
@@ -102,18 +97,6 @@ function formatHit(q: undefined | MatchQualifications): undefined | string {
   const rendered = formatAxisQualifications(q.forHit);
   if (rendered === undefined) return undefined;
   return ["Hit column qualifications", `${BULLET_1}${rendered}`].join("\n");
-}
-
-function formatDistinctive(q: undefined | MatchQualifications): undefined | string {
-  if (isNil(q)) return undefined;
-  const bullets: string[] = [];
-  for (const id of Object.keys(q.forQueries)) {
-    for (const item of q.forQueries[id as PObjectId])
-      bullets.push(`${BULLET_1}${id}: ${formatQualification(item)}`);
-  }
-  for (const item of q.forHit) bullets.push(`${BULLET_1}hit: ${formatQualification(item)}`);
-  if (bullets.length === 0) return undefined;
-  return ["Distinctive (what separates this variant)", ...bullets].join("\n");
 }
 
 function formatAxisQualifications(qs: AxisQualification[]): undefined | string {

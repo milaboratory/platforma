@@ -79,7 +79,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
       labelsOptions: {
         // Custom linker label formatter to verify linker path labels in the UI.
         // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
-        linkerLabelFormatter: (linkerLabels) => `[${linkerLabels.join(" > ")}]`,
+        formatters: { linker: (linkerLabels) => `[${linkerLabels.join(" > ")}]` },
       },
       displayOptions: {
         ordering: [

@@ -3,7 +3,7 @@ import { createDiscoveredPColumnId, isPlRef } from "@milaboratories/pl-model-com
 import type { RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
-  ColumnMatch,
+  ColumnVariant,
   RelaxedColumnSelector,
   ColumnSnapshotProvider,
   ColumnSnapshot,
@@ -12,7 +12,7 @@ import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
-import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
+import type { ColumnsSelectorConfig, TableColumnVariant } from "./createPlDataTableV3";
 import { isNil } from "es-toolkit";
 
 export type DiscoverTableColumnOptions = {
@@ -21,11 +21,11 @@ export type DiscoverTableColumnOptions = {
   selector: ColumnsSelectorConfig;
 };
 
-/** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
+/** Discover columns from sources/anchors and normalize into a flat TableColumnVariant list. */
 export function discoverTableColumnSnaphots(
   ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,
-): TableColumnSnapshot[] | undefined {
+): TableColumnVariant[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
   const resolvedOptions = {
     ...options,
@@ -43,7 +43,7 @@ export function discoverTableColumnSnaphots(
   if (collection === undefined) return undefined;
 
   try {
-    const columns = collection.findColumns({
+    const variants = collection.findColumnVariants({
       ...(resolvedOptions.selector ?? {}),
       exclude: [
         ...(Array.isArray(resolvedOptions.selector?.exclude)
@@ -55,7 +55,7 @@ export function discoverTableColumnSnaphots(
       ],
     });
     const anchors = collection.getAnchors();
-    return mapToDiscoveredColumns(columns, anchors);
+    return mapToTableColumnVariants(variants, anchors);
   } finally {
     collection.dispose();
   }
@@ -93,43 +93,40 @@ function resolveProviders(
     : collectCtxColumnSnapshotProviders(ctx);
 }
 
-/** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
-function mapToDiscoveredColumns(
-  matched: readonly ColumnMatch[],
+/** Map column variants into TableColumnVariant list with anchor-derived isPrimary flag. */
+function mapToTableColumnVariants(
+  variants: readonly ColumnVariant[],
   anchors: Map<string, ColumnSnapshot<PObjectId>>,
-): TableColumnSnapshot[] {
+): TableColumnVariant[] {
   const columnIdToAnchorName = new Map<PObjectId, string>(
     Array.from(anchors.entries(), ([key, { id }]) => [id, key] as const),
   );
 
-  return matched.flatMap((match) => {
-    const snap = match.column;
-    const isPrimary = columnIdToAnchorName.get(match.column.id) !== undefined;
+  return variants.map((variant): TableColumnVariant => {
+    const snap = variant.column;
+    const isPrimary = columnIdToAnchorName.get(snap.id) !== undefined;
 
-    return match.variants.map((variant): TableColumnSnapshot => {
-      const discoveredId = createDiscoveredPColumnId({
-        column: snap.id,
-        path: variant.path.map((p) => ({
-          type: "linker",
-          column: p.linker.id,
-          qualifications: p.qualifications,
-        })),
-        columnQualifications: variant.qualifications.forHit,
-        queriesQualifications: variant.qualifications.forQueries,
-      });
-      return {
+    const discoveredId = createDiscoveredPColumnId({
+      column: snap.id,
+      path: variant.path.map((p) => ({
+        type: "linker",
+        column: p.linker.id,
+        qualifications: p.qualifications,
+      })),
+      columnQualifications: variant.qualifications.forHit,
+      queriesQualifications: variant.qualifications.forQueries,
+    });
+    return {
+      column: {
         id: discoveredId,
-        isPrimary,
-
-        originalId: snap.id,
         spec: snap.spec,
         data: snap.data,
         dataStatus: snap.dataStatus,
-
-        linkerPath: variant.path,
-        qualifications: variant.qualifications,
-        distinctiveQualifications: variant.distinctiveQualifications,
-      };
-    });
+      },
+      path: variant.path,
+      qualifications: variant.qualifications,
+      originalId: snap.id,
+      isPrimary,
+    };
   });
 }

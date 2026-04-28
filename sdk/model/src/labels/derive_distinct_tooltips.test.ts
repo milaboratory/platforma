@@ -110,22 +110,6 @@ describe("deriveDistinctTooltips", () => {
     expect(tooltip).toContain("sample context: batch=B");
   });
 
-  test("distinctiveQualifications produces Distinctive section", () => {
-    const entries: TooltipEntry[] = [
-      {
-        spec: createSpec("col1", "Col 1"),
-        distinctiveQualifications: {
-          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "A" })] },
-          forHit: [axisQualification("gene", { source: "Y" })],
-        },
-      },
-    ];
-    const [tooltip] = deriveDistinctTooltips(entries);
-    expect(tooltip).toContain("Distinctive (what separates this variant)");
-    expect(tooltip).toContain("main: sample context: batch=A");
-    expect(tooltip).toContain("hit: gene context: source=Y");
-  });
-
   test("variantCount > 1 adds Variant N of M line in header", () => {
     const entries: TooltipEntry[] = [
       {
@@ -195,21 +179,16 @@ describe("deriveDistinctTooltips", () => {
           forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "B" })] },
           forHit: [axisQualification("sample", { batch: "B" })],
         },
-        distinctiveQualifications: {
-          forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "B" })] },
-          forHit: [],
-        },
       },
     ];
     const [tooltip] = deriveDistinctTooltips(entries);
     expect(tooltip).toBeDefined();
     const sections = tooltip!.split("\n\n");
-    expect(sections.length).toBe(5);
+    expect(sections.length).toBe(4);
     expect(sections[0]).toContain("Variant: 2 of 2");
     expect(sections[1]).toContain("Origin path");
     expect(sections[2]).toContain("Anchors");
     expect(sections[3]).toContain("Hit column qualifications");
-    expect(sections[4]).toContain("Distinctive");
   });
 
   test("parallel results — array aligns with input", () => {

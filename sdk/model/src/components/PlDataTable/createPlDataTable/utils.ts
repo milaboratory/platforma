@@ -229,7 +229,8 @@ export function withHidenAxesAnnotations<T extends { readonly spec: PColumnSpec 
 export type LabelableColumn = {
   readonly id: PObjectId;
   readonly spec: PColumnSpec;
-  readonly linkerPath?: { spec: PColumnSpec }[];
+  readonly linkerPath?: MatchVariant["path"];
+  readonly qualifications?: MatchQualifications;
 };
 
 /** Derive labels for all table elements: columns via deriveDistinctLabels, axes from label columns. */
@@ -240,7 +241,15 @@ export function deriveAllLabels(options: {
 }): Record<string, string> {
   const { columns, labelColumns, deriveLabelsOptions } = options;
   const axisLabels = deriveAxisLabels(columns, labelColumns);
-  const columnLabels = deriveDistinctLabels(columns, deriveLabelsOptions).reduce(
+  const entries = columns.map((c) => ({
+    spec: c.spec,
+    linkerPath: c.linkerPath?.map((step) => ({
+      spec: step.linker.spec,
+      qualifications: step.qualifications,
+    })),
+    qualifications: c.qualifications,
+  }));
+  const columnLabels = deriveDistinctLabels(entries, deriveLabelsOptions).reduce(
     (acc, label, index) => ((acc[columns[index].id] = label), acc),
     {} as Record<string, string>,
   );
@@ -273,7 +282,6 @@ export type TooltipableColumn = {
   readonly originalId: PObjectId;
   readonly linkerPath?: MatchVariant["path"];
   readonly qualifications?: MatchQualifications;
-  readonly distinctiveQualifications?: MatchQualifications;
 };
 
 /** Derive origin tooltips for columns whose qualifications or linker path carry info. */
@@ -297,7 +305,6 @@ export function deriveAllTooltips(options: {
         spec: c.spec,
         linkerPath: c.linkerPath,
         qualifications: c.qualifications,
-        distinctiveQualifications: c.distinctiveQualifications,
         variantIndex,
         variantCount,
       });
