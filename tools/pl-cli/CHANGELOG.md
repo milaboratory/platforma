@@ -1,5 +1,17 @@
 # @platforma-sdk/pl-cli
 
+## 0.3.0
+
+### Minor Changes
+
+- 58a28bc: Use PlClient.getUserRoot() to get user's root on modern backends
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-middle-layer@1.55.24
+
 ## 0.2.41
 
 ### Patch Changes

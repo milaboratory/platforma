@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.2.0
+
+### Minor Changes
+
+- 58a28bc: Expose getUserRoot method to obtain actual user root from modern backends
+
 ## 3.1.8
 
 ### Patch Changes
