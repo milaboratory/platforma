@@ -114,6 +114,27 @@ createBuilder := func(ctx) {
 			queryOpts = ops[1]
 		}
 
+		// Global-form PObjectId: canonicalize({__isRef: true, blockId, name}).
+		// Opaque id from cross-block result pool — must be resolved by ref, not as a query.
+		isGlobalRef := is_map(decodedId) && decodedId.__isRef == true
+		if isGlobalRef {
+			refKey := is_string(id) ? id : canonical.encode(decodedId)
+			if !is_undefined(queryKey) {
+				refKey = queryKey
+			}
+			ref := { blockId: decodedId.blockId, name: decodedId.name }
+			if !is_string(refs[refKey]) {
+				refs[refKey] = ref
+			}
+			return
+		}
+
+		// Local-form PObjectId: canonicalize({resolvePath, name}).
+		// Not yet supported here — addSingle has no resolver for local refs.
+		if is_map(decodedId) && !is_undefined(decodedId.resolvePath) {
+			ll.panic("addSingle does not support local-form PObjectId (resolvePath): ", decodedId)
+		}
+
 		isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
 		if isFiltered && !is_undefined(queryKey) {
 			ll.panic("FilteredPColumnId cannot be used with a queryKey.")
