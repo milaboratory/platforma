@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ptabler-expression-js",
-  "version": "1.2.15",
+  "version": "1.2.16",
   "description": "JavaScript/TypeScript implementation of PTabler expression system",
   "files": [
     "./dist/**/*",

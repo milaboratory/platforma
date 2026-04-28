@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.68.4
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pf-spec-driver@1.3.5
+  - @platforma-sdk/model@1.68.4
+  - @milaboratories/uikit@2.12.11
+
 ## 1.68.1
 
 ### Patch Changes
