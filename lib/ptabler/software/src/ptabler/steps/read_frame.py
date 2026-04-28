@@ -1,12 +1,20 @@
 from typing import Mapping
 
+import msgspec
 import polars as pl
 import polars_pf as ppf
 from polars._typing import ParallelStrategy
-from polars_pf import CreateTableRequest, PTableColumnSpec, PTableColumnSpecAxis
+from polars_pf import PTableColumnSpec, PTableColumnSpecAxis, SpecQuery
 
 from .base import PStep, StepContext
 from ptabler.common import axis_ref
+
+
+class PTableDefV2(msgspec.Struct, rename="camel"):
+    """Mirrors ``PTableDefV2<PObjectId>`` from ``@milaboratories/pl-model-common``."""
+
+    query: SpecQuery
+
 
 class ReadFrame(PStep, tag="read_frame"):
     """
@@ -16,8 +24,8 @@ class ReadFrame(PStep, tag="read_frame"):
     """
     name: str
     """Name to assign to the loaded DataFrame in the tablespace"""
-    request: CreateTableRequest
-    """Request to create the table"""
+    request: PTableDefV2
+    """Request to create the table (PTableDefV2 carrying a SpecQuery)"""
     translation: Mapping[str, str]
     """Translation of PFrame column ids into Polars column names"""
     parallel: ParallelStrategy = "auto"
@@ -30,15 +38,15 @@ class ReadFrame(PStep, tag="read_frame"):
             return axis_ref(spec.spec)
         if spec.id in self.translation:
             return self.translation[spec.id]
-        return spec.id # sliced columns do not require renaming
+        return spec.id  # sliced columns do not require renaming
 
     def execute(self, ctx: StepContext) -> None:
         if ctx.settings.frame_folder is None:
             raise ValueError("Frame folder is not set")
-        
+
         result: tuple[pl.LazyFrame, ppf.PFrameCache] = ppf.pframe_source(
             ctx.settings.frame_folder,
-            self.request,
+            self.request.query,
             spill_path=ctx.settings.spill_folder,
             # column_ref is a function which takes a PTableColumnSpec and returns a polars column name
             # effectively pframe_source applies select with aliases to names returned by column_ref
@@ -48,6 +56,6 @@ class ReadFrame(PStep, tag="read_frame"):
             low_memory=self.low_memory,
         )
         lf, cache = result
-        
+
         ctx.put_table(self.name, lf)
         ctx.chain_task(lambda: cache.dispose())

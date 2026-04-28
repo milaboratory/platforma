@@ -1,0 +1,301 @@
+// Ported from pframes-rs/packages/spec/src/requests/build_query/{logic,request}.rs.
+// Pins the JSON wire shape between the tengo and wasm implementations.
+// Cross-checked against the wasm pf-spec-driver in
+// tests/workflow-tengo/src/pframes/build-query.test.ts.
+
+test := import(":test")
+bq := import(":pframes.build-query")
+canonical := import(":canonical")
+
+// Spec content is irrelevant to buildQuery (only `columnId` is read),
+// but the shape mirrors the rust fixtures.
+columnIdAndSpec := func(id) {
+	return {
+		columnId: id,
+		spec: {
+			kind: "PColumn",
+			name: "c",
+			valueType: "Int",
+			axesSpec: [{ name: "a", type: "Int" }]
+		}
+	}
+}
+
+linkerStep := func(id) {
+	return { type: "linker", linker: columnIdAndSpec(id), qualifications: [] }
+}
+
+linkerStepWithQuals := func(id, qualifications) {
+	return { type: "linker", linker: columnIdAndSpec(id), qualifications: qualifications }
+}
+
+filterStep := func(id) {
+	return { type: "filter", filter: columnIdAndSpec(id) }
+}
+
+sampleQualification := func() {
+	return { axis: { name: "a" }, contextDomain: { d: "1" } }
+}
+
+discardedQualification := func() {
+	return { axis: { name: "a" }, contextDomain: { discarded: "1" } }
+}
+
+// Spec: { version: "v1", column: C } → { entry: Column(C) }.
+TestSpecExampleDirectColumnNoQualifications := func() {
+	got := bq.buildQuery({ version: "v1", column: "c" })
+	test.isEqual(got, { entry: { type: "column", column: "c" } })
+}
+
+// Spec: qualified direct column → { entry: Column(C), qualifications: [Q] }.
+TestSpecExampleDirectColumnQualified := func() {
+	q := sampleQualification()
+	got := bq.buildQuery({ version: "v1", column: "c", qualifications: [q] })
+	test.isEqual(got, {
+		entry: { type: "column", column: "c" },
+		qualifications: [q]
+	})
+}
+
+// Spec: single filter → InnerJoin([Column(C), Column(F)]).
+TestSpecExampleSingleFilterStep := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [filterStep("f")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "innerJoin",
+			entries: [
+				{ entry: { type: "column", column: "c" } },
+				{ entry: { type: "column", column: "f" } }
+			]
+		}
+	})
+}
+
+// Spec: linker chain — two linker steps wrapping H.
+TestSpecExampleLinkerChainTwoSteps := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "h",
+		path: [linkerStep("l1"), linkerStep("l2")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "linkerJoin",
+			linker: { column: "l1" },
+			secondary: [
+				{
+					entry: {
+						type: "linkerJoin",
+						linker: { column: "l2" },
+						secondary: [
+							{ entry: { type: "column", column: "h" } }
+						]
+					}
+				}
+			]
+		}
+	})
+}
+
+// Spec: mixed — linker then filter.
+TestSpecExampleMixedLinkerThenFilter := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [linkerStep("l"), filterStep("f")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "linkerJoin",
+			linker: { column: "l" },
+			secondary: [
+				{
+					entry: {
+						type: "innerJoin",
+						entries: [
+							{ entry: { type: "column", column: "c" } },
+							{ entry: { type: "column", column: "f" } }
+						]
+					}
+				}
+			]
+		}
+	})
+}
+
+// Spec: qualifications attach to the outermost entry only.
+TestQualificationsAttachToOutermostOnly := func() {
+	q := sampleQualification()
+	got := bq.buildQuery({
+		version: "v1",
+		column: "h",
+		path: [linkerStep("l")],
+		qualifications: [q]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "linkerJoin",
+			linker: { column: "l" },
+			secondary: [
+				{ entry: { type: "column", column: "h" } }
+			]
+		},
+		qualifications: [q]
+	})
+}
+
+// Spec: step-level linker qualifications (discovery metadata) are discarded.
+TestStepLevelLinkerQualificationsAreDiscarded := func() {
+	withQuals := bq.buildQuery({
+		version: "v1",
+		column: "h",
+		path: [linkerStepWithQuals("l", [discardedQualification()])]
+	})
+	withoutQuals := bq.buildQuery({
+		version: "v1",
+		column: "h",
+		path: [linkerStep("l")]
+	})
+	test.isEqual(withQuals, withoutQuals)
+}
+
+// Spec: filter steps emit unqualified entries on both sides of the inner-join.
+TestFilterStepEmitsUnqualifiedEntry := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [filterStep("f")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "innerJoin",
+			entries: [
+				{ entry: { type: "column", column: "c" } },
+				{ entry: { type: "column", column: "f" } }
+			]
+		}
+	})
+}
+
+// Forward-compat: multi-filter path right-folds into nested inner-joins.
+TestMultiFilterPathRightFolds := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [filterStep("f1"), filterStep("f2")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "innerJoin",
+			entries: [
+				{
+					entry: {
+						type: "innerJoin",
+						entries: [
+							{ entry: { type: "column", column: "c" } },
+							{ entry: { type: "column", column: "f2" } }
+						]
+					}
+				},
+				{ entry: { type: "column", column: "f1" } }
+			]
+		}
+	})
+}
+
+// Forward-compat: filter then linker — reverse of the two-step example.
+TestFilterThenLinkerReverseMix := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [filterStep("f"), linkerStep("l")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "innerJoin",
+			entries: [
+				{
+					entry: {
+						type: "linkerJoin",
+						linker: { column: "l" },
+						secondary: [
+							{ entry: { type: "column", column: "c" } }
+						]
+					}
+				},
+				{ entry: { type: "column", column: "f" } }
+			]
+		}
+	})
+}
+
+// Stability: same input must produce value-deterministic output, so
+// build-table emits the same pt expression tree every run and backend
+// caching can reuse results.
+//
+// Asserts canonical (sorted-key) byte equality. The builtin `json.encode`
+// is byte-unstable for tengo maps in general, but build-table reads
+// buildQuery output by named keys — never via `json.encode` — so map
+// iteration order does not propagate to pt.
+TestBuildQueryOutputIsStableAcrossInvocations := func() {
+	// Exercises every node kind: outer qualifications, linker wrap,
+	// inner-join, nested column entries.
+	input := {
+		version: "v1",
+		column: "c",
+		path: [
+			{ type: "linker", linker: { columnId: "l1", spec: { kind: "PColumn", name: "x", valueType: "Int" } } },
+			{ type: "filter", filter: { columnId: "f", spec: { kind: "PColumn", name: "y", valueType: "Int" } } },
+			{ type: "linker", linker: { columnId: "l2", spec: { kind: "PColumn", name: "z", valueType: "Int" } } }
+		],
+		qualifications: [
+			{ axis: { name: "a" }, contextDomain: { d: "1", e: "2" } },
+			{ axis: { name: "b" }, contextDomain: { f: "3" } }
+		]
+	}
+
+	expected := canonical.encode(bq.buildQuery(input))
+	for i := 0; i < 32; i++ {
+		got := canonical.encode(bq.buildQuery(input))
+		test.isEqual(expected, got,
+			"buildQuery output must be canonically byte-stable (iteration %d)", i)
+	}
+}
+
+// Three-step mixed chain: exercises ordering beyond two-step paths.
+TestThreeStepChainLinkerFilterLinker := func() {
+	got := bq.buildQuery({
+		version: "v1",
+		column: "c",
+		path: [linkerStep("l1"), filterStep("f"), linkerStep("l2")]
+	})
+	test.isEqual(got, {
+		entry: {
+			type: "linkerJoin",
+			linker: { column: "l1" },
+			secondary: [
+				{
+					entry: {
+						type: "innerJoin",
+						entries: [
+							{
+								entry: {
+									type: "linkerJoin",
+									linker: { column: "l2" },
+									secondary: [
+										{ entry: { type: "column", column: "c" } }
+									]
+								}
+							},
+							{ entry: { type: "column", column: "f" } }
+						]
+					}
+				}
+			]
+		}
+	})
+}

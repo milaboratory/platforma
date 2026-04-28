@@ -150,14 +150,21 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           return node;
       }
     },
-    joinEntry: (entry) => ({
-      ...entry,
-      qualifications: entry.qualifications.toSorted((a, b) => {
-        const ak = canonicalizeJson(a.axis);
-        const bk = canonicalizeJson(b.axis);
-        return ak < bk ? -1 : ak === bk ? 0 : 1;
-      }),
-    }),
+    joinEntry: (entry) => {
+      // Preserve absence of `qualifications` (absent == `[]`) so canonical
+      // output is stable across both input forms.
+      if (entry.qualifications === undefined || entry.qualifications.length === 0) {
+        return entry;
+      }
+      return {
+        ...entry,
+        qualifications: entry.qualifications.toSorted((a, b) => {
+          const ak = canonicalizeJson(a.axis);
+          const bk = canonicalizeJson(b.axis);
+          return ak < bk ? -1 : ak === bk ? 0 : 1;
+        }),
+      };
+    },
   });
 }
 
@@ -173,9 +180,9 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
           ? 0
           : 1;
     case "inlineColumn":
-      return lhs.spec.id < (rhs as typeof lhs).spec.id
+      return lhs.spec.columnId < (rhs as typeof lhs).spec.columnId
         ? -1
-        : lhs.spec.id === (rhs as typeof lhs).spec.id
+        : lhs.spec.columnId === (rhs as typeof lhs).spec.columnId
           ? 0
           : 1;
     case "sparseToDenseColumn":
@@ -237,13 +244,16 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
 function cmpQueryJoinEntrySpec(lhs: SpecQueryJoinEntry, rhs: SpecQueryJoinEntry): number {
   const cmp = cmpQuerySpec(lhs.entry, rhs.entry);
   if (cmp !== 0) return cmp;
-  if (lhs.qualifications.length !== rhs.qualifications.length) {
-    return lhs.qualifications.length - rhs.qualifications.length;
+  // Absent `qualifications` is equivalent to an empty list.
+  const lhsQ = lhs.qualifications ?? [];
+  const rhsQ = rhs.qualifications ?? [];
+  if (lhsQ.length !== rhsQ.length) {
+    return lhsQ.length - rhsQ.length;
   }
-  for (let i = 0; i < lhs.qualifications.length; i++) {
-    const lhsQ = canonicalizeJson(lhs.qualifications[i]);
-    const rhsQ = canonicalizeJson(rhs.qualifications[i]);
-    if (lhsQ !== rhsQ) return lhsQ < rhsQ ? -1 : 1;
+  for (let i = 0; i < lhsQ.length; i++) {
+    const l = canonicalizeJson(lhsQ[i]);
+    const r = canonicalizeJson(rhsQ[i]);
+    if (l !== r) return l < r ? -1 : 1;
   }
   return 0;
 }
