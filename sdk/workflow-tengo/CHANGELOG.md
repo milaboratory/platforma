@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.15.1
+
+### Patch Changes
+
+- 425b6b3: Fix bundle.addSingle on global-form PObjectId.
+
 ## 5.15.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.55.23
+
+### Patch Changes
+
+- 425b6b3: inferAllReferencedBlocks: detect PlRef embedded as canonicalized JSON string (global-form PObjectId) and account for it in block upstreams the same way as object-shaped PlRef.
+- Updated dependencies [425b6b3]
+  - @platforma-sdk/workflow-tengo@5.15.1
+
 ## 1.55.22
 
 ### Patch Changes
