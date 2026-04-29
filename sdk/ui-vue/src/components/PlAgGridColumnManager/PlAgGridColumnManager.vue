@@ -77,7 +77,7 @@ const toggleAllFiltered = () => {
     <div :class="$style.searchRow">
       <PlSearchField v-model="query" clearable />
       <PlBtnSecondary
-        :class="$style.toogleAllBtn"
+        :class="$style.toggleAllBtn"
         :disabled="toggleableFilteredItems.length === 0"
         @click.stop="toggleAllFiltered"
       >
@@ -142,7 +142,7 @@ const toggleAllFiltered = () => {
   flex: 1;
 }
 
-.toogleAllBtn {
+.toggleAllBtn {
   min-width: unset;
   opacity: 0.2;
   transition: opacity 0.3s;
