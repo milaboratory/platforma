@@ -3,10 +3,12 @@ import type { AnchoredPColumnId } from "./selectors";
 import type { FilteredPColumnId } from "./filtered_column";
 import canonicalize from "canonicalize";
 import type { PObjectId } from "../../../pool";
+import { DiscoveredPColumn } from "./discovered_column";
+
 /**
  * Universal column identifier optionally anchored and optionally filtered.
  */
-export type UniversalPColumnId = AnchoredPColumnId | FilteredPColumnId;
+export type UniversalPColumnId = AnchoredPColumnId | FilteredPColumnId | DiscoveredPColumn;
 
 /**
  * Canonically serialized {@link UniversalPColumnId}.

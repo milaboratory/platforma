@@ -1,5 +1,168 @@
 # @platforma-sdk/ui-vue
 
+## 1.69.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/uikit@2.13.0
+  - @platforma-sdk/model@1.69.0
+
+## 1.68.8
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+- @platforma-sdk/model@1.68.8
+- @milaboratories/pf-spec-driver@1.3.6
+- @milaboratories/uikit@2.12.15
+
+## 1.68.7
+
+### Patch Changes
+
+- Updated dependencies [e1bb3ba]
+  - @platforma-sdk/model@1.68.7
+  - @milaboratories/uikit@2.12.14
+
+## 1.68.6
+
+### Patch Changes
+
+- Updated dependencies [557d174]
+  - @platforma-sdk/model@1.68.6
+  - @milaboratories/uikit@2.12.13
+
+## 1.68.5
+
+### Patch Changes
+
+- Updated dependencies [c1baeb8]
+  - @platforma-sdk/model@1.68.5
+  - @milaboratories/uikit@2.12.12
+
+## 1.68.4
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pf-spec-driver@1.3.5
+  - @platforma-sdk/model@1.68.4
+  - @milaboratories/uikit@2.12.11
+
+## 1.68.1
+
+### Patch Changes
+
+- ca3cf14: export labeled columns
+
+## 1.68.0
+
+### Minor Changes
+
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+
+### Patch Changes
+
+- 5420fea: Add native CSV/TSV export path in PlAgCsvExporter that delegates to downloadPTableCsv when available in desktop runtime, with automatic fallback to browser-based export
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @platforma-sdk/model@1.68.0
+  - @milaboratories/pf-spec-driver@1.3.4
+  - @milaboratories/uikit@2.12.10
+
+## 1.67.0
+
+### Minor Changes
+
+- 10eec21: Add `PlDatasetSelector` component for dataset + optional filter selection. Emits `PrimaryRef`; filter dropdown appears only when the selected dataset has compatible filters (progressive disclosure). Accepts both `PrimaryRef` and plain `PlRef` as input for backward compatibility.
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/uikit@2.12.9
+  - @milaboratories/pf-spec-driver@1.3.3
+
+## 1.66.2
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @platforma-sdk/model@1.66.2
+  - @milaboratories/pf-spec-driver@1.3.2
+  - @milaboratories/uikit@2.12.8
+
+## 1.66.1
+
+### Patch Changes
+
+- Updated dependencies [4964b89]
+  - @milaboratories/uikit@2.12.7
+
+## 1.66.0
+
+### Minor Changes
+
+- 0237f1b: fix broken annotations
+
+## 1.65.10
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pf-spec-driver@1.3.1
+  - @platforma-sdk/model@1.65.10
+  - @milaboratories/uikit@2.12.6
+
+## 1.65.9
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pf-spec-driver@1.3.0
+  - @platforma-sdk/model@1.65.9
+  - @milaboratories/uikit@2.12.5
+
+## 1.65.8
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-common@1.32.1
+  - @milaboratories/pf-spec-driver@1.2.7
+  - @platforma-sdk/model@1.65.8
+  - @milaboratories/uikit@2.12.4
+
+## 1.65.6
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pf-spec-driver@1.2.6
+  - @platforma-sdk/model@1.65.6
+  - @milaboratories/uikit@2.12.3
+
 ## 1.65.4
 
 ### Patch Changes

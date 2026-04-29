@@ -1,5 +1,104 @@
 # @milaboratories/pl-drivers
 
+## 1.12.22
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-tree@1.9.20
+  - @milaboratories/pl-model-common@1.36.2
+  - @milaboratories/pl-client@3.2.2
+
+## 1.12.21
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pl-client@3.2.1
+  - @milaboratories/pl-tree@1.9.19
+
+## 1.12.20
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-tree@1.9.18
+
+## 1.12.19
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @milaboratories/pl-client@3.1.8
+  - @milaboratories/pl-tree@1.9.17
+
+## 1.12.18
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/pl-client@3.1.7
+  - @milaboratories/pl-tree@1.9.16
+
+## 1.12.17
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @milaboratories/pl-client@3.1.6
+  - @milaboratories/pl-tree@1.9.15
+
+## 1.12.16
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pl-client@3.1.5
+  - @milaboratories/pl-tree@1.9.14
+
+## 1.12.15
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pl-client@3.1.4
+  - @milaboratories/pl-tree@1.9.13
+
+## 1.12.14
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-common@1.32.1
+  - @milaboratories/pl-client@3.1.3
+  - @milaboratories/pl-tree@1.9.12
+
+## 1.12.13
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pl-client@3.1.2
+  - @milaboratories/pl-tree@1.9.11
+
+## 1.12.12
+
+### Patch Changes
+
+- @milaboratories/pl-tree@1.9.10
+
 ## 1.12.11
 
 ### Patch Changes

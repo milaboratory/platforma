@@ -1,57 +1,52 @@
-import type {
-  PColumnSpec,
-  PlRef,
-  PObjectId,
-  RequireServices,
-  Services,
-  SUniversalPColumnId,
-} from "@milaboratories/pl-model-common";
-import { isPlRef } from "@milaboratories/pl-model-common";
+import type { PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
+import { createDiscoveredPColumnId, isPlRef } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
-import type { ColumnSource, ColumnMatch, RelaxedColumnSelector } from "../../../columns";
+import type {
+  ColumnSource,
+  ColumnVariant,
+  RelaxedColumnSelector,
+  ColumnSnapshotProvider,
+  ColumnSnapshot,
+} from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
 import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
-import type { ColumnsSelectorConfig, TableColumnSnapshot } from "./createPlDataTableV3";
+import type { ColumnsSelectorConfig, TableColumnVariant } from "./createPlDataTableV3";
 
-export type DiscoveredTableColumnOptions = {
+export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>;
-  columnsSelector: ColumnsSelectorConfig;
+  selector: ColumnsSelectorConfig;
 };
 
-/** Discover columns from sources/anchors and normalize into a flat DiscoveredColumn list. */
-export function discoverTableColumnSnaphots<
-  A,
-  U,
-  S extends RequireServices<typeof Services.PFrameSpec>,
->(
-  ctx: RenderCtxBase<A, U, S>,
-  options: DiscoveredTableColumnOptions,
-): TableColumnSnapshot<SUniversalPColumnId>[] | undefined {
+/** Discover columns from sources/anchors and normalize into a flat TableColumnVariant list. */
+export function discoverTableColumnSnaphots(
+  ctx: RenderCtxBase,
+  options: DiscoverTableColumnOptions,
+): TableColumnVariant[] | undefined {
   // Resolve PlRef anchors to PColumnSpec
-  const resolvedOptions = { ...options, anchors: resolveAnchors(ctx, options.anchors) };
+  const resolvedOptions = {
+    ...options,
+    anchors: resolveAnchors(ctx, options.anchors),
+  };
 
   // Resolve providers
   const providers = resolveProviders(ctx, resolvedOptions.sources);
   if (providers.length === 0) return undefined;
 
   // Build collection (anchored or plain)
-  const pframeSpec =
-    ctx.services.pframeSpec ?? throwError("PFrameSpec service is required for column discovery.");
-  const collection = new ColumnCollectionBuilder(pframeSpec)
+  const collection = new ColumnCollectionBuilder(ctx.getService("pframeSpec"))
     .addSources(providers)
     .build(resolvedOptions);
   if (collection === undefined) return undefined;
 
   try {
-    const matched = collection.findColumns(resolvedOptions.columnsSelector ?? undefined);
+    const variants = collection.findColumnVariants({
+      ...(resolvedOptions.selector ?? {}),
+    });
     const anchors = collection.getAnchors();
-    return mapToDiscoveredColumns(
-      matched,
-      Array.from(Array.from(anchors.values()).map((v) => v.columnId)),
-    );
+    return mapToTableColumnVariants(variants, anchors);
   } finally {
     collection.dispose();
   }
@@ -60,8 +55,8 @@ export function discoverTableColumnSnaphots<
 // --- Pure helper functions ---
 
 /** Resolve PlRef values in anchors to PColumnSpec via the result pool. */
-function resolveAnchors<A, U>(
-  ctx: RenderCtxBase<A, U>,
+function resolveAnchors(
+  ctx: RenderCtxBase,
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>,
 ): Record<string, PObjectId | PColumnSpec | RelaxedColumnSelector> {
   const result: Record<string, PObjectId | PColumnSpec | RelaxedColumnSelector> = {};
@@ -80,43 +75,49 @@ function resolveAnchors<A, U>(
 }
 
 /** Resolve column snapshot providers from explicit sources or context. */
-function resolveProviders<A, U>(ctx: RenderCtxBase<A, U>, sources: undefined | ColumnSource[]) {
+function resolveProviders(
+  ctx: RenderCtxBase,
+  sources: undefined | ColumnSource[],
+): ColumnSnapshotProvider[] {
   return sources !== undefined
     ? sources.map(toColumnSnapshotProvider)
     : collectCtxColumnSnapshotProviders(ctx);
 }
 
-/** Map matched columns into a flat DiscoveredColumn list with deduped IDs. */
-function mapToDiscoveredColumns(
-  matched: readonly ColumnMatch[],
-  anchorColumnIds: readonly PObjectId[],
-): TableColumnSnapshot<SUniversalPColumnId>[] {
-  const hitCounts = matched.reduce(
-    (acc, match) => acc.set(match.originalId, (acc.get(match.originalId) ?? 0) + 1),
-    new Map<PObjectId, number>(),
+/** Map column variants into TableColumnVariant list with anchor-derived isPrimary flag. */
+function mapToTableColumnVariants(
+  variants: readonly ColumnVariant[],
+  anchors: Map<string, ColumnSnapshot<PObjectId>>,
+): TableColumnVariant[] {
+  const columnIdToAnchorName = new Map<PObjectId, string>(
+    Array.from(anchors.entries(), ([key, { id }]) => [id, key] as const),
   );
 
-  const hitIndices = new Map<PObjectId, number>();
-  return matched.map((match) => {
-    const snap = match.column;
+  return variants.map((variant): TableColumnVariant => {
+    const snap = variant.column;
+    const isPrimary = columnIdToAnchorName.get(snap.id) !== undefined;
 
-    let id = snap.id;
-    if ((hitCounts.get(match.originalId) ?? 0) > 1) {
-      const idx = hitIndices.get(match.originalId) ?? 0;
-      hitIndices.set(match.originalId, idx + 1);
-      id = `${snap.id}#q${idx}` as SUniversalPColumnId;
-    }
-
+    const discoveredId = createDiscoveredPColumnId({
+      column: snap.id,
+      path: variant.path.map((p) => ({
+        type: "linker",
+        column: p.linker.id,
+        qualifications: p.qualifications,
+      })),
+      columnQualifications: variant.qualifications.forHit,
+      queriesQualifications: variant.qualifications.forQueries,
+    });
     return {
-      id,
-      originalId: match.originalId,
-      spec: snap.spec,
-      data: snap.data,
-      dataStatus: snap.dataStatus,
-      isPrimary: anchorColumnIds.some(
-        (anchor) => snap.id === anchor || match.originalId === anchor,
-      ),
-      linkerPath: match.path,
+      column: {
+        id: discoveredId,
+        spec: snap.spec,
+        data: snap.data,
+        dataStatus: snap.dataStatus,
+      },
+      path: variant.path,
+      qualifications: variant.qualifications,
+      originalId: snap.id,
+      isPrimary,
     };
   });
 }

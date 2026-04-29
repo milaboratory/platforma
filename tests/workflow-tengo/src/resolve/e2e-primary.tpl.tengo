@@ -1,0 +1,45 @@
+// Reusable end-to-end driver for resolve+await tests: builds a PrimaryRef
+// pointing at a producer-supplied export, runs `wf.resolve()` deep-walk,
+// and forwards the resolved column to the reader template that exercises
+// `awaitState`. All identifiers come from TS args so a new test case can
+// target a different producer/export without touching this template.
+//
+// args:
+//   producerBlockId — blockId the producer was rendered with
+//   exportKey       — name of the producer's export (target of the PlRef)
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+wf.prepare(func(args) {
+	primaryRef := {
+		__isPrimaryRef: "v1",
+		column: {
+			__isRef: true,
+			blockId: args.producerBlockId,
+			name: args.exportKey
+		}
+	}
+
+	// Deep-walk resolve: replaces the nested PlRef with { spec, data }
+	resolved := wf.resolve(primaryRef)
+
+	reader := assets.importTemplate(":resolve.e2e-primary-reader")
+	run := render.createEphemeral(reader, {
+		column: resolved.column
+	})
+
+	return {
+		specResult: run.output("main")
+	}
+})
+
+wf.body(func(args) {
+	return {
+		outputs: {
+			main: args.specResult
+		},
+		exports: {}
+	}
+})

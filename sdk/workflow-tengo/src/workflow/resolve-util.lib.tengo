@@ -1,0 +1,65 @@
+/*
+ * Pure utility functions for deep-walking structures containing PlRefs.
+ * Extracted from wf.resolve() to enable unit testing.
+ */
+
+ll := import(":ll")
+
+/**
+ * Deep-walk a structure, replacing every PlRef (__isRef: true) with the
+ * result of resolveFn. Panics if no PlRefs are found (spec R4).
+ *
+ * Uses iterative BFS traversal to avoid stack overflow on deeply nested
+ * structures. Parent containers are created before their children are
+ * processed, so child results are assigned into already-placed parents.
+ *
+ * @param value: any nested structure (map, array, or primitive)
+ * @param resolveFn: func(plRef) -> resolved value
+ * @return resolved: structure with PlRefs replaced
+ */
+deepResolve := func(value, resolveFn) {
+	root := { value: undefined }
+	queue := [{val: value, target: root, key: "value"}]
+	qi := 0
+	refCount := 0
+
+	for qi < len(queue) {
+		item := queue[qi]
+		qi = qi + 1
+		v := item.val
+
+		if ll.isMap(v) {
+			if v.__isRef == true {
+				refCount = refCount + 1
+				item.target[item.key] = resolveFn(v)
+			} else {
+				result := {}
+				item.target[item.key] = result
+				for k, child in v {
+					queue = append(queue, {val: child, target: result, key: k})
+				}
+			}
+		} else if is_array(v) {
+			// Pre-allocate array so later index assignments mutate in place
+			result := []
+			for i := 0; i < len(v); i++ {
+				result = append(result, undefined)
+			}
+			item.target[item.key] = result
+			for idx, child in v {
+				queue = append(queue, {val: child, target: result, key: idx})
+			}
+		} else {
+			item.target[item.key] = v
+		}
+	}
+
+	ll.assert(refCount > 0,
+		"wf.resolve(): input contains no PlRef (__isRef: true)")
+
+	return root.value
+}
+
+export ll.toStrict({
+	deepResolve: deepResolve
+})

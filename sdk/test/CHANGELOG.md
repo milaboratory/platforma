@@ -1,5 +1,158 @@
 # @platforma-sdk/test
 
+## 1.69.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/pl-middle-layer@1.56.0
+  - @platforma-sdk/model@1.69.0
+
+## 1.68.8
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-tree@1.9.20
+  - @platforma-sdk/model@1.68.8
+  - @milaboratories/pl-middle-layer@1.55.29
+  - @milaboratories/pl-client@3.2.2
+
+## 1.68.7
+
+### Patch Changes
+
+- Updated dependencies [e1bb3ba]
+  - @platforma-sdk/model@1.68.7
+  - @milaboratories/pl-middle-layer@1.55.28
+
+## 1.68.6
+
+### Patch Changes
+
+- Updated dependencies [557d174]
+  - @platforma-sdk/model@1.68.6
+  - @milaboratories/pl-middle-layer@1.55.27
+
+## 1.68.5
+
+### Patch Changes
+
+- Updated dependencies [c1baeb8]
+  - @platforma-sdk/model@1.68.5
+  - @milaboratories/pl-middle-layer@1.55.26
+
+## 1.68.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.25
+- @milaboratories/pl-client@3.2.1
+- @platforma-sdk/model@1.68.4
+- @milaboratories/pl-tree@1.9.19
+
+## 1.68.3
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-middle-layer@1.55.24
+  - @milaboratories/pl-tree@1.9.18
+
+## 1.68.2
+
+### Patch Changes
+
+- Updated dependencies [425b6b3]
+  - @milaboratories/pl-middle-layer@1.55.23
+
+## 1.68.0
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @platforma-sdk/model@1.68.0
+  - @milaboratories/pl-client@3.1.8
+  - @milaboratories/pl-middle-layer@1.55.22
+  - @milaboratories/pl-tree@1.9.17
+
+## 1.67.0
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+  - @milaboratories/pl-middle-layer@1.55.21
+  - @milaboratories/pl-client@3.1.7
+  - @milaboratories/pl-tree@1.9.16
+
+## 1.66.2
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @platforma-sdk/model@1.66.2
+  - @milaboratories/pl-client@3.1.6
+  - @milaboratories/pl-middle-layer@1.55.20
+  - @milaboratories/pl-tree@1.9.15
+
+## 1.65.10
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.5
+- @milaboratories/pl-middle-layer@1.55.19
+- @platforma-sdk/model@1.65.10
+- @milaboratories/pl-tree@1.9.14
+
+## 1.65.9
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-middle-layer@1.55.18
+  - @milaboratories/pl-client@3.1.4
+  - @platforma-sdk/model@1.65.9
+  - @milaboratories/pl-tree@1.9.13
+
+## 1.65.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.17
+- @platforma-sdk/model@1.65.8
+- @milaboratories/pl-client@3.1.3
+- @milaboratories/pl-tree@1.9.12
+
+## 1.65.7
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.16
+
+## 1.65.6
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.2
+- @milaboratories/pl-middle-layer@1.55.15
+- @platforma-sdk/model@1.65.6
+- @milaboratories/pl-tree@1.9.11
+
+## 1.65.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.14
+- @milaboratories/pl-tree@1.9.10
+
 ## 1.65.4
 
 ### Patch Changes

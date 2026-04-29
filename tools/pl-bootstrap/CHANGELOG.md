@@ -1,5 +1,60 @@
 # @platforma-sdk/bootstrap
 
+## 5.3.16
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-deployments@2.17.9
+
+## 5.3.15
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.8
+
+## 5.3.14
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.7
+
+## 5.3.13
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.6
+
+## 5.3.12
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.5
+
+## 5.3.11
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.4
+
+## 5.3.10
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.3
+
+## 5.3.9
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.2
+
+## 5.3.8
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@2.17.1
+
 ## 5.3.7
 
 ### Patch Changes

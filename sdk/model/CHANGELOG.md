@@ -1,5 +1,129 @@
 # @platforma-sdk/model
 
+## 1.69.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+## 1.68.8
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-error-like@1.12.10
+  - @milaboratories/pl-model-common@1.36.2
+  - @milaboratories/pl-model-middle-layer@1.18.7
+  - @milaboratories/ptabler-expression-js@1.2.17
+
+## 1.68.7
+
+### Patch Changes
+
+- e1bb3ba: hide axes from label columns
+
+## 1.68.6
+
+### Patch Changes
+
+- 557d174: Adopt labels for usage qualifications
+
+## 1.68.5
+
+### Patch Changes
+
+- c1baeb8: fix broken table query
+
+## 1.68.4
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/ptabler-expression-js@1.2.16
+  - @milaboratories/pl-model-middle-layer@1.18.6
+
+## 1.68.0
+
+### Minor Changes
+
+- 5420fea: Expose native PTable download via `PFrameDriver.downloadPTable(handle, options)` (optional, present only in the desktop runtime). `DownloadPTableCsvOptions` moved to `@milaboratories/pl-model-common`. The earlier `PlatformaV3.downloadPTableCsv` bridge is removed in favor of the driver-level method.
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @milaboratories/pl-model-middle-layer@1.18.5
+  - @milaboratories/ptabler-expression-js@1.2.15
+
+## 1.67.0
+
+### Minor Changes
+
+- 10eec21: Add filter discovery helpers: `findFilterColumns` for subset column matching, `filterMatchesToOptions` for converting matches to labeled options, and `buildRefMap` for PObjectId→PlRef lookup. Fix `wrapOutputs` Proxy to skip symbol keys and non-existent keys, preventing crashes when the proxy crosses `await` boundaries.
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/pl-model-middle-layer@1.18.4
+  - @milaboratories/ptabler-expression-js@1.2.14
+
+## 1.66.2
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @milaboratories/pl-model-middle-layer@1.18.3
+  - @milaboratories/ptabler-expression-js@1.2.13
+
+## 1.65.10
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pl-model-middle-layer@1.18.2
+  - @milaboratories/ptabler-expression-js@1.2.12
+
+## 1.65.9
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pl-model-middle-layer@1.18.1
+  - @milaboratories/ptabler-expression-js@1.2.11
+
+## 1.65.8
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-middle-layer@1.18.0
+  - @milaboratories/pl-model-common@1.32.1
+  - @milaboratories/ptabler-expression-js@1.2.10
+
+## 1.65.6
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pl-model-middle-layer@1.17.0
+  - @milaboratories/ptabler-expression-js@1.2.9
+
 ## 1.65.4
 
 ### Patch Changes

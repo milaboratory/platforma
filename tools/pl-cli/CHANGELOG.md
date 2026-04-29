@@ -1,5 +1,130 @@
 # @platforma-sdk/pl-cli
 
+## 0.4.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/pl-middle-layer@1.56.0
+
+## 0.3.5
+
+### Patch Changes
+
+- f28bb32: rename run.js to mjs to fix bunch of warnings in dev mode
+  - @milaboratories/pl-middle-layer@1.55.29
+  - @milaboratories/pl-client@3.2.2
+
+## 0.3.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.28
+
+## 0.3.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.27
+
+## 0.3.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.26
+
+## 0.3.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.25
+- @milaboratories/pl-client@3.2.1
+
+## 0.3.0
+
+### Minor Changes
+
+- 58a28bc: Use PlClient.getUserRoot() to get user's root on modern backends
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-middle-layer@1.55.24
+
+## 0.2.41
+
+### Patch Changes
+
+- Updated dependencies [425b6b3]
+  - @milaboratories/pl-middle-layer@1.55.23
+
+## 0.2.40
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.8
+- @milaboratories/pl-middle-layer@1.55.22
+
+## 0.2.39
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.21
+- @milaboratories/pl-client@3.1.7
+
+## 0.2.38
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.6
+- @milaboratories/pl-middle-layer@1.55.20
+
+## 0.2.37
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.5
+- @milaboratories/pl-middle-layer@1.55.19
+
+## 0.2.36
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-middle-layer@1.55.18
+  - @milaboratories/pl-client@3.1.4
+
+## 0.2.35
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.17
+- @milaboratories/pl-client@3.1.3
+
+## 0.2.34
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.16
+
+## 0.2.33
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.2
+- @milaboratories/pl-middle-layer@1.55.15
+
+## 0.2.32
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.55.14
+
 ## 0.2.31
 
 ### Patch Changes

@@ -1,0 +1,58 @@
+// Reusable consumer for tableBuilder integration tests against a result pool
+// produced by `pframes.table-builder-multi-producer`. Builds a tableBuilder
+// from declarative args supplied by TS, runs `.build()`, exports the file.
+//
+// args:
+//   producerBlockId — blockId used for the producer render (PlRef target)
+//   primaryExportKey — export key of the primary column in the producer
+//   format — "tsv" | "csv" | "parquet" | "ndjson"
+//   addColumn?   — array of { query, opts? } passed to .addColumn()
+//   addColumns?  — array of { query, opts? } passed to .addColumns()
+//   joinMode?    — "inner" | "full" passed to .setJoinMode()
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+file := import("@platforma-sdk/workflow-tengo:file")
+times := import("times")
+
+wf.body(func(args) {
+	primaryRef := {
+		__isRef: true,
+		blockId: args.producerBlockId,
+		name: args.primaryExportKey
+	}
+
+	builder := wf.tableBuilder(args.format).addPrimary("main", primaryRef)
+
+	if !is_undefined(args.joinMode) {
+		builder = builder.setJoinMode(args.joinMode)
+	}
+
+	if !is_undefined(args.addColumn) {
+		for entry in args.addColumn {
+			if !is_undefined(entry.opts) {
+				builder = builder.addColumn(entry.query, entry.opts)
+			} else {
+				builder = builder.addColumn(entry.query)
+			}
+		}
+	}
+
+	if !is_undefined(args.addColumns) {
+		for entry in args.addColumns {
+			if !is_undefined(entry.opts) {
+				builder = builder.addColumns(entry.query, entry.opts)
+			} else {
+				builder = builder.addColumns(entry.query)
+			}
+		}
+	}
+
+	builder.cacheInputs(1 * times.minute)
+
+	return {
+		outputs: {
+			tableFile: file.exportFile(builder.build())
+		},
+		exports: {}
+	}
+})

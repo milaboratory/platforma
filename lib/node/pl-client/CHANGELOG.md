@@ -1,5 +1,76 @@
 # @milaboratories/pl-client
 
+## 3.2.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+
+## 3.2.1
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+
+## 3.2.0
+
+### Minor Changes
+
+- 58a28bc: Expose getUserRoot method to obtain actual user root from modern backends
+
+## 3.1.8
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+
+## 3.1.7
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+
+## 3.1.6
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+
+## 3.1.5
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+
+## 3.1.4
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+
+## 3.1.3
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-common@1.32.1
+
+## 3.1.2
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+
 ## 3.1.1
 
 ### Patch Changes

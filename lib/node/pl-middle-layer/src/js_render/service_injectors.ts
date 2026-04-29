@@ -11,6 +11,7 @@ import type {
   PTableColumnId,
   PTableColumnSpec,
   SingleAxisSelector,
+  BuildQueryInput,
   DeleteColumnRequest,
   DiscoverColumnsRequest,
   PFrameDef,
@@ -73,12 +74,20 @@ export function getServiceInjectors(): ServiceInjectorMap {
           return obj;
         },
 
+        listColumns: (handle: QuickJSHandle) =>
+          vm.exportObjectViaJson(driver.listColumns(vm.vm.getString(handle) as SpecFrameHandle)),
+
         discoverColumns: (handle: QuickJSHandle, request: QuickJSHandle) =>
           vm.exportObjectViaJson(
             driver.discoverColumns(
               vm.vm.getString(handle) as SpecFrameHandle,
               vm.importObjectViaJson(request) as DiscoverColumnsRequest,
             ),
+          ),
+
+        buildQuery: (input: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.buildQuery(vm.importObjectViaJson(input) as BuildQueryInput),
           ),
 
         deleteColumn: (handle: QuickJSHandle, request: QuickJSHandle) =>
@@ -120,6 +129,10 @@ export function getServiceInjectors(): ServiceInjectorMap {
           ),
       };
     },
+
+    // Dialog has no model-side surface — workflow scripts cannot open save dialogs.
+    // Declared as an empty injector to satisfy the exhaustive ServiceInjectorMap.
+    Dialog: () => ({}) as Record<never, VmMethod>,
 
     PFrame: ({ host, vm }: ServiceInjectorContext) => ({
       createPFrame: (def: QuickJSHandle) =>

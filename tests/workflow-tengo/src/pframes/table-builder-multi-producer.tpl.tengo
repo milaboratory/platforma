@@ -1,0 +1,34 @@
+// Reusable producer for tableBuilder integration tests that need a populated
+// result pool. Imports a CSV via xsv → PColumns and exports each column under
+// its pfconv-assigned id, so the consumer workflow can find them by anchored
+// query or address them by PlRef name.
+//
+// All test data (csv, spec, ...) comes from TS; this template carries no
+// fixtures of its own.
+
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+util := import("@platforma-sdk/workflow-tengo:pframes.util")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+wf.body(func(args) {
+	e := exec.builder().
+		cpu(1).ram("50Mi").
+		cmd("env").
+		writeFile("data.csv", args.csv).
+		saveFile("data.csv").
+		run()
+
+	pf := xsv.importFile(e.getFile("data.csv"), "csv", args.spec)
+
+	exports := {}
+	maps.forEach(util.pFrameToColumnsMap(pf), func(colId, col) {
+		exports[colId] = col
+	})
+
+	return {
+		outputs: {},
+		exports: exports
+	}
+})

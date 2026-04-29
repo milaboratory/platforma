@@ -632,23 +632,31 @@ export interface QueryOuterJoin<JE extends QueryJoinEntry<unknown>> {
  * @template A - Axis selector type
  *
  * @example
- * // Slice 3D data [sample, gene, condition] to 1D [gene]
+ * // Spec layer: axisSelector is a SingleAxisSelector.
  * {
  *   type: 'sliceAxes',
  *   input: fullDataQuery,
  *   axisFilters: [
- *     { type: 'constant', axisSelector: { type: 'axis', id: 'sample' }, constant: 'Sample1' },
- *     { type: 'constant', axisSelector: { type: 'axis', id: 'condition' }, constant: 'Treatment' }
+ *     { axisSelector: { name: 'sample' }, constant: 'Sample1' },
+ *     { axisSelector: { name: 'condition' }, constant: 'Treatment' }
  *   ]
  * }
+ *
+ * @example
+ * // Data layer: axisSelector is the axis index.
+ * {
+ *   type: 'sliceAxes',
+ *   input: fullDataQuery,
+ *   axisFilters: [{ axisSelector: 0, constant: 'Sample1' }]
+ * }
  */
-export interface QuerySliceAxes<Q, A extends QueryAxisSelector<unknown>> {
+export interface QuerySliceAxes<Q, A> {
   type: "sliceAxes";
   /** Input query to slice */
   input: Q;
   /** List of axis filters to apply (at least one required) */
   axisFilters: {
-    /** Selector identifying which axis to filter */
+    /** Axis to filter. `SingleAxisSelector` at the spec layer; axis index at the data layer. */
     axisSelector: A;
     /** The constant value to filter the axis to */
     constant: string | number;
@@ -880,4 +888,43 @@ export interface QuerySymmetricJoin<JE extends QueryJoinEntry<unknown>> {
 export interface QueryJoinEntry<Q> {
   /** The query to be joined */
   entry: Q;
+}
+
+/**
+ * Linker-join query operation.
+ *
+ * Inner-joins a linker column (`linker`) with one or more secondary subqueries,
+ * then projects out the linker's one-side axes from the joined result. Used to
+ * traverse a linker relationship: rows on the secondary side are "lifted" onto
+ * the linker's many-side axes, with one-side axes collapsed away.
+ *
+ * Mirrors {@link QueryOuterJoin}'s `{ primary, secondary }` shape (with
+ * `secondary` as an array), but the linker side is a specialized sub-struct —
+ * a plain column reference rather than a full join entry.
+ *
+ * **Join behavior**:
+ * - The linker column is inner-joined with all `secondary` entries
+ * - After the join, the linker's one-side axes are projected out
+ * - Result axes = joined axes minus the linker's one-side axes
+ *
+ * **Note**: `secondary` must contain at least one entry (empty has no
+ * well-defined meaning for linker-join).
+ *
+ * @template L - Linker sub-struct type (layer-specific)
+ * @template JE - Join entry type for the secondary side
+ *
+ * @example
+ * // Traverse linker l1 and read rest data lifted onto l1's many-side
+ * {
+ *   type: 'linkerJoin',
+ *   linker: { column: 'l1' },
+ *   secondary: [{ entry: restQuery, ... }]
+ * }
+ */
+export interface QueryLinkerJoin<L, JE extends QueryJoinEntry<unknown>> {
+  type: "linkerJoin";
+  /** Linker side — column reference plus layer-specific integration data. */
+  linker: L;
+  /** Rest side — one or more subqueries joined with the linker (at least one). */
+  secondary: JE[];
 }

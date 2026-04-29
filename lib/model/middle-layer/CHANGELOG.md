@@ -1,5 +1,99 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.18.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+
+## 1.18.6
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+
+## 1.18.5
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+
+## 1.18.4
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+
+## 1.18.3
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+
+## 1.18.2
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+
+## 1.18.1
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+
+## 1.18.0
+
+### Minor Changes
+
+- 49485fd: Correct `PFrameWasmV3` shape:
+
+  - Move `buildQuery` from the per-frame interface to the API factory
+    (`PFrameWasmAPIV3`). It is pure over its input and does not consult
+    frame state, so it should not require a frame instance.
+  - Add the missing `listColumns(): PColumnInfo[]` on the per-frame
+    interface, mirroring `PFrameReadApi.listColumns` on the data layer.
+
+  `PFrameWasmV2` / `PFrameWasmAPIV2` are kept as legacy shims until the V3
+  surface is implemented on the pframes-rs side and `pframes-rs-wasm`
+  stops returning V2 from its top-level exports.
+
+  Requires a matching `pframes-rs-wasm` release that exposes `buildQuery`
+  as a top-level export and `listColumns` on the frame resource.
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-common@1.32.1
+
+## 1.17.0
+
+### Minor Changes
+
+- 436d4a9: Add LinkerJoin query node (spec + data layers) mirroring OuterJoin's shape,
+  with a specialized linker sub-struct and a non-empty array of secondary join
+  entries. Introduces `PFrameWasmV3` adding `buildQuery`: a pure spec-layer
+  assembler that turns a terminal column plus an ordered path of wrapping
+  steps (linker hops, filter joins) into a ready-to-compose
+  `SpecQueryJoinEntry`. Extends `DiscoverColumnsStepInfo` with a `filter`
+  variant and adds `BuildQueryInput` in `pl-model-common`. V2 interfaces
+  remain as legacy shims pointing to V3 and will be removed in a future
+  PFrames update.
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+
 ## 1.16.4
 
 ### Patch Changes

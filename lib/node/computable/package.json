@@ -1,11 +1,12 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "Watcher / Computable Abstraction",
   "files": [
     "./dist/**/*",
     "./src/**/*"
   ],
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

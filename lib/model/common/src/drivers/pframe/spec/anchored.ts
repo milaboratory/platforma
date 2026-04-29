@@ -31,9 +31,9 @@ function domainKey(key: string, value: string): string {
  * Maintains maps of known domain values and axes that can be referenced by anchors
  */
 export class AnchoredIdDeriver {
+  private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   private readonly domains = new Map<string, string>();
   private readonly contextDomains = new Map<string, string>();
-  private readonly axes = new Map<string, AnchorAxisRefByIdx>();
   /**
    * Domain packs are used to group domain keys that can be anchored to the same anchor
    * This is used to optimize the lookup of domain anchors
@@ -244,6 +244,7 @@ export type ResolveAnchorsOptions = {
  * @param matcher - An anchored column matcher (or id, which is subtype of it) containing references that need to be resolved
  * @param options - Options for resolving anchors
  * @returns A non-anchored column matcher with all references resolved to actual values
+ * @deprecated - This function by parent PColumnCollection
  */
 export function resolveAnchors(
   anchors: Record<string, Pick<PColumnSpec, "axesSpec" | "domain" | "contextDomain">>,

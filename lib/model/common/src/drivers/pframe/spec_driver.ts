@@ -1,17 +1,19 @@
 import type { Branded } from "@milaboratories/helpers";
 import type { PoolEntry } from "../../pool_entry";
+import type { PObjectId } from "../../pool";
 import type {
   AxisSpec,
   AxesSpec,
   AxesId,
   PColumnIdAndSpec,
+  PColumnInfo,
   PColumnSpec,
   SingleAxisSelector,
   AxisValueType,
   ColumnValueType,
 } from "./spec";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
-import { DataQuery, SpecQuery } from "./query";
+import { DataQuery, SpecQuery, SpecQueryJoinEntry } from "./query";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -103,7 +105,6 @@ export interface DiscoverColumnsRequest {
 }
 
 /** Linker step: traversal through a linker column */
-/** A step traversed during path-based column discovery. Discriminated by `type`. */
 export interface DiscoverColumnsLinkerStep {
   type: "linker";
   /** The linker column traversed in this step */
@@ -112,8 +113,48 @@ export interface DiscoverColumnsLinkerStep {
   qualifications: AxisQualification[];
 }
 
+/**
+ * Filter step: intersects the current subquery with a filter column on shared
+ * axes. Filter columns carry `pl7.app/isSubset: "true"` with axes ⊆ dataset
+ * axes, so the inner-join narrows the key space to rows where the filter is
+ * present.
+ */
+export interface DiscoverColumnsFilterStep {
+  type: "filter";
+  /** The filter column applied in this step */
+  filter: PColumnIdAndSpec;
+}
+
 /** A step traversed during path-based column discovery. Discriminated by `type`. */
-export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep;
+export type DiscoverColumnsStepInfo = DiscoverColumnsLinkerStep | DiscoverColumnsFilterStep;
+
+/**
+ * Input to `buildQuery`: a terminal column plus an ordered
+ * path of wrapping steps (linker hops, filter joins). Produces a
+ * {@link SpecQueryJoinEntry} ready to be plugged into an
+ * `innerJoin`/`fullJoin`/`outerJoin` entry list.
+ *
+ * Path ordering: `path[0]` is outermost (first applied), `path[N-1]` is
+ * closest to `column`. Omit or pass `[]` for a direct column with no
+ * wrapping.
+ *
+ * Columns are referenced by id — specs are resolved later at
+ * `evaluateQuery` against the registered specs of the PFrame, so the
+ * caller cannot disagree with the frame about spec content.
+ *
+ * Qualifications annotate the resulting outermost entry; they do not
+ * propagate into the inner query.
+ */
+export type BuildQueryInput = {
+  /** Shape version marker — bumped only on breaking structural changes. */
+  readonly version: "v1";
+  /** Terminal column id — the column actually returning data. */
+  readonly column: PObjectId;
+  /** Ordered path from source integration to `column`. Outermost first. */
+  readonly path?: DiscoverColumnsStepInfo[];
+  /** Axis qualifications attached to the resulting join entry. */
+  readonly qualifications?: AxisQualification[];
+};
 
 /** Qualifications info for a discover columns response mapping variant */
 export interface DiscoverColumnsResponseQualifications {
@@ -188,6 +229,9 @@ export interface PFrameSpecDriver {
   /** Create a spec-only PFrame from column specs. Returns a pool entry with handle and unref. */
   createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle>;
 
+  /** List all columns currently registered in the frame. */
+  listColumns(handle: SpecFrameHandle): PColumnInfo[];
+
   /** Discover columns compatible with given axes integration. */
   discoverColumns(
     handle: SpecFrameHandle,
@@ -199,6 +243,15 @@ export interface PFrameSpecDriver {
 
   /** Evaluates a query specification against this PFrame */
   evaluateQuery(handle: SpecFrameHandle, request: SpecQuery): EvaluateQueryResponse;
+
+  /**
+   * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
+   * ordered path of wrapping steps (linker hops, filter joins).
+   *
+   * Pure over its input — no frame handle is needed. Column ids are resolved
+   * later at {@link evaluateQuery} against the registered specs.
+   */
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
 
   /** Expand index-based parentAxes in AxesSpec to resolved AxisId parents in AxesId. */
   expandAxes(spec: AxesSpec): AxesId;

@@ -63,15 +63,15 @@ function columns2rows(
   axesResultIndices: number[],
 ): PlAgDataTableV2Row[] {
   const rowData: PlAgDataTableV2Row[] = [];
-  for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const axesKey: PTableKey = axesResultIndices.map((ri) => pTableValue(columns[ri], iRow));
+  for (let rowIdx = 0; rowIdx < columns[0].data.length; ++rowIdx) {
+    const axesKey: PTableKey = axesResultIndices.map((ri) => pTableValue(columns[ri], rowIdx));
     const id = canonicalizeJson<PlTableRowId>(axesKey);
     const row = fields.reduce<PlAgDataTableV2Row>(
-      (acc, field, iCol) => {
+      (acc, field, colIdx) => {
         acc[field.toString() as `${number}`] =
-          fieldResultMapping[iCol] === -1
+          fieldResultMapping[colIdx] === -1
             ? PTableHidden
-            : pTableValue(columns[fieldResultMapping[iCol]], iRow);
+            : pTableValue(columns[fieldResultMapping[colIdx]], rowIdx);
         return acc;
       },
       { id, axesKey },
@@ -126,7 +126,7 @@ export async function calculateGridOptions({
 
   // displayable column indices ordered: axes first, then columns by OrderPriority
   const fields = sortIndicesByTypeAndPriority(
-    selectDisplayableIndices(tableSpecs, isPartitionedAxis),
+    selectDisplayableIndices(tableSpecs, isPartitionedAxis, getLabelColumnIndex),
     tableSpecs,
   );
 
@@ -156,10 +156,10 @@ export async function calculateGridOptions({
   // request indices: non-hidden display fields + visible axes for row selection keys.
   // Axes replaced by label columns request label data (display); original axis values
   // are fetched via visibleAxes (row keys).
-  const { requestIndices, fieldResultMapping, axesResultIndices } = buildRequestIndices(
+  const { requestIndices, axesResultIndices, fieldResultMapping } = buildRequestIndices(
     indices,
+    visibleAxes.map(([idx]) => idx),
     specsToVisibleSpecsMapping,
-    visibleAxes.map(([i]) => i),
   );
 
   let rowCount = -1;
@@ -313,7 +313,12 @@ export function makeColDef(
             throw Error(`unsupported data type: ${valueType}`);
         }
       })(),
-      tooltip: readAnnotation(labeledSpec.spec, Annotation.Description)?.trim(),
+      tooltip:
+        readAnnotation(spec.spec, Annotation.Description)?.trim() ??
+        readAnnotation(labeledSpec.spec, Annotation.Description)?.trim(),
+      info:
+        readAnnotation(spec.spec, Annotation.Table.Info)?.trim() ??
+        readAnnotation(labeledSpec.spec, Annotation.Table.Info)?.trim(),
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
@@ -331,8 +336,6 @@ export function makeColDef(
     })(),
   };
 }
-
-type LabelColumnLookup = (axisId: AxisId) => number;
 
 /** Build index mapping from full tableSpecs to their position in visibleTableSpecs (missing → -1). */
 function buildSpecsToVisibleSpecsMapping(
@@ -365,7 +368,7 @@ function createPartitionedAxisPredicate(sheets: PlDataTableSheet[]): (axisId: Ax
 function collectLabelColumnsByAxis(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
-): LabelColumnLookup {
+): (axisId: AxisId) => number {
   const labelColumns: { axisId: AxisId; labelColumnIdx: number }[] = [];
   for (const [i, spec] of tableSpecs.entries()) {
     if (spec.type !== "column" || !isLabelColumnSpec(spec.spec)) continue;
@@ -385,17 +388,23 @@ function collectLabelColumnsByAxis(
 function selectDisplayableIndices(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
+  getLabelColumnIndex: (axisId: AxisId) => number,
 ): number[] {
   return tableSpecs
     .entries()
     .filter(([, spec]) => {
       switch (spec.type) {
         case "axis":
-          return !isPartitionedAxis(spec.id);
+          return (
+            // show axis if not hidden or if it has a label column
+            (!isColumnHidden(spec.spec) ? true : getLabelColumnIndex(spec.id) > -1) &&
+            !isPartitionedAxis(spec.id)
+          );
         case "column":
           return (
-            !isLabelColumnSpec(spec.spec) &&
             !isColumnHidden(spec.spec) &&
+            // hide label columns (their labeled axes are shown instead)
+            !isLabelColumnSpec(spec.spec) &&
             !isLinkerColumnSpec(spec.spec)
           );
       }
@@ -424,7 +433,7 @@ function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColum
 function replaceAxesWithLabelColumns(
   fields: number[],
   tableSpecs: PTableColumnSpec[],
-  getLabelColumnIndex: LabelColumnLookup,
+  getLabelColumnIndex: (axisId: AxisId) => number,
 ): number[] {
   return fields.map((i) => {
     const spec = tableSpecs[i];
@@ -465,26 +474,23 @@ function collectVisibleAxes(
  */
 function buildRequestIndices(
   indices: number[],
-  specsToVisibleSpecsMapping: Map<number, number>,
   visibleAxesIndices: number[],
+  specsToVisibleSpecsMapping: Map<number, number>,
 ): {
   requestIndices: number[];
-  fieldResultMapping: number[];
   axesResultIndices: number[];
+  fieldResultMapping: number[];
 } {
   const resolved = indices.map((displayField) => {
     const idx = specsToVisibleSpecsMapping.get(displayField);
-    return idx === undefined || idx === -1 ? null : idx;
+    return isNil(idx) || idx === -1 ? null : idx;
   });
-  const requestedFields = resolved.filter((v): v is number => v !== null);
-
-  const fieldResultMapping: number[] = [];
-  let pos = 0;
-  for (const v of resolved) {
-    fieldResultMapping.push(v === null ? -1 : pos++);
-  }
-
-  const requestIndices = uniq([...requestedFields, ...visibleAxesIndices]);
+  const requestIndices = uniq([
+    ...resolved.filter((v): v is number => v !== null),
+    ...visibleAxesIndices,
+  ]);
+  const fieldResultMapping = resolved.map((v) => (v === null ? -1 : requestIndices.indexOf(v)));
   const axesResultIndices = visibleAxesIndices.map((vi) => requestIndices.indexOf(vi));
-  return { requestIndices, fieldResultMapping, axesResultIndices };
+
+  return { requestIndices, axesResultIndices, fieldResultMapping };
 }

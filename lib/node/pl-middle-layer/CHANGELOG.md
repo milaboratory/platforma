@@ -1,5 +1,271 @@
 # @milaboratories/pl-middle-layer
 
+## 1.56.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @platforma-sdk/model@1.69.0
+
+## 1.55.29
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-deployments@2.17.9
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-errors@1.3.10
+  - @milaboratories/pl-tree@1.9.20
+  - @milaboratories/pl-model-common@1.36.2
+  - @platforma-sdk/model@1.68.8
+  - @milaboratories/pl-drivers@1.12.22
+  - @milaboratories/pl-model-middle-layer@1.18.7
+  - @milaboratories/pf-spec-driver@1.3.6
+  - @milaboratories/pf-driver@1.4.2
+  - @milaboratories/pl-client@3.2.2
+  - @platforma-sdk/block-tools@2.7.16
+  - @milaboratories/pl-model-backend@1.2.18
+  - @platforma-sdk/workflow-tengo@5.16.0
+
+## 1.55.28
+
+### Patch Changes
+
+- Updated dependencies [e1bb3ba]
+  - @platforma-sdk/model@1.68.7
+
+## 1.55.27
+
+### Patch Changes
+
+- Updated dependencies [557d174]
+  - @platforma-sdk/model@1.68.6
+
+## 1.55.26
+
+### Patch Changes
+
+- Updated dependencies [c1baeb8]
+  - @platforma-sdk/model@1.68.5
+
+## 1.55.25
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+- Updated dependencies [e5596f5]
+- Updated dependencies [e5596f5]
+  - @platforma-sdk/workflow-tengo@5.16.0
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pl-model-middle-layer@1.18.6
+  - @milaboratories/pf-spec-driver@1.3.5
+  - @milaboratories/pf-driver@1.4.1
+  - @milaboratories/pl-client@3.2.1
+  - @milaboratories/pl-deployments@2.17.8
+  - @milaboratories/pl-drivers@1.12.21
+  - @platforma-sdk/model@1.68.4
+  - @platforma-sdk/block-tools@2.7.15
+  - @milaboratories/pl-model-backend@1.2.17
+  - @milaboratories/pl-errors@1.3.9
+  - @milaboratories/pl-tree@1.9.19
+
+## 1.55.24
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-model-backend@1.2.16
+  - @milaboratories/pl-drivers@1.12.20
+  - @milaboratories/pl-errors@1.3.8
+  - @milaboratories/pl-tree@1.9.18
+  - @platforma-sdk/workflow-tengo@5.15.1
+
+## 1.55.23
+
+### Patch Changes
+
+- 425b6b3: inferAllReferencedBlocks: detect PlRef embedded as canonicalized JSON string (global-form PObjectId) and account for it in block upstreams the same way as object-shaped PlRef.
+- Updated dependencies [425b6b3]
+  - @platforma-sdk/workflow-tengo@5.15.1
+
+## 1.55.22
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @milaboratories/pf-driver@1.4.0
+  - @platforma-sdk/model@1.68.0
+  - @milaboratories/pl-model-middle-layer@1.18.5
+  - @milaboratories/pf-spec-driver@1.3.4
+  - @milaboratories/pl-client@3.1.8
+  - @milaboratories/pl-deployments@2.17.7
+  - @milaboratories/pl-drivers@1.12.19
+  - @platforma-sdk/block-tools@2.7.14
+  - @milaboratories/pl-model-backend@1.2.15
+  - @milaboratories/pl-errors@1.3.7
+  - @milaboratories/pl-tree@1.9.17
+  - @platforma-sdk/workflow-tengo@5.15.0
+
+## 1.55.21
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+- Updated dependencies [10eec21]
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+  - @milaboratories/pl-model-common@1.35.0
+  - @platforma-sdk/workflow-tengo@5.15.0
+  - @milaboratories/pl-model-middle-layer@1.18.4
+  - @milaboratories/pf-spec-driver@1.3.3
+  - @milaboratories/pf-driver@1.3.11
+  - @milaboratories/pl-client@3.1.7
+  - @milaboratories/pl-deployments@2.17.6
+  - @milaboratories/pl-drivers@1.12.18
+  - @platforma-sdk/block-tools@2.7.13
+  - @milaboratories/pl-model-backend@1.2.14
+  - @milaboratories/pl-errors@1.3.6
+  - @milaboratories/pl-tree@1.9.16
+
+## 1.55.20
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @platforma-sdk/model@1.66.2
+  - @milaboratories/pl-model-middle-layer@1.18.3
+  - @milaboratories/pf-spec-driver@1.3.2
+  - @milaboratories/pf-driver@1.3.10
+  - @milaboratories/pl-client@3.1.6
+  - @milaboratories/pl-deployments@2.17.5
+  - @milaboratories/pl-drivers@1.12.17
+  - @platforma-sdk/block-tools@2.7.12
+  - @milaboratories/pl-model-backend@1.2.13
+  - @milaboratories/pl-errors@1.3.5
+  - @milaboratories/pl-tree@1.9.15
+  - @platforma-sdk/workflow-tengo@5.14.0
+
+## 1.55.19
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pl-model-middle-layer@1.18.2
+  - @milaboratories/pf-spec-driver@1.3.1
+  - @milaboratories/pf-driver@1.3.9
+  - @milaboratories/pl-client@3.1.5
+  - @milaboratories/pl-deployments@2.17.4
+  - @milaboratories/pl-drivers@1.12.16
+  - @platforma-sdk/model@1.65.10
+  - @platforma-sdk/block-tools@2.7.11
+  - @milaboratories/pl-model-backend@1.2.12
+  - @milaboratories/pl-errors@1.3.4
+  - @milaboratories/pl-tree@1.9.14
+  - @platforma-sdk/workflow-tengo@5.14.0
+
+## 1.55.18
+
+### Patch Changes
+
+- 1411dea: Expose `buildQuery` and `listColumns` on `PFrameSpecDriver`:
+
+  - `buildQuery(input: BuildQueryInput): SpecQueryJoinEntry` — pure
+    spec-layer assembler that turns a terminal column plus an ordered
+    path of wrapping steps (linker hops, filter joins) into a
+    ready-to-compose `SpecQueryJoinEntry`. No frame handle is required
+    (wires directly to the top-level export from `pframes-rs-wasm`).
+  - `listColumns(handle: SpecFrameHandle): PColumnInfo[]` — enumerates
+    every column registered in the spec frame. `hasData` is always
+    `false` for spec-only frames.
+
+  Both are also routed through the QuickJS service injector, so block
+  models can call `ctx.services.pframeSpec.buildQuery(...)` and
+  `ctx.services.pframeSpec.listColumns(handle)`.
+
+  Bumps `@milaboratories/pframes-rs-wasm` to 1.1.26 (corrected V3:
+  `buildQuery` at top level, `listColumns` on the frame resource). The
+  pool type switches from `PFrameWasmV2` to `PFrameWasmV3`.
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pf-spec-driver@1.3.0
+  - @milaboratories/pl-model-middle-layer@1.18.1
+  - @milaboratories/pf-driver@1.3.8
+  - @milaboratories/pl-client@3.1.4
+  - @milaboratories/pl-deployments@2.17.3
+  - @milaboratories/pl-drivers@1.12.15
+  - @platforma-sdk/model@1.65.9
+  - @platforma-sdk/block-tools@2.7.10
+  - @milaboratories/pl-model-backend@1.2.11
+  - @milaboratories/pl-errors@1.3.3
+  - @milaboratories/pl-tree@1.9.13
+  - @platforma-sdk/workflow-tengo@5.14.0
+
+## 1.55.17
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-middle-layer@1.18.0
+  - @milaboratories/pl-model-common@1.32.1
+  - @milaboratories/pf-spec-driver@1.2.7
+  - @milaboratories/pf-driver@1.3.7
+  - @platforma-sdk/model@1.65.8
+  - @platforma-sdk/block-tools@2.7.9
+  - @milaboratories/pl-client@3.1.3
+  - @milaboratories/pl-deployments@2.17.2
+  - @milaboratories/pl-drivers@1.12.14
+  - @milaboratories/pl-model-backend@1.2.10
+  - @milaboratories/pl-errors@1.3.2
+  - @milaboratories/pl-tree@1.9.12
+  - @platforma-sdk/workflow-tengo@5.14.0
+
+## 1.55.16
+
+### Patch Changes
+
+- Updated dependencies [20519be]
+  - @platforma-sdk/workflow-tengo@5.14.0
+
+## 1.55.15
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pl-model-middle-layer@1.17.0
+  - @milaboratories/pf-spec-driver@1.2.6
+  - @milaboratories/pf-driver@1.3.6
+  - @milaboratories/pl-client@3.1.2
+  - @milaboratories/pl-deployments@2.17.1
+  - @milaboratories/pl-drivers@1.12.13
+  - @platforma-sdk/model@1.65.6
+  - @platforma-sdk/block-tools@2.7.8
+  - @milaboratories/pl-model-backend@1.2.9
+  - @milaboratories/pl-errors@1.3.1
+  - @milaboratories/pl-tree@1.9.11
+  - @platforma-sdk/workflow-tengo@5.13.3
+
+## 1.55.14
+
+### Patch Changes
+
+- Updated dependencies [9942557]
+  - @milaboratories/pl-errors@1.3.0
+  - @milaboratories/pl-tree@1.9.10
+  - @milaboratories/pl-drivers@1.12.12
+
 ## 1.55.13
 
 ### Patch Changes

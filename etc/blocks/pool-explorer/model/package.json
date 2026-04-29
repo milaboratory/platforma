@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer.model",
-  "version": "1.2.11",
+  "version": "1.3.0",
   "description": "Block model",
   "type": "module",
   "main": "dist/index.cjs",

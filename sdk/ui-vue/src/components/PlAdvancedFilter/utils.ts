@@ -148,3 +148,23 @@ export function isValidColumnId(id: unknown): id is PlAdvancedFilterColumnId {
     return false;
   }
 }
+
+export function mergeFilterForTypeChange(
+  oldFilter: EditableFilter,
+  newType: SupportedFilterTypes,
+): EditableFilter {
+  const oldDefault = DEFAULT_FILTERS[oldFilter.type] as Record<string, unknown>;
+  const newDefault = DEFAULT_FILTERS[newType];
+
+  const stripped = { ...oldFilter } as Record<string, unknown>;
+  for (const key of Object.keys(oldDefault)) {
+    if (key === "type" || key === "column") continue;
+    delete stripped[key];
+  }
+
+  return {
+    ...newDefault,
+    ...stripped,
+    type: newType,
+  } as EditableFilter;
+}

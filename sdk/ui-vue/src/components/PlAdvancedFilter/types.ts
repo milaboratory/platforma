@@ -9,6 +9,7 @@ import type {
   SUniversalPColumnId,
 } from "@platforma-sdk/model";
 import type { SUPPORTED_FILTER_TYPES } from "./constants";
+import { PartialBy, RequiredBy } from "@milaboratories/helpers";
 
 export type Operand = "or" | "and";
 
@@ -52,9 +53,6 @@ export type RootFilter<Meta extends RequiredMeta = RequiredMeta> = Omit<
 // or, and, not - in groups
 export type SupportedFilterTypes = (typeof SUPPORTED_FILTER_TYPES)[number];
 
-type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
-type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
 type NumericalWithOptionalN = "topN" | "bottomN";
 type NumericalWithOptionalX =
   | "lessThan"
@@ -64,21 +62,21 @@ type NumericalWithOptionalX =
   | "equal"
   | "notEqual";
 type StringWithOptionalValue = "patternEquals" | "patternNotEquals";
-// types from ui with some changed by optionality fields
 type EditedTypes =
   | "patternFuzzyContainSubsequence"
   | NumericalWithOptionalX
   | StringWithOptionalValue
   | NumericalWithOptionalN;
+
 export type EditableFilter =
   | Exclude<FilterLeafContent, { type: EditedTypes }>
-  | RequireFields<
+  | RequiredBy<
       Extract<FilterLeafContent, { type: "patternFuzzyContainSubsequence" }>,
       "maxEdits" | "substitutionsOnly"
     >
-  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalN }>, "n">
-  | OptionalFields<Extract<FilterLeafContent, { type: NumericalWithOptionalX }>, "x">
-  | OptionalFields<Extract<FilterLeafContent, { type: StringWithOptionalValue }>, "value">;
+  | PartialBy<Extract<FilterLeafContent, { type: NumericalWithOptionalN }>, "n">
+  | PartialBy<Extract<FilterLeafContent, { type: NumericalWithOptionalX }>, "x">
+  | PartialBy<Extract<FilterLeafContent, { type: StringWithOptionalValue }>, "value">;
 
 export type FixedAxisInfo = {
   idx: number;

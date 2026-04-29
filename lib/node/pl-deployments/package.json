@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.17.0",
+  "version": "2.17.9",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "keywords": [],
   "license": "UNLICENSED",
@@ -13,6 +13,7 @@
     "assets",
     "postinstall.js"
   ],
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",

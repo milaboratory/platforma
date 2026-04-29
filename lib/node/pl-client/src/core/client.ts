@@ -179,6 +179,25 @@ export class PlClient {
     return await this.ll.license();
   }
 
+  /**
+   * Returns the user root ResourceId via ListUserResources.
+   * @param opts.login - target user login; omit for the authenticated user.
+   * @returns ResourceId of the user root, or undefined if the server returned no userRoot entry.
+   * @throws if the backend does not implement ListUserResources (callers should catch with isUnimplementedError).
+   */
+  public async getUserRoot(opts: { login?: string } = {}): Promise<ResourceId | undefined> {
+    const responses = await this.ll.listUserResources({
+      login: opts.login,
+      limit: 1,
+    });
+    for (const msg of responses) {
+      if (msg.entry.oneofKind === "userRoot") {
+        return bigintToResourceId(msg.entry.userRoot.resourceId);
+      }
+    }
+    return undefined;
+  }
+
   public get conf(): PlClientConfig {
     return this.ll.conf;
   }

@@ -67,7 +67,7 @@ blockTest(
     await project.runBlock(blockId);
     const blockState = await helpers.awaitBlockDoneAndGetStableBlockState(blockId);
 
-    // Block-level pframeSpec service (via ctx.services.pframeSpec)
+    // Block-level pframeSpec service
     expect(blockState.outputs?.blockSpecFrameTest).toStrictEqual({
       ok: true,
       value: "blockSpecFrame: created (auto-disposed)",
@@ -83,14 +83,14 @@ blockTest(
     // Plugin outputs are keyed with a prefix — access via plain record
     const outputs = blockState.outputs as Record<string, unknown> | undefined;
 
-    // Plugin-level pframeSpec service (via plugin ctx.services.pframeSpec)
+    // Plugin-level pframeSpec service
     expect(outputs?.[pluginOutputKey("counter" as any, "specFrameTest")]).toStrictEqual({
       ok: true,
       value: "specFrame: created and manually disposed",
       stable: true,
     });
 
-    // Plugin-level pframe service (via plugin ctx.services.pframe)
+    // Plugin-level pframe service
     const pframeOutput = outputs?.[pluginOutputKey("counter" as any, "pframeTest")] as any;
     expect(pframeOutput).toMatchObject({ ok: true, stable: true });
     expect(pframeOutput?.value).toMatch(/^pframe: created handle/);

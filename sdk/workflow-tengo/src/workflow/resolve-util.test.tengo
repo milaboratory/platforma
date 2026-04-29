@@ -1,0 +1,182 @@
+test := import(":test")
+resolveUtil := import(":workflow.resolve-util")
+
+//
+// R4: Deep-walk resolution — deepResolve
+//
+// Spec: wf.resolve() deep-walks any structure, replaces each PlRef
+// (__isRef: true) with the result of resolveFn. Non-PlRef fields
+// preserved as-is. Panics if zero PlRefs found (cannot be unit-tested
+// since ll.assert terminates execution; verified at integration level).
+//
+
+// Mock resolver: returns { spec, data } keyed by ref name
+mockResolve := func(ref) {
+	return { spec: ref.name, data: ref.name + "_data" }
+}
+
+TestR4_ResolveSinglePlRef := func() {
+	// Spec: "If input is a PlRef, current behavior returns PColumnResult"
+	ref := { __isRef: true, blockId: "b1", name: "col" }
+	resolved := resolveUtil.deepResolve(ref, mockResolve)
+	test.isEqual("col", resolved.spec)
+	test.isEqual("col_data", resolved.data)
+}
+
+TestR4_ResolvePrimaryRefWithFilter := func() {
+	// Spec: "If input is PrimaryRef, resolves nested column and filter,
+	//        preserves __isPrimaryRef as-is"
+	colRef := { __isRef: true, blockId: "b1", name: "col" }
+	fltRef := { __isRef: true, blockId: "b2", name: "flt" }
+	primary := { __isPrimaryRef: "v1", column: colRef, filter: fltRef }
+
+	resolved := resolveUtil.deepResolve(primary, mockResolve)
+
+	// Version marker preserved
+	test.isEqual("v1", resolved.__isPrimaryRef)
+	// Column resolved
+	test.isEqual("col", resolved.column.spec)
+	test.isEqual("col_data", resolved.column.data)
+	// Filter resolved
+	test.isEqual("flt", resolved.filter.spec)
+	test.isEqual("flt_data", resolved.filter.data)
+}
+
+TestR4_ResolvePrimaryRefWithoutFilter := func() {
+	// Spec: "filter?: PlRef" — filter is optional
+	colRef := { __isRef: true, blockId: "b1", name: "col" }
+	primary := { __isPrimaryRef: "v1", column: colRef }
+
+	resolved := resolveUtil.deepResolve(primary, mockResolve)
+	test.isEqual("v1", resolved.__isPrimaryRef)
+	test.isEqual("col", resolved.column.spec)
+	// filter key absent — not added by deep-walk
+	test.isTrue(is_undefined(resolved.filter))
+}
+
+TestR4_ResolveArbitraryNestedStructure := func() {
+	// Spec: "If input is any other structure (map, array), deep-walks"
+	ref1 := { __isRef: true, blockId: "b1", name: "a" }
+	ref2 := { __isRef: true, blockId: "b2", name: "b" }
+	input := { x: ref1, y: { z: ref2 } }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("a", resolved.x.spec)
+	test.isEqual("b", resolved.y.z.spec)
+}
+
+TestR4_ResolveArrayOfPlRefs := func() {
+	ref1 := { __isRef: true, blockId: "b1", name: "a" }
+	ref2 := { __isRef: true, blockId: "b2", name: "b" }
+
+	resolved := resolveUtil.deepResolve([ref1, ref2], mockResolve)
+	test.isEqual("a", resolved[0].spec)
+	test.isEqual("b", resolved[1].spec)
+}
+
+TestR4_ResolvePreservesNonRefFields := func() {
+	// Spec: "Non-PlRef fields (e.g., __isPrimaryRef: 'v1') preserved as-is"
+	ref := { __isRef: true, blockId: "b1", name: "col" }
+	input := { version: "v1", column: ref, count: 42, flag: true }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("v1", resolved.version)
+	test.isEqual(42, resolved.count)
+	test.isEqual(true, resolved.flag)
+	test.isEqual("col", resolved.column.spec)
+}
+
+TestR4_ResolveMixedArrayWithMaps := func() {
+	ref1 := { __isRef: true, blockId: "b1", name: "a" }
+	ref2 := { __isRef: true, blockId: "b2", name: "b" }
+	input := { items: [ref1, { nested: ref2 }] }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("a", resolved.items[0].spec)
+	test.isEqual("b", resolved.items[1].nested.spec)
+}
+
+TestR4_ResolveDeeplyNestedStructure := func() {
+	// Verifies iterative traversal handles deep nesting
+	ref := { __isRef: true, blockId: "b1", name: "deep" }
+	input := { l1: { l2: { l3: { l4: { l5: ref } } } } }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("deep", resolved.l1.l2.l3.l4.l5.spec)
+}
+
+TestR4_EachPlRefResolvedIndependently := func() {
+	// Spec: each PlRef is resolved independently via resolveFn
+	ref1 := { __isRef: true, blockId: "b1", name: "first" }
+	ref2 := { __isRef: true, blockId: "b2", name: "second" }
+	ref3 := { __isRef: true, blockId: "b3", name: "third" }
+	input := { a: ref1, b: ref2, c: [ref3] }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("first", resolved.a.spec)
+	test.isEqual("first_data", resolved.a.data)
+	test.isEqual("second", resolved.b.spec)
+	test.isEqual("second_data", resolved.b.data)
+	test.isEqual("third", resolved.c[0].spec)
+	test.isEqual("third_data", resolved.c[0].data)
+}
+
+TestR4_ResolverCalledExactlyOncePerPlRef := func() {
+	// Track how many times resolveFn is called
+	callLog := []
+	trackingResolve := func(ref) {
+		callLog = append(callLog, ref.name)
+		return { spec: ref.name }
+	}
+
+	ref1 := { __isRef: true, blockId: "b1", name: "a" }
+	ref2 := { __isRef: true, blockId: "b2", name: "b" }
+	primary := { __isPrimaryRef: "v1", column: ref1, filter: ref2 }
+
+	resolveUtil.deepResolve(primary, trackingResolve)
+	test.isEqual(2, len(callLog))
+}
+
+TestR4_OptionsPropagateThroughResolver := func() {
+	// Spec: "Options (e.g., { data: false }) apply to all resolved refs"
+	// Simulate by using a resolver that omits data (like { data: false })
+	specOnlyResolve := func(ref) {
+		return { spec: ref.name }
+	}
+
+	colRef := { __isRef: true, blockId: "b1", name: "col" }
+	fltRef := { __isRef: true, blockId: "b2", name: "flt" }
+	primary := { __isPrimaryRef: "v1", column: colRef, filter: fltRef }
+
+	resolved := resolveUtil.deepResolve(primary, specOnlyResolve)
+	test.isEqual("v1", resolved.__isPrimaryRef)
+	test.isEqual("col", resolved.column.spec)
+	test.isTrue(is_undefined(resolved.column.data))
+	test.isEqual("flt", resolved.filter.spec)
+	test.isTrue(is_undefined(resolved.filter.data))
+}
+
+TestR4_DoesNotTreatIsRefStringAsPlRef := func() {
+	// __isRef must be boolean true, string "true" is not a PlRef
+	realRef := { __isRef: true, blockId: "b1", name: "real" }
+	notRef := { __isRef: "true", blockId: "b2", name: "fake" }
+	input := { a: realRef, b: notRef }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	// Real ref resolved
+	test.isEqual("real", resolved.a.spec)
+	// Fake ref passed through as-is
+	test.isEqual("true", resolved.b.__isRef)
+	test.isEqual("b2", resolved.b.blockId)
+}
+
+TestR4_DoesNotTreatIsRefFalseAsPlRef := func() {
+	realRef := { __isRef: true, blockId: "b1", name: "real" }
+	notRef := { __isRef: false, blockId: "b2", name: "fake" }
+	input := { a: realRef, b: notRef }
+
+	resolved := resolveUtil.deepResolve(input, mockResolve)
+	test.isEqual("real", resolved.a.spec)
+	test.isEqual(false, resolved.b.__isRef)
+	test.isEqual("b2", resolved.b.blockId)
+}
