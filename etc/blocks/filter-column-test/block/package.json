@@ -1,0 +1,39 @@
+{
+  "name": "@milaboratories/milaboratories.test-filter-column",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "shx rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-filter-column.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",
+    "@milaboratories/milaboratories.test-filter-column.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*",
+    "shx": "catalog:"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-filter-column.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-filter-column.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-filter-column.ui/dist"
+    },
+    "meta": {
+      "title": "Filter Column Test",
+      "description": "Integration test: PlDatasetSelector + PrimaryRef + wf.resolve()",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}

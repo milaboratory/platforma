@@ -1,5 +1,74 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.17
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.1
+
+## 1.2.16
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.15.0
+
+## 1.2.15
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.15
+
+## 1.2.14
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.14
+
+## 1.2.13
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.13
+
+## 1.2.12
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.12
+
+## 1.2.11
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.11
+
+## 1.2.10
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.10
+
+## 1.2.9
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.14.9
+
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [fd0b5e3]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.14.8
+
+## 1.2.7
+
+### Patch Changes
+
+- Updated dependencies [54f60b7]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.14.7
+
 ## 1.2.6
 
 ### Patch Changes

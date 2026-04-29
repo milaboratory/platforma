@@ -15,55 +15,35 @@ import type {
   ExprStringEquals,
   ExprStringRegex,
   ExprNumericUnary,
-  QueryAxisSelector,
   QueryColumn,
   QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
+  QueryLinkerJoin,
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
   QuerySymmetricJoin,
   InferBooleanExpressionUnion,
 } from "./query_common";
-import type { Domain, PColumnIdAndSpec, PColumnSpec, SingleAxisSelector } from "../spec";
+import type { Domain, PColumnIdAndSpec, SingleAxisSelector } from "../spec";
 
 /**
- * Column identifier with specification.
- *
- * Pairs a column ID with its full PColumnSpec.
- * Used in spec layer to carry column specification alongside references.
- */
-type ColumnIdAndSpec = {
-  /** Unique identifier of the column */
-  id: PObjectId;
-  /** Full column specification including axes and value type */
-  spec: PColumnSpec;
-};
-
-/**
- * Join entry for spec layer queries.
- *
- * Extends the base join entry with axis qualifications.
- * Qualifications specify additional domain constraints for each axis,
- * enabling more precise control over how columns are joined.
+ * Join entry for spec-layer queries — the base join entry extended with
+ * per-axis domain constraints. Absent `qualifications` is equivalent to `[]`.
  *
  * @example
- * // Join entry with axis qualifications
  * {
  *   entry: querySpec,
- *   qualifications: [
- *     { axis: { name: 'sample' }, contextDomain: { ... } }
- *   ]
+ *   qualifications: [{ axis: { name: 'sample' }, contextDomain: { ... } }]
  * }
  */
 export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
-  /** Axis qualifications with additional domain constraints */
-  qualifications: {
-    /** Axis selector identifying which axis to qualify */
+  qualifications?: {
+    /** Axis to qualify. */
     axis: SingleAxisSelector;
-    /** Additional domain constraints for this axis */
+    /** Additional domain constraints for this axis. */
     contextDomain: Domain;
   }[];
 };
@@ -71,7 +51,7 @@ export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
 /** @see QueryColumn */
 export type SpecQueryColumn<C = PObjectId> = QueryColumn<C>;
 /** @see QueryInlineColumn */
-export type SpecQueryInlineColumn = QueryInlineColumn<ColumnIdAndSpec>;
+export type SpecQueryInlineColumn = QueryInlineColumn<PColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
 export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColumn<
   C,
@@ -81,11 +61,23 @@ export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColu
 export type SpecQuerySymmetricJoin<C = PObjectId> = QuerySymmetricJoin<SpecQueryJoinEntry<C>>;
 /** @see QueryOuterJoin */
 export type SpecQueryOuterJoin<C = PObjectId> = QueryOuterJoin<SpecQueryJoinEntry<C>>;
-/** @see QuerySliceAxes */
-export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<
-  SpecQuery<C>,
-  QueryAxisSelector<SingleAxisSelector>
+/**
+ * Linker side of a spec-layer linker-join.
+ *
+ * At the spec layer the linker is just a column reference — integration artifacts
+ * (axes mapping, one-side indices) are derived during spec→data conversion.
+ */
+export type SpecQueryLinkerJoinLinker<C = PObjectId> = {
+  /** Linker column reference. */
+  column: C;
+};
+/** @see QueryLinkerJoin */
+export type SpecQueryLinkerJoin<C = PObjectId> = QueryLinkerJoin<
+  SpecQueryLinkerJoinLinker<C>,
+  SpecQueryJoinEntry<C>
 >;
+/** @see QuerySliceAxes */
+export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<SpecQuery<C>, SingleAxisSelector>;
 /** @see QuerySort */
 export type SpecQuerySort<C = PObjectId> = QuerySort<SpecQuery<C>, SpecQueryExpression>;
 /** @see QueryFilter */
@@ -112,6 +104,7 @@ export type SpecQuery<C = PObjectId> =
   | SpecQuerySparseToDenseColumn<C>
   | SpecQuerySymmetricJoin<C>
   | SpecQueryOuterJoin<C>
+  | SpecQueryLinkerJoin<C>
   | SpecQuerySliceAxes<C>
   | SpecQuerySort<C>
   | SpecQueryFilter<C>;

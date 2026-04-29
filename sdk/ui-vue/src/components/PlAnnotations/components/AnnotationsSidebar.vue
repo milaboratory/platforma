@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import $commonStyle from "./style.module.css";
 
+import { produce } from "immer";
 import { randomInt } from "@milaboratories/helpers";
 import {
   PlBtnGhost,
@@ -14,26 +15,53 @@ import type { Annotation } from "../types";
 import { validateTitle } from "../utils";
 import { isEmpty } from "es-toolkit/compat";
 
-// Models
-const annotation = defineModel<Annotation>("annotation", { required: true });
-const selectedStepId = defineModel<undefined | number>("selectedStepId");
-// Emits
+const props = defineProps<{
+  annotation: Annotation;
+  selectedStepId: undefined | number;
+  onUpdateAnnotation: (annotation: Annotation) => void;
+  onUpdateSelectedStepId: (id: undefined | number) => void;
+}>();
+
 const emits = defineEmits<{
   (e: "delete-schema"): void;
 }>();
-// Actions
+
+function produceAnnotationUpdate(updater: (draft: Annotation) => void) {
+  props.onUpdateAnnotation(produce(props.annotation, updater));
+}
+
+function updateTitle(title: string) {
+  produceAnnotationUpdate((draft) => {
+    draft.title = title;
+  });
+}
+
+function updateSteps(steps: Annotation["steps"]) {
+  produceAnnotationUpdate((draft) => {
+    draft.steps = steps;
+  });
+}
+
+function updateDefaultValue(value: string) {
+  produceAnnotationUpdate((draft) => {
+    draft.defaultValue = value === "" ? undefined : value;
+  });
+}
+
 function handleAddStep() {
   const id = randomInt();
-  annotation.value.steps.push({
-    id,
-    label: "",
-    filter: {
-      id: randomInt(),
-      type: "and",
-      filters: [],
-    },
+  produceAnnotationUpdate((draft) => {
+    draft.steps.push({
+      id,
+      label: "",
+      filter: {
+        id: randomInt(),
+        type: "and",
+        filters: [],
+      },
+    });
   });
-  selectedStepId.value = id;
+  props.onUpdateSelectedStepId(id);
 }
 </script>
 
@@ -41,28 +69,29 @@ function handleAddStep() {
   <PlSidebarItem>
     <template #header-content>
       <PlEditableTitle
-        v-model="annotation.title"
-        :class="{ [$commonStyle.flashing]: annotation.title.length === 0 }"
+        :model-value="props.annotation.title"
+        :class="{ [$commonStyle.flashing]: props.annotation.title.length === 0 }"
         :max-length="40"
         max-width="600px"
         placeholder="Annotation Title"
-        :autofocus="annotation.title.length === 0"
+        :autofocus="props.annotation.title.length === 0"
         :validate="validateTitle"
+        @update:model-value="updateTitle"
       />
     </template>
-    <template v-if="annotation" #body-content>
-      <div :class="[$style.root, { [$commonStyle.disabled]: annotation.title.length === 0 }]">
-        <span :class="$style.tip"
-          >Above annotations override the ones below. Rearrange them by dragging.</span
-        >
-
+    <template v-if="props.annotation" #body-content>
+      <div :class="[$style.root, { [$commonStyle.disabled]: props.annotation.title.length === 0 }]">
+        <span :class="$style.tip">
+          Above annotations override the ones below. Rearrange them by dragging.
+        </span>
         <PlElementList
-          v-model:items="annotation.steps"
+          :items="props.annotation.steps"
           :get-item-key="(item) => item.id"
-          :is-active="(item) => item.id === selectedStepId"
+          :is-active="(item) => item.id === props.selectedStepId"
           :item-class="$style.stepItem"
           :class="$style.steps"
-          @item-click="(item) => (selectedStepId = item.id)"
+          @update:items="updateSteps"
+          @item-click="(item) => props.onUpdateSelectedStepId(item.id)"
         >
           <template #item-title="{ item }">
             {{ item.label }}
@@ -74,15 +103,15 @@ function handleAddStep() {
         <PlTextField
           :class="[
             $style.defaultValue,
-            { [$style.emptyDefaultValue]: isEmpty(annotation.defaultValue) },
+            { [$style.emptyDefaultValue]: isEmpty(props.annotation.defaultValue) },
           ]"
-          :model-value="annotation.defaultValue ?? ''"
+          :model-value="props.annotation.defaultValue ?? ''"
           label="Label remaining with"
           placeholder="No label"
           clearable
           helper="This label will be applied to the remaining rows, after all other filters are applied."
           @click.stop
-          @update:model-value="annotation.defaultValue = $event === '' ? undefined : $event"
+          @update:model-value="updateDefaultValue"
         />
       </div>
     </template>
@@ -90,7 +119,7 @@ function handleAddStep() {
       <PlBtnGhost
         icon="delete-bin"
         reverse
-        :disabled="annotation.steps.length === 0"
+        :disabled="props.annotation.steps.length === 0"
         @click.stop="emits('delete-schema')"
       >
         Delete Schema

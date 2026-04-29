@@ -19,10 +19,21 @@ wf.body(func(args) {
 		"G1\tFirst group\t1\n" +
 		"G2\tSecond group\t2\n"
 
-	// --- Linker: maps "name" -> "group" ---
+	// --- Linker A: maps "name" -> "group" (group axis domain: source=primary) ---
+	// Partial coverage — maps A,B,C only.
 	linkerTsv := "name\tgroup\tlink\n" +
 		"A\tG1\t1\n" +
 		"B\tG1\t1\n" +
+		"C\tG2\t1\n"
+
+	// --- Linker B: second path "name" -> "group" (group axis domain: source=secondary) ---
+	// Partial coverage — maps C,D,E only. Different group-axis domain than linker A.
+	// Two linkers over the same (name, group) axis pair but with DIFFERENT group-axis
+	// domains produce MatchVariants whose qualifications on the hit's group axis carry
+	// distinct contextDomain values — populating `distinctiveQualifications` (non-empty
+	// forHit) for each group-axis hit column. Feeds formatDistinctive in
+	// deriveDistinctTooltips and withInfoAnnotations per-variant records.
+	linkerAltTsv := "name\tgroup\tlinkAlt\n" +
 		"C\tG2\t1\n" +
 		"D\tG2\t1\n" +
 		"E\tG1\t1\n"
@@ -61,6 +72,7 @@ wf.body(func(args) {
 		writeFile("main.tsv", mainTsv).
 		writeFile("group.tsv", groupTsv).
 		writeFile("linker.tsv", linkerTsv).
+		writeFile("linkerAlt.tsv", linkerAltTsv).
 		writeFile("region.tsv", regionTsv).
 		writeFile("linker2.tsv", linker2Tsv).
 		writeFile("nameLabel.tsv", nameLabelTsv).
@@ -69,6 +81,7 @@ wf.body(func(args) {
 		saveFile("main.tsv").
 		saveFile("group.tsv").
 		saveFile("linker.tsv").
+		saveFile("linkerAlt.tsv").
 		saveFile("region.tsv").
 		saveFile("linker2.tsv").
 		saveFile("nameLabel.tsv").
@@ -79,6 +92,7 @@ wf.body(func(args) {
 	mainFile := e.getFile("main.tsv")
 	groupFile := e.getFile("group.tsv")
 	linkerFile := e.getFile("linker.tsv")
+	linkerAltFile := e.getFile("linkerAlt.tsv")
 	regionFile := e.getFile("region.tsv")
 	linker2File := e.getFile("linker2.tsv")
 	nameLabelFile := e.getFile("nameLabel.tsv")
@@ -93,12 +107,67 @@ wf.body(func(args) {
 		}
 	}
 
+	nameAxisSpecPrimary := {
+		name: "name",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Name"
+		},
+		domain: {
+			"pl7.app/source": "primary"
+		}
+	}
+
+	nameAxisSpecSecondary := {
+		name: "name",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Name"
+		},
+		domain: {
+			"pl7.app/source": "secondary"
+		}
+	}
+
 	groupAxisSpec := {
 		name: "group",
 		type: "String",
 		annotations: {
 			"pl7.app/label": "Group"
 		}
+	}
+
+	groupAxisSpecHit := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group hit"
+		},
+		parentAxes: [0]
+	}
+
+	groupAxisSpecPrimary := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group primary"
+		},
+		domain: {
+			"pl7.app/source": "primary"
+		},
+		parentAxes: [0]
+	}
+
+	groupAxisSpecSecondary := {
+		name: "group",
+		type: "String",
+		annotations: {
+			"pl7.app/label": "Group secondary"
+		},
+		domain: {
+			"pl7.app/source": "secondary"
+		},
+		parentAxes: [0]
 	}
 
 	regionAxisSpec := {
@@ -163,6 +232,9 @@ wf.body(func(args) {
 		axes: [{
 			column: "group",
 			spec: groupAxisSpec
+		}, {
+			column: "group",
+			spec: groupAxisSpecHit
 		}],
 		columns: [{
 			column: "description",
@@ -189,10 +261,17 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	}
 
+	// Linker A: group axis domain=source:primary. Carries rows A,B,C only.
 	linkerSpec := {
 		axes: [{
 			column: "group",
 			spec: groupAxisSpec
+		}, {
+			column: "group",
+			spec: groupAxisSpecPrimary
+		}, {
+			column: "group",
+			spec: groupAxisSpecSecondary
 		}, {
 			column: "name",
 			spec: nameAxisSpec
@@ -204,7 +283,37 @@ wf.body(func(args) {
 				name: "linker_name_group",
 				valueType: "Int",
 				annotations: {
-					"pl7.app/linkLabel": "Name-Group Linker",
+					"pl7.app/linkLabel": "Name-Group Linker (primary)",
+					"pl7.app/isLinkerColumn": "true"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 0
+	}
+
+	// Linker B: group axis domain=source:secondary. Carries rows C,D,E only.
+	// Same (name, group) axis pair as linker A by name/type but with a distinct
+	// axis `domain` — discoverColumns emits a MatchVariant whose hit-axis
+	// qualification carries contextDomain={pl7.app/source: secondary}, which
+	// differs from linker A's variant. That delta populates
+	// `distinctiveQualifications.forHit` on both variants.
+	linkerAltSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}, {
+			column: "name",
+			spec: nameAxisSpec
+		}],
+		columns: [{
+			column: "linkAlt",
+			id: "linker_name_group_alt",
+			spec: {
+				name: "linker_name_group_alt",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/linkLabel": "Name-Group Linker (secondary)",
 					"pl7.app/isLinkerColumn": "true"
 				}
 			}
@@ -331,6 +440,7 @@ wf.body(func(args) {
 	mainPf := xsv.importFile(mainFile, "tsv", mainSpec, importOps)
 	groupPf := xsv.importFile(groupFile, "tsv", groupSpec, importOps)
 	linkerPf := xsv.importFile(linkerFile, "tsv", linkerSpec, importOps)
+	linkerAltPf := xsv.importFile(linkerAltFile, "tsv", linkerAltSpec, importOps)
 	regionPf := xsv.importFile(regionFile, "tsv", regionSpec, importOps)
 	linker2Pf := xsv.importFile(linker2File, "tsv", linker2Spec, importOps)
 	nameLabelPf := xsv.importFile(nameLabelFile, "tsv", nameLabelSpec, importOps)
@@ -346,6 +456,9 @@ wf.body(func(args) {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in linkerPf {
+		pf.add(k, v.spec, v.data)
+	}
+	for k, v in linkerAltPf {
 		pf.add(k, v.spec, v.data)
 	}
 	for k, v in regionPf {

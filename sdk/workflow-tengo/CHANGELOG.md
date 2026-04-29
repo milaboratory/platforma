@@ -1,5 +1,76 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.17.0
+
+### Minor Changes
+
+- faa0781: GPU minimal support in tengo workflow
+
+## 5.16.0
+
+### Minor Changes
+
+- e5596f5: Add `pframes.build-query` — a tengo port of `pframes-rs`'s `BuildQuery`
+  request. Right-folds an ordered `path` of linker/filter steps over a
+  terminal column id into a `SpecQueryJoinEntry`, byte-identical on JSON
+  output to the wasm `pf-spec-driver.buildQuery` (cross-checked by tests).
+  Will be replaced with a wasm call once the backend exposes one.
+
+  `pframes.build-table.tpl.tengo` now drives its per-primary filter wrap
+  through `buildQuery`, translating the resulting `SpecQueryJoinEntry`
+  tree (`column`, `innerJoin`, `linkerJoin`) into pt operations.
+
+- e5596f5: Migrate `pt` emitters and ptabler `read_frame` step to the `SpecQuery` shape, and fix a TS type bug.
+
+  **`pl-model-common` type fix:** `QuerySliceAxes.axisFilters[i].axisSelector` was typed as `QueryAxisSelector<A>` (wrapped `{type: "axis", id: A}`), which disagreed with the wire format — Rust (`pframes-rs/packages/bridge/src/query/query_slice_axes.rs`) and Python (`polars_pf.json.query_spec.SpecQuerySliceAxisFilter`) both serialize `axis_selector` as the bare selector (`SingleAxisSelector` at the spec layer, `number` at the data layer). The Rust `serialize_slice_axes` test at `pframes-rs/packages/spec/src/query_spec/query.rs:381` confirms the flat wire. Updated `QuerySliceAxes<Q, A>` to take `A` unconstrained, updated `SpecQuerySliceAxes` to use `SingleAxisSelector` directly and `DataQuerySliceAxes` to use `number` directly, and corrected the jsdoc example.
+
+  - `pt.p.column/slicedColumn/inner/full/outer` now emit `SpecQueryJoinEntry` nodes (`column`, `sliceAxes`, `innerJoin`, `fullJoin`, `outerJoin`) byte-compatible with the output of `PFrameSpecDriver.buildQuery`.
+  - Added `pt.p.linkerJoin` for emitter completeness against the `SpecQuery` union.
+  - `read_frame.request` is now `PTableDefV2<PObjectId>` (`{ query: SpecQuery }`) — dropped the legacy `{ src, filters: [] }` sibling shape. The `filters` list goes away because filters live as `SpecQueryFilter` nodes inside the query tree.
+  - ptabler Python step (`ptabler.steps.read_frame.ReadFrame`) takes `PTableDefV2` and forwards `request.query` directly to `polars_pf.pframe_source`, which accepts `SpecQuery` natively.
+  - Bumped `polars-pf` requirement to `1.1.27` (shipped in `runenv-python-3.12.10@1.3.9`; catalog `runenv-python-3` bumped `1.7.4 → 1.8.0` to pull it in). Updated the `test_duplicate_axis_values_failure` assertion to match the new error wording ("multiple rows with the same axis key").
+  - `slicedColumn` no longer uses the `new_id`/`column_id` rename pair — each slice wraps a direct `Column(name)` reference under a `sliceAxes` node with axis selectors resolved from the column's `axesSpec`. This aligns with the Rust upgrade rule that rejects `new_id != column_id` (see `pframes-rs/packages/spec/src/requests/query_upgrade/logic.rs:35`).
+
+### Patch Changes
+
+- e5596f5: Drop redundant forward-declaration of `_buildAxisSelector` in `pt/index.lib.tengo`.
+- Updated dependencies [e5596f5]
+  - @platforma-open/milaboratories.software-ptabler@1.16.0
+
+## 5.15.1
+
+### Patch Changes
+
+- 425b6b3: Fix bundle.addSingle on global-form PObjectId.
+
+## 5.15.0
+
+### Minor Changes
+
+- 10eec21: Add `tableBuilder` API (`wf.tableBuilder(format)`) for declarative table construction with primary-level filtering. Extend `wf.resolve()` to deep-walk any structure containing PlRefs (universal resolve). Add `PrimarySpecsReady` predefined await template for spec-only awaiting in ephemeral templates.
+
+## 5.14.0
+
+### Minor Changes
+
+- 20519be: GPU minimal support in tengo workflow
+
+## 5.13.3
+
+### Patch Changes
+
+- fd0b5e3: Slice operation support
+- Updated dependencies [fd0b5e3]
+  - @platforma-open/milaboratories.software-ptabler@1.15.2
+
+## 5.13.2
+
+### Patch Changes
+
+- 54f60b7: Slice operation support
+- Updated dependencies [54f60b7]
+  - @platforma-open/milaboratories.software-ptabler@1.15.1
+
 ## 5.13.1
 
 ### Patch Changes

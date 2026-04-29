@@ -1,5 +1,89 @@
 # @milaboratories/pf-driver
 
+## 1.4.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+- @milaboratories/pl-model-middle-layer@1.18.7
+
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pl-model-middle-layer@1.18.6
+
+## 1.4.0
+
+### Minor Changes
+
+- 5420fea: Add PTableDownloadFormat, DownloadPTableOptions, and DownloadPTableResult types for PTable file export support
+
+### Patch Changes
+
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @milaboratories/pl-model-middle-layer@1.18.5
+
+## 1.3.11
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/pl-model-middle-layer@1.18.4
+
+## 1.3.10
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @milaboratories/pl-model-middle-layer@1.18.3
+
+## 1.3.9
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pl-model-middle-layer@1.18.2
+
+## 1.3.8
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pl-model-middle-layer@1.18.1
+
+## 1.3.7
+
+### Patch Changes
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-middle-layer@1.18.0
+  - @milaboratories/pl-model-common@1.32.1
+
+## 1.3.6
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pl-model-middle-layer@1.17.0
+
 ## 1.3.5
 
 ### Patch Changes

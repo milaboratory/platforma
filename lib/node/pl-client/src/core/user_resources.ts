@@ -58,7 +58,7 @@ export class UserResources {
   constructor(
     private readonly ll: LLPlClient,
     private readonly runTx: TxRunner,
-    private readonly authUser: string | null,
+    public readonly authUser: string | null,
   ) {}
 
   /**
@@ -68,45 +68,73 @@ export class UserResources {
    * - New path: listUserResources RPC returns the root directly
    * - Legacy path: named resource lookup/creation via transaction
    */
-  async getUserRoot(): Promise<ResourceId> {
+  async getUserRoot(): Promise<ResourceId>;
+  async getUserRoot(opts: { login?: string }): Promise<ResourceId>;
+  async getUserRoot(opts: { login?: string; doNotCreate: false }): Promise<ResourceId>;
+  async getUserRoot(opts: { login?: string; doNotCreate: true }): Promise<ResourceId | undefined>;
+  async getUserRoot(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
     if (this.supportsListUserResources === undefined) {
       // First call — detect backend capability
       try {
-        const root = await this.getUserRootViaList();
+        const root = await this.getUserRootViaList(opts);
         this.supportsListUserResources = true;
         return root;
       } catch (err) {
         if (!isUnimplementedError(err)) throw err;
         this.supportsListUserResources = false;
-        return await this.getUserRootViaLegacy();
+        return await this.getUserRootViaLegacy(opts);
       }
     }
 
     if (this.supportsListUserResources) {
-      return await this.getUserRootViaList();
+      return await this.getUserRootViaList(opts);
     }
-    return await this.getUserRootViaLegacy();
+    return await this.getUserRootViaLegacy(opts);
   }
 
   /**
    * Returns all data libraries the user has access to.
    * Always fetches fresh from the server (no caching).
    */
-  async getDataLibraries(): Promise<ReadonlyMap<string, StorageInfo>> {
+  async getDataLibraries(
+    opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
+  ): Promise<ReadonlyMap<string, StorageInfo>> {
     if (this.supportsListUserResources === undefined) {
-      throw new Error("getUserRoot() must be called before getDataLibraries()");
+      // First call — detect backend capability
+      try {
+        const libs = await this.getDataLibrariesViaList(opts);
+        this.supportsListUserResources = true;
+        return libs;
+      } catch (err) {
+        if (!isUnimplementedError(err)) throw err;
+        this.supportsListUserResources = false;
+        return await this.getDataLibrariesViaLegacy();
+      }
     }
 
     if (this.supportsListUserResources) {
-      return await this.getDataLibrariesViaList();
+      return await this.getDataLibrariesViaList(opts);
     }
     return await this.getDataLibrariesViaLegacy();
   }
 
   // --- New path: listUserResources ---
 
-  private async getUserRootViaList(): Promise<ResourceId> {
-    const responses = await this.ll.listUserResources({ limit: 1 });
+  private async getUserRootViaList(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaList(opts: {
+    login?: string;
+    doNotCreate: false;
+  }): Promise<ResourceId>;
+  private async getUserRootViaList(opts: {
+    login?: string;
+    doNotCreate: true;
+  }): Promise<ResourceId | undefined>;
+  private async getUserRootViaList(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    const responses = await this.ll.listUserResources({ login: opts.login, limit: 1 });
     for (const msg of responses) {
       if (msg.entry.oneofKind === "userRoot") {
         return bigintToResourceId(
@@ -118,8 +146,10 @@ export class UserResources {
     throw new Error("listUserResources returned no userRoot entry");
   }
 
-  private async getDataLibrariesViaList(): Promise<ReadonlyMap<string, StorageInfo>> {
-    const responses = await this.ll.listUserResources({});
+  private async getDataLibrariesViaList(
+    opts: { login?: string } = {},
+  ): Promise<ReadonlyMap<string, StorageInfo>> {
+    const responses = await this.ll.listUserResources({ login: opts.login });
 
     // Collect all LS/* shared resources, separating V1 and V2
     const v1Entries: StorageInfo[] = [];
@@ -181,15 +211,29 @@ export class UserResources {
 
   // --- Legacy path: named resources ---
 
-  private async getUserRootViaLegacy(): Promise<ResourceId> {
+  private async getUserRootViaLegacy(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaLegacy(opts: {
+    login?: string;
+    doNotCreateUserRoot: false;
+  }): Promise<ResourceId>;
+  private async getUserRootViaLegacy(opts: {
+    login?: string;
+    doNotCreateUserRoot: true;
+  }): Promise<ResourceId | undefined>;
+  private async getUserRootViaLegacy(
+    opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    const login = opts.login ?? this.authUser;
     const mainRootName =
-      this.authUser === null
-        ? AnonymousClientRoot
-        : createHash("sha256").update(this.authUser).digest("hex");
+      login === null ? AnonymousClientRoot : createHash("sha256").update(login).digest("hex");
 
     return await this.runTx("initialization", true, NullResourceId, async (tx) => {
       if (await tx.checkResourceNameExists(mainRootName)) {
         return await tx.getResourceByName(mainRootName);
+      }
+
+      if (opts.doNotCreateUserRoot) {
+        return undefined;
       }
 
       const mainRoot = tx.createRoot(ClientRoot);

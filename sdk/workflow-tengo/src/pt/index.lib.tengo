@@ -59,193 +59,231 @@ _newDataFrameGroupBy := undefined
 
 workflowCounter := 0
 
-_validateColumn := func(name, columnStruct) {
+_validateColumn := func(name, columnMap) {
 	ll.assert(is_string(name), "column name must be a string")
-	ll.assert(is_map(columnStruct), "columnStruct must be a map")
-	ll.assert(!is_undefined(columnStruct.spec), "columnStruct must have 'spec' field defined")
-	ll.assert(!is_undefined(columnStruct.data), "columnStruct must have 'data' field defined")
+	ll.assert(is_map(columnMap), "column must be a map")
+	ll.assert(!is_undefined(columnMap.spec), "column must have 'spec' field defined")
+	ll.assert(!is_undefined(columnMap.data), "column must have 'data' field defined")
 }
 
-_newPEntry := func(columnsByName, joinTree) {
+_newPEntry := func(columnsByName, specQuery) {
 	return ll.toStrict({
-		/** Returns the columns map of the entry. */
+		/** Column map keyed by name, to be registered on the PFrame. */
 		_getColumnsMap: func() {
 			return columnsByName
 		},
-		/** Returns the join tree of the entry. */
-		_getJoinTree: func() {
-			return joinTree
+		/** The bare `SpecQuery` carried by this entry. */
+		_getSpecQuery: func() {
+			return specQuery
 		}
 	})
 }
 
 _isPEntry := func(entry) {
-	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getJoinTree");
+	return ll.isMap(entry) && ll.methodExists(entry, "_getColumnsMap") && ll.methodExists(entry, "_getSpecQuery");
 }
 
 _frameToPEntries := undefined
 
-slicedColumnCounter := 0
+// Merge PEntries into one column map (panicking on duplicate names) plus each
+// entry's bare SpecQuery, in input order. Shared by every symmetric-join
+// builder — callers wrap each SpecQuery into a `SpecQueryJoinEntry` at the
+// composition site (qualifications belong to the parent join, not the child).
+_mergePEntries := func(entries) {
+	columns := {}
+	specQueries := []
+	for entry in entries {
+		ll.assert(_isPEntry(entry), "expected a PEntry, got: %v", entry)
+		entryColumns := entry._getColumnsMap()
+		// Sort-iterate so the duplicate-name panic reports the same collision
+		// across runs — otherwise map iteration order is non-deterministic.
+		maps.forEach(entryColumns, func(name, info) {
+			if !is_undefined(columns[name]) {
+				ll.panic("column name %s is already used, please pick a different name", name)
+			}
+			columns[name] = info
+		})
+		specQueries = append(specQueries, entry._getSpecQuery())
+	}
+	return { columns: columns, specQueries: specQueries }
+}
+
+// Wrap a bare SpecQuery into a SpecQueryJoinEntry with no qualifications
+// (absent `qualifications` is the canonical empty form — see
+// `lib/model/common/src/drivers/pframe/query/query_spec.ts`).
+_asJoinEntry := func(specQuery) {
+	return { entry: specQuery }
+}
+
+_asJoinEntries := func(specQueries) {
+	return slices.map(specQueries, _asJoinEntry)
+}
+
+// Build a `SingleAxisSelector` for `axesSpec[idx]`. Over-specified
+// (every disambiguator included) — simpler than the Rust minimal-
+// selector algorithm at `pframes-rs/packages/spec/src/axes/axes_spec.rs:162`
+// and still uniquely matches via `find()`. Empty fields are omitted to
+// keep the JSON canonical; `parentAxes` recurse for multi-layer columns
+// where axes share name/type/domain and differ only in parent hierarchy.
+_buildAxisSelector := func(axesSpec, idx) {
+	axis := axesSpec[idx]
+	selector := { name: axis.name }
+	if !is_undefined(axis.type) {
+		selector.type = axis.type
+	}
+	if !is_undefined(axis.domain) && len(axis.domain) > 0 {
+		selector.domain = maps.clone(axis.domain)
+	}
+	if !is_undefined(axis.contextDomain) && len(axis.contextDomain) > 0 {
+		selector.contextDomain = maps.clone(axis.contextDomain)
+	}
+	if !is_undefined(axis.parentAxes) && len(axis.parentAxes) > 0 {
+		parents := []
+		for parentIdx in axis.parentAxes {
+			ll.assert(parentIdx >= 0 && parentIdx < idx,
+				"slicedColumn: parentAxes index %d must be less than current axis index %d",
+				parentIdx, idx)
+			parents = append(parents, _buildAxisSelector(axesSpec, parentIdx))
+		}
+		selector.parentAxes = parents
+	}
+	return selector
+}
+
+// Each PEntry holds a bare `SpecQuery` — see
+// `lib/model/common/src/drivers/pframe/query/query_spec.ts`. pt emits only
+// the subset its builders produce: `column`, `sliceAxes`, and the
+// `innerJoin`/`fullJoin`/`outerJoin`/`linkerJoin` wrappers. The surrounding
+// `SpecQueryJoinEntry` (with its optional `qualifications`) is built on the
+// spot by each join builder — mirroring `QueryBuilderSpec::into_join_entry`
+// in `pframes-rs/packages/spec/src/query_spec/query.rs`.
 
 p := ll.toStrict({
 	/**
-	 * Creates a new column join builder entry.
+	 * Creates a column join builder entry.
 	 * @param name {string} - The name of the column.
-	 * @param columnStruct { spec: json, data: resource } - The column object.
+	 * @param columnMap { spec: json, data: resource } - The column object.
 	 * @returns {object} - A join builder entry object.
 	 */
-	column: func(name, columnStruct) {
-		_validateColumn(name, columnStruct)
+	column: func(name, columnMap) {
+		_validateColumn(name, columnMap)
 		columnsByName := {}
-		columnsByName[name] = columnStruct
+		columnsByName[name] = columnMap
 		return _newPEntry(columnsByName, {
 			type: "column",
-			columnId: name
+			column: name
 		})
 	},
 	/**
-	 * Creates a new sliced column join builder entry.
+	 * Creates a sliced column join builder entry — emits `sliceAxes` over
+	 * `column`, with each `axisIndex` resolved to a `SingleAxisSelector`
+	 * against the column's `axesSpec`.
+	 *
 	 * @param name {string} - The name of the column.
 	 * @param columnMap { spec: json, data: resource } - The column object.
-	 * @param axisFilters {array} - The array of axis filters.
+	 * @param axisFilters {array} - `[{ axisIndex: number, constant: string|number }, ...]`
 	 * @returns {object} - A join builder entry object.
 	 */
 	slicedColumn: func(name, columnMap, axisFilters) {
 		_validateColumn(name, columnMap)
 		util.validateAxisFilters(axisFilters)
 
-		slicedColumnCounter += 1
-		oldName := "p_sliced_" + slicedColumnCounter
+		axesSpec := columnMap.spec.axesSpec
+		ll.assert(is_array(axesSpec),
+			"slicedColumn: column %q spec must carry axesSpec, got: %v", name, columnMap.spec)
+
+		resolvedFilters := []
+		for filter in axisFilters {
+			idx := filter.axisIndex
+			ll.assert(idx >= 0 && idx < len(axesSpec),
+				"slicedColumn: axisIndex %d out of range for column %q (axes: %d)",
+				idx, name, len(axesSpec))
+			resolvedFilters = append(resolvedFilters, {
+				axisSelector: _buildAxisSelector(axesSpec, idx),
+				constant: filter.constant
+			})
+		}
 
 		columnsByName := {}
-		columnsByName[oldName] = columnMap
+		columnsByName[name] = columnMap
 		return _newPEntry(columnsByName, {
-			type: "slicedColumn",
-			columnId: oldName,
-			newId: name,
-			axisFilters: axisFilters
+			type: "sliceAxes",
+			input: { type: "column", column: name },
+			axisFilters: resolvedFilters
 		})
 	},
 	/**
-	 * Creates a new inner join builder entry.
-	 * @param entries {array} - The array of join builder entry objects.
+	 * Creates an inner join builder entry.
+	 * @param entries {array} - PEntries to inner-join (non-empty).
 	 * @returns {object} - A join builder entry object.
 	 */
 	inner: func(...entries) {
 		ll.assert(len(entries) > 0, "inner join requires at least one entry")
-
 		if len(entries) == 1 && !_isPEntry(entries[0]) {
 			entries = _frameToPEntries(entries[0])
 		}
-
-		mergedColMap := {}
-		joinTreeEntries := []
-
-		for entry in entries {
-			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-
-			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
-		}
-
-		joinTree := {
-			type: "inner",
-			entries: joinTreeEntries
-		}
-
-		return _newPEntry(mergedColMap, joinTree)
+		merged := _mergePEntries(entries)
+		return _newPEntry(merged.columns, {
+			type: "innerJoin",
+			entries: _asJoinEntries(merged.specQueries)
+		})
 	},
 	/**
-	 * Creates a new full join builder entry.
-	 * @param entries {array} - The array of join builder entry objects.
+	 * Creates a full join builder entry.
+	 * @param entries {array} - PEntries to full-join (non-empty).
 	 * @returns {object} - A join builder entry object.
 	 */
 	full: func(...entries) {
 		ll.assert(len(entries) > 0, "full join requires at least one entry")
-
 		if len(entries) == 1 && !_isPEntry(entries[0]) {
 			entries = _frameToPEntries(entries[0])
 		}
-
-		mergedColMap := {}
-		joinTreeEntries := []
-
-		for entry in entries {
-			ll.assert(_isPEntry(entry), "all entries must be PEntry objects")
-
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-
-			joinTreeEntries = append(joinTreeEntries, entryJoinTree)
-		}
-
-		joinTree := {
-			type: "full",
-			entries: joinTreeEntries
-		}
-
-		return _newPEntry(mergedColMap, joinTree)
+		merged := _mergePEntries(entries)
+		return _newPEntry(merged.columns, {
+			type: "fullJoin",
+			entries: _asJoinEntries(merged.specQueries)
+		})
 	},
 	/**
-	 * Creates a new outer join builder entry.
-	 * @param primary {object} - The primary join builder entry object.
-	 * @param secondary {array} - The array of secondary join builder entry objects.
+	 * Creates an outer join builder entry.
+	 * @param primary {PEntry} - Left-side entry, preserved in full.
+	 * @param secondary {...PEntry} - One or more right-side entries.
 	 * @returns {object} - A join builder entry object.
 	 */
 	outer: func(primary, ...secondary) {
 		ll.assert(_isPEntry(primary), "primary entry must be a PEntry object")
 		ll.assert(len(secondary) > 0, "outer join requires at least one secondary entry")
+		merged := _mergePEntries(append([primary], secondary...))
+		return _newPEntry(merged.columns, {
+			type: "outerJoin",
+			primary: _asJoinEntry(merged.specQueries[0]),
+			secondary: _asJoinEntries(merged.specQueries[1:])
+		})
+	},
+	/**
+	 * Creates a `linkerJoin` entry with one secondary subquery.
+	 *
+	 * No caller inside pt today — added for emitter completeness against
+	 * the `SpecQuery` union.
+	 *
+	 * @param linkerColumnEntry {PEntry} — a plain `p.column` entry; its
+	 *        column is used as the linker id and its column map is merged
+	 *        into the result so pframe registration covers it.
+	 * @param secondaryEntry {PEntry} — the many-side subquery.
+	 * @returns {object} - A join builder entry object.
+	 */
+	linkerJoin: func(linkerColumnEntry, secondaryEntry) {
+		ll.assert(_isPEntry(linkerColumnEntry), "linker must be a PEntry object")
+		linkerQuery := linkerColumnEntry._getSpecQuery()
+		ll.assert(ll.isMap(linkerQuery) && linkerQuery.type == "column",
+			"linkerJoin: linker entry must be a plain p.column(...) result, got: %v", linkerQuery)
 
-		mergedColMap := {}
-
-		primaryColMap := primary._getColumnsMap()
-		primaryJoinTree := primary._getJoinTree()
-
-		for colName, colInfo in primaryColMap {
-			mergedColMap[colName] = colInfo
-		}
-
-		secondaryJoinTrees := []
-
-		for entry in secondary {
-			ll.assert(_isPEntry(entry), "all secondary entries must be PEntry objects")
-
-			entryColMap := entry._getColumnsMap()
-			entryJoinTree := entry._getJoinTree()
-
-			for colName, colInfo in entryColMap {
-				if !is_undefined(mergedColMap[colName]) {
-					ll.panic("column name %s is already used, please pick a different name", colName)
-				}
-				mergedColMap[colName] = colInfo
-			}
-
-			secondaryJoinTrees = append(secondaryJoinTrees, entryJoinTree)
-		}
-
-		joinTree := {
-			type: "outer",
-			primary: primaryJoinTree,
-			secondary: secondaryJoinTrees
-		}
-
-		return _newPEntry(mergedColMap, joinTree)
+		merged := _mergePEntries([linkerColumnEntry, secondaryEntry])
+		return _newPEntry(merged.columns, {
+			type: "linkerJoin",
+			linker: { column: linkerQuery.column },
+			secondary: [_asJoinEntry(merged.specQueries[1])]
+		})
 	}
 })
 
@@ -556,7 +594,6 @@ workflow := func() {
 			step := undefined
 			if finalFormat == "pentry" {
 				columnsMap := frameInput._getColumnsMap()
-				src := frameInput._getJoinTree()
 
 				// Build translation and rename mappings
 				translation := {}
@@ -571,12 +608,7 @@ workflow := func() {
 					renamedColumnsMap[workflowUniqueColumnId] = columnInfo
 				})
 
-				// Create request and rename columns
-				request := {
-					src: src,
-					filters: []
-				}
-				renamedRequest := util.renameJoinColumns(request, rename)
+				renamedQuery := util.renameSpecQueryColumns(frameInput._getSpecQuery(), rename)
 
 				// Register frame and create step
 				ll.assert(is_undefined(inFrames[finalDataFrameId]),
@@ -588,7 +620,7 @@ workflow := func() {
 				step = {
 					type: "read_frame",
 					name: finalDataFrameId,
-					request: renamedRequest,
+					request: { query: renamedQuery },
 					translation: translation
 				}
 			} else if finalFormat == "parquet" {
@@ -1436,6 +1468,35 @@ _newDataFrame = func(parentWorkflow, dfName) {
 				inputTable: dfName,
 				outputTable: outputDfName,
 				n: nRows
+			})
+			return _newDataFrame(parentWorkflow, outputDfName)
+		},
+
+		/**
+		 * Returns rows [offset, offset+length) of the DataFrame.
+		 * Mirrors Polars `slice`. Ranges that extend past end-of-frame are clipped;
+		 * length=0 yields an empty frame (useful for dynamic chunk sizing / empty
+		 * partition handling).
+		 *
+		 * @param offset {number} - Non-negative, 0-based starting row index.
+		 * @param length {number} - Non-negative number of rows to extract.
+		 * @returns {object} - A new DataFrame object.
+		 * @example
+		 *   batch0 := df.slice(0, 100)
+		 *   batch1 := df.slice(100, 100)
+		 *   empty  := df.slice(0, 0)   // empty frame, same schema as df
+		 */
+		slice: func(offset, length) {
+			ll.assert(is_int(offset) && offset >= 0, "slice offset must be a non-negative integer.")
+			ll.assert(is_int(length) && length >= 0, "slice length must be a non-negative integer.")
+
+			outputDfName := parentWorkflow._newAnonymousDataFrameId()
+			parentWorkflow.addRawStep({
+				type: "slice",
+				inputTable: dfName,
+				outputTable: outputDfName,
+				offset: offset,
+				length: length
 			})
 			return _newDataFrame(parentWorkflow, outputDfName)
 		},

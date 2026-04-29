@@ -82,6 +82,12 @@ packages:
   - etc/blocks/sum-numbers-v3/ui
   - etc/blocks/sum-numbers-v3/block
 
+  - etc/blocks/filter-column-test/workflow
+  - etc/blocks/filter-column-test/model
+  - etc/blocks/filter-column-test/ui
+  - etc/blocks/filter-column-test/block
+  - etc/blocks/filter-column-test/test
+
   - etc/blocks/upload-file/workflow
   - etc/blocks/upload-file/model
   - etc/blocks/upload-file/ui
@@ -242,8 +248,8 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  "@milaboratories/pframes-rs-node": 1.1.18
-  "@milaboratories/pframes-rs-wasm": 1.1.18
+  "@milaboratories/pframes-rs-node": 1.1.26
+  "@milaboratories/pframes-rs-wasm": 1.1.26
 
   "quickjs-emscripten": 0.31.0
 
@@ -275,6 +281,7 @@ catalog:
   "sortablejs": ^1.15.6
   "@types/sortablejs": ^1.15.6
 
+  "fast-csv": 5.0.5
   "@zip.js/zip.js": ^2.8.2
 
   "@noble/hashes": ^2.0.1
@@ -285,7 +292,9 @@ catalog:
   "@platforma-open/milaboratories.software-small-binaries": ^2.0.3
   "@platforma-open/milaboratories.software-test-utils": ^1.1.6
   "@platforma-open/milaboratories.software-conda-empty": ^1.0.1
-  "@platforma-open/milaboratories.runenv-python-3": 1.7.4
+  "@platforma-open/milaboratories.runenv-python-3": 1.8.0
+
+  "shx": ^0.4.0
 
   # Test
 

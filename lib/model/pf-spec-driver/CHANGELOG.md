@@ -1,5 +1,115 @@
 # @milaboratories/pf-spec-driver
 
+## 1.3.6
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+- @milaboratories/pl-model-middle-layer@1.18.7
+
+## 1.3.5
+
+### Patch Changes
+
+- Updated dependencies [e5596f5]
+  - @milaboratories/pl-model-common@1.36.1
+  - @milaboratories/pl-model-middle-layer@1.18.6
+
+## 1.3.4
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @milaboratories/pl-model-common@1.36.0
+  - @milaboratories/pl-model-middle-layer@1.18.5
+
+## 1.3.3
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @milaboratories/pl-model-common@1.35.0
+  - @milaboratories/pl-model-middle-layer@1.18.4
+
+## 1.3.2
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @milaboratories/pl-model-common@1.34.1
+  - @milaboratories/pl-model-middle-layer@1.18.3
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [8eb112a]
+- Updated dependencies [8eb112a]
+  - @milaboratories/pl-model-common@1.34.0
+  - @milaboratories/pl-model-middle-layer@1.18.2
+
+## 1.3.0
+
+### Minor Changes
+
+- 1411dea: Expose `buildQuery` and `listColumns` on `PFrameSpecDriver`:
+
+  - `buildQuery(input: BuildQueryInput): SpecQueryJoinEntry` — pure
+    spec-layer assembler that turns a terminal column plus an ordered
+    path of wrapping steps (linker hops, filter joins) into a
+    ready-to-compose `SpecQueryJoinEntry`. No frame handle is required
+    (wires directly to the top-level export from `pframes-rs-wasm`).
+  - `listColumns(handle: SpecFrameHandle): PColumnInfo[]` — enumerates
+    every column registered in the spec frame. `hasData` is always
+    `false` for spec-only frames.
+
+  Both are also routed through the QuickJS service injector, so block
+  models can call `ctx.services.pframeSpec.buildQuery(...)` and
+  `ctx.services.pframeSpec.listColumns(handle)`.
+
+  Bumps `@milaboratories/pframes-rs-wasm` to 1.1.26 (corrected V3:
+  `buildQuery` at top level, `listColumns` on the frame resource). The
+  pool type switches from `PFrameWasmV2` to `PFrameWasmV3`.
+
+### Patch Changes
+
+- Updated dependencies [1411dea]
+  - @milaboratories/pl-model-common@1.33.0
+  - @milaboratories/pl-model-middle-layer@1.18.1
+
+## 1.2.7
+
+### Patch Changes
+
+- 49485fd: Correct `PFrameWasmV3` shape:
+
+  - Move `buildQuery` from the per-frame interface to the API factory
+    (`PFrameWasmAPIV3`). It is pure over its input and does not consult
+    frame state, so it should not require a frame instance.
+  - Add the missing `listColumns(): PColumnInfo[]` on the per-frame
+    interface, mirroring `PFrameReadApi.listColumns` on the data layer.
+
+  `PFrameWasmV2` / `PFrameWasmAPIV2` are kept as legacy shims until the V3
+  surface is implemented on the pframes-rs side and `pframes-rs-wasm`
+  stops returning V2 from its top-level exports.
+
+  Requires a matching `pframes-rs-wasm` release that exposes `buildQuery`
+  as a top-level export and `listColumns` on the frame resource.
+
+- Updated dependencies [49485fd]
+  - @milaboratories/pl-model-middle-layer@1.18.0
+  - @milaboratories/pl-model-common@1.32.1
+
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [436d4a9]
+  - @milaboratories/pl-model-common@1.32.0
+  - @milaboratories/pl-model-middle-layer@1.17.0
+
 ## 1.2.5
 
 ### Patch Changes

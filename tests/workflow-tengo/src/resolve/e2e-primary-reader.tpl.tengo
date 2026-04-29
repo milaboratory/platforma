@@ -1,0 +1,15 @@
+// Ephemeral template that awaits column spec readiness.
+// Used by e2e-primary workflow to verify resolve -> template -> awaitState path.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["main"])
+
+// Wait for column.spec to be ready (data may still be computing)
+self.awaitState("column", "spec", "ResourceReady")
+
+self.body(func(inputs) {
+	return {
+		main: "resolved_and_ready"
+	}
+})

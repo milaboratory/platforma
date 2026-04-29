@@ -178,6 +178,18 @@ export class PlClient {
     return await this.ll.license();
   }
 
+  /**
+   * Returns the user root ResourceId via ListUserResources.
+   * @param opts.login - target user login; omit for the authenticated user.
+   * @returns ResourceId of the user root, or undefined if the server returned no userRoot entry.
+   * @throws if the backend does not implement ListUserResources (callers should catch with isUnimplementedError).
+   */
+  public async getUserRoot(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    return this.userResources.getUserRoot(opts);
+  }
+
   public get conf(): PlClientConfig {
     return this.ll.conf;
   }
@@ -210,8 +222,13 @@ export class PlClient {
 
   /** User resources index for discovering data libraries and other shared resources. */
   public get userResources(): UserResources {
-    this.checkInitialized();
-    return this._userResources!;
+    if (!this._ll) throw new Error("Client not initialized");
+
+    if (!this._userResources) {
+      this._userResources = new UserResources(this._ll, this._withTx.bind(this), this._ll.authUser);
+    }
+
+    return this._userResources;
   }
 
   /** Discovers or creates the user's root resource via UserResources,
@@ -234,10 +251,7 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    // UserResourcesIndex handles backend capability detection internally
-    this._userResources = new UserResources(this._ll, this._withTx.bind(this), this._ll.authUser);
-
-    const userRoot = await this._userResources.getUserRoot();
+    const userRoot = await this.userResources.getUserRoot();
 
     if (this.conf.alternativeRoot === undefined) {
       this._clientRoot = userRoot;

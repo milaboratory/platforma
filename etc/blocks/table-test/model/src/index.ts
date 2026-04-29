@@ -41,6 +41,19 @@ export const platforma = BlockModelV3.create(blockDataModel)
     return createPlDataTableV3(ctx, {
       tableState: ctx.data.tableState,
 
+      columns: {
+        anchors: {
+          main: {
+            name: "value",
+            axes: [{ name: "name" }],
+          },
+        },
+        selector: {
+          mode: "enrichment",
+          maxHops: 4,
+        },
+      },
+
       sorting: [
         {
           column: {
@@ -63,25 +76,12 @@ export const platforma = BlockModelV3.create(blockDataModel)
         ],
       } as PlDataTableFilters,
 
-      discoverColumnOptions: {
-        anchors: {
-          main: {
-            name: "value",
-            axes: [{ name: "name" }],
-          },
-        },
-        columnsSelector: {
-          mode: "related",
-          maxHops: 4,
-        },
-      },
-
       labelsOptions: {
         // Custom linker label formatter to verify linker path labels in the UI.
         // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
-        linkerLabelFormatter: (linkerLabels) => `[${linkerLabels.join(" > ")}]`,
+        formatters: { linker: (linkerLabels) => `[${linkerLabels.join(" > ")}]` },
       },
-      columnsDisplayOptions: {
+      displayOptions: {
         ordering: [
           // "category" leftmost (highest priority)
           { match: (spec) => spec.name === "category", priority: 20 },

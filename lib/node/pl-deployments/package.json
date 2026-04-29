@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.16.6",
+  "version": "2.17.9",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "keywords": [],
   "license": "UNLICENSED",
@@ -13,6 +13,7 @@
     "assets",
     "postinstall.js"
   ],
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -66,5 +67,5 @@
   "engines": {
     "node": ">=22.19.0"
   },
-  "pl-version": "1.46.0"
+  "pl-version": "3.2.1"
 }

@@ -2,19 +2,24 @@ test := import(":test")
 exec := import(":exec")
 ll := import(":ll")
 
-Test_gpu_method_exists := func() {
-	b := exec.builder()
-	test.isTrue(ll.methodExists(b, "gpu"), "exec.builder should have gpu method")
-}
-
-Test_gpu_with_count := func() {
+Test_gpu_no_args := func() {
 	b := exec.builder().
-		cmd("nvidia-smi").
+		cmd("test").
 		cpu(1).
 		mem("2GiB").
-		gpu(1)
+		gpuMemory()
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() should return builder with run method")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() should return builder with run method")
+}
+
+Test_gpu_with_size_string := func() {
+	b := exec.builder().
+		cmd("test").
+		cpu(1).
+		mem("2GiB").
+		gpuMemory("16GiB")
+
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory('16GiB') should return builder with run method")
 }
 
 Test_gpu_chaining := func() {
@@ -22,10 +27,10 @@ Test_gpu_chaining := func() {
 		cmd("test").
 		cpu(1).
 		mem("2GiB").
-		gpu(4).
+		gpuMemory("4GiB").
 		arg("--flag")
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() should not break the builder chain")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() should not break the builder chain")
 }
 
 Test_gpu_override := func() {
@@ -33,8 +38,8 @@ Test_gpu_override := func() {
 		cmd("test").
 		cpu(1).
 		mem("2GiB").
-		gpu(2).
-		gpu(1)
+		gpuMemory("2GiB").
+		gpuMemory("16GiB")
 
-	test.isTrue(ll.methodExists(b, "run"), "gpu() override should return valid builder")
+	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() override should return valid builder")
 }

@@ -137,19 +137,37 @@ export function registerUIInteractionTools(server: McpServer, ctx: ToolContext):
     "execute_js",
     {
       description:
-        "Execute JavaScript in the renderer process and return the result. Useful for querying DOM, reading text, or complex interactions.",
+        "Execute JavaScript in a renderer and return the result. By default runs in the topmost webContents (main app / topmost modal). Pass projectId + blockId to run inside that block's webview, where `window.platforma` is exposed and the driverKit (e.g. `window.platforma.lsDriver.getLocalFileHandle`) is callable. The block must already be open — call `select_block` first if needed.",
       inputSchema: {
         code: z.string().describe("JavaScript code to execute"),
+        projectId: z
+          .string()
+          .optional()
+          .describe("Target project ID. Must be paired with blockId."),
+        blockId: z
+          .string()
+          .optional()
+          .describe(
+            "Target block ID. When provided with projectId, JS runs in that block's webview (where `window.platforma` is available).",
+          ),
       },
     },
-    async ({ code }) => {
+    async ({ code, projectId, blockId }) => {
       if (!ctx.callbacks.executeJavaScript) {
         return errorResult(
           "JS execution is not available.",
           "Make sure the MCP server is running inside Platforma Desktop and MCP connected properly. If everything is fine check Electron logs with get_app_log",
         );
       }
-      const result = await ctx.callbacks.executeJavaScript(code);
+      if ((projectId === undefined) !== (blockId === undefined)) {
+        return errorResult(
+          "projectId and blockId must be provided together.",
+          "Either pass both to target a specific block's webview, or pass neither to run in the topmost webContents.",
+        );
+      }
+      const target =
+        projectId !== undefined && blockId !== undefined ? { projectId, blockId } : undefined;
+      const result = await ctx.callbacks.executeJavaScript(code, target);
       return textResult(result);
     },
   );

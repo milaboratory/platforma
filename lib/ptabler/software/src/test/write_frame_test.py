@@ -743,7 +743,7 @@ class WriteFrameTests(unittest.TestCase):
                 ptw.execute(global_settings=global_settings, initial_table_space=ts)
             
             exception_str = str(cm.exception)
-            self.assertIn("duplicate", exception_str.lower())
+            self.assertIn("multiple rows with the same axis key", exception_str.lower())
             self.assertIn("A", exception_str)
 
         finally:

@@ -163,20 +163,27 @@ async function getSuggestModel({
   );
 }
 
-const getValuesForSelectedColumns = async () => {
+async function getValuesForSelectedColumns() {
   // Mock implementation - in real app this would fetch actual column values
   return {
     columnId: sampleNameId as PObjectId,
     values: ["Sample_001", "Sample_002", "Sample_003", "Control_001", "Control_002"],
   };
-};
+}
+
+function handleUpdateAnnotation(annotation: Annotation) {
+  console.log("Updated Annotation:", annotation);
+  mockAnnotations.value = annotation;
+}
 </script>
 
 <template>
   <div :class="$style.page">
     <PlAnnotationsModal
-      v-model:opened="showModal"
-      v-model:annotation="mockAnnotations"
+      :opened="showModal"
+      :annotation="mockAnnotations"
+      :on-update-opened="(v: boolean) => (showModal = v)"
+      :on-update-annotation="handleUpdateAnnotation"
       :columns="mockColumns"
       :hasSelectedColumns="true"
       :getSuggestOptions="getSuggestOptions"

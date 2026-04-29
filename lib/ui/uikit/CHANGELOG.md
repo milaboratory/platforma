@@ -1,5 +1,113 @@
 # @milaboratories/uikit
 
+## 2.13.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @platforma-sdk/model@1.69.0
+
+## 2.12.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.68.8
+
+## 2.12.14
+
+### Patch Changes
+
+- Updated dependencies [e1bb3ba]
+  - @platforma-sdk/model@1.68.7
+
+## 2.12.13
+
+### Patch Changes
+
+- Updated dependencies [557d174]
+  - @platforma-sdk/model@1.68.6
+
+## 2.12.12
+
+### Patch Changes
+
+- Updated dependencies [c1baeb8]
+  - @platforma-sdk/model@1.68.5
+
+## 2.12.11
+
+### Patch Changes
+
+- @platforma-sdk/model@1.68.4
+
+## 2.12.10
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @platforma-sdk/model@1.68.0
+
+## 2.12.9
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+
+## 2.12.8
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @platforma-sdk/model@1.66.2
+
+## 2.12.7
+
+### Patch Changes
+
+- 4964b89: Choose correct label from options
+
+## 2.12.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.10
+
+## 2.12.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.9
+
+## 2.12.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.8
+
+## 2.12.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.6
+
+## 2.12.2
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.4
+
+## 2.12.1
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+
 ## 2.12.0
 
 ### Minor Changes

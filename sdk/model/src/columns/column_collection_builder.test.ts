@@ -1,10 +1,4 @@
-import type {
-  AxisSpec,
-  PColumnSpec,
-  PObjectId,
-  SUniversalPColumnId,
-} from "@milaboratories/pl-model-common";
-import { AnchoredIdDeriver } from "@milaboratories/pl-model-common";
+import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 
 import { afterEach, describe, expect, test } from "vitest";
@@ -122,25 +116,26 @@ describe("ColumnCollectionBuilder", () => {
   });
 });
 
-describe("ColumnCollection.getColumn", () => {
-  test("returns snapshot for existing id", () => {
+describe("ColumnCollection lookup by id", () => {
+  test("findColumns includes snapshot with existing id", () => {
     const spec = createSpec("col1");
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
 
     const collection = builder.build()!;
-    const found = collection.getColumn("id1" as PObjectId);
+    const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId));
     expect(found).toBeDefined();
     expect(found!.spec.name).toBe("col1");
   });
 
-  test("returns undefined for missing id", () => {
+  test("findColumns does not include missing id", () => {
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([createSnapshot("id1", createSpec("col1"))]);
 
     const collection = builder.build()!;
-    expect(collection.getColumn("missing" as PObjectId)).toBeUndefined();
+    const found = collection.findColumns().find((c) => c.id === ("missing" as PObjectId));
+    expect(found).toBeUndefined();
   });
 });
 
@@ -232,7 +227,7 @@ describe("data status handling", () => {
     builder.addSource([snap]);
     const collection = builder.build()!;
 
-    const found = collection.getColumn("id1" as PObjectId)!;
+    const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
     expect(found.dataStatus).toBe("ready");
     expect(found.data).toBeDefined();
     expect(found.data!.get()).toBe(data);
@@ -245,7 +240,7 @@ describe("data status handling", () => {
     builder.addSource([snap]);
     const collection = builder.build()!;
 
-    const found = collection.getColumn("id1" as PObjectId)!;
+    const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
     expect(found.dataStatus).toBe("computing");
     expect(found.data).toBeDefined();
 
@@ -260,7 +255,7 @@ describe("data status handling", () => {
     builder.addSource([snap]);
     const collection = builder.build()!;
 
-    const found = collection.getColumn("id1" as PObjectId)!;
+    const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
     expect(found.dataStatus).toBe("absent");
     expect(found.data).toBeUndefined();
   });
@@ -338,7 +333,7 @@ describe("AnchoredColumnCollection", () => {
     );
   });
 
-  test("getColumn returns snapshot by SUniversalPColumnId", () => {
+  test("findColumns surfaces column by original PObjectId", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
@@ -346,22 +341,22 @@ describe("AnchoredColumnCollection", () => {
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
-    const idDeriver = new AnchoredIdDeriver({ main: anchorSpec });
-    const expectedId = idDeriver.deriveS(spec);
-
-    const found = collection.getColumn(expectedId);
+    const matches = collection.findColumns();
+    const found = matches.find((m) => m.column.id === ("id1" as PObjectId));
     expect(found).toBeDefined();
-    expect(found!.spec.name).toBe("col1");
-    expect(found!.id).toBe(expectedId);
+    expect(found!.column.spec.name).toBe("col1");
   });
 
-  test("getColumn returns undefined for unknown id", () => {
+  test("findColumns does not include unknown id", () => {
     const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
-    expect(collection.getColumn("not-a-real-id" as SUniversalPColumnId)).toBeUndefined();
+    const found = collection
+      .findColumns()
+      .find((m) => m.column.id === ("not-a-real-id" as PObjectId));
+    expect(found).toBeUndefined();
   });
 
   test("getAnchors returns resolved anchor map", () => {
@@ -377,7 +372,7 @@ describe("AnchoredColumnCollection", () => {
     expect(anchors.get("main")!.spec.name).toBe("anchor-col");
   });
 
-  test("findColumns returns ColumnMatch with originalId and variants", () => {
+  test("findColumns returns ColumnMatch with column id and variants", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
     const snap = createSnapshot("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
@@ -391,8 +386,57 @@ describe("AnchoredColumnCollection", () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
     const col1Match = matches.find((m) => m.column.spec.name === "col1")!;
     expect(col1Match).toBeDefined();
-    expect(col1Match.originalId).toBe("id1");
+    expect(col1Match.column.id).toBe("id1");
     expect(col1Match.variants).toBeDefined();
+  });
+
+  test("variants carry forQueries keyed by anchor PObjectId", () => {
+    const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
+    const snap = createSnapshot("id1", spec);
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([snap, anchorSnap]);
+
+    const collection = builder.build({ anchors: { main: anchorSpec } })!;
+    const matches = collection.findColumns();
+    const col1Match = matches.find((m) => m.column.spec.name === "col1")!;
+
+    expect(col1Match.variants.length).toBeGreaterThan(0);
+    for (const v of col1Match.variants) {
+      expect(v.qualifications.forQueries).toBeDefined();
+      expect(v.qualifications.forHit).toBeDefined();
+      // forQueries keys are a subset of anchor ids
+      for (const key of Object.keys(v.qualifications.forQueries)) {
+        expect([anchorSnap.id]).toContain(key);
+      }
+    }
+  });
+
+  test("anchors sharing same axes group produce forQueries entries pointing to same array", () => {
+    // Two anchors with identical axesSpec share an axes-group bucket in the reverse index.
+    const sharedAxes = [sampleAxis("sample"), sampleAxis("gene")];
+    const anchorA = createSpec("anchor-a", { axesSpec: sharedAxes });
+    const anchorB = createSpec("anchor-b", { axesSpec: sharedAxes });
+    const anchorASnap = createSnapshot("anchor-a-id", anchorA);
+    const anchorBSnap = createSnapshot("anchor-b-id", anchorB);
+
+    const colSpec = createSpec("c1", { axesSpec: [sampleAxis("sample")] });
+    const colSnap = createSnapshot("c1-id", colSpec);
+
+    const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
+    builder.addSource([colSnap, anchorASnap, anchorBSnap]);
+
+    const collection = builder.build({ anchors: { a: anchorA, b: anchorB } })!;
+    const matches = collection.findColumns();
+    const c1 = matches.find((m) => m.column.spec.name === "c1")!;
+    expect(c1).toBeDefined();
+
+    for (const v of c1.variants) {
+      const forQueries = v.qualifications.forQueries;
+      if (anchorASnap.id in forQueries && anchorBSnap.id in forQueries) {
+        // Shared axes group → equal qualifications for both anchor keys.
+        expect(forQueries[anchorASnap.id]).toStrictEqual(forQueries[anchorBSnap.id]);
+      }
+    }
   });
 
   test("findColumns exclude filters out matching columns", () => {
@@ -437,9 +481,8 @@ describe("AnchoredColumnCollection", () => {
 
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
-    const idDeriver = new AnchoredIdDeriver({ main: anchorSpec });
-    const found = collection.getColumn(idDeriver.deriveS(spec))!;
-    expect(found.dataStatus).toBe("computing");
-    expect(found.data!.get()).toBeUndefined();
+    const found = collection.findColumns().find((m) => m.column.id === ("id1" as PObjectId))!;
+    expect(found.column.dataStatus).toBe("computing");
+    expect(found.column.data!.get()).toBeUndefined();
   });
 });

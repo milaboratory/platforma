@@ -22,19 +22,36 @@ export type InferServiceKind<S extends ServiceTypesLike> =
 
 export type ServiceName<S extends ServiceTypesLike = ServiceTypesLike> = Branded<string, S>;
 
-export type ServiceType = "node" | "wasm";
+export type ServiceType = "node" | "wasm" | "main";
 
 const SERVICE_ID_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*$/;
 
-export const { service, isNodeService } = (() => {
+export const {
+  service,
+  isNodeService,
+  isWasmService,
+  isMainService,
+  getServiceKind,
+  getServiceModelMethods,
+  getServiceUiMethods,
+} = (() => {
   const typeMap = new Map<string, ServiceType>();
+  const modelMethodsMap = new Map<string, readonly string[]>();
+  const uiMethodsMap = new Map<string, readonly string[]>();
   return {
     service<Model, Ui>() {
-      return <K extends ServiceType, N extends string>(options: {
+      return <
+        K extends ServiceType,
+        N extends string,
+        MM extends readonly (keyof Model & string)[],
+        UM extends readonly (keyof Ui & string)[],
+      >(options: {
         readonly type: K;
         readonly name: N;
+        readonly modelMethods: MM;
+        readonly uiMethods: UM;
       }): Branded<N, ServiceTypesLike<Model, Ui, K>> => {
-        const { name, type } = options;
+        const { name, type, modelMethods, uiMethods } = options;
         if (!SERVICE_ID_PATTERN.test(name)) {
           throw new ServiceInvalidIdError(
             `Invalid service ID "${name}": must match ${SERVICE_ID_PATTERN}`,
@@ -44,11 +61,28 @@ export const { service, isNodeService } = (() => {
           throw new ServiceAlreadyRegisteredError(`Service "${name}" already registered`);
         }
         typeMap.set(name, type);
+        modelMethodsMap.set(name, modelMethods);
+        uiMethodsMap.set(name, uiMethods);
         return name as Branded<N, ServiceTypesLike<Model, Ui, K>>;
       };
     },
     isNodeService(id: ServiceName): boolean {
       return typeMap.get(id) === "node";
+    },
+    isWasmService(id: ServiceName): boolean {
+      return typeMap.get(id) === "wasm";
+    },
+    isMainService(id: ServiceName): boolean {
+      return typeMap.get(id) === "main";
+    },
+    getServiceKind(id: ServiceName): ServiceType | undefined {
+      return typeMap.get(id);
+    },
+    getServiceModelMethods(id: ServiceName): readonly string[] {
+      return modelMethodsMap.get(id) ?? [];
+    },
+    getServiceUiMethods(id: ServiceName): readonly string[] {
+      return uiMethodsMap.get(id) ?? [];
     },
   };
 })();
@@ -78,28 +112,32 @@ export interface ServiceDispatch {
 // Auto-derived types from the Services const in service_declarations.ts.
 // Adding a service to Services automatically updates all of these.
 
-type SMap = typeof Services;
+type TServices = typeof Services;
 
 type ExtractServiceName<T> = T extends Branded<infer N extends string, any> ? N : never;
 
 /** Model-side service interfaces keyed by service name literal. */
 export type ModelServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceModel<ServiceBrand<SMap[K]>>;
+  [K in keyof TServices as ExtractServiceName<TServices[K]>]: InferServiceModel<
+    ServiceBrand<TServices[K]>
+  >;
 };
 
 /** UI-side service interfaces keyed by service name literal. */
 export type UiServices = {
-  [K in keyof SMap as ExtractServiceName<SMap[K]>]: InferServiceUi<ServiceBrand<SMap[K]>>;
+  [K in keyof TServices as ExtractServiceName<TServices[K]>]: InferServiceUi<
+    ServiceBrand<TServices[K]>
+  >;
 };
 
 /** Map from Services keys to their unbranded string name literals. */
 export type ServiceNameLiterals = {
-  [K in keyof SMap]: ExtractServiceName<SMap[K]>;
+  [K in keyof TServices]: ExtractServiceName<TServices[K]>;
 };
 
 /** Auto-derived requires* feature flags from Services keys. */
 export type ServiceRequireFlags = {
-  [K in keyof SMap as `requires${K & string}`]?: boolean;
+  [K in keyof TServices as `requires${K & string}`]?: boolean;
 };
 
 export type RequireServices<T extends ServiceName> = UnionToIntersection<

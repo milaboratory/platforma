@@ -78,6 +78,13 @@ export function traverseQuerySpec<C1, C2>(
         secondary: query.secondary.map(traverseEntry),
       };
       break;
+    case "linkerJoin":
+      result = {
+        ...query,
+        linker: { ...query.linker, column: visitor.column(query.linker.column) },
+        secondary: query.secondary.map(traverseEntry),
+      };
+      break;
     case "filter":
     case "sort":
     case "sliceAxes":
@@ -126,6 +133,10 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
           return { ...node, secondary: sorted };
         }
+        case "linkerJoin": {
+          const sorted = [...node.secondary].sort(cmpQueryJoinEntrySpec);
+          return { ...node, secondary: sorted };
+        }
         case "sliceAxes":
           return {
             ...node,
@@ -139,14 +150,21 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
           return node;
       }
     },
-    joinEntry: (entry) => ({
-      ...entry,
-      qualifications: entry.qualifications.toSorted((a, b) => {
-        const ak = canonicalizeJson(a.axis);
-        const bk = canonicalizeJson(b.axis);
-        return ak < bk ? -1 : ak === bk ? 0 : 1;
-      }),
-    }),
+    joinEntry: (entry) => {
+      // Preserve absence of `qualifications` (absent == `[]`) so canonical
+      // output is stable across both input forms.
+      if (entry.qualifications === undefined || entry.qualifications.length === 0) {
+        return entry;
+      }
+      return {
+        ...entry,
+        qualifications: entry.qualifications.toSorted((a, b) => {
+          const ak = canonicalizeJson(a.axis);
+          const bk = canonicalizeJson(b.axis);
+          return ak < bk ? -1 : ak === bk ? 0 : 1;
+        }),
+      };
+    },
   });
 }
 
@@ -162,9 +180,9 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
           ? 0
           : 1;
     case "inlineColumn":
-      return lhs.spec.id < (rhs as typeof lhs).spec.id
+      return lhs.spec.columnId < (rhs as typeof lhs).spec.columnId
         ? -1
-        : lhs.spec.id === (rhs as typeof lhs).spec.id
+        : lhs.spec.columnId === (rhs as typeof lhs).spec.columnId
           ? 0
           : 1;
     case "sparseToDenseColumn":
@@ -198,6 +216,20 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       }
       return 0;
     }
+    case "linkerJoin": {
+      const rhsLinker = rhs as typeof lhs;
+      if (lhs.linker.column !== rhsLinker.linker.column) {
+        return lhs.linker.column < rhsLinker.linker.column ? -1 : 1;
+      }
+      if (lhs.secondary.length !== rhsLinker.secondary.length) {
+        return lhs.secondary.length - rhsLinker.secondary.length;
+      }
+      for (let i = 0; i < lhs.secondary.length; i++) {
+        const cmp = cmpQueryJoinEntrySpec(lhs.secondary[i], rhsLinker.secondary[i]);
+        if (cmp !== 0) return cmp;
+      }
+      return 0;
+    }
     case "sliceAxes":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "sort":
@@ -212,13 +244,16 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
 function cmpQueryJoinEntrySpec(lhs: SpecQueryJoinEntry, rhs: SpecQueryJoinEntry): number {
   const cmp = cmpQuerySpec(lhs.entry, rhs.entry);
   if (cmp !== 0) return cmp;
-  if (lhs.qualifications.length !== rhs.qualifications.length) {
-    return lhs.qualifications.length - rhs.qualifications.length;
+  // Absent `qualifications` is equivalent to an empty list.
+  const lhsQ = lhs.qualifications ?? [];
+  const rhsQ = rhs.qualifications ?? [];
+  if (lhsQ.length !== rhsQ.length) {
+    return lhsQ.length - rhsQ.length;
   }
-  for (let i = 0; i < lhs.qualifications.length; i++) {
-    const lhsQ = canonicalizeJson(lhs.qualifications[i]);
-    const rhsQ = canonicalizeJson(rhs.qualifications[i]);
-    if (lhsQ !== rhsQ) return lhsQ < rhsQ ? -1 : 1;
+  for (let i = 0; i < lhsQ.length; i++) {
+    const l = canonicalizeJson(lhsQ[i]);
+    const r = canonicalizeJson(rhsQ[i]);
+    if (l !== r) return l < r ? -1 : 1;
   }
   return 0;
 }

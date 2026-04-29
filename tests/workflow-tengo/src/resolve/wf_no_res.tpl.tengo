@@ -12,6 +12,7 @@ wf.prepare(func(args){
 
 	return {
 		resolvedRef: wf.resolve({
+			__isRef: true,
 			blockId: "",
 			name: ""
 		}, ops)

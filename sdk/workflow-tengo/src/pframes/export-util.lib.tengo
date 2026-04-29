@@ -1,0 +1,113 @@
+/**
+ * Shared helpers for templates that export a list of resolved PColumns to a
+ * flat table via pt (sort + axes + value columns + save).
+ *
+ * Consumers: `:pframes.xsv-export-pframe`, `:pframes.build-table`.
+ */
+
+ll := import(":ll")
+slices := import(":slices")
+canonical := import(":canonical")
+pSpec := import(":pframes.spec")
+pt := import(":pt")
+
+/**
+ * Builds pt sort and column selectors for exporting resolved columns.
+ *
+ * Deduplicates axes across columns by distilling each axis (strips annotations
+ * and non-discriminative domains via pSpec.createSpecDistiller) and canonically
+ * encoding the result. Then produces:
+ *   - sortSelectors  — axis selectors for deterministic row ordering
+ *   - columnSelectors — axis selectors aliased with labels, followed by
+ *                       per-column selectors aliased with headers
+ *
+ * Label uniqueness is always enforced: if two axes/columns resolve to the
+ * same label, the helper panics. Callers must supply their own labeling
+ * policy via the two callbacks.
+ *
+ * @param rawColumns: [{frameKey: string, spec: PColumnSpec, ...}]
+ *   frameKey — pFrame column key, used in `pt.col(frameKey)` selectors.
+ *              Must match the id used when building the pFrame.
+ *   spec     — PColumnSpec, used for axis distillation and label derivation.
+ *              Additional fields (e.g. header, headerPrefix) are read only by
+ *              the caller-provided `columnLabel` callback.
+ *
+ * @param opts: {
+ *     axisLabel: func(originalAxisSpec) -> string
+ *       Derives label for an axis. Receives the ORIGINAL axis spec with its
+ *       annotations intact (distillation strips annotations). Called once
+ *       per unique axis — identity determined by canonical encoding of the
+ *       distilled axis, but the label source is the raw spec.
+ *     columnLabel: func(rawColumn) -> string
+ *       Derives header for a column. Called once per rawColumns entry.
+ *   }
+ *
+ * @return { sortSelectors, columnSelectors }
+ */
+buildExportSelectors := func(rawColumns, opts) {
+	axisLabel := opts.axisLabel
+	columnLabel := opts.columnLabel
+
+	ll.assert(is_callable(axisLabel), "opts.axisLabel must be callable")
+	ll.assert(is_callable(columnLabel), "opts.columnLabel must be callable")
+
+	// Label → owner map for uniqueness enforcement (always on).
+	labelOwners := {}
+	registerLabel := func(label, owner) {
+		prev := labelOwners[label]
+		ll.assert(is_undefined(prev),
+			"label '%s' is not unique (already used by %v, again by %v)",
+			label, prev, owner)
+		labelOwners[label] = owner
+	}
+
+	// Distill once across all column specs so axis equivalence classes
+	// account for domains that discriminate within this column set.
+	distiller := pSpec.createSpecDistiller(slices.map(rawColumns, func(c) {
+		return c.spec
+	}))
+
+	// Collect unique axes across all columns. Distilled axis drives identity
+	// (non-discriminative domains removed + annotations stripped). The label
+	// derivation receives the ORIGINAL axis so it can read annotations.
+	seenAxis := {}
+	uniqueAxes := []  // entries: { spec, label } — spec is distilled
+	for column in rawColumns {
+		for axis in column.spec.axesSpec {
+			distilled := distiller.distill(axis)
+			key := canonical.encode(distilled)
+			if is_undefined(seenAxis[key]) {
+				seenAxis[key] = true
+				label := axisLabel(axis)
+				registerLabel(label, axis.name)
+				uniqueAxes = append(uniqueAxes, {
+					spec: distilled,
+					label: label
+				})
+			}
+		}
+	}
+
+	// Build sort + column selectors. Axes first (sort order = output order),
+	// then value columns.
+	sortSelectors := []
+	columnSelectors := []
+	for ua in uniqueAxes {
+		sortSelectors = append(sortSelectors, pt.axis(ua.spec))
+		columnSelectors = append(columnSelectors, pt.axis(ua.spec).alias(ua.label))
+	}
+	for column in rawColumns {
+		label := columnLabel(column)
+		registerLabel(label, column.spec.name)
+		columnSelectors = append(columnSelectors, pt.col(column.frameKey).alias(label))
+	}
+
+	return {
+		sortSelectors: sortSelectors,
+		columnSelectors: columnSelectors
+	}
+}
+
+export ll.toStrict({
+	buildExportSelectors: buildExportSelectors
+})

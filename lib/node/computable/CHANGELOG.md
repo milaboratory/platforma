@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.9.3
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-error-like@1.12.10
+
 ## 2.9.2
 
 ### Patch Changes

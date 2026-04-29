@@ -8,9 +8,13 @@ from polars.testing import assert_frame_equal
 
 from ptabler.steps import GlobalSettings, TableSpace
 from ptabler.steps.write_frame import AxisMapping, WriteFrame, ColumnMapping
-from ptabler.steps.read_frame import ReadFrame
+from ptabler.steps.read_frame import ReadFrame, PTableDefV2
 from ptabler.workflow.workflow import PWorkflow
-from polars_pf.json.join import CreateTableRequest, ColumnJoinEntry, FullJoin
+from polars_pf.json.query_spec import (
+    SpecQueryColumn,
+    SpecQueryFullJoin,
+    SpecQueryJoinEntry,
+)
 from polars_pf import AxisSpec, PColumnSpec
 from polars_pf.json.spec import AxisType, ColumnType
 from ptabler.steps.basics import Select
@@ -113,11 +117,13 @@ class ReadFrameTests(unittest.TestCase):
         
         read_step = ReadFrame(
             name="written_data",
-            request=CreateTableRequest(
-                src=FullJoin(entries=[
-                    ColumnJoinEntry(column_id=column.name) for column in columns
-                ]),
-                filters=[],
+            request=PTableDefV2(
+                query=SpecQueryFullJoin(
+                    entries=[
+                        SpecQueryJoinEntry(entry=SpecQueryColumn(column=column.name))
+                        for column in columns
+                    ]
+                )
             ),
             translation={column.name: column.name for column in columns}
         )
@@ -144,25 +150,19 @@ class ReadFrameTests(unittest.TestCase):
     def test_nonexistent_frame_folder_error(self):
         read_step = ReadFrame(
             name="test",
-            request=CreateTableRequest(
-                src=ColumnJoinEntry(column_id="value"),
-                filters=[]
-            ),
+            request=PTableDefV2(query=SpecQueryColumn(column="value")),
             translation={}
         )
         workflow = PWorkflow(workflow=[read_step])
-        
+
         with self.assertRaises(ValueError) as cm:
             workflow.execute(global_settings=global_settings)
         self.assertIn("is not an existing directory", str(cm.exception))
-    
+
     def test_not_defined_frame_folder_error(self):
         read_step = ReadFrame(
             name="test",
-            request=CreateTableRequest(
-                src=ColumnJoinEntry(column_id="value"),
-                filters=[]
-            ),
+            request=PTableDefV2(query=SpecQueryColumn(column="value")),
             translation={}
         )
         workflow = PWorkflow(workflow=[read_step])
@@ -211,11 +211,13 @@ class ReadFrameTests(unittest.TestCase):
         def run_workflow():
             read_step = ReadFrame(
                 name="anonymous_1",
-                request=CreateTableRequest(
-                    src=FullJoin(entries=[
-                        ColumnJoinEntry(column_id=column.name) for column in columns
-                    ]),
-                    filters=[],
+                request=PTableDefV2(
+                    query=SpecQueryFullJoin(
+                        entries=[
+                            SpecQueryJoinEntry(entry=SpecQueryColumn(column=column.name))
+                            for column in columns
+                        ]
+                    )
                 ),
                 translation={column.name: f"col{i+1}" for i, column in enumerate(columns)}
             )
@@ -281,17 +283,13 @@ class ReadFrameTests(unittest.TestCase):
         
         read_frame_step = ReadFrame(
             name="anonymous_1",
-            request=CreateTableRequest(
-                src=FullJoin(
+            request=PTableDefV2(
+                query=SpecQueryFullJoin(
                     entries=[
-                        ColumnJoinEntry(column_id="pcolumn_1"),
-                        ColumnJoinEntry(column_id="pcolumn_2"),
-                        ColumnJoinEntry(column_id="pcolumn_3"),
-                        ColumnJoinEntry(column_id="pcolumn_4"),
-                        ColumnJoinEntry(column_id="pcolumn_5"),
+                        SpecQueryJoinEntry(entry=SpecQueryColumn(column=f"pcolumn_{i}"))
+                        for i in range(1, 6)
                     ]
-                ),
-                filters=[],
+                )
             ),
             translation={}
         )

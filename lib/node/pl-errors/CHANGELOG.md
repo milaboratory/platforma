@@ -1,5 +1,73 @@
 # @milaboratories/pl-errors
 
+## 1.3.10
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+  - @milaboratories/pl-client@3.2.2
+
+## 1.3.9
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.2.1
+
+## 1.3.8
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+
+## 1.3.7
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.8
+
+## 1.3.6
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.7
+
+## 1.3.5
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.6
+
+## 1.3.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.5
+
+## 1.3.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.4
+
+## 1.3.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.3
+
+## 1.3.1
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.2
+
+## 1.3.0
+
+### Minor Changes
+
+- 9942557: Publish the `ModelAPIVersionMismatchError` class from `pl-errors`, which was added in #1563 but missed in that PR's changeset. `pl-mcp-server@2.1.0` imports the class (`src/tools/block-state.ts`), so downstream bundling against `pl-errors@1.2.8` (the version pinned by the current release) fails with `MISSING_EXPORT`. Bumping `pl-errors` publishes the class; the `pl-mcp-server` patch bump re-resolves its `workspace:*` dep so the next release pins the fixed `pl-errors`.
+
 ## 1.2.8
 
 ### Patch Changes

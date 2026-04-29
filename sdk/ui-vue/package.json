@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.65.0",
+  "version": "1.69.0",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -53,6 +53,8 @@
     "@vitest/coverage-istanbul": "catalog:",
     "@vue/test-utils": "catalog:",
     "fast-json-patch": "catalog:",
+    "jsdom": "catalog:",
+    "resize-observer-polyfill": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",

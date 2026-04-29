@@ -1,0 +1,14 @@
+// Tests PrimarySpecsReady await template:
+// body runs when */spec is ResourceReady, regardless of */data state.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["main"])
+
+self.awaitState("input1", "PrimarySpecsReady")
+
+self.body(func(inputs) {
+	return {
+		main: "specs_ready"
+	}
+})

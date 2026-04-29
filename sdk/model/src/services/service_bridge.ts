@@ -15,7 +15,7 @@ import { UiServiceRegistry } from "@milaboratories/pl-model-common";
 // Makes a remote node service appear local.
 // Given a service ID, returns an object implementing the service's UI interface.
 // Provided by the desktop app (e.g. backed by Electron IPC).
-export type NodeServiceProxy = <S extends ServiceTypesLike>(
+export type ServiceProxy = <S extends ServiceTypesLike>(
   serviceId: ServiceName<S>,
 ) => InferServiceUi<S>;
 
@@ -53,10 +53,10 @@ export function buildServices<S extends Partial<AllUiServices> = Partial<AllUiSe
 }
 
 /**
- * Builds a NodeServiceProxy from a ServiceDispatch.
+ * Builds a ServiceProxy from a ServiceDispatch.
  * Each service method call is forwarded to dispatch.callServiceMethod.
  */
-export function createNodeServiceProxy(dispatch: ServiceDispatch): NodeServiceProxy {
+export function createServiceProxy(dispatch: ServiceDispatch): ServiceProxy {
   return ((serviceId: ServiceName) =>
     Object.freeze(
       Object.fromEntries(
@@ -64,8 +64,8 @@ export function createNodeServiceProxy(dispatch: ServiceDispatch): NodeServicePr
           .getServiceMethods(serviceId)
           .map((method) => [
             method,
-            async (...args: unknown[]) => dispatch.callServiceMethod(serviceId, method, ...args),
+            (...args: unknown[]) => dispatch.callServiceMethod(serviceId, method, ...args),
           ]),
       ),
-    )) as NodeServiceProxy;
+    )) as ServiceProxy;
 }

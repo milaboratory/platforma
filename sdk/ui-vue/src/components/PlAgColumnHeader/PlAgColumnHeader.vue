@@ -64,14 +64,20 @@ function showMenu() {
 
 <template>
   <div class="pl-ag-column-header d-flex align-center gap-6" @click="onSortRequested">
-    <PlTooltip>
-      <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
-      <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
-        <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
+    <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
+      <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
+      <PlTooltip>
+        <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
         <span>{{ params.displayName }}</span>
-        <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
-      </div>
-    </PlTooltip>
+      </PlTooltip>
+      <PlTooltip v-if="params.info" max-width="500px" position="bottom" :close-delay="10000000000">
+        <template #tooltip>
+          <span style="white-space: pre-wrap">{{ params.info }}</span>
+        </template>
+        <PlMaskIcon16 name="info" />
+      </PlTooltip>
+      <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
+    </div>
     <div
       v-if="params.enableMenu"
       ref="menuActivatorBtn"

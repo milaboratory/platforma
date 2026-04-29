@@ -1,5 +1,107 @@
 # @milaboratories/milaboratories.monetization-test.model
 
+## 1.2.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @platforma-sdk/model@1.69.0
+
+## 1.1.23
+
+### Patch Changes
+
+- @platforma-sdk/model@1.68.8
+
+## 1.1.22
+
+### Patch Changes
+
+- Updated dependencies [e1bb3ba]
+  - @platforma-sdk/model@1.68.7
+
+## 1.1.21
+
+### Patch Changes
+
+- Updated dependencies [557d174]
+  - @platforma-sdk/model@1.68.6
+
+## 1.1.20
+
+### Patch Changes
+
+- Updated dependencies [c1baeb8]
+  - @platforma-sdk/model@1.68.5
+
+## 1.1.19
+
+### Patch Changes
+
+- @platforma-sdk/model@1.68.4
+
+## 1.1.18
+
+### Patch Changes
+
+- Updated dependencies [5420fea]
+- Updated dependencies [5420fea]
+  - @platforma-sdk/model@1.68.0
+
+## 1.1.17
+
+### Patch Changes
+
+- Updated dependencies [10eec21]
+  - @platforma-sdk/model@1.67.0
+
+## 1.1.16
+
+### Patch Changes
+
+- Updated dependencies [a2304be]
+  - @platforma-sdk/model@1.66.2
+
+## 1.1.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.10
+
+## 1.1.14
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.9
+
+## 1.1.13
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.8
+
+## 1.1.12
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.6
+
+## 1.1.11
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.4
+
+## 1.1.10
+
+### Patch Changes
+
+- @platforma-sdk/model@1.65.3
+
 ## 1.1.9
 
 ### Patch Changes

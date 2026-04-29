@@ -6,12 +6,11 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
-import { resolveRequiredServices } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { BlockDefaultUiServices } from "./services/service_resolve";
-import { blockServiceNames, BLOCK_SERVICE_FLAGS } from "./services/block_services";
+import { BLOCK_SERVICE_FLAGS } from "./services/block_services";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
 import type { PluginData, PluginModel, PluginOutputs, PluginParams } from "./plugin_model";
@@ -237,7 +236,7 @@ export class BlockModelV3<
         ...this.config.outputs,
         [key]: createAndRegisterRenderLambda({
           handle: `block-output#${key}`,
-          lambda: () => cfgOrRf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+          lambda: () => cfgOrRf(new BlockRenderCtx<Args, Data>()),
           ...flags,
         }),
       },
@@ -335,7 +334,7 @@ export class BlockModelV3<
         sections: createAndRegisterRenderLambda(
           {
             handle: "sections",
-            lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+            lambda: () => rf(new BlockRenderCtx<Args, Data>()),
           },
           true,
         ),
@@ -351,7 +350,7 @@ export class BlockModelV3<
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -363,7 +362,7 @@ export class BlockModelV3<
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -375,7 +374,7 @@ export class BlockModelV3<
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
-        lambda: () => rf(new BlockRenderCtx<Args, Data>(blockServiceNames)),
+        lambda: () => rf(new BlockRenderCtx<Args, Data>()),
       }),
     });
   }
@@ -536,8 +535,6 @@ export class BlockModelV3<
 
     const { dataModel, argsFunction, prerunArgsFunction } = this.config;
 
-    const mergedServiceNames = resolveRequiredServices(this.config.featureFlags);
-
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
       if (!plugin) throw new Error(`Plugin model not found for '${handle}'`);
@@ -577,7 +574,7 @@ export class BlockModelV3<
       // Wrap plugin param lambdas: close over BlockRenderCtx creation
       const wrappedInputs: Record<string, () => unknown> = {};
       for (const [paramKey, paramFn] of Object.entries(inputs)) {
-        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx(mergedServiceNames));
+        wrappedInputs[paramKey] = () => paramFn(new BlockRenderCtx());
       }
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
@@ -587,7 +584,7 @@ export class BlockModelV3<
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
-          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs, mergedServiceNames)),
+          lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
           withStatus: outputFlags[outputKey]?.withStatus,
         });
       }

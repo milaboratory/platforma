@@ -1,5 +1,118 @@
 # @milaboratories/pl-model-common
 
+## 1.36.2
+
+### Patch Changes
+
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-error-like@1.12.10
+
+## 1.36.1
+
+### Patch Changes
+
+- e5596f5: Migrate `pt` emitters and ptabler `read_frame` step to the `SpecQuery` shape, and fix a TS type bug.
+
+  **`pl-model-common` type fix:** `QuerySliceAxes.axisFilters[i].axisSelector` was typed as `QueryAxisSelector<A>` (wrapped `{type: "axis", id: A}`), which disagreed with the wire format — Rust (`pframes-rs/packages/bridge/src/query/query_slice_axes.rs`) and Python (`polars_pf.json.query_spec.SpecQuerySliceAxisFilter`) both serialize `axis_selector` as the bare selector (`SingleAxisSelector` at the spec layer, `number` at the data layer). The Rust `serialize_slice_axes` test at `pframes-rs/packages/spec/src/query_spec/query.rs:381` confirms the flat wire. Updated `QuerySliceAxes<Q, A>` to take `A` unconstrained, updated `SpecQuerySliceAxes` to use `SingleAxisSelector` directly and `DataQuerySliceAxes` to use `number` directly, and corrected the jsdoc example.
+
+  - `pt.p.column/slicedColumn/inner/full/outer` now emit `SpecQueryJoinEntry` nodes (`column`, `sliceAxes`, `innerJoin`, `fullJoin`, `outerJoin`) byte-compatible with the output of `PFrameSpecDriver.buildQuery`.
+  - Added `pt.p.linkerJoin` for emitter completeness against the `SpecQuery` union.
+  - `read_frame.request` is now `PTableDefV2<PObjectId>` (`{ query: SpecQuery }`) — dropped the legacy `{ src, filters: [] }` sibling shape. The `filters` list goes away because filters live as `SpecQueryFilter` nodes inside the query tree.
+  - ptabler Python step (`ptabler.steps.read_frame.ReadFrame`) takes `PTableDefV2` and forwards `request.query` directly to `polars_pf.pframe_source`, which accepts `SpecQuery` natively.
+  - Bumped `polars-pf` requirement to `1.1.27` (shipped in `runenv-python-3.12.10@1.3.9`; catalog `runenv-python-3` bumped `1.7.4 → 1.8.0` to pull it in). Updated the `test_duplicate_axis_values_failure` assertion to match the new error wording ("multiple rows with the same axis key").
+  - `slicedColumn` no longer uses the `new_id`/`column_id` rename pair — each slice wraps a direct `Column(name)` reference under a `sliceAxes` node with axis selectors resolved from the column's `axesSpec`. This aligns with the Rust upgrade rule that rejects `new_id != column_id` (see `pframes-rs/packages/spec/src/requests/query_upgrade/logic.rs:35`).
+
+## 1.36.0
+
+### Minor Changes
+
+- 5420fea: Add PTableDownloadFormat, DownloadPTableOptions, and DownloadPTableResult types for PTable file export support
+- 5420fea: Expose native PTable download via `PFrameDriver.downloadPTable(handle, options)` (optional, present only in the desktop runtime). `DownloadPTableCsvOptions` moved to `@milaboratories/pl-model-common`. The earlier `PlatformaV3.downloadPTableCsv` bridge is removed in favor of the driver-level method.
+- 5420fea: Replace legacy `PFrameDriver.writePTableToFs?` with two modern services:
+  `Dialog.showSaveDialog` (new `main`-kind service for native save dialogs)
+  and `PFrame.writePTableToFs` (now a required method on the UI-facing
+  driver, accepting a caller-provided `path`). `exportCsv` in `ui-vue`
+  now opens the save dialog and invokes the write as two separate
+  service calls.
+
+## 1.35.0
+
+### Minor Changes
+
+- 10eec21: Add `PrimaryRef` type (dataset + optional filter), `createPrimaryRef` factory, `isPrimaryRef` type guard, `DatasetInput` union, and `DatasetOption` type for dataset selection with filter choices. Fix `createPlRef` return type to properly narrow `__isRef` literal.
+
+## 1.34.1
+
+### Patch Changes
+
+- a2304be: refactoring column_collection_builder
+
+## 1.34.0
+
+### Minor Changes
+
+- 8eb112a: update linker connection order
+
+### Patch Changes
+
+- 8eb112a: update tests
+
+## 1.33.0
+
+### Minor Changes
+
+- 1411dea: Expose `buildQuery` and `listColumns` on `PFrameSpecDriver`:
+
+  - `buildQuery(input: BuildQueryInput): SpecQueryJoinEntry` — pure
+    spec-layer assembler that turns a terminal column plus an ordered
+    path of wrapping steps (linker hops, filter joins) into a
+    ready-to-compose `SpecQueryJoinEntry`. No frame handle is required
+    (wires directly to the top-level export from `pframes-rs-wasm`).
+  - `listColumns(handle: SpecFrameHandle): PColumnInfo[]` — enumerates
+    every column registered in the spec frame. `hasData` is always
+    `false` for spec-only frames.
+
+  Both are also routed through the QuickJS service injector, so block
+  models can call `ctx.services.pframeSpec.buildQuery(...)` and
+  `ctx.services.pframeSpec.listColumns(handle)`.
+
+  Bumps `@milaboratories/pframes-rs-wasm` to 1.1.26 (corrected V3:
+  `buildQuery` at top level, `listColumns` on the frame resource). The
+  pool type switches from `PFrameWasmV2` to `PFrameWasmV3`.
+
+## 1.32.1
+
+### Patch Changes
+
+- 49485fd: Correct `PFrameWasmV3` shape:
+
+  - Move `buildQuery` from the per-frame interface to the API factory
+    (`PFrameWasmAPIV3`). It is pure over its input and does not consult
+    frame state, so it should not require a frame instance.
+  - Add the missing `listColumns(): PColumnInfo[]` on the per-frame
+    interface, mirroring `PFrameReadApi.listColumns` on the data layer.
+
+  `PFrameWasmV2` / `PFrameWasmAPIV2` are kept as legacy shims until the V3
+  surface is implemented on the pframes-rs side and `pframes-rs-wasm`
+  stops returning V2 from its top-level exports.
+
+  Requires a matching `pframes-rs-wasm` release that exposes `buildQuery`
+  as a top-level export and `listColumns` on the frame resource.
+
+## 1.32.0
+
+### Minor Changes
+
+- 436d4a9: Add LinkerJoin query node (spec + data layers) mirroring OuterJoin's shape,
+  with a specialized linker sub-struct and a non-empty array of secondary join
+  entries. Introduces `PFrameWasmV3` adding `buildQuery`: a pure spec-layer
+  assembler that turns a terminal column plus an ordered path of wrapping
+  steps (linker hops, filter joins) into a ready-to-compose
+  `SpecQueryJoinEntry`. Extends `DiscoverColumnsStepInfo` with a `filter`
+  variant and adds `BuildQueryInput` in `pl-model-common`. V2 interfaces
+  remain as legacy shims pointing to V3 and will be removed in a future
+  PFrames update.
+
 ## 1.31.2
 
 ### Patch Changes

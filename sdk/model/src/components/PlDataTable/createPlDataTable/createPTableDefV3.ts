@@ -1,4 +1,5 @@
 import type {
+  AxisQualification,
   PColumn,
   PTableColumnId,
   PTableSorting,
@@ -7,6 +8,7 @@ import type {
   SpecQuery,
   SpecQueryExpression,
   SpecQueryJoinEntry,
+  PObjectId,
 } from "@milaboratories/pl-model-common";
 import { isBooleanExpression } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../../../render";
@@ -15,31 +17,53 @@ import type { PlDataTableFilters } from "../typesV5";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
 
+/** Primary side — base row grid. */
+export type PrimaryEntry<Data> = {
+  column: PColumn<Data>;
+};
+
+/** Secondary side leaf — the hit column, a linker step, or a label column. */
+export type SecondaryEntry<Data> = {
+  column: PColumn<Data>;
+  /** For hit: `forHit`. For linker step k: `path[k].qualifications`. For label/direct: omit. */
+  qualifications?: AxisQualification[];
+};
+
+/** Secondary group — one join subtree outer-joined onto primary. */
+export type SecondaryGroup<Data> = {
+  entries: SecondaryEntry<Data>[];
+  /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
+   *  Keyed by `PrimaryEntry.column.id`. Omit → base primary used unqualified (labels, non-variant columns). */
+  primaryQualifications?: Record<PObjectId, AxisQualification[]>;
+};
+
 export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   primaryJoinType: "inner" | "full";
-  primaryColumns: PColumn<Data>[];
-  secondaryGroups: PColumn<Data>[][];
+  primary: PrimaryEntry<Data>[];
+  secondary: SecondaryGroup<Data>[];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
 }): PTableDefV2<PColumn<Data>> {
-  // Build SpecQuery directly from columns
-  const coreJoinQuery: SpecQuery<PColumn<Data>> = {
-    type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: params.primaryColumns.map((c) => toJoinEntry({ type: "column", column: c })),
-  };
-
   let query: SpecQuery<PColumn<Data>> = {
-    type: "outerJoin",
-    primary: toJoinEntry(coreJoinQuery),
-    secondary: params.secondaryGroups.map((group) =>
-      toJoinEntry({
-        type: "innerJoin" as const,
-        entries: group.map((c) => toJoinEntry({ type: "column" as const, column: c })),
-      }),
-    ),
+    type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
+    entries: params.primary.map((a) => toLeaf(a.column, [])),
   };
 
-  // Apply filters
+  if (params.secondary.length > 0) {
+    query = {
+      type: "outerJoin",
+      primary: {
+        entry: query,
+        qualifications: params.secondary.flatMap((g) =>
+          params.primary.flatMap((p) => g.primaryQualifications?.[p.column.id] ?? []),
+        ),
+      },
+      secondary: params.secondary.flatMap((g) =>
+        g.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
+      ),
+    };
+  }
+
   if (!isNil(params.filters)) {
     const nonEmpty = distillFilterSpec(params.filters);
 
@@ -58,7 +82,6 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
     }
   }
 
-  // Apply sorting
   if (!isNil(params.sorting) && params.sorting.length > 0) {
     query = {
       type: "sort",
@@ -74,16 +97,18 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
   return { query };
 }
 
-/** Convert a PTableColumnId to a SpecQueryExpression reference. */
 function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
   return col.type === "axis"
     ? { type: "axisRef", value: col.id as SingleAxisSelector }
     : { type: "columnRef", value: col.id };
 }
 
-function toJoinEntry<C>(input: SpecQuery<C>): SpecQueryJoinEntry<C> {
+function toLeaf<Data>(
+  col: PColumn<Data>,
+  qs: AxisQualification[],
+): SpecQueryJoinEntry<PColumn<Data>> {
   return {
-    entry: input,
-    qualifications: [],
+    entry: { type: "column", column: col },
+    qualifications: qs,
   };
 }

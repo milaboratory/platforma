@@ -1,5 +1,86 @@
 # @milaboratories/pl-tree
 
+## 1.9.20
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+- Updated dependencies [f28bb32]
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-errors@1.3.10
+  - @milaboratories/pl-client@3.2.2
+
+## 1.9.19
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.2.1
+- @milaboratories/pl-errors@1.3.9
+
+## 1.9.18
+
+### Patch Changes
+
+- Updated dependencies [58a28bc]
+  - @milaboratories/pl-client@3.2.0
+  - @milaboratories/pl-errors@1.3.8
+
+## 1.9.17
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.8
+- @milaboratories/pl-errors@1.3.7
+
+## 1.9.16
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.7
+- @milaboratories/pl-errors@1.3.6
+
+## 1.9.15
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.6
+- @milaboratories/pl-errors@1.3.5
+
+## 1.9.14
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.5
+- @milaboratories/pl-errors@1.3.4
+
+## 1.9.13
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.4
+- @milaboratories/pl-errors@1.3.3
+
+## 1.9.12
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.3
+- @milaboratories/pl-errors@1.3.2
+
+## 1.9.11
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.1.2
+- @milaboratories/pl-errors@1.3.1
+
+## 1.9.10
+
+### Patch Changes
+
+- Updated dependencies [9942557]
+  - @milaboratories/pl-errors@1.3.0
+
 ## 1.9.9
 
 ### Patch Changes

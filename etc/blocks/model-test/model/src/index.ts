@@ -79,12 +79,12 @@ export const counterPlugin = PluginModel.define({
     return ctx.data.count % 2 === 0;
   })
   .output("specFrameTest", (ctx) => {
-    const entry = ctx.services.pframeSpec.createSpecFrame({});
+    const entry = ctx.getService("pframeSpec").createSpecFrame({});
     entry.unref();
     return `specFrame: created and manually disposed`;
   })
   .output("pframeTest", (ctx) => {
-    const handle = ctx.services.pframe.createPFrame([]);
+    const handle = ctx.getService("pframe").createPFrame([]);
     return `pframe: created handle ${handle}`;
   })
   .build();
@@ -137,14 +137,14 @@ export const platforma = BlockModelV3.create(blockDataModel)
   )
 
   .output("blockSpecFrameTest", (ctx) => {
-    ctx.services.pframeSpec.createSpecFrame({});
+    ctx.getService("pframeSpec").createSpecFrame({});
     return `blockSpecFrame: created (auto-disposed)`;
   })
 
   .outputWithStatus("blockTableTest", (ctx) => {
     return createPlDataTable(ctx, {
       tableState: ctx.data.tableState,
-      discoverColumnOptions: {
+      columns: {
         anchors: {
           main: {
             kind: "PColumn",
@@ -153,7 +153,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
             axesSpec: [{ type: "String", name: "item" }],
           },
         },
-        columnsSelector: {
+        selector: {
           include: [{ name: [{ type: "exact", value: "mock_score" }] }],
         },
       },
