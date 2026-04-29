@@ -1,4 +1,4 @@
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { ResourceType } from "@milaboratories/pl-client";
 import type {
   ProjectListEntry as ProjectListEntryFromModel,
   ProjectMeta,
@@ -16,8 +16,7 @@ import type { BlockRenderingMode } from "@platforma-sdk/model";
 declare const __projectIdBrand: unique symbol;
 export type ProjectId = string & { readonly __projectIdBrand: typeof __projectIdBrand };
 
-export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "id" | "rid"> {
-  rid: ResourceId;
+export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "id"> {
   /** Unique project identifier in middle layer. Use to operate with given project. */
   id: ProjectId;
 }

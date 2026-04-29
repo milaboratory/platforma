@@ -55,7 +55,6 @@ export async function createProjectList(
       const projectId = resourceIdToString(prj.id) as ProjectId;
       result.push({
         id: projectId,
-        rid: prj.id,
         created: new Date(created),
         lastModified: new Date(lastModified),
         opened: oProjects.indexOf(projectId) >= 0,

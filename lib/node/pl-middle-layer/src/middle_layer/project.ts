@@ -100,7 +100,7 @@ export class Project {
   constructor(
     private readonly env: MiddleLayerEnvironment,
     public readonly id: ProjectId /* Project ID, exposed to outer consumers, who work with ML */,
-    public readonly rid: ResourceId /* Underlying pl resource id */,
+    readonly rid: ResourceId /* Contains signature, not exposed outside middle layer. */,
     private readonly projectTree: SynchronizedTreeState,
   ) {
     this.overview = projectOverview(
