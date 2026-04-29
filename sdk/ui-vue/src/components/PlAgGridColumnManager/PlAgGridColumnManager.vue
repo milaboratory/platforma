@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import {
   PlBtnGhost,
+  PlBtnSecondary,
   PlElementList,
+  PlIcon24,
   PlSearchField,
   PlSlideModal,
   usePlBlockPageTitleTeleportTarget,
@@ -45,6 +47,24 @@ const { filteredItems, segments } = useFilteredItems({
   query,
   getStrings: (item) => [item.label],
 });
+
+const toggleableFilteredItems = computed(() =>
+  filteredItems.value.filter((item) => item.id !== PlAgDataTableRowNumberColId),
+);
+
+const allFilteredHidden = computed(
+  () =>
+    toggleableFilteredItems.value.length > 0 &&
+    toggleableFilteredItems.value.every((item) => !item.column.isVisible()),
+);
+
+const toggleAllFiltered = () => {
+  if (props.api.isDestroyed()) return;
+  const nextVisible = allFilteredHidden.value;
+  const cols = toggleableFilteredItems.value.map((item) => item.column);
+  if (cols.length === 0) return;
+  props.api.setColumnsVisible(cols, nextVisible);
+};
 </script>
 
 <template>
@@ -54,7 +74,17 @@ const { filteredItems, segments } = useFilteredItems({
 
   <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
     <template #title>Manage Columns</template>
-    <PlSearchField v-model="query" clearable />
+    <div :class="$style.searchRow">
+      <PlSearchField v-model="query" clearable />
+      <PlBtnSecondary
+        :class="$style.toogleAllBtn"
+        :disabled="toggleableFilteredItems.length === 0"
+        @click.stop="toggleAllFiltered"
+      >
+        <PlIcon24 v-if="allFilteredHidden" name="view-show" />
+        <PlIcon24 v-else name="view-hide" />
+      </PlBtnSecondary>
+    </div>
     <PlElementList
       :items="filteredItems"
       :get-item-key="(item) => item.id"
@@ -100,5 +130,25 @@ const { filteredItems, segments } = useFilteredItems({
 .match {
   background-color: var(--color-active-select);
   border-radius: 2px;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchRow > :first-child {
+  flex: 1;
+}
+
+.toogleAllBtn {
+  min-width: unset;
+  opacity: 0.2;
+  transition: opacity 0.3s;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 </style>
