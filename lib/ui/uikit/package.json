@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.12.14",
+  "version": "2.12.15",
   "type": "module",
   "main": "dist/index.js",
   "exports": {

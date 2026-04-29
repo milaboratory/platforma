@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 2.17.9
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+- Updated dependencies [f28bb32]
+  - @milaboratories/pl-config@1.7.18
+  - @milaboratories/pl-model-common@1.36.2
+
 ## 2.17.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.7.18
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+
 ## 1.7.17
 
 ### Patch Changes

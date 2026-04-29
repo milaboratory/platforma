@@ -1,5 +1,12 @@
 # @milaboratories/pf-driver
 
+## 1.4.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+- @milaboratories/pl-model-middle-layer@1.18.7
+
 ## 1.4.1
 
 ### Patch Changes

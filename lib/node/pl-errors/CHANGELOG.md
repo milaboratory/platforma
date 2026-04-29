@@ -1,5 +1,12 @@
 # @milaboratories/pl-errors
 
+## 1.3.10
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+  - @milaboratories/pl-client@3.2.2
+
 ## 1.3.9
 
 ### Patch Changes

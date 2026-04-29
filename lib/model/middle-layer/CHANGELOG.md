@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.18.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.36.2
+
 ## 1.18.6
 
 ### Patch Changes
