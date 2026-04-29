@@ -1045,6 +1045,8 @@ builder := func() {
 				ram: ramRequest
 			}
 			if !is_undefined(gpuMemory) {
+				ll.assert(!is_undefined(cpuRequest), "exec.builder: cpu() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
+				ll.assert(!is_undefined(ramRequest), "exec.builder: mem() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
 				quotaData.gpuMemory = gpuMemory
 			}
 			metaExecInputs := {
