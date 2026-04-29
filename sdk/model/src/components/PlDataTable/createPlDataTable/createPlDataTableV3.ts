@@ -21,7 +21,6 @@ import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } 
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSelector, ColumnSnapshot, ColumnVariant, MatchingMode } from "../../../columns";
-import { getAllLabelColumns, getMatchingLabelColumns } from "../labels";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
   deriveAllLabels,
@@ -97,11 +96,6 @@ export function createPlDataTableV3<A, U>(
 
   const splited = splitDiscoveredColumns(discovered);
 
-  const labelColumns = getMatchingLabelColumns(
-    [...splited.direct, ...splited.linked].map((v) => v.column),
-    getAllLabelColumns(ctx),
-  );
-
   const derivedLabels = deriveAllLabels({
     columns: discovered.map((dc) => ({
       id: dc.column.id,
@@ -109,7 +103,6 @@ export function createPlDataTableV3<A, U>(
       linkerPath: dc.path,
       qualifications: dc.qualifications,
     })),
-    labelColumns,
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,
@@ -129,7 +122,6 @@ export function createPlDataTableV3<A, U>(
   const annotated = annotateColumnGroups({
     pframeSpec,
     ...splited,
-    labelColumns,
     derivedLabels,
     derivedTooltips,
     displayOptions: options.displayOptions,
@@ -143,7 +135,6 @@ export function createPlDataTableV3<A, U>(
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct.map((v) => v.column),
     ...annotated.linked.flatMap((lc) => [...lc.path.map((s) => s.linker), lc.column]),
-    ...annotated.labels,
   ]);
 
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, discovered);
@@ -165,7 +156,6 @@ export function createPlDataTableV3<A, U>(
   const secondaryGroups: SecondaryGroup<undefined | PColumnDataUniversal>[] = buildSecondaryGroups(
     secondarySnapshots,
     annotated.linked,
-    annotated.labels,
   );
   const fullDef = createPTableDefV3({
     primaryJoinType,
@@ -181,7 +171,6 @@ export function createPlDataTableV3<A, U>(
   const pframeHandle = ctx.createPFrame([
     ...annotated.direct.map((v) => resolveSnapshot(v.column)),
     ...annotated.linked.map((v) => resolveSnapshot(v.column)),
-    ...annotated.labels,
     ...collectLinkerSnapshots(annotated.linked).map(resolveSnapshot),
   ]);
 
@@ -193,14 +182,13 @@ export function createPlDataTableV3<A, U>(
     hiddenSpecs,
   );
 
-  const visible = buildVisibleColumns(annotated, hiddenColumnIds, labelColumns);
+  const visible = buildVisibleColumns(annotated, hiddenColumnIds);
   const visibleDef = createPTableDefV3({
     primaryJoinType,
     primary: primaryEntries,
     secondary: buildSecondaryGroups(
       visible.direct.filter((c) => !c.isPrimary),
       visible.linked,
-      visible.labels,
     ),
     filters,
     sorting,
@@ -229,13 +217,11 @@ type SplitDiscoveredColumns = {
 type AnnotatedColumnGroups = {
   readonly direct: TableColumnVariant[];
   readonly linked: TableColumnVariant[];
-  readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
 type VisibleColumns = {
   readonly direct: TableColumnVariant[];
   readonly linked: TableColumnVariant[];
-  readonly labels: PColumn<PColumnDataUniversal>[];
 };
 
 /** Split discovered columns into direct (no linker path) and linked (with linker path). */
@@ -262,26 +248,16 @@ function collectLinkerSnapshots(linked: TableColumnVariant[]): ColumnSnapshot<PO
 function annotateColumnGroups(params: {
   direct: TableColumnVariant[];
   linked: TableColumnVariant[];
-  labelColumns: PColumn<PColumnDataUniversal>[];
   derivedLabels: Record<string, string>;
   derivedTooltips: Record<string, string>;
   displayOptions?: ColumnsDisplayOptions;
   pframeSpec: PFrameSpecDriver;
 }): AnnotatedColumnGroups {
-  const {
-    direct,
-    linked,
-    labelColumns,
-    derivedLabels,
-    derivedTooltips,
-    displayOptions,
-    pframeSpec,
-  } = params;
+  const { direct, linked, derivedLabels, derivedTooltips, displayOptions, pframeSpec } = params;
 
   const allColumnsForRules = [
     ...direct.map((v) => v.column),
     ...linked.map((v) => v.column),
-    ...labelColumns,
     ...collectLinkerSnapshots(linked),
   ];
   const visibilityByColId = evaluateRules(
@@ -314,15 +290,9 @@ function annotateColumnGroups(params: {
     ),
   ).map((lc) => ({ ...lc, path: annotateLinkerPath(derivedLabels, lc.path) }));
 
-  const labelColumnsAnnotated = flow(
-    (cols: PColumn<PColumnDataUniversal>[]) => withHidenAxesAnnotations(cols),
-    (cols) => withLabelAnnotations(derivedLabels, cols),
-  )(labelColumns);
-
   return {
     direct: directAnnotated,
     linked: linkedAnnotated,
-    labels: labelColumnsAnnotated,
   };
 }
 
@@ -422,7 +392,6 @@ function validateSorting(sorting: PTableSorting[], isValidColumnId: (id: string)
 function buildSecondaryGroups(
   direct: TableColumnVariant[],
   linked: TableColumnVariant[],
-  labels: PColumn<PColumnDataUniversal>[],
 ): SecondaryGroup<undefined | PColumnDataUniversal>[] {
   return [
     ...direct.map(
@@ -442,9 +411,6 @@ function buildSecondaryGroups(
         ],
         primaryQualifications: lc.qualifications.forQueries,
       }),
-    ),
-    ...labels.map(
-      (c): SecondaryGroup<undefined | PColumnDataUniversal> => ({ entries: [{ column: c }] }),
     ),
   ];
 }
@@ -490,15 +456,10 @@ function collectPreservedColumnIds(
 function buildVisibleColumns(
   annotated: AnnotatedColumnGroups,
   hiddenColumns: Set<PObjectId>,
-  originalLabelColumns: PColumn<PColumnDataUniversal>[],
 ): VisibleColumns {
   const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.column.id));
   const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.column.id));
-  const labels = getMatchingLabelColumns(
-    [...direct, ...linked].map((v) => v.column),
-    originalLabelColumns,
-  );
-  return { direct, linked, labels };
+  return { direct, linked };
 }
 
 /** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */

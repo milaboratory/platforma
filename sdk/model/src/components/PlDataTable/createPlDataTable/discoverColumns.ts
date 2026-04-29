@@ -13,7 +13,6 @@ import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provi
 import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnVariant } from "./createPlDataTableV3";
-import { isNil } from "es-toolkit";
 
 export type DiscoverTableColumnOptions = {
   sources?: ColumnSource[];
@@ -45,14 +44,6 @@ export function discoverTableColumnSnaphots(
   try {
     const variants = collection.findColumnVariants({
       ...(resolvedOptions.selector ?? {}),
-      exclude: [
-        ...(Array.isArray(resolvedOptions.selector?.exclude)
-          ? resolvedOptions.selector.exclude
-          : !isNil(resolvedOptions.selector.exclude)
-            ? [resolvedOptions.selector.exclude]
-            : []),
-        { name: "pl7.app/label" },
-      ],
     });
     const anchors = collection.getAnchors();
     return mapToTableColumnVariants(variants, anchors);

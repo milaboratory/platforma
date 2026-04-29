@@ -5,9 +5,7 @@ import {
   type PObjectId,
   Annotation,
   canonicalizeAxisId,
-  canonicalizeJson,
   DiscoveredPColumnId,
-  getAxisId,
   readAnnotation,
   readAnnotationJson,
 } from "@milaboratories/pl-model-common";
@@ -236,11 +234,9 @@ export type LabelableColumn = {
 /** Derive labels for all table elements: columns via deriveDistinctLabels, axes from label columns. */
 export function deriveAllLabels(options: {
   columns: LabelableColumn[];
-  labelColumns: { readonly spec: PColumnSpec }[];
   deriveLabelsOptions?: DeriveLabelsOptions;
 }): Record<string, string> {
-  const { columns, labelColumns, deriveLabelsOptions } = options;
-  const axisLabels = deriveAxisLabels(columns, labelColumns);
+  const { columns, deriveLabelsOptions } = options;
   const entries = columns.map((c) => ({
     spec: c.spec,
     linkerPath: c.linkerPath?.map((step) => ({
@@ -253,26 +249,7 @@ export function deriveAllLabels(options: {
     (acc, label, index) => ((acc[columns[index].id] = label), acc),
     {} as Record<string, string>,
   );
-  return { ...axisLabels, ...columnLabels };
-}
-
-/** Derive axis labels from matching label columns, falling back to axis spec annotations. */
-function deriveAxisLabels(
-  columns: { readonly spec: PColumnSpec }[],
-  labelColumns: { readonly spec: PColumnSpec }[],
-): Record<string, string> {
-  const axisSpecMap = new Map(
-    columns.flatMap((c) => c.spec.axesSpec).map((a) => [canonicalizeJson(getAxisId(a)), a]),
-  );
-  const result: Record<string, string> = {};
-  for (const axisKey of axisSpecMap.keys()) {
-    const labelCol = labelColumns.find(
-      (lc) => canonicalizeJson(getAxisId(lc.spec.axesSpec[0])) === axisKey,
-    );
-    const source = labelCol?.spec ?? axisSpecMap.get(axisKey);
-    result[axisKey] = readAnnotation(source ?? {}, Annotation.Label)?.trim() ?? "Unlabeled";
-  }
-  return result;
+  return columnLabels;
 }
 
 /** Column shape required by tooltip derivation. */

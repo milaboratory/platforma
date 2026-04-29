@@ -126,7 +126,7 @@ export async function calculateGridOptions({
 
   // displayable column indices ordered: axes first, then columns by OrderPriority
   const fields = sortIndicesByTypeAndPriority(
-    selectDisplayableIndices(tableSpecs, isPartitionedAxis),
+    selectDisplayableIndices(tableSpecs, isPartitionedAxis, getLabelColumnIndex),
     tableSpecs,
   );
 
@@ -337,8 +337,6 @@ export function makeColDef(
   };
 }
 
-type LabelColumnLookup = (axisId: AxisId) => number;
-
 /** Build index mapping from full tableSpecs to their position in visibleTableSpecs (missing → -1). */
 function buildSpecsToVisibleSpecsMapping(
   tableSpecs: PTableColumnSpec[],
@@ -370,7 +368,7 @@ function createPartitionedAxisPredicate(sheets: PlDataTableSheet[]): (axisId: Ax
 function collectLabelColumnsByAxis(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
-): LabelColumnLookup {
+): (axisId: AxisId) => number {
   const labelColumns: { axisId: AxisId; labelColumnIdx: number }[] = [];
   for (const [i, spec] of tableSpecs.entries()) {
     if (spec.type !== "column" || !isLabelColumnSpec(spec.spec)) continue;
@@ -390,16 +388,22 @@ function collectLabelColumnsByAxis(
 function selectDisplayableIndices(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
+  getLabelColumnIndex: (axisId: AxisId) => number,
 ): number[] {
   return tableSpecs
     .entries()
     .filter(([, spec]) => {
       switch (spec.type) {
         case "axis":
-          return !isColumnHidden(spec.spec) && !isPartitionedAxis(spec.id);
+          return (
+            // show axis if not hidden or if it has a label column
+            (!isColumnHidden(spec.spec) ? true : getLabelColumnIndex(spec.id) > -1) &&
+            !isPartitionedAxis(spec.id)
+          );
         case "column":
           return (
             !isColumnHidden(spec.spec) &&
+            // hide label columns (their labeled axes are shown instead)
             !isLabelColumnSpec(spec.spec) &&
             !isLinkerColumnSpec(spec.spec)
           );
@@ -429,7 +433,7 @@ function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColum
 function replaceAxesWithLabelColumns(
   fields: number[],
   tableSpecs: PTableColumnSpec[],
-  getLabelColumnIndex: LabelColumnLookup,
+  getLabelColumnIndex: (axisId: AxisId) => number,
 ): number[] {
   return fields.map((i) => {
     const spec = tableSpecs[i];
