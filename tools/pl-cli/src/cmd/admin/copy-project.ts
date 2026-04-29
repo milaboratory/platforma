@@ -1,5 +1,5 @@
 import { Flags } from "@oclif/core";
-import { field, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, resourceIdToString } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
@@ -81,20 +81,22 @@ export default class AdminCopyProject extends PlCommand {
       tx.createField(field(target.projectListRid, newId), "Dynamic", newPrj);
       await tx.commit();
 
-      return { rid: await toGlobalResourceId(newPrj), label: newLabel };
+      const prjResourceId = await newPrj.globalId;
+      const prjId = resourceIdToString(prjResourceId);
+      return { id: prjId, rid: prjResourceId, label: newLabel };
     });
 
     if (flags.format === "json") {
       outputJson({
-        id: newId,
-        rid: String(result.rid),
+        id: result.id,
+        rid: resourceIdToString(result.rid),
         label: result.label,
         sourceUser: flags["source-user"],
         targetUser,
       });
     } else {
       outputText(
-        `Copied project from ${flags["source-user"]} to ${targetUser} as "${result.label}" (id: ${newId})`,
+        `Copied project from ${flags["source-user"]} to ${targetUser} as "${result.label}" (id: ${result.id}, rid: ${resourceIdToString(result.rid)})`,
       );
     }
   }
