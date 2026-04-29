@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.4.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/milaboratories.monetization-test.model@1.2.0
+  - @milaboratories/milaboratories.monetization-test.ui@1.3.0
+
 ## 1.3.37
 
 ### Patch Changes

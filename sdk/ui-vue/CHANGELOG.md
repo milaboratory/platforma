@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.69.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/uikit@2.13.0
+  - @platforma-sdk/model@1.69.0
+
 ## 1.68.8
 
 ### Patch Changes

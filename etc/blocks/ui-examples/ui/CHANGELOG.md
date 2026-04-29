@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.11.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/milaboratories.ui-examples.model@1.6.0
+  - @platforma-sdk/model@1.69.0
+
 ## 1.10.8
 
 ### Patch Changes

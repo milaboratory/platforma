@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.56.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @platforma-sdk/model@1.69.0
+
 ## 1.55.29
 
 ### Patch Changes

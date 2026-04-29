@@ -1,5 +1,17 @@
 # @milaboratories/pl-mcp-server
 
+## 5.0.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/pl-middle-layer@1.56.0
+  - @platforma-sdk/model@1.69.0
+
 ## 4.0.0
 
 ### Patch Changes

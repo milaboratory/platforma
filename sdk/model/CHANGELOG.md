@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.69.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
 ## 1.68.8
 
 ### Patch Changes
