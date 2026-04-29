@@ -1,5 +1,15 @@
 # @milaboratories/pl-tree
 
+## 1.9.20
+
+### Patch Changes
+
+- f28bb32: mark node libs with type: module annotation in package.json
+- Updated dependencies [f28bb32]
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-errors@1.3.10
+  - @milaboratories/pl-client@3.2.2
+
 ## 1.9.19
 
 ### Patch Changes

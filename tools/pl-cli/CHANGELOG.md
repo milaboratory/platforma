@@ -1,5 +1,13 @@
 # @platforma-sdk/pl-cli
 
+## 0.3.5
+
+### Patch Changes
+
+- f28bb32: rename run.js to mjs to fix bunch of warnings in dev mode
+  - @milaboratories/pl-middle-layer@1.55.29
+  - @milaboratories/pl-client@3.2.2
+
 ## 0.3.4
 
 ### Patch Changes
