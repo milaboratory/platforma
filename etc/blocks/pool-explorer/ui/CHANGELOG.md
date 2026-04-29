@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.pool-explorer.ui
 
+## 1.3.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @milaboratories/milaboratories.pool-explorer.model@1.3.0
+  - @platforma-sdk/ui-vue@1.69.0
+
 ## 1.2.31
 
 ### Patch Changes

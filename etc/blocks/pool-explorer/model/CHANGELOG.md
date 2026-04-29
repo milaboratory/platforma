@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.pool-explorer.model
 
+## 1.3.0
+
+### Minor Changes
+
+- d8f985a: Correct show label columns and simplify join for big projects
+
+### Patch Changes
+
+- Updated dependencies [d8f985a]
+  - @platforma-sdk/model@1.69.0
+
 ## 1.2.23
 
 ### Patch Changes
