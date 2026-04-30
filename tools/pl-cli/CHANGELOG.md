@@ -1,5 +1,17 @@
 # @platforma-sdk/pl-cli
 
+## 0.5.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-middle-layer@1.57.0
+  - @milaboratories/pl-client@3.2.4
+
 ## 0.4.2
 
 ### Patch Changes

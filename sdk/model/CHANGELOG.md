@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-model-common@1.38.0
+  - @milaboratories/pl-model-middle-layer@1.18.9
+  - @milaboratories/ptabler-expression-js@1.2.19
+
 ## 1.70.0
 
 ### Minor Changes
