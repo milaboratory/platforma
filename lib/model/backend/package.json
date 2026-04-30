@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-backend",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "description": "Backend model for Platforma.bio",
   "files": [
     "./dist/**/*",

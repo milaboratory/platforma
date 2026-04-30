@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-errors",
-  "version": "1.3.10",
+  "version": "1.3.11",
   "description": "Parsing errors from Pl backend",
   "files": [
     "./dist/**/*",
