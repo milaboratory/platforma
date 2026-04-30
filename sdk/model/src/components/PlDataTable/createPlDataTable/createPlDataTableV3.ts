@@ -405,7 +405,6 @@ function buildSecondaryGroups(
         entries: [
           ...lc.path.map((s) => ({
             column: resolveSnapshot(s.linker),
-            qualifications: s.qualifications,
           })),
           { column: resolveSnapshot(lc.column), qualifications: lc.qualifications.forHit },
         ],

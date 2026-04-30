@@ -1,38 +1,34 @@
 // Ephemeral template for tableBuilder.build().
-// Receives fully-resolved {spec, data} pairs — all bquery.resolve and
-// bquery.anchoredQuery happen in the builder (workflow body context).
-// This template just assembles the PFrame, joins, and exports via pt.
+// Inputs are pre-resolved {spec, data} (the builder did bquery resolution
+// in the workflow body context); this template just assembles the PFrame,
+// runs the join tree, and exports the file via pt.
 
 ll := import(":ll")
 pt := import(":pt")
+maps := import(":maps")
 pframesSpec := import(":pframes.spec")
 pBuilder := import(":pframes.builder")
 util := import(":pframes.util")
 exportUtil := import(":pframes.export-util")
 bquery := import(":pframes.build-query")
 
-// `:tpl` (not `:tpl.light`) registers `bquery.resultUnmarshaller` by default,
-// so a BQueryResult resource passed via `inputs.columns.*.multiResult` is
-// auto-parsed into `[{ref, spec, data}, ...]` during input unmarshal.
+// `:tpl` (not `:tpl.light`) registers `bquery.resultUnmarshaller`, which
+// auto-parses `inputs.columns.*.multiResult` into `[{ref, spec, data}, ...]`.
 self := import(":tpl")
 
 self.defineOutputs(["result"])
 
-// Each primary in `inputs.primaries` is a v1 ResolvedPrimaryRef
-// (`{__isPrimaryRef: "v1", column: {spec, data}, filter?: {spec, data}}`)
-// plus builder metadata (`name`, `header?`). PrimarySpecsReady awaits the
-// column's spec (required) and filter's spec (optional).
-//
-// Each enrichment column carries either flat {spec, data} (resolved,
-// pre-resolved PlRef, or single-match query) or a `multiResult` BQueryResult
-// (multi-match query from addColumns). Data fields pass as future references —
-// pt awaits them when executing ptabler.
+// Input shape:
+// - primaries: v1 ResolvedPrimaryRef + builder metadata.
+// - columns: flat {spec, data} (single), `multiResult` BQueryResult (multi),
+//   or EnrichmentRef with a resolved-hop list.
+// All specs must be ready before PFrame registration; multi-match data needs
+// inputs locked before resultUnmarshaller can iterate.
 self.awaitState("AllInputsSet")
 self.awaitState("primaries", { wildcard: "*" }, "PrimarySpecsReady")
-// Single-entry columns: spec ready at `columns.*.spec`.
 self.awaitState("columns", { wildcard: "*" }, { match: "^spec$" }, "ResourceReady")
-// Multi-entry columns: the BQueryResult's spec map and every sub-spec need
-// to be ready before resultUnmarshaller can parse; data needs inputs locked.
+self.awaitState("columns", { wildcard: "*" },
+	{ match: "^path$" }, { wildcard: "*" }, "spec", "ResourceReady")
 self.awaitState("columns", { wildcard: "*" },
 	{ match: "^multiResult$" }, "spec", "ResourceReady")
 self.awaitState("columns", { wildcard: "*" },
@@ -47,10 +43,9 @@ self.body(func(inputs) {
 	primaryCount := inputs.primaryCount
 	columnCount := inputs.columnCount
 
-	// Phase 1: Collect primaries (all pre-resolved). A primary's `filter`
-	// is singular in v1 — we normalize it into a `filters` list here so the
-	// downstream PFrame build and join-tree steps handle 0, 1, or (future v2) N
-	// filters uniformly.
+	// Phase 1: Collect primaries. v1 has at most one filter per primary; we
+	// normalize it into a `filters` list so downstream code handles 0, 1, or
+	// (future v2) N filters uniformly.
 
 	primaries := []
 	nextKey := 1
@@ -79,11 +74,9 @@ self.body(func(inputs) {
 		primaries = append(primaries, entry)
 	}
 
-	// Phase 2: Collect enrichment columns. Single entries carry flat
-	// {spec, data}; multi entries (addColumns with a query spec) carry a
-	// `multiResult` that the registered bquery.resultUnmarshaller has already
-	// parsed into a list of {ref, spec, data} — iterate to expand into N
-	// downstream columns, each sharing the same headerPrefix/headerSuffix.
+	// Phase 2: Collect enrichments. Single entries are flat {spec, data}; multi
+	// entries carry a `multiResult` (already parsed by resultUnmarshaller) that
+	// expands into N columns sharing the same headerPrefix/headerSuffix.
 
 	enrichments := []
 	for idx := 0; idx < columnCount; idx++ {
@@ -97,11 +90,25 @@ self.body(func(inputs) {
 					headerPrefix: c.headerPrefix,
 					headerSuffix: c.headerSuffix,
 					pFrameKey: "col" + string(nextKey),
-					mode: c.mode
+					mode: c.mode,
+					path: []
 				})
 				nextKey += 1
 			}
 		} else {
+			path := []
+			if !is_undefined(c.path) && !is_undefined(c.pathLength) {
+				for stepIdx := 0; stepIdx < c.pathLength; stepIdx++ {
+					step := c.path[string(stepIdx)]
+					path = append(path, {
+						type: step.type,
+						spec: step.spec,
+						data: step.data,
+						pFrameKey: "col" + string(nextKey)
+					})
+					nextKey += 1
+				}
+			}
 			enrichments = append(enrichments, {
 				spec: c.spec,
 				data: c.data,
@@ -109,7 +116,9 @@ self.body(func(inputs) {
 				headerPrefix: c.headerPrefix,
 				headerSuffix: c.headerSuffix,
 				pFrameKey: "col" + string(nextKey),
-				mode: c.mode
+				mode: c.mode,
+				path: path,
+				qualifications: c.qualifications
 			})
 			nextKey += 1
 		}
@@ -126,6 +135,9 @@ self.body(func(inputs) {
 	}
 	for e in enrichments {
 		frameBuilder.add(e.pFrameKey, e.spec, e.data)
+		for step in e.path {
+			frameBuilder.add(step.pFrameKey, step.spec, step.data)
+		}
 	}
 	pFrame := frameBuilder.build()
 
@@ -134,58 +146,38 @@ self.body(func(inputs) {
 	resultFile := "result." + format
 	columnsMap := util.pFrameToColumnsMap(pFrame)
 
-	// Build pt entries for each column
-	ptEntry := func(key) {
+	ptColumn := func(key) {
 		return pt.p.column(key, columnsMap[key])
 	}
 
-	// Step 1: per-primary filter wrap. `pframes.build-query.buildQuery`
-	// is the same logic the wasm pf-spec-driver runs; we translate its
-	// SpecQueryJoinEntry tree into pt operations.
-	translateQueryEntry := undefined
-	translateQueryEntry = func(entryWrap) {
-		node := entryWrap.entry
-		if node.type == "column" {
-			return ptEntry(node.column)
-		}
-		if node.type == "innerJoin" {
-			args := []
-			for child in node.entries {
-				args = append(args, translateQueryEntry(child))
-			}
-			return pt.p.inner(args...)
-		}
-		if node.type == "linkerJoin" {
-			ll.assert(len(node.secondary) == 1,
-				"build-table: linkerJoin must have exactly one secondary entry, got %d",
-				len(node.secondary))
-			return pt.p.linkerJoin(
-				ptEntry(node.linker.column),
-				translateQueryEntry(node.secondary[0]))
-		}
-		ll.panic("build-table: unsupported query node type: %v", node.type)
-	}
-
+	// Step 1: per-primary filter wrap via buildQuery → _rawQueryEntry.
 	filteredPrimaries := []
 	for p in primaries {
+		cols := {}
+		cols[p.pFrameKey] = columnsMap[p.pFrameKey]
 		path := []
 		for flt in p.filters {
+			cols[flt.pFrameKey] = columnsMap[flt.pFrameKey]
 			path = append(path, {
 				type: "filter",
 				filter: { columnId: flt.pFrameKey }
 			})
 		}
-		queryEntry := bquery.buildQuery({
-			version: "v1",
-			column: p.pFrameKey,
-			path: path
-		})
-		filteredPrimaries = append(filteredPrimaries, translateQueryEntry(queryEntry))
+		if len(path) == 0 {
+			filteredPrimaries = append(filteredPrimaries, ptColumn(p.pFrameKey))
+		} else {
+			qe := bquery.buildQuery({
+				version: "v1",
+				column: p.pFrameKey,
+				path: path
+			})
+			filteredPrimaries = append(filteredPrimaries, pt.p._rawQueryEntry(cols, qe))
+		}
 	}
 
-	// Step 2: Combine primaries into a single trunk using the configured join
-	// mode (inner or full). With a single primary, the mode has no effect.
-	// Filter joins above are always inner regardless of this setting.
+	// Step 2: Combine primaries into a single trunk via inner or full join.
+	// joinMode has no effect with a single primary; filter joins above are
+	// always inner regardless of this setting.
 	trunk := undefined
 	if len(filteredPrimaries) == 1 {
 		trunk = filteredPrimaries[0]
@@ -195,18 +187,45 @@ self.body(func(inputs) {
 		trunk = pt.p.full(filteredPrimaries...)
 	}
 
-	// Step 3: Full outer-join enrichments to trunk
+	// Step 3: full-join enrichments to the trunk; path-bearing entries become
+	// LinkerJoin chains via buildQuery.
 	frameInput := trunk
 	if len(enrichments) > 0 {
 		enrichEntries := []
 		for e in enrichments {
-			enrichEntries = append(enrichEntries, ptEntry(e.pFrameKey))
+			if len(e.path) == 0 {
+				enrichEntries = append(enrichEntries, ptColumn(e.pFrameKey))
+			} else {
+				cols := {}
+				cols[e.pFrameKey] = columnsMap[e.pFrameKey]
+				bqPath := []
+				for step in e.path {
+					ll.assert(step.type == "linker",
+						"build-table: only \"linker\" enrichment steps are supported, got %q",
+						step.type)
+					cols[step.pFrameKey] = columnsMap[step.pFrameKey]
+					bqPath = append(bqPath, {
+						type: "linker",
+						linker: { columnId: step.pFrameKey }
+					})
+				}
+				bqInput := {
+					version: "v1",
+					column: e.pFrameKey,
+					path: bqPath
+				}
+				if !is_undefined(e.qualifications) && len(e.qualifications) > 0 {
+					bqInput.qualifications = e.qualifications
+				}
+				enrichEntries = append(enrichEntries,
+					pt.p._rawQueryEntry(cols, bquery.buildQuery(bqInput)))
+			}
 		}
 		frameInput = pt.p.full(trunk, enrichEntries...)
 	}
 
-	// Collect all non-filter columns for label/axis processing.
-	// Filters are omitted — they're internal to the join, not rendered.
+	// Collect non-filter columns for label/axis processing.
+	// Filters are internal to the join and not rendered.
 	rawColumns := []
 	for p in primaries {
 		rawColumns = append(rawColumns, {
@@ -216,18 +235,23 @@ self.body(func(inputs) {
 		})
 	}
 	for e in enrichments {
+		spec := columnsMap[e.pFrameKey].spec
+		// linkerJoin strips the hit's own axes; clear axesSpec so
+		// exportUtil doesn't try to select axes that aren't there.
+		if len(e.path) > 0 {
+			spec = maps.deepMerge(spec, { axesSpec: [] })
+		}
 		rawColumns = append(rawColumns, {
 			frameKey: e.pFrameKey,
-			spec: columnsMap[e.pFrameKey].spec,
+			spec: spec,
 			header: e.header,
 			headerPrefix: e.headerPrefix,
 			headerSuffix: e.headerSuffix
 		})
 	}
 
-	// Strict label policy: every axis/column spec must carry pl7.app/label,
-	// unless the caller provided an explicit override (`setAxisHeader` for
-	// axes, `opts.header` for columns).
+	// Every axis/column spec must carry pl7.app/label, unless overridden
+	// (`setAxisHeader` for axes, `opts.header` for columns).
 	getAnnotatedLabel := func(spec) {
 		label := spec.annotations[pframesSpec.A_LABEL]
 		ll.assert(is_string(label) && label != "",

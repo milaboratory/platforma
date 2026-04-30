@@ -87,7 +87,6 @@ export interface ColumnVariant<Id extends PObjectId = PObjectId> {
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<PObjectId>;
-    qualifications: AxisQualification[];
   }[];
 }
 
@@ -98,7 +97,6 @@ export interface MatchVariant {
   /** Linker steps traversed to reach this hit; empty for direct matches. */
   readonly path: {
     linker: ColumnSnapshot<PObjectId>;
-    qualifications: AxisQualification[];
   }[];
 }
 
@@ -319,7 +317,6 @@ class AnchoredColumnCollectionImpl implements AnchoredColumnCollection, Disposab
           linker:
             this.columnsMap.get(step.linker.columnId) ??
             throwError(`Linker column with id ${step.linker.columnId} not found in collection`),
-          qualifications: step.qualifications,
         };
       });
       const variants: MatchVariant[] = hit.mappingVariants.map((v) => ({

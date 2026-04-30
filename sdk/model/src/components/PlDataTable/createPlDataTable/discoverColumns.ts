@@ -102,7 +102,6 @@ function mapToTableColumnVariants(
       path: variant.path.map((p) => ({
         type: "linker",
         column: p.linker.id,
-        qualifications: p.qualifications,
       })),
       columnQualifications: variant.qualifications.forHit,
       queriesQualifications: variant.qualifications.forQueries,

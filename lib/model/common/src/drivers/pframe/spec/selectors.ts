@@ -1,4 +1,10 @@
 import { isPColumnSpec, type PObjectSpec } from "../../../pool";
+import type {
+  MatcherMap,
+  MultiAxisSelector,
+  MultiColumnSelector,
+  StringMatcher,
+} from "../spec_driver";
 import type { AxisId, AxisValueType, Domain, PColumnSpec, ValueType } from "./spec";
 import { getAxisId } from "./spec";
 
@@ -60,6 +66,14 @@ export interface SingleAxisSelector {
   domain?: Domain;
   /** Parent axes requirements (optional) */
   parentAxes?: SingleAxisSelector[];
+}
+
+/** Qualification applied to a single axis to make it compatible during integration. */
+export interface AxisQualification {
+  /** Axis selector identifying which axis is qualified. */
+  readonly axis: SingleAxisSelector;
+  /** Additional context domain entries applied to the axis. */
+  readonly contextDomain: Record<string, string>;
 }
 
 /**
@@ -311,4 +325,75 @@ export function legacyColumnSelectorsToPredicate(
     return (spec) =>
       predicateOrSelectors.some((selector) => isPColumnSpec(spec) && matchPColumn(spec, selector));
   else return (spec) => isPColumnSpec(spec) && matchPColumn(spec, predicateOrSelectors);
+}
+
+function matchString(matcher: StringMatcher, value: string): boolean {
+  return matcher.type === "exact" ? value === matcher.value : new RegExp(matcher.value).test(value);
+}
+
+function matchMatcherMap(map: MatcherMap, target: Record<string, string> | undefined): boolean {
+  const t = target ?? {};
+  for (const [key, matchers] of Object.entries(map)) {
+    const v = t[key];
+    if (v === undefined) return false;
+    if (!matchers.some((m) => matchString(m, v))) return false;
+  }
+  return true;
+}
+
+function matchMultiAxis(selector: MultiAxisSelector, axis: AxisId): boolean {
+  if (selector.type !== undefined && !selector.type.includes(axis.type)) return false;
+  if (selector.name !== undefined && !selector.name.some((m) => matchString(m, axis.name)))
+    return false;
+  if (selector.domain !== undefined && !matchMatcherMap(selector.domain, axis.domain)) return false;
+  if (
+    selector.contextDomain !== undefined &&
+    !matchMatcherMap(selector.contextDomain, axis.contextDomain)
+  )
+    return false;
+  return true;
+}
+
+/** Match a {@link PColumnSpec} against a {@link MultiColumnSelector}. */
+export function matchMultiColumnSelector(
+  spec: PColumnSpec,
+  selector: MultiColumnSelector,
+): boolean {
+  if (selector.type !== undefined && !selector.type.includes(spec.valueType)) return false;
+  if (selector.name !== undefined && !selector.name.some((m) => matchString(m, spec.name)))
+    return false;
+  if (selector.domain !== undefined && !matchMatcherMap(selector.domain, spec.domain)) return false;
+  if (
+    selector.contextDomain !== undefined &&
+    !matchMatcherMap(selector.contextDomain, spec.contextDomain)
+  )
+    return false;
+  if (
+    selector.annotations !== undefined &&
+    !matchMatcherMap(selector.annotations, spec.annotations)
+  )
+    return false;
+  if (selector.axes !== undefined) {
+    const columnAxes = spec.axesSpec.map(getAxisId);
+    if (selector.partialAxesMatch ?? true) {
+      for (const axisSelector of selector.axes)
+        if (!columnAxes.some((axis) => matchMultiAxis(axisSelector, axis))) return false;
+    } else {
+      if (columnAxes.length !== selector.axes.length) return false;
+      for (let i = 0; i < selector.axes.length; i++)
+        if (!matchMultiAxis(selector.axes[i], columnAxes[i])) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Convert a {@link MultiColumnSelector} (or array; selectors OR-ed) to a predicate.
+ * Non-PColumn specs always return false.
+ */
+export function multiColumnSelectorsToPredicate(
+  selectors: MultiColumnSelector | MultiColumnSelector[],
+): (spec: PObjectSpec) => boolean {
+  const arr = Array.isArray(selectors) ? selectors : [selectors];
+  return (spec) => isPColumnSpec(spec) && arr.some((sel) => matchMultiColumnSelector(spec, sel));
 }

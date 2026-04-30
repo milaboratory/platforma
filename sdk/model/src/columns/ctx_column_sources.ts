@@ -9,31 +9,25 @@ import { ResourceTypeName } from "@milaboratories/pl-model-common";
 import type { ValueOf } from "@milaboratories/helpers";
 
 /**
- * Collect ColumnSnapshotProviders from all render context sources:
- *
- * - **resultPool** — all upstream columns (always included)
- * - **outputs** — PFrame fields from block execution outputs
- * - **prerun** — PFrame fields from prerun/staging results
- *
- * Returns an array of providers suitable for `ColumnCollectionBuilder.addSource()`.
+ * Collect ColumnSnapshotProviders from `outputs`, `prerun`, and
+ * `resultPool` in that order. Dedup keeps the first occurrence per
+ * `NativePObjectId`, so a block re-publishing its own columns keeps
+ * the `outputs`-rooted canonical id instead of the result-pool variant.
  */
 export function collectCtxColumnSnapshotProviders(ctx: RenderCtxBase): ColumnSnapshotProvider[] {
   const providers: ColumnSnapshotProvider[] = [];
 
-  // ResultPool — all upstream columns
-  providers.push(new ResultPoolColumnSnapshotProvider(ctx.resultPool));
-
-  // Outputs — each PFrame-like output field becomes a provider
   const outputs = ctx.outputs;
   if (outputs) {
     providers.push(...collectPFrameProviders(outputs));
   }
 
-  // Prerun — same treatment as outputs
   const prerun = ctx.prerun;
   if (prerun) {
     providers.push(...collectPFrameProviders(prerun));
   }
+
+  providers.push(new ResultPoolColumnSnapshotProvider(ctx.resultPool));
 
   return providers;
 }

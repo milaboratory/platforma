@@ -241,7 +241,6 @@ export function deriveAllLabels(options: {
     spec: c.spec,
     linkerPath: c.linkerPath?.map((step) => ({
       spec: step.linker.spec,
-      qualifications: step.qualifications,
     })),
     qualifications: c.qualifications,
   }));

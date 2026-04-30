@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DatasetOption, PlRef, PrimaryRef } from "@platforma-sdk/model";
-import { createPlRef, createPrimaryRef } from "@platforma-sdk/model";
+import type { DatasetOption, DatasetSelection } from "@platforma-sdk/model";
+import { createDatasetSelection, createPlRef, createPrimaryRef } from "@platforma-sdk/model";
 import {
   PlBlockPage,
   PlCheckbox,
@@ -22,22 +22,23 @@ const data = reactive({
   clearable: true,
   required: false,
   optionsLoading: false,
-  selected: createPrimaryRef(datasetWithFilters, filterTop1000) as PrimaryRef | PlRef | undefined,
-  plainRefSelected: datasetWithoutFilters as PrimaryRef | PlRef | undefined,
-  emptyOptionsSelected: undefined as PrimaryRef | PlRef | undefined,
+  selected: createDatasetSelection(createPrimaryRef(datasetWithFilters, filterTop1000)) as
+    | DatasetSelection
+    | undefined,
+  secondSelected: undefined as DatasetSelection | undefined,
+  emptyOptionsSelected: undefined as DatasetSelection | undefined,
 });
 
 const optionsBase: DatasetOption[] = [
   {
-    label: "Leads — Clonotypes",
-    ref: datasetWithFilters,
+    primary: { label: "Leads — Clonotypes", ref: datasetWithFilters },
     filters: [
       { label: "Top 1000", ref: filterTop1000 },
       { label: "High confidence", ref: filterHighConfidence },
     ],
   },
   // No `filters` — component hides the filter dropdown when this is picked.
-  { label: "Raw — Clonotypes", ref: datasetWithoutFilters },
+  { primary: { label: "Raw — Clonotypes", ref: datasetWithoutFilters } },
 ];
 
 const options = computed<readonly DatasetOption[] | undefined>(() =>
@@ -73,13 +74,13 @@ const emptyOptions = computed<readonly DatasetOption[] | undefined>(() =>
           />
 
           <PlDatasetSelector
-            v-model="data.plainRefSelected"
+            v-model="data.secondSelected"
             :options="options"
             :disabled="data.disabled"
             :clearable="data.clearable"
             :required="data.required"
-            label="Backward compat (plain PlRef modelValue)"
-            helper="Selected value is a plain PlRef — the component normalizes it."
+            label="Second instance"
+            helper="Independent v-model — picks its own dataset/filter pair."
           />
 
           <PlDatasetSelector

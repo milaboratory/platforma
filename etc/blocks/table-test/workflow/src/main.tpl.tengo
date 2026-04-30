@@ -447,40 +447,26 @@ wf.body(func(args) {
 	groupLabelPf := xsv.importFile(groupLabelFile, "tsv", groupLabelSpec, importOps)
 	regionLabelPf := xsv.importFile(regionLabelFile, "tsv", regionLabelSpec, importOps)
 
-	// Merge all into a single pframe
+	// Republish every column as a block export so downstream blocks
+	// can discover the linker chain through the result pool.
 	pf := pframes.pFrameBuilder()
-	for k, v in mainPf {
-		pf.add(k, v.spec, v.data)
+	addAll := func(...srcPfs) {
+		for srcPf in srcPfs {
+			for k, v in srcPf {
+				pf.add(k, v.spec, v.data)
+			}
+		}
 	}
-	for k, v in groupPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in linkerPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in linkerAltPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in regionPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in linker2Pf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in nameLabelPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in groupLabelPf {
-		pf.add(k, v.spec, v.data)
-	}
-	for k, v in regionLabelPf {
-		pf.add(k, v.spec, v.data)
-	}
+	addAll(mainPf, groupPf, linkerPf, linkerAltPf, regionPf, linker2Pf,
+		nameLabelPf, groupLabelPf, regionLabelPf)
+	pf = pf.build()
 
 	return {
 		outputs: {
-			tableFrame: pframes.exportFrame(pf.build())
+			tableFrame: pframes.exportFrame(pf)
 		},
-		exports: {}
+		exports: {
+			tableFrame: pf
+		}
 	}
 })

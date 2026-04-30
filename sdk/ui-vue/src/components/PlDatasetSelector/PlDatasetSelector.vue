@@ -1,14 +1,14 @@
 <script lang="ts">
 /**
- * Select a dataset and (optionally) a filter column, emitting a `PrimaryRef`.
+ * Select a dataset and (optionally) a filter column, emitting a {@link DatasetSelection}.
  *
  * Behaves like {@link PlDropdownRef} when none of the offered datasets carry
  * filter options. When the selected dataset has compatible filters, a second
  * dropdown appears with the filters plus a "No filter" entry.
  *
- * Accepts `PrimaryRef | PlRef | undefined` as `modelValue` (a plain `PlRef`
- * is treated as an unfiltered dataset), but always emits `PrimaryRef`
- * (or `undefined` when cleared).
+ * The emitted value bundles the user's pick (`primary`) with the auto-attached
+ * `enrichments` payload from the matching `DatasetOption`. Enrichments are
+ * opaque to the UI — block authors unbundle them inside their args resolver.
  */
 export default {
   name: "PlDatasetSelector",
@@ -16,8 +16,8 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { DatasetOption, PlRef, PrimaryRef } from "@platforma-sdk/model";
-import { createPrimaryRef, isPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import type { DatasetOption, DatasetSelection, PlRef } from "@platforma-sdk/model";
+import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown, PlDropdownRef } from "@milaboratories/uikit";
 import { computed } from "vue";
@@ -26,11 +26,7 @@ const slots = defineSlots<{
   tooltip?: () => unknown;
 }>();
 
-/**
- * v-model value. Accepts `PrimaryRef`, plain `PlRef` (treated as unfiltered),
- * or `undefined`. Writes always emit `PrimaryRef` or `undefined`.
- */
-const model = defineModel<PrimaryRef | PlRef | undefined>();
+const model = defineModel<DatasetSelection | undefined>();
 
 const props = withDefaults(
   defineProps<{
@@ -75,22 +71,20 @@ const props = withDefaults(
   },
 );
 
-const selectedDataset = computed<PlRef | undefined>(() => {
-  const v = model.value;
-  if (v === undefined) return undefined;
-  return isPrimaryRef(v) ? v.column : v;
-});
+const selectedDataset = computed<PlRef | undefined>(() => model.value?.primary.column);
 
-const selectedFilter = computed<PlRef | undefined>(() => {
-  const v = model.value;
-  return isPrimaryRef(v) ? v.filter : undefined;
-});
+const selectedFilter = computed<PlRef | undefined>(() => model.value?.primary.filter);
 
 const currentDatasetOption = computed<DatasetOption | undefined>(() => {
   const dataset = selectedDataset.value;
   if (!dataset) return undefined;
-  return props.options?.find((o) => plRefsEqual(o.ref, dataset, true));
+  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
 });
+
+// PlDropdownRef expects `Option[]`; project the primary out of each entry.
+const primaryOptions = computed<readonly { ref: PlRef; label: string }[] | undefined>(() =>
+  props.options?.map((o) => o.primary),
+);
 
 const hasFilters = computed(() => (currentDatasetOption.value?.filters?.length ?? 0) > 0);
 
@@ -110,7 +104,14 @@ const filterOptions = computed<ListOption<PlRef | null>[]>(() => {
 const filterValue = computed<PlRef | null>(() => selectedFilter.value ?? null);
 
 function emitValue(dataset: PlRef | undefined, filter: PlRef | undefined) {
-  model.value = dataset === undefined ? undefined : createPrimaryRef(dataset, filter);
+  if (dataset === undefined) {
+    model.value = undefined;
+    return;
+  }
+  // Resolve from `props.options` directly — `currentDatasetOption` may not
+  // have recomputed yet when this runs synchronously inside a change handler.
+  const option = props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
+  model.value = createDatasetSelection(createPrimaryRef(dataset, filter), option?.enrichments);
 }
 
 function onDatasetChange(dataset: PlRef | undefined) {
@@ -128,7 +129,7 @@ function onFilterChange(value: PlRef | null | undefined) {
   <div class="pl-dataset-selector">
     <PlDropdownRef
       :model-value="selectedDataset"
-      :options="options"
+      :options="primaryOptions"
       :label="label"
       :helper="helper"
       :loading-options-helper="loadingOptionsHelper"
