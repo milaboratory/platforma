@@ -34,7 +34,7 @@ export function createPTableDefV2(params: {
 
   return createPTableDefV3({
     primary: coreColumns.map((column) => ({ column })),
-    secondary: secondaryColumns.map((column) => ({ entries: [{ column }] })),
+    secondary: secondaryColumns.map((column) => ({ hit: { column } })),
     primaryJoinType: params.coreJoinType,
     filters: params.filters,
     sorting: params.sorting,

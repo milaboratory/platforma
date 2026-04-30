@@ -25,13 +25,23 @@ export type PrimaryEntry<Data> = {
 /** Secondary side leaf — the hit column, a linker step, or a label column. */
 export type SecondaryEntry<Data> = {
   column: PColumn<Data>;
-  /** For hit: `forHit`. For linker step k: `path[k].qualifications`. For label/direct: omit. */
+  /** For hit: `forHit`. For label/direct: omit. */
   qualifications?: AxisQualification[];
 };
 
-/** Secondary group — one join subtree outer-joined onto primary. */
+/**
+ * Secondary group — one outerJoin secondary subtree.
+ *
+ * For direct hits `linkers` is omitted/empty and the group becomes a plain
+ * column leaf. For linked hits the chain is right-folded into nested
+ * `linkerJoin` operations (outermost-first), binding *this* hit to *this*
+ * linker chain so the engine cannot collapse variants whose intermediate
+ * axes share name + domain.
+ */
 export type SecondaryGroup<Data> = {
-  entries: SecondaryEntry<Data>[];
+  hit: SecondaryEntry<Data>;
+  /** Outermost-first linker chain. Omit for direct hits. */
+  linkers?: { column: PColumn<Data> }[];
   /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
    *  Keyed by `PrimaryEntry.column.id`. Omit → base primary used unqualified (labels, non-variant columns). */
   primaryQualifications?: Record<PObjectId, AxisQualification[]>;
@@ -58,9 +68,7 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
           params.primary.flatMap((p) => g.primaryQualifications?.[p.column.id] ?? []),
         ),
       },
-      secondary: params.secondary.flatMap((g) =>
-        g.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
-      ),
+      secondary: params.secondary.map(toSecondaryEntry),
     };
   }
 
@@ -111,4 +119,20 @@ function toLeaf<Data>(
     entry: { type: "column", column: col },
     qualifications: qs,
   };
+}
+
+function toSecondaryEntry<Data>(group: SecondaryGroup<Data>): SpecQueryJoinEntry<PColumn<Data>> {
+  const hitEntry = toLeaf(group.hit.column, group.hit.qualifications ?? []);
+  if (isNil(group.linkers) || group.linkers.length === 0) return hitEntry;
+  return group.linkers.reduceRight<SpecQueryJoinEntry<PColumn<Data>>>(
+    (inner, linker) => ({
+      entry: {
+        type: "linkerJoin",
+        linker: { column: linker.column },
+        secondary: [inner],
+      },
+      qualifications: [],
+    }),
+    hitEntry,
+  );
 }

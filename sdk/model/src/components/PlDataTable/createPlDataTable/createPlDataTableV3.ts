@@ -396,19 +396,14 @@ function buildSecondaryGroups(
   return [
     ...direct.map(
       (c): SecondaryGroup<undefined | PColumnDataUniversal> => ({
-        entries: [{ column: resolveSnapshot(c.column), qualifications: c.qualifications.forHit }],
+        hit: { column: resolveSnapshot(c.column), qualifications: c.qualifications.forHit },
         primaryQualifications: c.qualifications.forQueries,
       }),
     ),
     ...linked.map(
       (lc): SecondaryGroup<undefined | PColumnDataUniversal> => ({
-        entries: [
-          ...lc.path.map((s) => ({
-            column: resolveSnapshot(s.linker),
-            qualifications: s.qualifications,
-          })),
-          { column: resolveSnapshot(lc.column), qualifications: lc.qualifications.forHit },
-        ],
+        hit: { column: resolveSnapshot(lc.column), qualifications: lc.qualifications.forHit },
+        linkers: lc.path.map((s) => ({ column: resolveSnapshot(s.linker) })),
         primaryQualifications: lc.qualifications.forQueries,
       }),
     ),
