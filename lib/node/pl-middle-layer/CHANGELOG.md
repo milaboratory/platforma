@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.57.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-drivers@1.13.0
+  - @platforma-sdk/workflow-tengo@5.19.0
+  - @milaboratories/pl-model-common@1.38.0
+  - @platforma-sdk/model@1.71.0
+  - @milaboratories/pl-model-middle-layer@1.18.9
+  - @milaboratories/pf-spec-driver@1.3.8
+  - @milaboratories/pf-driver@1.4.4
+  - @milaboratories/pl-client@3.2.4
+  - @milaboratories/pl-deployments@2.17.11
+  - @platforma-sdk/block-tools@2.7.18
+  - @milaboratories/pl-model-backend@1.2.20
+  - @milaboratories/pl-errors@1.3.12
+  - @milaboratories/pl-tree@1.9.22
+
 ## 1.56.2
 
 ### Patch Changes

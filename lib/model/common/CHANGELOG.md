@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.38.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
 ## 1.37.0
 
 ### Minor Changes

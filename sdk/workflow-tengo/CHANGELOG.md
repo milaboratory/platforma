@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.19.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
 ## 5.18.0
 
 ### Minor Changes

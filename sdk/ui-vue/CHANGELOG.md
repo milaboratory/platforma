@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-model-common@1.38.0
+  - @platforma-sdk/model@1.71.0
+  - @milaboratories/pf-spec-driver@1.3.8
+  - @milaboratories/uikit@2.13.2
+
 ## 1.70.0
 
 ### Patch Changes

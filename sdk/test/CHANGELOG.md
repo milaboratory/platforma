@@ -1,5 +1,19 @@
 # @platforma-sdk/test
 
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-middle-layer@1.57.0
+  - @platforma-sdk/model@1.71.0
+  - @milaboratories/pl-client@3.2.4
+  - @milaboratories/pl-tree@1.9.22
+
 ## 1.70.0
 
 ### Patch Changes

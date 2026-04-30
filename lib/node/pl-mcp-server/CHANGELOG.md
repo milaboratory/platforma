@@ -1,5 +1,17 @@
 # @milaboratories/pl-mcp-server
 
+## 7.0.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-middle-layer@1.57.0
+  - @platforma-sdk/model@1.71.0
+
 ## 6.0.0
 
 ### Patch Changes
