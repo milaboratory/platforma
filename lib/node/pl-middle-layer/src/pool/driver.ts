@@ -37,7 +37,7 @@ import { parseDataInfoResource, traverseParquetChunkResource } from "./data";
 import { isDownloadNetworkError400 } from "@milaboratories/pl-drivers";
 
 function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
-  return String(res.ridNoSignature) as PFrameInternal.PFrameBlobId;
+  return String(res.id) as PFrameInternal.PFrameBlobId;
 }
 
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;

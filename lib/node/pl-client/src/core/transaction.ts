@@ -692,7 +692,7 @@ export class PlTransaction {
       // caching result even if we were ignore the cache
       if (isResourceId(rId) && this.finalPredicate(result)) {
         deepFreeze(result);
-        const fromCache = this.sharedResourceDataCache.get(rId as ResourceId);
+        const fromCache = this.sharedResourceDataCache.get(rId);
         if (fromCache) {
           if (loadFields && !fromCache.data) {
             fromCache.data = result;
@@ -703,13 +703,13 @@ export class PlTransaction {
           const basicData = extractBasicResourceData(result);
           deepFreeze(basicData);
           if (loadFields)
-            this.sharedResourceDataCache.set(rId as ResourceId, {
+            this.sharedResourceDataCache.set(rId, {
               basicData,
               data: result,
               cacheTxOpenTimestamp: this.txOpenTimestamp,
             });
           else
-            this.sharedResourceDataCache.set(rId as ResourceId, {
+            this.sharedResourceDataCache.set(rId, {
               basicData,
               data: undefined,
               cacheTxOpenTimestamp: this.txOpenTimestamp,

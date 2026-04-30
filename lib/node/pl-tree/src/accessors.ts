@@ -5,15 +5,9 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type {
-  ResourceId,
-  GlobalResourceId,
-  ResourceType,
-  OptionalResourceId,
-} from "@milaboratories/pl-client";
+import type { ResourceId, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
 import {
   resourceIdToString,
-  parseSignedResourceId,
   resourceTypesEqual,
   resourceTypeToString,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -77,22 +71,22 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
 
   constructor(
     private readonly accessorData: TreeAccessorData,
-    private readonly _rid: ResourceId,
+    public readonly rid: ResourceId, // only for runtime. Not exposing rid at all causes too much pain. Never persist this anywhere.
   ) {}
 
   public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.accessorData, this.accessorData.treeProvider(), this._rid, {
+    return new PlTreeEntryAccessor(this.accessorData, this.accessorData.treeProvider(), this.rid, {
       ctx,
       guard,
     });
   }
 
-  public get rid(): ResourceId {
-    return this._rid;
-  }
-
-  public get ridNoSignature(): GlobalResourceId {
-    return parseSignedResourceId(this._rid).globalId;
+  /**
+   * Tree TreeEntry ID suitable for persistence and use in names (files/objects/whatever), as it does not
+   * contain signature which can change from session to session.
+   */
+  public get id(): string {
+    return resourceIdToString(this.rid);
   }
 
   public toJSON(): string {
