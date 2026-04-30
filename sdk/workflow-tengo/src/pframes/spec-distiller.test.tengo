@@ -249,3 +249,39 @@ TestDiscriminativeDomainsAreSorted := func() {
 	// Verify the domains are sorted alphabetically
 	test.isEqual(["abc", "def", "xyz"], domains2)
 }
+
+// ptabler reads `pl7.app/isLinkerColumn` from the spec frame to populate
+// the linker index (`pframes-rs/.../frame.rs:90`); the distiller must
+// preserve it even though all other annotations are stripped.
+TestDistillerPreservesIsLinkerColumnAnnotation := func() {
+	specs := [
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "linker",
+			annotations: {
+				"pl7.app/label": "Sample-Gene Linker",
+				"pl7.app/isLinkerColumn": "true"
+			},
+			axesSpec: [
+				{ type: "String", name: "sample" },
+				{ type: "String", name: "gene" }
+			]
+		},
+		{
+			kind: "PColumn",
+			valueType: "Int",
+			name: "data",
+			annotations: { "pl7.app/label": "Some Data" },
+			axesSpec: [{ type: "String", name: "sample" }]
+		}
+	]
+
+	distiller := pSpec.createSpecDistiller(specs)
+
+	distilledLinker := distiller.distill(specs[0])
+	test.isEqual({ "pl7.app/isLinkerColumn": "true" }, distilledLinker.annotations)
+
+	distilledData := distiller.distill(specs[1])
+	test.isEqual(undefined, distilledData.annotations)
+}

@@ -46,7 +46,6 @@ function formatTooltip(entry: TooltipEntry): undefined | string {
 }
 
 const BULLET_1 = "  • ";
-const SUB_BULLET = "      ";
 
 function formatHeader(entry: TooltipEntry): undefined | string {
   const lines: string[] = [];
@@ -67,8 +66,6 @@ function formatOriginPath(entry: TooltipEntry): undefined | string {
       readAnnotation(step.linker.spec, Annotation.Label) ??
       step.linker.spec.name;
     lines.push(`${BULLET_1}linker ${i + 1}: ${label}`);
-    const qs = formatAxisQualifications(step.qualifications);
-    if (qs !== undefined) lines.push(`${SUB_BULLET}qualifies: ${qs}`);
   });
   const hitName = readAnnotation(entry.spec, Annotation.Label) ?? entry.spec.name;
   lines.push(`${BULLET_1}hit column: ${hitName}`);

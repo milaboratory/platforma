@@ -1,9 +1,8 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-filter-column.model";
 import type { platforma } from "@milaboratories/milaboratories.test-filter-column.model";
-import { blockSpec as enterNumbersBlockSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
-import type { BlockData as EnterNumbersBlockData } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
+import { blockSpec as tableTestBlockSpec } from "@milaboratories/milaboratories.test-block-table";
 import type { InferBlockState, Platforma } from "@platforma-sdk/model";
-import { createPrimaryRef, wrapOutputs } from "@platforma-sdk/model";
+import { createDatasetSelection, createPrimaryRef, wrapOutputs } from "@platforma-sdk/model";
 import type { ML, RawHelpers } from "@platforma-sdk/test";
 import { awaitStableState, blockTest } from "@platforma-sdk/test";
 import { blockSpec } from "this-block";
@@ -33,17 +32,11 @@ async function runAndGetOutputs<Pl extends Platforma>(
 }
 
 async function setupProject(project: ML.Project, helpers: RawHelpers) {
-  const enterNumbersId = await project.addBlock("Enter Numbers", enterNumbersBlockSpec);
-  await project.mutateBlockStorage(enterNumbersId, {
-    operation: "update-block-data",
-    value: {
-      numbers: [1, 2, 3],
-      labels: ["test"],
-      description: "test data",
-    } satisfies EnterNumbersBlockData,
-  });
-  await project.runBlock(enterNumbersId);
-  await helpers.awaitBlockDone(enterNumbersId, 30000);
+  // Upstream block exports primaries + linker chain; this block whitelists
+  // `value` / `description` as primaries, the rest become enrichments.
+  const tableTestId = await project.addBlock("Table Test Source", tableTestBlockSpec);
+  await project.runBlock(tableTestId);
+  await helpers.awaitBlockDone(tableTestId, 30000);
 
   const blockId = await project.addBlock("Filter Column Test", blockSpec);
   const outputs = await getStableOutputs<typeof platforma>(project, blockId);
@@ -52,47 +45,37 @@ async function setupProject(project: ML.Project, helpers: RawHelpers) {
 }
 
 blockTest(
-  "PrimaryRef → tableBuilder produces correct TSV",
+  "buildDatasetOptions surfaces whitelisted primaries from table-test",
   { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect }) => {
-    const { blockId, outputs } = await setupProject(project, helpers);
+    const { outputs } = await setupProject(project, helpers);
 
     const datasetOptions = outputs.datasetOptions;
     assert(datasetOptions !== undefined, "datasetOptions output missing");
-    assert(datasetOptions.length > 0, "no dataset options in result pool");
+    expect(datasetOptions.length).toBeGreaterThan(0);
 
-    await project.mutateBlockStorage(blockId, {
-      operation: "update-block-data",
-      value: { dataset: createPrimaryRef(datasetOptions[0].ref) } satisfies BlockData,
-    });
-
-    const finalOutputs = await runAndGetOutputs<typeof platforma>(project, helpers, blockId);
-
-    const tableContent = finalOutputs.tableContent;
-    assert(typeof tableContent === "string", "tableContent output missing");
-
-    const lines = tableContent.trim().split("\n");
-
-    // enter-numbers exports: axis "Index" + value "Numbers", 3 rows (0,1,2).
-    expect(lines[0]).toContain("Index");
-    expect(lines[0]).toContain("Numbers");
-    expect(lines.length).toBe(4); // header + 3 data rows
+    const labels = datasetOptions.map((o) => o.primary.label).sort();
+    expect(labels).toEqual(["Description", "Value"].sort());
   },
 );
 
 blockTest(
-  "plain PlRef normalized to PrimaryRef, tableBuilder produces correct TSV",
+  "PrimaryRef → tableBuilder produces a TSV for the picked primary",
   { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect }) => {
     const { blockId, outputs } = await setupProject(project, helpers);
 
     const datasetOptions = outputs.datasetOptions;
     assert(datasetOptions !== undefined, "datasetOptions output missing");
-    assert(datasetOptions.length > 0, "no dataset options in result pool");
+
+    const valueOption = datasetOptions.find((o) => o.primary.label === "Value");
+    assert(valueOption !== undefined, "no `Value` option");
 
     await project.mutateBlockStorage(blockId, {
       operation: "update-block-data",
-      value: { dataset: datasetOptions[0].ref } satisfies BlockData,
+      value: {
+        dataset: createDatasetSelection(createPrimaryRef(valueOption.primary.ref)),
+      } satisfies BlockData,
     });
 
     const finalOutputs = await runAndGetOutputs<typeof platforma>(project, helpers, blockId);
@@ -101,6 +84,44 @@ blockTest(
     assert(typeof tableContent === "string", "tableContent output missing");
 
     const lines = tableContent.trim().split("\n");
-    expect(lines.length).toBe(4);
+    expect(lines.length).toBe(6); // header + 5 rows (A–E on `name`)
+    expect(lines[0]).toContain("Value");
+  },
+);
+
+blockTest(
+  "EnrichmentRef from buildDatasetOptions joins via the linker column",
+  { timeout: 60000 },
+  async ({ rawPrj: project, helpers, expect }) => {
+    const { blockId, outputs } = await setupProject(project, helpers);
+
+    const datasetOptions = outputs.datasetOptions;
+    assert(datasetOptions !== undefined, "datasetOptions output missing");
+
+    const enriched = datasetOptions.find(
+      (o) => (o.enrichments?.length ?? 0) > 0 && o.primary.label === "Value",
+    );
+    assert(enriched !== undefined, "no option with enrichments for `Value`");
+    assert(enriched.enrichments !== undefined && enriched.enrichments.length > 0);
+
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: {
+        dataset: createDatasetSelection(
+          createPrimaryRef(enriched.primary.ref),
+          enriched.enrichments,
+        ),
+      } satisfies BlockData,
+    });
+
+    const finalOutputs = await runAndGetOutputs<typeof platforma>(project, helpers, blockId);
+
+    const tsv = finalOutputs.tableContentLinker;
+    assert(typeof tsv === "string", "tableContentLinker output missing");
+
+    const lines = tsv.trim().split("\n");
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    expect(lines[0]).toContain("Name");
+    expect(lines[0]).toContain("Value");
   },
 );

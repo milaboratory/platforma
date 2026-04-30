@@ -1,6 +1,6 @@
 import { Branded, throwError } from "@milaboratories/helpers";
 import { PObjectId } from "../../../pool";
-import { AxisQualification } from "../spec_driver";
+import { AxisQualification } from "./selectors";
 import { canonicalizeJson } from "../../../json";
 
 export type DiscoveredPColumn = {
@@ -15,7 +15,6 @@ export type DiscoveredPColumnId = Branded<PObjectId, "DiscoveredPColumnId">; // 
 type PathItem = {
   type: "linker";
   column: PObjectId;
-  qualifications: AxisQualification[];
 };
 
 export function isDiscoveredPColumn(obj: unknown): obj is DiscoveredPColumn {
