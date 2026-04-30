@@ -290,7 +290,7 @@ export function bigintToResourceId(globalId: bigint, signature?: ResourceSignatu
 
   const idStr = resourceIdToString(globalId as GlobalResourceId);
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return `${idStr}|${sigHex}` as SignedResourceId;
+  return `${idStr}|${sigHex}` as SignedResourceId; // lint-allow-cast
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
