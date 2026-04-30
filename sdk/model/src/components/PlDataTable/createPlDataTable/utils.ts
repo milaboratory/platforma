@@ -17,7 +17,7 @@ import {
   deriveDistinctTooltips,
   type TooltipEntry,
 } from "../../../labels/derive_distinct_tooltips";
-import type { MatchQualifications, MatchVariant } from "../../../columns";
+import type { ColumnDataStatus, MatchQualifications, MatchVariant } from "../../../columns";
 import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector } from "../../../columns";
 import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
@@ -130,7 +130,10 @@ function dedupeById(columns: RuleColumn[]): RuleColumn[] {
  * For each axis in column specs: writes derived axis label into AxisSpec annotations.
  */
 export function withLabelAnnotations<
-  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
+  T extends {
+    readonly id: PObjectId;
+    readonly spec: PColumnSpec;
+  },
 >(derivedLabels: undefined | Record<string, string>, columns: T[]): T[] {
   if (derivedLabels === undefined) return columns;
   return columns.map((col) => {
@@ -148,6 +151,26 @@ export function withLabelAnnotations<
             ? axis
             : { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } };
         }),
+      },
+    } as T;
+  });
+}
+
+export function withDataStatusAnnotations<
+  T extends {
+    readonly spec: PColumnSpec;
+    readonly dataStatus: ColumnDataStatus;
+  },
+>(columns: T[]): T[] {
+  return columns.map((col) => {
+    return {
+      ...col,
+      spec: {
+        ...col.spec,
+        annotations: {
+          ...col.spec.annotations,
+          [Annotation.DataStatus]: col.dataStatus,
+        },
       },
     } as T;
   });
