@@ -51,7 +51,7 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
         valueFormatter: (params) => {
           const formatted = formatSpecialValues(params.value, dataStatus);
           if (formatted !== undefined) return formatted;
-          return formatFn ? formatFn(Number(params.value)) : params.value!.toString();
+          return formatFn ? formatFn(Number(params.value)) : (params.value?.toString() ?? "");
         },
       };
       break;
@@ -64,7 +64,7 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
             readAnnotation(spec.spec, Annotation.DataStatus),
           );
           if (formatted !== undefined) return formatted;
-          return params.value!.toString();
+          return params.value?.toString() ?? "";
         },
       };
       break;

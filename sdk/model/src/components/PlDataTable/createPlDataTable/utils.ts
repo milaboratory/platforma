@@ -6,10 +6,8 @@ import {
   Annotation,
   canonicalizeAxisId,
   DiscoveredPColumnId,
-  isDataInfo,
   readAnnotation,
   readAnnotationJson,
-  visitDataInfo,
 } from "@milaboratories/pl-model-common";
 import {
   deriveDistinctLabels,
@@ -19,12 +17,11 @@ import {
   deriveDistinctTooltips,
   type TooltipEntry,
 } from "../../../labels/derive_distinct_tooltips";
-import type { ColumnData, MatchQualifications, MatchVariant } from "../../../columns";
+import type { ColumnDataStatus, MatchQualifications, MatchVariant } from "../../../columns";
 import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector } from "../../../columns";
 import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
 import { isNil } from "es-toolkit";
-import { PColumnDataUniversal, TreeNodeAccessor } from "../../../render";
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
@@ -162,36 +159,9 @@ export function withLabelAnnotations<
 export function withDataStatusAnnotations<
   T extends {
     readonly spec: PColumnSpec;
-    readonly data: ColumnData<undefined | PColumnDataUniversal> | undefined;
+    readonly dataStatus: ColumnDataStatus;
   },
 >(columns: T[]): T[] {
-  const getStatus = (
-    d: undefined | PColumnDataUniversal | (() => undefined | PColumnDataUniversal),
-  ): "absent" | "computing" | "ready" => {
-    if (d == null) {
-      return "absent";
-    }
-    if (typeof d === "function") {
-      return getStatus(d());
-    }
-    if (d instanceof TreeNodeAccessor) {
-      if (d.getIsReadyOrError()) return "ready";
-      if (d.getIsFinal()) return "absent";
-      return "computing";
-    }
-    if (isDataInfo(d)) {
-      let ready = true;
-      let final = true;
-      visitDataInfo(d, (v) => {
-        ready &&= v.getIsReadyOrError();
-        final &&= v.getIsFinal();
-      });
-      if (ready) return "ready";
-      if (final) return "absent";
-      return "computing";
-    }
-    return "ready"; // PColumnValues
-  };
   return columns.map((col) => {
     return {
       ...col,
@@ -199,7 +169,7 @@ export function withDataStatusAnnotations<
         ...col.spec,
         annotations: {
           ...col.spec.annotations,
-          [Annotation.DataStatus]: getStatus(col.data?.get()),
+          [Annotation.DataStatus]: col.dataStatus,
         },
       },
     } as T;
