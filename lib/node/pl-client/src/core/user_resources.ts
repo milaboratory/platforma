@@ -45,15 +45,19 @@ export type TxRunner = <T>(
   body: (tx: PlTransaction) => Promise<T>,
 ) => Promise<T>;
 
+type BackendCapability = "getUserRoot" | "listUserResources" | "legacy";
+
 /**
  * Abstracts user resource discovery with backward compatibility.
  *
- * Detects whether the backend supports listUserResources (new path) or
- * requires named resource lookup (legacy path). The detection happens
- * on the first getUserRoot() call and is remembered for subsequent calls.
+ * Detects backend capability on the first getUserRoot() call and remembers
+ * the result. Three-tier fallback:
+ * 1. getUserRoot RPC (newest, supports doNotCreate)
+ * 2. listUserResources RPC (streams all resources, picks userRoot)
+ * 3. Named resource lookup/creation via transaction (legacy)
  */
 export class UserResources {
-  private supportsListUserResources: boolean | undefined;
+  private backendCapability: BackendCapability | undefined;
 
   constructor(
     private readonly ll: LLPlClient,
@@ -64,9 +68,10 @@ export class UserResources {
   /**
    * Returns the user's root resource ID.
    *
-   * On first call, detects backend capability:
-   * - New path: listUserResources RPC returns the root directly
-   * - Legacy path: named resource lookup/creation via transaction
+   * On first call, detects backend capability by trying methods in order:
+   * 1. getUserRoot RPC (newest)
+   * 2. listUserResources RPC
+   * 3. Named resource lookup/creation via transaction (legacy)
    */
   async getUserRoot(): Promise<ResourceId>;
   async getUserRoot(opts: { login?: string }): Promise<ResourceId>;
@@ -75,23 +80,50 @@ export class UserResources {
   async getUserRoot(
     opts: { login?: string; doNotCreate?: boolean } = {},
   ): Promise<ResourceId | undefined> {
-    if (this.supportsListUserResources === undefined) {
-      // First call — detect backend capability
-      try {
-        const root = await this.getUserRootViaList(opts);
-        this.supportsListUserResources = true;
-        return root;
-      } catch (err) {
-        if (!isUnimplementedError(err)) throw err;
-        this.supportsListUserResources = false;
-        return await this.getUserRootViaLegacy(opts);
-      }
+    if (this.backendCapability === undefined) {
+      return await this.detectAndGetUserRoot(opts);
+    }
+    return await this.getUserRootWith(this.backendCapability, opts);
+  }
+
+  private async detectAndGetUserRoot(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    // 1. Try getUserRoot RPC
+    try {
+      const root = await this.getUserRootViaRpc(opts);
+      this.backendCapability = "getUserRoot";
+      return root;
+    } catch (err) {
+      if (!isUnimplementedError(err)) throw err;
     }
 
-    if (this.supportsListUserResources) {
-      return await this.getUserRootViaList(opts);
+    // 2. Try listUserResources
+    try {
+      const root = await this.getUserRootViaList(opts);
+      this.backendCapability = "listUserResources";
+      return root;
+    } catch (err) {
+      if (!isUnimplementedError(err)) throw err;
     }
+
+    // 3. Legacy fallback
+    this.backendCapability = "legacy";
     return await this.getUserRootViaLegacy(opts);
+  }
+
+  private async getUserRootWith(
+    capability: BackendCapability,
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    switch (capability) {
+      case "getUserRoot":
+        return await this.getUserRootViaRpc(opts);
+      case "listUserResources":
+        return await this.getUserRootViaList(opts);
+      case "legacy":
+        return await this.getUserRootViaLegacy(opts);
+    }
   }
 
   /**
@@ -101,26 +133,57 @@ export class UserResources {
   async getDataLibraries(
     opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
   ): Promise<ReadonlyMap<string, StorageInfo>> {
-    if (this.supportsListUserResources === undefined) {
+    if (this.backendCapability === undefined) {
       // First call — detect backend capability
       try {
         const libs = await this.getDataLibrariesViaList(opts);
-        this.supportsListUserResources = true;
+        // getUserRoot RPC doesn't return libraries, but listUserResources does;
+        // record at least "listUserResources" so future getUserRoot calls don't re-detect.
+        this.backendCapability = "listUserResources";
         return libs;
       } catch (err) {
         if (!isUnimplementedError(err)) throw err;
-        this.supportsListUserResources = false;
+        this.backendCapability = "legacy";
         return await this.getDataLibrariesViaLegacy();
       }
     }
 
-    if (this.supportsListUserResources) {
+    // A server that supports getUserRoot definitely supports listUserResources.
+    if (this.backendCapability !== "legacy") {
       return await this.getDataLibrariesViaList(opts);
     }
     return await this.getDataLibrariesViaLegacy();
   }
 
-  // --- New path: listUserResources ---
+  // --- Newest path: getUserRoot RPC ---
+
+  private async getUserRootViaRpc(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaRpc(opts: {
+    login?: string;
+    doNotCreate: false;
+  }): Promise<ResourceId>;
+  private async getUserRootViaRpc(opts: {
+    login?: string;
+    doNotCreate: true;
+  }): Promise<ResourceId | undefined>;
+  private async getUserRootViaRpc(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    const resp = await this.ll.getUserRoot({
+      login: opts.login,
+      doNotCreate: opts.doNotCreate,
+    });
+    if (resp.userRoot === undefined) {
+      if (opts.doNotCreate) return undefined;
+      throw new Error("getUserRoot returned no userRoot entry");
+    }
+    return bigintToResourceId(
+      resp.userRoot.resourceId,
+      toResourceSignature(resp.userRoot.resourceSignature),
+    );
+  }
+
+  // --- listUserResources path ---
 
   private async getUserRootViaList(opts: { login?: string }): Promise<ResourceId>;
   private async getUserRootViaList(opts: {

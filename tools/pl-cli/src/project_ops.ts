@@ -1,10 +1,5 @@
 import type { PlClient, ResourceId, PlTransaction } from "@milaboratories/pl-client";
-import {
-  field,
-  isNullResourceId,
-  isUnimplementedError,
-  resourceIdToString,
-} from "@milaboratories/pl-client";
+import { field, isNullResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import {
   ProjectMetaKey,
   ProjectCreatedTimestamp,
@@ -15,7 +10,6 @@ import {
   duplicateProject,
 } from "@milaboratories/pl-middle-layer";
 import type { ProjectMeta } from "@milaboratories/pl-middle-layer";
-import { createHash } from "node:crypto";
 
 export interface ProjectEntry {
   id: string;
@@ -241,29 +235,15 @@ export async function navigateToUserRoot(
 ): Promise<{ userRoot: ResourceId; projectListRid: ResourceId }> {
   let userRootRid: ResourceId | undefined;
 
-  // Try new ListUserResources API first
-  try {
-    userRootRid = await pl.getUserRoot({ login: username });
-  } catch (err) {
-    if (!isUnimplementedError(err)) throw err;
-    // Backend doesn't support ListUserResources — fall through to legacy
-  }
-
-  // Legacy fallback: SHA256 named resource lookup
+  userRootRid = await pl.getUserRoot({ login: username, doNotCreate: true });
   if (userRootRid === undefined) {
-    const rootName = createHash("sha256").update(username).digest("hex");
-    userRootRid = await pl.withReadTx("navigateToUserRoot:legacy", async (tx) => {
-      if (!(await tx.checkResourceNameExists(rootName))) {
-        throw new Error(`User "${username}" not found on this server (no root resource).`);
-      }
-      return await tx.getResourceByName(rootName);
-    });
+    throw new Error(`User "${username}" not found on this server (no root resource).`);
   }
 
   // Read the projects field from the resolved user root
-  return await pl.withReadTx("navigateToUserRoot", async (tx) => {
+  return await pl.withReadTx("navigateToUserProjects", async (tx) => {
     const projectsFieldData = await tx.getField({
-      resourceId: userRootRid!,
+      resourceId: userRootRid,
       fieldName: ProjectsField,
     });
 
@@ -271,7 +251,7 @@ export async function navigateToUserRoot(
       throw new Error(`User "${username}" has no project list.`);
     }
 
-    return { userRoot: userRootRid!, projectListRid: projectsFieldData.value };
+    return { userRoot: userRootRid, projectListRid: projectsFieldData.value };
   });
 }
 

@@ -12,6 +12,8 @@ import type { MiscAPI_ListResourceTypes_Response } from "./api";
 import type { MiscAPI_ListResourceTypes_Request } from "./api";
 import type { AuthAPI_ListUserResources_Response } from "./api";
 import type { AuthAPI_ListUserResources_Request } from "./api";
+import type { AuthAPI_GetUserRoot_Response } from "./api";
+import type { AuthAPI_GetUserRoot_Request } from "./api";
 import type { AuthAPI_MintSignature_Response } from "./api";
 import type { AuthAPI_MintSignature_Request } from "./api";
 import type { AuthAPI_ListGrants_Response } from "./api";
@@ -21,6 +23,8 @@ import type { AuthAPI_RevokeAccess_Response } from "./api";
 import type { AuthAPI_RevokeAccess_Request } from "./api";
 import type { AuthAPI_GrantAccess_Response } from "./api";
 import type { AuthAPI_GrantAccess_Request } from "./api";
+import type { AuthAPI_GetSessionInfo_Response } from "./api";
+import type { AuthAPI_GetSessionInfo_Request } from "./api";
 import type { AuthAPI_GetJWTToken_Response } from "./api";
 import type { AuthAPI_GetJWTToken_Request } from "./api";
 import type { AuthAPI_ListMethods_Response } from "./api";
@@ -213,6 +217,10 @@ export interface IPlatformClient {
      */
     getJWTToken(input: AuthAPI_GetJWTToken_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetJWTToken_Request, AuthAPI_GetJWTToken_Response>;
     /**
+     * @generated from protobuf rpc: GetSessionInfo
+     */
+    getSessionInfo(input: AuthAPI_GetSessionInfo_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetSessionInfo_Request, AuthAPI_GetSessionInfo_Response>;
+    /**
      * @generated from protobuf rpc: GrantAccess
      */
     grantAccess(input: AuthAPI_GrantAccess_Request, options?: RpcOptions): UnaryCall<AuthAPI_GrantAccess_Request, AuthAPI_GrantAccess_Response>;
@@ -232,6 +240,10 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: MintSignature
      */
     mintSignature(input: AuthAPI_MintSignature_Request, options?: RpcOptions): UnaryCall<AuthAPI_MintSignature_Request, AuthAPI_MintSignature_Response>;
+    /**
+     * @generated from protobuf rpc: GetUserRoot
+     */
+    getUserRoot(input: AuthAPI_GetUserRoot_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetUserRoot_Request, AuthAPI_GetUserRoot_Response>;
     /**
      * @generated from protobuf rpc: ListUserResources
      */
@@ -474,24 +486,31 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         return stackIntercept<AuthAPI_GetJWTToken_Request, AuthAPI_GetJWTToken_Response>("unary", this._transport, method, opt, input);
     }
     /**
+     * @generated from protobuf rpc: GetSessionInfo
+     */
+    getSessionInfo(input: AuthAPI_GetSessionInfo_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetSessionInfo_Request, AuthAPI_GetSessionInfo_Response> {
+        const method = this.methods[24], opt = this._transport.mergeOptions(options);
+        return stackIntercept<AuthAPI_GetSessionInfo_Request, AuthAPI_GetSessionInfo_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
      * @generated from protobuf rpc: GrantAccess
      */
     grantAccess(input: AuthAPI_GrantAccess_Request, options?: RpcOptions): UnaryCall<AuthAPI_GrantAccess_Request, AuthAPI_GrantAccess_Response> {
-        const method = this.methods[24], opt = this._transport.mergeOptions(options);
+        const method = this.methods[25], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_GrantAccess_Request, AuthAPI_GrantAccess_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: RevokeAccess
      */
     revokeAccess(input: AuthAPI_RevokeAccess_Request, options?: RpcOptions): UnaryCall<AuthAPI_RevokeAccess_Request, AuthAPI_RevokeAccess_Response> {
-        const method = this.methods[25], opt = this._transport.mergeOptions(options);
+        const method = this.methods[26], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_RevokeAccess_Request, AuthAPI_RevokeAccess_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: ListGrants
      */
     listGrants(input: AuthAPI_ListGrants_Request, options?: RpcOptions): ServerStreamingCall<AuthAPI_ListGrants_Request, AuthAPI_ListGrants_Response> {
-        const method = this.methods[26], opt = this._transport.mergeOptions(options);
+        const method = this.methods[27], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_ListGrants_Request, AuthAPI_ListGrants_Response>("serverStreaming", this._transport, method, opt, input);
     }
     /**
@@ -502,14 +521,21 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: MintSignature
      */
     mintSignature(input: AuthAPI_MintSignature_Request, options?: RpcOptions): UnaryCall<AuthAPI_MintSignature_Request, AuthAPI_MintSignature_Response> {
-        const method = this.methods[27], opt = this._transport.mergeOptions(options);
+        const method = this.methods[28], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_MintSignature_Request, AuthAPI_MintSignature_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * @generated from protobuf rpc: GetUserRoot
+     */
+    getUserRoot(input: AuthAPI_GetUserRoot_Request, options?: RpcOptions): UnaryCall<AuthAPI_GetUserRoot_Request, AuthAPI_GetUserRoot_Response> {
+        const method = this.methods[29], opt = this._transport.mergeOptions(options);
+        return stackIntercept<AuthAPI_GetUserRoot_Request, AuthAPI_GetUserRoot_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: ListUserResources
      */
     listUserResources(input: AuthAPI_ListUserResources_Request, options?: RpcOptions): ServerStreamingCall<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response> {
-        const method = this.methods[28], opt = this._transport.mergeOptions(options);
+        const method = this.methods[30], opt = this._transport.mergeOptions(options);
         return stackIntercept<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response>("serverStreaming", this._transport, method, opt, input);
     }
     /**
@@ -520,7 +546,7 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: ListResourceTypes
      */
     listResourceTypes(input: MiscAPI_ListResourceTypes_Request, options?: RpcOptions): UnaryCall<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response> {
-        const method = this.methods[29], opt = this._transport.mergeOptions(options);
+        const method = this.methods[31], opt = this._transport.mergeOptions(options);
         return stackIntercept<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -531,14 +557,14 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
-        const method = this.methods[30], opt = this._transport.mergeOptions(options);
+        const method = this.methods[32], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
-        const method = this.methods[31], opt = this._transport.mergeOptions(options);
+        const method = this.methods[33], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
     }
 }

@@ -189,6 +189,12 @@ service Platform {
       body: "*"
     };
   }
+  rpc GetSessionInfo(AuthAPI.GetSessionInfo.Request) returns (AuthAPI.GetSessionInfo.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/session-info"
+      body: "*"
+    };
+  }
 
   rpc GrantAccess(AuthAPI.GrantAccess.Request) returns (AuthAPI.GrantAccess.Response) {
     option (google.api.http) = {
@@ -212,6 +218,12 @@ service Platform {
   rpc MintSignature(AuthAPI.MintSignature.Request) returns (AuthAPI.MintSignature.Response) {
     option (google.api.http) = {
       post: "/v1/auth/mint-signature"
+      body: "*"
+    };
+  }
+  rpc GetUserRoot(AuthAPI.GetUserRoot.Request) returns (AuthAPI.GetUserRoot.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/user-root"
       body: "*"
     };
   }
@@ -1482,14 +1494,19 @@ message AuthAPI {
     }
   }
 
-  message GetJWTToken {
-    enum Role {
-      ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role
-      USER = 1;
-      CONTROLLER = 2;
-      WORKFLOW = 3;
-    }
+  enum Role {
+    ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role. Never appears in server responses.
+    
+    // Controller roles
+    ROLE_CONTROLLER = 2;
+    ROLE_WORKFLOW = 3;
 
+    // User roles
+    ROLE_USER = 1;
+    ROLE_ADMIN = 4;
+  }
+
+  message GetJWTToken {
     message Request {
       google.protobuf.Duration expiration = 1;
       optional Role requested_role = 2;
@@ -1497,7 +1514,20 @@ message AuthAPI {
 
     message Response {
       string token = 1;
+      
+      // Session info fields
       bytes session_id = 2;
+      Role role = 3;
+    }
+  }
+
+  message GetSessionInfo {
+    message Request {
+    }
+
+    message Response {
+      bytes session_id = 1;
+      Role role = 2;
     }
   }
 
@@ -1566,6 +1596,22 @@ message AuthAPI {
     }
   }
 
+  message UserRoot {
+    uint64 resource_id = 1;
+    bytes resource_signature = 2;
+  }
+
+  message GetUserRoot {
+    message Request {
+      string login = 1;
+      bool do_not_create = 2;
+    }
+
+    message Response {
+      UserRoot user_root = 1;
+    }
+  }
+
   message ListUserResources {
     message Request {
       // User login to list resources for.
@@ -1593,11 +1639,6 @@ message AuthAPI {
       // Set only on the last message when limit > 0 and more items exist.
       // Use as 'start_from' in the next request to continue listing.
       uint64 next_resource_id = 3;
-    }
-
-    message UserRoot {
-      uint64 resource_id = 1;
-      bytes resource_signature = 2;
     }
 
     message SharedResource {
