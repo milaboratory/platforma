@@ -1,0 +1,289 @@
+// pframes batch split — renders body per batch, then concatenates batch outputs
+// via pt.concat and does a single xsv.importFile.
+//
+// Two input modes driven by passContent:
+// - passContent=false: orchestrator passes N per-batch Blob refs as separately
+//   named inputs (__batch_<i>__). Each blob flows through to the body unchanged.
+//   Peak Tengo memory is O(1) references.
+// - passContent=true: orchestrator passes a single content-carrying resource
+//   (`joinedContent`). The split template reads it once, slices lines in Tengo,
+//   and wraps each batch in a fresh JsonResource for the body. Memory is
+//   O(scope_size) — the cost the developer accepted by choosing passContent=true.
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+render := import(":render")
+smart := import(":smart")
+pt := import(":pt")
+assets := import(":assets")
+pConstants := import(":pframes.constants")
+pUtil := import(":pframes.util")
+xsv := import(":pframes.xsv")
+text := import("text")
+
+json := import("json")
+
+mergeResourceMapsTpl := assets.importTemplate(":pframes.merge-resource-maps")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+self.awaitState({ wildcard: "*" }, "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	body := inputs.body
+
+	batchCount := params.batchCount
+	batchSize := params.batchSize
+	eph := params.eph
+	outputs := params.outputs
+	formatExt := params.formatExt
+	if is_undefined(formatExt) {
+		formatExt = "tsv"
+	}
+	passContent := params.passContent
+	if is_undefined(passContent) {
+		passContent = false
+	}
+	// Optional per-batch cache duration (opts.stepCache in the public API),
+	// passed as a meta input so it doesn't affect the split template's hash.
+	// Applied to the body render's top-level output field via render.output(name, cache).
+	stepCache := inputs.stepCache
+
+	// Prepare output collectors.
+	// Xsv: collect per-batch output file refs to concatenate later via pt.concat.
+	// ResourceMap: collect per-batch body results to merge via merge-resource-maps.
+	xsvBatchFiles := {}
+	resourceMapBatchResults := {}
+
+	for output in outputs {
+		if output.type == "Xsv" {
+			xsvBatchFiles[output.name] = []
+		} else if output.type == "ResourceMap" {
+			resourceMapBatchResults[output.name] = []
+		}
+	}
+
+	// Collect extra/meta inputs to forward to body template.
+	// __extra_: passed as regular body inputs (name stripped of prefix).
+	// __meta_:  passed as meta inputs (see metaInputs option on render.createUniversal).
+	extraInputs := {}
+	metaInputs := {}
+	for name, field in self.rawInputs() {
+		if text.has_prefix(name, "__extra_") {
+			extraInputs[name[8:]] = field
+		} else if text.has_prefix(name, "__meta_") {
+			metaInputs[name[7:]] = field
+		}
+	}
+
+	rawInputs := self.rawInputs()
+
+	// Extract raw content from a resource/field/string input, without double-copy.
+	_readContent := func(x) {
+		if is_string(x) {
+			return x
+		}
+		if smart.isField(x) {
+			return x.getValue().getData()
+		}
+		if smart.isResource(x) {
+			return x.getData()
+		}
+		ll.panic("expected string/field/resource, got: %v", x)
+	}
+
+	// Pre-split content lines once for passContent=true mode.
+	// The orchestrator passes the full per-scope joined file; we reconstruct
+	// per-batch content by slicing lines.
+	// NDJSON has no header row — each line is an independent record. TSV/CSV
+	// have a single leading header that must be prepended to every batch.
+	header := undefined
+	dataLines := undefined
+	hasHeader := passContent && formatExt != "ndjson"
+	if passContent {
+		ll.assert(!is_undefined(inputs.joinedContent),
+			"passContent=true but joinedContent input is missing")
+		lines := text.split(_readContent(inputs.joinedContent), "\n")
+		for len(lines) > 0 && lines[len(lines)-1] == "" {
+			lines = lines[:len(lines)-1]
+		}
+		if hasHeader {
+			if len(lines) > 0 {
+				header = lines[0]
+				dataLines = lines[1:]
+			} else {
+				header = ""
+				dataLines = []
+			}
+		} else {
+			header = ""
+			dataLines = lines
+		}
+	}
+
+	// Process each batch
+	for batchIdx := 0; batchIdx < batchCount; batchIdx++ {
+		valueInput := undefined
+		if passContent {
+			startLine := batchIdx * batchSize
+			endLine := startLine + batchSize
+			if endLine > len(dataLines) {
+				endLine = len(dataLines)
+			}
+			batchLines := dataLines[startLine:endLine]
+			batchContent := ""
+			if hasHeader {
+				batchContent = header + "\n" + text.join(batchLines, "\n") + "\n"
+			} else {
+				batchContent = text.join(batchLines, "\n") + "\n"
+			}
+			valueInput = smart.createJsonResource(batchContent)
+		} else {
+			batchInputName := "__batch_" + string(batchIdx) + "__"
+			valueInput = rawInputs[batchInputName]
+			ll.assert(!is_undefined(valueInput), "batch input not found: %v", batchInputName)
+		}
+
+		// Build render inputs for body template
+		renderInputs := {}
+		renderInputs[pConstants.VALUE_FIELD_NAME] = valueInput
+
+		for k, v in extraInputs {
+			renderInputs[k] = v
+		}
+
+		renderOpts := undefined
+		if len(metaInputs) > 0 {
+			renderOpts = { metaInputs: metaInputs }
+		}
+		batchResult := undefined
+		if is_undefined(renderOpts) {
+			batchResult = render.createUniversal(body, eph, renderInputs)
+		} else {
+			batchResult = render.createUniversal(body, eph, renderInputs, renderOpts)
+		}
+
+		// Collect outputs from batch result.
+		// render.resolveOutput handles both string path elements and `{name, optional}`
+		// maps — no manual per-step traversal. Optional-missing outputs resolve to a
+		// null field and are skipped (avoids feeding undefined refs into pt.concat etc.).
+		applyCache := !is_undefined(stepCache) && stepCache > 0
+		for output in outputs {
+			outputPath := output.path
+			if is_undefined(outputPath) || len(outputPath) == 0 {
+				outputPath = [output.name]
+			}
+
+			batchOutputRef := batchResult.resolveOutput(outputPath)
+			if is_undefined(batchOutputRef) {
+				continue
+			}
+			if applyCache {
+				batchOutputRef.setCache(stepCache)
+			}
+
+			if output.type == "Xsv" {
+				xsvBatchFiles[output.name] = append(xsvBatchFiles[output.name], batchOutputRef)
+			} else if output.type == "ResourceMap" {
+				resourceMapBatchResults[output.name] = append(resourceMapBatchResults[output.name], batchOutputRef)
+			}
+		}
+	}
+
+	// Post-process Xsv outputs: concatenate batch files via pt, then import once.
+	result := {}
+
+	for output in outputs {
+		if output.type == "ResourceMap" {
+			// Merge per-batch ResourceMap outputs into a flat ResourceMap whose keys
+			// are the union of all batch-returned keys.
+			batchRMs := resourceMapBatchResults[output.name]
+			if len(batchRMs) == 0 {
+				result[output.name] = smart.structBuilder(
+					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: output.keyLength })
+				).lockAndBuild()
+			} else if len(batchRMs) == 1 {
+				// Single batch — pass-through
+				result[output.name] = batchRMs[0]
+			} else {
+				// Multiple batches — merge via merge-resource-maps template
+				mergeInputs := {}
+				for i, rm in batchRMs {
+					mergeInputs["src_" + string(i)] = rm
+				}
+				mergeResult := render.createEphemeral(mergeResourceMapsTpl, mergeInputs)
+				result[output.name] = mergeResult.output("result")
+			}
+		} else if output.type == "Xsv" {
+			batchFiles := xsvBatchFiles[output.name]
+			xsvType := output.xsvType
+			if is_undefined(xsvType) {
+				xsvType = formatExt
+			}
+
+			// No batch produced this (optional) output in this scope — emit an
+			// empty typed data resource per declared column so downstream
+			// consumers still see a well-formed (empty) PColumn. Skip the
+			// concat+import path entirely (pt.concat([]) would panic).
+			// partitionKeyLength matches the batch-key shape (same convention
+			// as the orchestrator's empty-scope fallback), and no partitions
+			// are added.
+			if len(batchFiles) == 0 {
+				batchKeyLength := len(params.batchKeyHeaders)
+				for column in output.settings.columns {
+					id := pUtil.xsvColumnId(column)
+					result[output.name + "/" + id] = smart.structBuilder(
+						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+						json.encode({ partitionKeyLength: batchKeyLength })
+					).lockAndBuild()
+				}
+				continue
+			}
+
+			mergedFile := undefined
+			if len(batchFiles) == 1 {
+				// Single batch — pass-through
+				mergedFile = batchFiles[0]
+			} else {
+				// Concatenate all batch files via pt
+				wf := pt.workflow()
+				frames := []
+				for i, f in batchFiles {
+					frames = append(frames, wf.frame(f, { xsvType: xsvType, id: "batch_" + string(i) }))
+				}
+				concatDf := pt.concat(frames)
+				mergedName := "merged." + xsvType
+				concatDf.save(mergedName, { format: xsvType })
+				ptResult := wf.run()
+				mergedFile = ptResult.getFile(mergedName)
+			}
+
+			// Single xsv.importFile on the merged file. Per-output cpu/mem/queue
+			// take precedence; opts.cpu/mem/queue act as fallbacks (same convention
+			// as standard processColumn).
+			importOps := { dataOnly: true }
+			_applyHint := func(opsKey, perOutput, global) {
+				if !is_undefined(perOutput) {
+					importOps[opsKey] = perOutput
+				} else if !is_undefined(global) {
+					importOps[opsKey] = global
+				}
+			}
+			_applyHint("cpu", output.cpu, inputs.globalCpu)
+			_applyHint("mem", output.mem, inputs.globalMem)
+			_applyHint("queue", output.queue, inputs.globalQueue)
+
+			pf := xsv.importFile(mergedFile, xsvType, output.settings, importOps)
+
+			for column in output.settings.columns {
+				id := pUtil.xsvColumnId(column)
+				result[output.name + "/" + id] = pf.getFutureInputField(id)
+			}
+		}
+	}
+
+	return result
+})

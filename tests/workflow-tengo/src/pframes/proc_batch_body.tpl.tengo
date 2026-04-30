@@ -1,0 +1,36 @@
+// proc_batch_body — body template for batch processColumn test
+// Receives batch TSV content as __value__ (string), passes it through
+// exec, returns the file for Xsv import
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchContent := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(batchContent) {
+		ll.panic("expected string batch content, got: %v", batchContent)
+	}
+
+	// Pass through hello-world software (identity transform)
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(hwSoftware).
+		arg("a").
+		writeFile("batch.tsv", batchContent).
+		saveFile("batch.tsv").
+		run()
+
+	return {
+		tsv: run.getFile("batch.tsv")
+	}
+})

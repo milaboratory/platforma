@@ -6,6 +6,7 @@ text := import("text")
 smart := import(":smart")
 constants := import(":pframes.constants")
 pSpec := import(":pframes.spec")
+pCommon := import(":pframes.process-column-common")
 path := import(":path")
 json := import("json")
 sets := import(":sets")
@@ -822,5 +823,12 @@ export ll.toStrict({
 	addColumnToWd: addColumnToWd,
 	isFlatPfMap: isFlatPfMap,
 	isStructuredPfMap: isStructuredPfMap,
-	validateXsvType: validateXsvType
+	validateXsvType: validateXsvType,
+
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.deriveHeaderFromSpec from that module.
+	deriveHeaderFromSpec: pCommon.deriveHeaderFromSpec,
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.resolveColumnSrc from that module.
+	resolveColumnSrc: pCommon.resolveColumnSrc,
+	// @deprecated Moved to :pframes.process-column-common; use pCommon.normalizeColumnEntries from that module.
+	normalizeColumnEntries: pCommon.normalizeColumnEntries
 })

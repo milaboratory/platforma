@@ -1,0 +1,82 @@
+// pframes merge resource-maps — unions entries from multiple PColumnData/ResourceMap
+// resources into a single one. All sources must have the same keyLength.
+// Used by batch mode to merge per-batch ResourceMap outputs into a flat result.
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+smart := import(":smart")
+pConstants := import(":pframes.constants")
+text := import("text")
+maps := import(":maps")
+
+json := import("json")
+
+self.awaitState("InputsLocked")
+// Await each source resource to be ready for input iteration
+self.awaitState({ wildcard: "*" }, "InputsLocked")
+
+self.body(func(inputs) {
+	// Collect source resources via rawInputs (preserves field references — we
+	// want to set the merged resource's fields to the SAME underlying blob/
+	// resource, not copies). Iterate names in sorted order (maps.getKeys)
+	// so the merge is deterministic across runs — critical for backend caching.
+	rawInputs := self.rawInputs()
+	sources := []
+	for name in maps.getKeys(rawInputs) {
+		if text.has_prefix(name, "src_") {
+			sources = append(sources, rawInputs[name].getValue())
+		}
+	}
+
+	if len(sources) == 0 {
+		ll.panic("merge-resource-maps: no sources provided")
+	}
+
+	// All sources must be ResourceMap with matching keyLength. Bad inputs
+	// would silently merge into a structurally-invalid output — a real bug
+	// upstream — so validate both properties explicitly.
+	keyLength := undefined
+	for src in sources {
+		if !src.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) {
+			ll.panic("merge-resource-maps: expected ResourceMap, got %v", src.info().Type.Name)
+		}
+		meta := src.getDataAsJson()
+		if is_undefined(meta.keyLength) {
+			continue
+		}
+		if is_undefined(keyLength) {
+			keyLength = meta.keyLength
+		} else if keyLength != meta.keyLength {
+			ll.panic("merge-resource-maps: keyLength mismatch across sources — %v vs %v", keyLength, meta.keyLength)
+		}
+	}
+	if is_undefined(keyLength) {
+		keyLength = 0
+	}
+
+	merged := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: keyLength })
+	)
+
+	// Batches cover disjoint key ranges so collisions shouldn't occur; if they
+	// do, panic — a non-deterministic merge would hide a real bug upstream.
+	// Iterate per-source keys in sorted order (maps.getKeys) for deterministic
+	// createInputField insertion sequence.
+	seenKeys := {}
+	for src in sources {
+		srcInputs := src.inputs()
+		for key in maps.getKeys(srcInputs) {
+			if !is_undefined(seenKeys[key]) {
+				ll.panic("merge-resource-maps: duplicate key %v across batches — batches must be disjoint", key)
+			}
+			seenKeys[key] = true
+			merged.createInputField(key).set(srcInputs[key])
+		}
+	}
+
+	return {
+		result: merged.lockAndBuild()
+	}
+})
