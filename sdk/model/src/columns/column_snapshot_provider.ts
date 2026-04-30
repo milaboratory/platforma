@@ -46,6 +46,7 @@ export class ArrayColumnProvider implements ColumnSnapshotProvider {
     this.columns = columns.map((col) => ({
       id: col.id,
       spec: col.spec,
+      // @todo: is a lie
       dataStatus: "ready" as const,
       data: { get: () => col.data },
     }));

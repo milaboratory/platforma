@@ -29,10 +29,8 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
-  collectSpecQueryColumns,
   ensurePColumn,
   parseJson,
-  extractAllColumns,
   isDataInfo,
   isPColumn,
   isPColumnSpec,
@@ -46,6 +44,7 @@ import {
   readAnnotation,
   withEnrichments,
   legacyColumnSelectorsToPredicate,
+  extractAllColumns,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -70,9 +69,9 @@ import type { LabelDerivationOps } from "./util/label";
 import { deriveLabels } from "./util/label";
 import type { APColumnSelectorWithSplit } from "./util/split_selectors";
 import { patchInSetFilters } from "./util/pframe_upgraders";
-import { allPColumnsReady } from "./util/pcolumn_data";
 import type { PColumnDataUniversal } from "./internal";
 import { getService } from "../services";
+import { allPColumnsReady } from "./util";
 
 /**
  * Helper function to match domain objects
@@ -97,7 +96,7 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
  * @returns Transformed data compatible with platform API
  */
 function transformPColumnData(
-  data: PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>,
+  data: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
   return mapPObjectData(data, (d) => {
     if (d instanceof TreeNodeAccessor) {
@@ -105,7 +104,7 @@ function transformPColumnData(
     } else if (isDataInfo(d)) {
       return mapDataInfo(d, (accessor) => accessor.handle);
     } else {
-      return d;
+      return d ?? [];
     }
   });
 }
@@ -663,8 +662,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
       PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>
     >,
   ): PFrameHandle | undefined {
-    if (!allPColumnsReady(def)) return undefined;
-    this.verifyInlineAndExplicitColumnsSupport(def);
     return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
   }
 
@@ -709,16 +706,7 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
   public createPTableV2(
     def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
   ): PTableHandle | undefined {
-    const columns = collectSpecQueryColumns(def.query);
-    if (!allPColumnsReady(columns)) return undefined;
-    this.verifyInlineAndExplicitColumnsSupport(columns);
-    return this.ctx.createPTableV2(
-      mapPTableDefV2(def, (po) => {
-        if (po.data === undefined)
-          throw new Error("unreachable: column data undefined after readiness check");
-        return transformPColumnData({ id: po.id, spec: po.spec, data: po.data });
-      }),
-    );
+    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
   }
 
   /** @deprecated scheduled for removal from SDK */

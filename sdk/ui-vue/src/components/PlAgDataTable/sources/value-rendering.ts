@@ -13,10 +13,15 @@ import * as d3 from "d3-format";
 import type { PlAgDataTableV2Row } from "../types";
 
 export function formatSpecialValues(
-  value: PTableValue | PTableHidden | undefined,
+  value: undefined | PTableValue | PTableHidden,
+  dataStatus: undefined | "absent" | "error" | "computing" | "ready",
 ): string | undefined {
-  if (value === undefined) {
-    return "undefined";
+  if (dataStatus === "absent") {
+    return "absent";
+  } else if (dataStatus === "error") {
+    return "error";
+  } else if (dataStatus === "computing") {
+    return "computing...";
   } else if (isPTableHidden(value)) {
     return "loading...";
   } else if (value === PTableNA) {
@@ -40,10 +45,11 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     case ValueType.Float:
     case ValueType.Double: {
       const format = readAnnotation(spec.spec, Annotation.Format);
+      const dataStatus = readAnnotation(spec.spec, Annotation.DataStatus);
       const formatFn = format ? d3.format(format) : undefined;
       renderSpec = {
         valueFormatter: (params) => {
-          const formatted = formatSpecialValues(params.value);
+          const formatted = formatSpecialValues(params.value, dataStatus);
           if (formatted !== undefined) return formatted;
           return formatFn ? formatFn(Number(params.value)) : params.value!.toString();
         },
@@ -53,7 +59,10 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     default:
       renderSpec = {
         valueFormatter: (params) => {
-          const formatted = formatSpecialValues(params.value);
+          const formatted = formatSpecialValues(
+            params.value,
+            readAnnotation(spec.spec, Annotation.DataStatus),
+          );
           if (formatted !== undefined) return formatted;
           return params.value!.toString();
         },

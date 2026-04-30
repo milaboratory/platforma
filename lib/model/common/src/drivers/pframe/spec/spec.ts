@@ -122,6 +122,7 @@ export const Annotation = {
   AxisNature: "pl7.app/axisNature",
   Alphabet: "pl7.app/alphabet",
   Description: "pl7.app/description",
+  DataStatus: "pl7.app/dataStatus",
   DiscreteValues: "pl7.app/discreteValues",
   Format: "pl7.app/format",
   Graph: {
@@ -178,6 +179,7 @@ export type Annotation = Metadata &
     [Annotation.Alphabet]: "nucleotide" | "aminoacid" | (string & {});
     [Annotation.AxisNature]: "homogeneous" | "heterogeneous" | "scaleCompatible" | (string & {});
     [Annotation.Description]: string;
+    [Annotation.DataStatus]: "computing" | "ready" | "error" | "absent";
     [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
     [Annotation.Format]: string;
     [Annotation.Graph.Axis.HighCardinality]: StringifiedJson<boolean>;

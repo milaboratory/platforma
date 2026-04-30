@@ -32,6 +32,7 @@ import {
   withLabelAnnotations,
   withTableVisualAnnotations,
   withInfoAnnotations,
+  withDataStatusAnnotations,
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
@@ -274,6 +275,7 @@ function annotateColumnGroups(params: {
   const directAnnotated = liftToVariantColumns(
     direct,
     flow(
+      (cols) => withDataStatusAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
       (cols) => withTableVisualAnnotations(visibilityByColId, orderByColId, cols),
@@ -283,6 +285,7 @@ function annotateColumnGroups(params: {
   const linkedAnnotated = liftToVariantColumns(
     linked,
     flow(
+      (cols) => withDataStatusAnnotations(cols),
       (cols) => withHidenAxesAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
