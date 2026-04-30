@@ -6,6 +6,7 @@ runtime/*
 proto/.proto/
 proto/plapi/.proto/
 proto/shared/.proto/
+sync-proto.log
 assets/heavy/*
 test_config.json
 .test_auth.json

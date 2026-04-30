@@ -1,13 +1,15 @@
-import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import type { PlClient, ResourceId, ResourceRef } from "@milaboratories/pl-client";
 import {
   field,
   isNotNullResourceId,
   isNullResourceId,
-  toGlobalResourceId,
+  resourceIdToString,
 } from "@milaboratories/pl-client";
+import { LRUCache } from "lru-cache";
 import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
 import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
 import { ProjectMetaKey } from "../model/project_model";
+import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
@@ -86,7 +88,7 @@ export class MiddleLayer {
     public readonly driverKit: DriverKit,
     public readonly signer: Signer,
     private readonly projectListResourceId: ResourceId,
-    private readonly openedProjectsList: WatchableValue<ResourceId[]>,
+    private readonly openedProjectsList: WatchableValue<ProjectId[]>,
     private readonly projectListTree: SynchronizedTreeState,
     public readonly blockRegistryProvider: V2RegistryProvider,
     projectList: ComputableStableDefined<ProjectListEntry[]>,
@@ -127,27 +129,58 @@ export class MiddleLayer {
   }
 
   //
+  // ProjectId ↔ ResourceId resolution
+  //
+
+  private readonly projectIdCache = new LRUCache<ProjectId, ResourceId>({ max: 1024 });
+
+  /** Resolves a ProjectId to a signed ResourceId.
+   * Uses LRU cache with TX-scan fallback. */
+  private async resolveProjectId(projectId: ProjectId): Promise<ResourceId> {
+    const cached = this.projectIdCache.get(projectId);
+    if (cached !== undefined) return cached;
+
+    // Cache miss — scan project list fields to find the matching resource
+    const rid = await this.pl.withReadTx("ResolveProjectId", async (tx) => {
+      const data = await tx.getResourceData(this.projectListResourceId, true);
+      for (const f of data.fields) {
+        if (isNullResourceId(f.value)) continue;
+        if (resourceIdToString(f.value) === (projectId as string)) return f.value;
+      }
+      throw new Error(`Project ${projectId} not found in project list.`);
+    });
+
+    this.projectIdCache.set(projectId, rid);
+    return rid;
+  }
+
+  //
   // Project List Manipulation
   //
 
   /** Creates a project with initial state and adds it to project list. */
-  public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
-    const resource = await this.pl.withWriteTx("MLCreateProject", async (tx) => {
-      const prj = await createProject(tx, meta);
-      tx.createField(field(this.projectListResourceId, id), "Dynamic", prj);
+  public async createProject(meta: ProjectMeta): Promise<ProjectId> {
+    let prj: ResourceRef;
+    await this.pl.withWriteTx("MLCreateProject", async (tx) => {
+      prj = await createProject(tx, meta);
+      tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", prj);
       await tx.commit();
-      return await toGlobalResourceId(prj);
     });
     await this.projectListTree.refreshState();
-    return resource;
+
+    const signedRid = await prj!.globalId;
+    const projectId = resourceIdToString(signedRid) as ProjectId;
+    this.projectIdCache.set(projectId, signedRid);
+    return projectId;
   }
 
   /** Updates project metadata */
   public async setProjectMeta(
-    rid: ResourceId,
+    id: ProjectId,
     meta: ProjectMeta,
     author?: AuthorMarker,
   ): Promise<void> {
+    const rid = await this.resolveProjectId(id);
     await withProjectAuthored(
       this.env.projectHelper,
       this.pl,
@@ -163,28 +196,39 @@ export class MiddleLayer {
 
   /** Permanently deletes project from the project list, this will result in
    * destruction of all attached objects, like files, analysis results etc. */
-  public async deleteProject(id: string): Promise<void> {
+  public async deleteProject(id: ProjectId): Promise<void> {
     await this.pl.withWriteTx("MLRemoveProject", async (tx) => {
-      tx.removeField(field(this.projectListResourceId, id));
+      const data = await tx.getResourceData(this.projectListResourceId, true);
+      let fieldName: string | undefined;
+      for (const f of data.fields) {
+        if (isNullResourceId(f.value)) continue;
+        if (resourceIdToString(f.value) === (id as string)) {
+          fieldName = f.name;
+          break;
+        }
+      }
+      if (fieldName === undefined) throw new Error(`Project ${id} not found in project list.`);
+      tx.removeField(field(this.projectListResourceId, fieldName));
       await tx.commit();
     });
+    this.projectIdCache.delete(id);
     await this.projectListTree.refreshState();
   }
 
   /**
    * Duplicates an existing project and adds the copy to this user's project list.
    *
-   * @param sourceRid - resource id of the project to duplicate
+   * @param srcProjectId - project id of the project to duplicate
    * @param rename - optional function that receives the source label and all existing
    *   project labels (read within the same transaction), and returns the label for the copy
-   * @param id - optional id for the new project list entry (defaults to random UUID)
    */
   public async duplicateProject(
-    sourceRid: ResourceId,
+    srcProjectId: ProjectId,
     rename?: (previousLabel: string, existingLabels: string[]) => string,
-    id: string = randomUUID(),
-  ): Promise<ResourceId> {
-    const resource = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
+  ): Promise<ProjectId> {
+    const sourceRid = await this.resolveProjectId(srcProjectId);
+    let newPrj: ResourceRef;
+    await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
       // Read source project meta
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
 
@@ -201,64 +245,53 @@ export class MiddleLayer {
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
       // Create the duplicate
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
 
-      // Attach to project list
-      tx.createField(field(this.projectListResourceId, id), "Dynamic", newPrj);
+      // Attach to project list with a random UUID field name
+      tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", newPrj);
       await tx.commit();
-      return await toGlobalResourceId(newPrj);
     });
     await this.projectListTree.refreshState();
-    return resource;
+
+    const signedRid = await newPrj!.globalId;
+    const newProjectId = resourceIdToString(signedRid) as ProjectId;
+    this.projectIdCache.set(newProjectId, signedRid);
+    return newProjectId;
   }
 
   //
   // Projects
   //
 
-  private readonly openedProjectsByRid = new Map<ResourceId, Project>();
-
-  private async projectIdToResourceId(id: string): Promise<ResourceId> {
-    return await this.pl.withReadTx("Project id to resource id", async (tx) => {
-      const rid = (await tx.getField(field(this.projectListResourceId, id))).value;
-      if (isNullResourceId(rid)) throw new Error("Unexpected project list structure.");
-      return rid;
-    });
-  }
-
-  private async ensureProjectRid(id: ResourceId | string): Promise<ResourceId> {
-    if (typeof id === "string") return await this.projectIdToResourceId(id);
-    else return id;
-  }
+  private readonly openedProjects = new Map<ProjectId, Project>();
 
   /** Opens a project, and starts corresponding project maintenance loop. */
-  public async openProject(id: ResourceId | string) {
-    const rid = await this.ensureProjectRid(id);
-    if (this.openedProjectsByRid.has(rid)) throw new Error(`Project ${rid} already opened`);
-    this.openedProjectsByRid.set(rid, await Project.init(this.env, rid));
-    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
+  public async openProject(id: ProjectId): Promise<void> {
+    if (this.openedProjects.has(id)) throw new Error(`Project ${id} already opened`);
+    const rid = await this.resolveProjectId(id);
+    this.openedProjects.set(id, await Project.init(this.env, id, rid));
+    this.openedProjectsList.setValue([...this.openedProjects.keys()]);
   }
 
   /** Closes the project, and deallocate all corresponding resources. */
-  public async closeProject(rid: ResourceId): Promise<void> {
-    const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
-    this.openedProjectsByRid.delete(rid);
+  public async closeProject(id: ProjectId): Promise<void> {
+    const prj = this.openedProjects.get(id);
+    if (prj === undefined) throw new Error(`Project ${id} not found among opened projects`);
+    this.openedProjects.delete(id);
     await prj.destroy();
-    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
+    this.openedProjectsList.setValue([...this.openedProjects.keys()]);
   }
 
-  /** Returns a project access object for opened project, for the given project
-   * resource id. */
-  public getOpenedProject(rid: ResourceId): Project {
-    const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
+  /** Returns a project access object for an opened project. */
+  public getOpenedProject(id: ProjectId): Project {
+    const prj = this.openedProjects.get(id);
+    if (prj === undefined) throw new Error(`Project ${id} not found among opened projects`);
     return prj;
   }
 
-  /** Returns true if project with given resource id is currently opened. */
-  public isProjectOpened(rid: ResourceId): boolean {
-    return this.openedProjectsByRid.has(rid);
+  /** Returns true if project with given id is currently opened. */
+  public isProjectOpened(id: ProjectId): boolean {
+    return this.openedProjects.has(id);
   }
 
   /**
@@ -267,7 +300,7 @@ export class MiddleLayer {
    * them.
    */
   public async close() {
-    await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
+    await Promise.all([...this.openedProjects.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await this.projectListTree.terminate();
     await this.env.dispose();
@@ -380,7 +413,7 @@ export class MiddleLayer {
       },
     };
 
-    const openedProjects = new WatchableValue<ResourceId[]>([]);
+    const openedProjects = new WatchableValue<ProjectId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
     return new MiddleLayer(

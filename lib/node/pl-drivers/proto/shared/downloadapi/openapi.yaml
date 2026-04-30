@@ -16,7 +16,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GetDownloadURL_Request"
+              $ref: "#/components/schemas/DownloadAPI_GetDownloadURL_Request"
         required: true
       responses:
         "200":
@@ -24,7 +24,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetDownloadURL_Response"
+                $ref: "#/components/schemas/DownloadAPI_GetDownloadURL_Response"
         default:
           description: Default error response
           content:
@@ -33,14 +33,14 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
-    GetDownloadURL_HTTPHeader:
+    DownloadAPI_GetDownloadURL_HTTPHeader:
       type: object
       properties:
         name:
           type: string
         value:
           type: string
-    GetDownloadURL_Request:
+    DownloadAPI_GetDownloadURL_Request:
       type: object
       properties:
         resourceId:
@@ -55,7 +55,7 @@ components:
             Pass `true` here if the blob will be downloaded from the internal network,
              e.g. controllers could use this if they are trying to download something from the internal network.
              For backward compatibility, by default pl treats all requests as from the external network.
-    GetDownloadURL_Response:
+    DownloadAPI_GetDownloadURL_Response:
       type: object
       properties:
         downloadUrl:
@@ -63,7 +63,7 @@ components:
         headers:
           type: array
           items:
-            $ref: "#/components/schemas/GetDownloadURL_HTTPHeader"
+            $ref: "#/components/schemas/DownloadAPI_GetDownloadURL_HTTPHeader"
     GoogleProtobufAny:
       type: object
       properties:

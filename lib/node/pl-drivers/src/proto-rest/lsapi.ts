@@ -31,34 +31,6 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
-    List_Request: {
-      /** @description resource_id of 'LS/<Storage>' resource */
-      resourceId: string;
-      /**
-       * Format: bytes
-       * @description Signature proving the caller is authorized to access this resource.
-       */
-      resourceSignature: string;
-      /**
-       * @description Location to list, relative to the storage root. Only items that have <full_name> starting
-       *      with <location> are included in the list response.
-       */
-      location: string;
-    };
-    List_Response: {
-      /**
-       * @description List of the full (relative to storage root) names of items from storage.
-       *      E.g., for 'fs' storage each name will consist of names of all directories, where the
-       *      item is located, and the item name itself.
-       *      The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
-       */
-      items: components["schemas"]["LsAPI_ListItem"][];
-      /**
-       * @description The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
-       *      to extract directory names.
-       */
-      delimiter: string;
-    };
     LsAPI_ListItem: {
       /** @description Name of the item in storage, without any prefixes. */
       name: string;
@@ -96,6 +68,34 @@ export interface components {
        */
       version: string;
     };
+    LsAPI_List_Request: {
+      /** @description resource_id of 'LS/<Storage>' resource */
+      resourceId: string;
+      /**
+       * Format: bytes
+       * @description Signature proving the caller is authorized to access this resource.
+       */
+      resourceSignature: string;
+      /**
+       * @description Location to list, relative to the storage root. Only items that have <full_name> starting
+       *      with <location> are included in the list response.
+       */
+      location: string;
+    };
+    LsAPI_List_Response: {
+      /**
+       * @description List of the full (relative to storage root) names of items from storage.
+       *      E.g., for 'fs' storage each name will consist of names of all directories, where the
+       *      item is located, and the item name itself.
+       *      The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
+       */
+      items: components["schemas"]["LsAPI_ListItem"][];
+      /**
+       * @description The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
+       *      to extract directory names.
+       */
+      delimiter: string;
+    };
     /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
     Status: {
       /**
@@ -126,7 +126,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["List_Request"];
+        "application/json": components["schemas"]["LsAPI_List_Request"];
       };
     };
     responses: {
@@ -136,7 +136,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["List_Response"];
+          "application/json": components["schemas"]["LsAPI_List_Response"];
         };
       };
       /** @description Default error response */

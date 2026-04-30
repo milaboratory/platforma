@@ -22,7 +22,7 @@ import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
 import type { FrontendData } from "../model/frontend";
-import type { ProjectStructure } from "../model/project_model";
+import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
 import {
   cachedDeserialize,
@@ -79,9 +79,6 @@ function stringifyForDump(object: unknown): string {
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
-  /** Underlying pl resource id */
-  public readonly rid: ResourceId;
-
   /** Data for the left panel, contain basic information about block status. */
   public readonly overview: ComputableStableDefined<ProjectOverview>;
   private readonly overviewLight: Computable<ProjectOverviewLight>;
@@ -102,7 +99,8 @@ export class Project {
 
   constructor(
     private readonly env: MiddleLayerEnvironment,
-    rid: ResourceId,
+    public readonly id: ProjectId /* Project ID, exposed to outer consumers, who work with ML */,
+    readonly rid: ResourceId /* Contains signature, not exposed outside middle layer. */,
     private readonly projectTree: SynchronizedTreeState,
   ) {
     this.overview = projectOverview(
@@ -111,7 +109,6 @@ export class Project {
       env,
     ).withPreCalculatedValueTree();
     this.overviewLight = projectOverviewLight(projectTree.entry()).withPreCalculatedValueTree();
-    this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
     this.refreshLoopResult.catch((err) => {
       env.logger.warn(new Error("Error during refresh loop", { cause: err })); // TODO (safe voiding for now)
@@ -120,7 +117,7 @@ export class Project {
   }
 
   get projectLockId(): string {
-    return "project:" + this.rid.toString();
+    return "project:" + this.id.toString();
   }
 
   private async refreshLoop(): Promise<void> {
@@ -708,7 +705,11 @@ export class Project {
     return this.projectTree.dumpState();
   }
 
-  public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+  public static async init(
+    env: MiddleLayerEnvironment,
+    id: ProjectId,
+    rid: ResourceId,
+  ): Promise<Project> {
     // Applying migrations to the project resource, if needed
     await applyProjectMigrations(env.pl, rid);
 
@@ -734,7 +735,7 @@ export class Project {
       await fs.writeFile(`${resourceIdToString(rid)}.stats.json`, stringifyForDump(stats));
     }
 
-    return new Project(env, rid, projectTree);
+    return new Project(env, id, rid, projectTree);
   }
 }
 

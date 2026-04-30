@@ -1,5 +1,4 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { resourceIdToString } from "@milaboratories/pl-middle-layer";
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { textResult } from "./types";
@@ -14,7 +13,7 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
       const projects = await ml.projectList.awaitStableValue();
       return textResult(
         projects.map((p) => ({
-          projectId: resourceIdToString(p.rid),
+          projectId: p.id,
           label: p.meta.label,
           opened: p.opened,
           created: p.created.toISOString(),
@@ -31,8 +30,7 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
       inputSchema: { label: z.string().describe("Project name") },
     },
     async ({ label }) => {
-      const rid = await ctx.requireMl().createProject({ label });
-      const projectId = resourceIdToString(rid);
+      const projectId = await ctx.requireMl().createProject({ label });
       await ctx.callbacks.onProjectCreated?.(projectId);
       return textResult({ projectId });
     },
@@ -48,7 +46,7 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     },
     async ({ projectId }) => {
       const entry = await ctx.resolveProject(projectId);
-      await ctx.requireMl().openProject(entry.rid);
+      await ctx.requireMl().openProject(entry.id);
       await ctx.callbacks.onProjectOpened?.(projectId);
       return textResult({ ok: true });
     },
@@ -62,7 +60,7 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     },
     async ({ projectId }) => {
       const entry = await ctx.resolveProject(projectId);
-      await ctx.requireMl().closeProject(entry.rid);
+      await ctx.requireMl().closeProject(entry.id);
       await ctx.callbacks.onProjectClosed?.(projectId);
       return textResult({ ok: true });
     },

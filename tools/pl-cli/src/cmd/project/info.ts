@@ -2,6 +2,7 @@ import { Args } from "@oclif/core";
 import { PlCommand } from "../../base_command";
 import { resolveProject, getProjectInfo } from "../../project_ops";
 import { formatDate, outputJson, outputText } from "../../output";
+import { resourceIdToString } from "@milaboratories/pl-client";
 
 export default class ProjectInfo extends PlCommand {
   static override description = "Show detailed information about a project.";
@@ -20,13 +21,13 @@ export default class ProjectInfo extends PlCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectInfo);
     const { pl, projectListRid } = await this.connect(flags);
-    const { id } = await resolveProject(pl, projectListRid, args.project);
-    const info = await getProjectInfo(pl, projectListRid, id);
+    const { id, rid } = await resolveProject(pl, projectListRid, args.project);
+    const info = await getProjectInfo(pl, id, rid);
 
     if (flags.format === "json") {
       outputJson({
         id: info.id,
-        rid: info.rid,
+        rid: resourceIdToString(info.rid),
         label: info.label,
         schemaVersion: info.schemaVersion,
         blockCount: info.blockCount,
@@ -37,7 +38,7 @@ export default class ProjectInfo extends PlCommand {
     } else {
       outputText(`Project: ${info.label}`);
       outputText(`ID:      ${info.id}`);
-      outputText(`RID:     ${info.rid}`);
+      outputText(`RID:     ${resourceIdToString(info.rid)}`);
       outputText(`Schema:  ${info.schemaVersion ?? "(unknown)"}`);
       outputText(`Blocks:  ${info.blockCount}`);
       if (info.blockIds.length > 0) {

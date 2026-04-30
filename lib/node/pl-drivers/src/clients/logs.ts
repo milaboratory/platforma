@@ -3,7 +3,13 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  RestAPI,
+  parseSignedResourceId,
+  signatureToBase64Url,
+} from "@milaboratories/pl-client";
 import type { StreamingAPI_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol";
 import { StreamingClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client";
 import type { StreamingApiPaths, StreamingRestClientType } from "../proto-rest";
@@ -43,11 +49,18 @@ export class ClientLogs {
     searchStr?: string,
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
+    const { globalId: rIdGlobal, signature: rIdSig } = parseSignedResourceId(rId);
     const client = this.wire.get();
     if (client instanceof StreamingClient) {
       return (
         await client.lastLines(
-          { resourceId: rId, lineCount: lineCount, offset: offsetBytes, search: searchStr },
+          {
+            resourceId: rIdGlobal,
+            resourceSignature: rIdSig,
+            lineCount: lineCount,
+            offset: offsetBytes,
+            search: searchStr,
+          },
           addRTypeToMetadata(rType, options),
         )
       ).response;
@@ -56,8 +69,8 @@ export class ClientLogs {
     const resp = (
       await client.POST("/v1/last-lines", {
         body: {
-          resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceId: rIdGlobal.toString(),
+          resourceSignature: signatureToBase64Url(rIdSig),
           lineCount: lineCount,
           offset: offsetBytes.toString(),
           search: searchStr ?? "",
@@ -84,13 +97,15 @@ export class ClientLogs {
     searchStr?: string,
     options?: RpcOptions,
   ): Promise<StreamingAPI_Response> {
+    const { globalId: rIdGlobal2, signature: rIdSig2 } = parseSignedResourceId(rId);
     const client = this.wire.get();
 
     if (client instanceof StreamingClient) {
       return (
         await client.readText(
           {
-            resourceId: notEmpty(rId),
+            resourceId: notEmpty(rIdGlobal2),
+            resourceSignature: rIdSig2,
             readLimit: BigInt(lineCount),
             offset: offsetBytes,
             search: searchStr,
@@ -103,8 +118,8 @@ export class ClientLogs {
     const resp = (
       await client.POST("/v1/read/text", {
         body: {
-          resourceId: rId.toString(),
-          resourceSignature: "",
+          resourceId: rIdGlobal2.toString(),
+          resourceSignature: signatureToBase64Url(rIdSig2),
           readLimit: lineCount.toString(),
           offset: offsetBytes.toString(),
           search: searchStr ?? "",

@@ -5,9 +5,15 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type { ResourceId, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
+import type {
+  ResourceId,
+  GlobalResourceId,
+  ResourceType,
+  OptionalResourceId,
+} from "@milaboratories/pl-client";
 import {
   resourceIdToString,
+  parseSignedResourceId,
   resourceTypesEqual,
   resourceTypeToString,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,14 +77,22 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
 
   constructor(
     private readonly accessorData: TreeAccessorData,
-    public readonly rid: ResourceId,
+    private readonly _rid: ResourceId,
   ) {}
 
   public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.accessorData, this.accessorData.treeProvider(), this.rid, {
+    return new PlTreeEntryAccessor(this.accessorData, this.accessorData.treeProvider(), this._rid, {
       ctx,
       guard,
     });
+  }
+
+  public get rid(): ResourceId {
+    return this._rid;
+  }
+
+  public get ridNoSignature(): GlobalResourceId {
+    return parseSignedResourceId(this._rid).globalId;
   }
 
   public toJSON(): string {

@@ -92,9 +92,9 @@ export interface LsAPI_List_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 3
+     * @generated from protobuf field: bytes resource_signature = 3
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * Location to list, relative to the storage root. Only items that have <full_name> starting
      * with <location> are included in the list response.
@@ -299,13 +299,14 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.LsAPI.List.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "location", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<LsAPI_List_Request>): LsAPI_List_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.location = "";
         if (value !== undefined)
             reflectionMergePartial<LsAPI_List_Request>(this, message, value);
@@ -319,7 +320,7 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 3:
+                case /* bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* string location */ 2:
@@ -343,8 +344,8 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
         /* string location = 2; */
         if (message.location !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.location);
-        /* optional bytes resource_signature = 3; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 3; */
+        if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)

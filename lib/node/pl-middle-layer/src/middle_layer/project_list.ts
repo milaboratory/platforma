@@ -1,11 +1,11 @@
 import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import type { PlClient, ResourceId, ResourceType } from "@milaboratories/pl-client";
-import { resourceTypesEqual } from "@milaboratories/pl-client";
+import { resourceIdToString, resourceTypesEqual } from "@milaboratories/pl-client";
 import type { TreeAndComputableU } from "./types";
 import type { WatchableValue } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
-import type { ProjectListEntry } from "../model/project_model";
+import type { ProjectId, ProjectListEntry } from "../model/project_model";
 import {
   ProjectCreatedTimestamp,
   ProjectLastModifiedTimestamp,
@@ -26,7 +26,7 @@ export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
 export async function createProjectList(
   pl: PlClient,
   rid: ResourceId,
-  openedProjects: WatchableValue<ResourceId[]>,
+  openedProjects: WatchableValue<ProjectId[]>,
   env: MiddleLayerEnvironment,
 ): Promise<TreeAndComputableU<ProjectListEntry[]>> {
   const tree = await SynchronizedTreeState.init(
@@ -44,18 +44,20 @@ export async function createProjectList(
     const oProjects = openedProjects.getValue(ctx);
     if (node === undefined) return undefined;
     const result: ProjectListEntry[] = [];
+
+    // Projects list resource keeps projects assigned to fields. Each field name is project's UUID
     for (const field of node.listDynamicFields()) {
       const prj = node.traverse(field);
       if (prj === undefined) continue;
       const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
       const created = notEmpty(prj.getKeyValueAsJson<number>(ProjectCreatedTimestamp));
       const lastModified = notEmpty(prj.getKeyValueAsJson<number>(ProjectLastModifiedTimestamp));
+      const projectId = resourceIdToString(prj.id) as ProjectId;
       result.push({
-        id: field,
-        rid: prj.id,
+        id: projectId,
         created: new Date(created),
         lastModified: new Date(lastModified),
-        opened: oProjects.indexOf(prj.id) >= 0,
+        opened: oProjects.indexOf(projectId) >= 0,
         meta,
       });
     }

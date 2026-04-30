@@ -5,6 +5,8 @@ import {
   stringifyWithResourceId,
   RestAPI,
   createRTypeRoutingHeader,
+  parseSignedResourceId,
+  signatureToBase64Url,
 } from "@milaboratories/pl-client";
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import { PerfTimer } from "@milaboratories/helpers";
@@ -136,18 +138,19 @@ export class ClientDownload {
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
+    const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
     if (client instanceof DownloadClient) {
       return await client.getDownloadURL(
-        { resourceId: id, isInternalUse: false },
+        { resourceId: globalId, resourceSignature: signature, isInternalUse: false },
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
       return (
         await client.POST("/v1/get-download-url", {
           body: {
-            resourceId: id.toString(),
-            resourceSignature: "",
+            resourceId: globalId.toString(),
+            resourceSignature: signatureToBase64Url(signature),
             isInternalUse: false,
           },
           headers: { ...createRTypeRoutingHeader(type) },

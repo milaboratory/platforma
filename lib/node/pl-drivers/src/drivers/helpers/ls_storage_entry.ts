@@ -1,6 +1,11 @@
 import type * as sdk from "@milaboratories/pl-model-common";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
-import { bigintToResourceId } from "@milaboratories/pl-client";
+import type {
+  ResourceId,
+  ResourceType,
+  SignedResourceId,
+  StorageInfo,
+} from "@milaboratories/pl-client";
+import { resourceTypeToString, parseResourceType } from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
@@ -45,9 +50,9 @@ function parseLocalStorageHandle(handle: string): LocalStorageHandleData {
   const { name, path } = parsed.groups!;
 
   return {
+    isRemote: false,
     rootPath: decodeURIComponent(path),
     name,
-    isRemote: false,
   };
 }
 
@@ -57,12 +62,12 @@ function parseLocalStorageHandle(handle: string): LocalStorageHandleData {
 
 export type RemoteStorageHandleData = {
   isRemote: true;
-  name: string;
-  id: ResourceId;
-  type: ResourceType;
+  storageId: string;
+  resourceType: ResourceType;
+  resourceId: ResourceId;
 };
 
-const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;
+const remoteHandleRegex = /^remote:\/\/(?<storageId>.*)\/(?<resourceType>.*)\/(?<resourceId>.*)$/;
 
 export function isRemoteStorageHandle(
   handle: sdk.StorageHandle,
@@ -70,23 +75,21 @@ export function isRemoteStorageHandle(
   return remoteHandleRegex.test(handle);
 }
 
-export function createRemoteStorageHandle(name: string, rId: ResourceId): sdk.StorageHandleRemote {
-  return `remote://${name}/${BigInt(rId)}`;
+export function createRemoteStorageHandle(info: StorageInfo): sdk.StorageHandleRemote {
+  return `remote://${info.storageId}/${encodeURIComponent(resourceTypeToString(info.resourceType))}/${encodeURIComponent(info.resourceId)}`;
 }
 
 function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
   const parsed = handle.match(remoteHandleRegex);
   if (parsed == null) throw new Error(`Remote list handle wasn't parsed: ${handle}`);
-  const { name, resourceId } = parsed.groups!;
+  const { storageId, resourceType: encodedRType, resourceId: encodedRId } = parsed.groups!;
 
+  const resourceType = parseResourceType(decodeURIComponent(encodedRType));
+  const resourceId = decodeURIComponent(encodedRId) as SignedResourceId;
   return {
-    id: bigintToResourceId(BigInt(resourceId)),
-    type: storageType(name),
-    name,
     isRemote: true,
+    storageId,
+    resourceType: resourceType,
+    resourceId: resourceId,
   };
-}
-
-function storageType(name: string): ResourceType {
-  return { name: `LS/${name}`, version: "1" };
 }

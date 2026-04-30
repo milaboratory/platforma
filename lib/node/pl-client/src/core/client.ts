@@ -1,18 +1,16 @@
 import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol } from "./config";
 import type { PlCallOps } from "./ll_client";
 import { LLPlClient } from "./ll_client";
-import type { AnyResourceRef } from "./transaction";
-import { PlTransaction, toGlobalResourceId, TxCommitConflict } from "./transaction";
-import { createHash } from "node:crypto";
+import { PlTransaction, TxCommitConflict } from "./transaction";
 import type { OptionalResourceId, ResourceId } from "./types";
 import {
-  bigintToResourceId,
   ensureResourceIdNotNull,
   isNullResourceId,
   NullResourceId,
+  parseSignedResourceId,
 } from "./types";
+import type { ColorProof } from "./types";
 import { ClientRoot } from "../helpers/pl";
-import { isUnimplementedError } from "./errors";
 import type { MiLogger, RetryOptions } from "@milaboratories/ts-helpers";
 import { assertNever, createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
 import type { PlDriver, PlDriverDefinition } from "./driver";
@@ -32,6 +30,7 @@ import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
+import { UserResources } from "./user_resources";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -43,8 +42,6 @@ export type TxOps = PlCallOps & {
 const defaultTxOps = {
   sync: false,
 };
-
-const AnonymousClientRoot = "AnonymousRoot";
 
 function alternativeRootFieldName(alternativeRoot: string): string {
   return `alternative_root_${alternativeRoot}`;
@@ -81,6 +78,8 @@ export class PlClient {
   private _clientRoot: OptionalResourceId = NullResourceId;
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
+
+  private _userResources?: UserResources;
 
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
@@ -185,17 +184,10 @@ export class PlClient {
    * @returns ResourceId of the user root, or undefined if the server returned no userRoot entry.
    * @throws if the backend does not implement ListUserResources (callers should catch with isUnimplementedError).
    */
-  public async getUserRoot(opts: { login?: string } = {}): Promise<ResourceId | undefined> {
-    const responses = await this.ll.listUserResources({
-      login: opts.login,
-      limit: 1,
-    });
-    for (const msg of responses) {
-      if (msg.entry.oneofKind === "userRoot") {
-        return bigintToResourceId(msg.entry.userRoot.resourceId);
-      }
-    }
-    return undefined;
+  public async getUserRoot(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<ResourceId | undefined> {
+    return this.userResources.getUserRoot(opts);
   }
 
   public get conf(): PlClientConfig {
@@ -228,9 +220,19 @@ export class PlClient {
     return this._serverInfo!;
   }
 
-  /** Discovers or creates the user's root resource.
-   *  Tries ListUserResources RPC first (new backend), falls back to
-   *  legacy named-resource lookup for older backends. */
+  /** User resources index for discovering data libraries and other shared resources. */
+  public get userResources(): UserResources {
+    if (!this._ll) throw new Error("Client not initialized");
+
+    if (!this._userResources) {
+      this._userResources = new UserResources(this._ll, this._withTx.bind(this), this._ll.authUser);
+    }
+
+    return this._userResources;
+  }
+
+  /** Discovers or creates the user's root resource via UserResources,
+   *  then handles alternativeRoot if configured. */
   private async init() {
     if (this.initialized) throw new Error("Already initialized");
 
@@ -249,79 +251,24 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    // Try ListUserResources first (new backend, gRPC only)
-    let rootFromServer: ResourceId | undefined;
-    try {
-      const responses = await this._ll.listUserResources({ limit: 1 });
-      for (const msg of responses) {
-        if (msg.entry.oneofKind === "userRoot") {
-          rootFromServer = bigintToResourceId(msg.entry.userRoot.resourceId);
-          break;
-        }
-      }
-    } catch (err) {
-      if (!isUnimplementedError(err)) throw err;
-      // Backend doesn't support ListUserResources — fall through to legacy
-    }
+    const userRoot = await this.userResources.getUserRoot();
 
-    if (rootFromServer !== undefined) {
-      // New path: server created/returned the root
-      if (this.conf.alternativeRoot === undefined) {
-        this._clientRoot = rootFromServer;
-      } else {
-        this._clientRoot = await this._withTx(
-          "initialization",
-          true,
-          rootFromServer,
-          async (tx) => {
-            const aFId = {
-              resourceId: tx.clientRoot,
-              fieldName: alternativeRootFieldName(this.conf.alternativeRoot!),
-            };
-
-            const altRoot = tx.createEphemeral(ClientRoot);
-            tx.lock(altRoot);
-            tx.createField(aFId, "Dynamic");
-            tx.setField(aFId, altRoot);
-            await tx.commit();
-
-            return await altRoot.globalId;
-          },
-        );
-      }
+    if (this.conf.alternativeRoot === undefined) {
+      this._clientRoot = userRoot;
     } else {
-      // Legacy path: named resource lookup
-      const user = this._ll.authUser;
-      const mainRootName =
-        user === null ? AnonymousClientRoot : createHash("sha256").update(user).digest("hex");
+      this._clientRoot = await this._withTx("initialization", true, userRoot, async (tx) => {
+        const aFId = {
+          resourceId: userRoot,
+          fieldName: alternativeRootFieldName(this.conf.alternativeRoot!),
+        };
 
-      this._clientRoot = await this._withTx("initialization", true, NullResourceId, async (tx) => {
-        let mainRoot: AnyResourceRef;
+        const altRoot = tx.createEphemeral(ClientRoot);
+        tx.lock(altRoot);
+        tx.createField(aFId, "Dynamic");
+        tx.setField(aFId, altRoot);
+        await tx.commit();
 
-        if (await tx.checkResourceNameExists(mainRootName))
-          mainRoot = await tx.getResourceByName(mainRootName);
-        else {
-          mainRoot = tx.createRoot(ClientRoot);
-          tx.setResourceName(mainRootName, mainRoot);
-        }
-
-        if (this.conf.alternativeRoot === undefined) {
-          await tx.commit();
-          return await toGlobalResourceId(mainRoot);
-        } else {
-          const aFId = {
-            resourceId: mainRoot,
-            fieldName: alternativeRootFieldName(this.conf.alternativeRoot),
-          };
-
-          const altRoot = tx.createEphemeral(ClientRoot);
-          tx.lock(altRoot);
-          tx.createField(aFId, "Dynamic");
-          tx.setField(aFId, altRoot);
-          await tx.commit();
-
-          return await altRoot.globalId;
-        }
+        return await altRoot.globalId;
       });
     }
   }
@@ -368,6 +315,14 @@ export class PlClient {
           this.finalPredicate,
           this.resourceDataCache,
         );
+
+        // Auto-set default color proof from the client root's signature
+        if (!isNullResourceId(clientRoot) && writable) {
+          const parsed = parseSignedResourceId(clientRoot);
+          if (parsed.signature) {
+            tx.setDefaultColor(parsed.signature as ColorProof);
+          }
+        }
 
         let ok = false;
         let result: T | undefined = undefined;

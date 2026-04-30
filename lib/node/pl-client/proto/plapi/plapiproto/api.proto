@@ -189,6 +189,12 @@ service Platform {
       body: "*"
     };
   }
+  rpc GetSessionInfo(AuthAPI.GetSessionInfo.Request) returns (AuthAPI.GetSessionInfo.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/session-info"
+      body: "*"
+    };
+  }
 
   rpc GrantAccess(AuthAPI.GrantAccess.Request) returns (AuthAPI.GrantAccess.Response) {
     option (google.api.http) = {
@@ -197,15 +203,30 @@ service Platform {
     };
   }
 
-  rpc RevokeGrant(AuthAPI.RevokeGrant.Request) returns (AuthAPI.RevokeGrant.Response) {
+  rpc RevokeAccess(AuthAPI.RevokeAccess.Request) returns (AuthAPI.RevokeAccess.Response) {
     option (google.api.http) = {
-      post: "/v1/auth/revoke-grant"
+      post: "/v1/auth/revoke-access"
       body: "*"
     };
   }
 
   rpc ListGrants(AuthAPI.ListGrants.Request) returns (stream AuthAPI.ListGrants.Response) {}
 
+  // MintSignature creates a resource signature bound to a target session.
+  // Controllers use it during workflow bootstrap to pre-sign resources
+  // so the workflow can access them under its own isolated session.
+  rpc MintSignature(AuthAPI.MintSignature.Request) returns (AuthAPI.MintSignature.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/mint-signature"
+      body: "*"
+    };
+  }
+  rpc GetUserRoot(AuthAPI.GetUserRoot.Request) returns (AuthAPI.GetUserRoot.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/user-root"
+      body: "*"
+    };
+  }
   rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
 
   //
@@ -435,6 +456,9 @@ message TxAPI {
       ControllerAPI.ClearFeatures.Request controller_features_clear = 351; // clear list of resource features, provided by controller.
 
       SetDefaultColor.Request set_default_color = 400; // set default color for resource creation
+
+      AuthAPI.GrantAccess.Request grant_access = 410; // grant access to a resource within transaction
+      AuthAPI.RevokeAccess.Request revoke_access = 411; // revoke access to a resource within transaction
     }
   }
 
@@ -534,6 +558,9 @@ message TxAPI {
       ControllerAPI.ClearFeatures.Response controller_features_clear = 351;
 
       SetDefaultColor.Response set_default_color = 400;
+
+      AuthAPI.GrantAccess.Response grant_access = 410;
+      AuthAPI.RevokeAccess.Response revoke_access = 411;
     }
 
     google.rpc.Status error = 3;
@@ -584,7 +611,7 @@ message TxAPI {
 
   message SetDefaultColor {
     message Request {
-      optional bytes color_proof = 1;
+      bytes color_proof = 1;
     }
     message Response {}
   }
@@ -597,12 +624,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
-      optional bytes color_proof = 5;
+      bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
   message CreateEphemeral {
@@ -611,12 +638,12 @@ message ResourceAPI {
       Base.ResourceType type = 3;
 
       optional bytes data = 4;
-      optional bytes color_proof = 5;
+      bytes color_proof = 5;
     }
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
 
@@ -640,12 +667,12 @@ message ResourceAPI {
       bytes data = 6;
 
       bool error_if_exists = 7;
-      optional bytes color_proof = 8;
+      bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
 
@@ -657,7 +684,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
 
@@ -670,12 +697,12 @@ message ResourceAPI {
 
       bool error_if_exists = 7;
 
-      optional bytes color_proof = 8;
+      bytes color_proof = 8;
     }
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
 
@@ -695,7 +722,7 @@ message ResourceAPI {
   message LockInputs {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -704,7 +731,7 @@ message ResourceAPI {
   message LockOutputs {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -713,7 +740,7 @@ message ResourceAPI {
   message Exists {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {
@@ -724,10 +751,10 @@ message ResourceAPI {
   message SetError {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       uint64 error_resource_id = 2;
-      optional bytes error_resource_signature = 4;
+      bytes error_resource_signature = 4;
     }
     message Response {}
   }
@@ -735,7 +762,7 @@ message ResourceAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       bool load_fields = 2;
     }
@@ -781,7 +808,7 @@ message ResourceAPI {
 
     message Response {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
   }
 
@@ -791,7 +818,7 @@ message ResourceAPI {
   message Remove {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {}
@@ -801,7 +828,7 @@ message ResourceAPI {
     message Set {
       message Request {
         uint64 resource_id = 1;
-        optional bytes resource_signature = 3;
+        bytes resource_signature = 3;
         string name = 2;
       }
 
@@ -815,7 +842,7 @@ message ResourceAPI {
 
       message Response {
         uint64 resource_id = 1;
-        optional bytes resource_signature = 2;
+        bytes resource_signature = 2;
       }
     }
 
@@ -841,7 +868,7 @@ message ResourceAPI {
   message Tree {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       // Limit the maximum depth the tree is traversed.
       // The resource <resource_id> is considered at depth = 0, the values of its fields
@@ -861,7 +888,7 @@ message ResourceAPI {
   message TreeSize {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
     message Response {
       // size of all tree resources in bytes
@@ -909,7 +936,7 @@ message FieldAPI {
     message Request {
       Base.FieldRef field = 1;
       uint64 error_resource_id = 2;
-      optional bytes error_resource_signature = 3;
+      bytes error_resource_signature = 3;
     }
 
     message Response {}
@@ -942,7 +969,7 @@ message FieldAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 4;
+      bytes resource_signature = 4;
 
       // Start the listing from given position, returning first field with
       // name >= start_from.
@@ -1196,7 +1223,7 @@ message ResourceKVAPI {
   message List {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 4;
+      bytes resource_signature = 4;
 
       // Start the listing from given position, returning first item with
       // key >= start_from.
@@ -1230,7 +1257,7 @@ message ResourceKVAPI {
   message Set {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 4;
+      bytes resource_signature = 4;
 
       string key = 2;
       bytes value = 3;
@@ -1242,7 +1269,7 @@ message ResourceKVAPI {
   message Get {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1255,7 +1282,7 @@ message ResourceKVAPI {
   message GetIfExists {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1269,7 +1296,7 @@ message ResourceKVAPI {
   message Delete {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1280,7 +1307,7 @@ message ResourceKVAPI {
   message SetFlag {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 4;
+      bytes resource_signature = 4;
 
       string key = 2;
       bool value = 3;
@@ -1292,7 +1319,7 @@ message ResourceKVAPI {
   message GetFlag {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       string key = 2;
     }
@@ -1418,7 +1445,7 @@ message LocksAPI {
     message Create {
       message Request {
         uint64 resource_id = 1;
-        optional bytes resource_signature = 5;
+        bytes resource_signature = 5;
 
         google.protobuf.Duration timeout = 3;
         string name = 4;
@@ -1431,7 +1458,7 @@ message LocksAPI {
     message Update {
       message Request {
         uint64 resource_id = 1;
-        optional bytes resource_signature = 5;
+        bytes resource_signature = 5;
 
         bytes lease_id = 2;
         google.protobuf.Duration timeout = 3;
@@ -1443,7 +1470,7 @@ message LocksAPI {
     message Release {
       message Request {
         uint64 resource_id = 1;
-        optional bytes resource_signature = 3;
+        bytes resource_signature = 3;
 
         bytes lease_id = 2;
       }
@@ -1467,14 +1494,19 @@ message AuthAPI {
     }
   }
 
-  message GetJWTToken {
-    enum Role {
-      ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role
-      USER = 1;
-      CONTROLLER = 2;
-      WORKFLOW = 3;
-    }
+  enum Role {
+    ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role. Never appears in server responses.
+    
+    // Controller roles
+    ROLE_CONTROLLER = 2;
+    ROLE_WORKFLOW = 3;
 
+    // User roles
+    ROLE_USER = 1;
+    ROLE_ADMIN = 4;
+  }
+
+  message GetJWTToken {
     message Request {
       google.protobuf.Duration expiration = 1;
       optional Role requested_role = 2;
@@ -1482,25 +1514,45 @@ message AuthAPI {
 
     message Response {
       string token = 1;
+      
+      // Session info fields
       bytes session_id = 2;
+      Role role = 3;
+    }
+  }
+
+  message GetSessionInfo {
+    message Request {
+    }
+
+    message Response {
+      bytes session_id = 1;
+      Role role = 2;
     }
   }
 
   message GrantAccess {
+    // GrantType distinguishes regular grants from system-level grants.
+    enum GrantType {
+      GENERAL = 0; // regular user-to-user grant (default)
+      MAKE_RESOURCE_PUBLIC = 1; // make resource publically-accessible, showing it in ListUserResources for all users. Requires controller role.
+    }
+
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
-      string target_user = 3;        // user login to grant access to
-      Grant.Permissions permissions = 4;   // access level to grant
+      bytes resource_signature = 2;
+      string target_user = 3; // user login to grant access to
+      Grant.Permissions permissions = 4; // access level to grant
+      GrantType grant_type = 5; // default: GENERAL
     }
 
     message Response {}
   }
 
-  message RevokeGrant {
+  message RevokeAccess {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
       string target_user = 3; // user login whose grant to revoke
     }
 
@@ -1510,7 +1562,7 @@ message AuthAPI {
   message ListGrants {
     message Request {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {
@@ -1527,8 +1579,37 @@ message AuthAPI {
     string user = 1;
     uint64 resource_id = 2;
     Permissions permissions = 3; // access level from grant table
-    string granted_by = 4;      // login of the user who created this grant
-    int64 granted_at = 5;       // unix timestamp in milliseconds
+    string granted_by = 4; // login of the user who created this grant
+    int64 granted_at = 5; // unix timestamp in milliseconds
+  }
+
+  message MintSignature {
+    message Request {
+      uint64 resource_id = 1;
+      bytes target_sid = 2;
+      Base.Color color = 3;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+  }
+
+  message UserRoot {
+    uint64 resource_id = 1;
+    bytes resource_signature = 2;
+  }
+
+  message GetUserRoot {
+    message Request {
+      string login = 1;
+      bool do_not_create = 2;
+    }
+
+    message Response {
+      UserRoot user_root = 1;
+    }
   }
 
   message ListUserResources {
@@ -1560,14 +1641,9 @@ message AuthAPI {
       uint64 next_resource_id = 3;
     }
 
-    message UserRoot {
-      uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
-    }
-
     message SharedResource {
       uint64 resource_id = 1;
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
       Base.ResourceType resource_type = 3;
       Grant.Permissions permissions = 4;
     }

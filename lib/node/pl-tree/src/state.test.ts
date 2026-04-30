@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
 import {
+  bigintToResourceId,
   DefaultFinalResourceDataPredicate,
   NullResourceId,
-  ResourceId,
 } from "@milaboratories/pl-client";
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from "./accessors";
 import { PlTreeState } from "./state";
@@ -18,9 +18,7 @@ import {
   TestValueResourceState1,
 } from "./test_utils";
 
-function rid(id: bigint): ResourceId {
-  return id as ResourceId;
-}
+const rid = bigintToResourceId;
 
 test("simple tree test 1", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);

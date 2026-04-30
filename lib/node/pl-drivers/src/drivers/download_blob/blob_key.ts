@@ -1,8 +1,9 @@
-import { bigintToResourceId, ResourceId } from "@milaboratories/pl-client";
+import { bigintToResourceId, parseSignedResourceId, ResourceId } from "@milaboratories/pl-client";
 import * as path from "node:path";
 
 export function blobKey(rId: ResourceId): string {
-  return `${BigInt(rId)}`;
+  const { globalId } = parseSignedResourceId(rId);
+  return `${globalId}`;
 }
 
 export function pathToKey(fPath: string): string {

@@ -2,6 +2,7 @@ import type {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  ResourceRef,
   PlTransaction,
   ResourceData,
   ResourceId,
@@ -1917,7 +1918,7 @@ export interface ProjectState {
 export async function createProject(
   tx: PlTransaction,
   meta: ProjectMeta = InitialBlockMeta,
-): Promise<AnyResourceRef> {
+): Promise<ResourceRef> {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
   const ts = String(Date.now());
@@ -1952,7 +1953,7 @@ export async function duplicateProject(
   tx: PlTransaction,
   sourceRid: ResourceId,
   options?: { label?: string },
-): Promise<AnyResourceRef> {
+): Promise<ResourceRef> {
   // Read source resource data (with fields) and all KV pairs
   const sourceDataP = tx.getResourceData(sourceRid, true);
   const sourceKVsP = tx.listKeyValuesString(sourceRid);

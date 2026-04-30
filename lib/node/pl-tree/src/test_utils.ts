@@ -3,10 +3,9 @@ import type {
   FieldData,
   FieldType,
   OptionalResourceId,
-  ResourceId,
   ResourceType,
 } from "@milaboratories/pl-client";
-import { NullResourceId } from "@milaboratories/pl-client";
+import { NullResourceId, bigintToResourceId, isNotNullResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 
 export const TestRootType1: ResourceType = {
@@ -100,7 +99,7 @@ export const TestErrorResourceState2: Omit<ExtendedResourceData, "id" | "data"> 
   type: TestErrorResourceType1,
 };
 
-export const TestDynamicRootId1 = 1000001n as ResourceId;
+export const TestDynamicRootId1 = bigintToResourceId(1000001n);
 export const TestDynamicRootState1: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
@@ -110,7 +109,7 @@ export const TestDynamicRootState1: Omit<ExtendedResourceData, "fields"> = {
   id: TestDynamicRootId1,
 };
 
-export const TestDynamicRootId2 = 1000002n as ResourceId;
+export const TestDynamicRootId2 = bigintToResourceId(1000002n);
 export const TestDynamicRootState2: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
@@ -132,7 +131,11 @@ export function field(
     type,
     value,
     error,
-    status: value !== NullResourceId ? "Resolved" : error !== NullResourceId ? "Assigned" : "Empty",
+    status: isNotNullResourceId(value)
+      ? "Resolved"
+      : isNotNullResourceId(error)
+        ? "Assigned"
+        : "Empty",
     valueIsFinal,
   };
 }

@@ -9,11 +9,11 @@ import { BlockDumpArraySchemaUnified } from "./unified-state-schema";
 // v2/v1 ui api test
 test("v2: temp test", { timeout: 10_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
-    expect(prj.rid).toBe(pRid1);
+    expect(prj.id).toBe(prj1Id);
 
     const enterNumberId = await prj.addBlock("Block 1", enterNumberSpec);
     const sumNumbersId = await prj.addBlock("Block 2", sumNumbersSpec);
@@ -51,11 +51,11 @@ test("v2: temp test", { timeout: 10_000 }, async ({ expect }) => {
 
 test("v2: project watcher test", { timeout: 10_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
-    expect(prj.rid).toBe(pRid1);
+    expect(prj.id).toBe(prj1Id);
 
     const enterNumberId = await prj.addBlock("Block 1", enterNumberSpec);
     const sumNumbersId = await prj.addBlock("Block 2", sumNumbersSpec);

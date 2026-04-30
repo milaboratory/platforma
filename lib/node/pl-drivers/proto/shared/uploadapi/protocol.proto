@@ -78,7 +78,7 @@ message UploadAPI {
       // ID of the upload resource
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {
@@ -112,7 +112,7 @@ message UploadAPI {
       // ID of the upload resource
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       // Number of bytes uploaded since the earlier call to UpdateProgress.
       // This value is just blindly added to the 'bytes_processed' of the progress report,
@@ -134,7 +134,7 @@ message UploadAPI {
       // ID of the upload resource
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      optional bytes resource_signature = 6;
+      bytes resource_signature = 6;
 
       // Part to be uploaded. It is the responsibility of the client to keep track of already uploaded parts:
       // - client can request a URL for the same part twice (request -> request) without errors;
@@ -191,7 +191,7 @@ message UploadAPI {
       message Request {
         uint64 resource_id = 1;
         // Signature proving the caller is authorized to access this resource.
-        optional bytes resource_signature = 4;
+        bytes resource_signature = 4;
 
         // The client can send the final checksum of the whole file to verify the upload.
         // The algorithm used to calculate this final checksum must match the algorithm from
@@ -212,7 +212,7 @@ message UploadAPI {
     message Request {
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      optional bytes resource_signature = 2;
+      bytes resource_signature = 2;
     }
 
     message Response {}

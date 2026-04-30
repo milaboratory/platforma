@@ -1,5 +1,5 @@
 import type { PlClient, ResourceId, PlTransaction } from "@milaboratories/pl-client";
-import { field, isNullResourceId, isUnimplementedError } from "@milaboratories/pl-client";
+import { field, isNullResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import {
   ProjectMetaKey,
   ProjectCreatedTimestamp,
@@ -10,14 +10,22 @@ import {
   duplicateProject,
 } from "@milaboratories/pl-middle-layer";
 import type { ProjectMeta } from "@milaboratories/pl-middle-layer";
-import { createHash } from "node:crypto";
 
 export interface ProjectEntry {
   id: string;
-  rid: string;
+  rid: ResourceId;
   label: string;
   created: Date;
   lastModified: Date;
+}
+
+export interface ProjectIdentity {
+  /** Project ID (resourceIdToString of resource ID) */
+  id: string;
+  /** Signed resource ID for use in transactions */
+  rid: ResourceId;
+  /** UUID field name in the project list resource */
+  fieldName: string;
 }
 
 export interface ProjectInfo extends ProjectEntry {
@@ -46,9 +54,10 @@ export async function listProjects(
 
       const meta: ProjectMeta = metaStr ? JSON.parse(metaStr) : { label: "(unknown)" };
 
+      const projectId = resourceIdToString(f.value);
       entries.push({
-        id: f.name,
-        rid: String(f.value),
+        id: projectId,
+        rid: f.value,
         label: meta.label,
         created: createdStr ? new Date(Number(createdStr)) : new Date(0),
         lastModified: modifiedStr ? new Date(Number(modifiedStr)) : new Date(0),
@@ -63,16 +72,10 @@ export async function listProjects(
 /** Get detailed info about a project. */
 export async function getProjectInfo(
   pl: PlClient,
-  projectListRid: ResourceId,
   projectId: string,
+  rid: ResourceId,
 ): Promise<ProjectInfo> {
   return await pl.withReadTx("getProjectInfo", async (tx) => {
-    const fieldData = await tx.getField(field(projectListRid, projectId));
-    if (isNullResourceId(fieldData.value)) {
-      throw new Error(`Project "${projectId}" not found.`);
-    }
-
-    const rid = fieldData.value;
     const kvs = await tx.listKeyValuesString(rid);
 
     const metaKV = kvs.find((kv: { key: string }) => kv.key === ProjectMetaKey);
@@ -96,7 +99,7 @@ export async function getProjectInfo(
 
     return {
       id: projectId,
-      rid: String(rid),
+      rid: rid,
       label: meta.label,
       created: createdKV ? new Date(Number(createdKV.value)) : new Date(0),
       lastModified: modifiedKV ? new Date(Number(modifiedKV.value)) : new Date(0),
@@ -107,24 +110,29 @@ export async function getProjectInfo(
   });
 }
 
-/** Resolve a project identifier (id or label) to its field ID and ResourceId. */
+/** Resolve a project identifier (id or label) to its project ID, ResourceId and field name. */
 export async function resolveProject(
   pl: PlClient,
   projectListRid: ResourceId,
   identifier: string,
-): Promise<{ id: string; rid: ResourceId }> {
+): Promise<ProjectIdentity> {
   return await pl.withReadTx("resolveProject", async (tx) => {
     const data = await tx.getResourceData(projectListRid, true);
     for (const f of data.fields) {
       if (isNullResourceId(f.value)) continue;
-      if (f.name === identifier) {
-        return { id: f.name, rid: f.value };
+      const projectId = resourceIdToString(f.value);
+      if (projectId === identifier) {
+        return { id: projectId, rid: f.value, fieldName: f.name };
       }
+    }
+    // Fallback: match by label
+    for (const f of data.fields) {
+      if (isNullResourceId(f.value)) continue;
       const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
       if (metaStr) {
         const meta: ProjectMeta = JSON.parse(metaStr);
         if (meta.label === identifier) {
-          return { id: f.name, rid: f.value };
+          return { id: resourceIdToString(f.value), rid: f.value, fieldName: f.name };
         }
       }
     }
@@ -195,10 +203,10 @@ export async function renameProject(
 export async function deleteProject(
   pl: PlClient,
   projectListRid: ResourceId,
-  projectId: string,
+  fieldName: string,
 ): Promise<void> {
   await pl.withWriteTx("deleteProject", async (tx) => {
-    tx.removeField(field(projectListRid, projectId));
+    tx.removeField(field(projectListRid, fieldName));
     await tx.commit();
   });
 }
@@ -227,29 +235,15 @@ export async function navigateToUserRoot(
 ): Promise<{ userRoot: ResourceId; projectListRid: ResourceId }> {
   let userRootRid: ResourceId | undefined;
 
-  // Try new ListUserResources API first
-  try {
-    userRootRid = await pl.getUserRoot({ login: username });
-  } catch (err) {
-    if (!isUnimplementedError(err)) throw err;
-    // Backend doesn't support ListUserResources — fall through to legacy
-  }
-
-  // Legacy fallback: SHA256 named resource lookup
+  userRootRid = await pl.getUserRoot({ login: username, doNotCreate: true });
   if (userRootRid === undefined) {
-    const rootName = createHash("sha256").update(username).digest("hex");
-    userRootRid = await pl.withReadTx("navigateToUserRoot:legacy", async (tx) => {
-      if (!(await tx.checkResourceNameExists(rootName))) {
-        throw new Error(`User "${username}" not found on this server (no root resource).`);
-      }
-      return await tx.getResourceByName(rootName);
-    });
+    throw new Error(`User "${username}" not found on this server (no root resource).`);
   }
 
   // Read the projects field from the resolved user root
-  return await pl.withReadTx("navigateToUserRoot", async (tx) => {
+  return await pl.withReadTx("navigateToUserProjects", async (tx) => {
     const projectsFieldData = await tx.getField({
-      resourceId: userRootRid!,
+      resourceId: userRootRid,
       fieldName: ProjectsField,
     });
 
@@ -257,7 +251,7 @@ export async function navigateToUserRoot(
       throw new Error(`User "${username}" has no project list.`);
     }
 
-    return { userRoot: userRootRid!, projectListRid: projectsFieldData.value };
+    return { userRoot: userRootRid, projectListRid: projectsFieldData.value };
   });
 }
 

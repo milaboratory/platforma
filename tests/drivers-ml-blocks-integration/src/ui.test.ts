@@ -9,11 +9,11 @@ import type { BlockStateOverview } from "@milaboratories/pl-middle-layer";
 // V3 ui api
 test("v3: ui test", { timeout: 10_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
-    expect(prj.rid).toBe(pRid1);
+    expect(prj.id).toBe(prj1Id);
 
     const awaitOverview = async (cb: (overview: BlockStateOverview[]) => void) => {
       const overview = await prj.overview.awaitStableValue();

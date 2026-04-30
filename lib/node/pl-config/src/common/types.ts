@@ -146,7 +146,7 @@ export type PlControllerDataMainStoragesSettings = {
 
 export type PlControllerDataStoragesSettings = PlS3StorageSettings | PlFsStorageSettings;
 
-export type PlStorageID = { id: string };
+export type PlStorageID = { id: string; name: string };
 
 export type PlCommonStorageSettings = {
   indexCachePeriod: string;

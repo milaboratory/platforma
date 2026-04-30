@@ -72,15 +72,18 @@ controllers:
 
     storages:
       - id: remoteRoot
+        name: remoteRoot
         type: FS
         indexCachePeriod: 1m
         rootPath: ""
       - id: work
+        name: work
         type: FS
         indexCachePeriod: 1m
         rootPath: /home/pl-doctor/platforma_backend/storages/work
 
       - id: main
+        name: main
         type: FS
         indexCachePeriod: "0s"
         rootPath: /home/pl-doctor/platforma_backend/storages/main

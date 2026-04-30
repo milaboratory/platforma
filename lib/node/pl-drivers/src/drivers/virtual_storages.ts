@@ -9,6 +9,7 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
   if (path.sep == "/")
     return [
       {
+        id: "local",
         name: "local",
         root: "/",
         initialPath: home,
@@ -33,6 +34,7 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
       return drives.map((drive) => {
         const isHomeDrive = drive == homeDrive;
         return {
+          id: `local_disk_${drive}`,
           name: `local_disk_${drive}`,
           root: `${drive}:\\`,
           initialPath: isHomeDrive ? home : `${drive}:\\`,
@@ -41,6 +43,7 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
     } catch {
       return [
         {
+          id: `local_disk_${homeDrive}`,
           name: `local_disk_${homeDrive}`,
           root: `${homeDrive}:\\`,
           initialPath: home,

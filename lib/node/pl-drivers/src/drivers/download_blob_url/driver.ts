@@ -6,7 +6,11 @@ import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 import { FilesCache } from "../helpers/files_cache";
 import type { ResourceId } from "@milaboratories/pl-client";
-import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
+import {
+  resourceIdToString,
+  stringifyWithResourceId,
+  parseSignedResourceId,
+} from "@milaboratories/pl-client";
 import {
   type ArchiveFormat,
   type BlobToURLDriver,
@@ -225,6 +229,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
   }
 
   private getFilePath(id: ResourceId, format: ArchiveFormat): string {
-    return path.join(this.saveDir, `${String(BigInt(id))}_${format}`);
+    const { globalId } = parseSignedResourceId(id);
+    return path.join(this.saveDir, `${String(globalId)}_${format}`);
   }
 }
