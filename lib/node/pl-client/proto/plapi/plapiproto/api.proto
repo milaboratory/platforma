@@ -391,6 +391,7 @@ message TxAPI {
       ResourceAPI.Name.Delete.Request resource_name_delete = 69; // detach name from resource
       ResourceAPI.Tree.Request resource_tree = 70; // load tree rooted at given resource
       ResourceAPI.TreeSize.Request resource_tree_size = 71; // calculate size for all resources in tree
+      ResourceAPI.LoadSubtree.Request resource_load_subtree = 72; // server-side pruned subtree walk with known-finals skip
 
       FieldAPI.Create.Request field_create = 101; // add field to resource
       FieldAPI.Exists.Request field_exists = 107; // check if field exists
@@ -490,6 +491,7 @@ message TxAPI {
       ResourceAPI.Name.Delete.Response resource_name_delete = 69;
       ResourceAPI.Tree.Response resource_tree = 70;
       ResourceAPI.TreeSize.Response resource_tree_size = 71;
+      ResourceAPI.LoadSubtree.Response resource_load_subtree = 72;
 
       FieldAPI.Create.Response field_create = 101;
       FieldAPI.Exists.Response field_exists = 107;
@@ -868,6 +870,79 @@ message ResourceAPI {
       // could change between calls depending on compression algorithm
       uint64 size = 1;
       uint64 resource_count = 2;
+    }
+  }
+
+  // Server-side tree walk rooted at a given resource.
+  //
+  // The client declares which resources it already holds up-to-date
+  // (known_finals) and a set of pruning rules; the server performs the walk
+  // locally against the open read transaction and streams visited resources
+  // back without per-layer client round-trips.
+  //
+  // Used by the middle layer to synchronize project state efficiently on
+  // high-latency connections.
+  message LoadSubtree {
+    message Request {
+      // Root of the server-side walk.
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+
+      // Resources the client already holds with up-to-date, final state.
+      // The server returns no data for these resources and does not descend
+      // past them. Each entry must carry a signature obtained from a prior
+      // response.
+      repeated KnownFinal known_finals = 3;
+
+      // Declarative pruning rules evaluated per visited resource.
+      // Rules are tried in order; the first matching rule wins.
+      // If no rule matches, all fields are kept and traversal continues
+      // into them.
+      repeated PruningRule pruning = 4;
+
+      // If true, the response carries per-resource key-values alongside each
+      // visited resource. Defaults to false.
+      bool include_kv = 5;
+
+      // Safety limit: aborts traversal with ResourceExhausted if more than N
+      // resources would be visited. Zero means unlimited.
+      uint32 max_resources = 6;
+    }
+
+    message KnownFinal {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+
+    message PruningRule {
+      enum TypeMatch {
+        EXACT = 0;  // resource type name equals type_pattern
+        PREFIX = 1; // resource type name starts with type_pattern
+      }
+      TypeMatch type_match = 1;
+      string type_pattern = 2;
+
+      enum Action {
+        INCLUDE_ALL = 0;    // keep all fields and descend into them
+        DROP_ALL = 1;       // drop all fields and do not descend
+        EXCLUDE_FIELDS = 2; // drop fields matching field_names or any field_name_prefixes
+      }
+      Action action = 3;
+      repeated string field_names = 4;
+      repeated string field_name_prefixes = 5;
+    }
+
+    // Multi-message.
+    message Response {
+      Resource resource = 1;
+
+      message KV {
+        string key = 1;
+        bytes value = 2;
+      }
+
+      // Populated only when include_kv=true in the request.
+      repeated KV kv = 2;
     }
   }
 }
@@ -1610,7 +1685,17 @@ message MaintenanceAPI {
       string os = 7; // linux / windows / macosx
       string arch = 8; // x64 / aarch64
 
-      // next free: 9
+      // Opt-in capabilities advertised by this server instance, used by
+      // clients to pick between fast and fallback code paths without waiting
+      // for a failed RPC.
+      //
+      // Each entry is an opaque token "<feature>:<version>" (e.g.
+      // "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+      // The field is unset on servers predating this mechanism, which the
+      // client treats as "no optional capabilities advertised".
+      repeated string capabilities = 9;
+
+      // next free: 10
     }
   }
 

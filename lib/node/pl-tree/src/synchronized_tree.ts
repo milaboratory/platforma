@@ -10,7 +10,14 @@ import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TreeLoadingStat } from "./sync";
-import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import type { PruningSpec } from "@milaboratories/pl-client";
+import {
+  constructTreeLoadingRequest,
+  initialTreeLoadingStat,
+  loadTreeState,
+  loadTreeStateServerSide,
+  LoadSubtreeCapability,
+} from "./sync";
 import * as tp from "node:timers/promises";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 
@@ -23,6 +30,14 @@ export type SynchronizedTreeOps = {
   /** Pruning function to limit set of fields through which tree will
    * traverse during state synchronization */
   pruning?: PruningFunction;
+
+  /** Declarative pruning spec mirroring {@link pruning}. When both are
+   * provided and the server advertises {@link LoadSubtreeCapability},
+   * {@link loadTreeStateServerSide} is used and `pruningSpec` is authoritative.
+   * Otherwise the loader falls back to the client-driven BFS and
+   * {@link pruning} is used. Callers migrating to the new loader should
+   * provide both to keep parity across old and new backends. */
+  pruningSpec?: PruningSpec;
 
   /** Interval after last sync to sleep before the next one */
   pollingInterval: number;
@@ -46,6 +61,7 @@ export class SynchronizedTreeState {
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
+  private readonly pruningSpec?: PruningSpec;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -56,8 +72,16 @@ export class SynchronizedTreeState {
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger,
   ) {
-    const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
+    const {
+      finalPredicateOverride,
+      pruning,
+      pruningSpec,
+      pollingInterval,
+      stopPollingDelay,
+      logStat,
+    } = ops;
     this.pruning = pruning;
+    this.pruningSpec = pruningSpec;
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
@@ -123,11 +147,21 @@ export class SynchronizedTreeState {
   /** Executed from the main loop, and initialization procedure. */
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error("tree synchronization is terminated");
-    const request = constructTreeLoadingRequest(this.state, this.pruning);
+    const request = constructTreeLoadingRequest(this.state, this.pruning, this.pruningSpec);
+
+    // Pick server-side walker when the backend advertises the capability and
+    // a declarative pruning spec was supplied; fall back to the classic
+    // client-driven BFS otherwise. Both paths produce the same
+    // ExtendedResourceData[] shape and feed the same tree state.
+    const useServerSide =
+      this.pruningSpec !== undefined && this.pl.hasServerCapability(LoadSubtreeCapability);
+
     const data = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(tx, request, stats);
+        return useServerSide
+          ? await loadTreeStateServerSide(tx, request, stats)
+          : await loadTreeState(tx, request, stats);
       },
       txOps,
     );

@@ -496,7 +496,17 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
     } else {
-      return notEmpty((await cl.GET("/v1/ping")).data, "REST: empty response for ping request");
+      const restResponse = notEmpty(
+        (await cl.GET("/v1/ping")).data,
+        "REST: empty response for ping request",
+      );
+      // The REST schema (openapi.yaml, synced from pl) may lag behind the
+      // gRPC schema when new optional fields are added; default them here so
+      // REST callers see the same shape as gRPC callers.
+      return {
+        ...restResponse,
+        capabilities: (restResponse as { capabilities?: string[] }).capabilities ?? [],
+      } as grpcTypes.MaintenanceAPI_Ping_Response;
     }
   }
 

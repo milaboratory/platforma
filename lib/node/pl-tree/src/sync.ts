@@ -2,6 +2,7 @@ import type {
   FieldData,
   OptionalResourceId,
   PlTransaction,
+  PruningSpec,
   ResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
@@ -29,6 +30,15 @@ export interface TreeLoadingRequest {
    * all referenced resources, this is required to be able to pass it to tree
    * to update the state. */
   readonly pruningFunction?: PruningFunction;
+
+  /** Tree root, used as the sole seed when the server-side loader is active
+   * (see {@link loadTreeStateServerSide}). */
+  readonly root: ResourceId;
+
+  /** Wire-level pruning spec, mirroring {@link pruningFunction} but in a
+   * declarative shape transmissible to the server. Populated by callers that
+   * wish to opt into server-side loading. */
+  readonly pruningSpec?: PruningSpec;
 }
 
 /** Given the current tree state, build the request object to pass to
@@ -36,6 +46,7 @@ export interface TreeLoadingRequest {
 export function constructTreeLoadingRequest(
   tree: PlTreeState,
   pruningFunction?: PruningFunction,
+  pruningSpec?: PruningSpec,
 ): TreeLoadingRequest {
   const seedResources: ResourceId[] = [];
   const finalResources = new Set<ResourceId>();
@@ -47,7 +58,13 @@ export function constructTreeLoadingRequest(
   // if tree is empty, seeding tree reconstruction from the specified root
   if (seedResources.length === 0 && finalResources.size === 0) seedResources.push(tree.root);
 
-  return { seedResources, finalResources, pruningFunction };
+  return {
+    seedResources,
+    finalResources,
+    pruningFunction,
+    root: tree.root,
+    pruningSpec,
+  };
 }
 
 export type TreeLoadingStat = {
@@ -207,3 +224,48 @@ export async function loadTreeState(
 
   return result;
 }
+
+/** Server-side equivalent of {@link loadTreeState}: fetches the pruned
+ * subtree rooted at the tree's root in a single gRPC call, skipping any
+ * resources the client already knows are final. Requires the server to
+ * advertise the "loadSubtree:v1" capability. */
+export async function loadTreeStateServerSide(
+  tx: PlTransaction,
+  loadingRequest: TreeLoadingRequest,
+  stats?: TreeLoadingStat,
+): Promise<ExtendedResourceData[]> {
+  const startTimestamp = Date.now();
+
+  if (stats) {
+    stats.requests++;
+    // One network round-trip for the whole subtree, regardless of graph depth.
+    stats.roundTrips++;
+  }
+
+  const nodes = await tx.loadSubtree({
+    root: loadingRequest.root,
+    knownFinals: loadingRequest.finalResources,
+    pruning: loadingRequest.pruningSpec,
+    includeKv: true,
+  });
+
+  const result: ExtendedResourceData[] = nodes.map((n) => ({ ...n.resource, kv: n.kv }));
+
+  if (stats) {
+    for (const r of result) {
+      stats.retrievedResources++;
+      stats.retrievedFields += r.fields.length;
+      stats.retrievedKeyValues += r.kv.length;
+      stats.retrievedResourceDataBytes += r.data?.length ?? 0;
+      for (const kv of r.kv) stats.retrievedKeyValueBytes += kv.value.length;
+    }
+    stats.millisSpent += Date.now() - startTimestamp;
+  }
+
+  return result;
+}
+
+/** Capability token a server must advertise (via
+ * {@link PlClient.hasServerCapability}) before {@link loadTreeStateServerSide}
+ * may be used. */
+export const LoadSubtreeCapability = "loadSubtree:v1" as const;

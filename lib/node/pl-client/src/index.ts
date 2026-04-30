@@ -4,6 +4,7 @@ export * from "./core/config";
 export * from "./core/client";
 export * from "./core/driver";
 export * from "./core/transaction";
+export * from "./core/load_subtree";
 export * from "./core/errors";
 export * from "./core/default_client";
 export * from "./core/unauth_client";
