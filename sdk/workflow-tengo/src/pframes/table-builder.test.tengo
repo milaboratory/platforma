@@ -117,6 +117,51 @@ TestMultiplePrimaries := func() {
 	test.isTrue(true, "multiple addPrimary calls accepted")
 }
 
+// EnrichmentRef hops are either a global-form PObjectId string —
+// canonicalize({__isRef: true, blockId, name}) — decoded by the workflow at
+// build() time, or a pre-resolved {spec, data} map (used when the hop is sourced
+// from prerun/outputs and was resolved on the model side).
+sampleHitId := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"hit-1\"}"
+sampleLinkerId := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"linker-1\"}"
+
+TestAddColumnAcceptsEnrichmentRefWithGlobalIds := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumn({
+		__isEnrichment: "v1",
+		hit: sampleHitId,
+		path: [{ type: "linker", linker: sampleLinkerId }]
+	})
+	test.isTrue(true, "addColumn accepts EnrichmentRef with global-form PObjectId hops")
+}
+
+TestAddColumnAcceptsEnrichmentRefWithResolvedHops := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleResolved)
+	b.addColumn({
+		__isEnrichment: "v1",
+		hit: sampleResolved,
+		path: [{ type: "linker", linker: sampleResolved }]
+	})
+	test.isTrue(true, "addColumn accepts EnrichmentRef with pre-resolved {spec, data} hops")
+}
+
+TestAddColumnAcceptsEnrichmentRefWithoutPath := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumn({ __isEnrichment: "v1", hit: sampleHitId })
+	test.isTrue(true, "addColumn accepts zero-hop EnrichmentRef (path omitted)")
+}
+
+TestAddColumnsAcceptsArrayWithEnrichmentRef := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumns(
+		[sampleResolved, { __isEnrichment: "v1", hit: sampleHitId, path: [] }],
+		{ headerPrefix: "x_" })
+	test.isTrue(true, "addColumns accepts array mixing resolved columns and EnrichmentRefs")
+}
+
 // Note on panic-on-misuse coverage: Tengo unit tests can't catch panics
 // (`ll.panic` is terminal, no recover/try-catch). Misuse paths are guarded
 // by `ll.assert` in the source — see the assertions in:

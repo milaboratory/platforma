@@ -34,12 +34,8 @@ function linkerSnapshot(name: string, label?: string): ColumnSnapshot<PObjectId>
   };
 }
 
-function pathStep(
-  linkerName: string,
-  qualifications: AxisQualification[],
-  label?: string,
-): MatchVariant["path"][number] {
-  return { linker: linkerSnapshot(linkerName, label), qualifications };
+function pathStep(linkerName: string, label?: string): MatchVariant["path"][number] {
+  return { linker: linkerSnapshot(linkerName, label) };
 }
 
 describe("deriveDistinctTooltips", () => {
@@ -63,16 +59,13 @@ describe("deriveDistinctTooltips", () => {
     const entries: TooltipEntry[] = [
       {
         spec: createSpec("hit_col", "Hit Col"),
-        linkerPath: [
-          pathStep("linker_a", [axisQualification("sample", { batch: "A" })], "Linker A"),
-        ],
+        linkerPath: [pathStep("linker_a", "Linker A")],
       },
     ];
     const [tooltip] = deriveDistinctTooltips(entries);
     expect(tooltip).toBeDefined();
     expect(tooltip).toContain("Origin path");
     expect(tooltip).toContain("linker 1: Linker A");
-    expect(tooltip).toContain("qualifies: sample context: batch=A");
     expect(tooltip).toContain("hit column: Hit Col");
   });
 
@@ -146,7 +139,7 @@ describe("deriveDistinctTooltips", () => {
       {
         spec: createSpec("col1", "Col 1"),
         qualifications: { forQueries: {}, forHit: [] },
-        linkerPath: [pathStep("linker_a", [], "Linker A")],
+        linkerPath: [pathStep("linker_a", "Linker A")],
       },
     ];
     const [tooltip] = deriveDistinctTooltips(entries);
@@ -157,10 +150,7 @@ describe("deriveDistinctTooltips", () => {
     const entries: TooltipEntry[] = [
       {
         spec: createSpec("hit_col", "Hit Col"),
-        linkerPath: [
-          pathStep("linker_a", [], "Linker A"),
-          pathStep("linker_b", [axisQualification("sample", { batch: "B" })], "Linker B"),
-        ],
+        linkerPath: [pathStep("linker_a", "Linker A"), pathStep("linker_b", "Linker B")],
       },
     ];
     const [tooltip] = deriveDistinctTooltips(entries);
@@ -174,7 +164,7 @@ describe("deriveDistinctTooltips", () => {
         spec: createSpec("hit_col", "Hit"),
         variantIndex: 2,
         variantCount: 2,
-        linkerPath: [pathStep("linker_a", [axisQualification("sample", { batch: "B" })], "LA")],
+        linkerPath: [pathStep("linker_a", "LA")],
         qualifications: {
           forQueries: { ["main" as PObjectId]: [axisQualification("sample", { batch: "B" })] },
           forHit: [axisQualification("sample", { batch: "B" })],

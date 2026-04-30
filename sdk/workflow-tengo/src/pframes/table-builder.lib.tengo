@@ -28,6 +28,7 @@
  */
 
 ll := import(":ll")
+json := import("json")
 render := import(":render")
 assets := import(":assets")
 maps := import(":maps")
@@ -80,6 +81,42 @@ isResolvedColumn := func(value) {
 // Identifies PrimaryRef / ResolvedPrimaryRef by the version marker.
 isPrimaryRef := func(value) {
 	return ll.isMap(value) && value.__isPrimaryRef == "v1"
+}
+
+isEnrichmentRef := func(value) {
+	return ll.isMap(value) && value.__isEnrichment == "v1"
+}
+
+// `{ ref: EnrichmentRef, label }` from `enrichmentMatchesToRefs`. The
+// per-element label becomes the export header.
+isLabeledEnrichment := func(value) {
+	return ll.isMap(value) &&
+		is_string(value.label) &&
+		isEnrichmentRef(value.ref)
+}
+
+decodeGlobalPObjectId := func(id) {
+	ll.assert(is_string(id),
+		"expected PObjectId string, got %v", id)
+	decoded := json.decode(id)
+	ll.assert(ll.isMap(decoded) && is_string(decoded.blockId) && is_string(decoded.name),
+		"EnrichmentRef id is not a global PlRef; local-form ids must be " +
+		"pre-resolved to {spec, data} on the model side. Got: %v", decoded)
+	return { __isRef: true, blockId: decoded.blockId, name: decoded.name }
+}
+
+// step.linker is either a global-form PObjectId string or a resolved {spec, data}.
+enrichmentStepColumn := func(step) {
+	ll.assert(step.type == "linker",
+		"unsupported enrichment step type %q (only \"linker\" is allowed)", step.type)
+	ll.assert(!is_undefined(step.linker),
+		"linker step missing 'linker' field: %v", step)
+	return step.linker
+}
+
+// Anchored ColumnQuerySpec that needs `bquery.anchoredQuery` to resolve.
+isQuerySpec := func(q) {
+	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q)
 }
 
 /**
@@ -154,7 +191,7 @@ tableBuilder := func(format, ...ctxArg) {
 		 * Adds a single enrichment column. Expects exactly one match for query specs.
 		 *
 		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
-		 *               PColumnResult | PlRef
+		 *               PColumnResult | PlRef | EnrichmentRef | ResolvedEnrichmentRef
 		 * @param opts: (optional) { header?: string } — column header in exported file
 		 * @return self (for chaining)
 		 */
@@ -163,7 +200,7 @@ tableBuilder := func(format, ...ctxArg) {
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				header = opts[0].header
 			}
-			if isUnresolved(query) {
+			if isUnresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -178,7 +215,7 @@ tableBuilder := func(format, ...ctxArg) {
 		 * Adds multiple enrichment columns from a multi-match query or an array
 		 * of pre-resolved columns. Empty match set is allowed (produces no enrichments).
 		 *
-		 * @param query: ColumnQuerySpec | PColumnResult[] | PlRef
+		 * @param query: ColumnQuerySpec | (PColumnResult | EnrichmentRef | ResolvedEnrichmentRef)[] | PlRef
 		 * @param opts: (optional) { headerPrefix?: string, headerSuffix?: string }
 		 * @return self (for chaining)
 		 */
@@ -190,22 +227,40 @@ tableBuilder := func(format, ...ctxArg) {
 				headerSuffix = opts[0].headerSuffix
 			}
 
-			// Array of resolved columns: add each individually
+			// Per-element entries. Labeled enrichments override the
+			// shared header prefix/suffix with their own label.
 			if is_array(query) {
 				for col in query {
-					ll.assert(isResolvedColumn(col),
-						"array elements must be resolved columns {spec, data}")
+					ll.assert(isResolvedColumn(col) || isEnrichmentRef(col) || isLabeledEnrichment(col),
+						"array elements must be resolved columns {spec, data}, EnrichmentRefs, " +
+						"or labeled enrichments {ref, label}; got: %v", col)
+
+					entryQuery := col
+					entryHeader := undefined
+					entryPrefix := headerPrefix
+					entrySuffix := headerSuffix
+					if isLabeledEnrichment(col) {
+						entryQuery = col.ref
+						entryHeader = col.label
+						entryPrefix = undefined
+						entrySuffix = undefined
+					}
+
+					if isUnresolved(entryQuery) || isEnrichmentRef(entryQuery) {
+						_hasUnresolved = true
+					}
 					_columns = append(_columns, {
-						query: col,
-						headerPrefix: headerPrefix,
-						headerSuffix: headerSuffix,
+						query: entryQuery,
+						header: entryHeader,
+						headerPrefix: entryPrefix,
+						headerSuffix: entrySuffix,
 						mode: "multi"
 					})
 				}
 				return self
 			}
 
-			if isUnresolved(query) {
+			if isUnresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -268,13 +323,10 @@ tableBuilder := func(format, ...ctxArg) {
 		},
 
 		/**
-		 * Sets the cache duration for the underlying pt execution's inputs.
-		 * Useful when the builder runs in a sequence that may be re-rendered
-		 * shortly afterward — cached inputs enable recovery without recomputation.
-		 * A duration of ~one minute is typical. Pass a duration from the `times`
-		 * library (e.g. `1 * times.minute`).
+		 * Cache pt execution inputs for the given duration so a re-render shortly
+		 * after recovers without recomputation. Typical: ~1 minute.
 		 *
-		 * @param time: duration (int) — cache TTL
+		 * @param time: duration (int) from the `times` library (e.g. `1 * times.minute`)
 		 */
 		cacheInputs: func(time) {
 			ll.assert(is_int(time),
@@ -296,7 +348,7 @@ tableBuilder := func(format, ...ctxArg) {
 			// Determine whether ctx is needed: any unresolved PlRef, or any column query spec.
 			hasQuerySpec := false
 			for _, c in _columns {
-				if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+				if isQuerySpec(c.query) {
 					hasQuerySpec = true
 					break
 				}
@@ -307,8 +359,17 @@ tableBuilder := func(format, ...ctxArg) {
 					"Use wf.tableBuilder() or pass pre-resolved inputs.")
 			}
 
-			// Resolve a column (PlRef or {spec, data}) into {spec, data} futures.
+			// Resolve a column reference into {spec, data} futures.
+			// Accepts: PObjectId string | PlRef map | resolved {spec, data}.
 			resolveColumn := func(value) {
+				if is_string(value) {
+					ref := decodeGlobalPObjectId(value)
+					r := bquery.resolve(ref, _ctx)
+					return {
+						spec: r.getFutureInputField("spec"),
+						data: r.getFutureInputField("data")
+					}
+				}
 				if isUnresolved(value) {
 					r := bquery.resolve(value, _ctx)
 					return {
@@ -319,12 +380,10 @@ tableBuilder := func(format, ...ctxArg) {
 				return { spec: value.spec, data: value.data }
 			}
 
-			// Resolve primaries: collect {spec, data} and a filters list (0 or 1 entries
-			// today; extensible to N entries when PrimaryRef v2 adds `filters: PlRef[]`).
-			// `primaryPlRefs` tracks the ORIGINAL PlRef for each unresolved primary —
-			// passed as-is to bquery.anchoredQuery as the anchor (it re-resolves
-			// internally), since the result resource's `.ref` field carries an
-			// internal address, not the user's PlRef structure.
+			// Resolve primaries into {spec, data} + a filters list (0 or 1 in v1;
+			// PrimaryRef v2 will allow N). `primaryPlRefs` keeps the ORIGINAL PlRef
+			// per unresolved primary — bquery.anchoredQuery needs the user's PlRef
+			// as the anchor, not the resolved resource's internal `.ref`.
 			primaryEntries := []
 			primaryPlRefs := {}
 			for _, p in _primaries {
@@ -360,16 +419,14 @@ tableBuilder := func(format, ...ctxArg) {
 				primaryEntries = append(primaryEntries, entry)
 			}
 
-			// Run anchored query for column query specs.
-			// `addColumn` uses matchStrategy="expectSingle" — bquery asserts
-			// exactly one match (spec R11: "Expects exactly one match; panics on zero.").
-			// `addColumns` uses matchStrategy="expectMultiple" — bquery returns all
-			// matches as a map resource (spec R11: "Returns empty set on zero matches").
+			// Run anchored query for column query specs (spec R11):
+			//   addColumn  → expectSingle   (panics on zero, asserts exactly one).
+			//   addColumns → expectMultiple (returns all matches; empty set OK).
 			singleQueryByIdx := {}
 			multiQueryResultByIdx := {}
 			qMap := {}
 			for idx, c in _columns {
-				if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+				if isQuerySpec(c.query) {
 					strategy := "expectSingle"
 					if c.mode == "multi" { strategy = "expectMultiple" }
 					qMap["q" + string(idx)] = maps.deepMerge(c.query, {
@@ -384,7 +441,7 @@ tableBuilder := func(format, ...ctxArg) {
 
 				qResult := bquery.anchoredQuery(_ctx, primaryPlRefs, qMap)
 				for idx, c in _columns {
-					if !isUnresolved(c.query) && !isResolvedColumn(c.query) {
+					if isQuerySpec(c.query) {
 						r := qResult.getResult("q" + string(idx))
 						if c.mode == "multi" {
 							// Template iterates this resource via
@@ -400,8 +457,9 @@ tableBuilder := func(format, ...ctxArg) {
 				}
 			}
 
-			// Resolve enrichment columns. Single entries carry flat {spec, data};
-			// multi entries carry a `multiResult` resource expanded inside the template.
+			// Per-entry shape: flat {spec, data} for single, `multiResult`
+			// for multi-match queries, and resolved hit + path-step list
+			// for EnrichmentRefs.
 			columnEntries := []
 			for idx, c in _columns {
 				entry := {
@@ -410,7 +468,26 @@ tableBuilder := func(format, ...ctxArg) {
 					headerPrefix: c.headerPrefix,
 					headerSuffix: c.headerSuffix
 				}
-				if isResolvedColumn(c.query) {
+				if isEnrichmentRef(c.query) {
+					resolvedHit := resolveColumn(c.query.hit)
+					entry.spec = resolvedHit.spec
+					entry.data = resolvedHit.data
+					steps := []
+					if !is_undefined(c.query.path) {
+						for _, step in c.query.path {
+							resolvedStep := resolveColumn(enrichmentStepColumn(step))
+							steps = append(steps, {
+								type: step.type,
+								spec: resolvedStep.spec,
+								data: resolvedStep.data
+							})
+						}
+					}
+					entry.path = steps
+					if !is_undefined(c.query.qualifications) && len(c.query.qualifications) > 0 {
+						entry.qualifications = c.query.qualifications
+					}
+				} else if isResolvedColumn(c.query) {
 					entry.spec = c.query.spec
 					entry.data = c.query.data
 				} else if isUnresolved(c.query) {
@@ -427,11 +504,10 @@ tableBuilder := func(format, ...ctxArg) {
 				columnEntries = append(columnEntries, entry)
 			}
 
-			// Each primary entry matches v1 ResolvedPrimaryRef exactly
-			// (`__isPrimaryRef: "v1"`, nested `column`, optional singular `filter`)
-			// plus builder metadata (`name`, `header?`). Optional fields are
-			// added only when set — the JSON serializer rejects `undefined`
-			// values inside resource maps.
+			// Mirrors v1 ResolvedPrimaryRef shape (`__isPrimaryRef: "v1"`, nested
+			// `column`, optional singular `filter`) + builder metadata (`name`,
+			// `header?`). Optional fields are omitted when unset — the JSON
+			// serializer rejects `undefined` values inside resource maps.
 			primariesMap := {}
 			for idx, p in primaryEntries {
 				entry := {
@@ -460,6 +536,23 @@ tableBuilder := func(format, ...ctxArg) {
 				} else {
 					entry.spec = c.spec
 					entry.data = c.data
+				}
+				if !is_undefined(c.path) && len(c.path) > 0 {
+					// Map keyed by string(index): the smart serializer
+					// rejects arrays of refs but routes map entries.
+					steps := {}
+					for stepIdx, step in c.path {
+						steps[string(stepIdx)] = {
+							type: step.type,
+							spec: step.spec,
+							data: step.data
+						}
+					}
+					entry.path = steps
+					entry.pathLength = len(c.path)
+				}
+				if !is_undefined(c.qualifications) && len(c.qualifications) > 0 {
+					entry.qualifications = c.qualifications
 				}
 				if !is_undefined(c.header) { entry.header = c.header }
 				if !is_undefined(c.headerPrefix) { entry.headerPrefix = c.headerPrefix }
