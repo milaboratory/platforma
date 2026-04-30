@@ -32,6 +32,7 @@ import {
   withLabelAnnotations,
   withTableVisualAnnotations,
   withInfoAnnotations,
+  withDataStatusAnnotations,
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
@@ -78,8 +79,6 @@ export type ColumnVisibilityRule = {
 };
 
 export type ColumnMatcher = (spec: PColumnSpec) => boolean;
-
-// Main Function
 
 export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
@@ -138,17 +137,18 @@ export function createPlDataTableV3<A, U>(
   ]);
 
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, discovered);
-  const filters = concatFilters(
-    state.pTableParams.filters,
-    state.pTableParams.defaultFilters ?? remapedDefaultFilters,
+  const filters = filterFilters(
+    concatFilters(
+      state.pTableParams.filters,
+      state.pTableParams.defaultFilters ?? remapedDefaultFilters,
+    ),
+    columnIsAvailable,
   );
-  validateFilters(filters, columnIsAvailable);
 
-  const sorting = resolveSorting(
-    state.pTableParams.sorting,
-    remapSortingColumnIds(options.sorting, discovered),
+  const sorting = filterSorting(
+    resolveSorting(state.pTableParams.sorting, remapSortingColumnIds(options.sorting, discovered)),
+    columnIsAvailable,
   );
-  validateSorting(sorting, columnIsAvailable);
 
   const primaryEntries: PrimaryEntry<undefined | PColumnDataUniversal>[] = primarySnapshots.map(
     (v) => ({ column: resolveSnapshot(v.column) }),
@@ -274,6 +274,7 @@ function annotateColumnGroups(params: {
   const directAnnotated = liftToVariantColumns(
     direct,
     flow(
+      (cols) => withDataStatusAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
       (cols) => withTableVisualAnnotations(visibilityByColId, orderByColId, cols),
@@ -283,6 +284,7 @@ function annotateColumnGroups(params: {
   const linkedAnnotated = liftToVariantColumns(
     linked,
     flow(
+      (cols) => withDataStatusAnnotations(cols),
       (cols) => withHidenAxesAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
@@ -344,19 +346,35 @@ function createColumnValidationById(
   };
 }
 
-/** Validate that all column references in filters exist in the table. */
-function validateFilters(
+/** Drop filter leaves whose column references are not available in the table. */
+function filterFilters(
   filters: Nil | PlDataTableFilters,
   isValidColumnId: (id: string) => boolean,
-): void {
-  if (filters == null) return;
-  const filterColumns = collectFilterSpecColumns(filters);
-  const firstInvalid = filterColumns.find((col) => !isValidColumnId(col));
-  if (firstInvalid !== undefined) {
-    throw new Error(
-      `Invalid filter column ${firstInvalid}: column reference does not match the table columns`,
-    );
-  }
+): Nil | PlDataTableFilters {
+  if (isNil(filters)) return filters;
+
+  const isLeafValid = (leaf: PlDataTableFilterSpecLeaf): boolean => {
+    if (leaf.type === undefined) return true;
+    if ("column" in leaf && !isValidColumnId(leaf.column)) return false;
+    if ("rhs" in leaf && !isValidColumnId(leaf.rhs)) return false;
+    return true;
+  };
+
+  const prune = (node: PlDataTableFilterNode): Nil | PlDataTableFilterNode => {
+    if (node.type === "and" || node.type === "or") {
+      const kept = node.filters
+        .map((f) => prune(f))
+        .filter((f): f is PlDataTableFilterNode => !isNil(f));
+      return { type: node.type, filters: kept };
+    }
+    if (node.type === "not") {
+      const inner = prune(node.filter);
+      return isNil(inner) ? undefined : { type: "not", filter: inner };
+    }
+    return isLeafValid(node) ? node : undefined;
+  };
+
+  return prune(filters) as Nil | PlDataTableFilters;
 }
 
 /** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil. */
@@ -377,16 +395,12 @@ function resolveSorting(
   return (isEmpty(userSorting) ? defaultSorting : userSorting) ?? [];
 }
 
-/** Validate that all column references in sorting exist in the table. */
-function validateSorting(sorting: PTableSorting[], isValidColumnId: (id: string) => boolean): void {
-  const firstInvalid = sorting.find(
-    (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
-  );
-  if (firstInvalid !== undefined) {
-    throw new Error(
-      `Invalid sorting column ${JSON.stringify(firstInvalid.column)}: column reference does not match the table columns`,
-    );
-  }
+/** Drop sorting entries whose column is not available in the table. */
+function filterSorting(
+  sorting: PTableSorting[],
+  isValidColumnId: (id: string) => boolean,
+): PTableSorting[] {
+  return sorting.filter((s) => isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)));
 }
 
 function buildSecondaryGroups(
@@ -473,21 +487,22 @@ function remapSortingColumnIds(
   sorting: Nil | PTableSorting[],
   columns: TableColumnVariant[],
 ): Nil | PTableSorting[] {
-  return sorting?.map((s) => {
-    if (s.column.type === "axis") return s; // Axis references are unaffected by column ID remapping
+  return sorting?.flatMap((s) => {
+    if (s.column.type === "axis") return [s]; // Axis references are unaffected by column ID remapping
 
     const id = s.column.id;
-    const column =
-      columns.find((c) => (c.originalId ?? c.column.id) === id) ??
-      throwError(`Column ID "${id}" in sorting does not match any discovered column`);
+    const column = columns.find((c) => (c.originalId ?? c.column.id) === id);
+    if (column === undefined) return [];
 
-    return {
-      ...s,
-      column: {
-        type: "column",
-        id: column.column.id,
+    return [
+      {
+        ...s,
+        column: {
+          type: "column" as const,
+          id: column.column.id,
+        },
       },
-    };
+    ];
   });
 }
 
