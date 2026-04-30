@@ -1,20 +1,30 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+feats := import("@platforma-sdk/workflow-tengo:feats")
 
 self.defineOutputs(["gpuMemory"])
 
 sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
 
 self.body(func(inputs) {
-	/* Checks, that custom limits applied to the command do not
-	 * break anything in its execution. We can't check what _controller_ saw,
-	 * but we at least know SDK does not get broken when custom limits are applied. */
-	run := exec.builder().
+	/* Checks that the SDK builder chain does not break when .gpuMemory()
+	 * is wired in, mirroring what blocks like clonotype-space do.
+	 * Calling .gpuMemory() against a backend without GPU is a permanent error
+	 * from the runner driver, so we MUST gate with feats.hasGpu — same rule
+	 * blocks follow.
+	 * The hello-world echo of inputs.gpuMemory verifies the chain end-to-end
+	 * regardless of whether GPU was actually requested. */
+	builder := exec.builder().
 		software(sw).
 		cpu(1).
-		mem("2GiB").
-		gpuMemory(inputs.gpuMemory).
+		mem("2GiB")
+
+	if feats.hasGpu {
+		builder = builder.gpuMemory(inputs.gpuMemory)
+	}
+
+	run := builder.
 		arg(inputs.gpuMemory).
 		saveStdoutContent().
 		run()
