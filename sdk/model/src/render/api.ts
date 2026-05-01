@@ -45,6 +45,7 @@ import {
   withEnrichments,
   legacyColumnSelectorsToPredicate,
   extractAllColumns,
+  visitDataInfo,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -98,11 +99,13 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
 function transformPColumnData(
   data: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
-  // @todo: remove !
-  return mapPObjectData(data!, (d) => {
+  return mapPObjectData(data, (d) => {
     if (d instanceof TreeNodeAccessor) {
-      return d.handle;
+      return d.getIsReadyOrError() ? d.handle : [];
     } else if (isDataInfo(d)) {
+      let allReady = true;
+      visitDataInfo(d, (a) => (allReady &&= a.getIsReadyOrError()));
+      if (!allReady) return [];
       return mapDataInfo(d, (accessor) => accessor.handle);
     } else {
       return d ?? [];

@@ -1,5 +1,4 @@
 import {
-  mapPObjectData,
   mapPTableDef,
   extractAllColumns,
   uniqueBy,
@@ -97,7 +96,7 @@ export const AbstractPFrameDriverOpsDefaults: AbstractPFrameDriverOps = {
 export type DataInfoResolver<PColumnData, TreeEntry extends JsonSerializable> = (
   spec: PColumnSpec,
   data: PColumnData,
-) => PFrameInternal.DataInfo<TreeEntry>;
+) => PFrameInternal.DataInfo<TreeEntry> | undefined;
 
 export class AbstractPFrameDriver<
   PColumnData,
@@ -186,9 +185,10 @@ export class AbstractPFrameDriver<
       .filter((column) => ValueTypes.has(column.spec.valueType))
       .map((c) => ({ ...c, spec: resolveAnnotationParents(c.spec) }));
     const uniqueColumns = uniqueBy(supportedColumns, (column) => column.id);
-    const columns = uniqueColumns.map((c) =>
-      mapPObjectData(c, (d) => this.resolveDataInfo(c.spec, d)),
-    );
+    const columns = uniqueColumns.flatMap((c) => {
+      const info = this.resolveDataInfo(c.spec, c.data);
+      return info === undefined ? [] : [{ ...c, data: info }];
+    });
 
     return this.pFrames.acquire(columns);
   }
