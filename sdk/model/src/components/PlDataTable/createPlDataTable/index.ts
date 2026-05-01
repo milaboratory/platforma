@@ -26,4 +26,4 @@ export function createPlDataTable<A, U>(
   }
 }
 
-export { discoverTableColumnSnaphots } from "./discoverColumns";
+export { discoverTableColumnVariants as discoverTableColumnSnaphots } from "./discoverColumns";

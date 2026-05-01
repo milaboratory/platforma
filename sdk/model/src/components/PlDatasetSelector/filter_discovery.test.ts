@@ -1,10 +1,16 @@
 import { Annotation, createPlRef } from "@milaboratories/pl-model-common";
-import type { AxisSpec, PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
+import type {
+  AxisSpec,
+  PColumn,
+  PColumnSpec,
+  PlRef,
+  PObjectId,
+} from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import canonicalize from "canonicalize";
 import { afterEach, describe, expect, test } from "vitest";
-import type { ColumnSnapshot } from "../../columns/column_snapshot";
 import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
+import type { PColumnDataUniversal } from "../../render/internal";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 
 const drivers: SpecDriver[] = [];
@@ -32,8 +38,8 @@ function spec(
   return { kind: "PColumn", name, valueType: "Int", axesSpec, annotations } as PColumnSpec;
 }
 
-function snap(id: string, s: PColumnSpec): ColumnSnapshot<PObjectId> {
-  return { id: id as PObjectId, spec: s, dataStatus: "ready", data: { get: () => ({}) as never } };
+function snap(id: string, s: PColumnSpec): PColumn<PColumnDataUniversal | undefined> {
+  return { id: id as PObjectId, spec: s, dataStatus: "ready", data: {} as never };
 }
 
 // anchor defines the key space: [sample, gene]

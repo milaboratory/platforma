@@ -7,7 +7,7 @@ import type {
 import { canonicalizeAxisId, getAxisId } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../render/internal";
-import type { ColumnSnapshot } from "./column_snapshot";
+import type { PColumn } from "@milaboratories/pl-model-common";
 import { expandByPartition } from "./expand_by_partition";
 
 // --- Helpers ---
@@ -26,13 +26,13 @@ function createSpec(name: string, axes: AxisSpec[]): PColumnSpec {
   } as PColumnSpec;
 }
 
-/** Create a ready snapshot whose data.get() returns a JsonPartitioned DataInfoEntries. */
-function createReadySnapshot(
+/** Create a ready column whose data is a JsonPartitioned DataInfoEntries. */
+function createReadyColumn(
   id: string,
   columnSpec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): ColumnSnapshot<PObjectId> {
+): PColumn<PColumnDataUniversal | undefined> {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
@@ -44,22 +44,26 @@ function createReadySnapshot(
     dataStatus: "ready",
     // convertOrParsePColumnData checks isDataInfoEntries first (duck-type),
     // so this works at runtime despite the PColumnDataUniversal type
-    data: { get: () => dataEntries as unknown as PColumnDataUniversal },
+    data: dataEntries as unknown as PColumnDataUniversal,
   };
 }
 
-function createComputingSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
+function createComputingColumn(
+  id: string,
+  columnSpec: PColumnSpec,
+): PColumn<PColumnDataUniversal | undefined> {
   return {
     id: id as PObjectId,
     spec: columnSpec,
     dataStatus: "computing",
-    data: {
-      get: () => undefined,
-    },
+    data: undefined,
   };
 }
 
-function createAbsentSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
+function createAbsentColumn(
+  id: string,
+  columnSpec: PColumnSpec,
+): PColumn<PColumnDataUniversal | undefined> {
   return {
     id: id as PObjectId,
     spec: columnSpec,
@@ -74,16 +78,16 @@ interface Trace {
   importance: number;
 }
 
-function extractTrace(snapshot: ColumnSnapshot<PObjectId>): Trace[] {
-  const raw = snapshot.spec.annotations?.["pl7.app/trace"];
+function extractTrace(column: PColumn<PColumnDataUniversal | undefined>): Trace[] {
+  const raw = column.spec.annotations?.["pl7.app/trace"];
   return raw ? (JSON.parse(raw) as Trace[]) : [];
 }
 
 // --- Tests ---
 
 describe("expandByPartition", () => {
-  test("no split axes returns snapshots as-is", () => {
-    const s = createReadySnapshot("col1", createSpec("c", [createAxis("a")]), 1, [
+  test("no split axes returns columns as-is", () => {
+    const s = createReadyColumn("col1", createSpec("c", [createAxis("a")]), 1, [
       { key: ["x"], value: {} },
     ]);
     const result = expandByPartition([s], []);
@@ -92,8 +96,8 @@ describe("expandByPartition", () => {
     expect(result.items[0]).toBe(s); // same reference
   });
 
-  test("single axis split produces K snapshots", () => {
-    const s = createReadySnapshot(
+  test("single axis split produces K columns", () => {
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       2,
@@ -107,7 +111,7 @@ describe("expandByPartition", () => {
     const result = expandByPartition([s], [{ idx: 0 }]);
 
     expect(result.complete).toBe(true);
-    // unique values on axis 0: s1, s2 → 2 snapshots
+    // unique values on axis 0: s1, s2 → 2 columns
     expect(result.items).toHaveLength(2);
 
     // split axis removed from axesSpec
@@ -117,8 +121,8 @@ describe("expandByPartition", () => {
     }
   });
 
-  test("multi-axis split produces K1 x K2 snapshots", () => {
-    const s = createReadySnapshot(
+  test("multi-axis split produces K1 x K2 columns", () => {
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b"), createAxis("value")]),
       2,
@@ -143,7 +147,7 @@ describe("expandByPartition", () => {
   });
 
   test("trace annotations include split info", () => {
-    const s = createReadySnapshot(
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -178,7 +182,7 @@ describe("expandByPartition", () => {
 
   test("axisLabels option resolves labels", () => {
     const sampleAxis = createAxis("sample");
-    const s = createReadySnapshot("col1", createSpec("c", [sampleAxis, createAxis("gene")]), 1, [
+    const s = createReadyColumn("col1", createSpec("c", [sampleAxis, createAxis("gene")]), 1, [
       { key: ["s1"], value: {} },
       { key: ["s2"], value: {} },
     ]);
@@ -199,22 +203,22 @@ describe("expandByPartition", () => {
     expect(trace1[0].label).toBe("Sample Two");
   });
 
-  test("computing snapshot returns incomplete", () => {
-    const s = createComputingSnapshot("col1", createSpec("c", [createAxis("a")]));
+  test("computing column returns incomplete", () => {
+    const s = createComputingColumn("col1", createSpec("c", [createAxis("a")]));
     const result = expandByPartition([s], [{ idx: 0 }]);
     expect(result.complete).toBe(false);
     expect(result.items).toHaveLength(0);
   });
 
-  test("absent snapshot returns incomplete", () => {
-    const s = createAbsentSnapshot("col1", createSpec("c", [createAxis("a")]));
+  test("absent column returns incomplete", () => {
+    const s = createAbsentColumn("col1", createSpec("c", [createAxis("a")]));
     const result = expandByPartition([s], [{ idx: 0 }]);
     expect(result.complete).toBe(false);
     expect(result.items).toHaveLength(0);
   });
 
-  test("empty unique keys for an axis produces no snapshots for that column", () => {
-    const s = createReadySnapshot(
+  test("empty unique keys for an axis produces no columns for that column", () => {
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b")]),
       2,
@@ -226,8 +230,8 @@ describe("expandByPartition", () => {
     expect(result.items).toHaveLength(0);
   });
 
-  test("filtered data is accessible on expanded snapshots", () => {
-    const s = createReadySnapshot(
+  test("filtered data is accessible on expanded columns", () => {
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -241,16 +245,14 @@ describe("expandByPartition", () => {
     expect(result.complete).toBe(true);
     expect(result.items).toHaveLength(2);
 
-    // Each expanded snapshot should have accessible data
+    // Each expanded column should have accessible data
     for (const snap of result.items) {
       expect(snap.data).toBeDefined();
-      const data = snap.data!.get();
-      expect(data).toBeDefined();
     }
   });
 
-  test("multiple input snapshots are all expanded", () => {
-    const s1 = createReadySnapshot(
+  test("multiple input columns are all expanded", () => {
+    const s1 = createReadyColumn(
       "col1",
       createSpec("c1", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -259,7 +261,7 @@ describe("expandByPartition", () => {
         { key: ["s2"], value: {} },
       ],
     );
-    const s2 = createReadySnapshot(
+    const s2 = createReadyColumn(
       "col2",
       createSpec("c2", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -277,7 +279,7 @@ describe("expandByPartition", () => {
   });
 
   test("throws when split axis exceeds partition key length", () => {
-    const s = createReadySnapshot(
+    const s = createReadyColumn(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b"), createAxis("c")]),
       1, // only 1 partition key

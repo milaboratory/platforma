@@ -17,12 +17,7 @@ import {
   parseJson,
   PColumnName,
 } from "@milaboratories/pl-model-common";
-import type {
-  AxisLabelProvider,
-  ColumnProvider,
-  PColumnDataUniversal,
-  RenderCtxBase,
-} from "../../../render";
+import type { AxisLabelProvider, PColumnDataUniversal, RenderCtxBase } from "../../../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
 import type { CreatePlDataTableOps, PlDataTableModel } from "../typesV5";
@@ -33,6 +28,7 @@ import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
 import { createPTableDefV2 } from "./createPTableDefV2";
 import { isColumnOptional } from "./utils";
+import type { LegacyColumnProvider } from "../../../render";
 
 /**
  * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
@@ -210,7 +206,7 @@ export function createPlDataTableV2<A, U>(
 }
 
 function getAllLabelColumns(
-  resultPool: AxisLabelProvider & ColumnProvider,
+  resultPool: AxisLabelProvider & LegacyColumnProvider,
 ): PColumn<PColumnDataUniversal>[] | undefined {
   return new PColumnCollection()
     .addAxisLabelProvider(resultPool)

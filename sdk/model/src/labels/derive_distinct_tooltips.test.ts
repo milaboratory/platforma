@@ -1,12 +1,14 @@
 import {
   Annotation,
   type AxisQualification,
+  type PColumn,
   type PColumnSpec,
   type PObjectId,
 } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import { deriveDistinctTooltips, type TooltipEntry } from "./derive_distinct_tooltips";
-import type { ColumnSnapshot, MatchVariant } from "../columns";
+import type { MatchVariant } from "../columns";
+import type { PColumnDataUniversal } from "../render/internal";
 
 function createSpec(name: string, label?: string): PColumnSpec {
   return {
@@ -25,7 +27,7 @@ function axisQualification(
   return { axis: { name: axisName }, contextDomain };
 }
 
-function linkerSnapshot(name: string, label?: string): ColumnSnapshot<PObjectId> {
+function linkerColumn(name: string, label?: string): PColumn<PColumnDataUniversal | undefined> {
   return {
     id: `linker-${name}` as PObjectId,
     spec: createSpec(name, label),
@@ -35,7 +37,7 @@ function linkerSnapshot(name: string, label?: string): ColumnSnapshot<PObjectId>
 }
 
 function pathStep(linkerName: string, label?: string): MatchVariant["path"][number] {
-  return { linker: linkerSnapshot(linkerName, label) };
+  return { linker: linkerColumn(linkerName, label) };
 }
 
 describe("deriveDistinctTooltips", () => {

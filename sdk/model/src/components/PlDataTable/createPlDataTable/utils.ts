@@ -17,7 +17,8 @@ import {
   deriveDistinctTooltips,
   type TooltipEntry,
 } from "../../../labels/derive_distinct_tooltips";
-import type { ColumnDataStatus, MatchQualifications, MatchVariant } from "../../../columns";
+import type { PColumnDataStatus } from "@milaboratories/pl-model-common";
+import type { MatchQualifications, MatchVariant } from "../../../columns";
 import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector } from "../../../columns";
 import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
@@ -79,7 +80,12 @@ export function evaluateRules<R extends { match: ColumnMatcher | ColumnSelector 
 
   if (hasSelectorRules) {
     const dedupedColumns = dedupeById(columns);
-    const pColumns = dedupedColumns.map((c) => ({ id: c.id, spec: c.spec, data: undefined }));
+    const pColumns = dedupedColumns.map((c) => ({
+      id: c.id,
+      spec: c.spec,
+      data: undefined,
+      dataStatus: "absent" as const,
+    }));
     const collection = new ColumnCollectionBuilder(pframeSpec)
       .addSource(new ArrayColumnProvider(pColumns))
       .build();
@@ -159,7 +165,7 @@ export function withLabelAnnotations<
 export function withDataStatusAnnotations<
   T extends {
     readonly spec: PColumnSpec;
-    readonly dataStatus: ColumnDataStatus;
+    readonly dataStatus: PColumnDataStatus;
   },
 >(columns: T[]): T[] {
   return columns.map((col) => {

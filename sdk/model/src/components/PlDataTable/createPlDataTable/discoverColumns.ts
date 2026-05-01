@@ -1,16 +1,15 @@
-import type { PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
+import type { PColumn, PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
 import { createDiscoveredPColumnId, isPlRef } from "@milaboratories/pl-model-common";
-import type { RenderCtxBase } from "../../../render";
+import type { PColumnDataUniversal, RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
   ColumnVariant,
   RelaxedColumnSelector,
-  ColumnSnapshotProvider,
-  ColumnSnapshot,
+  ColumnProvider,
 } from "../../../columns";
 import { ColumnCollectionBuilder } from "../../../columns";
-import { toColumnSnapshotProvider } from "../../../columns/column_snapshot_provider";
-import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_sources";
+import { toColumnProvider } from "../../../columns/column_provider";
+import { collectCtxColumnProviders } from "../../../columns/ctx_column_sources";
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnVariant } from "./createPlDataTableV3";
 
@@ -21,7 +20,7 @@ export type DiscoverTableColumnOptions = {
 };
 
 /** Discover columns from sources/anchors and normalize into a flat TableColumnVariant list. */
-export function discoverTableColumnSnaphots(
+export function discoverTableColumnVariants(
   ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,
 ): TableColumnVariant[] | undefined {
@@ -42,9 +41,7 @@ export function discoverTableColumnSnaphots(
   if (collection === undefined) return undefined;
 
   try {
-    const variants = collection.findColumnVariants({
-      ...(resolvedOptions.selector ?? {}),
-    });
+    const variants = collection.findColumnVariants(resolvedOptions.selector);
     const anchors = collection.getAnchors();
     return mapToTableColumnVariants(variants, anchors);
   } finally {
@@ -74,20 +71,18 @@ function resolveAnchors(
   return result;
 }
 
-/** Resolve column snapshot providers from explicit sources or context. */
+/** Resolve column providers from explicit sources or context. */
 function resolveProviders(
   ctx: RenderCtxBase,
   sources: undefined | ColumnSource[],
-): ColumnSnapshotProvider[] {
-  return sources !== undefined
-    ? sources.map(toColumnSnapshotProvider)
-    : collectCtxColumnSnapshotProviders(ctx);
+): ColumnProvider[] {
+  return sources !== undefined ? sources.map(toColumnProvider) : collectCtxColumnProviders(ctx);
 }
 
 /** Map column variants into TableColumnVariant list with anchor-derived isPrimary flag. */
 function mapToTableColumnVariants(
   variants: readonly ColumnVariant[],
-  anchors: Map<string, ColumnSnapshot<PObjectId>>,
+  anchors: Map<string, PColumn<PColumnDataUniversal | undefined>>,
 ): TableColumnVariant[] {
   const columnIdToAnchorName = new Map<PObjectId, string>(
     Array.from(anchors.entries(), ([key, { id }]) => [id, key] as const),

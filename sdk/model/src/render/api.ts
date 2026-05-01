@@ -6,6 +6,7 @@ import type {
   ModelServices,
   Option,
   PColumn,
+  PColumnDataStatus,
   PColumnLazy,
   PColumnSelector,
   PColumnSpec,
@@ -15,7 +16,6 @@ import type {
   PObject,
   PObjectId,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -63,7 +63,7 @@ import { MainAccessorName, StagingAccessorName } from "./internal";
 import {
   PColumnCollection,
   type AxisLabelProvider,
-  type ColumnProvider,
+  type LegacyColumnProvider,
 } from "./util/column_collection";
 import type { LabelDerivationOps } from "./util/label";
 import { deriveLabels } from "./util/label";
@@ -98,7 +98,8 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
 function transformPColumnData(
   data: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
-  return mapPObjectData(data, (d) => {
+  // @todo: remove !
+  return mapPObjectData(data!, (d) => {
     if (d instanceof TreeNodeAccessor) {
       return d.handle;
     } else if (isDataInfo(d)) {
@@ -130,15 +131,8 @@ type GetOptionsOpts = {
   label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps;
 };
 
-export class ResultPool implements ColumnProvider, AxisLabelProvider {
+export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
-
-  /**
-   * @deprecated use getOptions()
-   */
-  public calculateOptions(predicate: PSpecPredicate): Option[] {
-    return this.ctx.calculateOptions(predicate);
-  }
 
   public getOptions(
     predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
@@ -286,13 +280,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     }));
   }
 
-  /**
-   * @deprecated use getData()
-   */
-  public getDataFromResultPool(): ResultCollection<PObject<TreeNodeAccessor>> {
-    return this.getData();
-  }
-
   public getData(): ResultCollection<PObject<TreeNodeAccessor>> {
     const result = this.ctx.getDataFromResultPool();
     return {
@@ -305,15 +292,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
         },
       })),
     };
-  }
-
-  /**
-   * @deprecated use getDataWithErrors()
-   */
-  public getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, "id">
-  > {
-    return this.getDataWithErrors();
   }
 
   public getDataWithErrors(): ResultCollection<
@@ -335,13 +313,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     };
   }
 
-  /**
-   * @deprecated use getSpecs()
-   */
-  public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
-    return this.getSpecs();
-  }
-
   public getSpecs(): ResultCollection<PObjectSpec> {
     return this.ctx.getSpecsFromResultPool();
   }
@@ -351,12 +322,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
-    // @TODO remove after 1 Jan 2025; forward compatibility
-    if (typeof this.ctx.getDataFromResultPoolByRef === "undefined")
-      return this.getData().entries.find(
-        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name,
-      )?.obj;
-    const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name); // Keep original call
+    const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
     // Need to handle undefined case before mapping
     if (!data) return undefined;
     return mapPObjectData(data, (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]));
@@ -367,10 +333,37 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * @param ref a Ref
    * @returns p-column associated with the ref
    */
-  public getPColumnByRef(ref: PlRef): PColumn<TreeNodeAccessor> | undefined {
-    const data = this.getDataByRef(ref);
-    if (!data) return undefined;
-    return ensurePColumn(data);
+  public getPColumnByRef(ref: PlRef): PColumn<TreeNodeAccessor | undefined> | undefined {
+    const spec = this.getSpecByRef(ref);
+    if (!spec) return undefined;
+    if (!isPColumnSpec(spec)) throw new Error(`not a PColumn spec (kind = ${spec.kind})`);
+
+    // oxlint-disable-next-line typescript/no-this-alias
+    const self = this;
+    let _resolved = false;
+    let _data: TreeNodeAccessor | undefined;
+    let _status: PColumnDataStatus;
+    // Resolve once to keep data and status in sync.
+    const resolve = () => {
+      if (_resolved) return;
+      const data = self.getDataByRef(ref);
+      _data = data ? ensurePColumn(data).data : undefined;
+      _status = self.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
+      _resolved = true;
+    };
+
+    return {
+      id: canonicalize(ref) as PObjectId,
+      spec,
+      get data(): TreeNodeAccessor | undefined {
+        resolve();
+        return _data;
+      },
+      get dataStatus(): PColumnDataStatus {
+        resolve();
+        return _status;
+      },
+    } satisfies PColumn<TreeNodeAccessor | undefined>;
   }
 
   /**
@@ -498,32 +491,10 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
     const predicate =
       typeof selectors === "function" ? selectors : legacyColumnSelectorsToPredicate(selectors);
 
-    const matchedSpecs = this.getSpecs().entries.filter(({ obj: spec }) => {
-      if (!isPColumnSpec(spec)) return false;
-      return predicate(spec);
-    });
-
-    // Map specs to PColumn objects with lazy data loading
-    return matchedSpecs.map(({ ref, obj: spec }) => {
-      // Type assertion needed because filter ensures it's PColumnSpec
-      const pcolumnSpec = spec as PColumnSpec;
-      let _cachedData: TreeNodeAccessor | undefined | null = null; // Use null to distinguish initial state from undefined result
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      const self = this; // Capture 'this' for use inside the getter
-
-      return {
-        id: canonicalize(ref) as PObjectId,
-        spec: pcolumnSpec,
-        get data(): TreeNodeAccessor | undefined {
-          if (_cachedData !== null) {
-            return _cachedData; // Return cached data (could be undefined if fetch failed)
-          }
-
-          _cachedData = self.getPColumnByRef(ref)?.data;
-          return _cachedData;
-        },
-      } satisfies PColumn<TreeNodeAccessor | undefined>; // Cast needed because 'data' is a getter
-    });
+    return this.getSpecs()
+      .entries.filter(({ obj: spec }) => isPColumnSpec(spec) && predicate(spec))
+      .map(({ ref }) => this.getPColumnByRef(ref))
+      .filter((col): col is PColumn<TreeNodeAccessor | undefined> => col !== undefined);
   }
 
   /**

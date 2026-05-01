@@ -3,7 +3,7 @@ import type {
   AxisFilterValue,
   AxisId,
   PartitionedDataInfoEntries,
-  PObjectId,
+  PColumn,
 } from "@milaboratories/pl-model-common";
 import {
   canonicalizeAxisId,
@@ -12,10 +12,9 @@ import {
   isPartitionedDataInfoEntries,
 } from "@milaboratories/pl-model-common";
 import type { TreeNodeAccessor } from "../render/accessor";
+import type { PColumnDataUniversal } from "../render/internal";
 import { filterDataInfoEntries } from "../render/util/axis_filtering";
 import { convertOrParsePColumnData, getUniquePartitionKeys } from "../render/util/pcolumn_data";
-import type { ColumnSnapshot } from "./column_snapshot";
-import { createReadyColumnData } from "./column_snapshot";
 
 // --- Types ---
 
@@ -30,8 +29,8 @@ export interface ExpandByPartitionOpts {
 }
 
 export interface ExpandByPartitionResult {
-  /** Expanded snapshots (one per key combination per original snapshot). */
-  readonly items: ColumnSnapshot<PObjectId>[];
+  /** Expanded columns (one per key combination per original column). */
+  readonly items: PColumn<PColumnDataUniversal | undefined>[];
   /** False if any column's data was not ready for splitting. */
   readonly complete: boolean;
 }
@@ -39,35 +38,34 @@ export interface ExpandByPartitionResult {
 // --- Implementation ---
 
 /**
- * Expand snapshots by splitting along partition axes.
+ * Expand columns by splitting along partition axes.
  *
- * For each snapshot, reads partition data, enumerates unique keys on the
- * split axes, and produces one output snapshot per key combination —
+ * For each column, reads partition data, enumerates unique keys on the
+ * split axes, and produces one output column per key combination —
  * with the split axes removed from `axesSpec` and a `pl7.app/trace`
  * annotation recording the split origin.
  *
- * Returns `{ items: [], complete: false }` when any snapshot's data
+ * Returns `{ items: [], complete: false }` when any column's data
  * is not ready (status !== 'ready' or partition data unavailable).
  */
 export function expandByPartition(
-  snapshots: ColumnSnapshot<PObjectId>[],
+  columns: PColumn<PColumnDataUniversal | undefined>[],
   splitAxes: SplitAxis[],
   opts?: ExpandByPartitionOpts,
 ): ExpandByPartitionResult {
   if (splitAxes.length === 0) {
-    return { items: snapshots, complete: true };
+    return { items: columns, complete: true };
   }
 
   const splitAxisIdxs = splitAxes.map((a) => a.idx).sort((a, b) => a - b);
-  const result: ColumnSnapshot<PObjectId>[] = [];
+  const result: PColumn<PColumnDataUniversal | undefined>[] = [];
 
-  for (const snapshot of snapshots) {
-    if (snapshot.dataStatus !== "ready" || snapshot.data === undefined) {
+  for (const column of columns) {
+    if (column.dataStatus !== "ready" || column.data === undefined) {
       return { items: [], complete: false };
     }
 
-    const rawData = snapshot.data.get();
-    const dataEntries = convertOrParsePColumnData(rawData as TreeNodeAccessor | undefined);
+    const dataEntries = convertOrParsePColumnData(column.data as TreeNodeAccessor | undefined);
 
     if (dataEntries === undefined) {
       return { items: [], complete: false };
@@ -75,7 +73,7 @@ export function expandByPartition(
 
     if (!isPartitionedDataInfoEntries(dataEntries)) {
       throw new Error(
-        `Splitting requires Partitioned DataInfoEntries, but got ${dataEntries.type} for column ${String(snapshot.id)}`,
+        `Splitting requires Partitioned DataInfoEntries, but got ${dataEntries.type} for column ${String(column.id)}`,
       );
     }
 
@@ -84,13 +82,13 @@ export function expandByPartition(
     const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1];
     if (maxSplitIdx >= dataEntries.partitionKeyLength) {
       throw new Error(
-        `Not enough partition keys (${dataEntries.partitionKeyLength}) for requested split axes (max index ${maxSplitIdx}) in column ${snapshot.spec.name}`,
+        `Not enough partition keys (${dataEntries.partitionKeyLength}) for requested split axes (max index ${maxSplitIdx}) in column ${column.spec.name}`,
       );
     }
 
     // Resolve labels for each split axis
     const axesLabels: (undefined | Record<string | number, string>)[] = splitAxisIdxs.map((idx) =>
-      opts?.axisLabels?.(getAxisId(snapshot.spec.axesSpec[idx])),
+      opts?.axisLabels?.(getAxisId(column.spec.axesSpec[idx])),
     );
 
     // Generate all key combinations across split axes
@@ -98,7 +96,7 @@ export function expandByPartition(
     if (keyCombinations.length === 0) continue;
 
     // Build adjusted axesSpec (remove split axes in reverse order)
-    const newAxesSpec = [...snapshot.spec.axesSpec];
+    const newAxesSpec = [...column.spec.axesSpec];
     for (let i = splitAxisIdxs.length - 1; i >= 0; i--) {
       newAxesSpec.splice(splitAxisIdxs[i], 1);
     }
@@ -110,7 +108,7 @@ export function expandByPartition(
 
       const traceEntries = keyCombo.map((value, sAxisIdx) => {
         const axisIdx = splitAxisIdxs[sAxisIdx];
-        const axisId = getAxisId(snapshot.spec.axesSpec[axisIdx]);
+        const axisId = getAxisId(column.spec.axesSpec[axisIdx]);
         const labelMap = axesLabels[sAxisIdx];
         const label = labelMap?.[value] ?? String(value);
         return {
@@ -126,19 +124,19 @@ export function expandByPartition(
       );
 
       const adjustedSpec = {
-        ...snapshot.spec,
+        ...column.spec,
         axesSpec: newAxesSpec,
         annotations: {
-          ...snapshot.spec.annotations,
+          ...column.spec.annotations,
           "pl7.app/trace": JSON.stringify(traceEntries),
         },
       };
 
       result.push({
-        id: snapshot.id,
+        id: column.id,
         spec: adjustedSpec,
         dataStatus: "ready",
-        data: createReadyColumnData(() => entriesToDataInfo(filteredData)),
+        data: entriesToDataInfo(filteredData),
       });
     }
   }

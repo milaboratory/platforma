@@ -20,7 +20,7 @@ import { isEmpty } from "es-toolkit/compat";
 import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
-import type { ColumnSelector, ColumnSnapshot, ColumnVariant, MatchingMode } from "../../../columns";
+import type { ColumnSelector, ColumnVariant, MatchingMode } from "../../../columns";
 import type { DeriveLabelsOptions } from "../../../labels/derive_distinct_labels";
 import {
   deriveAllLabels,
@@ -36,7 +36,7 @@ import {
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
+import { discoverTableColumnVariants, type DiscoverTableColumnOptions } from "./discoverColumns";
 import { isNil, isPlainObject, throwError, type Nil } from "@milaboratories/helpers";
 import { flow } from "es-toolkit";
 
@@ -89,7 +89,7 @@ export function createPlDataTableV3<A, U>(
   const primaryJoinType = options.primaryJoinType ?? "full";
 
   const discovered = isPlainObject(options.columns)
-    ? discoverTableColumnSnaphots(ctx, options.columns)
+    ? discoverTableColumnVariants(ctx, options.columns)
     : options.columns;
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
@@ -126,10 +126,10 @@ export function createPlDataTableV3<A, U>(
     displayOptions: options.displayOptions,
   });
 
-  const primarySnapshots = annotated.direct.filter((c) => c.isPrimary);
-  const secondarySnapshots = annotated.direct.filter((c) => !c.isPrimary);
+  const primaryColumns = annotated.direct.filter((c) => c.isPrimary);
+  const secondaryColumns = annotated.direct.filter((c) => !c.isPrimary);
 
-  if (primarySnapshots.length === 0) return undefined;
+  if (primaryColumns.length === 0) return undefined;
 
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct.map((v) => v.column),
@@ -150,11 +150,9 @@ export function createPlDataTableV3<A, U>(
     columnIsAvailable,
   );
 
-  const primaryEntries: PrimaryEntry<undefined | PColumnDataUniversal>[] = primarySnapshots.map(
-    (v) => ({ column: resolveSnapshot(v.column) }),
-  );
+  const primaryEntries: PrimaryEntry<undefined | PColumnDataUniversal>[] = primaryColumns;
   const secondaryGroups: SecondaryGroup<undefined | PColumnDataUniversal>[] = buildSecondaryGroups(
-    secondarySnapshots,
+    secondaryColumns,
     annotated.linked,
   );
   const fullDef = createPTableDefV3({
@@ -169,9 +167,9 @@ export function createPlDataTableV3<A, U>(
   // TODO: is workaround for dropdown suggestions.
   // Pframe have not equivalent data for columns relativly to Ptable
   const pframeHandle = ctx.createPFrame([
-    ...annotated.direct.map((v) => resolveSnapshot(v.column)),
-    ...annotated.linked.map((v) => resolveSnapshot(v.column)),
-    ...collectLinkerSnapshots(annotated.linked).map(resolveSnapshot),
+    ...annotated.direct.map((v) => v.column),
+    ...annotated.linked.map((v) => v.column),
+    ...collectLinkerColumns(annotated.linked),
   ]);
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
@@ -231,8 +229,10 @@ function splitDiscoveredColumns(columns: TableColumnVariant[]): SplitDiscoveredC
   return { direct, linked };
 }
 
-/** All linker snapshots across the given linked columns, deduped by id. */
-function collectLinkerSnapshots(linked: TableColumnVariant[]): ColumnSnapshot<PObjectId>[] {
+/** All linker columns across the given linked columns, deduped by id. */
+function collectLinkerColumns(
+  linked: TableColumnVariant[],
+): PColumn<PColumnDataUniversal | undefined>[] {
   return uniqueBy(
     linked.flatMap((lc) => lc.path.map((s) => s.linker)),
     (c) => c.id,
@@ -258,7 +258,7 @@ function annotateColumnGroups(params: {
   const allColumnsForRules = [
     ...direct.map((v) => v.column),
     ...linked.map((v) => v.column),
-    ...collectLinkerSnapshots(linked),
+    ...collectLinkerColumns(linked),
   ];
   const visibilityByColId = evaluateRules(
     displayOptions?.visibility ?? [],
@@ -298,10 +298,18 @@ function annotateColumnGroups(params: {
   };
 }
 
-/** Lift a snapshot-array transform so it runs on the inner `column` of each variant. */
-function liftToVariantColumns<V extends { readonly column: ColumnSnapshot<DiscoveredPColumnId> }>(
+/** Lift a column-array transform so it runs on the inner `column` of each variant. */
+function liftToVariantColumns<
+  V extends {
+    readonly column: PColumn<PColumnDataUniversal | undefined> & {
+      readonly id: DiscoveredPColumnId;
+    };
+  },
+>(
   variants: V[],
-  fn: (cols: ColumnSnapshot<DiscoveredPColumnId>[]) => ColumnSnapshot<DiscoveredPColumnId>[],
+  fn: (
+    cols: (PColumn<PColumnDataUniversal | undefined> & { readonly id: DiscoveredPColumnId })[],
+  ) => (PColumn<PColumnDataUniversal | undefined> & { readonly id: DiscoveredPColumnId })[],
 ): V[] {
   const cols = fn(variants.map((v) => v.column));
   if (cols.length !== variants.length)
@@ -410,17 +418,15 @@ function buildSecondaryGroups(
   return [
     ...direct.map(
       (c): SecondaryGroup<undefined | PColumnDataUniversal> => ({
-        entries: [{ column: resolveSnapshot(c.column), qualifications: c.qualifications.forHit }],
+        entries: [{ column: c.column, qualifications: c.qualifications.forHit }],
         primaryQualifications: c.qualifications.forQueries,
       }),
     ),
     ...linked.map(
       (lc): SecondaryGroup<undefined | PColumnDataUniversal> => ({
         entries: [
-          ...lc.path.map((s) => ({
-            column: resolveSnapshot(s.linker),
-          })),
-          { column: resolveSnapshot(lc.column), qualifications: lc.qualifications.forHit },
+          ...lc.path.map((s) => ({ column: s.linker })),
+          { column: lc.column, qualifications: lc.qualifications.forHit },
         ],
         primaryQualifications: lc.qualifications.forQueries,
       }),
@@ -473,13 +479,6 @@ function buildVisibleColumns(
   const direct = annotated.direct.filter((c) => !hiddenColumns.has(c.column.id));
   const linked = annotated.linked.filter((c) => !hiddenColumns.has(c.column.id));
   return { direct, linked };
-}
-
-/** Resolve a ColumnSnapshot to a PColumn with lazily-evaluated data. */
-function resolveSnapshot(
-  snap: ColumnSnapshot<PObjectId>,
-): PColumn<undefined | PColumnDataUniversal> {
-  return { id: snap.id, spec: snap.spec, data: snap.data?.get() };
 }
 
 /** Remap column references in sorting entries. */

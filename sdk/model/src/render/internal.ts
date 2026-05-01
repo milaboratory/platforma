@@ -6,6 +6,7 @@ import type {
   AnyFunction,
   Option,
   PColumn,
+  PColumnDataStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
@@ -143,6 +144,8 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined;
 
   getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
+
+  getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus;
 
   calculateOptions(predicate: PSpecPredicate): Option[];
 

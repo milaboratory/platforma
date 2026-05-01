@@ -3,8 +3,8 @@ import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
 import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
-import { collectCtxColumnSnapshotProviders } from "../../columns/ctx_column_sources";
 import type { DatasetOption } from "./dataset_selection";
+import { collectCtxColumnProviders } from "../../columns/ctx_column_sources";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
 
@@ -42,7 +42,7 @@ export function buildDatasetOptions(
   const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
   if (options.length === 0) return [];
 
-  const columnSources = collectCtxColumnSnapshotProviders(ctx);
+  const columnSources = collectCtxColumnProviders(ctx);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
 

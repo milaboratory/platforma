@@ -705,12 +705,33 @@ export function getPColumnSpecId(spec: PColumnSpec): PColumnSpecId {
   };
 }
 
+export type PColumnDataStatus = "ready" | "computing" | "error" | "absent";
+
 export interface PColumn<Data> extends PObject<Data> {
   /** PColumn spec, allowing it to be found among other PObjects */
   readonly spec: PColumnSpec;
+  readonly dataStatus: PColumnDataStatus;
+}
+
+export function createPColumn<Data>(pcolumn: {
+  id: PObjectId;
+  spec: PColumnSpec;
+  data: Data;
+  dataStatus: PColumnDataStatus;
+}): PColumn<Data> {
+  return pcolumn;
 }
 
 export type PColumnLazy<T> = PColumn<() => T>;
+
+export function createLazyPColumn<Data>(pcolumn: {
+  id: PObjectId;
+  spec: PColumnSpec;
+  data: () => Data;
+  dataStatus: PColumnDataStatus;
+}): PColumnLazy<Data> {
+  return pcolumn;
+}
 
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */

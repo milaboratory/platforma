@@ -1,22 +1,28 @@
-import type { PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type { PColumn } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { RenderCtxBase, ResultPool } from "../render";
-import type { ColumnSnapshot } from "./column_snapshot";
-import type { ColumnDataStatus } from "./column_snapshot";
-import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
-import { OutputColumnProvider } from "./column_snapshot_provider";
+import type { PColumnDataUniversal } from "../render/internal";
+import type { ColumnProvider } from "./column_provider";
+import { OutputColumnProvider } from "./column_provider";
 import { ResourceTypeName } from "@milaboratories/pl-model-common";
 import type { ValueOf } from "@milaboratories/helpers";
 
 /**
- * Collect ColumnSnapshotProviders from `outputs`, `prerun`, and
- * `resultPool` in that order. Dedup keeps the first occurrence per
- * `NativePObjectId`, so a block re-publishing its own columns keeps
- * the `outputs`-rooted canonical id instead of the result-pool variant.
+ * Collect ColumnProviders from all render context sources:
+ *
+ * - **resultPool** — all upstream columns (always included)
+ * - **outputs** — PFrame fields from block execution outputs
+ * - **prerun** — PFrame fields from prerun/staging results
+ *
+ * Returns an array of providers suitable for `ColumnCollectionBuilder.addSource()`.
  */
-export function collectCtxColumnSnapshotProviders(ctx: RenderCtxBase): ColumnSnapshotProvider[] {
-  const providers: ColumnSnapshotProvider[] = [];
+export function collectCtxColumnProviders(ctx: RenderCtxBase): ColumnProvider[] {
+  const providers: ColumnProvider[] = [];
 
+  // ResultPool — all upstream columns
+  providers.push(new ResultPoolColumnProvider(ctx.resultPool));
+
+  // Outputs — each PFrame-like output field becomes a provider
   const outputs = ctx.outputs;
   if (outputs) {
     providers.push(...collectPFrameProviders(outputs));
@@ -27,47 +33,27 @@ export function collectCtxColumnSnapshotProviders(ctx: RenderCtxBase): ColumnSna
     providers.push(...collectPFrameProviders(prerun));
   }
 
-  providers.push(new ResultPoolColumnSnapshotProvider(ctx.resultPool));
-
   return providers;
 }
 
 /**
- * Adapter wrapping ResultPool into the new ColumnSnapshotProvider interface.
+ * Adapter wrapping ResultPool into the new ColumnProvider interface.
  *
  * - `isColumnListComplete()` always returns true — the result pool
- *   is a stable snapshot within a single render cycle.
+ *   is a stable view within a single render cycle.
  * - Data status is derived from the underlying TreeNodeAccessor:
  *   ready (getIsReadyOrError), computing, or absent (no data resource).
  */
-export class ResultPoolColumnSnapshotProvider implements ColumnSnapshotProvider {
+export class ResultPoolColumnProvider implements ColumnProvider {
   constructor(private readonly pool: ResultPool) {}
 
-  getAllColumns(): ColumnSnapshot<PObjectId>[] {
-    const pColumns = this.pool.selectColumns(() => true);
-    return pColumns.map((col) => toSnapshot(col.id, col.spec, col.data));
+  getAllColumns(): PColumn<PColumnDataUniversal | undefined>[] {
+    return this.pool.selectColumns(() => true);
   }
 
   isColumnListComplete(): boolean {
     return true;
   }
-}
-
-function toSnapshot(
-  id: PObjectId,
-  spec: PColumnSpec,
-  accessor: TreeNodeAccessor | undefined,
-): ColumnSnapshot<PObjectId> {
-  if (accessor === undefined) {
-    return { id, spec, dataStatus: "absent" as ColumnDataStatus, data: undefined };
-  }
-  const isReady = accessor.getIsReadyOrError();
-  return {
-    id,
-    spec,
-    dataStatus: (isReady ? "ready" : "computing") as ColumnDataStatus,
-    data: { get: () => (isReady ? accessor : undefined) },
-  };
 }
 
 /**
@@ -76,13 +62,13 @@ function toSnapshot(
  * - If a node's resourceType is StdMap/std/map → recurse into its output fields.
  * - Otherwise → skip (leaf of unknown type).
  */
-function collectPFrameProviders(accessor: TreeNodeAccessor): ColumnSnapshotProvider[] {
-  const out: ColumnSnapshotProvider[] = [];
+function collectPFrameProviders(accessor: TreeNodeAccessor): ColumnProvider[] {
+  const out: ColumnProvider[] = [];
   walkTree(accessor, out);
   return out;
 }
 
-function walkTree(node: TreeNodeAccessor, out: ColumnSnapshotProvider[]): void {
+function walkTree(node: TreeNodeAccessor, out: ColumnProvider[]): void {
   const typeName = node.resourceType.name as ValueOf<typeof ResourceTypeName>;
 
   if (typeName === ResourceTypeName.PFrame) {

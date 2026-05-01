@@ -9,6 +9,7 @@ import type {
   FieldTraversalStep as FieldTraversalStepFromSDK,
   Option,
   PColumn,
+  PColumnDataStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
@@ -407,6 +408,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return mapPObjectData(this.resultPool.getDataByRef(blockId, exportName), (acc) =>
       this.wrapAccessor(acc),
     );
+  }
+
+  getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus {
+    return this.resultPool.getColumnStatusByRef(blockId, exportName);
   }
 
   //
@@ -833,6 +838,13 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getColumnStatusFromResultPoolByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getColumnStatusFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
       });

@@ -1,12 +1,13 @@
 import type { AxisId, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import {
+  createPColumn,
   getAxisId,
   isLabelColumn,
   matchAxisId,
   PColumnName,
 } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, RenderCtxBase } from "../../render";
-import { ColumnCollectionBuilder, collectCtxColumnSnapshotProviders } from "../../columns";
+import { ColumnCollectionBuilder, collectCtxColumnProviders } from "../../columns";
 
 /**
  * Get all label columns visible in the current render context
@@ -17,14 +18,18 @@ export function getAllLabelColumns<A, U>(
 ): PColumn<PColumnDataUniversal>[] {
   const pframeSpec = ctx.getService("pframeSpec");
   const collection = new ColumnCollectionBuilder(pframeSpec)
-    .addSources(collectCtxColumnSnapshotProviders(ctx))
+    .addSources(collectCtxColumnProviders(ctx))
     .build({ allowPartialColumnList: true });
   try {
     return collection
       .findColumns({ include: { name: PColumnName.Label, axes: [] } })
       .reduce<PColumn<PColumnDataUniversal>[]>((acc, hit) => {
-        const data = hit.data?.get();
-        return data === undefined ? acc : [...acc, { id: hit.id, spec: hit.spec, data }];
+        const data = hit.data;
+        return data === undefined
+          ? acc
+          : acc.concat(
+              createPColumn({ id: hit.id, spec: hit.spec, data, dataStatus: hit.dataStatus }),
+            );
       }, []);
   } finally {
     collection.dispose();
@@ -110,6 +115,7 @@ export function getMatchingLabelColumns(
             axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
           },
           data: labelColumn.data,
+          dataStatus: labelColumn.dataStatus,
         });
       } else {
         labelColumns.push(labelColumn);

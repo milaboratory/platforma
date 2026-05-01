@@ -2,6 +2,7 @@ import type { ComputableCtx } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   Option,
+  PColumnDataStatus,
   PObject,
   PObjectSpec,
   PSpecPredicate,
@@ -43,29 +44,10 @@ export interface ExtendedOption extends Option {
 }
 
 export class ResultPool {
-  private readonly allSpecsAvailable: boolean;
   private constructor(
     private readonly ctx: ComputableCtx,
     private readonly blocks: Map<string, PoolBlock>,
-  ) {
-    let allSpecsAvailable = true;
-    outer: for (const block of blocks.values()) {
-      for (const ctx of [block.prod, block.staging])
-        if (ctx !== undefined) {
-          if (!ctx.locked) {
-            allSpecsAvailable = false;
-            break outer;
-          }
-          for (const result of ctx.results.values()) {
-            if (result.spec === undefined) {
-              allSpecsAvailable = false;
-              break outer;
-            }
-          }
-        }
-    }
-    this.allSpecsAvailable = allSpecsAvailable;
-  }
+  ) {}
 
   public getSpecByRef(blockId: string, exportName: string): PObjectSpec | undefined {
     const block = this.blocks.get(blockId);
@@ -92,10 +74,11 @@ export class ResultPool {
     if (block === undefined) return undefined;
     const result = block.prod?.results?.get(exportName);
     const data = result?.data?.();
-    if (result !== undefined && result.spec !== undefined && data !== undefined)
+    const spec = result?.spec;
+    if (spec !== undefined && data !== undefined)
       return mapValueInVOE(data, (value) => ({
         id: deriveGlobalPObjectId(blockId, exportName),
-        spec: result.spec!,
+        spec: spec,
         data: value,
       }));
     if (result !== undefined) this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
@@ -103,6 +86,37 @@ export class ResultPool {
       this.ctx.markUnstable(`prod_not_locked:${blockId}`);
     // if prod is absent, returned undefined value is considered stable
     return undefined;
+  }
+
+  /**
+   * Returns the lifecycle status of a column's data without fetching it.
+   * Mirrors `getDataByRef` semantics — looks at prod ctx only.
+   */
+  public getColumnStatusByRef(blockId: string, exportName: string): PColumnDataStatus {
+    const block = this.blocks.get(blockId);
+    if (block === undefined) {
+      return "absent1" as PColumnDataStatus;
+    }
+
+    const result = block.prod?.results?.get(exportName);
+    if (result === undefined) {
+      if (block.prod !== undefined && !block.prod.locked) {
+        this.ctx.markUnstable(`prod_not_locked:${blockId}`);
+        return "computing";
+      }
+      return "absent2" as PColumnDataStatus;
+    }
+    if (result.hasData === false) return "absent3" as PColumnDataStatus;
+    if (result.hasData === undefined) {
+      this.ctx.markUnstable(`hasData_unknown:${blockId}:${exportName}`);
+      return "computing";
+    }
+    const data = result.data?.();
+    if (data === undefined) {
+      this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
+      return "computing";
+    }
+    return data.ok ? "ready" : "error";
   }
 
   public getDataByRef(

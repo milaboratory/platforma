@@ -1,9 +1,9 @@
-import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type { AxisSpec, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type { PColumnDataUniversal } from "../render/internal";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 
 import { afterEach, describe, expect, test } from "vitest";
-import type { ColumnSnapshotProvider } from "./column_snapshot_provider";
-import type { ColumnSnapshot } from "./column_snapshot";
+import type { ColumnProvider } from "./column_provider";
 import { ColumnCollectionBuilder } from "./column_collection_builder";
 
 const drivers: SpecDriver[] = [];
@@ -38,29 +38,26 @@ function createSpec(
   } as PColumnSpec;
 }
 
-function createSnapshot(
+function createColumn(
   id: string,
   spec: PColumnSpec,
   dataStatus: "ready" | "computing" | "absent" = "ready",
-): ColumnSnapshot<PObjectId> {
+): PColumn<PColumnDataUniversal | undefined> {
   return {
     id: id as PObjectId,
     spec,
     dataStatus,
-    data:
-      dataStatus === "absent"
-        ? undefined
-        : { get: () => (dataStatus === "ready" ? ({} as never) : undefined) },
+    data: dataStatus === "ready" ? ({} as never) : undefined,
   };
 }
 
 function createProvider(
-  snapshots: ColumnSnapshot<PObjectId>[],
+  columns: PColumn<PColumnDataUniversal | undefined>[],
   complete = true,
-): ColumnSnapshotProvider {
+): ColumnProvider {
   return {
     getAllColumns() {
-      return snapshots;
+      return columns;
     },
     isColumnListComplete() {
       return complete;
@@ -89,14 +86,14 @@ describe("ColumnCollectionBuilder", () => {
   });
 
   test("build returns undefined when providers are incomplete", () => {
-    const snap = createSnapshot("id1", createSpec("col1"));
+    const snap = createColumn("id1", createSpec("col1"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap], false));
     expect(builder.build()).toBeUndefined();
   });
 
   test("build with allowPartialColumnList returns collection even when incomplete", () => {
-    const snap = createSnapshot("id1", createSpec("col1"));
+    const snap = createColumn("id1", createSpec("col1"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap], false));
 
@@ -106,7 +103,7 @@ describe("ColumnCollectionBuilder", () => {
   });
 
   test("allowPartialColumnList with complete providers returns collection", () => {
-    const snap = createSnapshot("id1", createSpec("col1"));
+    const snap = createColumn("id1", createSpec("col1"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap], true));
 
@@ -117,9 +114,9 @@ describe("ColumnCollectionBuilder", () => {
 });
 
 describe("ColumnCollection lookup by id", () => {
-  test("findColumns includes snapshot with existing id", () => {
+  test("findColumns includes column with existing id", () => {
     const spec = createSpec("col1");
-    const snap = createSnapshot("id1", spec);
+    const snap = createColumn("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
 
@@ -131,7 +128,7 @@ describe("ColumnCollection lookup by id", () => {
 
   test("findColumns does not include missing id", () => {
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([createSnapshot("id1", createSpec("col1"))]);
+    builder.addSource([createColumn("id1", createSpec("col1"))]);
 
     const collection = builder.build()!;
     const found = collection.findColumns().find((c) => c.id === ("missing" as PObjectId));
@@ -141,8 +138,8 @@ describe("ColumnCollection lookup by id", () => {
 
 describe("ColumnCollection.findColumns", () => {
   test("no options returns all columns", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
+    const s1 = createColumn("id1", createSpec("col1"));
+    const s2 = createColumn("id2", createSpec("col2"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([s1, s2]);
 
@@ -151,8 +148,8 @@ describe("ColumnCollection.findColumns", () => {
   });
 
   test("exclude filters out matching columns", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
+    const s1 = createColumn("id1", createSpec("col1"));
+    const s2 = createColumn("id2", createSpec("col2"));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([s1, s2]);
 
@@ -167,9 +164,9 @@ describe("ColumnCollection.findColumns", () => {
     const itemAxis = sampleAxis("item");
 
     const vdjColumns = Array.from({ length: 10 }, (_, i) =>
-      createSnapshot(`vdj${i}`, createSpec(`pl7.app/vdj/col${i}`, { axesSpec: [vdjAxis] })),
+      createColumn(`vdj${i}`, createSpec(`pl7.app/vdj/col${i}`, { axesSpec: [vdjAxis] })),
     );
-    const mockScore = createSnapshot("mock", createSpec("mock_score", { axesSpec: [itemAxis] }));
+    const mockScore = createColumn("mock", createSpec("mock_score", { axesSpec: [itemAxis] }));
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([...vdjColumns, mockScore]);
@@ -187,8 +184,8 @@ describe("ColumnCollection.findColumns", () => {
 describe("dedup by native ID", () => {
   test("first source wins when specs have same native ID", () => {
     const spec = createSpec("col1");
-    const snap1 = createSnapshot("id-first", spec);
-    const snap2 = createSnapshot("id-second", spec);
+    const snap1 = createColumn("id-first", spec);
+    const snap2 = createColumn("id-second", spec);
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap1]);
@@ -201,8 +198,8 @@ describe("dedup by native ID", () => {
   });
 
   test("different specs are not deduped", () => {
-    const snap1 = createSnapshot("id1", createSpec("col1"));
-    const snap2 = createSnapshot("id2", createSpec("col2"));
+    const snap1 = createColumn("id1", createSpec("col1"));
+    const snap2 = createColumn("id2", createSpec("col2"));
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap1]);
@@ -216,11 +213,11 @@ describe("dedup by native ID", () => {
 describe("data status handling", () => {
   test("ready column data is accessible", () => {
     const data = { someKey: "someValue" };
-    const snap: ColumnSnapshot<PObjectId> = {
+    const snap: PColumn<PColumnDataUniversal | undefined> = {
       id: "id1" as PObjectId,
       spec: createSpec("col1"),
       dataStatus: "ready",
-      data: { get: () => data as never },
+      data: data as never,
     };
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
@@ -229,12 +226,11 @@ describe("data status handling", () => {
 
     const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
     expect(found.dataStatus).toBe("ready");
-    expect(found.data).toBeDefined();
-    expect(found.data!.get()).toBe(data);
+    expect(found.data).toBe(data);
   });
 
-  test("computing column data returns undefined", () => {
-    const snap = createSnapshot("id1", createSpec("col1"), "computing");
+  test("computing column data is undefined", () => {
+    const snap = createColumn("id1", createSpec("col1"), "computing");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
@@ -242,14 +238,11 @@ describe("data status handling", () => {
 
     const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
     expect(found.dataStatus).toBe("computing");
-    expect(found.data).toBeDefined();
-
-    const result = found.data!.get();
-    expect(result).toBeUndefined();
+    expect(found.data).toBeUndefined();
   });
 
   test("absent column has no data accessor", () => {
-    const snap = createSnapshot("id1", createSpec("col1"), "absent");
+    const snap = createColumn("id1", createSpec("col1"), "absent");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
@@ -263,8 +256,8 @@ describe("data status handling", () => {
 
 describe("multiple providers", () => {
   test("columns from multiple sources are merged", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
+    const s1 = createColumn("id1", createSpec("col1"));
+    const s2 = createColumn("id2", createSpec("col2"));
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([s1]);
@@ -275,8 +268,8 @@ describe("multiple providers", () => {
   });
 
   test("build returns undefined if any provider is incomplete", () => {
-    const s1 = createSnapshot("id1", createSpec("col1"));
-    const s2 = createSnapshot("id2", createSpec("col2"));
+    const s1 = createColumn("id1", createSpec("col1"));
+    const s2 = createColumn("id2", createSpec("col2"));
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([s1], true));
@@ -287,8 +280,8 @@ describe("multiple providers", () => {
 
   test("allowPartialColumnList returns collection when any provider incomplete", () => {
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource(createProvider([createSnapshot("id1", createSpec("col1"))], true));
-    builder.addSource(createProvider([createSnapshot("id2", createSpec("col2"))], false));
+    builder.addSource(createProvider([createColumn("id1", createSpec("col1"))], true));
+    builder.addSource(createProvider([createColumn("id2", createSpec("col2"))], false));
 
     const collection = builder.build({ allowPartialColumnList: true });
     expect(collection).toBeDefined();
@@ -302,10 +295,10 @@ describe("AnchoredColumnCollection", () => {
   const anchorSpec = createSpec("anchor-col", {
     axesSpec: [sampleAxis("sample"), sampleAxis("gene")],
   });
-  const anchorSnap = createSnapshot("anchor-snap-id", anchorSpec);
+  const anchorSnap = createColumn("anchor-snap-id", anchorSpec);
 
   test("build with PColumnSpec anchor returns anchored collection", () => {
-    const s1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const s1 = createColumn("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     // anchorSnap must be in sources so resolveAnchorMap can find it by native ID
     builder.addSource([s1, anchorSnap]);
@@ -316,7 +309,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("build with PObjectId anchor resolves from sources", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("anchor-id", spec);
+    const snap = createColumn("anchor-id", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
 
@@ -326,7 +319,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("build with unknown PObjectId anchor throws", () => {
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([createSnapshot("id1", createSpec("col1"))]);
+    builder.addSource([createColumn("id1", createSpec("col1"))]);
 
     expect(() => builder.build({ anchors: { main: "missing" as PObjectId } })).toThrow(
       /not found in sources/,
@@ -335,7 +328,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("findColumns surfaces column by original PObjectId", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("id1", spec);
+    const snap = createColumn("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
 
@@ -348,7 +341,7 @@ describe("AnchoredColumnCollection", () => {
   });
 
   test("findColumns does not include unknown id", () => {
-    const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const snap = createColumn("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
 
@@ -361,7 +354,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("getAnchors returns resolved anchor map", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("id1", spec);
+    const snap = createColumn("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
 
@@ -374,7 +367,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("findColumns returns ColumnMatch with column id and variants", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("id1", spec);
+    const snap = createColumn("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     // anchorSnap itself also appears in findColumns results (axes ⊆ anchor axes)
     builder.addSource([snap, anchorSnap]);
@@ -392,7 +385,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("variants carry forQueries keyed by anchor PObjectId", () => {
     const spec = createSpec("col1", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("id1", spec);
+    const snap = createColumn("id1", spec);
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
 
@@ -416,11 +409,11 @@ describe("AnchoredColumnCollection", () => {
     const sharedAxes = [sampleAxis("sample"), sampleAxis("gene")];
     const anchorA = createSpec("anchor-a", { axesSpec: sharedAxes });
     const anchorB = createSpec("anchor-b", { axesSpec: sharedAxes });
-    const anchorASnap = createSnapshot("anchor-a-id", anchorA);
-    const anchorBSnap = createSnapshot("anchor-b-id", anchorB);
+    const anchorASnap = createColumn("anchor-a-id", anchorA);
+    const anchorBSnap = createColumn("anchor-b-id", anchorB);
 
     const colSpec = createSpec("c1", { axesSpec: [sampleAxis("sample")] });
-    const colSnap = createSnapshot("c1-id", colSpec);
+    const colSnap = createColumn("c1-id", colSpec);
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([colSnap, anchorASnap, anchorBSnap]);
@@ -440,8 +433,8 @@ describe("AnchoredColumnCollection", () => {
   });
 
   test("findColumns exclude filters out matching columns", () => {
-    const snap1 = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
-    const snap2 = createSnapshot("id2", createSpec("col2", { axesSpec: [sampleAxis("sample")] }));
+    const snap1 = createColumn("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const snap2 = createColumn("id2", createSpec("col2", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap1, snap2, anchorSnap]);
 
@@ -452,7 +445,7 @@ describe("AnchoredColumnCollection", () => {
   });
 
   test("allowPartialColumnList with anchors returns collection when incomplete", () => {
-    const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const snap = createColumn("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap, anchorSnap], false));
 
@@ -464,7 +457,7 @@ describe("AnchoredColumnCollection", () => {
   });
 
   test("build returns undefined with anchors when incomplete and no allowPartial", () => {
-    const snap = createSnapshot("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
+    const snap = createColumn("id1", createSpec("col1", { axesSpec: [sampleAxis("sample")] }));
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource(createProvider([snap], false));
 
@@ -472,9 +465,9 @@ describe("AnchoredColumnCollection", () => {
     expect(result).toBeUndefined();
   });
 
-  test("data status is preserved through anchored snapshots", () => {
+  test("data status is preserved through anchored columns", () => {
     const spec = createSpec("computing-col", { axesSpec: [sampleAxis("sample")] });
-    const snap = createSnapshot("id1", spec, "computing");
+    const snap = createColumn("id1", spec, "computing");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
@@ -483,6 +476,6 @@ describe("AnchoredColumnCollection", () => {
 
     const found = collection.findColumns().find((m) => m.column.id === ("id1" as PObjectId))!;
     expect(found.column.dataStatus).toBe("computing");
-    expect(found.column.data!.get()).toBeUndefined();
+    expect(found.column.data).toBeUndefined();
   });
 });

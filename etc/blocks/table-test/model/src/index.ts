@@ -58,7 +58,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
         {
           column: {
             type: "column",
-            id: '{"name":"value","resolvePath":["main","tableFrame"]}' as PObjectId,
+            id: '{"__isRef":true,"blockId":"f3b893d4-c332-4e74-9fb3-3e0115f129e0","name":"tableFrame.value"}' as PObjectId,
           },
           ascending: true,
           naAndAbsentAreLeastValues: true,
@@ -70,7 +70,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
           {
             type: "greaterThan",
             column:
-              '{"type":"column","id":"{\\"name\\":\\"value\\",\\"resolvePath\\":[\\"main\\",\\"tableFrame\\"]}"}',
+              '{"type":"column","id":"{\\"__isRef\\":true,\\"blockId\\":\\"f3b893d4-c332-4e74-9fb3-3e0115f129e0\\",\\"name\\":\\"tableFrame.value\\"}"}',
             x: 11,
           },
         ],

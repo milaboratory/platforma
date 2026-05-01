@@ -1,6 +1,5 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-filter-column.model";
 import type { platforma } from "@milaboratories/milaboratories.test-filter-column.model";
-import { blockSpec as tableTestBlockSpec } from "@milaboratories/milaboratories.test-block-table";
 import type { InferBlockState, Platforma } from "@platforma-sdk/model";
 import { createDatasetSelection, createPrimaryRef, wrapOutputs } from "@platforma-sdk/model";
 import type { ML, RawHelpers } from "@platforma-sdk/test";
@@ -34,7 +33,7 @@ async function runAndGetOutputs<Pl extends Platforma>(
 async function setupProject(project: ML.Project, helpers: RawHelpers) {
   // Upstream block exports primaries + linker chain; this block whitelists
   // `value` / `description` as primaries, the rest become enrichments.
-  const tableTestId = await project.addBlock("Table Test Source", tableTestBlockSpec);
+  const tableTestId = await project.addBlock("Table Test Source", blockSpec);
   await project.runBlock(tableTestId);
   await helpers.awaitBlockDone(tableTestId, 30000);
 

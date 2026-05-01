@@ -47,7 +47,7 @@ function isPColumnValues(value: unknown): value is PColumnValues {
   return typeof first === "object" && first !== null && "key" in first && "val" in first;
 }
 
-export interface ColumnProvider {
+export interface LegacyColumnProvider {
   selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
   ): PColumn<PColumnDataUniversal | undefined>[];
@@ -58,9 +58,9 @@ export interface AxisLabelProvider {
 }
 
 /**
- * A simple implementation of {@link ColumnProvider} backed by a pre-defined array of columns.
+ * A simple implementation of {@link LegacyColumnProvider} backed by a pre-defined array of columns.
  */
-class ArrayColumnProvider implements ColumnProvider {
+class LegacyArrayColumnProvider implements LegacyColumnProvider {
   constructor(private readonly columns: PColumn<PColumnDataUniversal | undefined>[]) {}
 
   selectColumns(
@@ -219,14 +219,14 @@ type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
 
 export class PColumnCollection {
   private readonly defaultProviderStore: PColumn<PColumnDataUniversal | undefined>[] = [];
-  private readonly providers: ColumnProvider[] = [
-    new ArrayColumnProvider(this.defaultProviderStore),
+  private readonly providers: LegacyColumnProvider[] = [
+    new LegacyArrayColumnProvider(this.defaultProviderStore),
   ];
   private readonly axisLabelProviders: AxisLabelProvider[] = [];
 
   constructor() {}
 
-  public addColumnProvider(provider: ColumnProvider): this {
+  public addColumnProvider(provider: LegacyColumnProvider): this {
     this.providers.push(provider);
     return this;
   }
@@ -504,6 +504,7 @@ export class PColumnCollection {
           entry.type === "split"
             ? entriesToDataInfo(filterDataInfoEntries(entry.dataEntries, axisFiltersTuple!))
             : entry.originalColumn.data,
+        dataStatus: entry.originalColumn.dataStatus,
         label: label,
       });
     }
@@ -587,6 +588,7 @@ export class PColumnCollection {
         id: entry.id,
         spec: entry.spec,
         data,
+        dataStatus: entry.dataStatus,
       });
     }
 
