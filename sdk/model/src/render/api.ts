@@ -320,7 +320,8 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   }
 
   public getDataByRef(ref: PlRef): TreeNodeAccessor | undefined {
-    const object = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
+    // TODO: migrate to getDataFromResultPoolByRef after refactoring;
+    const object = this.ctx.getPObjectFromResultPoolByRef(ref.blockId, ref.name);
     return object === undefined
       ? undefined
       : new TreeNodeAccessor(object.data, [ref.blockId, ref.name]);

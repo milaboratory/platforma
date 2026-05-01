@@ -66,7 +66,7 @@ export class ResultPool {
     return undefined;
   }
 
-  public getDataOrErrorByRef(
+  public getPObjectOrErrorByRef(
     blockId: string,
     exportName: string,
   ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
@@ -86,6 +86,17 @@ export class ResultPool {
       this.ctx.markUnstable(`prod_not_locked:${blockId}`);
     // if prod is absent, returned undefined value is considered stable
     return undefined;
+  }
+
+  /**
+   * @deprecated use {@link getPObjectOrErrorByRef}.
+   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
+   */
+  public getDataOrErrorByRef(
+    blockId: string,
+    exportName: string,
+  ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
+    return this.getPObjectOrErrorByRef(blockId, exportName);
   }
 
   /**
@@ -119,13 +130,24 @@ export class ResultPool {
     return data.ok ? "ready" : "error";
   }
 
+  public getPObjectByRef(
+    blockId: string,
+    exportName: string,
+  ): PObject<PlTreeNodeAccessor> | undefined {
+    const res = this.getPObjectOrErrorByRef(blockId, exportName);
+    if (res === undefined || !res.ok) return undefined;
+    return res.value;
+  }
+
+  /**
+   * @deprecated use {@link getPObjectByRef}.
+   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
+   */
   public getDataByRef(
     blockId: string,
     exportName: string,
   ): PObject<PlTreeNodeAccessor> | undefined {
-    const res = this.getDataOrErrorByRef(blockId, exportName);
-    if (res === undefined || !res.ok) return undefined;
-    return res.value;
+    return this.getPObjectByRef(blockId, exportName);
   }
 
   public getData(): ExtendedResultCollection<PObject<PlTreeNodeAccessor>> {

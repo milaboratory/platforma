@@ -404,10 +404,18 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this.resultPool.getSpecByRef(blockId, exportName);
   }
 
-  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
-    return mapPObjectData(this.resultPool.getDataByRef(blockId, exportName), (acc) =>
+  getPObjectFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+    return mapPObjectData(this.resultPool.getPObjectByRef(blockId, exportName), (acc) =>
       this.wrapAccessor(acc),
     );
+  }
+
+  /**
+   * @deprecated use {@link getPObjectFromResultPoolByRef}.
+   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
+   */
+  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+    return this.getPObjectFromResultPoolByRef(blockId, exportName);
   }
 
   getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus {
@@ -838,6 +846,13 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getPObjectFromResultPoolByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getPObjectFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
       });

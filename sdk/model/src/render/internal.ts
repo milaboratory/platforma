@@ -143,7 +143,13 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined;
 
+  /**
+   * @deprecated use {@link getPObjectFromResultPoolByRef}.
+   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
+   */
   getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
+
+  getPObjectFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
 
   getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus;
 
