@@ -11,7 +11,7 @@ import type {
   ResultPoolEntry,
   ValueOrError,
 } from "@platforma-sdk/model";
-import { executePSpecPredicate, mapValueInVOE } from "@platforma-sdk/model";
+import { executePSpecPredicate } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import { outputRef } from "../model/args";
 import type { Block, ProjectStructure } from "../model/project_model";
@@ -69,18 +69,12 @@ export class ResultPool {
   public getDataOrErrorByRef(
     blockId: string,
     exportName: string,
-  ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     const block = this.blocks.get(blockId);
     if (block === undefined) return undefined;
     const result = block.prod?.results?.get(exportName);
     const data = result?.data?.();
-    const spec = result?.spec;
-    if (spec !== undefined && data !== undefined)
-      return mapValueInVOE(data, (value) => ({
-        id: deriveGlobalPObjectId(blockId, exportName),
-        spec: spec,
-        data: value,
-      }));
+    if (result?.spec !== undefined && data !== undefined) return data;
     if (result !== undefined) this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
     if (block.prod !== undefined && !block.prod.locked)
       this.ctx.markUnstable(`prod_not_locked:${blockId}`);
@@ -119,10 +113,7 @@ export class ResultPool {
     return data.ok ? "ready" : "error";
   }
 
-  public getDataByRef(
-    blockId: string,
-    exportName: string,
-  ): PObject<PlTreeNodeAccessor> | undefined {
+  public getDataByRef(blockId: string, exportName: string): PlTreeNodeAccessor | undefined {
     const res = this.getDataOrErrorByRef(blockId, exportName);
     if (res === undefined || !res.ok) return undefined;
     return res.value;

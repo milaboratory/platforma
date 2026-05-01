@@ -143,7 +143,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined;
 
-  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
+  getDataFromResultPoolByRef(blockId: string, exportName: string): AHandle | undefined;
 
   getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus;
 
