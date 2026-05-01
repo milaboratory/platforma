@@ -29,7 +29,6 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
-  ensurePColumn,
   parseJson,
   isDataInfo,
   isPColumn,
@@ -320,15 +319,15 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
     return this.ctx.getSpecsFromResultPool();
   }
 
-  /**
-   * @param ref a Ref
-   * @returns data associated with the ref
-   */
-  public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
-    const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
-    // Need to handle undefined case before mapping
-    if (!data) return undefined;
-    return mapPObjectData(data, (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]));
+  public getDataByRef(ref: PlRef): TreeNodeAccessor | undefined {
+    const object = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
+    return object === undefined
+      ? undefined
+      : new TreeNodeAccessor(object.data, [ref.blockId, ref.name]);
+  }
+
+  public getDataStatusByRef(ref: PlRef): PColumnDataStatus {
+    return this.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
   }
 
   /**
@@ -349,9 +348,8 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
     // Resolve once to keep data and status in sync.
     const resolve = () => {
       if (_resolved) return;
-      const data = self.getDataByRef(ref);
-      _data = data ? ensurePColumn(data).data : undefined;
-      _status = self.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
+      _data = self.getDataByRef(ref);
+      _status = self.getDataStatusByRef(ref);
       _resolved = true;
     };
 
