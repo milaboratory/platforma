@@ -29,6 +29,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   AnchoredIdDeriver,
+  ensurePColumn,
   parseJson,
   isDataInfo,
   isPColumn,
@@ -319,28 +320,38 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
     return this.ctx.getSpecsFromResultPool();
   }
 
-  public getDataByRef(ref: PlRef): TreeNodeAccessor | undefined {
-    const handle = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
-    return handle === undefined ? undefined : new TreeNodeAccessor(handle, [ref.blockId, ref.name]);
+  /**
+   * @param ref a Ref
+   * @returns data associated with the ref
+   */
+  public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
+    const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
+    // Need to handle undefined case before mapping
+    if (!data) return undefined;
+    return mapPObjectData(data, (handle) => new TreeNodeAccessor(handle, [ref.blockId, ref.name]));
   }
 
-  public getDataStatusByRef(ref: PlRef): PColumnDataStatus {
-    return this.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
-  }
-
+  /**
+   * Returns data associated with the ref ensuring that it is a p-column.
+   * @param ref a Ref
+   * @returns p-column associated with the ref
+   */
   public getPColumnByRef(ref: PlRef): PColumn<TreeNodeAccessor | undefined> | undefined {
     const spec = this.getSpecByRef(ref);
     if (!spec) return undefined;
     if (!isPColumnSpec(spec)) throw new Error(`not a PColumn spec (kind = ${spec.kind})`);
 
+    // oxlint-disable-next-line typescript/no-this-alias
+    const self = this;
     let _resolved = false;
     let _data: TreeNodeAccessor | undefined;
     let _status: PColumnDataStatus;
     // Resolve once to keep data and status in sync.
     const resolve = () => {
       if (_resolved) return;
-      _data = this.getDataByRef(ref);
-      _status = this.getDataStatusByRef(ref);
+      const data = self.getDataByRef(ref);
+      _data = data ? ensurePColumn(data).data : undefined;
+      _status = self.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
       _resolved = true;
     };
 

@@ -404,9 +404,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this.resultPool.getSpecByRef(blockId, exportName);
   }
 
-  getDataFromResultPoolByRef(blockId: string, exportName: string): string | undefined {
-    const acc = this.resultPool.getDataByRef(blockId, exportName);
-    return acc === undefined ? undefined : this.wrapAccessor(acc);
+  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+    return mapPObjectData(this.resultPool.getDataByRef(blockId, exportName), (acc) =>
+      this.wrapAccessor(acc),
+    );
   }
 
   getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus {
