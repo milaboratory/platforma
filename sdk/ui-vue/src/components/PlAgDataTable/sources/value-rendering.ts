@@ -16,8 +16,8 @@ export function formatSpecialValues(
   value: undefined | PTableValue | PTableHidden,
   dataStatus: undefined | "absent" | "error" | "computing" | "ready",
 ): string | undefined {
-  if (dataStatus?.startsWith("absent")) {
-    return dataStatus;
+  if (dataStatus === "absent") {
+    return "absent";
   } else if (dataStatus === "error") {
     return "error";
   } else if (dataStatus === "computing") {
