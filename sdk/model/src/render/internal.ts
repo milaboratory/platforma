@@ -4,15 +4,12 @@ import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from ".
 import type {
   ArchiveFormat,
   AnyFunction,
-  Option,
   PColumn,
-  PColumnDataStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -114,39 +111,53 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Logs
   //
 
+  getLogHandle(handle: AHandle): FHandle; // AnyLogHandle | undefined;
+
   getLastLogs(handle: AHandle, nLines: number): FHandle; // string | undefined;
 
   getProgressLog(handle: AHandle, patternToSearch: string): FHandle; // string | undefined;
 
   getProgressLogWithInfo(handle: AHandle, patternToSearch: string): FHandle; // ProgressLogWithInfo | undefined;
 
-  getLogHandle(handle: AHandle): FHandle; // AnyLogHandle | undefined;
-
   //
   // Result Pool
   //
 
+  getPObjectCollection(): ResultCollection<PObject<AHandle>>;
+
+  getPObjectSpecCollection(): ResultCollection<PObjectSpec>;
+
+  getPObjectCollectionWithErrors(): ResultCollection<
+    Optional<PObject<ValueOrError<AHandle, Error>>, "id">
+  >;
+
+  getPObjectByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
+
+  getPObjectSpecByRef(blockId: string, exportName: string): PObjectSpec | undefined;
+
+  getPObjectDataByRef(blockId: string, exportName: string): AHandle | undefined;
+
+  getPObjectStatusByRef(
+    blockId: string,
+    exportName: string,
+  ): "ready" | "computing" | "error" | "absent";
+
+  /** @deprecated use {@link getPObjectCollection}. */
   getDataFromResultPool(): ResultCollection<PObject<AHandle>>;
 
+  /** @deprecated use {@link getPObjectCollectionWithErrors}. */
   getDataWithErrorsFromResultPool(): ResultCollection<
     Optional<PObject<ValueOrError<AHandle, Error>>, "id">
   >;
 
+  /** @deprecated use {@link getPObjectSpecCollection}. */
   getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
 
+  /** @deprecated use {@link getPObjectSpecByRef}. */
   getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined;
 
-  /**
-   * @deprecated use {@link getPObjectFromResultPoolByRef}.
-   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
-   */
+  /** @deprecated use {@link getPObjectByRef} (returns PObject) or {@link getPObjectDataByRef} (returns only data handle). */
   getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
-
-  getPObjectFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
-
-  getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus;
-
-  calculateOptions(predicate: PSpecPredicate): Option[];
 
   //
   // PFrame / PTable

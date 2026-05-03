@@ -2,16 +2,14 @@ import type { ComputableCtx } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   Option,
-  PColumnDataStatus,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PlRef,
   ResultCollection,
   ResultPoolEntry,
   ValueOrError,
 } from "@platforma-sdk/model";
-import { executePSpecPredicate, mapValueInVOE } from "@platforma-sdk/model";
+import { mapValueInVOE } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import { outputRef } from "../model/args";
 import type { Block, ProjectStructure } from "../model/project_model";
@@ -66,21 +64,15 @@ export class ResultPool {
     return undefined;
   }
 
-  public getPObjectOrErrorByRef(
+  public getDataOrErrorByRef(
     blockId: string,
     exportName: string,
-  ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
+  ): ValueOrError<PlTreeNodeAccessor, Error> | undefined {
     const block = this.blocks.get(blockId);
     if (block === undefined) return undefined;
     const result = block.prod?.results?.get(exportName);
     const data = result?.data?.();
-    const spec = result?.spec;
-    if (spec !== undefined && data !== undefined)
-      return mapValueInVOE(data, (value) => ({
-        id: deriveGlobalPObjectId(blockId, exportName),
-        spec: spec,
-        data: value,
-      }));
+    if (data !== undefined) return data;
     if (result !== undefined) this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
     if (block.prod !== undefined && !block.prod.locked)
       this.ctx.markUnstable(`prod_not_locked:${blockId}`);
@@ -88,22 +80,28 @@ export class ResultPool {
     return undefined;
   }
 
-  /**
-   * @deprecated use {@link getPObjectOrErrorByRef}.
-   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
-   */
-  public getDataOrErrorByRef(
+  public getPObjectOrErrorByRef(
     blockId: string,
     exportName: string,
   ): ValueOrError<PObject<PlTreeNodeAccessor>, Error> | undefined {
-    return this.getPObjectOrErrorByRef(blockId, exportName);
+    const data = this.getDataOrErrorByRef(blockId, exportName);
+    if (data === undefined) return undefined;
+    const spec = this.blocks.get(blockId)?.prod?.results?.get(exportName)?.spec;
+    if (spec === undefined) {
+      this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
+      return undefined;
+    }
+    return mapValueInVOE(data, (value) => ({
+      id: deriveGlobalPObjectId(blockId, exportName),
+      spec,
+      data: value,
+    }));
   }
 
-  /**
-   * Returns the lifecycle status of a column's data without fetching it.
-   * Mirrors `getDataByRef` semantics — looks at prod ctx only.
-   */
-  public getColumnStatusByRef(blockId: string, exportName: string): PColumnDataStatus {
+  public getStatusByRef(
+    blockId: string,
+    exportName: string,
+  ): "ready" | "computing" | "error" | "absent" {
     const block = this.blocks.get(blockId);
     if (block === undefined) {
       return "absent";
@@ -139,15 +137,10 @@ export class ResultPool {
     return res.value;
   }
 
-  /**
-   * @deprecated use {@link getPObjectByRef}.
-   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
-   */
-  public getDataByRef(
-    blockId: string,
-    exportName: string,
-  ): PObject<PlTreeNodeAccessor> | undefined {
-    return this.getPObjectByRef(blockId, exportName);
+  public getDataByRef(blockId: string, exportName: string): PlTreeNodeAccessor | undefined {
+    const res = this.getDataOrErrorByRef(blockId, exportName);
+    if (res === undefined || !res.ok) return undefined;
+    return res.value;
   }
 
   public getData(): ExtendedResultCollection<PObject<PlTreeNodeAccessor>> {
@@ -273,28 +266,6 @@ export class ResultPool {
     }
 
     return { entries, isComplete, instabilityMarker };
-  }
-
-  public calculateOptions(predicate: PSpecPredicate): ExtendedOption[] {
-    const found: ExtendedOption[] = [];
-    for (const block of this.blocks.values()) {
-      const exportsChecked = new Set<string>();
-      const addToFound = (ctx: RawPObjectCollection) => {
-        for (const [exportName, result] of ctx.results) {
-          if (exportsChecked.has(exportName) || result.spec === undefined) continue;
-          exportsChecked.add(exportName);
-          if (executePSpecPredicate(predicate, result.spec))
-            found.push({
-              label: block.info.label + " / " + exportName,
-              ref: outputRef(block.info.id, exportName),
-              spec: result.spec,
-            });
-        }
-      };
-      if (block.staging !== undefined) addToFound(block.staging);
-      if (block.prod !== undefined) addToFound(block.prod);
-    }
-    return found;
   }
 
   public static create(ctx: ComputableCtx, prjEntry: PlTreeEntry, rootBlockId: string): ResultPool {

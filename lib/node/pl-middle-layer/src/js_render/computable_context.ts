@@ -7,15 +7,12 @@ import type {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
   FieldTraversalStep as FieldTraversalStepFromSDK,
-  Option,
   PColumn,
-  PColumnDataStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -351,11 +348,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this._resultPool;
   }
 
-  public calculateOptions(predicate: PSpecPredicate): Option[] {
-    return this.resultPool.calculateOptions(predicate);
-  }
-
-  public getDataFromResultPool(): ResultCollection<PObject<string>> {
+  public getPObjectCollection(): ResultCollection<PObject<string>> {
     const collection = this.resultPool.getData();
     if (collection.instabilityMarker !== undefined)
       this.requireComputableCtx.markUnstable(
@@ -370,7 +363,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     };
   }
 
-  public getDataWithErrorsFromResultPool(): ResultCollection<
+  public getPObjectCollectionWithErrors(): ResultCollection<
     Optional<PObject<ValueOrError<string, Error>>, "id">
   > {
     const collection = this.resultPool.getDataWithErrors();
@@ -391,7 +384,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     };
   }
 
-  public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+  public getPObjectSpecCollection(): ResultCollection<PObjectSpec> {
     const specs = this.resultPool.getSpecs();
     if (specs.instabilityMarker !== undefined)
       this.requireComputableCtx.markUnstable(
@@ -400,26 +393,55 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return specs;
   }
 
-  getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined {
+  public getPObjectSpecByRef(blockId: string, exportName: string): PObjectSpec | undefined {
     return this.resultPool.getSpecByRef(blockId, exportName);
   }
 
-  getPObjectFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+  public getPObjectStatusByRef(
+    blockId: string,
+    exportName: string,
+  ): "ready" | "computing" | "error" | "absent" {
+    return this.resultPool.getStatusByRef(blockId, exportName);
+  }
+
+  public getPObjectDataByRef(blockId: string, exportName: string): string | undefined {
+    return this.wrapAccessor(this.resultPool.getDataByRef(blockId, exportName));
+  }
+
+  public getPObjectByRef(blockId: string, exportName: string): PObject<string> | undefined {
     return mapPObjectData(this.resultPool.getPObjectByRef(blockId, exportName), (acc) =>
       this.wrapAccessor(acc),
     );
   }
 
-  /**
-   * @deprecated use {@link getPObjectFromResultPoolByRef}.
-   * TODO after 2026-06-01: rework so this name returns only data (not PObject) and drop the deprecation.
-   */
-  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
-    return this.getPObjectFromResultPoolByRef(blockId, exportName);
+  /** @deprecated use {@link getPObjectCollection}. */
+  public getDataFromResultPool(): ResultCollection<PObject<string>> {
+    return this.getPObjectCollection();
   }
 
-  getColumnStatusFromResultPoolByRef(blockId: string, exportName: string): PColumnDataStatus {
-    return this.resultPool.getColumnStatusByRef(blockId, exportName);
+  /** @deprecated use {@link getPObjectCollectionWithErrors}. */
+  public getDataWithErrorsFromResultPool(): ResultCollection<
+    Optional<PObject<ValueOrError<string, Error>>, "id">
+  > {
+    return this.getPObjectCollectionWithErrors();
+  }
+
+  /** @deprecated use {@link getPObjectSpecCollection}. */
+  public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    return this.getPObjectSpecCollection();
+  }
+
+  /** @deprecated use {@link getPObjectSpecByRef}. */
+  public getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined {
+    return this.getPObjectSpecByRef(blockId, exportName);
+  }
+
+  /** @deprecated use {@link getPObjectByRef} (returns PObject) or {@link getPObjectDataByRef} (returns only data handle).*/
+  public getDataFromResultPoolByRef(
+    blockId: string,
+    exportName: string,
+  ): PObject<string> | undefined {
+    return this.getPObjectByRef(blockId, exportName);
   }
 
   //
@@ -809,6 +831,48 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       // Result pool
       //
 
+      exportCtxFunction("getPObjectCollection", () => {
+        return parent.exportObjectUniversal(this.getPObjectCollection(), undefined);
+      });
+
+      exportCtxFunction("getPObjectCollectionWithErrors", () => {
+        return parent.exportObjectUniversal(this.getPObjectCollectionWithErrors(), undefined);
+      });
+
+      exportCtxFunction("getPObjectSpecCollection", () => {
+        return parent.exportObjectUniversal(this.getPObjectSpecCollection(), undefined);
+      });
+
+      exportCtxFunction("getPObjectByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getPObjectByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getPObjectSpecByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getPObjectSpecByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getPObjectDataByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getPObjectDataByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getPObjectStatusByRef", (blockId, exportName) => {
+        return parent.exportObjectUniversal(
+          this.getPObjectStatusByRef(vm.getString(blockId), vm.getString(exportName)),
+          undefined,
+        );
+      });
+
+      // Deprecated aliases — kept for backward compatibility.
+
       exportCtxFunction("getDataFromResultPool", () => {
         return parent.exportObjectUniversal(this.getDataFromResultPool(), undefined);
       });
@@ -821,13 +885,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         return parent.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
       });
 
-      exportCtxFunction("calculateOptions", (predicate) => {
-        return parent.exportObjectUniversal(
-          this.calculateOptions(parent.importObjectViaJson(predicate) as PSpecPredicate),
-          undefined,
-        );
-      });
-
       exportCtxFunction("getSpecFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getSpecFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
@@ -838,20 +895,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       exportCtxFunction("getDataFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("getPObjectFromResultPoolByRef", (blockId, exportName) => {
-        return parent.exportObjectUniversal(
-          this.getPObjectFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
-          undefined,
-        );
-      });
-
-      exportCtxFunction("getColumnStatusFromResultPoolByRef", (blockId, exportName) => {
-        return parent.exportObjectUniversal(
-          this.getColumnStatusFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
       });

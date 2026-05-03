@@ -283,7 +283,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   }
 
   public getData(): ResultCollection<PObject<TreeNodeAccessor>> {
-    const result = this.ctx.getDataFromResultPool();
+    const result = this.ctx.getPObjectCollection();
     return {
       isComplete: result.isComplete,
       entries: result.entries.map((e) => ({
@@ -299,7 +299,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   public getDataWithErrors(): ResultCollection<
     Optional<PObject<ValueOrError<TreeNodeAccessor, Error>>, "id">
   > {
-    const result = this.ctx.getDataWithErrorsFromResultPool();
+    const result = this.ctx.getPObjectCollectionWithErrors();
     return {
       isComplete: result.isComplete,
       entries: result.entries.map((e) => ({
@@ -316,18 +316,16 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   }
 
   public getSpecs(): ResultCollection<PObjectSpec> {
-    return this.ctx.getSpecsFromResultPool();
+    return this.ctx.getPObjectSpecCollection();
   }
 
   public getDataByRef(ref: PlRef): TreeNodeAccessor | undefined {
-    const object = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
-    return object === undefined
-      ? undefined
-      : new TreeNodeAccessor(object.data, [ref.blockId, ref.name]);
+    const data = this.ctx.getPObjectDataByRef(ref.blockId, ref.name);
+    return data === undefined ? undefined : new TreeNodeAccessor(data, [ref.blockId, ref.name]);
   }
 
-  public getDataStatusByRef(ref: PlRef): PColumnDataStatus {
-    return this.ctx.getColumnStatusFromResultPoolByRef(ref.blockId, ref.name);
+  public getStatusByRef(ref: PlRef): "ready" | "computing" | "error" | "absent" {
+    return this.ctx.getPObjectStatusByRef(ref.blockId, ref.name);
   }
 
   /**
@@ -349,7 +347,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
     const resolve = () => {
       if (_resolved) return;
       _data = self.getDataByRef(ref);
-      _status = self.getDataStatusByRef(ref);
+      _status = self.getStatusByRef(ref);
       _resolved = true;
     };
 
@@ -384,7 +382,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
    * @returns object spec associated with the ref
    */
   public getSpecByRef(ref: PlRef): PObjectSpec | undefined {
-    return this.ctx.getSpecFromResultPoolByRef(ref.blockId, ref.name);
+    return this.ctx.getPObjectSpecByRef(ref.blockId, ref.name);
   }
 
   /**
@@ -634,7 +632,7 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
       PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>
     >,
   ): PFrameHandle | undefined {
-    return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
+    return this.ctx.createPFrame(def.map(transformPColumnData));
   }
 
   // TODO remove all non-PColumn fields
@@ -672,13 +670,13 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     const columns = extractAllColumns(rawDef.src);
     this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
+    return this.ctx.createPTable(mapPTableDef(rawDef, transformPColumnData));
   }
 
   public createPTableV2(
     def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
   ): PTableHandle | undefined {
-    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
+    return this.ctx.createPTableV2(mapPTableDefV2(def, transformPColumnData));
   }
 
   public getCurrentUnstableMarker(): string | undefined {
