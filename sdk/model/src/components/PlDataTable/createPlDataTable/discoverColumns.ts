@@ -14,13 +14,47 @@ import { collectCtxColumnSnapshotProviders } from "../../../columns/ctx_column_s
 import { throwError } from "@milaboratories/helpers";
 import type { ColumnsSelectorConfig, TableColumnVariant } from "./createPlDataTableV3";
 
+/**
+ * Configuration for the advanced `columns: { sources, anchors, selector }`
+ * form of {@link createPlDataTableV3}. Use this when you need explicit control
+ * over which providers participate in discovery (e.g. filtering the result
+ * pool, adding extra workflow outputs) or when the anchor must be a specific
+ * column rather than the default "every primary column" set used by
+ * `primaryColumns` + `enrichFromPool`.
+ */
 export type DiscoverTableColumnOptions = {
+  /**
+   * Column sources to search. When omitted, discovery falls back to the
+   * default ctx providers (`outputs → prerun → resultPool`, deduped by
+   * `NativePObjectId` with first-source-wins).
+   *
+   * Order matters for dedup — sources earlier in the list take precedence
+   * when multiple sources expose the same column (same `NativePObjectId`).
+   */
   sources?: ColumnSource[];
+  /**
+   * Named anchors against which discovery resolves axes. Each entry can be:
+   *  - `PlRef` — resolved against the result pool to a `PColumnSpec`.
+   *  - `PObjectId` — looked up in the collected columns.
+   *  - `PColumnSpec` — used directly (matched by `NativePObjectId`).
+   *  - `RelaxedColumnSelector` — selector that must resolve to a unique column.
+   *
+   * Anchors define the join "frame" — discovery only returns columns whose
+   * axes are reachable from at least one anchor (per the `selector.mode`).
+   */
   anchors: Record<string, PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector>;
+  /** Selector configuration controlling which columns are discovered. */
   selector: ColumnsSelectorConfig;
 };
 
-/** Discover columns from sources/anchors and normalize into a flat TableColumnVariant list. */
+/**
+ * Discover columns from sources/anchors and normalize into a flat
+ * `TableColumnVariant[]`. Used internally by {@link createPlDataTableV3}
+ * when the user passes the advanced `columns: { ... }` form.
+ *
+ * Returns `undefined` when there are no sources, no collection could be built,
+ * or no variants matched.
+ */
 export function discoverTableColumnSnaphots(
   ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,

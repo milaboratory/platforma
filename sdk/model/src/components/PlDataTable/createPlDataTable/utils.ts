@@ -276,7 +276,9 @@ export function deriveAllLabels(options: {
 
 /** Column shape required by tooltip derivation. */
 export type TooltipableColumn = {
-  readonly id: DiscoveredPColumnId;
+  // `DiscoveredPColumnId` extends `PObjectId` via branding — both are accepted.
+  // The id is used as a Record key in the result map; semantically identical.
+  readonly id: PObjectId | DiscoveredPColumnId;
   readonly spec: PColumnSpec;
   readonly originalId: PObjectId;
   readonly linkerPath?: MatchVariant["path"];
