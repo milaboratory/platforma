@@ -123,13 +123,6 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getLogHandle(handle: AHandle): FHandle; // AnyLogHandle | undefined;
 
   //
-  // Blocks
-  //
-
-  /** @deprecated at some point will stop working and will return dummy values */
-  getBlockLabel(blockId: string): string;
-
-  //
   // Result Pool
   //
 

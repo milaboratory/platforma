@@ -806,14 +806,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
 
       //
-      // Blocks
-      //
-
-      exportCtxFunction("getBlockLabel", (blockId) => {
-        return parent.exportSingleValue(this.getBlockLabel(vm.getString(blockId)), undefined);
-      });
-
-      //
       // Result pool
       //
 

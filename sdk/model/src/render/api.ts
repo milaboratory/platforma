@@ -320,8 +320,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
   }
 
   public getDataByRef(ref: PlRef): TreeNodeAccessor | undefined {
-    // TODO: migrate to getDataFromResultPoolByRef after refactoring;
-    const object = this.ctx.getPObjectFromResultPoolByRef(ref.blockId, ref.name);
+    const object = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name);
     return object === undefined
       ? undefined
       : new TreeNodeAccessor(object.data, [ref.blockId, ref.name]);
@@ -680,11 +679,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
   ): PTableHandle | undefined {
     return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
-  }
-
-  /** @deprecated scheduled for removal from SDK */
-  public getBlockLabel(blockId: string): string {
-    return this.ctx.getBlockLabel(blockId);
   }
 
   public getCurrentUnstableMarker(): string | undefined {
