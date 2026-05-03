@@ -640,6 +640,13 @@ export function normalizeEnrichmentConfig(
  * annotation on each enriched column's spec. User-supplied
  * `displayOptions.visibility` rules still take precedence per the usual
  * first-match-wins semantics in `evaluateRules`.
+ *
+ * Failure handling: any error thrown by the underlying spec-frame engine
+ * (e.g. WASM traps in `pframes-rs-wasm` when the result pool produces an
+ * unsupported shape) is caught here. The function logs the failure and
+ * returns an empty enrichment list, so the table still renders with its
+ * primary columns. The block is responsible for surfacing the warning to
+ * the user if needed.
  */
 function discoverEnrichmentColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
@@ -649,18 +656,19 @@ function discoverEnrichmentColumns<A, U>(
   const primarySnapshots = primary.map((v) => v.column as ColumnSnapshot<PObjectId>);
   const primaryIds = new Set(primarySnapshots.map((s) => s.id));
 
-  const builder = new ColumnCollectionBuilder(ctx.getService("pframeSpec"))
-    .addSource(new SnapshotColumnProvider(primarySnapshots))
-    .addSources(collectCtxColumnSnapshotProviders(ctx));
-
-  // One anchor entry per primary column — discovery satisfies queries via any
-  // anchor, so any pool column joinable to *any* primary axis is reachable.
-  const anchors = Object.fromEntries(primary.map((v, i) => [`primary_${i}`, v.column.id]));
-
-  const collection = builder.build({ anchors });
-  if (collection === undefined) return [];
-
+  let collection: ReturnType<ColumnCollectionBuilder["build"]> | undefined;
   try {
+    const builder = new ColumnCollectionBuilder(ctx.getService("pframeSpec"))
+      .addSource(new SnapshotColumnProvider(primarySnapshots))
+      .addSources(collectCtxColumnSnapshotProviders(ctx));
+
+    // One anchor entry per primary column — discovery satisfies queries via any
+    // anchor, so any pool column joinable to *any* primary axis is reachable.
+    const anchors = Object.fromEntries(primary.map((v, i) => [`primary_${i}`, v.column.id]));
+
+    collection = builder.build({ anchors });
+    if (collection === undefined) return [];
+
     const variants = collection.findColumnVariants({
       mode: config.mode,
       maxHops: config.maxHops,
@@ -670,8 +678,17 @@ function discoverEnrichmentColumns<A, U>(
     return variants
       .filter((v) => !primaryIds.has(v.column.id))
       .map((v) => enrichmentVariantFromMatch(v, config.visibility));
+  } catch (err) {
+    // Discovery failed — most commonly a WASM trap in pframes-rs-wasm when
+    // the column set changes between evaluations. Degrade gracefully: skip
+    // enrichment and render the table with primary columns only.
+    console.warn(
+      "createPlDataTableV3: enrichFromPool discovery failed, falling back to primary-only",
+      err,
+    );
+    return [];
   } finally {
-    collection.dispose();
+    collection?.dispose();
   }
 }
 
