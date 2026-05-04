@@ -60,43 +60,44 @@ export function buildDatasetOptions(
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
 
+  const withEnrichments = opts?.withEnrichments;
+
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
+    // ResultPoolColumnSnapshotProvider is always complete, so build() never
+    // returns undefined here.
     const filterCollection = new ColumnCollectionBuilder(pframeSpec)
       .addSource(new ResultPoolColumnSnapshotProvider(ctx.resultPool))
-      .build({ anchors: { main: datasetSpec } });
+      .build({ anchors: { main: datasetSpec } })!;
 
     const enrichmentCollection =
-      opts?.withEnrichments !== undefined
+      withEnrichments !== undefined
         ? new ColumnCollectionBuilder(pframeSpec)
             .addSources(collectCtxColumnSnapshotProviders(ctx))
             .build({ anchors: { main: datasetSpec } })
         : undefined;
 
     try {
-      let filters: Option[] | undefined;
-      if (filterCollection) {
-        const filterMatches = findFilterColumns(filterCollection).filter((m) =>
-          filterPredicate(m.column.spec),
-        );
-        filters =
-          filterMatches.length === 0
-            ? undefined
-            : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
-      }
+      const filterMatches = findFilterColumns(filterCollection).filter((m) =>
+        filterPredicate(m.column.spec),
+      );
+      const filters =
+        filterMatches.length === 0
+          ? undefined
+          : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
 
       let enrichments;
-      if (enrichmentCollection && opts?.withEnrichments !== undefined) {
+      if (enrichmentCollection && withEnrichments !== undefined) {
         const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
-          maxHops: opts.enrichmentMaxHops,
-          ...(typeof opts.withEnrichments === "function"
-            ? { predicate: opts.withEnrichments }
-            : { include: opts.withEnrichments }),
+          maxHops: opts?.enrichmentMaxHops,
+          ...(typeof withEnrichments === "function"
+            ? { predicate: withEnrichments }
+            : { include: withEnrichments }),
         });
         if (enrichmentVariants.length > 0) {
-          enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts.labelOptions);
+          enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts?.labelOptions);
         }
       }
 
@@ -106,7 +107,7 @@ export function buildDatasetOptions(
         ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
       };
     } finally {
-      filterCollection?.dispose();
+      filterCollection.dispose();
       enrichmentCollection?.dispose();
     }
   });
