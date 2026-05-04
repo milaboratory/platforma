@@ -346,7 +346,7 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
-    runtimeCapabilities.addSupportedRequirement("requiresLinkerJoin", true);
+    runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", 1_001_031);
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );

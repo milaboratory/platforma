@@ -138,7 +138,7 @@ export class BlockModelV3<
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
-    requiresLinkerJoin: true,
+    requiresPFramesVersion: 1_001_031,
     ...BLOCK_SERVICE_FLAGS,
   } satisfies BlockCodeKnownFeatureFlags;
 

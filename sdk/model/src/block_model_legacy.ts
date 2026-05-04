@@ -72,7 +72,7 @@ export class BlockModel<
       requiresUIAPIVersion: 1,
       requiresModelAPIVersion: 1,
       requiresCreatePTable: 2,
-      requiresLinkerJoin: true,
+      requiresPFramesVersion: 1_001_031,
     };
   }
 
