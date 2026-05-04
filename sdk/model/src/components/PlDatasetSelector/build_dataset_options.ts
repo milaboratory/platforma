@@ -2,22 +2,42 @@ import type { MultiColumnSelector, Option, PObjectSpec } from "@milaboratories/p
 import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
+import type { AnchoredColumnCollection } from "../../columns/column_collection_builder";
 import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
-import { collectCtxColumnSnapshotProviders } from "../../columns/ctx_column_sources";
+import {
+  ResultPoolColumnSnapshotProvider,
+  collectCtxColumnSnapshotProviders,
+} from "../../columns/ctx_column_sources";
 import type { DatasetOption } from "./dataset_selection";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
 
+type SpecPredicateOption =
+  | MultiColumnSelector
+  | MultiColumnSelector[]
+  | ((spec: PObjectSpec) => boolean);
+
+function toPredicate(opt: SpecPredicateOption | undefined): (spec: PObjectSpec) => boolean {
+  if (opt === undefined) return () => true;
+  return typeof opt === "function" ? opt : multiColumnSelectorsToPredicate(opt);
+}
+
 export type BuildDatasetOptions = {
   /** Which result pool columns qualify as datasets. Defaults to all. */
-  primary?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
+  primary?: SpecPredicateOption;
+  /**
+   * Restricts which result pool columns are considered as filters. Intersected
+   * with the built-in `pl7.app/isSubset: "true"` constraint. Defaults to
+   * accept-all.
+   */
+  filter?: SpecPredicateOption;
   /** Formatting options for filter labels. */
   labelOptions?: DeriveLabelsOptions;
   /**
    * Enables enrichment discovery and filters hits attached to
    * `DatasetOption.enrichments`. Use `() => true` to accept all; omit to disable.
    */
-  withEnrichments?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
+  withEnrichments?: SpecPredicateOption;
   /** Maximum linker hops considered. Only used when `withEnrichments` is set. */
   enrichmentMaxHops?: number;
 };
@@ -32,46 +52,62 @@ export function buildDatasetOptions(
   ctx: RenderCtxBase,
   opts?: BuildDatasetOptions,
 ): DatasetOption[] | undefined {
-  const primary = opts?.primary;
-  const primaryPredicate =
-    primary === undefined
-      ? () => true
-      : typeof primary === "function"
-        ? primary
-        : multiColumnSelectorsToPredicate(primary);
+  const primaryPredicate = toPredicate(opts?.primary);
+  const filterPredicate = toPredicate(opts?.filter);
+
   const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
   if (options.length === 0) return [];
 
-  const columnSources = collectCtxColumnSnapshotProviders(ctx);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
+
+  const withEnrichments = opts?.withEnrichments ?? false;
+  const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
+  // Hoisted out of the per-option loop: collectCtxColumnSnapshotProviders
+  // walks the entire output tree, so calling it once per dataset option would
+  // be O(N × tree).
+  const enrichmentSources = withEnrichments ? collectCtxColumnSnapshotProviders(ctx) : undefined;
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    const builder = new ColumnCollectionBuilder(pframeSpec);
-    for (const src of columnSources) builder.addSource(src);
-    const collection = builder.build({ anchors: { main: datasetSpec } });
-    if (!collection) return { primary };
-
+    // Allocations happen inside try so a throw on the second build()
+    // still disposes the first collection.
+    let filterCollection: AnchoredColumnCollection | undefined;
+    let enrichmentCollection: AnchoredColumnCollection | undefined;
     try {
-      const filterMatches = findFilterColumns(collection);
+      // ResultPoolColumnSnapshotProvider is always complete;
+      // allowPartialColumnList narrows the return type to non-undefined.
+      filterCollection = new ColumnCollectionBuilder(pframeSpec)
+        .addSource(filterSource)
+        .build({ anchors: { main: datasetSpec }, allowPartialColumnList: true });
+
+      enrichmentCollection =
+        enrichmentSources !== undefined
+          ? new ColumnCollectionBuilder(pframeSpec)
+              .addSources(enrichmentSources)
+              .build({ anchors: { main: datasetSpec } })
+          : undefined;
+
+      const filterMatches = findFilterColumns(filterCollection).filter((m) =>
+        filterPredicate(m.column.spec),
+      );
       const filters =
         filterMatches.length === 0
           ? undefined
           : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
 
       let enrichments;
-      if (opts?.withEnrichments !== undefined) {
-        const enrichmentVariants = findEnrichmentColumns(collection, {
-          maxHops: opts.enrichmentMaxHops,
-          ...(typeof opts.withEnrichments === "function"
-            ? { predicate: opts.withEnrichments }
-            : { include: opts.withEnrichments }),
+      if (enrichmentCollection && withEnrichments) {
+        const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
+          maxHops: opts?.enrichmentMaxHops,
+          ...(typeof withEnrichments === "function"
+            ? { predicate: withEnrichments }
+            : { include: withEnrichments }),
         });
         if (enrichmentVariants.length > 0) {
-          enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts.labelOptions);
+          enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts?.labelOptions);
         }
       }
 
@@ -81,7 +117,8 @@ export function buildDatasetOptions(
         ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
       };
     } finally {
-      collection.dispose();
+      filterCollection?.dispose();
+      enrichmentCollection?.dispose();
     }
   });
 }

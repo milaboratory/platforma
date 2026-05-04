@@ -140,17 +140,23 @@ describe("filterMatchesToOptions", () => {
     expect(filterMatchesToOptions([], new Map())).toEqual([]);
   });
 
-  test("throws when ref not found in map", () => {
-    const filterSpec1 = spec("orphan", [axis("sample")], { [Annotation.IsSubset]: "true" });
-    const f1Snap = snap("orphan-id", filterSpec1);
+  test("skips entries whose ref is not found in map", () => {
+    const knownRef = createPlRef("b1", "known");
+    const knownSpec = spec("known", [axis("sample")], { [Annotation.IsSubset]: "true" });
+    const orphanSpec = spec("orphan", [axis("sample")], { [Annotation.IsSubset]: "true" });
+    const knownSnap = snap(canonicalize(knownRef)! as string, knownSpec);
+    const orphanSnap = snap("orphan-id", orphanSpec);
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
-    builder.addSource([f1Snap, anchorSnap]);
+    builder.addSource([knownSnap, orphanSnap, anchorSnap]);
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
     const matches = findFilterColumns(collection);
-    expect(matches.length).toBe(1);
+    expect(matches.length).toBe(2);
 
-    expect(() => filterMatchesToOptions(matches, new Map())).toThrow(/no PlRef found/);
+    const refMap = buildRefMap([{ ref: knownRef }]);
+    const options = filterMatchesToOptions(matches, refMap);
+    expect(options).toHaveLength(1);
+    expect(options[0].ref).toBe(knownRef);
   });
 });

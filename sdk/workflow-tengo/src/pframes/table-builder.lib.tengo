@@ -410,6 +410,9 @@ tableBuilder := func(format, ...ctxArg) {
 
 				for _, rawFlt in rawFilters {
 					resolvedFlt := resolveColumn(rawFlt)
+					if is_undefined(resolvedFlt.spec) {
+						continue
+					}
 					entry.filters = append(entry.filters, {
 						spec: resolvedFlt.spec,
 						data: resolvedFlt.data
