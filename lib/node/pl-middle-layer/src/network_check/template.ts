@@ -3,8 +3,8 @@ import {
   type PlTransaction,
   ContinuePolling,
   field,
-  isNotNullResourceId,
-  isNullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
   Pl,
   poll,
   toGlobalFieldId,
@@ -494,7 +494,7 @@ async function runTemplate(
     const outputsIds: Record<string, FieldId> = {};
 
     for (const output of outputs) {
-      const fieldRef = field(client.clientRoot, output);
+      const fieldRef = field(client.clientRoot, output) as FieldId;
       tx.createField(fieldRef, "Dynamic", outputFields[output]);
       outputsIds[output] = await toGlobalFieldId(fieldRef);
     }
@@ -512,12 +512,12 @@ async function getFieldValue(client: PlClient, fieldId: FieldId): Promise<Resour
 
   return await poll(client, async (tx) => {
     const field = await tx.tx.getField(fieldId);
-    if (isNotNullResourceId(field.error)) {
+    if (isNotNullSignedResourceId(field.error)) {
       const err = await tx.tx.getResourceData(field.error, true);
       throw new Error(`getFieldValue of "${fieldId.fieldName}" field failed: ${err.data}`);
     }
 
-    if (isNullResourceId(field.value)) {
+    if (isNullSignedResourceId(field.value)) {
       throw new ContinuePolling();
     }
 

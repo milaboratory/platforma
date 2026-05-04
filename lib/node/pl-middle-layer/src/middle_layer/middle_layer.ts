@@ -1,8 +1,8 @@
-import type { PlClient, ResourceId, ResourceRef } from "@milaboratories/pl-client";
+import type { PlClient, SignedResourceId, ResourceRef } from "@milaboratories/pl-client";
 import {
   field,
-  isNotNullResourceId,
-  isNullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
   resourceIdToString,
 } from "@milaboratories/pl-client";
 import { LRUCache } from "lru-cache";
@@ -87,7 +87,7 @@ export class MiddleLayer {
     private readonly env: MiddleLayerEnvironment,
     public readonly driverKit: DriverKit,
     public readonly signer: Signer,
-    private readonly projectListResourceId: ResourceId,
+    private readonly projectListResourceId: SignedResourceId,
     private readonly openedProjectsList: WatchableValue<ProjectId[]>,
     private readonly projectListTree: SynchronizedTreeState,
     public readonly blockRegistryProvider: V2RegistryProvider,
@@ -129,14 +129,14 @@ export class MiddleLayer {
   }
 
   //
-  // ProjectId ↔ ResourceId resolution
+  // ProjectId ↔ SignedResourceId resolution
   //
 
-  private readonly projectIdCache = new LRUCache<ProjectId, ResourceId>({ max: 1024 });
+  private readonly projectIdCache = new LRUCache<ProjectId, SignedResourceId>({ max: 1024 });
 
-  /** Resolves a ProjectId to a signed ResourceId.
+  /** Resolves a ProjectId to a signed SignedResourceId.
    * Uses LRU cache with TX-scan fallback. */
-  private async resolveProjectId(projectId: ProjectId): Promise<ResourceId> {
+  private async resolveProjectId(projectId: ProjectId): Promise<SignedResourceId> {
     const cached = this.projectIdCache.get(projectId);
     if (cached !== undefined) return cached;
 
@@ -144,7 +144,7 @@ export class MiddleLayer {
     const rid = await this.pl.withReadTx("ResolveProjectId", async (tx) => {
       const data = await tx.getResourceData(this.projectListResourceId, true);
       for (const f of data.fields) {
-        if (isNullResourceId(f.value)) continue;
+        if (isNullSignedResourceId(f.value)) continue;
         if (resourceIdToString(f.value) === (projectId as string)) return f.value;
       }
       throw new Error(`Project ${projectId} not found in project list.`);
@@ -201,7 +201,7 @@ export class MiddleLayer {
       const data = await tx.getResourceData(this.projectListResourceId, true);
       let fieldName: string | undefined;
       for (const f of data.fields) {
-        if (isNullResourceId(f.value)) continue;
+        if (isNullSignedResourceId(f.value)) continue;
         if (resourceIdToString(f.value) === (id as string)) {
           fieldName = f.name;
           break;
@@ -234,7 +234,9 @@ export class MiddleLayer {
 
       // Read all existing project labels from the project list (parallel reads)
       const projectListData = await tx.getResourceData(this.projectListResourceId, true);
-      const projectRids = projectListData.fields.map((f) => f.value).filter(isNotNullResourceId);
+      const projectRids = projectListData.fields
+        .map((f) => f.value)
+        .filter(isNotNullSignedResourceId);
       const existingLabels = (
         await Promise.all(
           projectRids.map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
@@ -343,7 +345,7 @@ export class MiddleLayer {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, "Dynamic");
       const projectsFieldData = await tx.getField(projectsField);
-      if (isNullResourceId(projectsFieldData.value)) {
+      if (isNullSignedResourceId(projectsFieldData.value)) {
         const projects = tx.createEphemeral(ProjectsResourceType);
         tx.lock(projects);
 

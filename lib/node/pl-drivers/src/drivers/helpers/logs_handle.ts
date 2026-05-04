@@ -4,7 +4,7 @@
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type * as sdk from "@milaboratories/pl-model-common";
 import {
-  bigintToResourceId,
+  createSignedResourceId,
   parseSignedResourceId,
   signatureToBase64Url,
   base64UrlToSignature,
@@ -55,7 +55,7 @@ export function getResourceInfoFromLogHandle(handle: sdk.AnyLogHandle): Resource
   const sig = resourceSig ? base64UrlToSignature(resourceSig) : undefined;
 
   return {
-    id: bigintToResourceId(BigInt(resourceId), sig),
+    id: createSignedResourceId(BigInt(resourceId), sig),
     type: { name: resourceType, version: resourceVersion },
   };
 }

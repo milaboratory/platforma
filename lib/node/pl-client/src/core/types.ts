@@ -4,19 +4,6 @@ import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 declare const __resource_id_type__: unique symbol;
 type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
 
-/** Opaque authorization signature attached to a resource. */
-declare const __resource_signature_type__: unique symbol;
-export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
-
-/**
- * Signed resource id is "<global ID>|<resource signature hex>", encoded as string
- * (e.g. "NG:0x123EC|1234567890abcdef")
- */
-export type SignedResourceId = string & { __resource_id_type__: "signed" };
-
-/** Default resource id type spread across code. If you're uncertain what type to use - use this. */
-export type ResourceId = SignedResourceId;
-
 /** Null resource id */
 export type NullResourceId = BrandResourceId<"null">;
 
@@ -29,25 +16,13 @@ export type LocalResourceId = BrandResourceId<"local">;
 /** Any non-null resource id */
 export type AnyResourceId = GlobalResourceId | LocalResourceId;
 
-/** Any resource id */
-export type OptionalResourceId = NullResourceId | ResourceId;
-
 /** All possible resource flavours */
 export type OptionalAnyResourceId = NullResourceId | GlobalResourceId | LocalResourceId;
 
 export const NullResourceId = 0n as NullResourceId;
 
-export function isNullResourceId(resourceId: bigint | string): resourceId is NullResourceId {
+function isNullResourceId(resourceId: bigint | string): resourceId is NullResourceId {
   return resourceId === NullResourceId;
-}
-
-export function isNotNullResourceId(resourceId: OptionalResourceId): resourceId is ResourceId {
-  return resourceId !== NullResourceId;
-}
-
-export function ensureResourceIdNotNull(resourceId: OptionalResourceId): ResourceId {
-  if (!isNotNullResourceId(resourceId)) throw new Error("null resource id");
-  return resourceId;
 }
 
 export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId {
@@ -89,34 +64,17 @@ export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): bo
 /** Color proof used for resource creation requests (alias for ResourceSignature). */
 export type ColorProof = ResourceSignature;
 
-/** Encode resource signature to base64url for embedding in URL-based handles. */
-export function signatureToBase64Url(sig?: ResourceSignature): string {
-  return sig && sig.length > 0 ? Buffer.from(sig).toString("base64url") : "";
-}
-
-/** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
-export function toResourceSignature(raw?: Uint8Array): ResourceSignature {
-  return raw && raw.length > 0
-    ? (raw as ResourceSignature)
-    : (new Uint8Array(0) as ResourceSignature);
-}
-
-/** Decode base64url-encoded string back to a branded ResourceSignature. */
-export function base64UrlToSignature(str: string): ResourceSignature {
-  return toResourceSignature(Buffer.from(str, "base64url"))!;
-}
-
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export type BasicResourceData = {
-  readonly id: ResourceId;
-  readonly originalResourceId: OptionalResourceId;
+  readonly id: SignedResourceId;
+  readonly originalResourceId: OptionalSignedResourceId;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
 
-  readonly error: OptionalResourceId;
+  readonly error: OptionalSignedResourceId;
 
   readonly inputsLocked: boolean;
   readonly outputsLocked: boolean;
@@ -170,8 +128,8 @@ export type FieldData = {
   readonly name: string;
   readonly type: FieldType;
   readonly status: FieldStatus;
-  readonly value: OptionalResourceId;
-  readonly error: OptionalResourceId;
+  readonly value: OptionalSignedResourceId;
+  readonly error: OptionalSignedResourceId;
 
   /** True if value the fields points to is in final state. */
   readonly valueIsFinal: boolean;
@@ -244,13 +202,17 @@ export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxI
     );
 }
 
-export function resourceIdToString(resourceId: OptionalAnyResourceId | ResourceId): string {
-  if (typeof resourceId === "string") {
-    // SignedResourceId — strip signature, return only the global ID portion
-    const pipeIdx = resourceId.indexOf("|");
-    return pipeIdx >= 0 ? resourceId.substring(0, pipeIdx) : resourceId;
+export function resourceIdToString(
+  resourceId: OptionalAnyResourceId | OptionalSignedResourceId,
+): string {
+  if (isSignedResourceId(resourceId)) {
+    // Strip signature
+    resourceId = anyResourceIdToBigint(resourceId) as GlobalResourceId;
   }
+
+  if (isNullSignedResourceId(resourceId)) return "XX:0x0";
   if (isNullResourceId(resourceId)) return "XX:0x0";
+
   if (isLocalResourceId(resourceId))
     return (
       (isRootResourceId(resourceId) ? "R" : "N") +
@@ -281,16 +243,95 @@ export function resourceIdFromString(str: string): OptionalAnyResourceId | undef
   else return createGlobalResourceId(rn === "R", BigInt("0x" + rid));
 }
 
+export function anyResourceIdToBigint(resourceId: bigint | SignedResourceId): bigint {
+  if (typeof resourceId !== "string") {
+    return resourceId;
+  }
+
+  const parsed = parseSignedResourceId(resourceId);
+  return parsed.globalId as bigint;
+}
+
+export function stringifyWithResourceId(object: unknown): string {
+  return JSON.stringify(object, (key, value) => {
+    if (typeof value === "bigint") return resourceIdToString(value as OptionalAnyResourceId);
+    if (isSignedResourceId(value)) return resourceIdToString(value);
+    return value;
+  });
+}
+
+// more details here: https://egghead.io/blog/using-branded-types-in-typescript
+/** Opaque authorization signature attached to a resource. */
+declare const __resource_signature_type__: unique symbol;
+export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
+
+/**
+ * Signed resource id is "<global ID>|<resource signature hex>", encoded as string
+ * (e.g. "NG:0x123EC|1234567890abcdef")
+ */
+export type SignedResourceId = string & { __resource_id_type__: "signed" };
+
+export type NullSignedResourceId = string & { __resource_id_type__: "null" };
+
+export const NullSignedResourceId = "" as NullSignedResourceId;
+
+/** Nullable signed resource ID */
+export type OptionalSignedResourceId = NullSignedResourceId | SignedResourceId;
+
+export function isNullSignedResourceId(
+  resourceId: bigint | string,
+): resourceId is NullSignedResourceId {
+  return resourceId === NullSignedResourceId;
+}
+
+export function isNotNullSignedResourceId(
+  resourceId: OptionalSignedResourceId,
+): resourceId is SignedResourceId {
+  // lint-allow-cast
+  return resourceId !== NullSignedResourceId;
+}
+
+export function ensureSignedResourceIdNotNull(
+  resourceId: OptionalSignedResourceId,
+): SignedResourceId {
+  if (!isNotNullSignedResourceId(resourceId)) throw new Error("null resource id");
+  return resourceId;
+}
+
+export function isSignedResourceId(resourceId: bigint | string): resourceId is SignedResourceId {
+  // lint-allow-cast
+  return typeof resourceId === "string" && resourceId.includes("|");
+}
+
+/** Encode resource signature to base64url for embedding in URL-based handles. */
+export function signatureToBase64Url(sig?: ResourceSignature): string {
+  return sig && sig.length > 0 ? Buffer.from(sig).toString("base64url") : "";
+}
+
+/** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
+export function toResourceSignature(raw?: Uint8Array): ResourceSignature {
+  return raw && raw.length > 0
+    ? (raw as ResourceSignature)
+    : (new Uint8Array(0) as ResourceSignature);
+}
+
+/** Decode base64url-encoded string back to a branded ResourceSignature. */
+export function base64UrlToSignature(str: string): ResourceSignature {
+  return toResourceSignature(Buffer.from(str, "base64url"))!;
+}
+
 /** Converts bigint global resource id and signature to a SignedResourceId string.
  *  Format: "<globalIdString>|<signatureHex>" */
-export function bigintToResourceId(globalId: bigint, signature?: ResourceSignature): ResourceId {
+export function createSignedResourceId(
+  globalId: bigint,
+  signature?: ResourceSignature,
+): SignedResourceId {
   if (isLocalResourceId(globalId))
     throw new Error(`Local resource id: ${resourceIdToString(globalId)}`);
   if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
 
-  const idStr = resourceIdToString(globalId as GlobalResourceId);
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return `${idStr}|${sigHex}` as SignedResourceId; // lint-allow-cast
+  return `${String(globalId)}|${sigHex}` as SignedResourceId; // lint-allow-cast
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
@@ -307,8 +348,8 @@ export function parseSignedResourceId(resourceId: SignedResourceId): {
   const globalIdStr = resourceId.substring(0, pipeIdx);
   const signatureHex = resourceId.substring(pipeIdx + 1);
 
-  const globalId = resourceIdFromString(globalIdStr);
-  if (globalId === undefined || isNullResourceId(globalId) || isLocalResourceId(globalId))
+  const globalId = BigInt(globalIdStr);
+  if (isNullSignedResourceId(globalId) || isLocalResourceId(globalId))
     throw new Error(`Invalid global id portion in signed resource id: ${globalIdStr}`);
 
   const signature: ResourceSignature = (
@@ -316,22 +357,4 @@ export function parseSignedResourceId(resourceId: SignedResourceId): {
   ) as ResourceSignature;
 
   return { globalId: globalId as GlobalResourceId, signature };
-}
-
-export function anyResourceIdToBigint(resourceId: bigint | string): bigint {
-  if (typeof resourceId !== "string") {
-    return resourceId;
-  }
-
-  const parsed = parseSignedResourceId(resourceId as ResourceId);
-  return parsed.globalId as bigint;
-}
-
-export function stringifyWithResourceId(object: unknown): string {
-  return JSON.stringify(object, (key, value) => {
-    if (typeof value === "bigint") return resourceIdToString(value as OptionalAnyResourceId);
-    if (typeof value === "string" && (value as string).includes("|"))
-      return resourceIdToString(value as ResourceId);
-    return value;
-  });
 }

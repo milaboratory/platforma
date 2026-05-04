@@ -1,5 +1,5 @@
-import type { PlClient, ResourceId, PlTransaction } from "@milaboratories/pl-client";
-import { field, isNullResourceId, resourceIdToString } from "@milaboratories/pl-client";
+import type { PlClient, SignedResourceId, PlTransaction } from "@milaboratories/pl-client";
+import { field, isNullSignedResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import {
   ProjectMetaKey,
   ProjectCreatedTimestamp,
@@ -13,7 +13,7 @@ import type { ProjectMeta } from "@milaboratories/pl-middle-layer";
 
 export interface ProjectEntry {
   id: string;
-  rid: ResourceId;
+  rid: SignedResourceId;
   label: string;
   created: Date;
   lastModified: Date;
@@ -23,7 +23,7 @@ export interface ProjectIdentity {
   /** Project ID (resourceIdToString of resource ID) */
   id: string;
   /** Signed resource ID for use in transactions */
-  rid: ResourceId;
+  rid: SignedResourceId;
   /** UUID field name in the project list resource */
   fieldName: string;
 }
@@ -37,14 +37,14 @@ export interface ProjectInfo extends ProjectEntry {
 /** List all projects from a project list resource. */
 export async function listProjects(
   pl: PlClient,
-  projectListRid: ResourceId,
+  projectListRid: SignedResourceId,
 ): Promise<ProjectEntry[]> {
   return await pl.withReadTx("listProjects", async (tx) => {
     const data = await tx.getResourceData(projectListRid, true);
     const entries: ProjectEntry[] = [];
 
     for (const f of data.fields) {
-      if (isNullResourceId(f.value)) continue;
+      if (isNullSignedResourceId(f.value)) continue;
 
       const [metaStr, createdStr, modifiedStr] = await Promise.all([
         tx.getKValueStringIfExists(f.value, ProjectMetaKey),
@@ -73,7 +73,7 @@ export async function listProjects(
 export async function getProjectInfo(
   pl: PlClient,
   projectId: string,
-  rid: ResourceId,
+  rid: SignedResourceId,
 ): Promise<ProjectInfo> {
   return await pl.withReadTx("getProjectInfo", async (tx) => {
     const kvs = await tx.listKeyValuesString(rid);
@@ -113,13 +113,13 @@ export async function getProjectInfo(
 /** Resolve a project identifier (id or label) to its project ID, ResourceId and field name. */
 export async function resolveProject(
   pl: PlClient,
-  projectListRid: ResourceId,
+  projectListRid: SignedResourceId,
   identifier: string,
 ): Promise<ProjectIdentity> {
   return await pl.withReadTx("resolveProject", async (tx) => {
     const data = await tx.getResourceData(projectListRid, true);
     for (const f of data.fields) {
-      if (isNullResourceId(f.value)) continue;
+      if (isNullSignedResourceId(f.value)) continue;
       const projectId = resourceIdToString(f.value);
       if (projectId === identifier) {
         return { id: projectId, rid: f.value, fieldName: f.name };
@@ -127,7 +127,7 @@ export async function resolveProject(
     }
     // Fallback: match by label
     for (const f of data.fields) {
-      if (isNullResourceId(f.value)) continue;
+      if (isNullSignedResourceId(f.value)) continue;
       const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
       if (metaStr) {
         const meta: ProjectMeta = JSON.parse(metaStr);
@@ -144,12 +144,12 @@ export async function resolveProject(
 /** Read all project labels within an existing transaction. */
 export async function getExistingLabelsInTx(
   tx: PlTransaction,
-  projectListRid: ResourceId,
+  projectListRid: SignedResourceId,
 ): Promise<string[]> {
   const data = await tx.getResourceData(projectListRid, true);
   const labels: string[] = [];
   for (const f of data.fields) {
-    if (isNullResourceId(f.value)) continue;
+    if (isNullSignedResourceId(f.value)) continue;
     const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
     if (metaStr) {
       const meta: ProjectMeta = JSON.parse(metaStr);
@@ -162,7 +162,7 @@ export async function getExistingLabelsInTx(
 /** Get all project labels from a project list. */
 export async function getProjectLabels(
   pl: PlClient,
-  projectListRid: ResourceId,
+  projectListRid: SignedResourceId,
 ): Promise<string[]> {
   return await pl.withReadTx("getProjectLabels", async (tx) => {
     return getExistingLabelsInTx(tx, projectListRid);
@@ -186,7 +186,7 @@ export function deduplicateName(baseName: string, existingLabels: string[]): str
 /** Rename a project (update its label). */
 export async function renameProject(
   pl: PlClient,
-  projectRid: ResourceId,
+  projectRid: SignedResourceId,
   newLabel: string,
 ): Promise<void> {
   await pl.withWriteTx("renameProject", async (tx) => {
@@ -202,7 +202,7 @@ export async function renameProject(
 /** Delete a project from the project list. */
 export async function deleteProject(
   pl: PlClient,
-  projectListRid: ResourceId,
+  projectListRid: SignedResourceId,
   fieldName: string,
 ): Promise<void> {
   await pl.withWriteTx("deleteProject", async (tx) => {
@@ -212,13 +212,13 @@ export async function deleteProject(
 }
 
 /** Get the project list ResourceId for the connected user. */
-export async function getProjectListRid(pl: PlClient): Promise<ResourceId> {
+export async function getProjectListRid(pl: PlClient): Promise<SignedResourceId> {
   return await pl.withReadTx("getProjectList", async (tx) => {
     const fieldData = await tx.getField({
       resourceId: tx.clientRoot,
       fieldName: ProjectsField,
     });
-    if (isNullResourceId(fieldData.value)) {
+    if (isNullSignedResourceId(fieldData.value)) {
       throw new Error("No project list found for this user.");
     }
     return fieldData.value;
@@ -232,8 +232,8 @@ export async function getProjectListRid(pl: PlClient): Promise<ResourceId> {
 export async function navigateToUserRoot(
   pl: PlClient,
   username: string,
-): Promise<{ userRoot: ResourceId; projectListRid: ResourceId }> {
-  let userRootRid: ResourceId | undefined;
+): Promise<{ userRoot: SignedResourceId; projectListRid: SignedResourceId }> {
+  let userRootRid: SignedResourceId | undefined;
 
   userRootRid = await pl.getUserRoot({ login: username, doNotCreate: true });
   if (userRootRid === undefined) {
@@ -247,7 +247,7 @@ export async function navigateToUserRoot(
       fieldName: ProjectsField,
     });
 
-    if (isNullResourceId(projectsFieldData.value)) {
+    if (isNullSignedResourceId(projectsFieldData.value)) {
       throw new Error(`User "${username}" has no project list.`);
     }
 

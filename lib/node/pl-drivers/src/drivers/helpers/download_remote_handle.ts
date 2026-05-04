@@ -5,7 +5,7 @@ import type { Signer } from "@milaboratories/ts-helpers";
 import type { OnDemandBlobResourceSnapshot } from "../types";
 import type { RemoteBlobHandle } from "@milaboratories/pl-model-common";
 import {
-  bigintToResourceId,
+  createSignedResourceId,
   parseSignedResourceId,
   signatureToBase64Url,
   base64UrlToSignature,
@@ -54,7 +54,7 @@ export function parseRemoteHandle(
 
   return {
     info: {
-      id: bigintToResourceId(BigInt(resourceId), sig),
+      id: createSignedResourceId(BigInt(resourceId), sig),
       type: { name: resourceType, version: resourceVersion },
     },
     size: Number(size),

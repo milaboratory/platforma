@@ -1,6 +1,6 @@
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { projectFieldName } from "../model/project_model";
-import type { ResourceId } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
 import { Pl } from "@milaboratories/pl-client";
 import { ifNotUndef } from "../cfg_render/util";
 import type { BlockPackInfo } from "../model/block_pack";
@@ -8,7 +8,7 @@ import type { BlockConfig } from "@platforma-sdk/model";
 import { extractConfig } from "@platforma-sdk/model";
 
 export type BlockPackInfoAndId = {
-  readonly bpResourceId: ResourceId;
+  readonly bpResourceId: SignedResourceId;
   /** To be added to computable keys, to force reload on config change */
   readonly bpId: string;
   /** Full block-pack info */

@@ -13,7 +13,7 @@ import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import canonicalize from "canonicalize";
 import {
   anyResourceIdToBigint,
-  isNullResourceId,
+  isNullSignedResourceId,
   resourceType,
   resourceTypeToString,
   resourceTypesEqual,
@@ -286,7 +286,7 @@ export function traverseParquetChunkResource(
 export function deriveLegacyPObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
   const hash = createHash("sha256");
   hash.update(canonicalize(spec)!);
-  const rid = !isNullResourceId(data.originalId) ? data.originalId : data.id;
+  const rid = !isNullSignedResourceId(data.originalId) ? data.originalId : data.id;
   hash.update(String(anyResourceIdToBigint(rid)));
   return hash.digest().toString("hex") as PObjectId;
 }

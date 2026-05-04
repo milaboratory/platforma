@@ -1,8 +1,8 @@
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import type { FieldData, OptionalAnyResourceId, ResourceId } from "@milaboratories/pl-client";
+import type { FieldData, OptionalAnyResourceId, SignedResourceId } from "@milaboratories/pl-client";
 import {
   DefaultRetryOptions,
-  ensureResourceIdNotNull,
+  ensureSignedResourceIdNotNull,
   field,
   isNotFoundError,
   isTimeoutOrCancelError,
@@ -100,7 +100,7 @@ export class Project {
   constructor(
     private readonly env: MiddleLayerEnvironment,
     public readonly id: ProjectId /* Project ID, exposed to outer consumers, who work with ML */,
-    readonly rid: ResourceId /* Contains signature, not exposed outside middle layer. */,
+    readonly rid: SignedResourceId /* Contains signature, not exposed outside middle layer. */,
     private readonly projectTree: SynchronizedTreeState,
   ) {
     this.overview = projectOverview(
@@ -562,10 +562,10 @@ export class Project {
   public async resetBlockArgsAndUiState(blockId: string, author?: AuthorMarker): Promise<void> {
     await this.env.pl.withWriteTx("BlockInputsReset", async (tx) => {
       // reading default arg values from block pack
-      const bpHolderRid = ensureResourceIdNotNull(
+      const bpHolderRid = ensureSignedResourceIdNotNull(
         (await tx.getField(field(this.rid, projectFieldName(blockId, "blockPack")))).value,
       );
-      const bpRid = ensureResourceIdNotNull(
+      const bpRid = ensureSignedResourceIdNotNull(
         (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value,
       );
       const bpData = await tx.getResourceData(bpRid, false);
@@ -708,7 +708,7 @@ export class Project {
   public static async init(
     env: MiddleLayerEnvironment,
     id: ProjectId,
-    rid: ResourceId,
+    rid: SignedResourceId,
   ): Promise<Project> {
     // Applying migrations to the project resource, if needed
     await applyProjectMigrations(env.pl, rid);

@@ -1,11 +1,11 @@
 import type { PlTransaction } from "../core/transaction";
-import type { FieldData, OptionalResourceId } from "../core/types";
-import { isNotNullResourceId } from "../core/types";
+import type { FieldData, OptionalSignedResourceId } from "../core/types";
+import { isNotNullSignedResourceId } from "../core/types";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
 export interface ValErr {
-  valueId: OptionalResourceId;
-  errorId: OptionalResourceId;
+  valueId: OptionalSignedResourceId;
+  errorId: OptionalSignedResourceId;
   error?: string;
 }
 
@@ -16,7 +16,7 @@ export async function valErr(tx: PlTransaction, f: FieldData): Promise<ValErr> {
     error: "",
   };
 
-  if (isNotNullResourceId(f.error)) {
+  if (isNotNullSignedResourceId(f.error)) {
     const e = await tx.getResourceData(f.error, true);
     const deserializationResult = cachedDeserialize(notEmpty(e.data));
     if (typeof deserializationResult !== "string") {

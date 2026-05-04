@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
 import {
-  bigintToResourceId,
+  createSignedResourceId,
   DefaultFinalResourceDataPredicate,
-  NullResourceId,
+  NullSignedResourceId,
 } from "@milaboratories/pl-client";
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from "./accessors";
 import { PlTreeState } from "./state";
@@ -18,7 +18,7 @@ import {
   TestValueResourceState1,
 } from "./test_utils";
 
-const rid = bigintToResourceId;
+const rid = createSignedResourceId;
 
 test("simple tree test 1", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
@@ -52,11 +52,11 @@ test("simple tree test 1", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestStructuralResourceState1, id: rid(1n), fields: [iField("b", rid(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: rid(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -83,11 +83,11 @@ test("simple tree kv test", async () => {
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(rid(1n)))] },
-    { ...TestStructuralResourceState1, id: rid(rid(1n)), fields: [iField("b", rid(rid(2n)))] },
+    { ...TestDynamicRootState1, fields: [dField("b"), dField("a", rid(1n))] },
+    { ...TestStructuralResourceState1, id: rid(1n), fields: [iField("b", rid(2n))] },
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: rid(2n),
       data: new TextEncoder().encode("Test1"),
     },
   ]);
@@ -99,7 +99,7 @@ test("simple tree kv test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: rid(2n),
       data: new TextEncoder().encode("Test1"),
       kv: [{ key: "thekey", value: Buffer.from("thevalue") }],
     },
@@ -112,7 +112,7 @@ test("simple tree kv test", async () => {
   tree.updateFromResourceData([
     {
       ...TestValueResourceState1,
-      id: rid(rid(2n)),
+      id: rid(2n),
       data: new TextEncoder().encode("Test1"),
       kv: [],
     },
@@ -195,7 +195,7 @@ test("field error", async () => {
   tree.updateFromResourceData([
     {
       ...TestDynamicRootState1,
-      fields: [dField("b", NullResourceId, rid(7n))],
+      fields: [dField("b", NullSignedResourceId, rid(7n))],
     },
     {
       ...TestErrorResourceState2,

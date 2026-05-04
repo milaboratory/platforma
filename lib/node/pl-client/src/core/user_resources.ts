@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import type { LLPlClient } from "./ll_client";
 import type { PlTransaction } from "./transaction";
 import { toGlobalResourceId } from "./transaction";
-import type { OptionalResourceId, ResourceId, ResourceType } from "./types";
+import type { OptionalSignedResourceId, SignedResourceId, ResourceType } from "./types";
 import {
-  bigintToResourceId,
-  isNotNullResourceId,
-  NullResourceId,
+  createSignedResourceId,
+  isNotNullSignedResourceId,
+  NullSignedResourceId,
   toResourceSignature,
 } from "./types";
 import { isUnimplementedError } from "./errors";
@@ -23,7 +23,7 @@ export interface StorageInfo {
   /** Human-readable display name. For V1/legacy equals storageId; for V2 from resource JSON data. */
   readonly storageName: string;
   /** Signed resource ID for this storage resource. */
-  readonly resourceId: ResourceId;
+  readonly resourceId: SignedResourceId;
   /** Full resource type including correct version ("1" or "2"). */
   readonly resourceType: ResourceType;
 }
@@ -41,7 +41,7 @@ interface LsStorageV2Data {
 export type TxRunner = <T>(
   name: string,
   writable: boolean,
-  clientRoot: OptionalResourceId,
+  clientRoot: OptionalSignedResourceId,
   body: (tx: PlTransaction) => Promise<T>,
 ) => Promise<T>;
 
@@ -73,13 +73,16 @@ export class UserResources {
    * 2. listUserResources RPC
    * 3. Named resource lookup/creation via transaction (legacy)
    */
-  async getUserRoot(): Promise<ResourceId>;
-  async getUserRoot(opts: { login?: string }): Promise<ResourceId>;
-  async getUserRoot(opts: { login?: string; doNotCreate: false }): Promise<ResourceId>;
-  async getUserRoot(opts: { login?: string; doNotCreate: true }): Promise<ResourceId | undefined>;
+  async getUserRoot(): Promise<SignedResourceId>;
+  async getUserRoot(opts: { login?: string }): Promise<SignedResourceId>;
+  async getUserRoot(opts: { login?: string; doNotCreate: false }): Promise<SignedResourceId>;
+  async getUserRoot(opts: {
+    login?: string;
+    doNotCreate: true;
+  }): Promise<SignedResourceId | undefined>;
   async getUserRoot(
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     if (this.backendCapability === undefined) {
       return await this.detectAndGetUserRoot(opts);
     }
@@ -88,7 +91,7 @@ export class UserResources {
 
   private async detectAndGetUserRoot(
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     // 1. Try getUserRoot RPC
     try {
       const root = await this.getUserRootViaRpc(opts);
@@ -115,7 +118,7 @@ export class UserResources {
   private async getUserRootWith(
     capability: BackendCapability,
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     switch (capability) {
       case "getUserRoot":
         return await this.getUserRootViaRpc(opts);
@@ -157,18 +160,18 @@ export class UserResources {
 
   // --- Newest path: getUserRoot RPC ---
 
-  private async getUserRootViaRpc(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaRpc(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaRpc(opts: {
     login?: string;
     doNotCreate: false;
-  }): Promise<ResourceId>;
+  }): Promise<SignedResourceId>;
   private async getUserRootViaRpc(opts: {
     login?: string;
     doNotCreate: true;
-  }): Promise<ResourceId | undefined>;
+  }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaRpc(
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     const resp = await this.ll.getUserRoot({
       login: opts.login,
       doNotCreate: opts.doNotCreate,
@@ -177,7 +180,7 @@ export class UserResources {
       if (opts.doNotCreate) return undefined;
       throw new Error("getUserRoot returned no userRoot entry");
     }
-    return bigintToResourceId(
+    return createSignedResourceId(
       resp.userRoot.resourceId,
       toResourceSignature(resp.userRoot.resourceSignature),
     );
@@ -185,22 +188,22 @@ export class UserResources {
 
   // --- listUserResources path ---
 
-  private async getUserRootViaList(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaList(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaList(opts: {
     login?: string;
     doNotCreate: false;
-  }): Promise<ResourceId>;
+  }): Promise<SignedResourceId>;
   private async getUserRootViaList(opts: {
     login?: string;
     doNotCreate: true;
-  }): Promise<ResourceId | undefined>;
+  }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaList(
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     const responses = await this.ll.listUserResources({ login: opts.login, limit: 1 });
     for (const msg of responses) {
       if (msg.entry.oneofKind === "userRoot") {
-        return bigintToResourceId(
+        return createSignedResourceId(
           msg.entry.userRoot.resourceId,
           toResourceSignature(msg.entry.userRoot.resourceSignature),
         );
@@ -216,7 +219,7 @@ export class UserResources {
 
     // Collect all LS/* shared resources, separating V1 and V2
     const v1Entries: StorageInfo[] = [];
-    const v2ResourceIds: { resourceId: ResourceId; resourceType: ResourceType }[] = [];
+    const v2ResourceIds: { resourceId: SignedResourceId; resourceType: ResourceType }[] = [];
 
     for (const msg of responses) {
       if (msg.entry.oneofKind !== "sharedResource") continue;
@@ -227,7 +230,7 @@ export class UserResources {
       const typeVersion = sr.resourceType.version;
       if (!typeName.startsWith(LsStorageTypePrefix)) continue;
 
-      const rId = bigintToResourceId(sr.resourceId, toResourceSignature(sr.resourceSignature));
+      const rId = createSignedResourceId(sr.resourceId, toResourceSignature(sr.resourceSignature));
       const rType: ResourceType = { name: typeName, version: typeVersion };
 
       if (typeVersion === "2") {
@@ -247,22 +250,27 @@ export class UserResources {
     // Read V2 resource data in a single transaction
     let v2Entries: StorageInfo[] = [];
     if (v2ResourceIds.length > 0) {
-      v2Entries = await this.runTx("ReadLsStorageV2Data", false, NullResourceId, async (tx) => {
-        const entries: StorageInfo[] = [];
-        for (const { resourceId, resourceType } of v2ResourceIds) {
-          const rd = await tx.getResourceData(resourceId, false);
-          if (rd.data) {
-            const v2Data = JSON.parse(Buffer.from(rd.data).toString("utf-8")) as LsStorageV2Data;
-            entries.push({
-              storageId: v2Data.storageID,
-              storageName: v2Data.storageName,
-              resourceId,
-              resourceType,
-            });
+      v2Entries = await this.runTx(
+        "ReadLsStorageV2Data",
+        false,
+        NullSignedResourceId,
+        async (tx) => {
+          const entries: StorageInfo[] = [];
+          for (const { resourceId, resourceType } of v2ResourceIds) {
+            const rd = await tx.getResourceData(resourceId, false);
+            if (rd.data) {
+              const v2Data = JSON.parse(Buffer.from(rd.data).toString("utf-8")) as LsStorageV2Data;
+              entries.push({
+                storageId: v2Data.storageID,
+                storageName: v2Data.storageName,
+                resourceId,
+                resourceType,
+              });
+            }
           }
-        }
-        return entries;
-      });
+          return entries;
+        },
+      );
     }
 
     const result = new Map<string, StorageInfo>();
@@ -274,23 +282,23 @@ export class UserResources {
 
   // --- Legacy path: named resources ---
 
-  private async getUserRootViaLegacy(opts: { login?: string }): Promise<ResourceId>;
+  private async getUserRootViaLegacy(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaLegacy(opts: {
     login?: string;
     doNotCreateUserRoot: false;
-  }): Promise<ResourceId>;
+  }): Promise<SignedResourceId>;
   private async getUserRootViaLegacy(opts: {
     login?: string;
     doNotCreateUserRoot: true;
-  }): Promise<ResourceId | undefined>;
+  }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaLegacy(
     opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     const login = opts.login ?? this.authUser;
     const mainRootName =
       login === null ? AnonymousClientRoot : createHash("sha256").update(login).digest("hex");
 
-    return await this.runTx("initialization", true, NullResourceId, async (tx) => {
+    return await this.runTx("initialization", true, NullSignedResourceId, async (tx) => {
       if (await tx.checkResourceNameExists(mainRootName)) {
         return await tx.getResourceByName(mainRootName);
       }
@@ -307,13 +315,13 @@ export class UserResources {
   }
 
   private async getDataLibrariesViaLegacy(): Promise<ReadonlyMap<string, StorageInfo>> {
-    return await this.runTx("GetAvailableStorageIds", false, NullResourceId, async (tx) => {
+    return await this.runTx("GetAvailableStorageIds", false, NullSignedResourceId, async (tx) => {
       const lsProviderId = await tx.getResourceByName("LSProvider");
       const provider = await tx.getResourceData(lsProviderId, true);
 
       const result = new Map<string, StorageInfo>();
       for (const field of provider.fields) {
-        if (field.type !== "Dynamic" || !isNotNullResourceId(field.value)) continue;
+        if (field.type !== "Dynamic" || !isNotNullSignedResourceId(field.value)) continue;
         if (!field.name.startsWith(LsProviderFieldPrefix)) continue;
 
         const storageId = field.name.substring(LsProviderFieldPrefix.length);

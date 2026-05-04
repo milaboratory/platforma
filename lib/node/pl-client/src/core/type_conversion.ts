@@ -10,12 +10,12 @@ import { FieldType as GrpcFieldType } from "../proto-grpc/github.com/milaborator
 import type {
   FieldData,
   FieldStatus,
-  OptionalResourceId,
+  OptionalSignedResourceId,
   FieldType,
   ResourceData,
   ResourceKind,
 } from "./types";
-import { bigintToResourceId, NullResourceId, toResourceSignature } from "./types";
+import { createSignedResourceId, NullSignedResourceId, toResourceSignature } from "./types";
 import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
 import { throwPlNotFoundError } from "./errors";
 
@@ -25,16 +25,16 @@ function resourceIsDeleted(proto: Resource): boolean {
   return proto.deletedTime !== undefined && proto.deletedTime.seconds !== 0n;
 }
 
-function protoIdToOptionalResourceId(id: bigint, signature?: Uint8Array): OptionalResourceId {
-  if (id === 0n) return NullResourceId;
-  return bigintToResourceId(id, toResourceSignature(signature));
+function protoIdToOptionalResourceId(id: bigint, signature?: Uint8Array): OptionalSignedResourceId {
+  if (id === 0n) return NullSignedResourceId;
+  return createSignedResourceId(id, toResourceSignature(signature));
 }
 
 /** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
   if (resourceIsDeleted(proto)) throwPlNotFoundError("resource deleted");
   return {
-    id: bigintToResourceId(proto.resourceId, toResourceSignature(proto.resourceSignature)),
+    id: createSignedResourceId(proto.resourceId, toResourceSignature(proto.resourceSignature)),
     originalResourceId: protoIdToOptionalResourceId(
       proto.originalResourceId,
       proto.originalResourceSignature,
@@ -62,12 +62,12 @@ function protoToResourceKind(proto: Resource_Kind): ResourceKind {
   throw new Error("invalid ResourceKind: " + proto);
 }
 
-function protoToError(proto: Resource): OptionalResourceId {
+function protoToError(proto: Resource): OptionalSignedResourceId {
   const f = proto.fields.find((f) => f?.id?.fieldName === ResourceErrorField);
-  if (!f) return NullResourceId;
+  if (!f) return NullSignedResourceId;
   const errId = f.error ?? 0n;
-  if (errId === 0n) return NullResourceId;
-  return bigintToResourceId(errId, toResourceSignature(f.errorSignature));
+  if (errId === 0n) return NullSignedResourceId;
+  return createSignedResourceId(errId, toResourceSignature(f.errorSignature));
 }
 
 export function protoToField(proto: Field): FieldData {

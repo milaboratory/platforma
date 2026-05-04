@@ -3,25 +3,26 @@
 import type {
   ColorProof,
   LocalResourceId,
-  OptionalResourceId,
+  OptionalSignedResourceId,
   BasicResourceData,
   FieldData,
   FieldType,
   ResourceData,
-  ResourceId,
+  SignedResourceId,
   ResourceSignature,
   ResourceType,
   FutureFieldType,
 } from "./types";
 import {
-  bigintToResourceId,
+  createSignedResourceId,
   createLocalResourceId,
   isLocalResourceId,
-  ensureResourceIdNotNull,
+  ensureSignedResourceIdNotNull,
   MaxTxId,
   extractBasicResourceData,
   parseSignedResourceId,
   toResourceSignature,
+  isSignedResourceId,
 } from "./types";
 import type {
   ClientMessageRequest,
@@ -54,7 +55,7 @@ import { PromiseTracker } from "./PromiseTracker";
 export interface ResourceRef {
   /** Global resource id of newly created resources, become available only
    * after response for the corresponding creation request is received. */
-  readonly globalId: Promise<ResourceId>;
+  readonly globalId: Promise<SignedResourceId>;
 
   /** Transaction-local resource id is assigned right after resource creation
    * request is sent, and can be used right away */
@@ -80,12 +81,12 @@ interface _FieldId<RId> {
   fieldName: string;
 }
 
-export type FieldId = _FieldId<ResourceId>;
+export type FieldId = _FieldId<SignedResourceId>;
 export type FieldRef = _FieldId<ResourceRef>;
 export type LocalFieldId = _FieldId<LocalResourceId>;
 export type AnyFieldId = FieldId | LocalFieldId;
 
-export type AnyResourceRef = ResourceRef | LocalResourceId | ResourceId;
+export type AnyResourceRef = ResourceRef | LocalResourceId | SignedResourceId;
 export type AnyFieldRef = _FieldId<AnyResourceRef>; // FieldRef | FieldId
 export type AnyRef = AnyResourceRef | AnyFieldRef;
 
@@ -99,8 +100,8 @@ export function isResource(ref: AnyRef): ref is AnyResourceRef {
   return isResourceRef(ref);
 }
 
-export function isResourceId(ref: AnyRef): ref is ResourceId {
-  return typeof ref === "string" && (ref as string).includes("|");
+export function isResourceId(ref: AnyRef): ref is SignedResourceId {
+  return typeof ref === "string" && isSignedResourceId(ref);
 }
 
 export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
@@ -121,10 +122,10 @@ export function toFieldId(ref: AnyFieldRef): AnyFieldId {
   else return ref as FieldId;
 }
 
-export async function toGlobalFieldId(ref: AnyFieldRef): Promise<FieldId> {
+export async function toGlobalFieldId(ref: FieldRef | FieldId): Promise<FieldId> {
   if (isFieldRef(ref))
     return { resourceId: await ref.resourceId.globalId, fieldName: ref.fieldName };
-  return { resourceId: ref.resourceId as ResourceId, fieldName: ref.fieldName };
+  return ref;
 }
 
 export interface ResourceIdWithSignature {
@@ -139,18 +140,18 @@ function toResourceIdAndSignature(ref: AnyResourceRef): ResourceIdWithSignature 
     // Local ID — no signature yet
     return { resourceId: ref.localId, resourceSignature: emptySignature };
   }
-  if (typeof ref === "string") {
+  if (isResourceId(ref)) {
     // SignedResourceId — decompose
-    const { globalId, signature } = parseSignedResourceId(ref as ResourceId);
+    const { globalId, signature } = parseSignedResourceId(ref);
     return { resourceId: globalId as bigint, resourceSignature: signature };
   }
   // Raw bigint (LocalResourceId)
   return { resourceId: ref as bigint, resourceSignature: emptySignature };
 }
 
-export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
+export async function toGlobalResourceId(ref: AnyResourceRef): Promise<SignedResourceId> {
   if (isResourceRef(ref)) return await ref.globalId;
-  if (isLocalResourceId(ref)) return bigintToResourceId(ref); // legacy path: loose security mode in backend
+  if (isLocalResourceId(ref)) return createSignedResourceId(ref); // legacy path: loose security mode in backend
   return ref;
 }
 
@@ -211,9 +212,9 @@ export class PlTransaction {
     private readonly ll: LLPlTransaction,
     public readonly name: string,
     public readonly writable: boolean,
-    private readonly _clientRoot: OptionalResourceId,
+    private readonly _clientRoot: OptionalSignedResourceId,
     private readonly finalPredicate: FinalResourceDataPredicate,
-    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>,
+    private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
   ) {
     // initiating transaction
@@ -402,8 +403,8 @@ export class PlTransaction {
   // Main tx methods
   //
 
-  public get clientRoot(): ResourceId {
-    return ensureResourceIdNotNull(this._clientRoot);
+  public get clientRoot(): SignedResourceId {
+    return ensureSignedResourceIdNotNull(this._clientRoot);
   }
 
   //
@@ -462,7 +463,7 @@ export class PlTransaction {
     const globalId = this.sendSingleAndParse(req(localId), (r) => {
       const rawId = parser(r);
       const sig = sigExtractor ? toResourceSignature(sigExtractor(r)) : undefined;
-      return bigintToResourceId(rawId, sig);
+      return createSignedResourceId(rawId, sig);
     });
 
     void this.track(globalId);
@@ -587,14 +588,14 @@ export class PlTransaction {
     this.sendVoidAsync({ oneofKind: "resourceNameDelete", resourceNameDelete: { name } });
   }
 
-  public getResourceByName(name: string): Promise<ResourceId> {
+  public getResourceByName(name: string): Promise<SignedResourceId> {
     return this.sendSingleAndParse(
       { oneofKind: "resourceNameGet", resourceNameGet: { name } },
       (r) => {
         const rawId = r.resourceNameGet.resourceId;
         if (rawId === 0n) throw new Error("null resource id from getResourceByName");
         const sig = toResourceSignature(r.resourceNameGet.resourceSignature);
-        return bigintToResourceId(rawId, sig);
+        return createSignedResourceId(rawId, sig);
       },
     );
   }
@@ -606,14 +607,14 @@ export class PlTransaction {
     );
   }
 
-  public removeResource(rId: ResourceId): void {
+  public removeResource(rId: SignedResourceId): void {
     this.sendVoidAsync({
       oneofKind: "resourceRemove",
       resourceRemove: this.toSignedResourceId(rId),
     });
   }
 
-  public resourceExists(rId: ResourceId): Promise<boolean> {
+  public resourceExists(rId: SignedResourceId): Promise<boolean> {
     return this.sendSingleAndParse(
       {
         oneofKind: "resourceExists",
@@ -658,7 +659,7 @@ export class PlTransaction {
     return this.track(async () => {
       if (!ignoreCache && isResourceId(rId)) {
         // checking if we can return result from cache
-        const fromCache = this.sharedResourceDataCache.get(rId as ResourceId);
+        const fromCache = this.sharedResourceDataCache.get(rId);
         if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
           if (!loadFields) {
             this._stat.rGetDataCacheHits++;
@@ -745,8 +746,7 @@ export class PlTransaction {
       );
 
       // cleaning cache record if resource was removed from the db
-      if (result === undefined && isResourceId(rId))
-        this.sharedResourceDataCache.delete(rId as ResourceId);
+      if (result === undefined && isResourceId(rId)) this.sharedResourceDataCache.delete(rId);
 
       return result;
     });

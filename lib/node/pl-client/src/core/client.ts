@@ -2,11 +2,11 @@ import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol 
 import type { PlCallOps } from "./ll_client";
 import { LLPlClient } from "./ll_client";
 import { PlTransaction, TxCommitConflict } from "./transaction";
-import type { OptionalResourceId, ResourceId } from "./types";
+import type { OptionalSignedResourceId, SignedResourceId } from "./types";
 import {
-  ensureResourceIdNotNull,
-  isNullResourceId,
-  NullResourceId,
+  ensureSignedResourceIdNotNull,
+  isNullSignedResourceId,
+  NullSignedResourceId,
   parseSignedResourceId,
 } from "./types";
 import type { ColorProof } from "./types";
@@ -75,7 +75,7 @@ export class PlClient {
   }
 
   /** Stores client root (this abstraction is intended for future implementation of the security model) */
-  private _clientRoot: OptionalResourceId = NullResourceId;
+  private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
 
@@ -93,7 +93,7 @@ export class PlClient {
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
-  private readonly resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+  private readonly resourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>;
 
   private constructor(
     configOrAddress: PlClientConfig | string,
@@ -179,14 +179,14 @@ export class PlClient {
   }
 
   /**
-   * Returns the user root ResourceId via ListUserResources.
+   * Returns the user root SignedResourceId via ListUserResources.
    * @param opts.login - target user login; omit for the authenticated user.
-   * @returns ResourceId of the user root, or undefined if the server returned no userRoot entry.
+   * @returns SignedResourceId of the user root, or undefined if the server returned no userRoot entry.
    * @throws if the backend does not implement ListUserResources (callers should catch with isUnimplementedError).
    */
   public async getUserRoot(
     opts: { login?: string; doNotCreate?: boolean } = {},
-  ): Promise<ResourceId | undefined> {
+  ): Promise<SignedResourceId | undefined> {
     return this.userResources.getUserRoot(opts);
   }
 
@@ -203,16 +203,16 @@ export class PlClient {
   }
 
   private get initialized() {
-    return !isNullResourceId(this._clientRoot);
+    return !isNullSignedResourceId(this._clientRoot);
   }
 
   private checkInitialized() {
     if (!this.initialized) throw new Error("Client not initialized");
   }
 
-  public get clientRoot(): ResourceId {
+  public get clientRoot(): SignedResourceId {
     this.checkInitialized();
-    return ensureResourceIdNotNull(this._clientRoot);
+    return ensureSignedResourceIdNotNull(this._clientRoot);
   }
 
   public get serverInfo(): MaintenanceAPI_Ping_Response {
@@ -293,7 +293,7 @@ export class PlClient {
   private async _withTx<T>(
     name: string,
     writable: boolean,
-    clientRoot: OptionalResourceId,
+    clientRoot: OptionalSignedResourceId,
     body: (tx: PlTransaction) => Promise<T>,
     ops?: TxOps,
   ): Promise<T> {
@@ -317,7 +317,7 @@ export class PlClient {
         );
 
         // Auto-set default color proof from the client root's signature
-        if (!isNullResourceId(clientRoot) && writable) {
+        if (!isNullSignedResourceId(clientRoot) && writable) {
           const parsed = parseSignedResourceId(clientRoot);
           if (parsed.signature) {
             tx.setDefaultColor(parsed.signature as ColorProof);

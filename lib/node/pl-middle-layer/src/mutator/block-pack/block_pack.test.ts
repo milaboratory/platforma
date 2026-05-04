@@ -1,4 +1,9 @@
-import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import {
+  isNullSignedResourceId,
+  poll,
+  TestHelpers,
+  toGlobalResourceId,
+} from "@milaboratories/pl-client";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import path from "node:path";
@@ -50,7 +55,7 @@ test.each([
 
     await poll(pl, async (a) => {
       const r = await a.get(bp).then((r) => r.final()); // this will await final state
-      expect(isNullResourceId(r.data.error)).toBe(true);
+      expect(isNullSignedResourceId(r.data.error)).toBe(true);
     });
   });
 });

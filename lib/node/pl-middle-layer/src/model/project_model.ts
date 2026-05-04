@@ -8,7 +8,7 @@ import type { BlockRenderingMode } from "@platforma-sdk/model";
 /**
  * Opaque identifier for a project, safe to persist and reuse across sessions.
  * Internally this is a string derived from resource ID without signature.
- * Unlike ResourceId, this does not carry cryptographic signatures and can be
+ * Unlike SignedResourceId, this does not carry cryptographic signatures and can be
  * safely persisted, serialized, and reused across ML sessions.
  * Absence of signature guarantees this ID cannot be used in transactions 'as-is',
  * requiring the caller to operate with special types and helpers.

@@ -1,5 +1,13 @@
-import type { OptionalResourceId, PlClient, ResourceId } from "@milaboratories/pl-middle-layer";
-import { NullResourceId, resourceIdToString, TestHelpers } from "@milaboratories/pl-middle-layer";
+import type {
+  OptionalSignedResourceId,
+  PlClient,
+  SignedResourceId,
+} from "@milaboratories/pl-middle-layer";
+import {
+  NullSignedResourceId,
+  resourceIdToString,
+  TestHelpers,
+} from "@milaboratories/pl-middle-layer";
 import type { SynchronizedTreeOps } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import { randomUUID } from "node:crypto";
@@ -10,7 +18,7 @@ import { test } from "vitest";
 // oxlint-disable-next-line jest/expect-expect jest/no-disabled-tests
 export const plTest = test.extend<{
   pl: PlClient;
-  createTree: (res: ResourceId, ops?: SynchronizedTreeOps) => Promise<SynchronizedTreeState>;
+  createTree: (res: SignedResourceId, ops?: SynchronizedTreeOps) => Promise<SynchronizedTreeState>;
   rootTree: SynchronizedTreeState;
   tmpFolder: string;
 }>({
@@ -29,7 +37,7 @@ export const plTest = test.extend<{
 
   pl: async ({ onTestFinished }, use) => {
     const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
-    let altRootId: OptionalResourceId = NullResourceId;
+    let altRootId: OptionalSignedResourceId = NullSignedResourceId;
     const client = await TestHelpers.getTestClient(alternativeRoot);
     altRootId = client.clientRoot;
     try {
@@ -60,7 +68,7 @@ export const plTest = test.extend<{
   },
 
   createTree: async ({ pl }, use) => {
-    const trees = new Map<ResourceId, Promise<SynchronizedTreeState>>();
+    const trees = new Map<SignedResourceId, Promise<SynchronizedTreeState>>();
     try {
       await use((res, ops) => {
         let treePromise = trees.get(res);

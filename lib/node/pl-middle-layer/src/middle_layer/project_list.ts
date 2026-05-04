@@ -1,6 +1,6 @@
 import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { PlClient, ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { PlClient, SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import { resourceIdToString, resourceTypesEqual } from "@milaboratories/pl-client";
 import type { TreeAndComputableU } from "./types";
 import type { WatchableValue } from "@milaboratories/computable";
@@ -25,7 +25,7 @@ export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
 
 export async function createProjectList(
   pl: PlClient,
-  rid: ResourceId,
+  rid: SignedResourceId,
   openedProjects: WatchableValue<ProjectId[]>,
   env: MiddleLayerEnvironment,
 ): Promise<TreeAndComputableU<ProjectListEntry[]>> {
