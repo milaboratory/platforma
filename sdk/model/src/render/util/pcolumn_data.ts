@@ -548,6 +548,8 @@ export function convertOrParsePColumnData(
 export function isPColumnReady(
   c: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): c is PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal> {
+  if (c.status !== "resolved") return false;
+
   const isValues = (d: PColumnDataUniversal): d is PColumnValues => Array.isArray(d);
   const isAccessor = (d: PColumnDataUniversal): d is TreeNodeAccessor =>
     d instanceof TreeNodeAccessor;

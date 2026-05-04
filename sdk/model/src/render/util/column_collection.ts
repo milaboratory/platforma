@@ -579,6 +579,10 @@ export class PColumnCollection {
 
     const columns: PColumn<PColumnDataUniversal>[] = [];
     for (const entry of entries) {
+      if (entry.status !== "resolved") {
+        if (opts?.dontWaitAllData) continue;
+        return undefined;
+      }
       const data = entry.data();
       if (!data) {
         if (opts?.dontWaitAllData) continue;

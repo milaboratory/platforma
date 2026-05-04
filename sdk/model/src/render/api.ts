@@ -92,13 +92,16 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
 
 /**
  * Transforms PColumn data into the internal representation expected by the platform
- * @param data Data from a PColumn to transform
+ * @param column to transform
  * @returns Transformed data compatible with platform API
  */
 function transformPColumnData(
-  data: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
+  column: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
-  return mapPObjectData(data, (d) => {
+  if (column.status !== "resolved") {
+    return { ...column, data: [] };
+  }
+  return mapPObjectData(column, (d) => {
     if (d instanceof TreeNodeAccessor) {
       return d.getIsReadyOrError() ? d.handle : [];
     } else if (isDataInfo(d)) {
@@ -594,19 +597,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.resultPool.findLabels(axis);
   }
 
-  private verifyInlineAndExplicitColumnsSupport(
-    columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
-  ) {
-    const hasInlineColumns = columns.some(
-      (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
-    ); // Updated check for DataInfo
-    const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
-    if (hasInlineColumns && !inlineColumnsSupport)
-      throw Error(`Inline or explicit columns not supported`); // Combined check
-
-    // Removed redundant explicitColumns check
-  }
-
   private patchPTableDef(
     def: PTableDef<PColumn<PColumnDataUniversal>>,
   ): PTableDef<PColumn<PColumnDataUniversal>> {
@@ -670,7 +660,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
       rawDef = this.patchPTableDef(def);
     }
     const columns = extractAllColumns(rawDef.src);
-    this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
     return this.ctx.createPTable(mapPTableDef(rawDef, transformPColumnData));
   }
