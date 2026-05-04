@@ -21,6 +21,7 @@ export type BlockCodeKnownFeatureFlags = {
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
   readonly requiresCreatePTable?: number;
+  readonly requiresResultPoolVersion?: number;
 } & ServiceRequireFlags;
 
 export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframeQueryRanking"] as const;
@@ -29,6 +30,7 @@ export const AllRequiresFeatureFlags = [
   "requiresUIAPIVersion",
   "requiresCreatePTable",
   "requiresModelAPIVersion",
+  "requiresResultPoolVersion",
 ] as const;
 
 //

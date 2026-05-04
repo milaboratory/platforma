@@ -101,7 +101,7 @@ export class ResultPool {
 
   public getStatusByRef(blockId: string, exportName: string): PColumnStatus {
     const block = this.blocks.get(blockId);
-    if (block === undefined) return "absent";
+    if (block === undefined) return "block_missing";
 
     const result = block.prod?.results?.get(exportName);
     if (result === undefined) {
@@ -109,7 +109,7 @@ export class ResultPool {
         this.ctx.markUnstable(`prod_not_locked:${blockId}`);
         return "resolving";
       }
-      return "absent";
+      return "export_missing";
     }
     if (result.hasData === false) return "absent";
     if (result.hasData === undefined) {
