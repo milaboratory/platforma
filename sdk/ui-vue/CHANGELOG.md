@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.73.2
+
+### Patch Changes
+
+- 62ab678: Disable linker tooltips
+
 ## 1.73.0
 
 ### Patch Changes
