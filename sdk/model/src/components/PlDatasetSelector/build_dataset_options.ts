@@ -2,6 +2,7 @@ import type { MultiColumnSelector, Option, PObjectSpec } from "@milaboratories/p
 import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
+import type { AnchoredColumnCollection } from "../../columns/column_collection_builder";
 import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
 import {
   ResultPoolColumnSnapshotProvider,
@@ -71,20 +72,24 @@ export function buildDatasetOptions(
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    // ResultPoolColumnSnapshotProvider is always complete; allowPartialColumnList
-    // narrows the return type to non-undefined.
-    const filterCollection = new ColumnCollectionBuilder(pframeSpec)
-      .addSource(filterSource)
-      .build({ anchors: { main: datasetSpec }, allowPartialColumnList: true });
-
-    const enrichmentCollection =
-      enrichmentSources !== undefined
-        ? new ColumnCollectionBuilder(pframeSpec)
-            .addSources(enrichmentSources)
-            .build({ anchors: { main: datasetSpec } })
-        : undefined;
-
+    // Allocations happen inside try so a throw on the second build()
+    // still disposes the first collection.
+    let filterCollection: AnchoredColumnCollection | undefined;
+    let enrichmentCollection: AnchoredColumnCollection | undefined;
     try {
+      // ResultPoolColumnSnapshotProvider is always complete;
+      // allowPartialColumnList narrows the return type to non-undefined.
+      filterCollection = new ColumnCollectionBuilder(pframeSpec)
+        .addSource(filterSource)
+        .build({ anchors: { main: datasetSpec }, allowPartialColumnList: true });
+
+      enrichmentCollection =
+        enrichmentSources !== undefined
+          ? new ColumnCollectionBuilder(pframeSpec)
+              .addSources(enrichmentSources)
+              .build({ anchors: { main: datasetSpec } })
+          : undefined;
+
       const filterMatches = findFilterColumns(filterCollection).filter((m) =>
         filterPredicate(m.column.spec),
       );
@@ -112,7 +117,7 @@ export function buildDatasetOptions(
         ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
       };
     } finally {
-      filterCollection.dispose();
+      filterCollection?.dispose();
       enrichmentCollection?.dispose();
     }
   });

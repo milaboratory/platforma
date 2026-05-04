@@ -48,11 +48,13 @@ export function filterMatchesToOptions(
   // Each ColumnMatch can be reached via multiple variants (different linker
   // paths / qualifications). We emit one Option per variant so the user can
   // pick a specific path — `deriveDistinctLabels` disambiguates labels by
-  // path.
-  const flattened = matches
-    .flatMap((m) => m.variants.map((v) => ({ match: m, variant: v })))
-    .map((item) => ({ ...item, ref: refsByObjectId.get(item.match.column.id) }))
-    .filter((item): item is typeof item & { ref: PlRef } => item.ref !== undefined);
+  // path. All variants of a match share a column id, so the ref lookup
+  // happens once per match.
+  const flattened = matches.flatMap((match) => {
+    const ref = refsByObjectId.get(match.column.id);
+    if (ref === undefined) return [];
+    return match.variants.map((variant) => ({ match, variant, ref }));
+  });
 
   const entries: Entry[] = flattened.map(({ match, variant }) => ({
     spec: match.column.spec,
