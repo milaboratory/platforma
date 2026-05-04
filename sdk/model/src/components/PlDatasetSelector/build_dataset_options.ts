@@ -16,10 +16,8 @@ type SpecPredicateOption =
   | MultiColumnSelector[]
   | ((spec: PObjectSpec) => boolean);
 
-function toPredicate(
-  opt: SpecPredicateOption | undefined,
-): ((spec: PObjectSpec) => boolean) | undefined {
-  if (opt === undefined) return undefined;
+function toPredicate(opt: SpecPredicateOption | undefined): (spec: PObjectSpec) => boolean {
+  if (opt === undefined) return () => true;
   return typeof opt === "function" ? opt : multiColumnSelectorsToPredicate(opt);
 }
 
@@ -53,7 +51,9 @@ export function buildDatasetOptions(
   ctx: RenderCtxBase,
   opts?: BuildDatasetOptions,
 ): DatasetOption[] | undefined {
-  const primaryPredicate = toPredicate(opts?.primary) ?? (() => true);
+  const primaryPredicate = toPredicate(opts?.primary);
+  const filterPredicate = toPredicate(opts?.filter);
+
   const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
   if (options.length === 0) return [];
 
@@ -61,8 +61,6 @@ export function buildDatasetOptions(
   const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
-
-  const filterPredicate = toPredicate(opts?.filter);
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
@@ -80,10 +78,9 @@ export function buildDatasetOptions(
     try {
       let filters: Option[] | undefined;
       if (filterCollection) {
-        let filterMatches = findFilterColumns(filterCollection);
-        if (filterPredicate !== undefined) {
-          filterMatches = filterMatches.filter((m) => filterPredicate(m.column.spec));
-        }
+        const filterMatches = findFilterColumns(filterCollection).filter((m) =>
+          filterPredicate(m.column.spec),
+        );
         filters =
           filterMatches.length === 0
             ? undefined
