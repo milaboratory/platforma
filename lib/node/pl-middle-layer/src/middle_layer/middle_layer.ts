@@ -37,6 +37,7 @@ import { RuntimeCapabilities } from "@platforma-sdk/model";
 import {
   type ModelServiceRegistry,
   registerServiceCapabilities,
+  REQUIRES_PFRAMES_VERSION,
 } from "@milaboratories/pl-model-common";
 import { createModelServiceRegistry } from "../service_factories";
 import type { DownloadUrlDriver } from "@milaboratories/pl-drivers";
@@ -381,6 +382,7 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 1);
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
+    runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", REQUIRES_PFRAMES_VERSION);
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );

@@ -1,5 +1,83 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.20.1
+
+### Patch Changes
+
+- 2df0aff: `buildDatasetOptions`: scope filter discovery to the result pool only (block outputs and prerun no longer pollute the filter dropdown), add a `filter` predicate to restrict eligible filter columns, and skip filter matches without a PlRef instead of throwing. Removes the need for callers to wrap `buildDatasetOptions` in try/catch.
+
+  `tableBuilder.addPrimary`: drop a `PrimaryRef.filter` whose `resolveColumn` produced no spec, so a stale or malformed filter ref no longer causes `pframes.build-table` to panic with `field "spec" not found and inputs locked`.
+
+  `PlDatasetSelector`: always render the filter dropdown, regardless of whether the selected dataset has compatible filters; the dropdown is clearable and uses an empty selection (instead of a synthetic "No filter" entry) to mean "no filter applied". Removed the `noFilterLabel` prop.
+
+## 5.20.0
+
+### Minor Changes
+
+- 92727be: Add `feats.hasGpu` — true when the backend reports GPU availability via the `gpuAvailable` feature flag (driven by the new `--runner-gpu-available` CLI flag in the platforma backend). Use it to gate `.gpuMemory()` calls in blocks that have a CPU fallback path:
+
+  ```tengo
+  feats := import("@platforma-sdk/workflow-tengo:feats")
+
+  builder := exec.builder().software(sw).cpu(8).mem("24GiB")
+  if feats.hasGpu {
+      builder = builder.gpuMemory("16GiB")
+  }
+  ```
+
+  Calling `.gpuMemory()` against a backend that reports no GPU now produces a permanent error from the runner driver, so blocks must guard with `feats.hasGpu` to remain compatible with both GPU and non-GPU backends.
+
+## 5.19.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+## 5.18.0
+
+### Minor Changes
+
+- a40505e: Add `EnrichmentRef` — a versioned envelope around a terminal column hit
+  and an ordered linker path, mirroring `PrimaryRef`'s pattern so the
+  dependency scanner deep-walks `PlRef`s inside it without changes. Adds
+  `EnrichmentStep`, `isEnrichmentRef`, `createEnrichmentRef` exports.
+  Today only `linker` steps are supported; the `type` discriminant leaves
+  room for future step kinds.
+
+  `tableBuilder.addColumn` / `addColumns` accept `EnrichmentRef` and
+  `ResolvedEnrichmentRef`. The `:pframes.build-table` ephemeral registers
+  the hit + every hop column in the PFrame, calls
+  `pframes.build-query.buildQuery` to assemble the query, and hands the
+  resulting `SpecQueryJoinEntry` straight to `pt.p._rawQueryEntry` — ptabler
+  resolves the linker join natively, no node-by-node translation.
+
+  Adds `pt.p._rawQueryEntry(columnsByName, joinEntry)` (internal — `_`
+  prefixed) for wrapping a pre-built `SpecQueryJoinEntry` (e.g. from
+  `bquery.buildQuery`) into a PEntry. Application code should compose
+  with the public builders (`p.column / p.inner / p.linkerJoin / …`).
+
+  The spec distiller now preserves the `pl7.app/isLinkerColumn`
+  annotation on column specs (all other annotations are still stripped).
+  ptabler reads this annotation at execution time to populate the spec
+  frame's linker index — without it, `linkerJoin` queries silently
+  degrade to inner joins.
+
+  Drops the `qualifications` field from the typed shapes of
+  `DiscoverColumnsLinkerStep`, `MatchVariant.path[]` items, and
+  `DiscoveredPColumn`'s linker path items. Per-step linker qualifications
+  were always empty (qualifications attach to query/hit ends, not to
+  intermediate steps) — `BuildQuery` already discarded them, and the
+  tooltip / `createPlDataTableV3` consumers were forwarding empty arrays.
+
+  `DiscoveredPColumnId` no longer carries per-step `qualifications` in
+  its canonicalized JSON form. The Rust side still emits the field on
+  the wire; the TS deserializer ignores it.
+
+### Patch Changes
+
+- Updated dependencies [a40505e]
+  - @platforma-open/milaboratories.software-ptabler@1.16.1
+
 ## 5.17.0
 
 ### Minor Changes

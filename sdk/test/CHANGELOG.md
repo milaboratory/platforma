@@ -1,5 +1,60 @@
 # @platforma-sdk/test
 
+## 1.73.1
+
+### Patch Changes
+
+- Updated dependencies [16fb5a6]
+  - @milaboratories/pl-middle-layer@1.58.2
+
+## 1.73.0
+
+### Patch Changes
+
+- Updated dependencies [2df0aff]
+  - @platforma-sdk/model@1.73.0
+  - @milaboratories/pl-middle-layer@1.58.1
+
+## 1.72.0
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @platforma-sdk/model@1.72.0
+  - @milaboratories/pl-middle-layer@1.58.0
+  - @milaboratories/pl-client@3.2.5
+  - @milaboratories/pl-tree@1.9.23
+
+## 1.71.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.57.1
+
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-middle-layer@1.57.0
+  - @platforma-sdk/model@1.71.0
+  - @milaboratories/pl-client@3.2.4
+  - @milaboratories/pl-tree@1.9.22
+
+## 1.70.0
+
+### Patch Changes
+
+- Updated dependencies [a40505e]
+  - @platforma-sdk/model@1.70.0
+  - @milaboratories/pl-middle-layer@1.56.2
+  - @milaboratories/pl-client@3.2.3
+  - @milaboratories/pl-tree@1.9.21
+
 ## 1.69.1
 
 ### Patch Changes

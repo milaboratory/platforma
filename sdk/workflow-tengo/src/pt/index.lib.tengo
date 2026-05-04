@@ -278,12 +278,43 @@ p := ll.toStrict({
 		ll.assert(ll.isMap(linkerQuery) && linkerQuery.type == "column",
 			"linkerJoin: linker entry must be a plain p.column(...) result, got: %v", linkerQuery)
 
+		// Without `pl7.app/isLinkerColumn: "true"`, ptabler degrades
+		// silently to inner join. Skipped for futures (still smart objects).
+		linkerSpec := linkerColumnEntry._getColumnsMap()[linkerQuery.column].spec
+		if ll.isMap(linkerSpec) {
+			annotations := linkerSpec.annotations
+			isLinker := ll.isMap(annotations) && annotations[pframesSpec.A_IS_LINKER_COLUMN] == "true"
+			ll.assert(isLinker,
+				"linkerJoin: linker column %q must carry annotation %q == \"true\", got spec: %v",
+				linkerQuery.column, pframesSpec.A_IS_LINKER_COLUMN, linkerSpec)
+		}
+
 		merged := _mergePEntries([linkerColumnEntry, secondaryEntry])
 		return _newPEntry(merged.columns, {
 			type: "linkerJoin",
 			linker: { column: linkerQuery.column },
 			secondary: [_asJoinEntry(merged.specQueries[1])]
 		})
+	},
+	/**
+	 * Internal: wrap a pre-built `SpecQueryJoinEntry` (e.g. from
+	 * `bquery.buildQuery`) as a PEntry without reconstructing the tree.
+	 * Application code should use the public builders instead.
+	 * Drops `joinEntry.qualifications` to match every other `pt.p.*` builder.
+	 *
+	 * @param columnsByName {object} - `{[columnId]: { spec, data }}` for every
+	 *        leaf column referenced inside the query.
+	 * @param joinEntry {object} - `{ entry: SpecQuery, qualifications? }`.
+	 * @returns {object} - A join builder entry object.
+	 */
+	_rawQueryEntry: func(columnsByName, joinEntry) {
+		ll.assert(ll.isMap(columnsByName), "columnsByName must be a map")
+		ll.assert(ll.isMap(joinEntry) && !is_undefined(joinEntry.entry),
+			"joinEntry must be a SpecQueryJoinEntry { entry, qualifications? }, got: %v", joinEntry)
+		for name, info in columnsByName {
+			_validateColumn(name, info)
+		}
+		return _newPEntry(columnsByName, joinEntry.entry)
 	}
 })
 

@@ -1,5 +1,59 @@
 # @platforma-sdk/ui-vue
 
+## 1.73.2
+
+### Patch Changes
+
+- 62ab678: Disable linker tooltips
+
+## 1.73.0
+
+### Patch Changes
+
+- 2df0aff: `buildDatasetOptions`: scope filter discovery to the result pool only (block outputs and prerun no longer pollute the filter dropdown), add a `filter` predicate to restrict eligible filter columns, and skip filter matches without a PlRef instead of throwing. Removes the need for callers to wrap `buildDatasetOptions` in try/catch.
+
+  `tableBuilder.addPrimary`: drop a `PrimaryRef.filter` whose `resolveColumn` produced no spec, so a stale or malformed filter ref no longer causes `pframes.build-table` to panic with `field "spec" not found and inputs locked`.
+
+  `PlDatasetSelector`: always render the filter dropdown, regardless of whether the selected dataset has compatible filters; the dropdown is clearable and uses an empty selection (instead of a synthetic "No filter" entry) to mean "no filter applied". Removed the `noFilterLabel` prop.
+
+- Updated dependencies [2df0aff]
+  - @platforma-sdk/model@1.73.0
+  - @milaboratories/uikit@2.13.4
+
+## 1.72.0
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @platforma-sdk/model@1.72.0
+  - @milaboratories/pl-model-common@1.39.0
+  - @milaboratories/uikit@2.13.3
+  - @milaboratories/pf-spec-driver@1.3.9
+
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-model-common@1.38.0
+  - @platforma-sdk/model@1.71.0
+  - @milaboratories/pf-spec-driver@1.3.8
+  - @milaboratories/uikit@2.13.2
+
+## 1.70.0
+
+### Patch Changes
+
+- Updated dependencies [a40505e]
+  - @milaboratories/pl-model-common@1.37.0
+  - @platforma-sdk/model@1.70.0
+  - @milaboratories/pf-spec-driver@1.3.7
+  - @milaboratories/uikit@2.13.1
+
 ## 1.69.0
 
 ### Minor Changes

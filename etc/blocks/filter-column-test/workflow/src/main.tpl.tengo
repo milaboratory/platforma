@@ -6,9 +6,15 @@ wf.body(func(args) {
 		addPrimary("main", args.dataset).
 		build()
 
+	tableLinker := wf.tableBuilder("tsv").
+		addPrimary("main", args.dataset).
+		addColumns(args.enrichments).
+		build()
+
 	return {
 		outputs: {
-			tableFile: file.exportFile(table)
+			tableFile: file.exportFile(table),
+			tableFileLinker: file.exportFile(tableLinker)
 		},
 		exports: {}
 	}

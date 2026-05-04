@@ -9,6 +9,7 @@ import type {
   PColumnInfo,
   PColumnSpec,
   SingleAxisSelector,
+  AxisQualification,
   AxisValueType,
   ColumnValueType,
 } from "./spec";
@@ -62,14 +63,6 @@ export interface MultiColumnSelector {
   readonly partialAxesMatch?: boolean;
 }
 
-/** Qualification applied to a single axis to make it compatible during integration. */
-export interface AxisQualification {
-  /** Axis selector identifying which axis is qualified. */
-  readonly axis: SingleAxisSelector;
-  /** Additional context domain entries applied to the axis. */
-  readonly contextDomain: Record<string, string>;
-}
-
 /** Qualifications needed for both query (already-integrated) columns and the hit column. */
 export interface ColumnAxesWithQualifications {
   /** Already integrated (query) columns with their qualifications. */
@@ -109,8 +102,6 @@ export interface DiscoverColumnsLinkerStep {
   type: "linker";
   /** The linker column traversed in this step */
   linker: PColumnIdAndSpec;
-  /** Axis qualifications produced when matching the linker's many-side axes */
-  qualifications: AxisQualification[];
 }
 
 /**

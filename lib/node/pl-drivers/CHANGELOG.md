@@ -1,5 +1,36 @@
 # @milaboratories/pl-drivers
 
+## 1.13.1
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @milaboratories/pl-model-common@1.39.0
+  - @milaboratories/pl-client@3.2.5
+  - @milaboratories/pl-tree@1.9.23
+
+## 1.13.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-model-common@1.38.0
+  - @milaboratories/pl-client@3.2.4
+  - @milaboratories/pl-tree@1.9.22
+
+## 1.12.23
+
+### Patch Changes
+
+- Updated dependencies [a40505e]
+  - @milaboratories/pl-model-common@1.37.0
+  - @milaboratories/pl-client@3.2.3
+  - @milaboratories/pl-tree@1.9.21
+
 ## 1.12.22
 
 ### Patch Changes

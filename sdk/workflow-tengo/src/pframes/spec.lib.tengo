@@ -69,6 +69,8 @@ D_BLOCK := "pl7.app/block"
 
 /** Annotation with axis or column label */
 A_LABEL := "pl7.app/label"
+/** Marks a PColumn as a linker column for spec-driven join discovery */
+A_IS_LINKER_COLUMN := "pl7.app/isLinkerColumn"
 /**
  * Annotation containing trace of operations resulting in a corresponding column.
  *
@@ -424,8 +426,17 @@ createSpecDistiller := func(specs) {
 	distillEntity := func(entity, entityName) {
 		result := maps.clone(entity)
 
+		// Keep `pl7.app/isLinkerColumn` — ptabler reads it to populate
+		// the linker index. Without it, linkerJoin degrades to inner.
 		if !is_undefined(result.annotations) {
-			delete(result, "annotations")
+			linkerVal := result.annotations[A_IS_LINKER_COLUMN]
+			if is_undefined(linkerVal) {
+				delete(result, "annotations")
+			} else {
+				keptAnnotations := {}
+				keptAnnotations[A_IS_LINKER_COLUMN] = linkerVal
+				result.annotations = keptAnnotations
+			}
 		}
 
 		// Filter domains

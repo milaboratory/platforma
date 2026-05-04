@@ -1,14 +1,14 @@
 <script lang="ts">
 /**
- * Select a dataset and (optionally) a filter column, emitting a `PrimaryRef`.
+ * Select a dataset and (optionally) a filter column, emitting a {@link DatasetSelection}.
  *
- * Behaves like {@link PlDropdownRef} when none of the offered datasets carry
- * filter options. When the selected dataset has compatible filters, a second
- * dropdown appears with the filters plus a "No filter" entry.
+ * The filter dropdown is always rendered and is clearable — leaving it empty
+ * means "no filter". When the selected dataset has no compatible filters, the
+ * dropdown opens to an empty option list.
  *
- * Accepts `PrimaryRef | PlRef | undefined` as `modelValue` (a plain `PlRef`
- * is treated as an unfiltered dataset), but always emits `PrimaryRef`
- * (or `undefined` when cleared).
+ * The emitted value bundles the user's pick (`primary`) with the auto-attached
+ * `enrichments` payload from the matching `DatasetOption`. Enrichments are
+ * opaque to the UI — block authors unbundle them inside their args resolver.
  */
 export default {
   name: "PlDatasetSelector",
@@ -16,8 +16,8 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { DatasetOption, PlRef, PrimaryRef } from "@platforma-sdk/model";
-import { createPrimaryRef, isPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import type { DatasetOption, DatasetSelection, PlRef } from "@platforma-sdk/model";
+import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown, PlDropdownRef } from "@milaboratories/uikit";
 import { computed } from "vue";
@@ -26,11 +26,7 @@ const slots = defineSlots<{
   tooltip?: () => unknown;
 }>();
 
-/**
- * v-model value. Accepts `PrimaryRef`, plain `PlRef` (treated as unfiltered),
- * or `undefined`. Writes always emit `PrimaryRef` or `undefined`.
- */
-const model = defineModel<PrimaryRef | PlRef | undefined>();
+const model = defineModel<DatasetSelection | undefined>();
 
 const props = withDefaults(
   defineProps<{
@@ -50,8 +46,6 @@ const props = withDefaults(
     filterLabel?: string;
     /** Placeholder for the filter dropdown. */
     filterPlaceholder?: string;
-    /** Label of the "no filter" entry prepended to the filter options. */
-    noFilterLabel?: string;
     /** Show a clear button on the dataset dropdown. */
     clearable?: boolean;
     /** Mark the dataset dropdown as required. */
@@ -68,59 +62,52 @@ const props = withDefaults(
     placeholder: "...",
     filterLabel: "",
     filterPlaceholder: "...",
-    noFilterLabel: "No filter",
     clearable: false,
     required: false,
     disabled: false,
   },
 );
 
-const selectedDataset = computed<PlRef | undefined>(() => {
-  const v = model.value;
-  if (v === undefined) return undefined;
-  return isPrimaryRef(v) ? v.column : v;
-});
+const selectedDataset = computed<PlRef | undefined>(() => model.value?.primary.column);
 
-const selectedFilter = computed<PlRef | undefined>(() => {
-  const v = model.value;
-  return isPrimaryRef(v) ? v.filter : undefined;
-});
+const selectedFilter = computed<PlRef | undefined>(() => model.value?.primary.filter);
 
 const currentDatasetOption = computed<DatasetOption | undefined>(() => {
   const dataset = selectedDataset.value;
   if (!dataset) return undefined;
-  return props.options?.find((o) => plRefsEqual(o.ref, dataset, true));
+  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
 });
 
-const hasFilters = computed(() => (currentDatasetOption.value?.filters?.length ?? 0) > 0);
+// PlDropdownRef expects `Option[]`; project the primary out of each entry.
+const primaryOptions = computed<readonly { ref: PlRef; label: string }[] | undefined>(() =>
+  props.options?.map((o) => o.primary),
+);
 
-/**
- * Filter dropdown options. The first entry (`null`) is the "No filter" choice —
- * null distinguishes it from `undefined` (dropdown clear button, disabled here).
- */
-const filterOptions = computed<ListOption<PlRef | null>[]>(() => {
-  const filters = currentDatasetOption.value?.filters;
-  if (!filters) return [];
-  return [
-    { label: props.noFilterLabel, value: null } as ListOption<PlRef | null>,
-    ...filters.map((f) => ({ label: f.label, value: f.ref }) as ListOption<PlRef | null>),
-  ];
-});
+const filterOptions = computed<ListOption<PlRef>[]>(
+  () => currentDatasetOption.value?.filters?.map((f) => ({ label: f.label, value: f.ref })) ?? [],
+);
 
-const filterValue = computed<PlRef | null>(() => selectedFilter.value ?? null);
-
-function emitValue(dataset: PlRef | undefined, filter: PlRef | undefined) {
-  model.value = dataset === undefined ? undefined : createPrimaryRef(dataset, filter);
+// Resolve from `props.options` directly — `currentDatasetOption` may not have
+// recomputed yet when this runs synchronously inside a change handler.
+function findOption(dataset: PlRef): DatasetOption | undefined {
+  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
 }
 
 function onDatasetChange(dataset: PlRef | undefined) {
-  emitValue(dataset, undefined);
+  if (dataset === undefined) {
+    model.value = undefined;
+    return;
+  }
+  model.value = createDatasetSelection(createPrimaryRef(dataset), findOption(dataset)?.enrichments);
 }
 
-function onFilterChange(value: PlRef | null | undefined) {
+function onFilterChange(filter: PlRef | undefined) {
   const dataset = selectedDataset.value;
   if (!dataset) return;
-  emitValue(dataset, value ?? undefined);
+  model.value = createDatasetSelection(
+    createPrimaryRef(dataset, filter),
+    findOption(dataset)?.enrichments,
+  );
 }
 </script>
 
@@ -128,7 +115,7 @@ function onFilterChange(value: PlRef | null | undefined) {
   <div class="pl-dataset-selector">
     <PlDropdownRef
       :model-value="selectedDataset"
-      :options="options"
+      :options="primaryOptions"
       :label="label"
       :helper="helper"
       :loading-options-helper="loadingOptionsHelper"
@@ -144,12 +131,12 @@ function onFilterChange(value: PlRef | null | undefined) {
       </template>
     </PlDropdownRef>
     <PlDropdown
-      v-if="hasFilters"
-      :model-value="filterValue"
+      :model-value="selectedFilter"
       :options="filterOptions"
       :label="filterLabel"
       :placeholder="filterPlaceholder"
       :disabled="disabled"
+      clearable
       @update:model-value="onFilterChange"
     />
   </div>

@@ -1,10 +1,8 @@
 import type { PObjectId } from "@milaboratories/pl-model-common";
-import { PColumn } from "@milaboratories/pl-model-common";
+import { isDataInfo, PColumn, visitDataInfo } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { PColumnDataUniversal } from "../render/internal";
 import type { ColumnDataStatus, ColumnSnapshot } from "./column_snapshot";
-
-// --- ColumnProvider ---
 
 /**
  * Data source interface for column enumeration.
@@ -22,8 +20,6 @@ export interface ColumnSnapshotProvider {
   isColumnListComplete(): boolean;
 }
 
-// --- ColumnSource ---
-
 /**
  * Union of types that can serve as column sources for helpers and builders.
  * Does NOT include TreeNodeAccessor — call `.toColumnSource()` on it first.
@@ -32,8 +28,6 @@ export type ColumnSource =
   | ColumnSnapshotProvider
   | ColumnSnapshot<PObjectId>[]
   | PColumn<PColumnDataUniversal | undefined>[];
-
-// --- ArrayColumnProvider ---
 
 /**
  * Simple provider wrapping an array of PColumns.
@@ -46,8 +40,8 @@ export class ArrayColumnProvider implements ColumnSnapshotProvider {
     this.columns = columns.map((col) => ({
       id: col.id,
       spec: col.spec,
-      dataStatus: "ready" as const,
       data: { get: () => col.data },
+      dataStatus: this.getStatus(col.data),
     }));
   }
 
@@ -58,9 +52,35 @@ export class ArrayColumnProvider implements ColumnSnapshotProvider {
   isColumnListComplete(): boolean {
     return true;
   }
-}
 
-// --- SnapshotColumnProvider ---
+  protected getStatus(
+    d: undefined | PColumnDataUniversal | (() => undefined | PColumnDataUniversal),
+  ): ColumnDataStatus {
+    if (d == null) {
+      return "absent";
+    }
+    if (typeof d === "function") {
+      return this.getStatus(d());
+    }
+    if (d instanceof TreeNodeAccessor) {
+      if (d.getIsReadyOrError()) return "ready";
+      if (d.getIsFinal()) return "absent";
+      return "computing";
+    }
+    if (isDataInfo(d)) {
+      let ready = true;
+      let final = true;
+      visitDataInfo(d, (v) => {
+        ready &&= v.getIsReadyOrError();
+        final &&= v.getIsFinal();
+      });
+      if (ready) return "ready";
+      if (final) return "absent";
+      return "computing";
+    }
+    return "ready";
+  }
+}
 
 /**
  * Provider wrapping an array of ColumnSnapshots.
@@ -77,8 +97,6 @@ export class SnapshotColumnProvider implements ColumnSnapshotProvider {
     return true;
   }
 }
-
-// --- OutputColumnProvider ---
 
 export interface OutputColumnProviderOpts {
   /** When true and the accessor is final, columns with no ready data get status 'absent'. */
@@ -132,8 +150,6 @@ export class OutputColumnProvider implements ColumnSnapshotProvider {
     });
   }
 }
-
-// --- Source normalization ---
 
 /** Checks if a value is a ColumnSnapshotProvider (duck-typing). */
 export function isColumnSnapshotProvider(source: unknown): source is ColumnSnapshotProvider {

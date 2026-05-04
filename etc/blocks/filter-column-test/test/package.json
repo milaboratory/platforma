@@ -14,6 +14,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/milaboratories.test-block-table": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers-v3": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",

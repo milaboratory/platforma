@@ -21,13 +21,22 @@ export type BlockCodeKnownFeatureFlags = {
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
   readonly requiresCreatePTable?: number;
+  readonly requiresPFramesVersion?: number;
 } & ServiceRequireFlags;
+
+/**
+ * Required PFrames version. Bump this in lockstep with the `@milaboratories/pframes-rs-*`
+ * version in `pnpm-workspace.yaml` so blocks built against the new SDK refuse to load on
+ * older desktop apps.
+ */
+export const REQUIRES_PFRAMES_VERSION = 1_001_031;
 
 export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframeQueryRanking"] as const;
 
 export const AllRequiresFeatureFlags = [
   "requiresUIAPIVersion",
   "requiresCreatePTable",
+  "requiresPFramesVersion",
   "requiresModelAPIVersion",
 ] as const;
 

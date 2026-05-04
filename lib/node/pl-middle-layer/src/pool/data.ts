@@ -9,18 +9,58 @@ import {
   type PObjectId,
   type PObjectSpec,
 } from "@platforma-sdk/model";
-import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import { makeResourceSnapshot, type PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import canonicalize from "canonicalize";
 import {
   anyResourceIdToBigint,
   isNullSignedResourceId,
+  resourceIdToString,
   resourceType,
   resourceTypeToString,
   resourceTypesEqual,
+  type SignedResourceId,
+  type ResourceType,
 } from "@milaboratories/pl-client";
 import type { Writable } from "utility-types";
 import { createHash } from "node:crypto";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import { OnDemandBlobResourceSnapshot } from "@milaboratories/pl-drivers";
+
+/**
+ * Tree-independent reference to a blob resource used by the PFrame data flow.
+ *
+ * The earlier design carried a {@link PlTreeEntry} all the way into the blob pools;
+ * resolution then went back through the originating tree, so when that tree dropped
+ * the resource (e.g., a project recalculated with new settings), shared pool entries
+ * — held alive by other projects — would start failing with "resource not found in
+ * the tree" even though the underlying blob was still valid backend-side.
+ *
+ * BlobResourceRef captures the snapshot at parse time, where the tree is guaranteed
+ * to resolve. The pools then key by rid (`resourceInfo.id`) and call into the
+ * download driver with the snapshot directly — independent of any specific tree.
+ */
+export class BlobResourceRef {
+  constructor(
+    public readonly resourceInfo: { readonly id: SignedResourceId; readonly type: ResourceType },
+    /** Present only for on-demand (remote) blobs; needed for size and signed handle. */
+    public readonly onDemandSnapshot: OnDemandBlobResourceSnapshot | undefined,
+  ) {}
+
+  toJSON(): string {
+    return resourceIdToString(this.resourceInfo.id);
+  }
+}
+
+export function makeLocalBlobRef(accessor: PlTreeNodeAccessor): BlobResourceRef {
+  return new BlobResourceRef(accessor.resourceInfo, undefined);
+}
+
+function makeRemoteBlobRef(accessor: PlTreeNodeAccessor): BlobResourceRef {
+  return new BlobResourceRef(
+    accessor.resourceInfo,
+    makeResourceSnapshot(accessor, OnDemandBlobResourceSnapshot),
+  );
+}
 
 export const PColumnDataJsonPartitioned = resourceType("PColumnData/JsonPartitioned", "1");
 export const PColumnDataJsonSuperPartitioned = resourceType(
@@ -60,7 +100,7 @@ const BinaryPartitionedValuesFieldSuffix = ".values";
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
-): PFrameInternal.DataInfo<PlTreeEntry> {
+): PFrameInternal.DataInfo<BlobResourceRef> {
   if (!data.getIsReadyOrError()) throw new PFrameDriverError("Data not ready.");
 
   const resourceData = data.getDataAsJson();
@@ -81,7 +121,10 @@ export function parseDataInfoResource(
     const parts = Object.fromEntries(
       data
         .listInputFields()
-        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).persist()]),
+        .map((field) => [
+          field,
+          makeLocalBlobRef(data.traverse({ field, errorIfFieldNotSet: true })),
+        ]),
     );
 
     return {
@@ -92,7 +135,7 @@ export function parseDataInfoResource(
   } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
-    const parts: Record<string, PlTreeEntry> = {};
+    const parts: Record<string, BlobResourceRef> = {};
     for (const superKey of data.listInputFields()) {
       const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
       const keys = superPart.listInputFields();
@@ -104,7 +147,9 @@ export function parseDataInfoResource(
           ...(JSON.parse(superKey) as PColumnValue[]),
           ...(JSON.parse(key) as PColumnValue[]),
         ]);
-        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).persist();
+        parts[partKey] = makeLocalBlobRef(
+          superPart.traverse({ field: key, errorIfFieldNotSet: true }),
+        );
       }
     }
 
@@ -116,7 +161,7 @@ export function parseDataInfoResource(
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
 
-    const parts: Record<string, Partial<Writable<BinaryChunk<PlTreeEntry>>>> = {};
+    const parts: Record<string, Partial<Writable<BinaryChunk<BlobResourceRef>>>> = {};
 
     // parsing the structure
     for (const field of data.listInputFields()) {
@@ -127,7 +172,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.index = data.traverse({ field, errorIfFieldNotSet: true }).persist();
+        part.index = makeLocalBlobRef(data.traverse({ field, errorIfFieldNotSet: true }));
       } else if (field.endsWith(BinaryPartitionedValuesFieldSuffix)) {
         const partKey = field.slice(0, -BinaryPartitionedValuesFieldSuffix.length);
         let part = parts[partKey];
@@ -135,7 +180,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.values = data.traverse({ field, errorIfFieldNotSet: true }).persist();
+        part.values = makeLocalBlobRef(data.traverse({ field, errorIfFieldNotSet: true }));
       } else throw new PFrameDriverError(`unrecognized part field name: ${field}`);
     }
 
@@ -148,12 +193,12 @@ export function parseDataInfoResource(
     return {
       type: "BinaryPartitioned",
       partitionKeyLength: meta.partitionKeyLength,
-      parts: parts as Record<string, BinaryChunk<PlTreeEntry>>,
+      parts: parts as Record<string, BinaryChunk<BlobResourceRef>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
-    const parts: Record<string, Partial<Writable<BinaryChunk<PlTreeEntry>>>> = {};
+    const parts: Record<string, Partial<Writable<BinaryChunk<BlobResourceRef>>>> = {};
     for (const superKey of data.listInputFields()) {
       const superData = data.traverse({ field: superKey, errorIfFieldNotSet: true });
       const keys = superData.listInputFields();
@@ -173,12 +218,9 @@ export function parseDataInfoResource(
             part = {};
             parts[partKey] = part;
           }
-          parts[partKey].index = superData
-            .traverse({
-              field,
-              errorIfFieldNotSet: true,
-            })
-            .persist();
+          parts[partKey].index = makeLocalBlobRef(
+            superData.traverse({ field, errorIfFieldNotSet: true }),
+          );
         } else if (field.endsWith(BinaryPartitionedValuesFieldSuffix)) {
           const key = field.slice(0, -BinaryPartitionedValuesFieldSuffix.length);
 
@@ -191,12 +233,9 @@ export function parseDataInfoResource(
             part = {};
             parts[partKey] = part;
           }
-          parts[partKey].values = superData
-            .traverse({
-              field,
-              errorIfFieldNotSet: true,
-            })
-            .persist();
+          parts[partKey].values = makeLocalBlobRef(
+            superData.traverse({ field, errorIfFieldNotSet: true }),
+          );
         } else throw new PFrameDriverError(`unrecognized part field name: ${field}`);
       }
     }
@@ -204,12 +243,12 @@ export function parseDataInfoResource(
     return {
       type: "BinaryPartitioned",
       partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
-      parts: parts as Record<string, BinaryChunk<PlTreeEntry>>,
+      parts: parts as Record<string, BinaryChunk<BlobResourceRef>>,
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
 
-    const parts: Record<string, ParquetChunk<PlTreeEntry>> = {};
+    const parts: Record<string, ParquetChunk<BlobResourceRef>> = {};
     for (const key of data.listInputFields()) {
       const resource = data.traverse({
         field: key,
@@ -228,7 +267,7 @@ export function parseDataInfoResource(
   } else if (resourceTypesEqual(data.resourceType, PColumnDataParquetSuperPartitioned)) {
     const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
 
-    const parts: Record<string, ParquetChunk<PlTreeEntry>> = {};
+    const parts: Record<string, ParquetChunk<BlobResourceRef>> = {};
     for (const superKey of data.listInputFields()) {
       const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
       const keys = superPart.listInputFields();
@@ -260,7 +299,7 @@ export function parseDataInfoResource(
 
 export function traverseParquetChunkResource(
   resource: PlTreeNodeAccessor,
-): ParquetChunk<PlTreeEntry> {
+): ParquetChunk<BlobResourceRef> {
   if (!resourceTypesEqual(resource.resourceType, ParquetChunkResourceType)) {
     throw new PFrameDriverError(
       `unknown resource type: ${resourceTypeToString(resource.resourceType)}, ` +
@@ -268,9 +307,9 @@ export function traverseParquetChunkResource(
     );
   }
 
-  const blob = resource
-    .traverse({ field: "blob", assertFieldType: "Service", errorIfFieldNotSet: true })
-    .persist();
+  const blob = makeRemoteBlobRef(
+    resource.traverse({ field: "blob", assertFieldType: "Service", errorIfFieldNotSet: true }),
+  );
   const partInfo = resource.getDataAsJson() as ParquetChunkMetadata;
   const mapping = resource
     .traverse({ field: "mapping", assertFieldType: "Service", errorIfFieldNotSet: true })

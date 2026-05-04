@@ -1,5 +1,88 @@
 # @platforma-sdk/model
 
+## 1.73.0
+
+### Minor Changes
+
+- 2df0aff: `buildDatasetOptions`: scope filter discovery to the result pool only (block outputs and prerun no longer pollute the filter dropdown), add a `filter` predicate to restrict eligible filter columns, and skip filter matches without a PlRef instead of throwing. Removes the need for callers to wrap `buildDatasetOptions` in try/catch.
+
+  `tableBuilder.addPrimary`: drop a `PrimaryRef.filter` whose `resolveColumn` produced no spec, so a stale or malformed filter ref no longer causes `pframes.build-table` to panic with `field "spec" not found and inputs locked`.
+
+  `PlDatasetSelector`: always render the filter dropdown, regardless of whether the selected dataset has compatible filters; the dropdown is clearable and uses an empty selection (instead of a synthetic "No filter" entry) to mean "no filter applied". Removed the `noFilterLabel` prop.
+
+## 1.72.0
+
+### Minor Changes
+
+- 731ab44: Add `requiresPFramesVersion` block feature flag. Blocks can declare a minimum PFrames version requirement; the middle layer registers the supported version as a runtime capability.
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @milaboratories/pl-model-common@1.39.0
+  - @milaboratories/pl-model-middle-layer@1.18.10
+  - @milaboratories/ptabler-expression-js@1.2.20
+
+## 1.71.0
+
+### Minor Changes
+
+- 6369956: Show table with partial data
+
+### Patch Changes
+
+- Updated dependencies [6369956]
+  - @milaboratories/pl-model-common@1.38.0
+  - @milaboratories/pl-model-middle-layer@1.18.9
+  - @milaboratories/ptabler-expression-js@1.2.19
+
+## 1.70.0
+
+### Minor Changes
+
+- a40505e: Add `EnrichmentRef` — a versioned envelope around a terminal column hit
+  and an ordered linker path, mirroring `PrimaryRef`'s pattern so the
+  dependency scanner deep-walks `PlRef`s inside it without changes. Adds
+  `EnrichmentStep`, `isEnrichmentRef`, `createEnrichmentRef` exports.
+  Today only `linker` steps are supported; the `type` discriminant leaves
+  room for future step kinds.
+
+  `tableBuilder.addColumn` / `addColumns` accept `EnrichmentRef` and
+  `ResolvedEnrichmentRef`. The `:pframes.build-table` ephemeral registers
+  the hit + every hop column in the PFrame, calls
+  `pframes.build-query.buildQuery` to assemble the query, and hands the
+  resulting `SpecQueryJoinEntry` straight to `pt.p._rawQueryEntry` — ptabler
+  resolves the linker join natively, no node-by-node translation.
+
+  Adds `pt.p._rawQueryEntry(columnsByName, joinEntry)` (internal — `_`
+  prefixed) for wrapping a pre-built `SpecQueryJoinEntry` (e.g. from
+  `bquery.buildQuery`) into a PEntry. Application code should compose
+  with the public builders (`p.column / p.inner / p.linkerJoin / …`).
+
+  The spec distiller now preserves the `pl7.app/isLinkerColumn`
+  annotation on column specs (all other annotations are still stripped).
+  ptabler reads this annotation at execution time to populate the spec
+  frame's linker index — without it, `linkerJoin` queries silently
+  degrade to inner joins.
+
+  Drops the `qualifications` field from the typed shapes of
+  `DiscoverColumnsLinkerStep`, `MatchVariant.path[]` items, and
+  `DiscoveredPColumn`'s linker path items. Per-step linker qualifications
+  were always empty (qualifications attach to query/hit ends, not to
+  intermediate steps) — `BuildQuery` already discarded them, and the
+  tooltip / `createPlDataTableV3` consumers were forwarding empty arrays.
+
+  `DiscoveredPColumnId` no longer carries per-step `qualifications` in
+  its canonicalized JSON form. The Rust side still emits the field on
+  the wire; the TS deserializer ignores it.
+
+### Patch Changes
+
+- Updated dependencies [a40505e]
+  - @milaboratories/pl-model-common@1.37.0
+  - @milaboratories/pl-model-middle-layer@1.18.8
+  - @milaboratories/ptabler-expression-js@1.2.18
+
 ## 1.69.0
 
 ### Minor Changes
