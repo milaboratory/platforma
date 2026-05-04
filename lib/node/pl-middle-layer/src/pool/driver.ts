@@ -15,11 +15,7 @@ import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { emptyDir } from "@milaboratories/ts-helpers";
 import { RefCountPoolBase, type PoolEntry, type MiLogger } from "@milaboratories/helpers";
 import type { DownloadDriver } from "@milaboratories/pl-drivers";
-import {
-  isPlTreeNodeAccessor,
-  type PlTreeEntry,
-  type PlTreeNodeAccessor,
-} from "@milaboratories/pl-tree";
+import { isPlTreeNodeAccessor, type PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type { Computable, ComputableStableDefined } from "@milaboratories/computable";
 import {
   makeJsonDataInfo,
@@ -33,17 +29,17 @@ import {
 import { HttpHelpers } from "@milaboratories/pframes-rs-node";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { parseDataInfoResource, traverseParquetChunkResource } from "./data";
+import { BlobResourceRef, parseDataInfoResource, traverseParquetChunkResource } from "./data";
 import { isDownloadNetworkError400 } from "@milaboratories/pl-drivers";
 
-function makeBlobId(res: PlTreeEntry): PFrameInternal.PFrameBlobId {
-  return String(res.rid) as PFrameInternal.PFrameBlobId;
+function makeBlobId(res: BlobResourceRef): PFrameInternal.PFrameBlobId {
+  return String(res.resourceInfo.id) as PFrameInternal.PFrameBlobId;
 }
 
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;
 class LocalBlobProviderImpl
-  extends RefCountPoolBase<PlTreeEntry, PFrameInternal.PFrameBlobId, LocalBlob>
-  implements LocalBlobProvider<PlTreeEntry>
+  extends RefCountPoolBase<BlobResourceRef, PFrameInternal.PFrameBlobId, LocalBlob>
+  implements LocalBlobProvider<BlobResourceRef>
 {
   constructor(
     private readonly blobDriver: DownloadDriver,
@@ -52,12 +48,15 @@ class LocalBlobProviderImpl
     super();
   }
 
-  protected calculateParamsKey(params: PlTreeEntry): PFrameInternal.PFrameBlobId {
+  protected calculateParamsKey(params: BlobResourceRef): PFrameInternal.PFrameBlobId {
     return makeBlobId(params);
   }
 
-  protected createNewResource(params: PlTreeEntry, _key: PFrameInternal.PFrameBlobId): LocalBlob {
-    return this.blobDriver.getDownloadedBlob(params);
+  protected createNewResource(
+    params: BlobResourceRef,
+    _key: PFrameInternal.PFrameBlobId,
+  ): LocalBlob {
+    return this.blobDriver.getDownloadedBlob(params.resourceInfo);
   }
 
   public getByKey(blobId: PFrameInternal.PFrameBlobId): LocalBlob {
@@ -90,7 +89,7 @@ class LocalBlobProviderImpl
 
 type RemoteBlob = Computable<RemoteBlobHandleAndSize>;
 class RemoteBlobPool extends RefCountPoolBase<
-  PlTreeEntry,
+  BlobResourceRef,
   PFrameInternal.PFrameBlobId,
   RemoteBlob
 > {
@@ -101,12 +100,21 @@ class RemoteBlobPool extends RefCountPoolBase<
     super();
   }
 
-  protected calculateParamsKey(params: PlTreeEntry): PFrameInternal.PFrameBlobId {
+  protected calculateParamsKey(params: BlobResourceRef): PFrameInternal.PFrameBlobId {
     return makeBlobId(params);
   }
 
-  protected createNewResource(params: PlTreeEntry, _key: PFrameInternal.PFrameBlobId): RemoteBlob {
-    return this.blobDriver.getOnDemandBlob(params);
+  protected createNewResource(
+    params: BlobResourceRef,
+    _key: PFrameInternal.PFrameBlobId,
+  ): RemoteBlob {
+    if (params.onDemandSnapshot === undefined) {
+      throw new PFrameDriverError(
+        `BlobResourceRef for rid ${params.toJSON()} is missing the on-demand snapshot; ` +
+          `remote (parquet) blobs must be captured via makeRemoteBlobRef.`,
+      );
+    }
+    return this.blobDriver.getOnDemandBlob(params.onDemandSnapshot);
   }
 
   public getByKey(blobId: PFrameInternal.PFrameBlobId): RemoteBlob {
@@ -232,7 +240,7 @@ class BlobStore extends PFrameInternal.BaseObjectStore {
   }
 }
 
-class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
+class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   constructor(
     private readonly pool: RemoteBlobPool,
     private readonly server: PFrameInternal.HttpServer,
@@ -253,7 +261,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<PlTreeEntry> {
     return new RemoteBlobProviderImpl(pool, server);
   }
 
-  public acquire(params: PlTreeEntry): PoolEntry<PFrameInternal.PFrameBlobId> {
+  public acquire(params: BlobResourceRef): PoolEntry<PFrameInternal.PFrameBlobId> {
     return this.pool.acquire(params);
   }
 
@@ -302,7 +310,7 @@ export async function createPFrameDriver(params: {
       : isDataInfo(data)
         ? data.type === "ParquetPartitioned"
           ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
-          : mapDataInfo(data, (a) => a.persist())
+          : mapDataInfo(data, (a) => new BlobResourceRef(a.resourceInfo, undefined))
         : makeJsonDataInfo(spec, data);
   };
 
