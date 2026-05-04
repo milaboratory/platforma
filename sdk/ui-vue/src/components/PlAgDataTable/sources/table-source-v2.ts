@@ -316,9 +316,9 @@ export function makeColDef(
       tooltip:
         readAnnotation(spec.spec, Annotation.Description)?.trim() ??
         readAnnotation(labeledSpec.spec, Annotation.Description)?.trim(),
-      info:
-        readAnnotation(spec.spec, Annotation.Table.Info)?.trim() ??
-        readAnnotation(labeledSpec.spec, Annotation.Table.Info)?.trim(),
+      // info:
+      //   readAnnotation(spec.spec, Annotation.Table.Info)?.trim() ??
+      //   readAnnotation(labeledSpec.spec, Annotation.Table.Info)?.trim(),
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
