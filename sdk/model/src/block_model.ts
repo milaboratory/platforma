@@ -6,6 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
+import { REQUIRES_PFRAMES_VERSION } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
 import type { DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
@@ -138,6 +139,7 @@ export class BlockModelV3<
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
+    requiresPFramesVersion: REQUIRES_PFRAMES_VERSION,
     ...BLOCK_SERVICE_FLAGS,
   } satisfies BlockCodeKnownFeatureFlags;
 
