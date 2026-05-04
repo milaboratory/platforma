@@ -39,7 +39,7 @@ import type { Optional } from "utility-types";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
 import type { Block } from "../model/project_model";
-import { parseFinalPObjectCollection } from "../pool/p_object_collection";
+import { parsePartialPObjectCollection } from "../pool/p_object_collection";
 import type { ResultPool } from "../pool/result_pool";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
@@ -197,13 +197,18 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     errorOnUnknownField: boolean,
     prefix: string,
     ...resolveSteps: string[]
-  ): Record<string, PObject<string>> | undefined {
+  ): Record<string, PObject<string | undefined> & { status: PColumnStatus }> | undefined {
     const acc = this.getAccessor(handle);
-    if (!acc.getIsReadyOrError()) return undefined;
-    const accResult = parseFinalPObjectCollection(acc, errorOnUnknownField, prefix, resolveSteps);
-    const result: Record<string, PObject<string>> = {};
+    const accResult = parsePartialPObjectCollection(acc, errorOnUnknownField, prefix, resolveSteps);
+    if (accResult === undefined) return undefined;
+    const result: Record<string, PObject<string | undefined> & { status: PColumnStatus }> = {};
     for (const [key, obj] of Object.entries(accResult)) {
-      result[key] = mapPObjectData(obj, (d) => this.wrapAccessor(d));
+      result[key] = {
+        id: obj.id,
+        spec: obj.spec,
+        status: obj.status,
+        data: this.wrapAccessor(obj.data),
+      };
     }
     return result;
   }

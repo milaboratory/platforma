@@ -1,4 +1,4 @@
-import type { PColumn, PColumnStatus } from "@milaboratories/pl-model-common";
+import type { PColumn } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { PColumnDataUniversal } from "../render/internal";
 
@@ -40,53 +40,20 @@ export class ArrayColumnProvider implements ColumnProvider {
   }
 }
 
-export interface OutputColumnProviderOpts {
-  /** When true and the accessor is final, columns with no ready data get status 'absent'. */
-  allowPermanentAbsence?: boolean;
-}
-
 /**
  * Provider wrapping a TreeNodeAccessor (output/prerun resolve result).
- * Detects data status from accessor readiness state.
+ * Status of each column is derived inside the render ctx — see
+ * `TreeNodeAccessor.getPColumns`.
  */
 export class OutputColumnProvider implements ColumnProvider {
-  constructor(
-    private readonly accessor: TreeNodeAccessor,
-    private readonly opts?: OutputColumnProviderOpts,
-  ) {}
+  constructor(private readonly accessor: TreeNodeAccessor) {}
 
   getAllColumns(): PColumn<PColumnDataUniversal | undefined>[] {
-    return this.getColumns();
+    return this.accessor.getPColumns() ?? [];
   }
 
   isColumnListComplete(): boolean {
     return this.accessor.getInputsLocked();
-  }
-
-  private getColumns(): PColumn<PColumnDataUniversal | undefined>[] {
-    const pColumns = this.accessor.getPColumns();
-    if (pColumns === undefined) return [];
-
-    const isFinal = this.accessor.getIsFinal();
-    const allowAbsence = this.opts?.allowPermanentAbsence === true;
-
-    return pColumns.map((col) => {
-      const dataAccessor = col.data;
-      const isReady = dataAccessor.getIsReadyOrError();
-
-      const status: PColumnStatus = isReady
-        ? "resolved"
-        : allowAbsence && isFinal
-          ? "absent"
-          : "resolving";
-
-      return {
-        id: col.id,
-        spec: col.spec,
-        status,
-        data: isReady ? dataAccessor : undefined,
-      };
-    });
   }
 }
 

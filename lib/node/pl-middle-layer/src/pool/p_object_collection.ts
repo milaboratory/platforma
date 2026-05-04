@@ -1,9 +1,10 @@
 import { type PlTreeNodeAccessor } from "@milaboratories/pl-tree";
-import type { PObject, PObjectSpec, ValueOrError } from "@platforma-sdk/model";
+import type { PColumnStatus, PObject, PObjectSpec, ValueOrError } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import assert from "node:assert";
 import type { Writable } from "utility-types";
 import { deriveLegacyPObjectId, deriveLocalPObjectId } from "./data";
+import { throwError } from "@milaboratories/helpers";
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -120,4 +121,52 @@ export function parseFinalPObjectCollection(
     };
   }
   return collection;
+}
+
+export interface PartialPObjectEntry {
+  readonly id: ReturnType<typeof deriveLocalPObjectId>;
+  readonly spec: PObjectSpec;
+  readonly status: PColumnStatus;
+  readonly data: PlTreeNodeAccessor | undefined;
+}
+
+/**
+ * Parse a PObject collection without requiring all entries to be resolved.
+ * Returns per-entry status:
+ * - 'resolved' — data field exists and accessor is available
+ * - 'absent'   — inputs locked, data field not present and never will be
+ * - 'resolving' — not yet known whether data will appear, or accessor not yet loaded
+ *
+ * Throws on data-side errors (matches parseFinalPObjectCollection behavior).
+ */
+export function parsePartialPObjectCollection(
+  node: PlTreeNodeAccessor,
+  errorOnUnknownField: boolean,
+  prefix: string,
+  resolvePath: string[],
+): Record<string, PartialPObjectEntry> | undefined {
+  if (!node.getIsReadyOrError()) return undefined;
+  const raw = parseRawPObjectCollection(node, errorOnUnknownField, false, prefix);
+  const out: Record<string, PartialPObjectEntry> = {};
+  for (const [name, entry] of raw.results) {
+    if (entry.spec === undefined) continue;
+    let status: PColumnStatus;
+    let dataValue: PlTreeNodeAccessor | undefined;
+    if (entry.hasData === undefined) {
+      status = "resolving";
+    } else if (entry.hasData === false) {
+      status = "absent";
+    } else {
+      const data = entry.data?.() ?? throwError(`data function not defined for entry ${name}`);
+      status = "resolved";
+      dataValue = data.ok ? data.value : undefined;
+    }
+    out[name] = {
+      id: deriveLocalPObjectId(resolvePath, name),
+      spec: entry.spec,
+      status,
+      data: dataValue,
+    };
+  }
+  return out;
 }

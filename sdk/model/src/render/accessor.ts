@@ -3,6 +3,7 @@ import type {
   ImportProgress,
   LocalBlobHandleAndSize,
   PColumn,
+  PColumnStatus,
   PObject,
   RemoteBlobHandleAndSize,
   FolderURL,
@@ -10,7 +11,7 @@ import type {
   ProgressLogWithInfo,
   RangeBytes,
 } from "@milaboratories/pl-model-common";
-import { isPColumn, mapPObjectData } from "@milaboratories/pl-model-common";
+import { isPColumn } from "@milaboratories/pl-model-common";
 import { getCfgRenderCtx } from "../internal";
 import { FutureRef } from "./future";
 import type { AccessorHandle } from "./internal";
@@ -203,30 +204,32 @@ export class TreeNodeAccessor {
   }
 
   /**
-   *
+   * Returns p-columns parsed from this node. Each entry carries a status —
+   * 'resolved' means data accessor is available; 'absent' / 'resolving' /
+   * 'missing' mean data is undefined.
    */
   public getPColumns(
     errorOnUnknownField: boolean = false,
     prefix: string = "",
-  ): PColumn<TreeNodeAccessor>[] | undefined {
+  ): PColumn<TreeNodeAccessor | undefined>[] | undefined {
     const result = this.parsePObjectCollection(errorOnUnknownField, prefix);
     if (result === undefined) return undefined;
 
-    const pf = Object.entries(result).map(([, obj]) => {
+    return Object.values(result).map((obj) => {
       if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
       return obj;
     });
-
-    return pf;
   }
 
   /**
-   *
+   * Returns the p-object collection parsed from this node. Each entry carries
+   * a `status` and may have `data === undefined` if the entry is not yet
+   * resolved (or is permanently absent).
    */
   public parsePObjectCollection(
     errorOnUnknownField: boolean = false,
     prefix: string = "",
-  ): Record<string, PObject<TreeNodeAccessor>> | undefined {
+  ): Record<string, PObject<TreeNodeAccessor | undefined> & { status: PColumnStatus }> | undefined {
     const pObjects = getCfgRenderCtx().parsePObjectCollection(
       this.handle,
       errorOnUnknownField,
@@ -234,10 +237,19 @@ export class TreeNodeAccessor {
       ...this.resolvePath,
     );
     if (pObjects === undefined) return undefined;
-    const result: Record<string, PObject<TreeNodeAccessor>> = {};
-    for (const [key, value] of Object.entries(pObjects)) {
+    const result: Record<
+      string,
+      PObject<TreeNodeAccessor | undefined> & { status: PColumnStatus }
+    > = {};
+    for (const [key, pobject] of Object.entries(pObjects)) {
       const resolvePath = [...this.resolvePath, key];
-      result[key] = mapPObjectData(value, (c) => new TreeNodeAccessor(c, resolvePath));
+      result[key] = {
+        id: pobject.id,
+        spec: pobject.spec,
+        status: pobject.status,
+        data:
+          pobject.data === undefined ? undefined : new TreeNodeAccessor(pobject.data, resolvePath),
+      };
     }
     return result;
   }

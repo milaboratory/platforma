@@ -76,13 +76,15 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getDataAsString(handle: AHandle): string | undefined;
 
-  /** If not final returns undefined */
+  /** Returns undefined if the parent node is not yet ready. Otherwise returns
+   *  per-entry status; entries may have `data === undefined` when status is
+   *  not 'resolved'. */
   parsePObjectCollection(
     handle: AHandle,
     errorOnUnknownField: boolean,
     prefix: string,
     ...resolvePath: string[]
-  ): Record<string, PObject<AHandle>> | undefined;
+  ): Record<string, PObject<AHandle | undefined> & { status: PColumnStatus }> | undefined;
 
   //
   // Blob
