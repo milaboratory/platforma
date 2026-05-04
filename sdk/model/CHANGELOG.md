@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.72.0
+
+### Minor Changes
+
+- 731ab44: Add `requiresPFramesVersion` block feature flag. Blocks can declare a minimum PFrames version requirement; the middle layer registers the supported version as a runtime capability.
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @milaboratories/pl-model-common@1.39.0
+  - @milaboratories/pl-model-middle-layer@1.18.10
+  - @milaboratories/ptabler-expression-js@1.2.20
+
 ## 1.71.0
 
 ### Minor Changes

@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.58.0
+
+### Minor Changes
+
+- 731ab44: Add `requiresPFramesVersion` block feature flag. Blocks can declare a minimum PFrames version requirement; the middle layer registers the supported version as a runtime capability.
+
+### Patch Changes
+
+- Updated dependencies [731ab44]
+  - @platforma-sdk/model@1.72.0
+  - @milaboratories/pl-model-common@1.39.0
+  - @milaboratories/pl-model-middle-layer@1.18.10
+  - @milaboratories/pf-spec-driver@1.3.9
+  - @milaboratories/pf-driver@1.4.5
+  - @milaboratories/pl-client@3.2.5
+  - @milaboratories/pl-deployments@2.17.12
+  - @milaboratories/pl-drivers@1.13.1
+  - @platforma-sdk/block-tools@2.7.19
+  - @milaboratories/pl-model-backend@1.2.21
+  - @milaboratories/pl-errors@1.3.13
+  - @milaboratories/pl-tree@1.9.23
+  - @platforma-sdk/workflow-tengo@5.20.0
+
 ## 1.57.1
 
 ### Patch Changes

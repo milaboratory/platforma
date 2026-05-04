@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.39.0
+
+### Minor Changes
+
+- 731ab44: Add `requiresPFramesVersion` block feature flag. Blocks can declare a minimum PFrames version requirement; the middle layer registers the supported version as a runtime capability.
+
 ## 1.38.0
 
 ### Minor Changes
