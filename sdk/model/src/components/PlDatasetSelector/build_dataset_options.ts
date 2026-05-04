@@ -64,14 +64,16 @@ export function buildDatasetOptions(
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    const enrichmentCollection = new ColumnCollectionBuilder(pframeSpec)
-      .addSources(collectCtxColumnSnapshotProviders(ctx))
-      .build({ anchors: { main: datasetSpec } });
-    if (!enrichmentCollection) return { primary };
-
     const filterCollection = new ColumnCollectionBuilder(pframeSpec)
       .addSource(new ResultPoolColumnSnapshotProvider(ctx.resultPool))
       .build({ anchors: { main: datasetSpec } });
+
+    const enrichmentCollection =
+      opts?.withEnrichments !== undefined
+        ? new ColumnCollectionBuilder(pframeSpec)
+            .addSources(collectCtxColumnSnapshotProviders(ctx))
+            .build({ anchors: { main: datasetSpec } })
+        : undefined;
 
     try {
       let filters: Option[] | undefined;
@@ -86,7 +88,7 @@ export function buildDatasetOptions(
       }
 
       let enrichments;
-      if (opts?.withEnrichments !== undefined) {
+      if (enrichmentCollection && opts?.withEnrichments !== undefined) {
         const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
           maxHops: opts.enrichmentMaxHops,
           ...(typeof opts.withEnrichments === "function"
@@ -104,8 +106,8 @@ export function buildDatasetOptions(
         ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
       };
     } finally {
-      enrichmentCollection.dispose();
       filterCollection?.dispose();
+      enrichmentCollection?.dispose();
     }
   });
 }
