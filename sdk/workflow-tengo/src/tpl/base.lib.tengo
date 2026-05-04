@@ -100,12 +100,15 @@ AWAIT_TEMPLATES := {
 	],
 	// Matches a v1 ResolvedPrimaryRef shape: { __isPrimaryRef: "v1",
 	// column: {spec, data}, filter?: {spec, data} }. Awaits the column's
-	// spec (required) and filter's spec (optional, regex-matched so the
-	// absence of `filter` is fine). The `__isPrimaryRef` marker is
-	// ignored — we never descend into it.
+	// spec (required) and filter's spec (optional). Both `filter` and
+	// `filter.spec` are regex-matched: the parent `filter` field may be
+	// absent (no filter selected), and the `spec` sub-field may be absent
+	// when the filter ref resolved to a "no result" sentinel that never
+	// populated the spec input. The `__isPrimaryRef` marker is ignored —
+	// we never descend into it.
 	"PrimarySpecsReady": [
 		["column", "spec", "ResourceReady"],
-		[{ match: "^filter$" }, "spec", "ResourceReady"]
+		[{ match: "^filter$" }, { match: "^spec$" }, "ResourceReady"]
 	]
 }
 
