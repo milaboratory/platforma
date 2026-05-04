@@ -6,6 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
 } from "@milaboratories/pl-model-common";
+import { REQUIRES_PFRAMES_VERSION } from "@milaboratories/pl-model-common";
 import type { Checked, ConfigResult, TypedConfig } from "./config";
 import { getImmediate } from "./config";
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from "./internal";
@@ -72,7 +73,7 @@ export class BlockModel<
       requiresUIAPIVersion: 1,
       requiresModelAPIVersion: 1,
       requiresCreatePTable: 2,
-      requiresPFramesVersion: 1_001_031,
+      requiresPFramesVersion: REQUIRES_PFRAMES_VERSION,
     };
   }
 

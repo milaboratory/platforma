@@ -248,7 +248,7 @@ catalog:
   "winston": ^3.17.0
 
   "@milaboratories/tengo-tester": ^1.6.4
-  # When bumping, also update `requiresPFramesVersion` in sdk/model and lib/node/pl-middle-layer.
+  # When bumping, also update `REQUIRES_PFRAMES_VERSION` in lib/model/common/src/flags/block_flags.ts.
   "@milaboratories/pframes-rs-node": 1.1.31
   "@milaboratories/pframes-rs-wasm": 1.1.31
 
