@@ -1,5 +1,8 @@
 import type {
   AxesSpec,
+  PColumnDataStatus,
+  PlTableColumnIdJson,
+  PObjectId,
   PTableColumnId,
   PTableColumnSpecAxis,
   PTableColumnSpecColumn,
@@ -17,7 +20,6 @@ import {
   type PTableColumnSpec,
   type PTableKey,
   type PlTableColumnId,
-  type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
   isLinkerColumn as isLinkerColumnSpec,
   isColumnHidden,
@@ -91,6 +93,7 @@ export async function calculateGridOptions({
   visibleTableHandle,
   dataRenderedTracker,
   hiddenColIds,
+  columnIdToDataStatus,
   cellButtonAxisParams,
 }: {
   sheets: PlDataTableSheet[];
@@ -100,6 +103,7 @@ export async function calculateGridOptions({
   visibleTableHandle: PTableHandle;
   dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
   hiddenColIds?: PlTableColumnIdJson[];
+  columnIdToDataStatus?: Record<PObjectId, PColumnDataStatus>;
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
 }): Promise<
   Pick<ManagedGridOptions<PlAgDataTableV2Row>, "columnDefs" | "serverSideDatasource"> & {
@@ -145,6 +149,7 @@ export async function calculateGridOptions({
         tableSpecs[field],
         tableSpecs[indices[index]],
         resolvedHiddenColIds,
+        columnIdToDataStatus,
         cellButtonAxisParams,
       ),
     ),
@@ -247,6 +252,7 @@ export function makeColDef(
   spec: PTableColumnSpec,
   labeledSpec: PTableColumnSpec,
   hiddenColIds: PlTableColumnIdJson[] | undefined,
+  columnIdToDataStatus?: Record<string, PColumnDataStatus>,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
   const colId = canonicalizeJson<PlTableColumnId>({
@@ -254,7 +260,7 @@ export function makeColDef(
     labeled: labeledSpec,
   });
   const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
-  const columnRenderingSpec = getColumnRenderingSpec(spec);
+  const columnRenderingSpec = getColumnRenderingSpec(spec, columnIdToDataStatus);
   const cellStyle: CellStyle = {};
   if (columnRenderingSpec.fontFamily) {
     if (columnRenderingSpec.fontFamily === "monospace") {

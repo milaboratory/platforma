@@ -10,6 +10,8 @@ import type {
   RootFilterSpec,
   PTableColumnId,
   PFrameHandle,
+  PObjectId,
+  PColumnDataStatus,
 } from "@milaboratories/pl-model-common";
 import type { FilterSpecLeaf } from "../../filters";
 import { Nil } from "@milaboratories/helpers";
@@ -128,6 +130,8 @@ export type PlDataTableModel = {
   visibleTableHandle?: PTableHandle;
   /** Default filters from model options, surfaced for UI display */
   defaultFilters?: Nil | PlDataTableFilters;
+  /** Map from column id to its data status, surfaced for UI display */
+  columnIdToDataStatus?: Nil | Record<PObjectId, PColumnDataStatus>;
 };
 
 export type CreatePlDataTableOps = {

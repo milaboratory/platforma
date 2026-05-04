@@ -13,7 +13,13 @@ import type {
   PFrameSpecDriver,
   DiscoveredPColumnId,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, getAxisId, parseJson, uniqueBy } from "@milaboratories/pl-model-common";
+import {
+  canonicalizeJson,
+  getAxisId,
+  parseJson,
+  resolvePColumnDataStatus,
+  uniqueBy,
+} from "@milaboratories/pl-model-common";
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
@@ -32,7 +38,6 @@ import {
   withLabelAnnotations,
   withTableVisualAnnotations,
   withInfoAnnotations,
-  withDataStatusAnnotations,
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
@@ -172,28 +177,32 @@ export function createPlDataTableV3<A, U>(
     ...collectLinkerColumns(annotated.linked),
   ]);
 
-  const hiddenSpecs = state.pTableParams.hiddenColIds;
+  const hiddenColIds = state.pTableParams.hiddenColIds;
   const hiddenColumnIds = computeHiddenColumns(
     [...annotated.direct, ...annotated.linked].map((v) => v.column),
     sorting,
     filters,
-    hiddenSpecs,
+    hiddenColIds,
   );
 
   const visible = buildVisibleColumns(annotated, hiddenColumnIds);
-  const visibleAnnotated = annotateVisibleColumns({
-    primary: primaryColumns,
-    secondary: visible.direct.filter((c) => !c.isPrimary),
-    linked: visible.linked,
-  });
   const visibleDef = createPTableDefV3({
     primaryJoinType,
-    primary: visibleAnnotated.primary,
-    secondary: buildSecondaryGroups(visibleAnnotated.secondary, visibleAnnotated.linked),
+    primary: primaryColumns,
+    secondary: buildSecondaryGroups(
+      visible.direct.filter((c) => !c.isPrimary),
+      visible.linked,
+    ),
     filters,
     sorting,
   });
   const visibleHandle = ctx.createPTableV2(visibleDef);
+
+  const columnIdToDataStatus = Object.fromEntries(
+    [...primaryColumns, ...visible.direct.filter((c) => !c.isPrimary), ...visible.linked].map(
+      (v) => [v.column.id, resolvePColumnDataStatus(v.column)],
+    ),
+  );
 
   return {
     sourceId: state.pTableParams.sourceId,
@@ -201,6 +210,7 @@ export function createPlDataTableV3<A, U>(
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
     defaultFilters: remapedDefaultFilters,
+    columnIdToDataStatus,
   } satisfies PlDataTableModel;
 }
 
@@ -289,22 +299,6 @@ function annotateColumns(params: {
   return {
     direct: directAnnotated,
     linked: linkedAnnotated,
-  };
-}
-
-function annotateVisibleColumns(groups: {
-  primary: TableColumnVariant[];
-  secondary: TableColumnVariant[];
-  linked: TableColumnVariant[];
-}): {
-  primary: TableColumnVariant[];
-  secondary: TableColumnVariant[];
-  linked: TableColumnVariant[];
-} {
-  return {
-    primary: liftToVariantColumns(groups.primary, withDataStatusAnnotations),
-    secondary: liftToVariantColumns(groups.secondary, withDataStatusAnnotations),
-    linked: liftToVariantColumns(groups.linked, withDataStatusAnnotations),
   };
 }
 

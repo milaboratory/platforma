@@ -429,6 +429,7 @@ watch(
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
         hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
+        columnIdToDataStatus: settings.model.columnIdToDataStatus,
         cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
           cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,

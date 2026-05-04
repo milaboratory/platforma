@@ -8,7 +8,6 @@ import {
   DiscoveredPColumnId,
   readAnnotation,
   readAnnotationJson,
-  resolvePColumnDataStatus,
 } from "@milaboratories/pl-model-common";
 import {
   deriveDistinctLabels,
@@ -157,27 +156,6 @@ export function withLabelAnnotations<
             ? axis
             : { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } };
         }),
-      },
-    } as T;
-  });
-}
-
-/**
- * Writes the terminal {@link PColumnDataStatus} into each column's spec
- * annotations so the UI/PTable layer can render placeholders. Touches
- * `col.data` for every passed column — apply only to columns whose data we
- * intend to materialize anyway (typically: visible part of the table).
- */
-export function withDataStatusAnnotations<T extends PColumn<unknown>>(columns: T[]): T[] {
-  return columns.map((col) => {
-    return {
-      ...col,
-      spec: {
-        ...col.spec,
-        annotations: {
-          ...col.spec.annotations,
-          [Annotation.DataStatus]: resolvePColumnDataStatus(col),
-        },
       },
     } as T;
   });

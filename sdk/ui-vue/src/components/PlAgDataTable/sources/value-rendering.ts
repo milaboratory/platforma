@@ -41,8 +41,12 @@ export type ColumnRenderingSpec = {
   fontFamily?: string;
 };
 
-export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingSpec {
-  const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
+export function getColumnRenderingSpec(
+  spec: PTableColumnSpec,
+  columnIdToDataStatus?: Record<string, PColumnDataStatus>,
+): ColumnRenderingSpec {
+  const isAxis = spec.type === "axis";
+  const valueType = isAxis ? spec.spec.type : spec.spec.valueType;
   let renderSpec: ColumnRenderingSpec;
   switch (valueType) {
     case ValueType.Int:
@@ -50,7 +54,7 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     case ValueType.Float:
     case ValueType.Double: {
       const format = readAnnotation(spec.spec, Annotation.Format);
-      const dataStatus = readAnnotation(spec.spec, Annotation.DataStatus);
+      const dataStatus = isAxis ? undefined : columnIdToDataStatus?.[spec.id];
       const formatFn = format ? d3.format(format) : undefined;
       renderSpec = {
         valueFormatter: (params) => {
@@ -64,10 +68,8 @@ export function getColumnRenderingSpec(spec: PTableColumnSpec): ColumnRenderingS
     default:
       renderSpec = {
         valueFormatter: (params) => {
-          const formatted = formatSpecialValues(
-            params.value,
-            readAnnotation(spec.spec, Annotation.DataStatus),
-          );
+          const dataStatus = isAxis ? undefined : columnIdToDataStatus?.[spec.id];
+          const formatted = formatSpecialValues(params.value, dataStatus);
           if (formatted !== undefined) return formatted;
           return params.value?.toString() ?? "";
         },

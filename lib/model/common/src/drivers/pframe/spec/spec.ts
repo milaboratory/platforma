@@ -174,14 +174,11 @@ export const Annotation = {
   },
 } as const;
 
-export type AnnotationDataStatus = "computing" | "resolving" | "ready" | "error" | "absent";
-
 export type Annotation = Metadata &
   Partial<{
     [Annotation.Alphabet]: "nucleotide" | "aminoacid" | (string & {});
     [Annotation.AxisNature]: "homogeneous" | "heterogeneous" | "scaleCompatible" | (string & {});
     [Annotation.Description]: string;
-    [Annotation.DataStatus]: AnnotationDataStatus;
     [Annotation.DiscreteValues]: StringifiedJson<number[]> | StringifiedJson<string[]>;
     [Annotation.Format]: string;
     [Annotation.Graph.Axis.HighCardinality]: StringifiedJson<boolean>;
