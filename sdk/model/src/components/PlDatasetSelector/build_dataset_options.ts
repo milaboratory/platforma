@@ -57,8 +57,6 @@ export function buildDatasetOptions(
   const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
   if (options.length === 0) return [];
 
-  const enrichmentSources = collectCtxColumnSnapshotProviders(ctx);
-  const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
 
@@ -66,14 +64,14 @@ export function buildDatasetOptions(
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    const enrichmentBuilder = new ColumnCollectionBuilder(pframeSpec);
-    for (const src of enrichmentSources) enrichmentBuilder.addSource(src);
-    const enrichmentCollection = enrichmentBuilder.build({ anchors: { main: datasetSpec } });
+    const enrichmentCollection = new ColumnCollectionBuilder(pframeSpec)
+      .addSources(collectCtxColumnSnapshotProviders(ctx))
+      .build({ anchors: { main: datasetSpec } });
     if (!enrichmentCollection) return { primary };
 
-    const filterBuilder = new ColumnCollectionBuilder(pframeSpec);
-    filterBuilder.addSource(filterSource);
-    const filterCollection = filterBuilder.build({ anchors: { main: datasetSpec } });
+    const filterCollection = new ColumnCollectionBuilder(pframeSpec)
+      .addSource(new ResultPoolColumnSnapshotProvider(ctx.resultPool))
+      .build({ anchors: { main: datasetSpec } });
 
     try {
       let filters: Option[] | undefined;
