@@ -8,4 +8,4 @@
 
 `tableBuilder.addPrimary`: drop a `PrimaryRef.filter` whose `resolveColumn` produced no spec, so a stale or malformed filter ref no longer causes `pframes.build-table` to panic with `field "spec" not found and inputs locked`.
 
-`PlDatasetSelector`: always render the filter dropdown; disable it when the selected dataset has no compatible filters, instead of hiding it entirely.
+`PlDatasetSelector`: always render the filter dropdown, regardless of whether the selected dataset has compatible filters. When there are none the dropdown shows an empty option list instead of being hidden.

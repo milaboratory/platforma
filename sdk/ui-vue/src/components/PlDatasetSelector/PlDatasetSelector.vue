@@ -86,8 +86,6 @@ const primaryOptions = computed<readonly { ref: PlRef; label: string }[] | undef
   props.options?.map((o) => o.primary),
 );
 
-const hasFilters = computed(() => (currentDatasetOption.value?.filters?.length ?? 0) > 0);
-
 /**
  * Filter dropdown options. The first entry (`null`) is the "No filter" choice —
  * null distinguishes it from `undefined` (dropdown clear button, disabled here).
@@ -149,7 +147,7 @@ function onFilterChange(value: PlRef | null | undefined) {
       :options="filterOptions"
       :label="filterLabel"
       :placeholder="filterPlaceholder"
-      :disabled="disabled || !hasFilters"
+      :disabled="disabled"
       @update:model-value="onFilterChange"
     />
   </div>
