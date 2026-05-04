@@ -29,7 +29,12 @@ import {
 import { HttpHelpers } from "@milaboratories/pframes-rs-node";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { BlobResourceRef, parseDataInfoResource, traverseParquetChunkResource } from "./data";
+import {
+  BlobResourceRef,
+  makeLocalBlobRef,
+  parseDataInfoResource,
+  traverseParquetChunkResource,
+} from "./data";
 import { isDownloadNetworkError400 } from "@milaboratories/pl-drivers";
 
 function makeBlobId(res: BlobResourceRef): PFrameInternal.PFrameBlobId {
@@ -310,7 +315,7 @@ export async function createPFrameDriver(params: {
       : isDataInfo(data)
         ? data.type === "ParquetPartitioned"
           ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
-          : mapDataInfo(data, (a) => new BlobResourceRef(a.resourceInfo, undefined))
+          : mapDataInfo(data, (a) => makeLocalBlobRef(a))
         : makeJsonDataInfo(spec, data);
   };
 

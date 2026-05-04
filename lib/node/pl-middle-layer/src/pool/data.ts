@@ -50,7 +50,7 @@ export class BlobResourceRef {
   }
 }
 
-function makeLocalBlobRef(accessor: PlTreeNodeAccessor): BlobResourceRef {
+export function makeLocalBlobRef(accessor: PlTreeNodeAccessor): BlobResourceRef {
   return new BlobResourceRef(accessor.resourceInfo, undefined);
 }
 
