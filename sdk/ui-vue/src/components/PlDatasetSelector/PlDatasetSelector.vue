@@ -2,9 +2,9 @@
 /**
  * Select a dataset and (optionally) a filter column, emitting a {@link DatasetSelection}.
  *
- * Behaves like {@link PlDropdownRef} when none of the offered datasets carry
- * filter options. When the selected dataset has compatible filters, a second
- * dropdown appears with the filters plus a "No filter" entry.
+ * The filter dropdown is always rendered and is clearable — leaving it empty
+ * means "no filter". When the selected dataset has no compatible filters, the
+ * dropdown opens to an empty option list.
  *
  * The emitted value bundles the user's pick (`primary`) with the auto-attached
  * `enrichments` payload from the matching `DatasetOption`. Enrichments are
@@ -46,8 +46,6 @@ const props = withDefaults(
     filterLabel?: string;
     /** Placeholder for the filter dropdown. */
     filterPlaceholder?: string;
-    /** Label of the "no filter" entry prepended to the filter options. */
-    noFilterLabel?: string;
     /** Show a clear button on the dataset dropdown. */
     clearable?: boolean;
     /** Mark the dataset dropdown as required. */
@@ -64,7 +62,6 @@ const props = withDefaults(
     placeholder: "...",
     filterLabel: "",
     filterPlaceholder: "...",
-    noFilterLabel: "No filter",
     clearable: false,
     required: false,
     disabled: false,
@@ -86,20 +83,9 @@ const primaryOptions = computed<readonly { ref: PlRef; label: string }[] | undef
   props.options?.map((o) => o.primary),
 );
 
-/**
- * Filter dropdown options. The first entry (`null`) is the "No filter" choice —
- * null distinguishes it from `undefined` (dropdown clear button, disabled here).
- */
-const filterOptions = computed<ListOption<PlRef | null>[]>(() => {
-  const filters = currentDatasetOption.value?.filters;
-  if (!filters) return [];
-  return [
-    { label: props.noFilterLabel, value: null } as ListOption<PlRef | null>,
-    ...filters.map((f) => ({ label: f.label, value: f.ref }) as ListOption<PlRef | null>),
-  ];
-});
-
-const filterValue = computed<PlRef | null>(() => selectedFilter.value ?? null);
+const filterOptions = computed<ListOption<PlRef>[]>(
+  () => currentDatasetOption.value?.filters?.map((f) => ({ label: f.label, value: f.ref })) ?? [],
+);
 
 function emitValue(dataset: PlRef | undefined, filter: PlRef | undefined) {
   if (dataset === undefined) {
@@ -116,10 +102,10 @@ function onDatasetChange(dataset: PlRef | undefined) {
   emitValue(dataset, undefined);
 }
 
-function onFilterChange(value: PlRef | null | undefined) {
+function onFilterChange(value: PlRef | undefined) {
   const dataset = selectedDataset.value;
   if (!dataset) return;
-  emitValue(dataset, value ?? undefined);
+  emitValue(dataset, value);
 }
 </script>
 
@@ -143,11 +129,12 @@ function onFilterChange(value: PlRef | null | undefined) {
       </template>
     </PlDropdownRef>
     <PlDropdown
-      :model-value="filterValue"
+      :model-value="selectedFilter"
       :options="filterOptions"
       :label="filterLabel"
       :placeholder="filterPlaceholder"
       :disabled="disabled"
+      clearable
       @update:model-value="onFilterChange"
     />
   </div>
