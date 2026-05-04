@@ -17,7 +17,9 @@ export function formatSpecialValues(
   value: undefined | PTableValue | PTableHidden,
   dataStatus: undefined | PColumnDataStatus,
 ): string | undefined {
-  if (dataStatus === "absent") {
+  if (dataStatus === "missing") {
+    return "pending...";
+  } else if (dataStatus === "absent") {
     return "absent";
   } else if (dataStatus === "error") {
     return "error";

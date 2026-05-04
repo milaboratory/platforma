@@ -708,8 +708,23 @@ export function getPColumnSpecId(spec: PColumnSpec): PColumnSpecId {
 /**
  * Resolution phase of a PColumn — whether the column's data slot is filled in
  * the underlying tree. Cheap to compute (no data subscription).
+ *
+ * - `missing`   — the ref points at nothing useful: either the owning block
+ *                 is not present in the project, or it does not expose an
+ *                 export with this name. Typically a stale ref.
+ * - `absent`    — the export is declared and the block has finished, but the
+ *                 data slot was determined to be empty (e.g. a conditional
+ *                 output that did not fire). The slot will not become filled.
+ * - `resolving` — the export is declared but the data slot has not yet been
+ *                 produced. The block is still running (or a parent ctx is
+ *                 not locked). Will eventually transition to `resolved` or
+ *                 `absent`.
+ * - `resolved`  — the data slot exists in the tree. The underlying resource
+ *                 may still be computing or may have errored — that terminal
+ *                 distinction is only knowable after reading the data and is
+ *                 not part of the resolution phase.
  */
-export type PColumnStatus = "absent" | "resolving" | "resolved";
+export type PColumnStatus = "missing" | "absent" | "resolving" | "resolved";
 
 export interface PColumn<Data> extends PObject<Data> {
   /** PColumn spec, allowing it to be found among other PObjects */
@@ -742,7 +757,13 @@ export function createLazyPColumn<Data>(pcolumn: {
  * data accessor has actually been read. Published via column annotations on
  * the visible part of the table — not stored on `PColumn` itself.
  */
-export type PColumnDataStatus = "ready" | "computing" | "resolving" | "error" | "absent";
+export type PColumnDataStatus =
+  | "missing"
+  | "absent"
+  | "resolving"
+  | "computing"
+  | "error"
+  | "ready";
 
 /**
  * Resolve the resolution-phase {@link PColumnStatus} of a column to the terminal
@@ -752,12 +773,10 @@ export type PColumnDataStatus = "ready" | "computing" | "resolving" | "error" | 
  */
 export function resolvePColumnDataStatus(col: PColumn<unknown>): PColumnDataStatus {
   switch (col.status) {
-    case "absent":
-      return "absent";
-    case "resolving":
-      return "resolving";
     case "resolved":
       return col.data !== undefined ? "ready" : "computing";
+    default:
+      return col.status;
   }
 }
 
