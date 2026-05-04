@@ -87,25 +87,27 @@ const filterOptions = computed<ListOption<PlRef>[]>(
   () => currentDatasetOption.value?.filters?.map((f) => ({ label: f.label, value: f.ref })) ?? [],
 );
 
-function emitValue(dataset: PlRef | undefined, filter: PlRef | undefined) {
+// Resolve from `props.options` directly — `currentDatasetOption` may not have
+// recomputed yet when this runs synchronously inside a change handler.
+function findOption(dataset: PlRef): DatasetOption | undefined {
+  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
+}
+
+function onDatasetChange(dataset: PlRef | undefined) {
   if (dataset === undefined) {
     model.value = undefined;
     return;
   }
-  // Resolve from `props.options` directly — `currentDatasetOption` may not
-  // have recomputed yet when this runs synchronously inside a change handler.
-  const option = props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
-  model.value = createDatasetSelection(createPrimaryRef(dataset, filter), option?.enrichments);
+  model.value = createDatasetSelection(createPrimaryRef(dataset), findOption(dataset)?.enrichments);
 }
 
-function onDatasetChange(dataset: PlRef | undefined) {
-  emitValue(dataset, undefined);
-}
-
-function onFilterChange(value: PlRef | undefined) {
+function onFilterChange(filter: PlRef | undefined) {
   const dataset = selectedDataset.value;
   if (!dataset) return;
-  emitValue(dataset, value);
+  model.value = createDatasetSelection(
+    createPrimaryRef(dataset, filter),
+    findOption(dataset)?.enrichments,
+  );
 }
 </script>
 
