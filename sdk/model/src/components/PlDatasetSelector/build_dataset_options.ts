@@ -11,26 +11,6 @@ import type { DatasetOption } from "./dataset_selection";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
 
-export type BuildDatasetOptions = {
-  /** Which result pool columns qualify as datasets. Defaults to all. */
-  primary?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
-  /**
-   * Restricts which result pool columns are considered as filters. Intersected
-   * with the built-in `pl7.app/isSubset: "true"` constraint. Defaults to
-   * accept-all.
-   */
-  filter?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
-  /** Formatting options for filter labels. */
-  labelOptions?: DeriveLabelsOptions;
-  /**
-   * Enables enrichment discovery and filters hits attached to
-   * `DatasetOption.enrichments`. Use `() => true` to accept all; omit to disable.
-   */
-  withEnrichments?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
-  /** Maximum linker hops considered. Only used when `withEnrichments` is set. */
-  enrichmentMaxHops?: number;
-};
-
 type SpecPredicateOption =
   | MultiColumnSelector
   | MultiColumnSelector[]
@@ -42,6 +22,26 @@ function toPredicate(
   if (opt === undefined) return undefined;
   return typeof opt === "function" ? opt : multiColumnSelectorsToPredicate(opt);
 }
+
+export type BuildDatasetOptions = {
+  /** Which result pool columns qualify as datasets. Defaults to all. */
+  primary?: SpecPredicateOption;
+  /**
+   * Restricts which result pool columns are considered as filters. Intersected
+   * with the built-in `pl7.app/isSubset: "true"` constraint. Defaults to
+   * accept-all.
+   */
+  filter?: SpecPredicateOption;
+  /** Formatting options for filter labels. */
+  labelOptions?: DeriveLabelsOptions;
+  /**
+   * Enables enrichment discovery and filters hits attached to
+   * `DatasetOption.enrichments`. Use `() => true` to accept all; omit to disable.
+   */
+  withEnrichments?: SpecPredicateOption;
+  /** Maximum linker hops considered. Only used when `withEnrichments` is set. */
+  enrichmentMaxHops?: number;
+};
 
 /**
  * Usage:
