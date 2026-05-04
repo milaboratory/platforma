@@ -330,16 +330,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   }
 
   //
-  // Blocks
-  //
-
-  public getBlockLabel(blockId: string): string {
-    const b = this.meta.get(blockId);
-    if (b === undefined) throw new Error(`Block ${blockId} not found.`);
-    return b.label;
-  }
-
-  //
   // Result Pool
   //
 
