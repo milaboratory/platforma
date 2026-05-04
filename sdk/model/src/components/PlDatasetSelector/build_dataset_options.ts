@@ -3,7 +3,10 @@ import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
 import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
-import { collectCtxColumnSnapshotProviders } from "../../columns/ctx_column_sources";
+import {
+  ResultPoolColumnSnapshotProvider,
+  collectCtxColumnSnapshotProviders,
+} from "../../columns/ctx_column_sources";
 import type { DatasetOption } from "./dataset_selection";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
@@ -11,6 +14,12 @@ import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_di
 export type BuildDatasetOptions = {
   /** Which result pool columns qualify as datasets. Defaults to all. */
   primary?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
+  /**
+   * Restricts which result pool columns are considered as filters. Intersected
+   * with the built-in `pl7.app/isSubset: "true"` constraint. Defaults to
+   * accept-all.
+   */
+  filter?: MultiColumnSelector | MultiColumnSelector[] | ((spec: PObjectSpec) => boolean);
   /** Formatting options for filter labels. */
   labelOptions?: DeriveLabelsOptions;
   /**
@@ -42,29 +51,48 @@ export function buildDatasetOptions(
   const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
   if (options.length === 0) return [];
 
-  const columnSources = collectCtxColumnSnapshotProviders(ctx);
+  const enrichmentSources = collectCtxColumnSnapshotProviders(ctx);
+  const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
+
+  const filterOpt = opts?.filter;
+  const filterPredicate =
+    filterOpt === undefined
+      ? undefined
+      : typeof filterOpt === "function"
+        ? filterOpt
+        : multiColumnSelectorsToPredicate(filterOpt);
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    const builder = new ColumnCollectionBuilder(pframeSpec);
-    for (const src of columnSources) builder.addSource(src);
-    const collection = builder.build({ anchors: { main: datasetSpec } });
-    if (!collection) return { primary };
+    const enrichmentBuilder = new ColumnCollectionBuilder(pframeSpec);
+    for (const src of enrichmentSources) enrichmentBuilder.addSource(src);
+    const enrichmentCollection = enrichmentBuilder.build({ anchors: { main: datasetSpec } });
+    if (!enrichmentCollection) return { primary };
+
+    const filterBuilder = new ColumnCollectionBuilder(pframeSpec);
+    filterBuilder.addSource(filterSource);
+    const filterCollection = filterBuilder.build({ anchors: { main: datasetSpec } });
 
     try {
-      const filterMatches = findFilterColumns(collection);
-      const filters =
-        filterMatches.length === 0
-          ? undefined
-          : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
+      let filters: Option[] | undefined;
+      if (filterCollection) {
+        let filterMatches = findFilterColumns(filterCollection);
+        if (filterPredicate !== undefined) {
+          filterMatches = filterMatches.filter((m) => filterPredicate(m.column.spec));
+        }
+        filters =
+          filterMatches.length === 0
+            ? undefined
+            : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
+      }
 
       let enrichments;
       if (opts?.withEnrichments !== undefined) {
-        const enrichmentVariants = findEnrichmentColumns(collection, {
+        const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
           maxHops: opts.enrichmentMaxHops,
           ...(typeof opts.withEnrichments === "function"
             ? { predicate: opts.withEnrichments }
@@ -81,7 +109,8 @@ export function buildDatasetOptions(
         ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
       };
     } finally {
-      collection.dispose();
+      enrichmentCollection.dispose();
+      filterCollection?.dispose();
     }
   });
 }

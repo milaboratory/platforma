@@ -31,6 +31,9 @@ export function findFilterColumns(collection: AnchoredColumnCollection): ColumnM
 /**
  * Derive labeled options from filter column matches, for use in DatasetOption.filters.
  *
+ * Entries whose column id has no PlRef in `refsByObjectId` are silently
+ * skipped — they cannot be exposed as user-selectable options.
+ *
  * @param matches - from findFilterColumns()
  * @param refsByObjectId - from {@link buildRefMap}
  * @param labelOptions - forwarded to deriveDistinctLabels()
@@ -46,7 +49,10 @@ export function filterMatchesToOptions(
   // paths / qualifications). We emit one Option per variant so the user can
   // pick a specific path — `deriveDistinctLabels` disambiguates labels by
   // path.
-  const flattened = matches.flatMap((m) => m.variants.map((v) => ({ match: m, variant: v })));
+  const flattened = matches
+    .flatMap((m) => m.variants.map((v) => ({ match: m, variant: v })))
+    .map((item) => ({ ...item, ref: refsByObjectId.get(item.match.column.id) }))
+    .filter((item): item is typeof item & { ref: PlRef } => item.ref !== undefined);
 
   const entries: Entry[] = flattened.map(({ match, variant }) => ({
     spec: match.column.spec,
@@ -55,14 +61,7 @@ export function filterMatchesToOptions(
 
   const labels = deriveDistinctLabels(entries, labelOptions);
 
-  return flattened.map(({ match }, i) => {
-    const ref = refsByObjectId.get(match.column.id);
-    if (ref === undefined)
-      throw new Error(
-        `no PlRef found for filter column ${match.column.spec.name} (id: ${match.column.id})`,
-      );
-    return { ref, label: labels[i] };
-  });
+  return flattened.map(({ ref }, i) => ({ ref, label: labels[i] }));
 }
 
 /**
