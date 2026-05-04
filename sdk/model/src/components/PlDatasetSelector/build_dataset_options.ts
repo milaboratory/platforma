@@ -61,21 +61,27 @@ export function buildDatasetOptions(
   const pframeSpec = ctx.getService("pframeSpec");
 
   const withEnrichments = opts?.withEnrichments;
+  const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
+  // Hoisted out of the per-option loop: collectCtxColumnSnapshotProviders
+  // walks the entire output tree, so calling it once per dataset option would
+  // be O(N × tree).
+  const enrichmentSources =
+    withEnrichments !== undefined ? collectCtxColumnSnapshotProviders(ctx) : undefined;
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    // ResultPoolColumnSnapshotProvider is always complete, so build() never
-    // returns undefined here.
+    // ResultPoolColumnSnapshotProvider is always complete; allowPartialColumnList
+    // narrows the return type to non-undefined.
     const filterCollection = new ColumnCollectionBuilder(pframeSpec)
-      .addSource(new ResultPoolColumnSnapshotProvider(ctx.resultPool))
-      .build({ anchors: { main: datasetSpec } })!;
+      .addSource(filterSource)
+      .build({ anchors: { main: datasetSpec }, allowPartialColumnList: true });
 
     const enrichmentCollection =
-      withEnrichments !== undefined
+      enrichmentSources !== undefined
         ? new ColumnCollectionBuilder(pframeSpec)
-            .addSources(collectCtxColumnSnapshotProviders(ctx))
+            .addSources(enrichmentSources)
             .build({ anchors: { main: datasetSpec } })
         : undefined;
 
