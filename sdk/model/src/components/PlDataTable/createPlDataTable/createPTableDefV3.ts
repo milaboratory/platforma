@@ -22,11 +22,19 @@ export type PrimaryEntry<Data> = {
   column: PColumn<Data>;
 };
 
-/** Secondary side leaf — the hit column, a linker step, or a label column. */
+/** Secondary side leaf — the hit column or a label column, optionally reached via a linker chain. */
 export type SecondaryEntry<Data> = {
   column: PColumn<Data>;
-  /** For hit: `forHit`. For linker step k: `path[k].qualifications`. For label/direct: omit. */
+  /** For hit: `forHit`. For label/direct: omit. Applied to the outermost emitted join entry. */
   qualifications?: AxisQualification[];
+  /**
+   * Linker chain leading to `column`, ordered from outermost to innermost.
+   * When present, the entry is emitted as nested `linkerJoin` operators —
+   * one per linker — wrapping the hit column. Binds this hit to this exact
+   * chain so the engine cannot reuse a sibling chain that happens to share
+   * axis name + domain.
+   */
+  linkers?: PColumn<Data>[];
 };
 
 /** Secondary group — one join subtree outer-joined onto primary. */
@@ -58,9 +66,7 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
           params.primary.flatMap((p) => g.primaryQualifications?.[p.column.id] ?? []),
         ),
       },
-      secondary: params.secondary.flatMap((g) =>
-        g.entries.map((e) => toLeaf(e.column, e.qualifications ?? [])),
-      ),
+      secondary: params.secondary.flatMap((g) => g.entries.map((e) => toJoinEntry(e))),
     };
   }
 
@@ -111,4 +117,18 @@ function toLeaf<Data>(
     entry: { type: "column", column: col },
     qualifications: qs,
   };
+}
+
+function toJoinEntry<Data>(e: SecondaryEntry<Data>): SpecQueryJoinEntry<PColumn<Data>> {
+  const qs = e.qualifications ?? [];
+  if (isNil(e.linkers) || e.linkers.length === 0) return toLeaf(e.column, qs);
+
+  const folded = e.linkers.reduceRight<SpecQueryJoinEntry<PColumn<Data>>>(
+    (inner, linker) => ({
+      entry: { type: "linkerJoin", linker: { column: linker }, secondary: [inner] },
+      qualifications: [],
+    }),
+    toLeaf(e.column, []),
+  );
+  return { ...folded, qualifications: qs };
 }
