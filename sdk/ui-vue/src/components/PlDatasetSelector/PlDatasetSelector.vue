@@ -145,12 +145,11 @@ function onFilterChange(value: PlRef | null | undefined) {
       </template>
     </PlDropdownRef>
     <PlDropdown
-      v-if="hasFilters"
       :model-value="filterValue"
       :options="filterOptions"
       :label="filterLabel"
       :placeholder="filterPlaceholder"
-      :disabled="disabled"
+      :disabled="disabled || !hasFilters"
       @update:model-value="onFilterChange"
     />
   </div>

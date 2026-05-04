@@ -410,6 +410,15 @@ tableBuilder := func(format, ...ctxArg) {
 
 				for _, rawFlt in rawFilters {
 					resolvedFlt := resolveColumn(rawFlt)
+					// A malformed or unresolvable filter ref produces no spec —
+					// silently dropping it here keeps build-table's
+					// PrimarySpecsReady awaitState from panicking on a
+					// locked-but-fieldless `filter` sub-resource. Same
+					// rationale as filterMatchesToOptions skipping ref-less
+					// entries on the model side.
+					if is_undefined(resolvedFlt.spec) {
+						continue
+					}
 					entry.filters = append(entry.filters, {
 						spec: resolvedFlt.spec,
 						data: resolvedFlt.data
