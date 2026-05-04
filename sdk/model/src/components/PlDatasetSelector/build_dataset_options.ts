@@ -60,13 +60,12 @@ export function buildDatasetOptions(
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
   const pframeSpec = ctx.getService("pframeSpec");
 
-  const withEnrichments = opts?.withEnrichments;
+  const withEnrichments = opts?.withEnrichments ?? false;
   const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
   // Hoisted out of the per-option loop: collectCtxColumnSnapshotProviders
   // walks the entire output tree, so calling it once per dataset option would
   // be O(N × tree).
-  const enrichmentSources =
-    withEnrichments !== undefined ? collectCtxColumnSnapshotProviders(ctx) : undefined;
+  const enrichmentSources = withEnrichments ? collectCtxColumnSnapshotProviders(ctx) : undefined;
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
@@ -95,7 +94,7 @@ export function buildDatasetOptions(
           : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
 
       let enrichments;
-      if (enrichmentCollection && withEnrichments !== undefined) {
+      if (enrichmentCollection && withEnrichments) {
         const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
           maxHops: opts?.enrichmentMaxHops,
           ...(typeof withEnrichments === "function"
