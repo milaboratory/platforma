@@ -5,6 +5,7 @@ import type {
   ArchiveFormat,
   AnyFunction,
   PColumn,
+  PColumnStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
@@ -137,10 +138,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getPObjectDataByRef(blockId: string, exportName: string): AHandle | undefined;
 
-  getPObjectStatusByRef(
-    blockId: string,
-    exportName: string,
-  ): "ready" | "computing" | "error" | "absent";
+  getPObjectStatusByRef(blockId: string, exportName: string): PColumnStatus;
 
   /** @deprecated use {@link getPObjectCollection}. */
   getDataFromResultPool(): ResultCollection<PObject<AHandle>>;

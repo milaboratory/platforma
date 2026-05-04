@@ -1,5 +1,6 @@
 import {
   Annotation,
+  PColumnDataStatus,
   PTableNA,
   readAnnotation,
   ValueType,
@@ -14,12 +15,14 @@ import type { PlAgDataTableV2Row } from "../types";
 
 export function formatSpecialValues(
   value: undefined | PTableValue | PTableHidden,
-  dataStatus: undefined | "absent" | "error" | "computing" | "ready",
+  dataStatus: undefined | PColumnDataStatus,
 ): string | undefined {
   if (dataStatus === "absent") {
     return "absent";
   } else if (dataStatus === "error") {
     return "error";
+  } else if (dataStatus === "resolving") {
+    return "resolving...";
   } else if (dataStatus === "computing") {
     return "computing...";
   } else if (isPTableHidden(value)) {

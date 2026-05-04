@@ -39,7 +39,7 @@ function spec(
 }
 
 function snap(id: string, s: PColumnSpec): PColumn<PColumnDataUniversal | undefined> {
-  return { id: id as PObjectId, spec: s, dataStatus: "ready", data: {} as never };
+  return { id: id as PObjectId, spec: s, status: "resolved", data: {} as never };
 }
 
 // anchor defines the key space: [sample, gene]

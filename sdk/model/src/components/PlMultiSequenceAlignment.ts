@@ -74,6 +74,6 @@ export function createRowSelectionColumn({
       } satisfies Annotation,
     },
     data,
-    dataStatus: "ready",
+    status: "resolved",
   };
 }

@@ -8,6 +8,7 @@ import type {
   DataInfo,
   FieldTraversalStep as FieldTraversalStepFromSDK,
   PColumn,
+  PColumnStatus,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
@@ -397,10 +398,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this.resultPool.getSpecByRef(blockId, exportName);
   }
 
-  public getPObjectStatusByRef(
-    blockId: string,
-    exportName: string,
-  ): "ready" | "computing" | "error" | "absent" {
+  public getPObjectStatusByRef(blockId: string, exportName: string): PColumnStatus {
     return this.resultPool.getStatusByRef(blockId, exportName);
   }
 

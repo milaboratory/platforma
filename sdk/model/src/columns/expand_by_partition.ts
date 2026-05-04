@@ -61,7 +61,7 @@ export function expandByPartition(
   const result: PColumn<PColumnDataUniversal | undefined>[] = [];
 
   for (const column of columns) {
-    if (column.dataStatus !== "ready" || column.data === undefined) {
+    if (column.status !== "resolved" || column.data === undefined) {
       return { items: [], complete: false };
     }
 
@@ -135,7 +135,7 @@ export function expandByPartition(
       result.push({
         id: column.id,
         spec: adjustedSpec,
-        dataStatus: "ready",
+        status: "resolved",
         data: entriesToDataInfo(filteredData),
       });
     }

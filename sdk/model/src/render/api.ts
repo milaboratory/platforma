@@ -6,7 +6,7 @@ import type {
   ModelServices,
   Option,
   PColumn,
-  PColumnDataStatus,
+  PColumnStatus,
   PColumnLazy,
   PColumnSelector,
   PColumnSpec,
@@ -324,7 +324,7 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
     return data === undefined ? undefined : new TreeNodeAccessor(data, [ref.blockId, ref.name]);
   }
 
-  public getStatusByRef(ref: PlRef): "ready" | "computing" | "error" | "absent" {
+  public getStatusByRef(ref: PlRef): PColumnStatus {
     return this.ctx.getPObjectStatusByRef(ref.blockId, ref.name);
   }
 
@@ -340,26 +340,28 @@ export class ResultPool implements LegacyColumnProvider, AxisLabelProvider {
 
     // oxlint-disable-next-line typescript/no-this-alias
     const self = this;
-    let _resolved = false;
+    // Cached per-getter — independent so that asking for `status` does not
+    // trigger the data subscription, and reading `data` twice does not
+    // re-allocate the TreeNodeAccessor.
+    let _statusCached = false;
+    let _status: PColumnStatus;
+    let _dataCached = false;
     let _data: TreeNodeAccessor | undefined;
-    let _status: PColumnDataStatus;
-    // Resolve once to keep data and status in sync.
-    const resolve = () => {
-      if (_resolved) return;
-      _data = self.getDataByRef(ref);
-      _status = self.getStatusByRef(ref);
-      _resolved = true;
-    };
-
     return {
       id: canonicalize(ref) as PObjectId,
       spec,
       get data(): TreeNodeAccessor | undefined {
-        resolve();
+        if (!_dataCached) {
+          _data = self.getDataByRef(ref);
+          _dataCached = true;
+        }
         return _data;
       },
-      get dataStatus(): PColumnDataStatus {
-        resolve();
+      get status(): PColumnStatus {
+        if (!_statusCached) {
+          _status = self.getStatusByRef(ref);
+          _statusCached = true;
+        }
         return _status;
       },
     } satisfies PColumn<TreeNodeAccessor | undefined>;

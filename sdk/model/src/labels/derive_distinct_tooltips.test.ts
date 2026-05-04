@@ -31,7 +31,7 @@ function linkerColumn(name: string, label?: string): PColumn<PColumnDataUniversa
   return {
     id: `linker-${name}` as PObjectId,
     spec: createSpec(name, label),
-    dataStatus: "ready",
+    status: "resolved",
     data: undefined,
   };
 }

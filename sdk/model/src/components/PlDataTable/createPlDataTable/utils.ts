@@ -8,6 +8,7 @@ import {
   DiscoveredPColumnId,
   readAnnotation,
   readAnnotationJson,
+  resolvePColumnDataStatus,
 } from "@milaboratories/pl-model-common";
 import {
   deriveDistinctLabels,
@@ -17,7 +18,6 @@ import {
   deriveDistinctTooltips,
   type TooltipEntry,
 } from "../../../labels/derive_distinct_tooltips";
-import type { PColumnDataStatus } from "@milaboratories/pl-model-common";
 import type { MatchQualifications, MatchVariant } from "../../../columns";
 import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector } from "../../../columns";
@@ -84,7 +84,7 @@ export function evaluateRules<R extends { match: ColumnMatcher | ColumnSelector 
       id: c.id,
       spec: c.spec,
       data: undefined,
-      dataStatus: "absent" as const,
+      status: "absent" as const,
     }));
     const collection = new ColumnCollectionBuilder(pframeSpec)
       .addSource(new ArrayColumnProvider(pColumns))
@@ -162,12 +162,13 @@ export function withLabelAnnotations<
   });
 }
 
-export function withDataStatusAnnotations<
-  T extends {
-    readonly spec: PColumnSpec;
-    readonly dataStatus: PColumnDataStatus;
-  },
->(columns: T[]): T[] {
+/**
+ * Writes the terminal {@link PColumnDataStatus} into each column's spec
+ * annotations so the UI/PTable layer can render placeholders. Touches
+ * `col.data` for every passed column — apply only to columns whose data we
+ * intend to materialize anyway (typically: visible part of the table).
+ */
+export function withDataStatusAnnotations<T extends PColumn<unknown>>(columns: T[]): T[] {
   return columns.map((col) => {
     return {
       ...col,
@@ -175,7 +176,7 @@ export function withDataStatusAnnotations<
         ...col.spec,
         annotations: {
           ...col.spec.annotations,
-          [Annotation.DataStatus]: col.dataStatus,
+          [Annotation.DataStatus]: resolvePColumnDataStatus(col),
         },
       },
     } as T;

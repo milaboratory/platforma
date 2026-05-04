@@ -118,7 +118,7 @@ export function createPlDataTableV3<A, U>(
     })),
   });
 
-  const annotated = annotateColumnGroups({
+  const annotated = annotateColumns({
     pframeSpec,
     ...splited,
     derivedLabels,
@@ -181,13 +181,15 @@ export function createPlDataTableV3<A, U>(
   );
 
   const visible = buildVisibleColumns(annotated, hiddenColumnIds);
+  const visibleAnnotated = annotateVisibleColumns({
+    primary: primaryColumns,
+    secondary: visible.direct.filter((c) => !c.isPrimary),
+    linked: visible.linked,
+  });
   const visibleDef = createPTableDefV3({
     primaryJoinType,
-    primary: primaryEntries,
-    secondary: buildSecondaryGroups(
-      visible.direct.filter((c) => !c.isPrimary),
-      visible.linked,
-    ),
+    primary: visibleAnnotated.primary,
+    secondary: buildSecondaryGroups(visibleAnnotated.secondary, visibleAnnotated.linked),
     filters,
     sorting,
   });
@@ -239,13 +241,7 @@ function collectLinkerColumns(
   );
 }
 
-/**
- * Annotate all column groups with derived labels and display-rule annotations.
- * Evaluates `displayOptions` rules against all discovered columns (direct,
- * linked, labels, linkers) and writes the winning visibility/priority into
- * column annotations via `withTableVisualAnnotations`.
- */
-function annotateColumnGroups(params: {
+function annotateColumns(params: {
   direct: TableColumnVariant[];
   linked: TableColumnVariant[];
   derivedLabels: Record<string, string>;
@@ -274,7 +270,6 @@ function annotateColumnGroups(params: {
   const directAnnotated = liftToVariantColumns(
     direct,
     flow(
-      (cols) => withDataStatusAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
       (cols) => withTableVisualAnnotations(visibilityByColId, orderByColId, cols),
@@ -284,7 +279,6 @@ function annotateColumnGroups(params: {
   const linkedAnnotated = liftToVariantColumns(
     linked,
     flow(
-      (cols) => withDataStatusAnnotations(cols),
       (cols) => withHidenAxesAnnotations(cols),
       (cols) => withLabelAnnotations(derivedLabels, cols),
       (cols) => withInfoAnnotations(derivedTooltips, cols),
@@ -295,6 +289,22 @@ function annotateColumnGroups(params: {
   return {
     direct: directAnnotated,
     linked: linkedAnnotated,
+  };
+}
+
+function annotateVisibleColumns(groups: {
+  primary: TableColumnVariant[];
+  secondary: TableColumnVariant[];
+  linked: TableColumnVariant[];
+}): {
+  primary: TableColumnVariant[];
+  secondary: TableColumnVariant[];
+  linked: TableColumnVariant[];
+} {
+  return {
+    primary: liftToVariantColumns(groups.primary, withDataStatusAnnotations),
+    secondary: liftToVariantColumns(groups.secondary, withDataStatusAnnotations),
+    linked: liftToVariantColumns(groups.linked, withDataStatusAnnotations),
   };
 }
 
@@ -471,7 +481,7 @@ function collectPreservedColumnIds(
   return new Set<PObjectId>([...sortedIds, ...filterIds]);
 }
 
-/** Filter annotated columns to only visible ones, re-matching label columns for the visible subset. */
+/** Filter annotated columns to only visible ones. */
 function buildVisibleColumns(
   annotated: AnnotatedColumnGroups,
   hiddenColumns: Set<PObjectId>,

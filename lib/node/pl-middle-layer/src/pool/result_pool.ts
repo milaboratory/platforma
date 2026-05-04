@@ -2,6 +2,7 @@ import type { ComputableCtx } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   Option,
+  PColumnStatus,
   PObject,
   PObjectSpec,
   PlRef,
@@ -98,34 +99,24 @@ export class ResultPool {
     }));
   }
 
-  public getStatusByRef(
-    blockId: string,
-    exportName: string,
-  ): "ready" | "computing" | "error" | "absent" {
+  public getStatusByRef(blockId: string, exportName: string): PColumnStatus {
     const block = this.blocks.get(blockId);
-    if (block === undefined) {
-      return "absent";
-    }
+    if (block === undefined) return "absent";
 
     const result = block.prod?.results?.get(exportName);
     if (result === undefined) {
       if (block.prod !== undefined && !block.prod.locked) {
         this.ctx.markUnstable(`prod_not_locked:${blockId}`);
-        return "computing";
+        return "resolving";
       }
       return "absent";
     }
     if (result.hasData === false) return "absent";
     if (result.hasData === undefined) {
       this.ctx.markUnstable(`hasData_unknown:${blockId}:${exportName}`);
-      return "computing";
+      return "resolving";
     }
-    const data = result.data?.();
-    if (data === undefined) {
-      this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
-      return "computing";
-    }
-    return data.ok ? "ready" : "error";
+    return "resolved";
   }
 
   public getPObjectByRef(

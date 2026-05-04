@@ -141,7 +141,7 @@ export const platforma = BlockModel.create("Heavy")
             val: v.toString(),
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       },
       {
         id: "column2" as PObjectId,
@@ -180,7 +180,7 @@ export const platforma = BlockModel.create("Heavy")
             val: v + 0.1,
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       },
       {
         id: "labelColumn" as PObjectId,
@@ -208,7 +208,7 @@ export const platforma = BlockModel.create("Heavy")
             val: 100000 - v,
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       },
       {
         id: "linkerColumn" as PObjectId,
@@ -245,7 +245,7 @@ export const platforma = BlockModel.create("Heavy")
             val: 1,
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       },
     ];
     for (let j = 1; j < 5; ++j) {
@@ -277,7 +277,7 @@ export const platforma = BlockModel.create("Heavy")
             val: pseudoRandomString(k, k * 10),
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       });
     }
     for (let j = 1; j < 5; ++j) {
@@ -310,7 +310,7 @@ export const platforma = BlockModel.create("Heavy")
             val: j % 2 === 0 ? v * Math.pow(2, i / 10) : v / Math.pow(2, i / 10),
           };
         }),
-        dataStatus: "ready",
+        status: "resolved",
       });
     }
     return createPlDataTableV2(ctx, columns, ctx.uiState.dataTableV2.state);

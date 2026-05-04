@@ -36,7 +36,7 @@ test("inline column support", async ({ expect }) => {
           val: 1,
         },
       ],
-      dataStatus: "ready",
+      status: "resolved",
     },
   ]);
 
@@ -113,7 +113,7 @@ test.for([{ testCase: "01_json" }, { testCase: "02_binary" }, { testCase: "03_pa
         id: "column" as PObjectId,
         spec: await readJson(join(dataFolder, `column${PFrameInternal.SpecExtension}`)),
         data: await readJson(join(dataFolder, `column${PFrameInternal.DataInfoExtension}`)),
-        dataStatus: "ready",
+        status: "resolved",
       },
     ]);
 
@@ -174,7 +174,7 @@ test("createTableV2 support", async ({ expect }) => {
     id: columnId,
     spec: columnSpec,
     data: inlineData,
-    dataStatus: "ready" as const,
+    status: "resolved" as const,
   };
 
   const columnRef: SpecQueryExpression = { type: "columnRef", value: columnId };
@@ -350,7 +350,7 @@ test("createTableV2 sorting by axis with 2 axes", async ({ expect }) => {
     id: columnId,
     spec: columnSpec,
     data: inlineData,
-    dataStatus: "ready" as const,
+    status: "resolved" as const,
   };
 
   const axis1Ref: SpecQueryExpression = {

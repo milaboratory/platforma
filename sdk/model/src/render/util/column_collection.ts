@@ -504,7 +504,7 @@ export class PColumnCollection {
           entry.type === "split"
             ? entriesToDataInfo(filterDataInfoEntries(entry.dataEntries, axisFiltersTuple!))
             : entry.originalColumn.data,
-        dataStatus: entry.originalColumn.dataStatus,
+        status: entry.originalColumn.status,
         label: label,
       });
     }
@@ -588,7 +588,7 @@ export class PColumnCollection {
         id: entry.id,
         spec: entry.spec,
         data,
-        dataStatus: entry.dataStatus,
+        status: entry.status,
       });
     }
 

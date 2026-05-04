@@ -1,4 +1,4 @@
-import type { PColumn } from "@milaboratories/pl-model-common";
+import type { PColumn, PColumnStatus } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import type { PColumnDataUniversal } from "../render/internal";
 
@@ -74,12 +74,16 @@ export class OutputColumnProvider implements ColumnProvider {
       const dataAccessor = col.data;
       const isReady = dataAccessor.getIsReadyOrError();
 
-      const dataStatus = isReady ? "ready" : allowAbsence && isFinal ? "absent" : "computing";
+      const status: PColumnStatus = isReady
+        ? "resolved"
+        : allowAbsence && isFinal
+          ? "absent"
+          : "resolving";
 
       return {
         id: col.id,
         spec: col.spec,
-        dataStatus,
+        status,
         data: isReady ? dataAccessor : undefined,
       };
     });
@@ -98,13 +102,13 @@ export function isColumnProvider(source: unknown): source is ColumnProvider {
   );
 }
 
-/** Checks if a value looks like a PColumn array — has `id`, `spec`, `data`, `dataStatus`. */
+/** Checks if a value looks like a PColumn array — has `id`, `spec`, `data`, `status`. */
 function isPColumnArray(source: unknown): source is PColumn<PColumnDataUniversal | undefined>[] {
   if (!Array.isArray(source)) return false;
   if (source.length === 0) return true;
   const first = source[0];
   if (typeof first !== "object" || first === null) return false;
-  return "id" in first && "spec" in first && "data" in first && "dataStatus" in first;
+  return "id" in first && "spec" in first && "data" in first && "status" in first;
 }
 
 /**

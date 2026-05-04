@@ -1,4 +1,10 @@
-import type { AxisSpec, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
+import type {
+  AxisSpec,
+  PColumn,
+  PColumnSpec,
+  PColumnStatus,
+  PObjectId,
+} from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../render/internal";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 
@@ -41,13 +47,13 @@ function createSpec(
 function createColumn(
   id: string,
   spec: PColumnSpec,
-  dataStatus: "ready" | "computing" | "absent" = "ready",
+  status: PColumnStatus = "resolved",
 ): PColumn<PColumnDataUniversal | undefined> {
   return {
     id: id as PObjectId,
     spec,
-    dataStatus,
-    data: dataStatus === "ready" ? ({} as never) : undefined,
+    status,
+    data: status === "resolved" ? ({} as never) : undefined,
   };
 }
 
@@ -216,7 +222,7 @@ describe("data status handling", () => {
     const snap: PColumn<PColumnDataUniversal | undefined> = {
       id: "id1" as PObjectId,
       spec: createSpec("col1"),
-      dataStatus: "ready",
+      status: "resolved",
       data: data as never,
     };
 
@@ -225,19 +231,19 @@ describe("data status handling", () => {
     const collection = builder.build()!;
 
     const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
-    expect(found.dataStatus).toBe("ready");
+    expect(found.status).toBe("resolved");
     expect(found.data).toBe(data);
   });
 
   test("computing column data is undefined", () => {
-    const snap = createColumn("id1", createSpec("col1"), "computing");
+    const snap = createColumn("id1", createSpec("col1"), "resolving");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap]);
     const collection = builder.build()!;
 
     const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
-    expect(found.dataStatus).toBe("computing");
+    expect(found.status).toBe("resolving");
     expect(found.data).toBeUndefined();
   });
 
@@ -249,7 +255,7 @@ describe("data status handling", () => {
     const collection = builder.build()!;
 
     const found = collection.findColumns().find((c) => c.id === ("id1" as PObjectId))!;
-    expect(found.dataStatus).toBe("absent");
+    expect(found.status).toBe("absent");
     expect(found.data).toBeUndefined();
   });
 });
@@ -467,7 +473,7 @@ describe("AnchoredColumnCollection", () => {
 
   test("data status is preserved through anchored columns", () => {
     const spec = createSpec("computing-col", { axesSpec: [sampleAxis("sample")] });
-    const snap = createColumn("id1", spec, "computing");
+    const snap = createColumn("id1", spec, "resolving");
 
     const builder = new ColumnCollectionBuilder(createSpecFrameCtx());
     builder.addSource([snap, anchorSnap]);
@@ -475,7 +481,7 @@ describe("AnchoredColumnCollection", () => {
     const collection = builder.build({ anchors: { main: anchorSpec } })!;
 
     const found = collection.findColumns().find((m) => m.column.id === ("id1" as PObjectId))!;
-    expect(found.column.dataStatus).toBe("computing");
+    expect(found.column.status).toBe("resolving");
     expect(found.column.data).toBeUndefined();
   });
 });

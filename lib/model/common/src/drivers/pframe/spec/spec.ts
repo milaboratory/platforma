@@ -174,7 +174,7 @@ export const Annotation = {
   },
 } as const;
 
-export type AnnotationDataStatus = "computing" | "ready" | "error" | "absent";
+export type AnnotationDataStatus = "computing" | "resolving" | "ready" | "error" | "absent";
 
 export type Annotation = Metadata &
   Partial<{
@@ -705,19 +705,23 @@ export function getPColumnSpecId(spec: PColumnSpec): PColumnSpecId {
   };
 }
 
-export type PColumnDataStatus = "ready" | "computing" | "error" | "absent";
+/**
+ * Resolution phase of a PColumn — whether the column's data slot is filled in
+ * the underlying tree. Cheap to compute (no data subscription).
+ */
+export type PColumnStatus = "absent" | "resolving" | "resolved";
 
 export interface PColumn<Data> extends PObject<Data> {
   /** PColumn spec, allowing it to be found among other PObjects */
   readonly spec: PColumnSpec;
-  readonly dataStatus: PColumnDataStatus;
+  readonly status: PColumnStatus;
 }
 
 export function createPColumn<Data>(pcolumn: {
   id: PObjectId;
   spec: PColumnSpec;
   data: Data;
-  dataStatus: PColumnDataStatus;
+  status: PColumnStatus;
 }): PColumn<Data> {
   return pcolumn;
 }
@@ -728,9 +732,33 @@ export function createLazyPColumn<Data>(pcolumn: {
   id: PObjectId;
   spec: PColumnSpec;
   data: () => Data;
-  dataStatus: PColumnDataStatus;
+  status: PColumnStatus;
 }): PColumnLazy<Data> {
   return pcolumn;
+}
+
+/**
+ * Terminal data status surfaced to the UI/PTable layer. Only known after the
+ * data accessor has actually been read. Published via column annotations on
+ * the visible part of the table — not stored on `PColumn` itself.
+ */
+export type PColumnDataStatus = "ready" | "computing" | "resolving" | "error" | "absent";
+
+/**
+ * Resolve the resolution-phase {@link PColumnStatus} of a column to the terminal
+ * {@link PColumnDataStatus} surfaced to the UI. Reading `col.data` is the moment
+ * we register a dependency on the underlying resource — only happens when the
+ * slot is `resolved`.
+ */
+export function resolvePColumnDataStatus(col: PColumn<unknown>): PColumnDataStatus {
+  switch (col.status) {
+    case "absent":
+      return "absent";
+    case "resolving":
+      return "resolving";
+    case "resolved":
+      return col.data !== undefined ? "ready" : "computing";
+  }
 }
 
 /** Columns in a PFrame also have internal identifier, this object represents

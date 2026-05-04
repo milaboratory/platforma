@@ -27,9 +27,7 @@ export function getAllLabelColumns<A, U>(
         const data = hit.data;
         return data === undefined
           ? acc
-          : acc.concat(
-              createPColumn({ id: hit.id, spec: hit.spec, data, dataStatus: hit.dataStatus }),
-            );
+          : acc.concat(createPColumn({ id: hit.id, spec: hit.spec, data, status: hit.status }));
       }, []);
   } finally {
     collection.dispose();
@@ -115,7 +113,7 @@ export function getMatchingLabelColumns(
             axesSpec: [{ ...axisId, annotations: labelAxis.annotations }],
           },
           data: labelColumn.data,
-          dataStatus: labelColumn.dataStatus,
+          status: labelColumn.status,
         });
       } else {
         labelColumns.push(labelColumn);

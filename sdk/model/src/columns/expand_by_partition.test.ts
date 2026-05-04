@@ -41,7 +41,7 @@ function createReadyColumn(
   return {
     id: id as PObjectId,
     spec: columnSpec,
-    dataStatus: "ready",
+    status: "resolved",
     // convertOrParsePColumnData checks isDataInfoEntries first (duck-type),
     // so this works at runtime despite the PColumnDataUniversal type
     data: dataEntries as unknown as PColumnDataUniversal,
@@ -55,7 +55,7 @@ function createComputingColumn(
   return {
     id: id as PObjectId,
     spec: columnSpec,
-    dataStatus: "computing",
+    status: "resolving",
     data: undefined,
   };
 }
@@ -67,7 +67,7 @@ function createAbsentColumn(
   return {
     id: id as PObjectId,
     spec: columnSpec,
-    dataStatus: "absent",
+    status: "absent",
     data: undefined,
   };
 }

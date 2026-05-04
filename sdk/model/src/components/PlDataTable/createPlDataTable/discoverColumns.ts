@@ -106,7 +106,7 @@ function mapToTableColumnVariants(
         id: discoveredId,
         spec: snap.spec,
         data: snap.data,
-        dataStatus: snap.dataStatus,
+        status: snap.status,
       },
       path: variant.path,
       qualifications: variant.qualifications,
