@@ -417,10 +417,11 @@ function buildSecondaryGroups(
     ...linked.map(
       (lc): SecondaryGroup<undefined | PColumnDataUniversal> => ({
         entries: [
-          ...lc.path.map((s) => ({
-            column: resolveSnapshot(s.linker),
-          })),
-          { column: resolveSnapshot(lc.column), qualifications: lc.qualifications.forHit },
+          {
+            column: resolveSnapshot(lc.column),
+            qualifications: lc.qualifications.forHit,
+            linkers: lc.path.map((s) => resolveSnapshot(s.linker)),
+          },
         ],
         primaryQualifications: lc.qualifications.forQueries,
       }),
