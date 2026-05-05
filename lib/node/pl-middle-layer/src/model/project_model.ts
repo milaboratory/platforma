@@ -1,20 +1,12 @@
 import type { ResourceType } from "@milaboratories/pl-client";
+import type { ProjectId } from "@milaboratories/pl-model-common";
 import type {
   ProjectListEntry as ProjectListEntryFromModel,
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
 import type { BlockRenderingMode } from "@platforma-sdk/model";
 
-/**
- * Opaque identifier for a project, safe to persist and reuse across sessions.
- * Internally this is a string derived from resource ID without signature.
- * Unlike SignedResourceId, this does not carry cryptographic signatures and can be
- * safely persisted, serialized, and reused across ML sessions.
- * Absence of signature guarantees this ID cannot be used in transactions 'as-is',
- * requiring the caller to operate with special types and helpers.
- */
-declare const __projectIdBrand: unique symbol;
-export type ProjectId = string & { readonly __projectIdBrand: typeof __projectIdBrand };
+export type { ProjectId };
 
 export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "id"> {
   /** Unique project identifier in middle layer. Use to operate with given project. */
