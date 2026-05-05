@@ -158,8 +158,6 @@ export class UserResources {
     return await this.getDataLibrariesViaLegacy();
   }
 
-  // --- Newest path: getUserRoot RPC ---
-
   private async getUserRootViaRpc(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaRpc(opts: {
     login?: string;
@@ -185,8 +183,6 @@ export class UserResources {
       toResourceSignature(resp.userRoot.resourceSignature),
     );
   }
-
-  // --- listUserResources path ---
 
   private async getUserRootViaList(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaList(opts: {
@@ -279,8 +275,6 @@ export class UserResources {
     }
     return result;
   }
-
-  // --- Legacy path: named resources ---
 
   private async getUserRootViaLegacy(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaLegacy(opts: {
