@@ -322,6 +322,12 @@ export interface TxAPI_ClientMessage {
          */
         resourceTreeSize: ResourceAPI_TreeSize_Request; // calculate size for all resources in tree
     } | {
+        oneofKind: "resourceLoadSubtree";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request resource_load_subtree = 72
+         */
+        resourceLoadSubtree: ResourceAPI_LoadSubtree_Request; // server-side pruned subtree walk with known-finals skip
+    } | {
         oneofKind: "fieldCreate";
         /**
          * @generated from protobuf field: MiLaboratories.PL.API.FieldAPI.Create.Request field_create = 101
@@ -698,6 +704,12 @@ export interface TxAPI_ServerMessage {
          * @generated from protobuf field: MiLaboratories.PL.API.ResourceAPI.TreeSize.Response resource_tree_size = 71
          */
         resourceTreeSize: ResourceAPI_TreeSize_Response;
+    } | {
+        oneofKind: "resourceLoadSubtree";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response resource_load_subtree = 72
+         */
+        resourceLoadSubtree: ResourceAPI_LoadSubtree_Response;
     } | {
         oneofKind: "fieldCreate";
         /**
@@ -1762,6 +1774,176 @@ export interface ResourceAPI_TreeSize_Response {
      * @generated from protobuf field: uint64 resource_count = 2
      */
     resourceCount: bigint;
+}
+/**
+ * Server-side tree walk rooted at a given resource.
+ *
+ * The client declares which resources it already holds up-to-date
+ * (known_finals) and a set of pruning rules; the server performs the walk
+ * locally against the open read transaction and streams visited resources
+ * back without per-layer client round-trips.
+ *
+ * Used by the middle layer to synchronize project state efficiently on
+ * high-latency connections.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree
+ */
+export interface ResourceAPI_LoadSubtree {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request
+ */
+export interface ResourceAPI_LoadSubtree_Request {
+    /**
+     * Root of the server-side walk.
+     *
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * Resources the client already holds with up-to-date, final state.
+     * The server returns no data for these resources and does not descend
+     * past them. Each entry must carry a signature obtained from a prior
+     * response.
+     *
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal known_finals = 3
+     */
+    knownFinals: ResourceAPI_LoadSubtree_KnownFinal[];
+    /**
+     * Declarative pruning rules evaluated per visited resource.
+     * Rules are tried in order; the first matching rule wins.
+     * If no rule matches, all fields are kept and traversal continues
+     * into them.
+     *
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule pruning = 4
+     */
+    pruning: ResourceAPI_LoadSubtree_PruningRule[];
+    /**
+     * If true, the response carries per-resource key-values alongside each
+     * visited resource. Defaults to false.
+     *
+     * @generated from protobuf field: bool include_kv = 5
+     */
+    includeKv: boolean;
+    /**
+     * Safety limit: aborts traversal with ResourceExhausted if more than N
+     * resources would be visited. Zero means unlimited.
+     *
+     * @generated from protobuf field: uint32 max_resources = 6
+     */
+    maxResources: number;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal
+ */
+export interface ResourceAPI_LoadSubtree_KnownFinal {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule
+ */
+export interface ResourceAPI_LoadSubtree_PruningRule {
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.TypeMatch type_match = 1
+     */
+    typeMatch: ResourceAPI_LoadSubtree_PruningRule_TypeMatch;
+    /**
+     * @generated from protobuf field: string type_pattern = 2
+     */
+    typePattern: string;
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.Action action = 3
+     */
+    action: ResourceAPI_LoadSubtree_PruningRule_Action;
+    /**
+     * @generated from protobuf field: repeated string field_names = 4
+     */
+    fieldNames: string[];
+    /**
+     * @generated from protobuf field: repeated string field_name_prefixes = 5
+     */
+    fieldNamePrefixes: string[];
+}
+/**
+ * @generated from protobuf enum MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.TypeMatch
+ */
+export enum ResourceAPI_LoadSubtree_PruningRule_TypeMatch {
+    /**
+     * resource type name equals type_pattern
+     *
+     * @generated from protobuf enum value: EXACT = 0;
+     */
+    EXACT = 0,
+    /**
+     * resource type name starts with type_pattern
+     *
+     * @generated from protobuf enum value: PREFIX = 1;
+     */
+    PREFIX = 1
+}
+/**
+ * @generated from protobuf enum MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.Action
+ */
+export enum ResourceAPI_LoadSubtree_PruningRule_Action {
+    /**
+     * keep all fields and descend into them
+     *
+     * @generated from protobuf enum value: INCLUDE_ALL = 0;
+     */
+    INCLUDE_ALL = 0,
+    /**
+     * drop all fields and do not descend
+     *
+     * @generated from protobuf enum value: DROP_ALL = 1;
+     */
+    DROP_ALL = 1,
+    /**
+     * drop fields matching field_names or any field_name_prefixes
+     *
+     * @generated from protobuf enum value: EXCLUDE_FIELDS = 2;
+     */
+    EXCLUDE_FIELDS = 2
+}
+/**
+ * Multi-message.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response
+ */
+export interface ResourceAPI_LoadSubtree_Response {
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.Resource resource = 1
+     */
+    resource?: Resource;
+    /**
+     * Populated only when include_kv=true in the request.
+     *
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV kv = 2
+     */
+    kv: ResourceAPI_LoadSubtree_Response_KV[];
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV
+ */
+export interface ResourceAPI_LoadSubtree_Response_KV {
+    /**
+     * @generated from protobuf field: string key = 1
+     */
+    key: string;
+    /**
+     * @generated from protobuf field: bytes value = 2
+     */
+    value: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.FieldAPI
@@ -3581,6 +3763,19 @@ export interface MaintenanceAPI_Ping_Response {
      * @generated from protobuf field: string arch = 8
      */
     arch: string; // x64 / aarch64
+    /**
+     * Opt-in capabilities advertised by this server instance, used by
+     * clients to pick between fast and fallback code paths without waiting
+     * for a failed RPC.
+     *
+     * Each entry is an opaque token "<feature>:<version>" (e.g.
+     * "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+     * The field is unset on servers predating this mechanism, which the
+     * client treats as "no optional capabilities advertised".
+     *
+     * @generated from protobuf field: repeated string capabilities = 9
+     */
+    capabilities: string[];
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression
@@ -3702,6 +3897,7 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 69, name: "resource_name_delete", kind: "message", oneof: "request", T: () => ResourceAPI_Name_Delete_Request },
             { no: 70, name: "resource_tree", kind: "message", oneof: "request", T: () => ResourceAPI_Tree_Request },
             { no: 71, name: "resource_tree_size", kind: "message", oneof: "request", T: () => ResourceAPI_TreeSize_Request },
+            { no: 72, name: "resource_load_subtree", kind: "message", oneof: "request", T: () => ResourceAPI_LoadSubtree_Request },
             { no: 101, name: "field_create", kind: "message", oneof: "request", T: () => FieldAPI_Create_Request },
             { no: 107, name: "field_exists", kind: "message", oneof: "request", T: () => FieldAPI_Exists_Request },
             { no: 102, name: "field_set", kind: "message", oneof: "request", T: () => FieldAPI_Set_Request },
@@ -3902,6 +4098,12 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                     message.request = {
                         oneofKind: "resourceTreeSize",
                         resourceTreeSize: ResourceAPI_TreeSize_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).resourceTreeSize)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request resource_load_subtree */ 72:
+                    message.request = {
+                        oneofKind: "resourceLoadSubtree",
+                        resourceLoadSubtree: ResourceAPI_LoadSubtree_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).resourceLoadSubtree)
                     };
                     break;
                 case /* MiLaboratories.PL.API.FieldAPI.Create.Request field_create */ 101:
@@ -4198,6 +4400,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.ResourceAPI.TreeSize.Request resource_tree_size = 71; */
         if (message.request.oneofKind === "resourceTreeSize")
             ResourceAPI_TreeSize_Request.internalBinaryWrite(message.request.resourceTreeSize, writer.tag(71, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request resource_load_subtree = 72; */
+        if (message.request.oneofKind === "resourceLoadSubtree")
+            ResourceAPI_LoadSubtree_Request.internalBinaryWrite(message.request.resourceLoadSubtree, writer.tag(72, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.FieldAPI.Create.Request field_create = 101; */
         if (message.request.oneofKind === "fieldCreate")
             FieldAPI_Create_Request.internalBinaryWrite(message.request.fieldCreate, writer.tag(101, WireType.LengthDelimited).fork(), options).join();
@@ -4341,6 +4546,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 69, name: "resource_name_delete", kind: "message", oneof: "response", T: () => ResourceAPI_Name_Delete_Response },
             { no: 70, name: "resource_tree", kind: "message", oneof: "response", T: () => ResourceAPI_Tree_Response },
             { no: 71, name: "resource_tree_size", kind: "message", oneof: "response", T: () => ResourceAPI_TreeSize_Response },
+            { no: 72, name: "resource_load_subtree", kind: "message", oneof: "response", T: () => ResourceAPI_LoadSubtree_Response },
             { no: 101, name: "field_create", kind: "message", oneof: "response", T: () => FieldAPI_Create_Response },
             { no: 107, name: "field_exists", kind: "message", oneof: "response", T: () => FieldAPI_Exists_Response },
             { no: 102, name: "field_set", kind: "message", oneof: "response", T: () => FieldAPI_Set_Response },
@@ -4545,6 +4751,12 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                     message.response = {
                         oneofKind: "resourceTreeSize",
                         resourceTreeSize: ResourceAPI_TreeSize_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).resourceTreeSize)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response resource_load_subtree */ 72:
+                    message.response = {
+                        oneofKind: "resourceLoadSubtree",
+                        resourceLoadSubtree: ResourceAPI_LoadSubtree_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).resourceLoadSubtree)
                     };
                     break;
                 case /* MiLaboratories.PL.API.FieldAPI.Create.Response field_create */ 101:
@@ -4850,6 +5062,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.ResourceAPI.TreeSize.Response resource_tree_size = 71; */
         if (message.response.oneofKind === "resourceTreeSize")
             ResourceAPI_TreeSize_Response.internalBinaryWrite(message.response.resourceTreeSize, writer.tag(71, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response resource_load_subtree = 72; */
+        if (message.response.oneofKind === "resourceLoadSubtree")
+            ResourceAPI_LoadSubtree_Response.internalBinaryWrite(message.response.resourceLoadSubtree, writer.tag(72, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.FieldAPI.Create.Response field_create = 101; */
         if (message.response.oneofKind === "fieldCreate")
             FieldAPI_Create_Response.internalBinaryWrite(message.response.fieldCreate, writer.tag(101, WireType.LengthDelimited).fork(), options).join();
@@ -5857,7 +6072,6 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
     create(value?: PartialMessage<ResourceAPI_CreateStruct_Request>): ResourceAPI_CreateStruct_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateStruct_Request>(this, message, value);
         return message;
@@ -6018,7 +6232,6 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
     create(value?: PartialMessage<ResourceAPI_CreateEphemeral_Request>): ResourceAPI_CreateEphemeral_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateEphemeral_Request>(this, message, value);
         return message;
@@ -6328,7 +6541,6 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateValue_Request>(this, message, value);
         return message;
@@ -6644,7 +6856,6 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         message.id = 0n;
         message.data = new Uint8Array(0);
         message.errorIfExists = false;
-        message.colorProof = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateSingleton_Request>(this, message, value);
         return message;
@@ -8934,6 +9145,374 @@ class ResourceAPI_TreeSize_Response$Type extends MessageType<ResourceAPI_TreeSiz
  * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.TreeSize.Response
  */
 export const ResourceAPI_TreeSize_Response = new ResourceAPI_TreeSize_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree$Type extends MessageType<ResourceAPI_LoadSubtree> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree", []);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree>): ResourceAPI_LoadSubtree {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree): ResourceAPI_LoadSubtree {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree
+ */
+export const ResourceAPI_LoadSubtree = new ResourceAPI_LoadSubtree$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree_Request$Type extends MessageType<ResourceAPI_LoadSubtree_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "known_finals", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_LoadSubtree_KnownFinal },
+            { no: 4, name: "pruning", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_LoadSubtree_PruningRule },
+            { no: 5, name: "include_kv", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 6, name: "max_resources", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree_Request>): ResourceAPI_LoadSubtree_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.knownFinals = [];
+        message.pruning = [];
+        message.includeKv = false;
+        message.maxResources = 0;
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree_Request): ResourceAPI_LoadSubtree_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal known_finals */ 3:
+                    message.knownFinals.push(ResourceAPI_LoadSubtree_KnownFinal.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule pruning */ 4:
+                    message.pruning.push(ResourceAPI_LoadSubtree_PruningRule.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* bool include_kv */ 5:
+                    message.includeKv = reader.bool();
+                    break;
+                case /* uint32 max_resources */ 6:
+                    message.maxResources = reader.uint32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal known_finals = 3; */
+        for (let i = 0; i < message.knownFinals.length; i++)
+            ResourceAPI_LoadSubtree_KnownFinal.internalBinaryWrite(message.knownFinals[i], writer.tag(3, WireType.LengthDelimited).fork(), options).join();
+        /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule pruning = 4; */
+        for (let i = 0; i < message.pruning.length; i++)
+            ResourceAPI_LoadSubtree_PruningRule.internalBinaryWrite(message.pruning[i], writer.tag(4, WireType.LengthDelimited).fork(), options).join();
+        /* bool include_kv = 5; */
+        if (message.includeKv !== false)
+            writer.tag(5, WireType.Varint).bool(message.includeKv);
+        /* uint32 max_resources = 6; */
+        if (message.maxResources !== 0)
+            writer.tag(6, WireType.Varint).uint32(message.maxResources);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Request
+ */
+export const ResourceAPI_LoadSubtree_Request = new ResourceAPI_LoadSubtree_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree_KnownFinal$Type extends MessageType<ResourceAPI_LoadSubtree_KnownFinal> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree_KnownFinal>): ResourceAPI_LoadSubtree_KnownFinal {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree_KnownFinal>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree_KnownFinal): ResourceAPI_LoadSubtree_KnownFinal {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree_KnownFinal, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.KnownFinal
+ */
+export const ResourceAPI_LoadSubtree_KnownFinal = new ResourceAPI_LoadSubtree_KnownFinal$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree_PruningRule$Type extends MessageType<ResourceAPI_LoadSubtree_PruningRule> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule", [
+            { no: 1, name: "type_match", kind: "enum", T: () => ["MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.TypeMatch", ResourceAPI_LoadSubtree_PruningRule_TypeMatch] },
+            { no: 2, name: "type_pattern", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "action", kind: "enum", T: () => ["MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.Action", ResourceAPI_LoadSubtree_PruningRule_Action] },
+            { no: 4, name: "field_names", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 5, name: "field_name_prefixes", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree_PruningRule>): ResourceAPI_LoadSubtree_PruningRule {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.typeMatch = 0;
+        message.typePattern = "";
+        message.action = 0;
+        message.fieldNames = [];
+        message.fieldNamePrefixes = [];
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree_PruningRule>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree_PruningRule): ResourceAPI_LoadSubtree_PruningRule {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.TypeMatch type_match */ 1:
+                    message.typeMatch = reader.int32();
+                    break;
+                case /* string type_pattern */ 2:
+                    message.typePattern = reader.string();
+                    break;
+                case /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.Action action */ 3:
+                    message.action = reader.int32();
+                    break;
+                case /* repeated string field_names */ 4:
+                    message.fieldNames.push(reader.string());
+                    break;
+                case /* repeated string field_name_prefixes */ 5:
+                    message.fieldNamePrefixes.push(reader.string());
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree_PruningRule, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.TypeMatch type_match = 1; */
+        if (message.typeMatch !== 0)
+            writer.tag(1, WireType.Varint).int32(message.typeMatch);
+        /* string type_pattern = 2; */
+        if (message.typePattern !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.typePattern);
+        /* MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule.Action action = 3; */
+        if (message.action !== 0)
+            writer.tag(3, WireType.Varint).int32(message.action);
+        /* repeated string field_names = 4; */
+        for (let i = 0; i < message.fieldNames.length; i++)
+            writer.tag(4, WireType.LengthDelimited).string(message.fieldNames[i]);
+        /* repeated string field_name_prefixes = 5; */
+        for (let i = 0; i < message.fieldNamePrefixes.length; i++)
+            writer.tag(5, WireType.LengthDelimited).string(message.fieldNamePrefixes[i]);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.PruningRule
+ */
+export const ResourceAPI_LoadSubtree_PruningRule = new ResourceAPI_LoadSubtree_PruningRule$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree_Response$Type extends MessageType<ResourceAPI_LoadSubtree_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response", [
+            { no: 1, name: "resource", kind: "message", T: () => Resource },
+            { no: 2, name: "kv", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_LoadSubtree_Response_KV }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree_Response>): ResourceAPI_LoadSubtree_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.kv = [];
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree_Response): ResourceAPI_LoadSubtree_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* MiLaboratories.PL.API.Resource resource */ 1:
+                    message.resource = Resource.internalBinaryRead(reader, reader.uint32(), options, message.resource);
+                    break;
+                case /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV kv */ 2:
+                    message.kv.push(ResourceAPI_LoadSubtree_Response_KV.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* MiLaboratories.PL.API.Resource resource = 1; */
+        if (message.resource)
+            Resource.internalBinaryWrite(message.resource, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* repeated MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV kv = 2; */
+        for (let i = 0; i < message.kv.length; i++)
+            ResourceAPI_LoadSubtree_Response_KV.internalBinaryWrite(message.kv[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response
+ */
+export const ResourceAPI_LoadSubtree_Response = new ResourceAPI_LoadSubtree_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class ResourceAPI_LoadSubtree_Response_KV$Type extends MessageType<ResourceAPI_LoadSubtree_Response_KV> {
+    constructor() {
+        super("MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV", [
+            { no: 1, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "value", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<ResourceAPI_LoadSubtree_Response_KV>): ResourceAPI_LoadSubtree_Response_KV {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.key = "";
+        message.value = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<ResourceAPI_LoadSubtree_Response_KV>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LoadSubtree_Response_KV): ResourceAPI_LoadSubtree_Response_KV {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string key */ 1:
+                    message.key = reader.string();
+                    break;
+                case /* bytes value */ 2:
+                    message.value = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: ResourceAPI_LoadSubtree_Response_KV, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string key = 1; */
+        if (message.key !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.key);
+        /* bytes value = 2; */
+        if (message.value.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.value);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.ResourceAPI.LoadSubtree.Response.KV
+ */
+export const ResourceAPI_LoadSubtree_Response_KV = new ResourceAPI_LoadSubtree_Response_KV$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class FieldAPI$Type extends MessageType<FieldAPI> {
     constructor() {
@@ -17591,7 +18170,8 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
             { no: 5, name: "instance_id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "platform", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "os", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 8, name: "arch", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 8, name: "arch", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 9, name: "capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<MaintenanceAPI_Ping_Response>): MaintenanceAPI_Ping_Response {
@@ -17603,6 +18183,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         message.platform = "";
         message.os = "";
         message.arch = "";
+        message.capabilities = [];
         if (value !== undefined)
             reflectionMergePartial<MaintenanceAPI_Ping_Response>(this, message, value);
         return message;
@@ -17632,6 +18213,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                     break;
                 case /* string arch */ 8:
                     message.arch = reader.string();
+                    break;
+                case /* repeated string capabilities */ 9:
+                    message.capabilities.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -17666,6 +18250,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* string arch = 8; */
         if (message.arch !== "")
             writer.tag(8, WireType.LengthDelimited).string(message.arch);
+        /* repeated string capabilities = 9; */
+        for (let i = 0; i < message.capabilities.length; i++)
+            writer.tag(9, WireType.LengthDelimited).string(message.capabilities[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

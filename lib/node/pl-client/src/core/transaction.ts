@@ -37,6 +37,7 @@ import {
   notEmpty,
 } from "@milaboratories/ts-helpers";
 import { isNotFoundError } from "./errors";
+import { encodePruningRule, type LoadSubtreeOptions, type LoadedSubtreeNode } from "./load_subtree";
 import type { FinalResourceDataPredicate } from "./final";
 import type { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
@@ -829,6 +830,63 @@ export class PlTransaction {
     rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
     return this.track(notFoundToUndefined(async () => await this.listKeyValuesString(rId)));
+  }
+
+  //
+  // Server-side subtree walk
+  //
+
+  /** Executes a server-side BFS walk rooted at the given resource and
+   *  returns each visited resource alongside its (optional) key-values.
+   *
+   *  Callers must check server capability ("loadSubtree:v1") before using
+   *  this method; on servers predating the RPC it will fail with
+   *  UNIMPLEMENTED. Use {@link PlClient.hasServerCapability} to gate calls. */
+  public async loadSubtree(opts: LoadSubtreeOptions): Promise<LoadedSubtreeNode[]> {
+    return this.track(async () => {
+      const knownFinals = opts.knownFinals
+        ? [...opts.knownFinals].map((rid) => ({
+            resourceId: toResourceId(rid),
+            resourceSignature: new Uint8Array(0),
+          }))
+        : [];
+
+      const pruning = (opts.pruning ?? []).map(encodePruningRule);
+
+      const result = await this.sendMultiAndParse(
+        {
+          oneofKind: "resourceLoadSubtree",
+          resourceLoadSubtree: {
+            resourceId: toResourceId(opts.root),
+            resourceSignature: new Uint8Array(0),
+            knownFinals,
+            pruning,
+            includeKv: opts.includeKv ?? false,
+            maxResources: opts.maxResources ?? 0,
+          },
+        },
+        (r) =>
+          r.map((e) => ({
+            resource: protoToResource(notEmpty(e.resourceLoadSubtree.resource)),
+            kv: e.resourceLoadSubtree.kv.map((kv) => ({
+              key: kv.key,
+              value: kv.value,
+            })),
+          })),
+      );
+
+      this._stat.loadSubtreeRequests++;
+      this._stat.loadSubtreeNodes += result.length;
+      for (const n of result) {
+        this._stat.loadSubtreeBytes += n.resource.data?.length ?? 0;
+        this._stat.loadSubtreeFields += n.resource.fields.length;
+        for (const kv of n.kv) {
+          this._stat.loadSubtreeBytes += kv.key.length + kv.value.length;
+        }
+      }
+
+      return result;
+    });
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {

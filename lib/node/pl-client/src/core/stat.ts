@@ -32,6 +32,11 @@ export type TxStat = {
 
   kvGetRequests: number;
   kvGetBytes: number;
+
+  loadSubtreeRequests: number;
+  loadSubtreeNodes: number;
+  loadSubtreeFields: number;
+  loadSubtreeBytes: number;
 };
 
 export type TxStatWithoutTime = Omit<TxStat, "timeMs">;
@@ -64,6 +69,10 @@ export function initialTxStatWithoutTime(): TxStatWithoutTime {
     kvListBytes: 0,
     kvGetRequests: 0,
     kvGetBytes: 0,
+    loadSubtreeRequests: 0,
+    loadSubtreeNodes: 0,
+    loadSubtreeFields: 0,
+    loadSubtreeBytes: 0,
   };
 }
 export function initialTxStat(): TxStat {
@@ -102,6 +111,10 @@ export function addStat(a: TxStat, b: TxStat): TxStat {
     kvListBytes: a.kvListBytes + b.kvListBytes,
     kvGetRequests: a.kvGetRequests + b.kvGetRequests,
     kvGetBytes: a.kvGetBytes + b.kvGetBytes,
+    loadSubtreeRequests: a.loadSubtreeRequests + b.loadSubtreeRequests,
+    loadSubtreeNodes: a.loadSubtreeNodes + b.loadSubtreeNodes,
+    loadSubtreeFields: a.loadSubtreeFields + b.loadSubtreeFields,
+    loadSubtreeBytes: a.loadSubtreeBytes + b.loadSubtreeBytes,
   };
 }
 

@@ -1,5 +1,10 @@
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import type { FieldData, OptionalAnyResourceId, ResourceId } from "@milaboratories/pl-client";
+import type {
+  FieldData,
+  OptionalAnyResourceId,
+  PruningSpec,
+  ResourceId,
+} from "@milaboratories/pl-client";
 import {
   DefaultRetryOptions,
   ensureResourceIdNotNull,
@@ -722,6 +727,7 @@ export class Project {
       {
         ...env.ops.defaultTreeOptions,
         pruning: projectTreePruning(env.logger),
+        pruningSpec: projectTreePruningSpec,
       },
       env.logger,
     );
@@ -737,6 +743,28 @@ export class Project {
     return new Project(env, rid, projectTree);
   }
 }
+
+/** Declarative pruning spec for the project resource tree. Sent to the
+ *  server when it advertises the `loadSubtree:v1` capability, letting the
+ *  walk happen locally on the backend. Kept in lock-step with
+ *  {@link projectTreePruning}: any change here must be reflected there and
+ *  vice versa. */
+const projectTreePruningSpec: PruningSpec = [
+  { typeMatch: "prefix", typePattern: "StreamWorkdir/", action: "dropAll" },
+  {
+    typeMatch: "exact",
+    typePattern: "BlockPackCustom",
+    action: "excludeFields",
+    fieldNames: ["template"],
+  },
+  {
+    typeMatch: "exact",
+    typePattern: "UserProject",
+    action: "excludeFields",
+    fieldNamePrefixes: ["__serviceTemplate"],
+  },
+  { typeMatch: "exact", typePattern: "Blob", action: "dropAll" },
+];
 
 function projectTreePruning(logger: MiLogger): PruningFunction {
   return (r: ExtendedResourceData): FieldData[] => {

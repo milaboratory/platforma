@@ -1,6 +1,6 @@
 import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { PlClient, ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { PlClient, PruningSpec, ResourceId, ResourceType } from "@milaboratories/pl-client";
 import { resourceTypesEqual } from "@milaboratories/pl-client";
 import type { TreeAndComputableU } from "./types";
 import type { WatchableValue } from "@milaboratories/computable";
@@ -23,6 +23,19 @@ export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
   return resource.fields;
 };
 
+/** Server-side pruning spec mirroring {@link ProjectsListTreePruningFunction}:
+ *  keep all fields on the Projects root, drop fields on every other resource
+ *  so the walk bottoms out at one level below the root. */
+export const ProjectsListTreePruningSpec: PruningSpec = [
+  {
+    typeMatch: "exact",
+    typePattern: ProjectsResourceType.name,
+    action: "includeAll",
+  },
+  // Catch-all: drop fields on any other resource and stop descending.
+  { typeMatch: "prefix", typePattern: "", action: "dropAll" },
+];
+
 export async function createProjectList(
   pl: PlClient,
   rid: ResourceId,
@@ -35,6 +48,7 @@ export async function createProjectList(
     {
       ...env.ops.defaultTreeOptions,
       pruning: ProjectsListTreePruningFunction,
+      pruningSpec: ProjectsListTreePruningSpec,
     },
     env.logger,
   );
