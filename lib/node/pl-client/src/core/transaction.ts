@@ -1010,7 +1010,7 @@ export class PlTransaction {
 
   public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
     return this.track(async () => {
-      const str = await this.getKValueString(rId, key);
+      const str = await this.getKValueStringIfExists(rId, key);
       if (str === undefined) return undefined;
       return JSON.parse(str) as T;
     });
