@@ -107,7 +107,16 @@ export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
         );
       }
       const result = pframe.discoverColumns(request);
-      return result;
+      // Backward-compat shim: pframes-rs >= 1.1.31 dropped the `qualifications`
+      return {
+        ...result,
+        hits: result.hits.map((hit) => ({
+          ...hit,
+          path: hit.path.map((step) =>
+            step.type === "linker" ? { ...step, qualifications: [] } : step,
+          ),
+        })),
+      };
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`discoverColumns failed`);
       error.cause = new Error(
