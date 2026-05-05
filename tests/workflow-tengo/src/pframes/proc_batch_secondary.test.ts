@@ -9,6 +9,7 @@ import {
   readJsonPartition,
   runBatch,
   singleAxisSpec,
+  twoAxisSpec,
   xsvSettings,
 } from "./proc_batch_common";
 
@@ -169,5 +170,78 @@ eTplTest.concurrent(
       }),
       /passContent=true is not applicable to batch\.format="parquet"/,
     );
+  },
+);
+
+// keyLength on the emitted ResourceMap data resource must reflect the body's
+// real key shape: batchKeyLength + len(output.spec.axesSpec). The body returns
+// a ResourceMap keyed by the batch axis (one key component), so the merged
+// outer resource — whether super-partitioned for isolation, the pass-through
+// for a single batch, or the empty fallback — must carry keyLength = 1.
+//
+// Two paths exercised below:
+// 1. hasIsolation: orchestrator wraps split's merged ResourceMap into a
+//    PColumnData/Partitioned/ResourceMap struct. The struct's "keyLength"
+//    annotates the inner ResourceMap and currently uses output.keyLength
+//    (= len(output.spec.axesSpec) = 0), missing the batch-key component.
+// 2. Empty input, no isolation: orchestrator's empty-fallback emits a fresh
+//    PColumnData/ResourceMap; same expected keyLength.
+
+eTplTest.concurrent(
+  "batch mode: ResourceMap super-partitioned keyLength includes batch key",
+  async ({ helper, expect, stHelper }) => {
+    const recs: Record<string, string> = {};
+    for (const sample of ["A", "B"]) {
+      for (let i = 0; i < 3; i++) {
+        recs[`["${sample}","k${i}"]`] = `${sample}${i}`;
+      }
+    }
+    const rm = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "resourceMap",
+        primaryEntries: [{ spec: twoAxisSpec, dataInputName: "data", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [
+          {
+            type: "ResourceMap",
+            name: "resMap",
+            spec: { valueType: "File", name: "pl7.app/batch-test/row", axesSpec: [] },
+          },
+        ],
+        batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+      }),
+      data: createJsonData(tx, 2, recs),
+    }));
+
+    expect(rm.resourceType.name).toEqual("PColumnData/Partitioned/ResourceMap");
+    const meta = JSON.parse(rm.data ?? "{}");
+    expect(meta.partitionKeyLength).toEqual(1);
+    expect(meta.keyLength).toEqual(1);
+  },
+);
+
+eTplTest.concurrent(
+  "batch mode: ResourceMap empty-input fallback keyLength includes batch key",
+  async ({ helper, expect, stHelper }) => {
+    const rm = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "resourceMap",
+        primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [
+          {
+            type: "ResourceMap",
+            name: "resMap",
+            spec: { valueType: "File", name: "pl7.app/batch-test/row", axesSpec: [] },
+          },
+        ],
+        batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+      }),
+      data: createJsonData(tx, 1, {}),
+    }));
+
+    expect(rm.resourceType.name).toEqual("PColumnData/ResourceMap");
+    const meta = JSON.parse(rm.data ?? "{}");
+    expect(meta.keyLength).toEqual(1);
   },
 );
