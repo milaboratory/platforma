@@ -15,7 +15,12 @@ import type {
   ResourceData,
   ResourceKind,
 } from "./types";
-import { createSignedResourceId, NullSignedResourceId, toResourceSignature } from "./types";
+import {
+  createSignedResourceId,
+  NullSignedResourceId,
+  toResourceSignature,
+  NullResourceId,
+} from "./types";
 import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
 import { throwPlNotFoundError } from "./errors";
 
@@ -26,7 +31,7 @@ function resourceIsDeleted(proto: Resource): boolean {
 }
 
 function protoIdToOptionalResourceId(id: bigint, signature?: Uint8Array): OptionalSignedResourceId {
-  if (id === 0n) return NullSignedResourceId;
+  if (id === NullResourceId) return NullSignedResourceId;
   return createSignedResourceId(id, toResourceSignature(signature));
 }
 

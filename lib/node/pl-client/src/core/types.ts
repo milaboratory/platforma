@@ -1,17 +1,14 @@
+import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
-// more details here: https://egghead.io/blog/using-branded-types-in-typescript
-declare const __resource_id_type__: unique symbol;
-type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
-
 /** Null resource id */
-export type NullResourceId = BrandResourceId<"null">;
+export type NullResourceId = Branded<bigint, "null", "__resource_id__">;
 
 /** Global resource id */
-export type GlobalResourceId = BrandResourceId<"global">;
+export type GlobalResourceId = Branded<bigint, "global", "__resource_id__">;
 
 /** Local resource id */
-export type LocalResourceId = BrandResourceId<"local">;
+export type LocalResourceId = Branded<bigint, "local", "__resource_id__">;
 
 /** Any non-null resource id */
 export type AnyResourceId = GlobalResourceId | LocalResourceId;
@@ -260,18 +257,16 @@ export function stringifyWithResourceId(object: unknown): string {
   });
 }
 
-// more details here: https://egghead.io/blog/using-branded-types-in-typescript
 /** Opaque authorization signature attached to a resource. */
-declare const __resource_signature_type__: unique symbol;
-export type ResourceSignature = Uint8Array & { readonly [__resource_signature_type__]: true };
+export type ResourceSignature = Branded<Uint8Array, "ResourceSignature">;
 
 /**
  * Signed resource id is "<global ID>|<resource signature hex>", encoded as string
  * (e.g. "NG:0x123EC|1234567890abcdef")
  */
-export type SignedResourceId = string & { __resource_id_type__: "signed" };
+export type SignedResourceId = Branded<string, "signed", "__signed_resource_id__">;
 
-export type NullSignedResourceId = string & { __resource_id_type__: "null" };
+export type NullSignedResourceId = Branded<string, "null", "__signed_resource_id__">;
 
 export const NullSignedResourceId = "" as NullSignedResourceId;
 
