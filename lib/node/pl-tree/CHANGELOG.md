@@ -1,5 +1,19 @@
 # @milaboratories/pl-tree
 
+## 1.10.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-client@3.3.0
+  - @milaboratories/pl-errors@1.4.0
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/ts-helpers@1.8.1
+
 ## 1.9.23
 
 ### Patch Changes

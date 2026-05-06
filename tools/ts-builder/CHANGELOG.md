@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.4.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
 ## 1.3.2
 
 ### Patch Changes

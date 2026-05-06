@@ -1,5 +1,18 @@
 # @milaboratories/pl-client
 
+## 3.3.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.1
+
 ## 3.2.5
 
 ### Patch Changes

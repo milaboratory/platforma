@@ -1,5 +1,17 @@
 # @milaboratories/pl-mcp-server
 
+## 10.0.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-middle-layer@1.59.0
+  - @platforma-sdk/model@1.74.0
+
 ## 9.0.0
 
 ### Patch Changes

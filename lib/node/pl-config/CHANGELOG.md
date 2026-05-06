@@ -1,5 +1,15 @@
 # @milaboratories/pl-config
 
+## 1.8.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.1
+
 ## 1.7.18
 
 ### Patch Changes

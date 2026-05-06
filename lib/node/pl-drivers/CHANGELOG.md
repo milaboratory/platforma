@@ -1,5 +1,21 @@
 # @milaboratories/pl-drivers
 
+## 1.14.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-client@3.3.0
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/pl-tree@1.10.0
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/helpers@1.14.1
+
 ## 1.13.1
 
 ### Patch Changes
