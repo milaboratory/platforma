@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.75.0
+
+### Minor Changes
+
+- cb9e0ba: Label columns for predefined columns and show in table label columns always
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @milaboratories/pl-model-common@1.41.0
+  - @milaboratories/pl-model-middle-layer@1.19.1
+  - @milaboratories/ptabler-expression-js@1.2.22
+
 ## 1.74.0
 
 ### Patch Changes
