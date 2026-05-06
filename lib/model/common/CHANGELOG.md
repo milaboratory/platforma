@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.41.0
+
+### Minor Changes
+
+- cb9e0ba: Label columns for predefined columns and show in table label columns always
+
 ## 1.40.0
 
 ### Minor Changes

@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.75.0
+
+### Minor Changes
+
+- cb9e0ba: Label columns for predefined columns and show in table label columns always
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @milaboratories/pl-model-common@1.41.0
+  - @platforma-sdk/model@1.75.0
+  - @milaboratories/pf-spec-driver@1.3.12
+  - @milaboratories/uikit@2.14.1
+
 ## 1.74.0
 
 ### Minor Changes
