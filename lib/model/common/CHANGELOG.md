@@ -1,5 +1,16 @@
 # @milaboratories/pl-model-common
 
+## 1.40.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- @milaboratories/pl-error-like@1.12.10
+- @milaboratories/helpers@1.14.1
+
 ## 1.39.0
 
 ### Minor Changes

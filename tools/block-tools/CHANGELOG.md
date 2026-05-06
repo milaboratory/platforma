@@ -1,5 +1,17 @@
 # @platforma-sdk/block-tools
 
+## 2.7.20
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-model-middle-layer@1.19.0
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/ts-helpers-oclif@1.1.40
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+
 ## 2.7.19
 
 ### Patch Changes

@@ -1,5 +1,32 @@
 # @milaboratories/pl-middle-layer
 
+## 1.59.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-model-middle-layer@1.19.0
+  - @milaboratories/pl-drivers@1.14.0
+  - @milaboratories/pl-client@3.3.0
+  - @milaboratories/pl-errors@1.4.0
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/pl-tree@1.10.0
+  - @milaboratories/pf-spec-driver@1.3.11
+  - @milaboratories/pf-driver@1.4.6
+  - @platforma-sdk/model@1.74.0
+  - @platforma-sdk/block-tools@2.7.20
+  - @milaboratories/pl-model-backend@1.2.22
+  - @milaboratories/pl-deployments@2.17.13
+  - @milaboratories/computable@2.9.3
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.1
+  - @milaboratories/helpers@1.14.1
+  - @platforma-sdk/workflow-tengo@5.20.1
+
 ## 1.58.4
 
 ### Patch Changes

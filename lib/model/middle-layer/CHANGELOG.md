@@ -1,5 +1,17 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.19.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/helpers@1.14.1
+
 ## 1.18.10
 
 ### Patch Changes

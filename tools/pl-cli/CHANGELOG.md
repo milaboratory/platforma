@@ -1,5 +1,17 @@
 # @platforma-sdk/pl-cli
 
+## 0.6.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-middle-layer@1.59.0
+  - @milaboratories/pl-client@3.3.0
+
 ## 0.5.6
 
 ### Patch Changes

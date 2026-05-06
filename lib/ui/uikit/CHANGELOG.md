@@ -1,5 +1,16 @@
 # @milaboratories/uikit
 
+## 2.14.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- @platforma-sdk/model@1.74.0
+- @milaboratories/helpers@1.14.1
+
 ## 2.13.5
 
 ### Patch Changes

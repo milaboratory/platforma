@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.74.0
+
+### Minor Changes
+
+- 72a9e61: Support signatures tracking and strict security mode of backend
+
+### Patch Changes
+
+- Updated dependencies [72a9e61]
+  - @milaboratories/pl-model-common@1.40.0
+  - @milaboratories/uikit@2.14.0
+  - @milaboratories/pf-spec-driver@1.3.11
+  - @platforma-sdk/model@1.74.0
+
 ## 1.73.4
 
 ### Patch Changes
