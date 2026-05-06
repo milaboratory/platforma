@@ -174,13 +174,18 @@ export function upgradePlDataTableStateV2(
 function migrateV5toV6(
   state: Extract<PlDataTableStateV2, { version: 5 }>,
 ): PlDataTableStateV2Normalized {
+  // pTableParams reset: v5 stored DiscoveredPColumnId-based hiddenColIds with
+  // empty-array fields (e.g. `{column, path: [], columnQualifications: [], ...}`).
+  // v6 distills empty fields, so the same logical column serialises differently
+  // and lookups would silently miss every previously-hidden discovered column.
+  // gridState colIds are derived from PTableColumnSpec and unaffected.
   return {
     version: 6,
     stateCache: state.stateCache.map((entry) => ({
       ...entry,
       gridState: unwrapV5GridState(entry.gridState),
     })),
-    pTableParams: state.pTableParams,
+    pTableParams: createDefaultPTableParams(),
   };
 }
 
