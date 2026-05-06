@@ -6,9 +6,7 @@ import {
   Annotation,
   canonicalizeAxisId,
   DiscoveredPColumnId,
-  isLabelColumn,
   readAnnotation,
-  readAnnotationJson,
 } from "@milaboratories/pl-model-common";
 import {
   deriveDistinctLabels,
@@ -56,12 +54,9 @@ export function getOrderPriority(
   orderByColId?: Map<PObjectId, ColumnOrderRule>,
 ): undefined | number {
   const rule = orderByColId?.get(col.id);
-  return (
-    rule?.priority ??
-    readAnnotationJson(col.spec, Annotation.Table.OrderPriority) ??
-    // Label columns for axes get highest priority to keep them leftmost;
-    (isLabelColumn(col.spec) && col.spec.axesSpec.length === 1 ? 110000 : undefined)
-  );
+  if (rule !== undefined) return rule.priority;
+  const annotation = Number(readAnnotation(col.spec, Annotation.Table.OrderPriority));
+  return isNaN(annotation) ? undefined : annotation;
 }
 
 /**
