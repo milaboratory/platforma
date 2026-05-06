@@ -103,8 +103,6 @@ export function discoverLabelColumnVariants<A, U>(
   }
 }
 
-// --- Pure helper functions ---
-
 /** Resolve PlRef values in anchors to PColumnSpec via the result pool. */
 function resolveAnchors(
   ctx: RenderCtxBase,
