@@ -7,7 +7,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson } from "@milaboratories/pl-model-common";
+import { canonicalizeJson, parseJson } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
@@ -17,7 +17,8 @@ import type {
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
   PTableParamsV2,
-} from "./typesV5";
+} from "./typesV6";
+import type { PlDataTableGridStateV5, PlDataTableV5ColIdJson } from "./typesV5";
 
 /**
  * PlDataTableV2 persisted state
@@ -111,6 +112,19 @@ export type PlDataTableStateV2 =
         sorting: PTableSorting[];
       };
     }
+  // v5 stored colIds as `{source, labeled}` wrappers; only the gridState shape differs.
+  | {
+      version: 5;
+      stateCache: {
+        sourceId: string;
+        gridState: PlDataTableGridStateV5;
+        sheetsState: PlDataTableSheetState[];
+        filtersState: null | PlDataTableFiltersWithMeta;
+        defaultFiltersState: null | PlDataTableFiltersWithMeta;
+        searchString?: string;
+      }[];
+      pTableParams: PTableParamsV2;
+    }
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -143,15 +157,59 @@ export function upgradePlDataTableStateV2(
     // Non upgradeable as column ids calculation algorithm has changed, resetting state to default
     state = createPlDataTableStateV2();
   }
-  // v4 -> v5: migrate per-column filters to tree-based format
+  // v4 -> v6: migrate per-column filters to tree-based format (skips v5).
+  // v4 gridState already used bare PTableColumnSpec colIds, so we jump
+  // straight to v6 without going through the v5 wrapper format.
   if (state.version === 4) {
-    state = migrateV4toV5(state);
+    state = migrateV4toV6(state);
+  }
+  // v5 -> v6: unwrap `{source, labeled}` colIds in gridState back to bare PTableColumnSpec.
+  if (state.version === 5) {
+    state = migrateV5toV6(state);
   }
   return state;
 }
 
-/** Migrate v4 state to v5: convert per-column filters to tree-based format */
-function migrateV4toV5(
+/** Migrate v5 to v6: unwrap `{source, labeled}` colIds in gridState. */
+function migrateV5toV6(
+  state: Extract<PlDataTableStateV2, { version: 5 }>,
+): PlDataTableStateV2Normalized {
+  return {
+    version: 6,
+    stateCache: state.stateCache.map((entry) => ({
+      ...entry,
+      gridState: unwrapV5GridState(entry.gridState),
+    })),
+    pTableParams: state.pTableParams,
+  };
+}
+
+/** Convert v5 wrapped colId JSON to bare PTableColumnSpec JSON, taking `.source`. */
+function unwrapV5ColId(json: PlDataTableV5ColIdJson): CanonicalizedJson<PTableColumnSpec> {
+  return canonicalizeJson(parseJson(json).source);
+}
+
+function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridStateCore {
+  return {
+    columnOrder: gridState.columnOrder
+      ? { orderedColIds: gridState.columnOrder.orderedColIds.map(unwrapV5ColId) }
+      : undefined,
+    sort: gridState.sort
+      ? {
+          sortModel: gridState.sort.sortModel.map((s) => ({
+            colId: unwrapV5ColId(s.colId),
+            sort: s.sort,
+          })),
+        }
+      : undefined,
+    columnVisibility: gridState.columnVisibility
+      ? { hiddenColIds: gridState.columnVisibility.hiddenColIds.map(unwrapV5ColId) }
+      : undefined,
+  };
+}
+
+/** Migrate v4 state to v6: convert per-column filters to tree-based format (skips v5). */
+function migrateV4toV6(
   state: Extract<PlDataTableStateV2, { version: 4 }>,
 ): PlDataTableStateV2Normalized {
   let idCounter = 0;
@@ -183,7 +241,7 @@ function migrateV4toV5(
     : undefined;
 
   return {
-    version: 5,
+    version: 6,
     stateCache: migratedCache,
     pTableParams:
       currentCache && oldSourceId
@@ -283,7 +341,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
 
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 5,
+    version: 6,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };
