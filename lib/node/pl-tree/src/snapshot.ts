@@ -1,4 +1,4 @@
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import type { Optional, Writable } from "utility-types";
 import type { ZodType, z } from "zod";
 import type { PlTreeNodeAccessor } from "./accessors";
@@ -13,10 +13,10 @@ import { notEmpty } from "@milaboratories/ts-helpers";
  */
 export type ResourceSnapshot<
   Data = undefined,
-  Fields extends Record<string, ResourceId | undefined> | undefined = undefined,
+  Fields extends Record<string, SignedResourceId | undefined> | undefined = undefined,
   KV extends Record<string, unknown> | undefined = undefined,
 > = {
-  readonly id: ResourceId;
+  readonly id: SignedResourceId;
   readonly type: ResourceType;
   readonly data: Data;
   readonly fields: Fields;
@@ -26,7 +26,7 @@ export type ResourceSnapshot<
 /** The most generic type of ResourceSnapshot. */
 type ResourceSnapshotGeneric = ResourceSnapshot<
   unknown,
-  Record<string, ResourceId | undefined> | undefined,
+  Record<string, SignedResourceId | undefined> | undefined,
   Record<string, unknown> | undefined
 >;
 
@@ -80,8 +80,8 @@ type InferFieldsType<Fields extends Record<string, boolean> | undefined> = Field
   ? undefined
   : {
       [FieldName in keyof Fields]: Fields[FieldName] extends true
-        ? ResourceId
-        : ResourceId | undefined;
+        ? SignedResourceId
+        : SignedResourceId | undefined;
     };
 
 /**
@@ -132,7 +132,7 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
   }
 
   if (schema.fields !== undefined) {
-    const fields: Record<string, ResourceId | undefined> = {};
+    const fields: Record<string, SignedResourceId | undefined> = {};
     // even if field is not defined, corresponding object field
     // with "undefined" value will still be added
     for (const [fieldName, required] of Object.entries(schema.fields))
@@ -165,9 +165,9 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
 
 /** @deprecated */
 export type ResourceWithData = {
-  readonly id: ResourceId;
+  readonly id: SignedResourceId;
   readonly type: ResourceType;
-  readonly fields: Map<string, ResourceId | undefined>;
+  readonly fields: Map<string, SignedResourceId | undefined>;
   readonly data?: Uint8Array;
 };
 
@@ -181,7 +181,7 @@ export function treeEntryToResourceWithData(
     const node = ctx.accessor(res).node();
     const info = node.resourceInfo;
 
-    const fValues: [string, ResourceId | undefined][] = fields.map((name) => [
+    const fValues: [string, SignedResourceId | undefined][] = fields.map((name) => [
       name,
       node.getField(name)?.value?.id,
     ]);
@@ -198,7 +198,7 @@ export function treeEntryToResourceWithData(
 
 /** @deprecated */
 export type ResourceWithMetadata = {
-  readonly id: ResourceId;
+  readonly id: SignedResourceId;
   readonly type: ResourceType;
   readonly metadata: Record<string, any>;
 };

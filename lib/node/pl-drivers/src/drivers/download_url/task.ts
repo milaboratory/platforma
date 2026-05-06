@@ -56,7 +56,11 @@ export class DownloadByUrlTask {
       this.setDone(size);
       this.change.markChanged(`download of ${this.url} finished`);
     } catch (e: unknown) {
-      if (e instanceof URLAborted || isDownloadNetworkError400(e)) {
+      if (
+        e instanceof URLAborted ||
+        isDownloadNetworkError400(e) ||
+        this.signalCtl.signal.aborted
+      ) {
         this.setError(e);
         this.change.markChanged(`download of ${this.url} failed`);
         // Just in case we were half-way extracting an archive.

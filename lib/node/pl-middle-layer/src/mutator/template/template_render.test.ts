@@ -3,13 +3,13 @@ import {
   AnyResourceRef,
   field,
   getField,
-  isNotNullResourceId,
-  isNullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
   Pl,
   PlClient,
   PlTransaction,
   ResourceData,
-  ResourceId,
+  SignedResourceId,
   TestHelpers,
   valErr,
 } from "@milaboratories/pl-client";
@@ -235,7 +235,7 @@ async function expectResultAndContext(
   ok: boolean;
 }> {
   const fieldData = await tx.getResourceData(root, true);
-  expect(isNullResourceId(fieldData.error)).toBe(true);
+  expect(isNullSignedResourceId(fieldData.error)).toBe(true);
   expectFields(fieldData, ["context", "result"]);
 
   const ctxField = await valErr(tx, getField(fieldData, "context"));
@@ -246,7 +246,7 @@ async function expectResultAndContext(
   const ctxId = ctxField.valueId;
   const resultId = resultField.valueId;
 
-  if (isNullResourceId(ctxId) || isNullResourceId(resultId)) return { ok: false };
+  if (isNullSignedResourceId(ctxId) || isNullSignedResourceId(resultId)) return { ok: false };
 
   const result = await tx.getResourceData(resultId, true);
   const ctx = await tx.getResourceData(ctxId, true);
@@ -260,8 +260,8 @@ async function expectResource(tx: PlTransaction, res: ResourceData, fieldName: s
   const f = getField(res, fieldName);
   const ve = await valErr(tx, f);
   expect(ve.error).toHaveLength(0);
-  expect(isNotNullResourceId(ve.valueId)).toBeTruthy();
-  return await tx.getResourceData(ve.valueId as ResourceId, true);
+  expect(isNotNullSignedResourceId(ve.valueId)).toBeTruthy();
+  return await tx.getResourceData(ve.valueId as SignedResourceId, true);
 }
 
 async function expectData(tx: PlTransaction, result: ResourceData, fieldName: string) {

@@ -21,7 +21,7 @@ message Resource {
   }
 
   uint64 resource_id = 2;
-  optional bytes resource_signature = 18;
+  bytes resource_signature = 18;
   bytes canonical_id = 17; // could be empty; it depends on the resource lifecycle state
   Kind kind = 3;
   Base.ResourceType type = 4;
@@ -43,12 +43,13 @@ message Resource {
   bool is_final = 15;
 
   uint64 original_resource_id = 10;
+  bytes original_resource_signature = 19;
   uint64 parent_resource_id = 11;
 
   google.protobuf.Timestamp created_time = 12;
   google.protobuf.Timestamp deleted_time = 13;
 
-  // next free: 19
+  // next free: 20
 }
 
 message Field {
@@ -65,7 +66,7 @@ message Field {
   uint64 value = 5;
   // Signature for value resource ID, inheriting the parent resource's color.
   // Populated server-side when the parent resource has a known color in the current TX.
-  optional bytes value_signature = 10;
+  bytes value_signature = 10;
 
   enum ValueStatus {
     INVALID = 0;
@@ -84,7 +85,7 @@ message Field {
   // Is intended to report problems _from_ the platform to the client.
   uint64 error = 6;
   // Signature for error resource ID, inheriting the parent resource's color.
-  optional bytes error_signature = 11;
+  bytes error_signature = 11;
 }
 
 message Notification {

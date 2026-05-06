@@ -54,7 +54,7 @@ message StreamingAPI {
     // <resource_id> of Stream resource that keeps info on item to be streamed.
     uint64 resource_id = 1;
     // Signature proving the caller is authorized to access this resource.
-    optional bytes resource_signature = 3;
+    bytes resource_signature = 3;
 
     // <offset> makes the streamer perform a seek operation to the given offset before sending the data.
     int64 offset = 2;
@@ -70,7 +70,7 @@ message StreamingAPI {
     // <resource_id> of Stream resource that keeps info on item to be streamed.
     uint64 resource_id = 1;
     // Signature proving the caller is authorized to access this resource.
-    optional bytes resource_signature = 3;
+    bytes resource_signature = 3;
 
     // <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
     // This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.
@@ -102,7 +102,7 @@ message StreamingAPI {
     // <resource_id> of Stream resource that keeps info on item to be streamed.
     uint64 resource_id = 1;
     // Signature proving the caller is authorized to access this resource.
-    optional bytes resource_signature = 4;
+    bytes resource_signature = 4;
 
     // <offset> makes the streamer perform a seek operation to the given offset before sending the contents.
     // This offset is taken in BYTES, as it eases streaming recovery after a client reconnection or controller restart.

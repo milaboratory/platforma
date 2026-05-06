@@ -28,12 +28,12 @@ import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
 import { computableFromCfgOrRF } from "./render";
 import type { NavigationStates } from "./navigation_states";
 import { getBlockPackInfo } from "./util";
-import { resourceIdToString, type ResourceId } from "@milaboratories/pl-client";
+import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
 import { getDebugFlags } from "../debug";
 
 type BlockInfo = {
-  argsRid?: ResourceId;
+  argsRid?: SignedResourceId;
   currentArguments: unknown;
   prod?: ProdState;
 };

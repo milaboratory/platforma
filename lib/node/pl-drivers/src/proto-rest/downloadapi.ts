@@ -24,11 +24,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    GetDownloadURL_HTTPHeader: {
+    DownloadAPI_GetDownloadURL_HTTPHeader: {
       name: string;
       value: string;
     };
-    GetDownloadURL_Request: {
+    DownloadAPI_GetDownloadURL_Request: {
       resourceId: string;
       /**
        * Format: bytes
@@ -42,9 +42,9 @@ export interface components {
        */
       isInternalUse: boolean;
     };
-    GetDownloadURL_Response: {
+    DownloadAPI_GetDownloadURL_Response: {
       downloadUrl: string;
-      headers: components["schemas"]["GetDownloadURL_HTTPHeader"][];
+      headers: components["schemas"]["DownloadAPI_GetDownloadURL_HTTPHeader"][];
     };
     /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
     GoogleProtobufAny: {
@@ -83,7 +83,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GetDownloadURL_Request"];
+        "application/json": components["schemas"]["DownloadAPI_GetDownloadURL_Request"];
       };
     };
     responses: {
@@ -93,7 +93,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GetDownloadURL_Response"];
+          "application/json": components["schemas"]["DownloadAPI_GetDownloadURL_Response"];
         };
       };
       /** @description Default error response */

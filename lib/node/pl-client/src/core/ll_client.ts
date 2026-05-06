@@ -35,7 +35,7 @@ import { notEmpty, retry, withTimeout, type RetryOptions } from "@milaboratories
 import { Code } from "../proto-grpc/google/rpc/code";
 import { WebSocketBiDiStream } from "./websocket_stream";
 import {
-  AuthAPI_GetJWTToken_Role,
+  AuthAPI_Role,
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
@@ -463,10 +463,10 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public async getJwtToken(
     ttlSeconds: bigint,
-    options?: { authorization?: string; role?: AuthAPI_GetJWTToken_Role },
+    options?: { authorization?: string; role?: AuthAPI_Role },
   ): Promise<string> {
     const cl = this.clientProvider.get();
-    const role = options?.role ?? AuthAPI_GetJWTToken_Role.ROLE_UNSPECIFIED;
+    const role = options?.role ?? AuthAPI_Role.UNSPECIFIED;
 
     if (cl instanceof GrpcPlApiClient) {
       const meta: Record<string, string> = {};
@@ -589,6 +589,42 @@ export class LLPlClient implements WireClientProviderFactory {
         (await cl.GET("/v1/auth/methods")).data,
         "REST: empty response for auth methods request",
       );
+    }
+  }
+
+  public async getUserRoot(
+    opts: { login?: string; doNotCreate?: boolean } = {},
+  ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (
+        await cl.getUserRoot({
+          login: opts.login ?? "",
+          doNotCreate: opts.doNotCreate ?? false,
+        })
+      ).response;
+    } else {
+      const resp = notEmpty(
+        (
+          await cl.POST("/v1/auth/user-root", {
+            body: {
+              login: opts.login ?? "",
+              doNotCreate: opts.doNotCreate ?? false,
+            },
+          })
+        ).data,
+        "REST: empty response for getUserRoot request",
+      );
+      return {
+        userRoot: resp.userRoot
+          ? {
+              resourceId: BigInt(resp.userRoot.resourceId),
+              resourceSignature: Uint8Array.from(
+                Buffer.from(resp.userRoot.resourceSignature, "base64"),
+              ),
+            }
+          : undefined,
+      };
     }
   }
 

@@ -1,11 +1,10 @@
+import type { ProjectId } from "@milaboratories/pl-model-common";
 import type { ProjectMeta } from "./project";
 
 /** Represents single entry in the list of projects owned by current user */
 export interface ProjectListEntry {
-  /** Project resource ID. */
-  rid: bigint;
-  /** Internal (user-specific) project id */
-  id: string;
+  /** Unique project identifier in middle layer. Use to operate with given project. */
+  id: ProjectId;
   /** Creation timestamp. */
   created: Date;
   /** Last modification timestamp. */

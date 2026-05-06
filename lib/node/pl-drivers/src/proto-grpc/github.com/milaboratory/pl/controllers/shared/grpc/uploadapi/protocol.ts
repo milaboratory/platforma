@@ -34,9 +34,9 @@ export interface UploadAPI_Init_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 2
+     * @generated from protobuf field: bytes resource_signature = 2
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Init.Response
@@ -99,9 +99,9 @@ export interface UploadAPI_UpdateProgress_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 3
+     * @generated from protobuf field: bytes resource_signature = 3
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * Number of bytes uploaded since the earlier call to UpdateProgress.
      * This value is just blindly added to the 'bytes_processed' of the progress report,
@@ -140,9 +140,9 @@ export interface UploadAPI_GetPartURL_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 6
+     * @generated from protobuf field: bytes resource_signature = 6
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * Part to be uploaded. It is the responsibility of the client to keep track of already uploaded parts:
      * - client can request a URL for the same part twice (request -> request) without errors;
@@ -247,9 +247,9 @@ export interface UploadAPI_Finalize_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 4
+     * @generated from protobuf field: bytes resource_signature = 4
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
     /**
      * The client can send the final checksum of the whole file to verify the upload.
      * The algorithm used to calculate this final checksum must match the algorithm from
@@ -289,9 +289,9 @@ export interface UploadAPI_Reset_Request {
     /**
      * Signature proving the caller is authorized to access this resource.
      *
-     * @generated from protobuf field: optional bytes resource_signature = 2
+     * @generated from protobuf field: bytes resource_signature = 2
      */
-    resourceSignature?: Uint8Array;
+    resourceSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.Controller.Shared.UploadAPI.Reset.Response
@@ -392,12 +392,13 @@ class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.Init.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_Init_Request>): UploadAPI_Init_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<UploadAPI_Init_Request>(this, message, value);
         return message;
@@ -410,7 +411,7 @@ class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 2:
+                case /* bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -428,8 +429,8 @@ class UploadAPI_Init_Request$Type extends MessageType<UploadAPI_Init_Request> {
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* optional bytes resource_signature = 2; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -571,13 +572,14 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.UpdateProgress.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "bytes_processed", kind: "scalar", T: 3 /*ScalarType.INT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_UpdateProgress_Request>): UploadAPI_UpdateProgress_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.bytesProcessed = 0n;
         if (value !== undefined)
             reflectionMergePartial<UploadAPI_UpdateProgress_Request>(this, message, value);
@@ -591,7 +593,7 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 3:
+                case /* bytes resource_signature */ 3:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* int64 bytes_processed */ 2:
@@ -615,8 +617,8 @@ class UploadAPI_UpdateProgress_Request$Type extends MessageType<UploadAPI_Update
         /* int64 bytes_processed = 2; */
         if (message.bytesProcessed !== 0n)
             writer.tag(2, WireType.Varint).int64(message.bytesProcessed);
-        /* optional bytes resource_signature = 3; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 3; */
+        if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -709,7 +711,7 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.GetPartURL.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 6, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 6, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "part_number", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "uploaded_part_size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "is_internal_use", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
@@ -719,6 +721,7 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
     create(value?: PartialMessage<UploadAPI_GetPartURL_Request>): UploadAPI_GetPartURL_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.partNumber = 0n;
         message.uploadedPartSize = 0n;
         message.isInternalUse = false;
@@ -735,7 +738,7 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 6:
+                case /* bytes resource_signature */ 6:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* uint64 part_number */ 2:
@@ -777,8 +780,8 @@ class UploadAPI_GetPartURL_Request$Type extends MessageType<UploadAPI_GetPartURL
         /* string part_checksum = 5; */
         if (message.partChecksum !== "")
             writer.tag(5, WireType.LengthDelimited).string(message.partChecksum);
-        /* optional bytes resource_signature = 6; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 6; */
+        if (message.resourceSignature.length)
             writer.tag(6, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -967,7 +970,7 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.Finalize.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 4, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "checksum_algorithm", kind: "enum", T: () => ["MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm", UploadAPI_ChecksumAlgorithm, "CHECKSUM_ALGORITHM_"] },
             { no: 3, name: "checksum", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
@@ -975,6 +978,7 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
     create(value?: PartialMessage<UploadAPI_Finalize_Request>): UploadAPI_Finalize_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         message.checksumAlgorithm = 0;
         message.checksum = new Uint8Array(0);
         if (value !== undefined)
@@ -989,7 +993,7 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 4:
+                case /* bytes resource_signature */ 4:
                     message.resourceSignature = reader.bytes();
                     break;
                 case /* MiLaboratories.Controller.Shared.UploadAPI.ChecksumAlgorithm checksum_algorithm */ 2:
@@ -1019,8 +1023,8 @@ class UploadAPI_Finalize_Request$Type extends MessageType<UploadAPI_Finalize_Req
         /* bytes checksum = 3; */
         if (message.checksum.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.checksum);
-        /* optional bytes resource_signature = 4; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 4; */
+        if (message.resourceSignature.length)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
@@ -1113,12 +1117,13 @@ class UploadAPI_Reset_Request$Type extends MessageType<UploadAPI_Reset_Request> 
     constructor() {
         super("MiLaboratories.Controller.Shared.UploadAPI.Reset.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "resource_signature", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ }
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<UploadAPI_Reset_Request>): UploadAPI_Reset_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<UploadAPI_Reset_Request>(this, message, value);
         return message;
@@ -1131,7 +1136,7 @@ class UploadAPI_Reset_Request$Type extends MessageType<UploadAPI_Reset_Request> 
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
-                case /* optional bytes resource_signature */ 2:
+                case /* bytes resource_signature */ 2:
                     message.resourceSignature = reader.bytes();
                     break;
                 default:
@@ -1149,8 +1154,8 @@ class UploadAPI_Reset_Request$Type extends MessageType<UploadAPI_Reset_Request> 
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        /* optional bytes resource_signature = 2; */
-        if (message.resourceSignature !== undefined)
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)

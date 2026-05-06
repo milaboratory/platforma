@@ -4,7 +4,13 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  RestAPI,
+  parseSignedResourceId,
+  signatureToBase64Url,
+} from "@milaboratories/pl-client";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
@@ -53,16 +59,24 @@ export class ClientProgress {
   async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
     const client = this.wire.get();
 
+    const { globalId, signature } = parseSignedResourceId(id);
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
-        (await client.getStatus({ resourceId: id }, addRTypeToMetadata(type, options)).response)
-          .report,
+        (
+          await client.getStatus(
+            { resourceId: globalId, resourceSignature: signature },
+            addRTypeToMetadata(type, options),
+          ).response
+        ).report,
       );
     } else {
       const resp = (
         await client.POST("/v1/get-progress", {
-          body: { resourceId: id.toString(), resourceSignature: "" },
+          body: {
+            resourceId: globalId.toString(),
+            resourceSignature: signatureToBase64Url(signature),
+          },
           headers: { ...createRTypeRoutingHeader(type) },
         })
       ).data!.report;

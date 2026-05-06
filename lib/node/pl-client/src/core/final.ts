@@ -1,6 +1,6 @@
 import type { Optional } from "utility-types";
 import type { BasicResourceData, ResourceData } from "./types";
-import { getField, isNotNullResourceId, isNullResourceId } from "./types";
+import { getField, isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
 export { ResourceTypeName, ResourceTypePrefix };
 
@@ -19,7 +19,9 @@ export type FinalResourceDataPredicate = (
 
 function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): boolean {
   return (
-    r.resourceReady || isNotNullResourceId(r.originalResourceId) || isNotNullResourceId(r.error)
+    r.resourceReady ||
+    isNotNullSignedResourceId(r.originalResourceId) ||
+    isNotNullSignedResourceId(r.error)
   );
 }
 
@@ -28,7 +30,8 @@ function readyAndHasAllOutputsFilled(r: Optional<ResourceData, "fields">): boole
   if (!r.outputsLocked) return false;
   if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
   for (const f of r.fields)
-    if (isNullResourceId(f.error) && (isNullResourceId(f.value) || !f.valueIsFinal)) return false;
+    if (isNullSignedResourceId(f.error) && (isNullSignedResourceId(f.value) || !f.valueIsFinal))
+      return false;
   return true;
 }
 
@@ -41,7 +44,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case ResourceTypeName.StreamManager: {
       if (!readyOrDuplicateOrError(r)) return false;
       if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
-      if (isNotNullResourceId(r.error)) return true;
+      if (isNotNullSignedResourceId(r.error)) return true;
       const downloadable = getField(r as ResourceData, "downloadable");
       const stream = getField(r as ResourceData, "stream");
       return stream.value === downloadable.value;
@@ -79,14 +82,21 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case ResourceTypeName.Null:
     case ResourceTypeName.Binary:
     case ResourceTypeName.LSProvider:
+    case ResourceTypeName.WorkingDirectory:
       return true;
     case ResourceTypeName.UserProject:
     case ResourceTypeName.Projects:
     case ResourceTypeName.ClientRoot:
       return false;
     default:
-      if (r.type.name.startsWith(ResourceTypePrefix.Blob)) return true;
-      else if (
+      if (
+        r.type.name.startsWith(ResourceTypePrefix.Blob) ||
+        r.type.name.startsWith(ResourceTypePrefix.LS) ||
+        r.type.name.startsWith(ResourceTypePrefix.WorkingDirectory) ||
+        r.type.name.startsWith(ResourceTypePrefix.StorageSpaceAllocation)
+      ) {
+        return true;
+      } else if (
         r.type.name.startsWith(ResourceTypePrefix.BlobUpload) ||
         r.type.name.startsWith(ResourceTypePrefix.BlobIndex)
       ) {

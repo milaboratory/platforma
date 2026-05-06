@@ -1,6 +1,9 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
-import { DefaultFinalResourceDataPredicate, ResourceId } from "@milaboratories/pl-client";
+import {
+  createSignedResourceId,
+  DefaultFinalResourceDataPredicate,
+} from "@milaboratories/pl-client";
 import { z } from "zod";
 import { InferSnapshot, makeResourceSnapshot, rsSchema } from "./snapshot";
 import { PlTreeState } from "./state";
@@ -13,6 +16,8 @@ import {
   dField,
   iField,
 } from "./test_utils";
+
+const rid = createSignedResourceId;
 
 // schema definition
 const MyTestResourceState = rsSchema({
@@ -96,7 +101,3 @@ test("simple snapshot test", async () => {
   expect((await c1.getValueOrError()).type).toStrictEqual("error");
   expect(c1.isChanged()).toBeFalsy();
 });
-
-function rid(id: bigint): ResourceId {
-  return id as ResourceId;
-}

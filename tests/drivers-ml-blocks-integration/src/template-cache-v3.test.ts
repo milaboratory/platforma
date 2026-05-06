@@ -1,7 +1,7 @@
 import { blockSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
 import {
   field,
-  isNotNullResourceId,
+  isNotNullSignedResourceId,
   poll,
   TestHelpers,
   toGlobalResourceId,
@@ -97,8 +97,12 @@ describe("V3 template cache", () => {
           return [cachedRes.data.originalResourceId, legacyRes.data.originalResourceId] as const;
         });
 
-        const resolvedCached = isNotNullResourceId(cachedOriginal) ? cachedOriginal : cachedId;
-        const resolvedLegacy = isNotNullResourceId(legacyOriginal) ? legacyOriginal : legacyId;
+        const resolvedCached = isNotNullSignedResourceId(cachedOriginal)
+          ? cachedOriginal
+          : cachedId;
+        const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal)
+          ? legacyOriginal
+          : legacyId;
         expect(resolvedCached).toBe(resolvedLegacy);
       });
     },

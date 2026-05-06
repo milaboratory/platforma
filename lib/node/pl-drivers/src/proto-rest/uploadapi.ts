@@ -105,7 +105,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    Finalize_Request: {
+    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+    GoogleProtobufAny: {
+      /** @description The type of the serialized message. */
+      "@type": string;
+    } & {
+      [key: string]: unknown;
+    };
+    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+    Status: {
+      /**
+       * Format: int32
+       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+       */
+      code: number;
+      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+      message: string;
+      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+      details: components["schemas"]["GoogleProtobufAny"][];
+    };
+    UploadAPI_Finalize_Request: {
       resourceId: string;
       /**
        * Format: bytes
@@ -128,12 +147,12 @@ export interface components {
        */
       checksum: string;
     };
-    Finalize_Response: Record<string, never>;
-    GetPartURL_HTTPHeader: {
+    UploadAPI_Finalize_Response: Record<string, never>;
+    UploadAPI_GetPartURL_HTTPHeader: {
       name: string;
       value: string;
     };
-    GetPartURL_Request: {
+    UploadAPI_GetPartURL_Request: {
       /** @description ID of the upload resource */
       resourceId: string;
       /**
@@ -167,7 +186,7 @@ export interface components {
        */
       partChecksum: string;
     };
-    GetPartURL_Response: {
+    UploadAPI_GetPartURL_Response: {
       /** @description URL for chunk upload */
       uploadUrl: string;
       /** @description HTTP method to use for chunk upload, say 'PUT' or 'POST'. */
@@ -177,7 +196,7 @@ export interface components {
        *      The destination service (the one that will handle the upload request for a specific part)
        *      may reject the request if it does not include the given headers.
        */
-      headers: components["schemas"]["GetPartURL_HTTPHeader"][];
+      headers: components["schemas"]["UploadAPI_GetPartURL_HTTPHeader"][];
       /**
        * @description The number of the _first_ byte in the chunk.
        *      Absolute position from the start of the file ( file.seek(<chunk_start>, SEEK_START) ).
@@ -191,14 +210,7 @@ export interface components {
        */
       chunkEnd: string;
     };
-    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-    GoogleProtobufAny: {
-      /** @description The type of the serialized message. */
-      "@type": string;
-    } & {
-      [key: string]: unknown;
-    };
-    Init_Request: {
+    UploadAPI_Init_Request: {
       /** @description ID of the upload resource */
       resourceId: string;
       /**
@@ -207,7 +219,7 @@ export interface components {
        */
       resourceSignature: string;
     };
-    Init_Response: {
+    UploadAPI_Init_Response: {
       /**
        * @description Number of parts in this upload.
        *      For parallel upload support, the client can generate any number of part upload URLs
@@ -237,7 +249,7 @@ export interface components {
        */
       uploadedParts: string[];
     };
-    Reset_Request: {
+    UploadAPI_Reset_Request: {
       resourceId: string;
       /**
        * Format: bytes
@@ -245,20 +257,8 @@ export interface components {
        */
       resourceSignature: string;
     };
-    Reset_Response: Record<string, never>;
-    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-    Status: {
-      /**
-       * Format: int32
-       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-       */
-      code: number;
-      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-      message: string;
-      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-      details: components["schemas"]["GoogleProtobufAny"][];
-    };
-    UpdateProgress_Request: {
+    UploadAPI_Reset_Response: Record<string, never>;
+    UploadAPI_UpdateProgress_Request: {
       /** @description ID of the upload resource */
       resourceId: string;
       /**
@@ -279,7 +279,7 @@ export interface components {
        */
       bytesProcessed: string;
     };
-    UpdateProgress_Response: Record<string, never>;
+    UploadAPI_UpdateProgress_Response: Record<string, never>;
   };
   responses: never;
   parameters: never;
@@ -298,7 +298,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Finalize_Request"];
+        "application/json": components["schemas"]["UploadAPI_Finalize_Request"];
       };
     };
     responses: {
@@ -308,7 +308,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Finalize_Response"];
+          "application/json": components["schemas"]["UploadAPI_Finalize_Response"];
         };
       };
       /** @description Default error response */
@@ -331,7 +331,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GetPartURL_Request"];
+        "application/json": components["schemas"]["UploadAPI_GetPartURL_Request"];
       };
     };
     responses: {
@@ -341,7 +341,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GetPartURL_Response"];
+          "application/json": components["schemas"]["UploadAPI_GetPartURL_Response"];
         };
       };
       /** @description Default error response */
@@ -364,7 +364,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Init_Request"];
+        "application/json": components["schemas"]["UploadAPI_Init_Request"];
       };
     };
     responses: {
@@ -374,7 +374,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Init_Response"];
+          "application/json": components["schemas"]["UploadAPI_Init_Response"];
         };
       };
       /** @description Default error response */
@@ -397,7 +397,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Reset_Request"];
+        "application/json": components["schemas"]["UploadAPI_Reset_Request"];
       };
     };
     responses: {
@@ -407,7 +407,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Reset_Response"];
+          "application/json": components["schemas"]["UploadAPI_Reset_Response"];
         };
       };
       /** @description Default error response */
@@ -430,7 +430,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UpdateProgress_Request"];
+        "application/json": components["schemas"]["UploadAPI_UpdateProgress_Request"];
       };
     };
     responses: {
@@ -440,7 +440,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["UpdateProgress_Response"];
+          "application/json": components["schemas"]["UploadAPI_UpdateProgress_Response"];
         };
       };
       /** @description Default error response */

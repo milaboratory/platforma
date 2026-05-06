@@ -20,7 +20,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Finalize_Request"
+              $ref: "#/components/schemas/UploadAPI_Finalize_Request"
         required: true
       responses:
         "200":
@@ -28,7 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Finalize_Response"
+                $ref: "#/components/schemas/UploadAPI_Finalize_Response"
         default:
           description: Default error response
           content:
@@ -47,7 +47,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GetPartURL_Request"
+              $ref: "#/components/schemas/UploadAPI_GetPartURL_Request"
         required: true
       responses:
         "200":
@@ -55,7 +55,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetPartURL_Response"
+                $ref: "#/components/schemas/UploadAPI_GetPartURL_Response"
         default:
           description: Default error response
           content:
@@ -72,7 +72,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Init_Request"
+              $ref: "#/components/schemas/UploadAPI_Init_Request"
         required: true
       responses:
         "200":
@@ -80,7 +80,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Init_Response"
+                $ref: "#/components/schemas/UploadAPI_Init_Response"
         default:
           description: Default error response
           content:
@@ -101,7 +101,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Reset_Request"
+              $ref: "#/components/schemas/UploadAPI_Reset_Request"
         required: true
       responses:
         "200":
@@ -109,7 +109,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Reset_Response"
+                $ref: "#/components/schemas/UploadAPI_Reset_Response"
         default:
           description: Default error response
           content:
@@ -126,7 +126,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateProgress_Request"
+              $ref: "#/components/schemas/UploadAPI_UpdateProgress_Request"
         required: true
       responses:
         "200":
@@ -134,7 +134,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UpdateProgress_Response"
+                $ref: "#/components/schemas/UploadAPI_UpdateProgress_Response"
         default:
           description: Default error response
           content:
@@ -143,7 +143,31 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
-    Finalize_Request:
+    GoogleProtobufAny:
+      type: object
+      properties:
+        "@type":
+          type: string
+          description: The type of the serialized message.
+      additionalProperties: true
+      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+    Status:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+          format: int32
+        message:
+          type: string
+          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoogleProtobufAny"
+          description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+      description: "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors)."
+    UploadAPI_Finalize_Request:
       type: object
       properties:
         resourceId:
@@ -167,17 +191,17 @@ components:
              marking it final. This is optional behavior that depends on the particular storage driver
              used on the backend side for this upload. See the storage driver's implementation for more details.
           format: bytes
-    Finalize_Response:
+    UploadAPI_Finalize_Response:
       type: object
       properties: {}
-    GetPartURL_HTTPHeader:
+    UploadAPI_GetPartURL_HTTPHeader:
       type: object
       properties:
         name:
           type: string
         value:
           type: string
-    GetPartURL_Request:
+    UploadAPI_GetPartURL_Request:
       type: object
       properties:
         resourceId:
@@ -212,7 +236,7 @@ components:
           description: |-
             Checksum is not used for now, but it is here for the case
              where signing the checksum header is required.
-    GetPartURL_Response:
+    UploadAPI_GetPartURL_Response:
       type: object
       properties:
         uploadUrl:
@@ -224,7 +248,7 @@ components:
         headers:
           type: array
           items:
-            $ref: "#/components/schemas/GetPartURL_HTTPHeader"
+            $ref: "#/components/schemas/UploadAPI_GetPartURL_HTTPHeader"
           description: |-
             List of headers with their values that MUST be sent by the client for the upload.
              The destination service (the one that will handle the upload request for a specific part)
@@ -241,15 +265,7 @@ components:
             The number of the byte _after_ the last to be sent in the chunk.
              Absolute position from the start of the file.
              The client is expected to send the [<chunk_start>; <chunk_end>) range.
-    GoogleProtobufAny:
-      type: object
-      properties:
-        "@type":
-          type: string
-          description: The type of the serialized message.
-      additionalProperties: true
-      description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
-    Init_Request:
+    UploadAPI_Init_Request:
       type: object
       properties:
         resourceId:
@@ -259,7 +275,7 @@ components:
           type: string
           description: Signature proving the caller is authorized to access this resource.
           format: bytes
-    Init_Response:
+    UploadAPI_Init_Response:
       type: object
       properties:
         partsCount:
@@ -292,7 +308,7 @@ components:
              after being interrupted in the middle of the upload
              (say, because of a restart).
              Parts enumeration starts from 1.
-    Reset_Request:
+    UploadAPI_Reset_Request:
       type: object
       properties:
         resourceId:
@@ -301,26 +317,10 @@ components:
           type: string
           description: Signature proving the caller is authorized to access this resource.
           format: bytes
-    Reset_Response:
+    UploadAPI_Reset_Response:
       type: object
       properties: {}
-    Status:
-      type: object
-      properties:
-        code:
-          type: integer
-          description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-          format: int32
-        message:
-          type: string
-          description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
-        details:
-          type: array
-          items:
-            $ref: "#/components/schemas/GoogleProtobufAny"
-          description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
-      description: "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors)."
-    UpdateProgress_Request:
+    UploadAPI_UpdateProgress_Request:
       type: object
       properties:
         resourceId:
@@ -342,7 +342,7 @@ components:
 
              A negative value can be used to report an upload retry: when the upload was interrupted,
              part of the uploaded data is lost and requires a re-upload.
-    UpdateProgress_Response:
+    UploadAPI_UpdateProgress_Response:
       type: object
       properties: {}
 tags:

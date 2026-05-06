@@ -2,11 +2,14 @@ import type {
   BasicResourceData,
   FieldData,
   FieldType,
-  OptionalResourceId,
-  ResourceId,
+  OptionalSignedResourceId,
   ResourceType,
 } from "@milaboratories/pl-client";
-import { NullResourceId } from "@milaboratories/pl-client";
+import {
+  NullSignedResourceId,
+  createSignedResourceId,
+  isNotNullSignedResourceId,
+} from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 
 export const TestRootType1: ResourceType = {
@@ -57,8 +60,8 @@ export const ResourceReady: Pick<
 export const InitialStructuralResourceState: Omit<ExtendedResourceData, "id" | "type" | "fields"> =
   {
     kind: "Structural",
-    originalResourceId: NullResourceId,
-    error: NullResourceId,
+    originalResourceId: NullSignedResourceId,
+    error: NullSignedResourceId,
     inputsLocked: false,
     outputsLocked: false,
     resourceReady: false,
@@ -68,8 +71,8 @@ export const InitialStructuralResourceState: Omit<ExtendedResourceData, "id" | "
 
 export const InitialValueResourceState: Omit<ExtendedResourceData, "id" | "type" | "data"> = {
   kind: "Value",
-  originalResourceId: NullResourceId,
-  error: NullResourceId,
+  originalResourceId: NullSignedResourceId,
+  error: NullSignedResourceId,
   ...ResourceReady,
   fields: [],
   kv: [],
@@ -100,7 +103,7 @@ export const TestErrorResourceState2: Omit<ExtendedResourceData, "id" | "data"> 
   type: TestErrorResourceType1,
 };
 
-export const TestDynamicRootId1 = 1000001n as ResourceId;
+export const TestDynamicRootId1 = createSignedResourceId(1000001n);
 export const TestDynamicRootState1: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
@@ -110,7 +113,7 @@ export const TestDynamicRootState1: Omit<ExtendedResourceData, "fields"> = {
   id: TestDynamicRootId1,
 };
 
-export const TestDynamicRootId2 = 1000002n as ResourceId;
+export const TestDynamicRootId2 = createSignedResourceId(1000002n);
 export const TestDynamicRootState2: Omit<ExtendedResourceData, "fields"> = {
   ...InitialStructuralResourceState,
   inputsLocked: true,
@@ -123,8 +126,8 @@ export const TestDynamicRootState2: Omit<ExtendedResourceData, "fields"> = {
 export function field(
   type: FieldType,
   name: string,
-  value: OptionalResourceId = NullResourceId,
-  error: OptionalResourceId = NullResourceId,
+  value: OptionalSignedResourceId = NullSignedResourceId,
+  error: OptionalSignedResourceId = NullSignedResourceId,
   valueIsFinal: boolean = false,
 ): FieldData {
   return {
@@ -132,23 +135,27 @@ export function field(
     type,
     value,
     error,
-    status: value !== NullResourceId ? "Resolved" : error !== NullResourceId ? "Assigned" : "Empty",
+    status: isNotNullSignedResourceId(value)
+      ? "Resolved"
+      : isNotNullSignedResourceId(error)
+        ? "Assigned"
+        : "Empty",
     valueIsFinal,
   };
 }
 
 export function dField(
   name: string,
-  value: OptionalResourceId = NullResourceId,
-  error: OptionalResourceId = NullResourceId,
+  value: OptionalSignedResourceId = NullSignedResourceId,
+  error: OptionalSignedResourceId = NullSignedResourceId,
 ): FieldData {
   return field("Dynamic", name, value, error);
 }
 
 export function iField(
   name: string,
-  value: OptionalResourceId = NullResourceId,
-  error: OptionalResourceId = NullResourceId,
+  value: OptionalSignedResourceId = NullSignedResourceId,
+  error: OptionalSignedResourceId = NullSignedResourceId,
 ): FieldData {
   return field("Input", name, value, error);
 }

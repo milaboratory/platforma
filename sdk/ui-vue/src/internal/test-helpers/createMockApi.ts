@@ -70,6 +70,7 @@ export function createMockApi<
       async getStorageList() {
         return [
           {
+            id: "local",
             name: "local",
             handle: "local://test",
             initialFullPath: "/",

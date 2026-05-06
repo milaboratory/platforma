@@ -3,8 +3,8 @@ import {
   type PlTransaction,
   ContinuePolling,
   field,
-  isNotNullResourceId,
-  isNullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
   Pl,
   poll,
   toGlobalFieldId,
@@ -315,7 +315,7 @@ export async function downloadFromEveryStorage(
         ops.minLsRequests,
       );
       if (result.file === undefined) {
-        results[storage.name] = {
+        results[storage.id] = {
           status: "warn",
           message:
             `No file between ${ops.minFileSize} and ${ops.maxFileSize} bytes ` +
@@ -345,14 +345,14 @@ export async function downloadFromEveryStorage(
         ) as string;
 
         if (workdirTypeName?.startsWith("WorkingDirectory")) {
-          results[storage.name] = {
+          results[storage.id] = {
             status: "ok",
             message:
               `Workdir creation succeeded, size of file: ${result.file?.size}, ` +
               `checked ${result.nCheckedFiles} files, did ${result.nLsRequests} ls requests`,
           };
         } else {
-          results[storage.name] = {
+          results[storage.id] = {
             status: "failed",
             message:
               `Workdir creation failed: ${workdirTypeName}, size of file: ${result.file?.size}, ` +
@@ -494,7 +494,7 @@ async function runTemplate(
     const outputsIds: Record<string, FieldId> = {};
 
     for (const output of outputs) {
-      const fieldRef = field(client.clientRoot, output);
+      const fieldRef = field(client.clientRoot, output) as FieldId;
       tx.createField(fieldRef, "Dynamic", outputFields[output]);
       outputsIds[output] = await toGlobalFieldId(fieldRef);
     }
@@ -512,12 +512,12 @@ async function getFieldValue(client: PlClient, fieldId: FieldId): Promise<Resour
 
   return await poll(client, async (tx) => {
     const field = await tx.tx.getField(fieldId);
-    if (isNotNullResourceId(field.error)) {
+    if (isNotNullSignedResourceId(field.error)) {
       const err = await tx.tx.getResourceData(field.error, true);
       throw new Error(`getFieldValue of "${fieldId.fieldName}" field failed: ${err.data}`);
     }
 
-    if (isNullResourceId(field.value)) {
+    if (isNullSignedResourceId(field.value)) {
       throw new ContinuePolling();
     }
 

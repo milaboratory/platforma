@@ -40,9 +40,9 @@ test.skip("v3: disconnect:runBlock throws DisconnectedError when connection drop
 }) => {
   await expect(() =>
     withMlAndProxy(async (ml, _wd, proxy) => {
-      const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-      await ml.openProject(pRid1);
-      const prj = ml.getOpenedProject(pRid1);
+      const prj1Id = await ml.createProject({ label: "Project 1" });
+      await ml.openProject(prj1Id);
+      const prj = ml.getOpenedProject(prj1Id);
 
       expect(await prj.overview.awaitStableValue()).toMatchObject({
         meta: { label: "Project 1" },
@@ -79,24 +79,22 @@ test("v3: project list manipulations test", async ({ expect }) => {
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
+    const prj1Id = await ml.createProject({ label: "Project 1" });
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: "id1",
-        rid: pRid1,
+        id: prj1Id,
         meta: { label: "Project 1" },
         opened: false,
       },
     ]);
 
-    await ml.setProjectMeta(pRid1, { label: "Project 1A" });
+    await ml.setProjectMeta(prj1Id, { label: "Project 1A" });
 
     const listSnapshot1 = await projectList.getValue();
     expect(listSnapshot1).toMatchObject([
       {
-        id: "id1",
-        rid: pRid1,
+        id: prj1Id,
         meta: { label: "Project 1A" },
         opened: false,
       },
@@ -105,29 +103,27 @@ test("v3: project list manipulations test", async ({ expect }) => {
       listSnapshot1![0].created.valueOf(),
     );
 
-    await ml.openProject(pRid1);
+    await ml.openProject(prj1Id);
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: "id1",
-        rid: pRid1,
+        id: prj1Id,
         meta: { label: "Project 1A" },
         opened: true,
       },
     ]);
 
-    await ml.closeProject(pRid1);
+    await ml.closeProject(prj1Id);
 
     expect(await projectList.getValue()).toMatchObject([
       {
-        id: "id1",
-        rid: pRid1,
+        id: prj1Id,
         meta: { label: "Project 1A" },
         opened: false,
       },
     ]);
 
-    await ml.deleteProject("id1");
+    await ml.deleteProject(prj1Id);
 
     expect(await projectList.awaitStableValue()).toEqual([]);
   });
@@ -137,12 +133,11 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
+    const prj1Id = await ml.createProject({ label: "Project 1" });
     const projectListValue1 = await projectList.getValue();
     expect(projectListValue1).toMatchObject([
       {
-        id: "id1",
-        rid: pRid1,
+        id: prj1Id,
         meta: { label: "Project 1" },
         opened: false,
       },
@@ -150,8 +145,8 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
 
     const lastModInitial = projectListValue1![0].lastModified.valueOf();
 
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: "Project 1" },
@@ -159,7 +154,7 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
       blocks: [],
     });
     await ml.setProjectMeta(
-      pRid1,
+      prj1Id,
       { label: "New Project Label" },
       { authorId: "test_author", localVersion: 1 },
     );
@@ -301,10 +296,10 @@ test("v3: reorder & rename blocks", { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
+    const prj1Id = await ml.createProject({ label: "Project 1" });
 
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
     const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
@@ -362,10 +357,10 @@ test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
+    const prj1Id = await ml.createProject({ label: "Project 1" });
 
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
     const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
@@ -446,9 +441,9 @@ test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
 
 test("v3: limbo test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
     const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
@@ -527,9 +522,9 @@ test("v3: limbo test", async ({ expect }) => {
 
 test("v3: test error propagation", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
 
@@ -575,9 +570,9 @@ test("v3: test error propagation", async ({ expect }) => {
 
 test("v3: block duplication test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     // Create original block with some configuration
     const originalBlockId = await prj.addBlock("Original Block", enterNumberSpec);
@@ -643,9 +638,9 @@ test("v3: block duplication test", async ({ expect }) => {
 
 test("v3: block update test", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
@@ -678,9 +673,9 @@ test("v3: block update test", async ({ expect }) => {
 
 test("v3: project open and close test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    let prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    let prj = ml.getOpenedProject(prj1Id);
 
     const blockId = await prj.addBlock("Test Block", enterNumberSpec);
     await prj.mutateBlockStorage(blockId, {
@@ -690,9 +685,9 @@ test("v3: project open and close test", async ({ expect }) => {
     const overview1 = await prj.overview.awaitStableValue();
     expect(overview1.blocks[0].canRun).toEqual(true);
 
-    ml.closeProject(pRid1);
-    await ml.openProject(pRid1);
-    prj = ml.getOpenedProject(pRid1);
+    ml.closeProject(prj1Id);
+    await ml.openProject(prj1Id);
+    prj = ml.getOpenedProject(prj1Id);
 
     const overview2 = await prj.overview.awaitStableValue();
     expect(overview2.blocks[0].canRun).toEqual(true);
@@ -701,9 +696,9 @@ test("v3: project open and close test", async ({ expect }) => {
 
 test("v3: block error test", async ({ expect }) => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: "Project 1" },

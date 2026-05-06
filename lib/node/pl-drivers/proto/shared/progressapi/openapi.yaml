@@ -16,7 +16,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GetStatus_Request"
+              $ref: "#/components/schemas/ProgressAPI_GetStatus_Request"
         required: true
       responses:
         "200":
@@ -24,7 +24,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetStatus_Response"
+                $ref: "#/components/schemas/ProgressAPI_GetStatus_Response"
         default:
           description: Default error response
           content:
@@ -40,7 +40,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RealtimeStatus_Request"
+              $ref: "#/components/schemas/ProgressAPI_RealtimeStatus_Request"
         required: true
       responses:
         "200":
@@ -48,7 +48,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RealtimeStatus_Response"
+                $ref: "#/components/schemas/ProgressAPI_RealtimeStatus_Response"
         default:
           description: Default error response
           content:
@@ -57,19 +57,6 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
-    GetStatus_Request:
-      type: object
-      properties:
-        resourceId:
-          type: string
-        resourceSignature:
-          type: string
-          format: bytes
-    GetStatus_Response:
-      type: object
-      properties:
-        report:
-          $ref: "#/components/schemas/ProgressAPI_Report"
     GoogleProtobufAny:
       type: object
       properties:
@@ -78,6 +65,35 @@ components:
           description: The type of the serialized message.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+    ProgressAPI_GetStatus_Request:
+      type: object
+      properties:
+        resourceId:
+          type: string
+        resourceSignature:
+          type: string
+          format: bytes
+    ProgressAPI_GetStatus_Response:
+      type: object
+      properties:
+        report:
+          $ref: "#/components/schemas/ProgressAPI_Report"
+    ProgressAPI_RealtimeStatus_Request:
+      type: object
+      properties:
+        resourceId:
+          type: string
+        resourceSignature:
+          type: string
+          format: bytes
+        updateInterval:
+          pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+          type: string
+    ProgressAPI_RealtimeStatus_Response:
+      type: object
+      properties:
+        report:
+          $ref: "#/components/schemas/ProgressAPI_Report"
     ProgressAPI_Report:
       type: object
       properties:
@@ -93,22 +109,6 @@ components:
         name:
           type: string
           description: Name of current progress stage (if any)
-    RealtimeStatus_Request:
-      type: object
-      properties:
-        resourceId:
-          type: string
-        resourceSignature:
-          type: string
-          format: bytes
-        updateInterval:
-          pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-          type: string
-    RealtimeStatus_Response:
-      type: object
-      properties:
-        report:
-          $ref: "#/components/schemas/ProgressAPI_Report"
     Status:
       type: object
       properties:

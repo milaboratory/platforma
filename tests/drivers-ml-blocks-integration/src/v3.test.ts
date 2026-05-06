@@ -15,9 +15,9 @@ import type { BlockStateOverview } from "@milaboratories/pl-middle-layer";
 // Test for prerunArgs / fastNumbers feature
 test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid = await ml.createProject({ label: "PrerunArgs Test" }, "prerun-test");
-    await ml.openProject(pRid);
-    const prj = ml.getOpenedProject(pRid);
+    const prj1Id = await ml.createProject({ label: "PrerunArgs Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const enterNumberId = await prj.addBlock("Enter Numbers", enterNumberSpec);
 
@@ -153,11 +153,11 @@ test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) 
 
 test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
-    expect(prj.rid).toBe(pRid1);
+    expect(prj.id).toBe(prj1Id);
 
     const awaitOverview = async (cb: (overview: BlockStateOverview[]) => void) => {
       const overview = await prj.overview.awaitStableValue();

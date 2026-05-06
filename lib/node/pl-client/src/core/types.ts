@@ -1,40 +1,25 @@
+import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
-// more details here: https://egghead.io/blog/using-branded-types-in-typescript
-declare const __resource_id_type__: unique symbol;
-type BrandResourceId<B> = bigint & { [__resource_id_type__]: B };
+/** Null resource id */
+export type NullResourceId = Branded<bigint, "null", "__resource_id__">;
 
 /** Global resource id */
-export type ResourceId = BrandResourceId<"global">;
-
-/** Null resource id */
-export type NullResourceId = BrandResourceId<"null">;
+export type GlobalResourceId = Branded<bigint, "global", "__resource_id__">;
 
 /** Local resource id */
-export type LocalResourceId = BrandResourceId<"local">;
+export type LocalResourceId = Branded<bigint, "local", "__resource_id__">;
 
 /** Any non-null resource id */
-export type AnyResourceId = ResourceId | LocalResourceId;
-
-/** Any resource id */
-export type OptionalResourceId = NullResourceId | ResourceId;
+export type AnyResourceId = GlobalResourceId | LocalResourceId;
 
 /** All possible resource flavours */
-export type OptionalAnyResourceId = NullResourceId | ResourceId | LocalResourceId;
+export type OptionalAnyResourceId = NullResourceId | GlobalResourceId | LocalResourceId;
 
 export const NullResourceId = 0n as NullResourceId;
 
-export function isNullResourceId(resourceId: bigint): resourceId is NullResourceId {
+function isNullResourceId(resourceId: bigint | string): resourceId is NullResourceId {
   return resourceId === NullResourceId;
-}
-
-export function isNotNullResourceId(resourceId: OptionalResourceId): resourceId is ResourceId {
-  return resourceId !== NullResourceId;
-}
-
-export function ensureResourceIdNotNull(resourceId: OptionalResourceId): ResourceId {
-  if (!isNotNullResourceId(resourceId)) throw new Error("null resource id");
-  return resourceId;
 }
 
 export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId {
@@ -64,21 +49,29 @@ export function resourceTypeToString(rt: ResourceType): string {
   return `${rt.name}:${rt.version}`;
 }
 
+export function parseResourceType(str: string): ResourceType {
+  const [name, version] = str.split(":");
+  return { name, version };
+}
+
 export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): boolean {
   return type1.name === type2.name && type1.version === type2.version;
 }
 
+/** Color proof used for resource creation requests (alias for ResourceSignature). */
+export type ColorProof = ResourceSignature;
+
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export type BasicResourceData = {
-  readonly id: ResourceId;
-  readonly originalResourceId: OptionalResourceId;
+  readonly id: SignedResourceId;
+  readonly originalResourceId: OptionalSignedResourceId;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
 
-  readonly error: OptionalResourceId;
+  readonly error: OptionalSignedResourceId;
 
   readonly inputsLocked: boolean;
   readonly outputsLocked: boolean;
@@ -132,8 +125,8 @@ export type FieldData = {
   readonly name: string;
   readonly type: FieldType;
   readonly status: FieldStatus;
-  readonly value: OptionalResourceId;
-  readonly error: OptionalResourceId;
+  readonly value: OptionalSignedResourceId;
+  readonly error: OptionalSignedResourceId;
 
   /** True if value the fields points to is in final state. */
   readonly valueIsFinal: boolean;
@@ -164,7 +157,11 @@ export function isRootResourceId(id: bigint) {
   return (id & ResourceIdRootMask) !== 0n;
 }
 
-export function isLocalResourceId(id: bigint): id is LocalResourceId {
+export function isLocalResourceId(id: bigint | string): id is LocalResourceId {
+  if (typeof id === "string") {
+    return false;
+  }
+
   return (id & ResourceIdLocalMask) !== 0n;
 }
 
@@ -186,8 +183,8 @@ export function createLocalResourceId(
     (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
 }
 
-export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): ResourceId {
-  return ((isRoot ? ResourceIdRootMask : 0n) | unmaskedId) as ResourceId;
+export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): GlobalResourceId {
+  return ((isRoot ? ResourceIdRootMask : 0n) | unmaskedId) as GlobalResourceId;
 }
 
 export function extractTxId(localResourceId: LocalResourceId): number {
@@ -202,8 +199,17 @@ export function checkLocalityOfResourceId(resourceId: AnyResourceId, expectedTxI
     );
 }
 
-export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
+export function resourceIdToString(
+  resourceId: OptionalAnyResourceId | OptionalSignedResourceId,
+): string {
+  if (isSignedResourceId(resourceId)) {
+    // Strip signature
+    resourceId = anyResourceIdToBigint(resourceId) as GlobalResourceId;
+  }
+
+  if (isNullSignedResourceId(resourceId)) return "XX:0x0";
   if (isNullResourceId(resourceId)) return "XX:0x0";
+
   if (isLocalResourceId(resourceId))
     return (
       (isRootResourceId(resourceId) ? "R" : "N") +
@@ -234,16 +240,116 @@ export function resourceIdFromString(str: string): OptionalAnyResourceId | undef
   else return createGlobalResourceId(rn === "R", BigInt("0x" + rid));
 }
 
-/** Converts bigint to global resource id */
-export function bigintToResourceId(resourceId: bigint): ResourceId {
-  if (isLocalResourceId(resourceId))
-    throw new Error(`Local resource id: ${resourceIdToString(resourceId)}`);
-  if (isNullResourceId(resourceId)) throw new Error(`Null resource id.`);
-  return resourceId as ResourceId;
+export function anyResourceIdToBigint(resourceId: bigint | SignedResourceId): bigint {
+  if (typeof resourceId !== "string") {
+    return resourceId;
+  }
+
+  const parsed = parseSignedResourceId(resourceId);
+  return parsed.globalId as bigint;
 }
 
 export function stringifyWithResourceId(object: unknown): string {
-  return JSON.stringify(object, (key, value) =>
-    typeof value === "bigint" ? resourceIdToString(value as OptionalAnyResourceId) : value,
-  );
+  return JSON.stringify(object, (key, value) => {
+    if (typeof value === "bigint") return resourceIdToString(value as OptionalAnyResourceId);
+    if (isSignedResourceId(value)) return resourceIdToString(value);
+    return value;
+  });
+}
+
+/** Opaque authorization signature attached to a resource. */
+export type ResourceSignature = Branded<Uint8Array, "ResourceSignature">;
+
+/**
+ * Signed resource id is "<global ID>|<resource signature hex>", encoded as string
+ * (e.g. "NG:0x123EC|1234567890abcdef")
+ */
+export type SignedResourceId = Branded<string, "signed", "__signed_resource_id__">;
+
+export type NullSignedResourceId = Branded<string, "null", "__signed_resource_id__">;
+
+export const NullSignedResourceId = "" as NullSignedResourceId;
+
+/** Nullable signed resource ID */
+export type OptionalSignedResourceId = NullSignedResourceId | SignedResourceId;
+
+export function isNullSignedResourceId(
+  resourceId: bigint | string,
+): resourceId is NullSignedResourceId {
+  return resourceId === NullSignedResourceId;
+}
+
+export function isNotNullSignedResourceId(
+  resourceId: OptionalSignedResourceId,
+): resourceId is SignedResourceId {
+  // lint-allow-cast
+  return resourceId !== NullSignedResourceId;
+}
+
+export function ensureSignedResourceIdNotNull(
+  resourceId: OptionalSignedResourceId,
+): SignedResourceId {
+  if (!isNotNullSignedResourceId(resourceId)) throw new Error("null resource id");
+  return resourceId;
+}
+
+export function isSignedResourceId(resourceId: bigint | string): resourceId is SignedResourceId {
+  // lint-allow-cast
+  return typeof resourceId === "string" && resourceId.includes("|");
+}
+
+/** Encode resource signature to base64url for embedding in URL-based handles. */
+export function signatureToBase64Url(sig?: ResourceSignature): string {
+  return sig && sig.length > 0 ? Buffer.from(sig).toString("base64url") : "";
+}
+
+/** Cast raw bytes to a branded ResourceSignature, returning undefined for empty/missing input. */
+export function toResourceSignature(raw?: Uint8Array): ResourceSignature {
+  return raw && raw.length > 0
+    ? (raw as ResourceSignature)
+    : (new Uint8Array(0) as ResourceSignature);
+}
+
+/** Decode base64url-encoded string back to a branded ResourceSignature. */
+export function base64UrlToSignature(str: string): ResourceSignature {
+  return toResourceSignature(Buffer.from(str, "base64url"))!;
+}
+
+/** Converts bigint global resource id and signature to a SignedResourceId string.
+ *  Format: "<globalIdString>|<signatureHex>" */
+export function createSignedResourceId(
+  globalId: bigint,
+  signature?: ResourceSignature,
+): SignedResourceId {
+  if (isLocalResourceId(globalId))
+    throw new Error(`Local resource id: ${resourceIdToString(globalId)}`);
+  if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
+
+  const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
+  return `${String(globalId)}|${sigHex}` as SignedResourceId; // lint-allow-cast
+}
+
+export function parseSignedResourceId(resourceId: SignedResourceId): {
+  globalId: GlobalResourceId;
+  signature: ResourceSignature;
+} {
+  if (typeof resourceId !== "string") {
+    throw new Error(`Not a signed resource id: ${resourceId}`);
+  }
+
+  const pipeIdx = resourceId.indexOf("|");
+  if (pipeIdx < 0) throw new Error(`Malformed signed resource id (no '|'): ${resourceId}`);
+
+  const globalIdStr = resourceId.substring(0, pipeIdx);
+  const signatureHex = resourceId.substring(pipeIdx + 1);
+
+  const globalId = BigInt(globalIdStr);
+  if (isNullSignedResourceId(globalId) || isLocalResourceId(globalId))
+    throw new Error(`Invalid global id portion in signed resource id: ${globalIdStr}`);
+
+  const signature: ResourceSignature = (
+    signatureHex.length > 0 ? Buffer.from(signatureHex, "hex") : new Uint8Array(0)
+  ) as ResourceSignature;
+
+  return { globalId: globalId as GlobalResourceId, signature };
 }

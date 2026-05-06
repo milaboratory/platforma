@@ -52,6 +52,7 @@ export function newRemoteConfigStoragesFS(
     },
     storage: {
       id: "main",
+      name: "main",
       type: "FS",
       indexCachePeriod: "0s",
       rootPath: mainPath,
@@ -68,6 +69,7 @@ export function newRemoteConfigStoragesFS(
     },
     storage: {
       id: "remoteRoot",
+      name: "remoteRoot",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: "",
@@ -81,6 +83,7 @@ export function newRemoteConfigStoragesFS(
     },
     storage: {
       id: "work",
+      name: "work",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: workPath,
@@ -109,6 +112,7 @@ export function newRemoteConfigStoragesMinio(
     },
     storage: {
       id: "main",
+      name: "main",
       type: "S3",
       indexCachePeriod: "0s",
       endpoint: minioOpts.endpoint,
@@ -133,6 +137,7 @@ export function newRemoteConfigStoragesMinio(
     },
     storage: {
       id: "remoteRoot",
+      name: "remoteRoot",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: "",
@@ -148,6 +153,7 @@ export function newRemoteConfigStoragesMinio(
     },
     storage: {
       id: "work",
+      name: "work",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: workPath,
@@ -192,6 +198,7 @@ function newDefaultLocalStorages(workdir: string, externalURL: string): Storages
     },
     storage: {
       id: "root",
+      name: "root",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: "",
@@ -208,6 +215,7 @@ function newDefaultLocalStorages(workdir: string, externalURL: string): Storages
     },
     storage: {
       id: "main",
+      name: "main",
       type: "FS",
       indexCachePeriod: "0m",
       rootPath: mainPath,
@@ -223,6 +231,7 @@ function newDefaultLocalStorages(workdir: string, externalURL: string): Storages
     },
     storage: {
       id: "work",
+      name: "work",
       type: "FS",
       indexCachePeriod: "1m",
       rootPath: workPath,

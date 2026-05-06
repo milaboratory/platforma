@@ -1,14 +1,5 @@
-import type { PlClient, ResourceData, ResourceId } from "@milaboratories/pl-client";
-import { isNotNullResourceId } from "@milaboratories/pl-client";
+import type { PlClient, UserResources } from "@milaboratories/pl-client";
 import type * as sdk from "@milaboratories/pl-model-common";
-import type {
-  LocalImportFileHandle,
-  LsEntry,
-  OpenDialogOps,
-  OpenMultipleFilesResponse,
-  OpenSingleFileResponse,
-  TableRange,
-} from "@milaboratories/pl-model-common";
 import { isImportFileHandleIndex } from "@milaboratories/pl-model-common";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
 import * as fsp from "node:fs/promises";
@@ -16,6 +7,7 @@ import * as path from "node:path";
 import { createLsFilesClient } from "../clients/constructors";
 import type { ClientLs } from "../clients/ls_api";
 import { validateAbsolute } from "../helpers/validate";
+import type { ResourceInfo } from "@milaboratories/pl-tree";
 import {
   createIndexImportHandle,
   createUploadImportHandle,
@@ -26,6 +18,7 @@ import {
   createLocalStorageHandle,
   createRemoteStorageHandle,
   parseStorageHandle,
+  RemoteStorageHandleData,
 } from "./helpers/ls_storage_entry";
 import type { LocalStorageProjection, VirtualLocalStorageSpec } from "./types";
 import { DefaultVirtualLocalStorages } from "./virtual_storages";
@@ -52,21 +45,20 @@ export type ListRemoteFilesResultWithAdditionalInfo = {
   entries: LsEntryWithAdditionalInfo[];
 };
 
-export type LsEntryWithAdditionalInfo = LsEntry & {
+export type LsEntryWithAdditionalInfo = sdk.LsEntry & {
   size: number;
 };
 
 export type OpenFileDialogCallback = (
   multipleFiles: boolean,
-  ops?: OpenDialogOps,
+  ops?: sdk.OpenDialogOps,
 ) => Promise<undefined | string[]>;
 
 export class LsDriver implements InternalLsDriver {
   private constructor(
     private readonly logger: MiLogger,
     private readonly lsClient: ClientLs,
-    /** Pl storage id, to resource id. The resource id can be used to make LS GRPC calls to. */
-    private readonly storageIdToResourceId: Record<string, ResourceId>,
+    private readonly userResources: UserResources,
     private readonly signer: Signer,
     /** Virtual storages by name */
     private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>,
@@ -76,8 +68,8 @@ export class LsDriver implements InternalLsDriver {
   ) {}
 
   public async getLocalFileContent(
-    file: LocalImportFileHandle,
-    range?: TableRange,
+    file: sdk.LocalImportFileHandle,
+    range?: sdk.TableRange,
   ): Promise<Uint8Array> {
     const localPath = await this.tryResolveLocalFileHandle(file);
 
@@ -95,15 +87,15 @@ export class LsDriver implements InternalLsDriver {
     return await fsp.readFile(localPath);
   }
 
-  public async getLocalFileSize(file: LocalImportFileHandle): Promise<number> {
+  public async getLocalFileSize(file: sdk.LocalImportFileHandle): Promise<number> {
     const localPath = await this.tryResolveLocalFileHandle(file);
     const stat = await fsp.stat(localPath);
     return stat.size;
   }
 
   public async showOpenMultipleFilesDialog(
-    ops?: OpenDialogOps,
-  ): Promise<OpenMultipleFilesResponse> {
+    ops?: sdk.OpenDialogOps,
+  ): Promise<sdk.OpenMultipleFilesResponse> {
     const result = await this.openFileDialogCallback(true, ops);
     if (result === undefined) return {};
     return {
@@ -111,7 +103,9 @@ export class LsDriver implements InternalLsDriver {
     };
   }
 
-  public async showOpenSingleFileDialog(ops?: OpenDialogOps): Promise<OpenSingleFileResponse> {
+  public async showOpenSingleFileDialog(
+    ops?: sdk.OpenDialogOps,
+  ): Promise<sdk.OpenSingleFileResponse> {
     const result = await this.openFileDialogCallback(false, ops);
     if (result === undefined) return {};
     return {
@@ -125,7 +119,7 @@ export class LsDriver implements InternalLsDriver {
    * @param handle handle to be resolved
    * @private
    */
-  private async tryResolveLocalFileHandle(handle: LocalImportFileHandle): Promise<string> {
+  private async tryResolveLocalFileHandle(handle: sdk.LocalImportFileHandle): Promise<string> {
     if (isImportFileHandleIndex(handle)) {
       const handleData = parseIndexHandle(handle);
       const localProjection = this.localProjectionsMap.get(handleData.storageId);
@@ -153,7 +147,7 @@ export class LsDriver implements InternalLsDriver {
 
   public async getLocalFileHandle(
     localPath: string,
-  ): Promise<sdk.ImportFileHandle & LocalImportFileHandle> {
+  ): Promise<sdk.ImportFileHandle & sdk.LocalImportFileHandle> {
     validateAbsolute(localPath);
 
     // Checking if local path is directly reachable by pl, because it is in one of the
@@ -169,7 +163,7 @@ export class LsDriver implements InternalLsDriver {
         return createIndexImportHandle(
           lp.storageId,
           pathWithinStorage,
-        ) as sdk.ImportFileHandleIndex & LocalImportFileHandle;
+        ) as sdk.ImportFileHandleIndex & sdk.LocalImportFileHandle;
       }
     }
 
@@ -181,30 +175,30 @@ export class LsDriver implements InternalLsDriver {
       this.signer,
       stat.size,
       stat.mtimeMs / 1000n, // integer division
-    ) as sdk.ImportFileHandleUpload & LocalImportFileHandle;
+    ) as sdk.ImportFileHandleUpload & sdk.LocalImportFileHandle;
   }
 
   public async getStorageList(): Promise<sdk.StorageEntry[]> {
     const virtualStorages = [...this.virtualStoragesMap.values()].map((s) => ({
+      id: s.id,
       name: s.name,
-      handle: createLocalStorageHandle(s.name, s.root),
+      handle: createLocalStorageHandle(s.id, s.root),
       initialFullPath: s.initialPath,
     }));
 
-    const otherStorages = Object.entries(this.storageIdToResourceId!).map(
-      ([storageId, resourceId]) => ({
-        name: storageId,
-        handle: createRemoteStorageHandle(storageId, resourceId),
-        initialFullPath: "", // we don't have any additional information from where to start browsing remote storages
-        isInitialPathHome: false,
-      }),
-    );
+    const dataLibraries = await this.userResources.getDataLibraries();
+    const remoteStorages = [...dataLibraries.values()].map((info) => ({
+      id: info.storageId,
+      name: info.storageName,
+      handle: createRemoteStorageHandle(info),
+      initialFullPath: "",
+    }));
 
     // root must be a storage so we can index any file,
     // but for UI it's enough
     // to have local virtual storage on *nix,
     // and local_disk_${drive} on Windows.
-    const noRoot = otherStorages.filter((it) => it.name !== "root");
+    const noRoot = remoteStorages.filter((it) => it.id !== "root");
 
     return [...virtualStorages, ...noRoot];
   }
@@ -216,13 +210,14 @@ export class LsDriver implements InternalLsDriver {
     const storageData = parseStorageHandle(storageHandle);
 
     if (storageData.isRemote) {
-      const response = await this.lsClient.list(storageData, fullPath);
+      const rInfo = await this.resolveRemoteStorageResourceInfo(storageData);
+      const response = await this.lsClient.list(rInfo, fullPath);
       return {
         entries: response.items.map((e) => ({
           type: e.isDir ? "dir" : "file",
           name: e.name,
           fullPath: e.fullName,
-          handle: createIndexImportHandle(storageData.name, e.fullName),
+          handle: createIndexImportHandle(storageData.storageId, e.fullName),
         })),
       };
     }
@@ -234,7 +229,7 @@ export class LsDriver implements InternalLsDriver {
     }
     const lsRoot = path.isAbsolute(fullPath) ? fullPath : path.join(storageData.rootPath, fullPath);
 
-    const entries: LsEntry[] = [];
+    const entries: sdk.LsEntry[] = [];
     for await (const dirent of await fsp.opendir(lsRoot)) {
       if (!dirent.isFile() && !dirent.isDirectory()) continue;
 
@@ -263,17 +258,25 @@ export class LsDriver implements InternalLsDriver {
       throw new Error(`Storage ${storageData.name} is not remote`);
     }
 
-    const response = await this.lsClient.list(storageData, fullPath);
+    const rInfo = await this.resolveRemoteStorageResourceInfo(storageData);
+    const response = await this.lsClient.list(rInfo, fullPath);
 
     return {
       entries: response.items.map((e) => ({
         type: e.isDir ? "dir" : "file",
         name: e.name,
         fullPath: e.fullName,
-        handle: createIndexImportHandle(storageData.name, e.fullName),
+        handle: createIndexImportHandle(storageData.storageId, e.fullName),
         size: Number(e.size),
       })),
     };
+  }
+
+  /** Looks up ResourceType for a remote storage from the data libraries index. */
+  private async resolveRemoteStorageResourceInfo(
+    storageData: RemoteStorageHandleData,
+  ): Promise<ResourceInfo> {
+    return { id: storageData.resourceId, type: storageData.resourceType };
   }
 
   public async fileToImportHandle(_file: sdk.FileLike): Promise<sdk.ImportFileHandle> {
@@ -300,7 +303,7 @@ export class LsDriver implements InternalLsDriver {
     for (const lp of localProjections) if (lp.localPath !== "") validateAbsolute(lp.localPath);
 
     // creating indexed maps for quick access
-    const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));
+    const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.id, s]));
     const localProjectionsMap = new Map(localProjections.map((s) => [s.storageId, s]));
 
     // validating there is no intersection
@@ -315,28 +318,11 @@ export class LsDriver implements InternalLsDriver {
     return new LsDriver(
       logger,
       lsClient,
-      await doGetAvailableStorageIds(client),
+      client.userResources,
       signer,
       virtualStoragesMap,
       localProjectionsMap,
       openFileDialogCallback,
     );
   }
-}
-
-async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, ResourceId>> {
-  return client.withReadTx("GetAvailableStorageIds", async (tx) => {
-    const lsProviderId = await tx.getResourceByName("LSProvider");
-    const provider = await tx.getResourceData(lsProviderId, true);
-
-    return providerToStorageIds(provider);
-  });
-}
-
-function providerToStorageIds(provider: ResourceData) {
-  return Object.fromEntries(
-    provider.fields
-      .filter((f) => f.type == "Dynamic" && isNotNullResourceId(f.value))
-      .map((f) => [f.name.substring("storage/".length), f.value as ResourceId]),
-  );
 }

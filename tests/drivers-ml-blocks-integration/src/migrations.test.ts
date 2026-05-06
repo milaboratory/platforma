@@ -47,9 +47,9 @@ async function triggerBlockPackUpdate(prj: Project): Promise<void> {
 
 test("v3: fresh block has correct initial dataVersion", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Fresh Block Test" }, "migration-fresh");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Fresh Block Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     // Add a fresh block
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
@@ -99,9 +99,9 @@ test("v3: fresh block has correct initial dataVersion", async ({ expect }) => {
 
 test("v3: migration from v1 to v3 (two migrations)", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Migration v1→v3 Test" }, "migration-v1-v3");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Migration v1→v3 Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
@@ -184,9 +184,9 @@ test("v3: migration from v1 to v3 (two migrations)", async ({ expect }) => {
 
 test("v3: migration from v2 to v3 (one migration)", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Migration v2→v3 Test" }, "migration-v2-v3");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Migration v2→v3 Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
@@ -269,9 +269,9 @@ test("v3: migration from v2 to v3 (one migration)", async ({ expect }) => {
 
 test("v3: no migration needed when already at target version", async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "No Migration Test" }, "migration-none");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "No Migration Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
@@ -353,9 +353,9 @@ test("v3: migration failure prevents block pack update", async ({ expect }) => {
   // and user data is preserved.
   // The enter-numbers-v3 migration[0] throws if numbers contain 666.
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Migration Failure Test" }, "migration-failure");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Migration Failure Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
@@ -439,12 +439,9 @@ test("v3: fresh block with correct version survives block pack update", async ({
   // 3. Block pack update does NOT run migration (already at target version)
   // 4. User's data is preserved
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject(
-      { label: "Fresh Block Update Test" },
-      "migration-fresh-update",
-    );
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Fresh Block Update Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     // Add a fresh block - gets dataVersion=v3 and v3-format data
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
@@ -536,9 +533,9 @@ test("v3: unknown version edge case - resets to initial data", async ({ expect }
   // This test verifies behavior when block has an unknown version key.
   // The migration should reset to initial data with the target version.
   await withMl(async (ml, workFolder) => {
-    const pRid1 = await ml.createProject({ label: "Migration Edge Case Test" }, "migration-edge");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Migration Edge Case Test" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     // Add a block
     const block1Id = await prj.addBlock("Block 1", enterNumberSpec);

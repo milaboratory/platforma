@@ -16,7 +16,7 @@ export class ModelAPIVersionMismatchError extends Error {
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
 import { z } from "zod";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import { resourceIdToString, resourceTypeToString } from "@milaboratories/pl-client";
 import { notEmpty } from "@milaboratories/ts-helpers";
 
@@ -71,7 +71,7 @@ export class PlErrorReport extends Error {
 
     /** Optional info about a resource where the error happened. */
     public readonly fieldName?: string,
-    public readonly resource?: ResourceId,
+    public readonly resource?: SignedResourceId,
     public readonly resourceType?: ResourceType,
   ) {
     const errorMessages = errors.map((e) => e.message).join("\n\n");
@@ -216,7 +216,7 @@ const backendErrorSchema = z
  */
 export function parsePlError(
   error: string,
-  resource?: ResourceId,
+  resource?: SignedResourceId,
   resourceType?: ResourceType,
   field?: string,
 ): PlErrorReport {

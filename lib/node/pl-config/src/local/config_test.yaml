@@ -60,6 +60,7 @@ controllers:
 
     storages:
       - id: "root"
+        name: root
         type: "FS"
         indexCachePeriod: "1m"
         rootPath: ""
@@ -67,6 +68,7 @@ controllers:
         externalURL: ""
 
       - id: "work"
+        name: work
         type: "FS"
         indexCachePeriod: "1m"
         rootPath: "storages/work"
@@ -74,6 +76,7 @@ controllers:
         externalURL: ""
 
       - id: "main"
+        name: main
         type: "FS"
         indexCachePeriod: "0m"
         rootPath: "storages/main"

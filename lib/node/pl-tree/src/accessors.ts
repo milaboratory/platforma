@@ -5,13 +5,17 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type { ResourceId, ResourceType, OptionalResourceId } from "@milaboratories/pl-client";
+import type {
+  SignedResourceId,
+  ResourceType,
+  OptionalSignedResourceId,
+} from "@milaboratories/pl-client";
 import {
   resourceIdToString,
   resourceTypesEqual,
   resourceTypeToString,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  NullResourceId,
+  NullSignedResourceId,
 } from "@milaboratories/pl-client";
 import type { ValueAndError } from "./value_and_error";
 import { mapValueAndError } from "./value_and_error";
@@ -71,7 +75,7 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
 
   constructor(
     private readonly accessorData: TreeAccessorData,
-    public readonly rid: ResourceId,
+    public readonly rid: SignedResourceId, // only for runtime. Not exposing rid at all causes too much pain. Never persist this anywhere.
   ) {}
 
   public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
@@ -79,6 +83,14 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
       ctx,
       guard,
     });
+  }
+
+  /**
+   * Tree TreeEntry ID suitable for persistence and use in names (files/objects/whatever), as it does not
+   * contain signature which can change from session to session.
+   */
+  public get id(): string {
+    return resourceIdToString(this.rid);
   }
 
   public toJSON(): string {
@@ -94,7 +106,7 @@ function getResourceFromTree(
   accessorData: TreeAccessorData,
   tree: PlTreeState,
   instanceData: TreeAccessorInstanceData,
-  rid: ResourceId,
+  rid: SignedResourceId,
   ops: ResourceTraversalOps,
 ): PlTreeNodeAccessor {
   const acc = new PlTreeNodeAccessor(
@@ -130,7 +142,7 @@ export class PlTreeEntryAccessor {
   constructor(
     private readonly accessorData: TreeAccessorData,
     private readonly tree: PlTreeState,
-    private readonly rid: ResourceId,
+    private readonly rid: SignedResourceId,
     private readonly instanceData: TreeAccessorInstanceData,
   ) {}
 
@@ -150,7 +162,7 @@ export class PlTreeEntryAccessor {
  * Helper type to simplify implementation of APIs requiring type information.
  * */
 export type ResourceInfo = {
-  readonly id: ResourceId;
+  readonly id: SignedResourceId;
   readonly type: ResourceType;
 };
 
@@ -166,7 +178,7 @@ export function treeEntryToResourceInfo(res: PlTreeEntry | ResourceInfo, ctx: Co
 
 /**
  * API contracts:
- *   - API never return {@link NullResourceId}, absence of link is always modeled as `undefined`
+ *   - API never return {@link NullSignedResourceId}, absence of link is always modeled as `undefined`
  *
  * Important: never store instances of this class, always get fresh instance from {@link PlTreeState} accessor.
  * */
@@ -180,12 +192,12 @@ export class PlTreeNodeAccessor {
     private readonly instanceData: TreeAccessorInstanceData,
   ) {}
 
-  public get id(): ResourceId {
+  public get id(): SignedResourceId {
     this.instanceData.guard();
     return this.resource.id;
   }
 
-  public get originalId(): OptionalResourceId {
+  public get originalId(): OptionalSignedResourceId {
     this.instanceData.guard();
     return this.resource.originalResourceId;
   }
@@ -199,7 +211,10 @@ export class PlTreeNodeAccessor {
     return { id: this.id, type: this.resourceType };
   }
 
-  private getResourceFromTree(rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
+  private getResourceFromTree(
+    rid: SignedResourceId,
+    ops: ResourceTraversalOps,
+  ): PlTreeNodeAccessor {
     return getResourceFromTree(this.accessorData, this.tree, this.instanceData, rid, ops);
   }
 

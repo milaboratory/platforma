@@ -1,5 +1,5 @@
 import { Command } from "@oclif/core";
-import type { PlClient, ResourceId } from "@milaboratories/pl-client";
+import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import { createPlConnection, createAdminPlConnection } from "./connection";
 import { getProjectListRid, navigateToUserRoot } from "./project_ops";
 import { GlobalFlags, UserAuthFlags, AdminTargetFlags } from "./cmd-opts";
@@ -56,7 +56,7 @@ export abstract class PlCommand extends Command {
     "admin-user"?: string;
     "admin-password"?: string;
     "target-user"?: string;
-  }): Promise<{ pl: PlClient; projectListRid: ResourceId }> {
+  }): Promise<{ pl: PlClient; projectListRid: SignedResourceId }> {
     const hasAdminUser = !!flags["admin-user"];
     const hasAdminPassword = !!flags["admin-password"];
     const hasTarget = !!flags["target-user"];
@@ -71,7 +71,7 @@ export abstract class PlCommand extends Command {
 
     const pl = await this.connectClient(flags);
 
-    let projectListRid: ResourceId;
+    let projectListRid: SignedResourceId;
     if (hasTarget) {
       const nav = await navigateToUserRoot(pl, flags["target-user"]!);
       projectListRid = nav.projectListRid;

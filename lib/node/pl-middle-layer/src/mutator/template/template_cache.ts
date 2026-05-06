@@ -3,11 +3,11 @@ import type {
   AnyResourceRef,
   PlClient,
   PlTransaction,
-  ResourceId,
+  SignedResourceId,
   ResourceRef,
 } from "@milaboratories/pl-client";
 import {
-  ensureResourceIdNotNull,
+  ensureSignedResourceIdNotNull,
   field,
   resourceType,
   toGlobalResourceId,
@@ -86,7 +86,7 @@ interface CacheableNode {
   /** SHA-256 content hash (includes all descendant content) */
   hash: string;
   /** Creates this node's resource in a transaction.
-   *  childRefs maps child hash → already-resolved ResourceRef or ResourceId */
+   *  childRefs maps child hash → already-resolved ResourceRef or SignedResourceId */
   create: (tx: PlTransaction, childRefs: ReadonlyMap<string, AnyResourceRef>) => ResourceRef;
   /** Hashes of direct child nodes this node depends on */
   childHashes: string[];
@@ -406,8 +406,8 @@ export function flattenTemplateTree(data: TemplateData | CompiledTemplateV3): Ca
 
 // ─── Cache operations ────────────────────────────────────────────────────────
 
-/** In-memory cache for the TemplateCache ResourceId per PlClient instance. */
-const cacheRidMap = new WeakMap<PlClient, ResourceId>();
+/** In-memory cache for the TemplateCache SignedResourceId per PlClient instance. */
+const cacheRidMap = new WeakMap<PlClient, SignedResourceId>();
 
 /** Clear the in-memory cacheRid entry (call on errors referencing the cache resource). */
 export function invalidateTemplateCacheId(pl: PlClient): void {
@@ -415,7 +415,7 @@ export function invalidateTemplateCacheId(pl: PlClient): void {
 }
 
 /** Find or create the TemplateCache/1 resource on user root. */
-export async function getOrCreateTemplateCache(pl: PlClient): Promise<ResourceId> {
+export async function getOrCreateTemplateCache(pl: PlClient): Promise<SignedResourceId> {
   // Check in-memory cache first (0ms after first call)
   const cached = cacheRidMap.get(pl);
   if (cached !== undefined) return cached;
@@ -423,7 +423,7 @@ export async function getOrCreateTemplateCache(pl: PlClient): Promise<ResourceId
   // Try read-only check
   const existing = await pl.withReadTx("templateCache:check", async (tx) => {
     const fd = await tx.getFieldIfExists(field(pl.clientRoot, TemplateCacheFieldName));
-    return fd ? ensureResourceIdNotNull(fd.value) : undefined;
+    return fd ? ensureSignedResourceIdNotNull(fd.value) : undefined;
   });
   if (existing) {
     cacheRidMap.set(pl, existing);
@@ -433,7 +433,7 @@ export async function getOrCreateTemplateCache(pl: PlClient): Promise<ResourceId
   const result = await pl.withWriteTx("templateCache:init", async (tx) => {
     // Double-check inside write tx (another instance may have created it)
     const fd = await tx.getFieldIfExists(field(pl.clientRoot, TemplateCacheFieldName));
-    if (fd) return ensureResourceIdNotNull(fd.value);
+    if (fd) return ensureSignedResourceIdNotNull(fd.value);
 
     const cache = tx.createStruct(TemplateCacheType);
     tx.createField(field(pl.clientRoot, TemplateCacheFieldName), "Dynamic", cache);
@@ -470,7 +470,7 @@ export async function dropTemplateCache(pl: PlClient): Promise<void> {
  */
 export async function runGc(
   pl: PlClient,
-  cacheRid: ResourceId,
+  cacheRid: SignedResourceId,
   maxEntries: number = GC_MAX_ENTRIES,
 ): Promise<boolean> {
   return await pl.withWriteTx("templateCache:gc", async (tx) => {
@@ -510,9 +510,9 @@ export async function runGc(
 /** Create a batch of cache nodes in the current transaction. */
 function createBatchNodes(
   tx: PlTransaction,
-  cacheRid: ResourceId,
+  cacheRid: SignedResourceId,
   batch: CacheableNode[],
-  resolvedIds: ReadonlyMap<string, ResourceId>,
+  resolvedIds: ReadonlyMap<string, SignedResourceId>,
   newRefs: Map<string, ResourceRef>,
   now: string,
 ): void {
@@ -543,17 +543,17 @@ function createBatchNodes(
  * Phase 2..N (one write tx per batch):
  *   - Create remaining missing nodes in BATCH_SIZE chunks
  *
- * @returns root ResourceId and current access count (for GC decision)
+ * @returns root SignedResourceId and current access count (for GC decision)
  */
 async function materialize(
   pl: PlClient,
-  cacheRid: ResourceId,
+  cacheRid: SignedResourceId,
   rootHash: string,
   nodes: CacheableNode[],
   stat: TemplateCacheStat,
-): Promise<{ rootId: ResourceId; accessCount: number }> {
+): Promise<{ rootId: SignedResourceId; accessCount: number }> {
   const allHashes = nodes.map((n) => n.hash);
-  const resolvedIds = new Map<string, ResourceId>();
+  const resolvedIds = new Map<string, SignedResourceId>();
 
   // Phase 1: probe all + first batch
   const phase1 = await pl.withWriteTx("templateCache:materialize", async (tx) => {
@@ -571,7 +571,7 @@ async function materialize(
     // Happy path: root already cached
     if (exists[rootIdx]) {
       const rootFd = await tx.getField(field(cacheRid, rootHash));
-      const rootRid = ensureResourceIdNotNull(rootFd.value);
+      const rootRid = ensureSignedResourceIdNotNull(rootFd.value);
       tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + rootHash, now);
       tx.setKValue(cacheRid, ACCESS_COUNT_KEY, newCount.toString());
       await tx.commit();
@@ -592,7 +592,10 @@ async function materialize(
         hitIndices.map((i) => tx.getField(field(cacheRid, allHashes[i]))),
       );
       for (let j = 0; j < hitIndices.length; j++) {
-        resolvedIds.set(allHashes[hitIndices[j]], ensureResourceIdNotNull(hitFields[j].value));
+        resolvedIds.set(
+          allHashes[hitIndices[j]],
+          ensureSignedResourceIdNotNull(hitFields[j].value),
+        );
       }
     }
     stat.cacheHits = hitIndices.length;
@@ -659,13 +662,13 @@ async function materialize(
  * Materialize a template tree via the cache.
  * Manages its own transactions internally — do NOT call inside an existing tx.
  *
- * @returns concrete ResourceId of the root template
+ * @returns concrete SignedResourceId of the root template
  */
 export async function loadTemplateCached(
   pl: PlClient,
   spec: TemplateSpecPrepared,
-  options?: { cacheResourceId?: ResourceId },
-): Promise<ResourceId> {
+  options?: { cacheResourceId?: SignedResourceId },
+): Promise<SignedResourceId> {
   const stat = initialStat();
   const t0 = performance.now();
 
@@ -751,7 +754,7 @@ export async function loadTemplateCached(
 export async function cacheBlockPackTemplate(
   pl: PlClient,
   spec: BlockPackSpecPrepared,
-  options?: { cacheResourceId?: ResourceId },
+  options?: { cacheResourceId?: SignedResourceId },
 ): Promise<BlockPackSpecPrepared> {
   if (spec.template.type === "cached") return spec;
 
