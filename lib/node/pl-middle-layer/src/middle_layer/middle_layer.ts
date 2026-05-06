@@ -106,6 +106,16 @@ export class MiddleLayer {
     return this.pl.serverInfo.platform as BlockPlatform | undefined;
   }
 
+  /**
+   * Runtime capabilities advertised by the connected backend (e.g. "wasm").
+   * Empty list if the backend predates the capability mechanism — that's
+   * the desired fail-closed behaviour for blocks declaring any
+   * `requiredCapabilities`.
+   */
+  public get serverCapabilities(): string[] {
+    return this.pl.serverInfo.capabilities ?? [];
+  }
+
   /** Adds a runtime capability to the middle layer. */
   public addRuntimeCapability(
     requirement: SupportedRequirement,
