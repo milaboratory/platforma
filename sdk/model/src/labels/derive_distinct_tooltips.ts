@@ -74,6 +74,7 @@ function formatOriginPath(entry: TooltipEntry): undefined | string {
 
 function formatAnchors(q: undefined | MatchQualifications): undefined | string {
   if (isNil(q)) return undefined;
+  if (isNil(q.forQueries)) return undefined;
   const ids = Object.keys(q.forQueries);
   if (ids.length === 0) return undefined;
 
@@ -90,7 +91,7 @@ function formatAnchors(q: undefined | MatchQualifications): undefined | string {
 }
 
 function formatHit(q: undefined | MatchQualifications): undefined | string {
-  if (isNil(q) || q.forHit.length === 0) return undefined;
+  if (isNil(q) || isNil(q.forHit) || q.forHit.length === 0) return undefined;
   const rendered = formatAxisQualifications(q.forHit);
   if (rendered === undefined) return undefined;
   return ["Hit column qualifications", `${BULLET_1}${rendered}`].join("\n");

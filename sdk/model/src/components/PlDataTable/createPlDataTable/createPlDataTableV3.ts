@@ -17,7 +17,7 @@ import { canonicalizeJson, getAxisId, parseJson, uniqueBy } from "@milaboratorie
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
-import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV5";
+import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV6";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSelector, ColumnSnapshot, ColumnVariant, MatchingMode } from "../../../columns";
@@ -36,8 +36,12 @@ import {
 } from "./utils";
 import type { PrimaryEntry, SecondaryGroup } from "./createPTableDefV3";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { discoverTableColumnSnaphots, type DiscoverTableColumnOptions } from "./discoverColumns";
-import { isNil, isPlainObject, throwError, type Nil } from "@milaboratories/helpers";
+import {
+  discoverLabelColumnVariants,
+  discoverTableColumnSnaphots,
+  type DiscoverTableColumnOptions,
+} from "./discoverColumns";
+import { getField, isNil, isPlainObject, throwError, type Nil } from "@milaboratories/helpers";
 import { flow } from "es-toolkit";
 
 export type createPlDataTableOptionsV3 = {
@@ -90,7 +94,12 @@ export function createPlDataTableV3<A, U>(
 
   const discovered = isPlainObject(options.columns)
     ? discoverTableColumnSnaphots(ctx, options.columns)
-    : options.columns;
+    : isNil(options.columns)
+      ? options.columns
+      : uniqueBy(
+          [...options.columns, ...discoverLabelColumnVariants(ctx, options.columns)],
+          (c) => c.column.id,
+        );
   if (isNil(discovered) || discovered.length === 0) return undefined;
 
   const splited = splitDiscoveredColumns(discovered);
@@ -111,7 +120,7 @@ export function createPlDataTableV3<A, U>(
   const derivedTooltips = deriveAllTooltips({
     columns: discovered.map((dc) => ({
       id: dc.column.id,
-      originalId: dc.originalId,
+      originalId: getField(dc, "originalId"),
       spec: dc.column.spec,
       linkerPath: dc.path,
       qualifications: dc.qualifications,
@@ -133,7 +142,7 @@ export function createPlDataTableV3<A, U>(
 
   const columnIsAvailable = createColumnValidationById([
     ...annotated.direct.map((v) => v.column),
-    ...annotated.linked.flatMap((lc) => [...lc.path.map((s) => s.linker), lc.column]),
+    ...annotated.linked.flatMap((lc) => [...(lc.path ?? []).map((s) => s.linker), lc.column]),
   ]);
 
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, discovered);
@@ -204,8 +213,10 @@ export function createPlDataTableV3<A, U>(
   } satisfies PlDataTableModel;
 }
 
-export type TableColumnVariant = ColumnVariant<DiscoveredPColumnId> & {
-  readonly originalId: PObjectId;
+export type TableColumnVariant = (
+  | ColumnVariant<PObjectId>
+  | (ColumnVariant<DiscoveredPColumnId> & { readonly originalId: PObjectId })
+) & {
   readonly isPrimary?: boolean;
 };
 
@@ -226,15 +237,15 @@ type VisibleColumns = {
 
 /** Split discovered columns into direct (no linker path) and linked (with linker path). */
 function splitDiscoveredColumns(columns: TableColumnVariant[]): SplitDiscoveredColumns {
-  const direct = columns.filter((dc) => dc.path.length === 0);
-  const linked = columns.filter((dc) => dc.path.length > 0);
+  const direct = columns.filter((dc) => (dc.path?.length ?? 0) === 0);
+  const linked = columns.filter((dc) => (dc.path?.length ?? 0) > 0);
   return { direct, linked };
 }
 
 /** All linker snapshots across the given linked columns, deduped by id. */
 function collectLinkerSnapshots(linked: TableColumnVariant[]): ColumnSnapshot<PObjectId>[] {
   return uniqueBy(
-    linked.flatMap((lc) => lc.path.map((s) => s.linker)),
+    linked.flatMap((lc) => (lc.path ?? []).map((s) => s.linker)),
     (c) => c.id,
   );
 }
@@ -299,9 +310,13 @@ function annotateColumnGroups(params: {
 }
 
 /** Lift a snapshot-array transform so it runs on the inner `column` of each variant. */
-function liftToVariantColumns<V extends { readonly column: ColumnSnapshot<DiscoveredPColumnId> }>(
+function liftToVariantColumns<
+  V extends { readonly column: ColumnSnapshot<PObjectId | DiscoveredPColumnId> },
+>(
   variants: V[],
-  fn: (cols: ColumnSnapshot<DiscoveredPColumnId>[]) => ColumnSnapshot<DiscoveredPColumnId>[],
+  fn: (
+    cols: ColumnSnapshot<PObjectId | DiscoveredPColumnId>[],
+  ) => ColumnSnapshot<PObjectId | DiscoveredPColumnId>[],
 ): V[] {
   const cols = fn(variants.map((v) => v.column));
   if (cols.length !== variants.length)
@@ -315,7 +330,7 @@ function annotateLinkerPath(
   derivedLabels: Record<string, string>,
   path: TableColumnVariant["path"],
 ): TableColumnVariant["path"] {
-  if (path.length === 0) return path;
+  if (isNil(path) || path.length === 0) return path;
   const annotatedLinkers = withHidenAxesAnnotations(
     withLabelAnnotations(
       derivedLabels,
@@ -410,8 +425,8 @@ function buildSecondaryGroups(
   return [
     ...direct.map(
       (c): SecondaryGroup<undefined | PColumnDataUniversal> => ({
-        entries: [{ column: resolveSnapshot(c.column), qualifications: c.qualifications.forHit }],
-        primaryQualifications: c.qualifications.forQueries,
+        entries: [{ column: resolveSnapshot(c.column), qualifications: c.qualifications?.forHit }],
+        primaryQualifications: c.qualifications?.forQueries,
       }),
     ),
     ...linked.map(
@@ -419,11 +434,11 @@ function buildSecondaryGroups(
         entries: [
           {
             column: resolveSnapshot(lc.column),
-            qualifications: lc.qualifications.forHit,
-            linkers: lc.path.map((s) => resolveSnapshot(s.linker)),
+            linkers: lc.path?.map((s) => resolveSnapshot(s.linker)),
+            qualifications: lc.qualifications?.forHit,
           },
         ],
-        primaryQualifications: lc.qualifications.forQueries,
+        primaryQualifications: lc.qualifications?.forQueries,
       }),
     ),
   ];
@@ -492,7 +507,7 @@ function remapSortingColumnIds(
     if (s.column.type === "axis") return [s]; // Axis references are unaffected by column ID remapping
 
     const id = s.column.id;
-    const column = columns.find((c) => (c.originalId ?? c.column.id) === id);
+    const column = columns.find((c) => (getField(c, "originalId") ?? c.column.id) === id);
     if (column === undefined) return [];
 
     return [
@@ -524,7 +539,7 @@ function remapFilterColumnIds(
 
     const originalId = parsed.id;
     const column =
-      columns.find((c) => (c.originalId ?? c.column.id) === originalId) ??
+      columns.find((c) => (getField(c, "originalId") ?? c.column.id) === originalId) ??
       throwError(`Column ID "${parsed.id}" in filters does not match any discovered column`);
 
     return canonicalizeJson<PTableColumnId>({

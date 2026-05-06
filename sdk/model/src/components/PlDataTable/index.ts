@@ -1,7 +1,6 @@
 // If you need to export something from previous versions,
 // that mean you don't forget update deps to the latest version of the package.
 export type {
-  PlTableColumnId,
   PlTableColumnIdJson,
   PlDataTableGridStateCore,
   PlDataTableSheet,
@@ -14,7 +13,7 @@ export type {
   PlDataTableFilterMeta,
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
-} from "./typesV5";
+} from "./typesV6";
 
 export type { PlDataTableStateV2 } from "./state-migration";
 export {

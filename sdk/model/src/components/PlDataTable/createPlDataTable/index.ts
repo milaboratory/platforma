@@ -1,5 +1,5 @@
 import type { RenderCtxBase } from "../../../render";
-import type { PlDataTableModel } from "../typesV5";
+import type { PlDataTableModel } from "../typesV6";
 import { createPlDataTableOptionsV2, createPlDataTableV2 } from "./createPlDataTableV2";
 import { createPlDataTableV3 } from "./createPlDataTableV3";
 import type { createPlDataTableOptionsV3 } from "./createPlDataTableV3";
