@@ -123,6 +123,17 @@ self.body(func(inputs) {
 		}
 	}
 
+	// In passContent mode the orchestrator's `batchCount` is an upper-bound
+	// estimate (recordsInGroup returns partition count for partitioned types,
+	// not record count). Recompute from the actual line count so we never
+	// silently drop trailing records when the estimate is too small.
+	if passContent {
+		actualBatchCount := (len(dataLines) + batchSize - 1) / batchSize
+		if actualBatchCount > batchCount {
+			batchCount = actualBatchCount
+		}
+	}
+
 	// Process each batch
 	for batchIdx := 0; batchIdx < batchCount; batchIdx++ {
 		valueInput := undefined
