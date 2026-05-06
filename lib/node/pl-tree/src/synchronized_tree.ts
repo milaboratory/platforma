@@ -3,7 +3,7 @@ import { PlTreeEntry } from "./accessors";
 import type {
   FinalResourceDataPredicate,
   PlClient,
-  ResourceId,
+  SignedResourceId,
   TxOps,
 } from "@milaboratories/pl-client";
 import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
@@ -52,7 +52,7 @@ export class SynchronizedTreeState {
 
   private constructor(
     private readonly pl: PlClient,
-    private readonly root: ResourceId,
+    private readonly root: SignedResourceId,
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger,
   ) {
@@ -71,12 +71,12 @@ export class SynchronizedTreeState {
   }
 
   /** @deprecated use "entry" instead */
-  public accessor(rid: ResourceId = this.root): PlTreeEntry {
+  public accessor(rid: SignedResourceId = this.root): PlTreeEntry {
     if (this.terminated) throw new Error("tree synchronization is terminated");
     return this.entry(rid);
   }
 
-  public entry(rid: ResourceId = this.root): PlTreeEntry {
+  public entry(rid: SignedResourceId = this.root): PlTreeEntry {
     if (this.terminated) throw new Error("tree synchronization is terminated");
     return new PlTreeEntry({ treeProvider: () => this.state, hooks: this.hooks }, rid);
   }
@@ -260,7 +260,7 @@ export class SynchronizedTreeState {
 
   public static async init(
     pl: PlClient,
-    root: ResourceId,
+    root: SignedResourceId,
     ops: SynchronizedTreeOps,
     logger?: MiLogger,
   ) {

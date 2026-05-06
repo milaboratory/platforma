@@ -25,9 +25,9 @@ export default class ProjectDelete extends PlCommand {
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(ProjectDelete);
     const { pl, projectListRid } = await this.connect(flags);
-    const { id } = await resolveProject(pl, projectListRid, args.project);
+    const { id, rid, fieldName } = await resolveProject(pl, projectListRid, args.project);
 
-    const info = await getProjectInfo(pl, projectListRid, id);
+    const info = await getProjectInfo(pl, id, rid);
 
     if (!flags.force) {
       const rl = createInterface({ input: process.stdin, output: process.stderr });
@@ -47,7 +47,7 @@ export default class ProjectDelete extends PlCommand {
       }
     }
 
-    await deleteProject(pl, projectListRid, id);
+    await deleteProject(pl, projectListRid, fieldName);
 
     if (flags.format === "json") {
       outputJson({ deleted: true, id, label: info.label });

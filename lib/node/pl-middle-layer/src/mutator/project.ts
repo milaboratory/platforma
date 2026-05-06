@@ -2,16 +2,17 @@ import type {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  ResourceRef,
   PlTransaction,
   ResourceData,
-  ResourceId,
+  SignedResourceId,
   TxOps,
 } from "@milaboratories/pl-client";
 import {
-  ensureResourceIdNotNull,
+  ensureSignedResourceIdNotNull,
   field,
-  isNotNullResourceId,
-  isNullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
   isResource,
   isResourceId,
   isResourceRef,
@@ -341,7 +342,7 @@ export class ProjectMutator {
   private readonly blocksWithChangedInputs = new Set<string>();
 
   constructor(
-    public readonly rid: ResourceId,
+    public readonly rid: SignedResourceId,
     private readonly tx: PlTransaction,
     private readonly author: AuthorMarker | undefined,
     private readonly schema: string,
@@ -359,7 +360,7 @@ export class ProjectMutator {
     // Fix inconsistent production fields.
     // All four fields (prodArgs, prodOutput, prodCtx, prodUiCtx) must be present together.
     // prodUiCtx can be missing after project duplication: prodCtx uses a holder wrapper
-    // (always non-null), but prodUiCtx is a raw FieldRef that may still be NullResourceId
+    // (always non-null), but prodUiCtx is a raw FieldRef that may still be NullSignedResourceId
     // at snapshot time and thus not copied.
     this.blockInfos.forEach((blockInfo) => {
       if (
@@ -1716,7 +1717,7 @@ export class ProjectMutator {
   public static async load(
     projectHelper: ProjectHelper,
     tx: PlTransaction,
-    rid: ResourceId,
+    rid: SignedResourceId,
     author?: AuthorMarker,
   ): Promise<ProjectMutator> {
     //
@@ -1749,7 +1750,7 @@ export class ProjectMutator {
         blockInfoStates.set(projectField.blockId, info);
       }
 
-      info.fields[projectField.fieldName] = isNullResourceId(f.value)
+      info.fields[projectField.fieldName] = isNullSignedResourceId(f.value)
         ? { modCount: 0 }
         : { modCount: 0, ref: f.value };
     }
@@ -1811,8 +1812,8 @@ export class ProjectMutator {
     for (const [info, fieldName, state, response] of blockFieldRequests) {
       const result = await response;
       state.value = result.data;
-      if (isNotNullResourceId(result.error)) state.status = "Error";
-      else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
+      if (isNotNullSignedResourceId(result.error)) state.status = "Error";
+      else if (result.resourceReady || isNotNullSignedResourceId(result.originalResourceId))
         state.status = "Ready";
       else state.status = "NotReady";
 
@@ -1822,7 +1823,7 @@ export class ProjectMutator {
         if (refField === undefined) throw new Error("Block pack ref field is missing");
         blockPackRequests.push([
           info,
-          tx.getResourceData(ensureResourceIdNotNull(refField.value), false),
+          tx.getResourceData(ensureSignedResourceIdNotNull(refField.value), false),
         ]);
       }
     }
@@ -1852,7 +1853,7 @@ export class ProjectMutator {
     );
     let ctxExportTplHolder: AnyResourceRef;
     if (ctxExportTplField !== undefined)
-      ctxExportTplHolder = ensureResourceIdNotNull(ctxExportTplField.value);
+      ctxExportTplHolder = ensureSignedResourceIdNotNull(ctxExportTplField.value);
     else {
       ctxExportTplHolder = Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec));
       tx.createField(
@@ -1917,7 +1918,7 @@ export interface ProjectState {
 export async function createProject(
   tx: PlTransaction,
   meta: ProjectMeta = InitialBlockMeta,
-): Promise<AnyResourceRef> {
+): Promise<ResourceRef> {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
   const ts = String(Date.now());
@@ -1950,9 +1951,9 @@ export async function createProject(
  */
 export async function duplicateProject(
   tx: PlTransaction,
-  sourceRid: ResourceId,
+  sourceRid: SignedResourceId,
   options?: { label?: string },
-): Promise<AnyResourceRef> {
+): Promise<ResourceRef> {
   // Read source resource data (with fields) and all KV pairs
   const sourceDataP = tx.getResourceData(sourceRid, true);
   const sourceKVsP = tx.listKeyValuesString(sourceRid);
@@ -2006,10 +2007,10 @@ export async function duplicateProject(
   // Copy only persistent block fields (FieldsToDuplicate).
   // Transient fields (prodChainCtx, staging*, *Previous) are rebuilt on project open
   // by fixProblemsAndMigrate(). Copying them is both unnecessary and dangerous:
-  // some fields use raw FieldRefs (not holder-wrapped) whose values may be NullResourceId
+  // some fields use raw FieldRefs (not holder-wrapped) whose values may be NullSignedResourceId
   // at snapshot time, leading to partially copied field groups and broken project state.
   for (const f of sourceData.fields) {
-    if (isNullResourceId(f.value)) continue;
+    if (isNullSignedResourceId(f.value)) continue;
     const parsed = parseProjectField(f.name);
     if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
     tx.createField(field(newPrj, f.name), "Dynamic", f.value);
@@ -2021,7 +2022,7 @@ export async function duplicateProject(
 export async function withProject<T>(
   projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
-  rid: ResourceId,
+  rid: SignedResourceId,
   cb: (p: ProjectMutator) => T | Promise<T>,
   ops?: Partial<TxOps>,
 ): Promise<T> {
@@ -2031,7 +2032,7 @@ export async function withProject<T>(
 export async function withProjectAuthored<T>(
   projectHelper: ProjectHelper,
   txOrPl: PlTransaction | PlClient,
-  rid: ResourceId,
+  rid: SignedResourceId,
   author: AuthorMarker | undefined,
   cb: (p: ProjectMutator) => T | Promise<T>,
   ops: Partial<TxOps> = {},

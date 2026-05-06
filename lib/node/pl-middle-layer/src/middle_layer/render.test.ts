@@ -60,9 +60,9 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
 
 test("test JS render enter numbers", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", {
       type: "from-registry-v1",
@@ -82,9 +82,9 @@ test("test JS render enter numbers", async () => {
 
 test.skip("test JS render options", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", {
       type: "from-registry-v1",
@@ -118,9 +118,9 @@ test.skip("test JS render options", async () => {
 
 test.skip("test JS render download", async () => {
   await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: "Project 1" }, "id1");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
 
     const block1Id = await prj.addBlock("Block 1", {
       type: "from-registry-v1",

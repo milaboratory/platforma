@@ -9,7 +9,7 @@ import {
 import { LRUCache } from "lru-cache";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
-import type { ResourceId } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
@@ -146,7 +146,7 @@ export class ProjectHelper {
   public getEnrichmentTargets(
     blockConfig: () => BlockConfig,
     args: () => unknown,
-    key?: { argsRid: ResourceId; blockPackRid: ResourceId },
+    key?: { argsRid: SignedResourceId; blockPackRid: SignedResourceId },
   ): PlRef[] | undefined {
     const req = { blockConfig, args };
     if (key === undefined) return this.calculateEnrichmentTargets(req);

@@ -20,7 +20,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/List_Request"
+              $ref: "#/components/schemas/LsAPI_List_Request"
         required: true
       responses:
         "200":
@@ -28,7 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/List_Response"
+                $ref: "#/components/schemas/LsAPI_List_Response"
         default:
           description: Default error response
           content:
@@ -45,38 +45,6 @@ components:
           description: The type of the serialized message.
       additionalProperties: true
       description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
-    List_Request:
-      type: object
-      properties:
-        resourceId:
-          type: string
-          description: resource_id of 'LS/<Storage>' resource
-        resourceSignature:
-          type: string
-          description: Signature proving the caller is authorized to access this resource.
-          format: bytes
-        location:
-          type: string
-          description: |-
-            Location to list, relative to the storage root. Only items that have <full_name> starting
-             with <location> are included in the list response.
-    List_Response:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/LsAPI_ListItem"
-          description: |-
-            List of the full (relative to storage root) names of items from storage.
-             E.g., for 'fs' storage each name will consist of names of all directories, where the
-             item is located, and the item name itself.
-             The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
-        delimiter:
-          type: string
-          description: |-
-            The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
-             to extract directory names.
     LsAPI_ListItem:
       type: object
       properties:
@@ -116,6 +84,38 @@ components:
              detect if the contents of the item have changed, e.g. <size>+<mtime>.
              Anyway, the client should not try to interpret this field, but should provide it to the Platform
              in operations with a given item (like BlobImportInternal) to help the Platform with deduplication.
+    LsAPI_List_Request:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          description: resource_id of 'LS/<Storage>' resource
+        resourceSignature:
+          type: string
+          description: Signature proving the caller is authorized to access this resource.
+          format: bytes
+        location:
+          type: string
+          description: |-
+            Location to list, relative to the storage root. Only items that have <full_name> starting
+             with <location> are included in the list response.
+    LsAPI_List_Response:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LsAPI_ListItem"
+          description: |-
+            List of the full (relative to storage root) names of items from storage.
+             E.g., for 'fs' storage each name will consist of names of all directories, where the
+             item is located, and the item name itself.
+             The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
+        delimiter:
+          type: string
+          description: |-
+            The delimiter is the path separator used in this storage. The client can use it to parse item names into parts,
+             to extract directory names.
     Status:
       type: object
       properties:

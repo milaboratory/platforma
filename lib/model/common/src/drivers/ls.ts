@@ -32,12 +32,12 @@ export type StorageHandleRemote = `remote://${string}`;
 export type StorageHandle = StorageHandleLocal | StorageHandleRemote;
 
 export type StorageEntry = {
+  /** Stable machine identifier (e.g. "library", "root", "local"). Used for filtering. */
+  id: string;
+  /** Human-readable display name. */
   name: string;
   handle: StorageHandle;
   initialFullPath: string;
-
-  // TODO
-  // pathStartsWithDisk
 };
 
 export type ListFilesResult = {

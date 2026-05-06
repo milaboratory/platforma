@@ -4,16 +4,16 @@ import type {
   FieldStatus,
   FieldType,
   KeyValue,
-  OptionalResourceId,
+  OptionalSignedResourceId,
   ResourceData,
-  ResourceId,
+  SignedResourceId,
   ResourceKind,
   ResourceType,
 } from "@milaboratories/pl-client";
 import {
-  isNotNullResourceId,
-  isNullResourceId,
-  NullResourceId,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
+  NullSignedResourceId,
   resourceIdToString,
   stringifyWithResourceId,
 } from "@milaboratories/pl-client";
@@ -42,8 +42,8 @@ class PlTreeField implements FieldData {
   constructor(
     public readonly name: string,
     public type: FieldType,
-    public value: OptionalResourceId,
-    public error: OptionalResourceId,
+    public value: OptionalSignedResourceId,
+    public error: OptionalSignedResourceId,
     public status: FieldStatus,
     public valueIsFinal: boolean,
     /** Last version of resource this field was observed, used to garbage collect fields in tree patching procedure */
@@ -98,8 +98,8 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   // kvChangedGlobal? = new ChangeSource();
   kvChangedPerKey? = new KeyedChangeSource();
 
-  readonly id: ResourceId;
-  originalResourceId: OptionalResourceId;
+  readonly id: SignedResourceId;
+  originalResourceId: OptionalSignedResourceId;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
@@ -108,7 +108,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   private dataAsString?: string;
   private dataAsJson?: unknown;
 
-  error: OptionalResourceId;
+  error: OptionalSignedResourceId;
 
   inputsLocked: boolean;
   outputsLocked: boolean;
@@ -162,17 +162,17 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       | (Omit<GetFieldStep, "errorIfFieldNotFound"> & { errorIfFieldNotFound: true })
       | (Omit<GetFieldStep, "errorIfFieldNotSet"> & { errorIfFieldNotSet: true }),
     onUnstable: (marker: string) => void,
-  ): ValueAndError<ResourceId>;
+  ): ValueAndError<SignedResourceId>;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
     onUnstable: (marker: string) => void,
-  ): ValueAndError<ResourceId> | undefined;
+  ): ValueAndError<SignedResourceId> | undefined;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
     onUnstable: (marker: string) => void = () => {},
-  ): ValueAndError<ResourceId> | undefined {
+  ): ValueAndError<SignedResourceId> | undefined {
     const step: FieldTraversalStep = typeof _step === "string" ? { field: _step } : _step;
 
     const field = this.fieldsMap.get(step.field);
@@ -208,9 +208,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
           `Unexpected field type: expected ${step.assertFieldType} but got ${field.type} for the field name ${step.field}`,
         );
 
-      const ret = {} as ValueAndError<ResourceId>;
-      if (isNotNullResourceId(field.value)) ret.value = field.value;
-      if (isNotNullResourceId(field.error)) ret.error = field.error;
+      const ret = {} as ValueAndError<SignedResourceId>;
+      if (isNotNullSignedResourceId(field.value)) ret.value = field.value;
+      if (isNotNullSignedResourceId(field.error)) ret.error = field.error;
       if (ret.value === undefined && ret.error === undefined)
         // this method returns value and error of the field, thus those values are considered to be accessed;
         // any existing but not resolved field here is considered to be unstable, in the sense it is
@@ -237,9 +237,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   public get isReadyOrError(): boolean {
     return (
-      this.error !== NullResourceId ||
+      this.error !== NullSignedResourceId ||
       this.resourceReady ||
-      this.originalResourceId !== NullResourceId
+      this.originalResourceId !== NullSignedResourceId
     );
   }
 
@@ -255,8 +255,8 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return this.isReadyOrError;
   }
 
-  public getError(watcher: Watcher): ResourceId | undefined {
-    if (isNullResourceId(this.error)) {
+  public getError(watcher: Watcher): SignedResourceId | undefined {
+    if (isNullSignedResourceId(this.error)) {
       this.resourceStateChange?.attachWatcher(watcher);
       return undefined;
     } else {
@@ -387,7 +387,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
 export class PlTreeState {
   /** resource heap */
-  private resources: Map<ResourceId, PlTreeResource> = new Map();
+  private resources: Map<SignedResourceId, PlTreeResource> = new Map();
   private readonly resourcesAdded = new ChangeSource();
   /** Resets to false if any invalid state transitions are registered,
    * after that tree will produce errors for any read or write operations */
@@ -396,7 +396,7 @@ export class PlTreeState {
 
   constructor(
     /** This will be the only resource not deleted during GC round */
-    public readonly root: ResourceId,
+    public readonly root: SignedResourceId,
     public readonly isFinalPredicate: FinalResourceDataPredicate,
   ) {}
 
@@ -408,7 +408,7 @@ export class PlTreeState {
     if (!this._isValid) throw new Error(this.invalidationMessage ?? "tree is in invalid state");
   }
 
-  public get(watcher: Watcher, rid: ResourceId): PlTreeResource {
+  public get(watcher: Watcher, rid: SignedResourceId): PlTreeResource {
     this.checkValid();
     const res = this.resources.get(rid);
     if (res === undefined) {
@@ -425,8 +425,8 @@ export class PlTreeState {
     this.checkValid();
 
     // All resources for which recount should be incremented, first are aggregated in this list
-    const incrementRefs: ResourceId[] = [];
-    const decrementRefs: ResourceId[] = [];
+    const incrementRefs: SignedResourceId[] = [];
+    const decrementRefs: SignedResourceId[] = [];
 
     // patching / creating resources
     for (const rd of resourceData) {
@@ -456,7 +456,7 @@ export class PlTreeState {
 
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {
-          if (resource.originalResourceId !== NullResourceId)
+          if (resource.originalResourceId !== NullSignedResourceId)
             unexpectedTransitionError("originalResourceId can't change after it is set");
           resource.originalResourceId = rd.originalResourceId;
           // duplicate status of the resource counts as ready for the external observer
@@ -467,11 +467,11 @@ export class PlTreeState {
         }
 
         // error
-        if (resource.error !== rd.error) {
-          if (isNotNullResourceId(resource.error))
+        if (isNotNullSignedResourceId(rd.error) && resource.error !== rd.error) {
+          if (isNotNullSignedResourceId(resource.error))
             unexpectedTransitionError("resource can't change attached error after it is set");
           resource.error = rd.error;
-          incrementRefs.push(resource.error as ResourceId);
+          incrementRefs.push(resource.error);
           notEmpty(resource.resourceStateChange).markChanged(
             `error changed for ${resourceIdToString(resource.id)}`,
           );
@@ -494,8 +494,8 @@ export class PlTreeState {
               fd.valueIsFinal,
               resource.version,
             );
-            if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
-            if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
+            if (isNotNullSignedResourceId(fd.value)) incrementRefs.push(fd.value);
+            if (isNotNullSignedResourceId(fd.error)) incrementRefs.push(fd.error);
 
             if (fd.type === "Input" || fd.type === "Service") {
               if (resource.inputsLocked)
@@ -559,9 +559,9 @@ export class PlTreeState {
 
             // field value
             if (field.value !== fd.value) {
-              if (isNotNullResourceId(field.value)) decrementRefs.push(field.value);
+              if (isNotNullSignedResourceId(field.value)) decrementRefs.push(field.value);
               field.value = fd.value;
-              if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
+              if (isNotNullSignedResourceId(fd.value)) incrementRefs.push(fd.value);
               field.change.markChanged(
                 `field ${fd.name} value changed in ${resourceIdToString(resource.id)}`,
               );
@@ -570,9 +570,9 @@ export class PlTreeState {
 
             // field error
             if (field.error !== fd.error) {
-              if (isNotNullResourceId(field.error)) decrementRefs.push(field.error);
+              if (isNotNullSignedResourceId(field.error)) decrementRefs.push(field.error);
               field.error = fd.error;
-              if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
+              if (isNotNullSignedResourceId(fd.error)) incrementRefs.push(fd.error);
               field.change.markChanged(
                 `field ${fd.name} error changed in ${resourceIdToString(resource.id)}`,
               );
@@ -611,8 +611,8 @@ export class PlTreeState {
             );
             fields.delete(fieldName);
 
-            if (isNotNullResourceId(field.value)) decrementRefs.push(field.value);
-            if (isNotNullResourceId(field.error)) decrementRefs.push(field.error);
+            if (isNotNullSignedResourceId(field.value)) decrementRefs.push(field.value);
+            if (isNotNullSignedResourceId(field.error)) decrementRefs.push(field.error);
 
             notEmpty(resource!.dynamicFieldListChanged).markChanged(
               `dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`,
@@ -700,7 +700,7 @@ export class PlTreeState {
 
         resource = new PlTreeResource(rd);
         resource.verifyReadyState();
-        if (isNotNullResourceId(resource.error)) incrementRefs.push(resource.error);
+        if (isNotNullSignedResourceId(resource.error)) incrementRefs.push(resource.error);
         for (const fd of rd.fields) {
           const field = new PlTreeField(
             fd.name,
@@ -711,8 +711,8 @@ export class PlTreeState {
             fd.valueIsFinal,
             InitialResourceVersion,
           );
-          if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
-          if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
+          if (isNotNullSignedResourceId(fd.value)) incrementRefs.push(fd.value);
+          if (isNotNullSignedResourceId(fd.error)) incrementRefs.push(fd.error);
           resource.fieldsMap.set(fd.name, field);
         }
 
@@ -741,7 +741,7 @@ export class PlTreeState {
     // recursively applying refCount decrements / doing garbage collection
     let currentRefs = decrementRefs;
     while (currentRefs.length > 0) {
-      const nextRefs: ResourceId[] = [];
+      const nextRefs: SignedResourceId[] = [];
       for (const rid of currentRefs) {
         const res = this.resources.get(rid);
         if (!res) {
@@ -754,13 +754,13 @@ export class PlTreeState {
         if (res.refCount === 0 && res.id !== this.root) {
           // removing fields
           res.fieldsMap.forEach((field) => {
-            if (isNotNullResourceId(field.value)) nextRefs.push(field.value);
-            if (isNotNullResourceId(field.error)) nextRefs.push(field.error);
+            if (isNotNullSignedResourceId(field.value)) nextRefs.push(field.value);
+            if (isNotNullSignedResourceId(field.error)) nextRefs.push(field.error);
             field.change.markChanged(
               `field ${field.name} removed during garbage collection of ${resourceIdToString(res.id)}`,
             );
           });
-          if (isNotNullResourceId(res.error)) nextRefs.push(res.error);
+          if (isNotNullSignedResourceId(res.error)) nextRefs.push(res.error);
           res.resourceRemoved.markChanged(
             `resource removed during garbage collection: ${resourceIdToString(res.id)}`,
           );
@@ -782,12 +782,12 @@ export class PlTreeState {
   }
 
   /** @deprecated use "entry" instead */
-  public accessor(rid: ResourceId = this.root): PlTreeEntry {
+  public accessor(rid: SignedResourceId = this.root): PlTreeEntry {
     this.checkValid();
     return this.entry(rid);
   }
 
-  public entry(rid: ResourceId = this.root): PlTreeEntry {
+  public entry(rid: SignedResourceId = this.root): PlTreeEntry {
     this.checkValid();
     return new PlTreeEntry({ treeProvider: () => this }, rid);
   }

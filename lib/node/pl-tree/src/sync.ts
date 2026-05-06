@@ -1,11 +1,11 @@
 import type {
   FieldData,
-  OptionalResourceId,
+  OptionalSignedResourceId,
   PlTransaction,
-  ResourceId,
+  SignedResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
-import { isNullResourceId } from "@milaboratories/pl-client";
+import { isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
@@ -16,12 +16,12 @@ export interface TreeLoadingRequest {
   /** Resource to prime the traversal algorithm. It is ok, if some of them
    * doesn't exist anymore. Should not contain elements from final resource
    * set. */
-  readonly seedResources: ResourceId[];
+  readonly seedResources: SignedResourceId[];
 
   /** Resource ids for which state is already known and not expected to change.
    * Algorithm will not continue traversal over those ids, and states will not
    * be retrieved for them. */
-  readonly finalResources: Set<ResourceId>;
+  readonly finalResources: Set<SignedResourceId>;
 
   /** This function is applied to each resource data field list, before
    * using it continue traversal. This modification also is applied to
@@ -37,8 +37,8 @@ export function constructTreeLoadingRequest(
   tree: PlTreeState,
   pruningFunction?: PruningFunction,
 ): TreeLoadingRequest {
-  const seedResources: ResourceId[] = [];
-  const finalResources = new Set<ResourceId>();
+  const seedResources: SignedResourceId[] = [];
+  const finalResources = new Set<SignedResourceId>();
   tree.forEachResource((res) => {
     if (res.finalState) finalResources.add(res.id);
     else seedResources.push(res.id);
@@ -120,11 +120,11 @@ export async function loadTreeState(
   let numberOfRoundTrips = 0;
 
   // tracking resources we already requested or queued
-  const requested = new Set<ResourceId>();
+  const requested = new Set<SignedResourceId>();
 
   /** Mark a resource for fetching. Deduplicates and respects final-resource set. */
-  const requestState = (rid: OptionalResourceId) => {
-    if (isNullResourceId(rid) || requested.has(rid)) return;
+  const requestState = (rid: OptionalSignedResourceId) => {
+    if (isNullSignedResourceId(rid) || requested.has(rid)) return;
 
     if (finalResources.has(rid)) {
       if (stats) stats.finalResourcesSkipped++;

@@ -1260,6 +1260,8 @@ export enum FieldOptions_JSType {
 }
 /**
  * If set to RETENTION_SOURCE, the option will be omitted from the binary.
+ * Note: as of January 2023, support for this is in progress and does not yet
+ * have an effect (b/264593489).
  *
  * @generated from protobuf enum google.protobuf.FieldOptions.OptionRetention
  */
@@ -1280,7 +1282,8 @@ export enum FieldOptions_OptionRetention {
 /**
  * This indicates the types of entities that the field may apply to when used
  * as an option. If it is unset, then the field may be freely used as an
- * option on any kind of entity.
+ * option on any kind of entity. Note: as of January 2023, support for this is
+ * in progress and does not yet have an effect (b/264593489).
  *
  * @generated from protobuf enum google.protobuf.FieldOptions.OptionTargetType
  */
@@ -2067,7 +2070,7 @@ export enum Edition {
     EDITION_2024 = 1001,
     /**
      * Placeholder editions for testing feature resolution.  These should not be
-     * used or relied on outside of tests.
+     * used or relyed on outside of tests.
      *
      * @generated from protobuf enum value: EDITION_1_TEST_ONLY = 1;
      */

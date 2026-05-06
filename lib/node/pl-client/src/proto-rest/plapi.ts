@@ -53,7 +53,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/auth/revoke-grant": {
+  "/v1/auth/mint-signature": {
     parameters: {
       query?: never;
       header?: never;
@@ -62,7 +62,60 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post: operations["Platform_RevokeGrant"];
+    /**
+     * @description MintSignature creates a resource signature bound to a target session.
+     *      Controllers use it during workflow bootstrap to pre-sign resources
+     *      so the workflow can access them under its own isolated session.
+     */
+    post: operations["Platform_MintSignature"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/revoke-access": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_RevokeAccess"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/session-info": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_GetSessionInfo"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/user-root": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["Platform_GetUserRoot"];
     delete?: never;
     options?: never;
     head?: never;
@@ -450,47 +503,173 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    AttachFilter_Request: {
-      subscriptionId: string;
-      filterName: string;
-      filterId: string;
-    };
-    AttachFilter_Response: Record<string, never>;
-    AttachSubscription_Request: {
-      controllerId: string;
-      subscriptionId: string;
-    };
-    AttachSubscription_Response: Record<string, never>;
-    ClearFeatures_Request: {
-      controllerType: string;
-    };
-    ClearFeatures_Response: Record<string, never>;
-    Create_Request: {
+    AuthAPI_GetJWTToken_Request: {
+      expiration: string;
       /** Format: enum */
-      type: number;
-      /** @description field ID is always combination of parent resource ID and field name */
-      id: components["schemas"]["FieldRef"];
+      requestedRole: number;
     };
-    Create_Response: {
-      globalId: components["schemas"]["FieldRef"];
+    AuthAPI_GetJWTToken_Response: {
+      token: string;
+      /**
+       * Format: bytes
+       * @description Session info fields
+       */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
     };
-    Deregister_Request: {
-      controllerType: string;
+    AuthAPI_GetSessionInfo_Request: Record<string, never>;
+    AuthAPI_GetSessionInfo_Response: {
+      /** Format: bytes */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
     };
-    Deregister_Response: Record<string, never>;
-    DetachFilter_Request: {
-      subscriptionId: string;
-      filterName: string;
+    AuthAPI_GetUserRoot_Request: {
+      login: string;
+      doNotCreate: boolean;
     };
-    DetachFilter_Response: Record<string, never>;
-    Exists_Request: {
+    AuthAPI_GetUserRoot_Response: {
+      userRoot: components["schemas"]["AuthAPI_UserRoot"];
+    };
+    AuthAPI_GrantAccess_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      targetUser: string;
+      permissions: components["schemas"]["AuthAPI_Grant_Permissions"];
+      /** Format: enum */
+      grantType: number;
+    };
+    AuthAPI_GrantAccess_Response: Record<string, never>;
+    /** @description Permissions describes access level for a grant. */
+    AuthAPI_Grant_Permissions: {
+      writable: boolean;
+    };
+    AuthAPI_ListMethods_MethodInfo: {
+      type: string;
+      name: string;
+      info: {
+        [key: string]: string;
+      };
+    };
+    AuthAPI_ListMethods_Response: {
+      methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
+    };
+    AuthAPI_MintSignature_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      targetSid: string;
+      color: components["schemas"]["Color"];
+    };
+    AuthAPI_MintSignature_Response: {
       resourceId: string;
       /** Format: bytes */
       resourceSignature: string;
     };
-    Exists_Response: {
+    AuthAPI_RevokeAccess_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      targetUser: string;
+    };
+    AuthAPI_RevokeAccess_Response: Record<string, never>;
+    AuthAPI_UserRoot: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+    };
+    Color: {
+      root: string;
+      /** Format: uint32 */
+      permissions: number;
+    };
+    Controller: {
+      type: string;
+      id: string;
+      subscriptionID: string;
+    };
+    ControllerAPI_AttachSubscription_Request: {
+      controllerId: string;
+      subscriptionId: string;
+    };
+    ControllerAPI_AttachSubscription_Response: Record<string, never>;
+    ControllerAPI_ClearFeatures_Request: {
+      controllerType: string;
+    };
+    ControllerAPI_ClearFeatures_Response: Record<string, never>;
+    ControllerAPI_Create_Request: {
+      id: string;
+      controllerType: string;
+    };
+    ControllerAPI_Create_Response: {
+      controllerId: string;
+    };
+    ControllerAPI_Deregister_Request: {
+      controllerType: string;
+    };
+    ControllerAPI_Deregister_Response: Record<string, never>;
+    ControllerAPI_Exists_Request: {
+      controllerType: string;
+    };
+    ControllerAPI_Exists_Response: {
       exists: boolean;
     };
+    ControllerAPI_GetNotifications_Request: {
+      controllerType: string;
+      /** Format: uint32 */
+      maxNotifications: number;
+    };
+    ControllerAPI_GetNotifications_Response: {
+      notifications: components["schemas"]["Notification"][];
+    };
+    ControllerAPI_GetUrl_Request: {
+      controllerAlias: string;
+      resourceId: string;
+    };
+    ControllerAPI_GetUrl_Response: {
+      controllerUrl: string;
+    };
+    ControllerAPI_Get_Request: {
+      controllerType: string;
+    };
+    ControllerAPI_Get_Response: {
+      controller: components["schemas"]["Controller"];
+    };
+    ControllerAPI_Register_Request: {
+      controllerType: string;
+      filters: {
+        [key: string]: components["schemas"]["NotificationFilter"];
+      };
+      resourceSchemas: components["schemas"]["ResourceSchema"][];
+    };
+    ControllerAPI_Register_Response: {
+      controllerId: string;
+      subscriptionId: string;
+    };
+    ControllerAPI_RemoveAliasesAndUrls_Request: {
+      controllerType: string;
+    };
+    ControllerAPI_RemoveAliasesAndUrls_Response: Record<string, never>;
+    ControllerAPI_SetFeatures_Request: {
+      features: components["schemas"]["ResourceAPIFeature"][];
+    };
+    ControllerAPI_SetFeatures_Response: Record<string, never>;
+    ControllerAPI_Update_Request: {
+      controllerType: string;
+      filters: {
+        [key: string]: components["schemas"]["NotificationFilter"];
+      };
+      resourceSchemas: components["schemas"]["ResourceSchema"][];
+    };
+    ControllerAPI_Update_Response: Record<string, never>;
+    ControllerAPI_WriteAliasesAndUrls_Request: {
+      controllerType: string;
+      aliasesToUrls: {
+        [key: string]: string;
+      };
+    };
+    ControllerAPI_WriteAliasesAndUrls_Response: Record<string, never>;
     Field: {
       /** @description field ID is always combination of parent resource ID and field name */
       id: components["schemas"]["FieldRef"];
@@ -540,40 +719,6 @@ export interface components {
       type: number;
       name: string;
     };
-    GetJWTToken_Request: {
-      expiration: string;
-      /** Format: enum */
-      requestedRole: number;
-    };
-    GetJWTToken_Response: {
-      token: string;
-      /** Format: bytes */
-      sessionId: string;
-    };
-    GetNotifications_Request: {
-      controllerType: string;
-      /** Format: uint32 */
-      maxNotifications: number;
-    };
-    GetNotifications_Response: {
-      notifications: components["schemas"]["Notification"][];
-    };
-    GetUrl_Request: {
-      controllerAlias: string;
-      resourceId: string;
-    };
-    GetUrl_Response: {
-      controllerUrl: string;
-    };
-    Get_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      loadFields: boolean;
-    };
-    Get_Response: {
-      resource: components["schemas"]["Resource"];
-    };
     /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
     GoogleProtobufAny: {
       /** @description The type of the serialized message. */
@@ -581,19 +726,63 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
-    GrantAccess_Request: {
+    LocksAPI_Lease_Create_Request: {
       resourceId: string;
       /** Format: bytes */
       resourceSignature: string;
-      targetUser: string;
-      permissions: components["schemas"]["Grant_Permissions"];
+      timeout: string;
+      name: string;
     };
-    GrantAccess_Response: Record<string, never>;
-    /** @description Permissions describes access level for a grant. */
-    Grant_Permissions: {
-      writable: boolean;
+    LocksAPI_Lease_Create_Response: {
+      /** Format: bytes */
+      leaseId: string;
     };
-    License_Response: {
+    LocksAPI_Lease_Release_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      /** Format: bytes */
+      leaseId: string;
+    };
+    LocksAPI_Lease_Release_Response: Record<string, never>;
+    LocksAPI_Lease_Update_Request: {
+      resourceId: string;
+      /** Format: bytes */
+      resourceSignature: string;
+      /** Format: bytes */
+      leaseId: string;
+      timeout: string;
+      name: string;
+    };
+    LocksAPI_Lease_Update_Response: Record<string, never>;
+    LocksAPI_LockFieldValues_Create_Request: {
+      resourceId: string;
+      lockReferencesOf: string[];
+      comment: string;
+    };
+    LocksAPI_LockFieldValues_Create_Response: {
+      /**
+       * @description true when lock was acquired (new, or already owned by the owner)
+       *      Client MUST pay attention to this flag, as it shows if lock was successful.
+       */
+      acquired: boolean;
+      /**
+       * @description Info about why lock was not acquired.
+       *      Limited number of conflicts is reported: i.e. if lock operation failed for 20 fields, only first 10 are listed here.
+       *      The number '10' is not a fixed contract for external clients. It is just 'somehow truncated'.
+       */
+      conflictingLocks: components["schemas"]["LocksAPI_LockFieldValues_Create_Response_LockInfo"][];
+      conflictsListTruncated: boolean;
+    };
+    LocksAPI_LockFieldValues_Create_Response_LockInfo: {
+      targetId: string;
+      fieldName: string;
+      lockedBy: string;
+      /** Format: date-time */
+      lockedAt: string;
+      comment: string;
+    };
+    MaintenanceAPI_License_Response: {
       /** Format: int32 */
       status: number;
       isOk: boolean;
@@ -603,17 +792,23 @@ export interface components {
        */
       responseBody: string;
     };
-    ListMethods_MethodInfo: {
-      type: string;
-      name: string;
-      info: {
-        [key: string]: string;
-      };
+    MaintenanceAPI_Ping_Response: {
+      coreVersion: string;
+      coreFullVersion: string;
+      /** Format: enum */
+      compression: number;
+      /**
+       * @description instanceID is a unique ID that changes when we reset DB state.
+       *      If we reset a state and a database, but the address of the backend is still the same,
+       *      without instanceID we are not sure if it's the same state or not,
+       *      and UI can't detect it and clear its state (e.g. caches of drivers).
+       */
+      instanceId: string;
+      platform: string;
+      os: string;
+      arch: string;
     };
-    ListMethods_Response: {
-      methods: components["schemas"]["ListMethods_MethodInfo"][];
-    };
-    ListResourceTypes_Response: {
+    MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];
     };
     Notification: {
@@ -628,6 +823,14 @@ export interface components {
       payload: components["schemas"]["NotificationFilter_Payload"];
       filterName: string;
       txSpan: components["schemas"]["SpanInfo"];
+    };
+    NotificationAPI_Get_Request: {
+      subscription: string;
+      /** Format: uint32 */
+      maxNotifications: number;
+    };
+    NotificationAPI_Get_Response: {
+      notifications: components["schemas"]["Notification"][];
     };
     NotificationFilter: {
       resourceType: components["schemas"]["ResourceType"];
@@ -682,71 +885,6 @@ export interface components {
       old: components["schemas"]["Field"];
       new: components["schemas"]["Field"];
     };
-    Ping_Response: {
-      coreVersion: string;
-      coreFullVersion: string;
-      /** Format: enum */
-      compression: number;
-      /**
-       * @description instanceID is a unique ID that changes when we reset DB state.
-       *      If we reset a state and a database, but the address of the backend is still the same,
-       *      without instanceID we are not sure if it's the same state or not,
-       *      and UI can't detect it and clear its state (e.g. caches of drivers).
-       */
-      instanceId: string;
-      platform: string;
-      os: string;
-      arch: string;
-    };
-    Register_Request: {
-      controllerType: string;
-      filters: {
-        [key: string]: components["schemas"]["NotificationFilter"];
-      };
-      resourceSchemas: components["schemas"]["ResourceSchema"][];
-    };
-    Register_Response: {
-      controllerId: string;
-      subscriptionId: string;
-    };
-    Release_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      /** Format: bytes */
-      leaseId: string;
-    };
-    Release_Response: Record<string, never>;
-    RemoveAliasesAndUrls_Request: {
-      controllerType: string;
-    };
-    RemoveAliasesAndUrls_Response: Record<string, never>;
-    Resource: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      /** Format: bytes */
-      canonicalId: string;
-      /** Format: enum */
-      kind: number;
-      type: components["schemas"]["ResourceType"];
-      /** Format: bytes */
-      data: string;
-      features: components["schemas"]["Resource_Features"];
-      fields: components["schemas"]["Field"][];
-      /** @description Resource has at least one field with error */
-      hasErrors: boolean;
-      inputsLocked: boolean;
-      outputsLocked: boolean;
-      resourceReady: boolean;
-      isFinal: boolean;
-      originalResourceId: string;
-      parentResourceId: string;
-      /** Format: date-time */
-      createdTime: string;
-      /** Format: date-time */
-      deletedTime: string;
-    };
     ResourceAPIFeature: {
       controllerType: string;
       featureName: string;
@@ -791,17 +929,6 @@ export interface components {
     Resource_Features: {
       ephemeral: boolean;
     };
-    RevokeGrant_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      targetUser: string;
-    };
-    RevokeGrant_Response: Record<string, never>;
-    SetFeatures_Request: {
-      features: components["schemas"]["ResourceAPIFeature"][];
-    };
-    SetFeatures_Response: Record<string, never>;
     SpanInfo: {
       path: string;
       carrier: {
@@ -820,25 +947,21 @@ export interface components {
       /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
       details: components["schemas"]["GoogleProtobufAny"][];
     };
-    Sync_Request: {
+    SubscriptionAPI_AttachFilter_Request: {
+      subscriptionId: string;
+      filterName: string;
+      filterId: string;
+    };
+    SubscriptionAPI_AttachFilter_Response: Record<string, never>;
+    SubscriptionAPI_DetachFilter_Request: {
+      subscriptionId: string;
+      filterName: string;
+    };
+    SubscriptionAPI_DetachFilter_Response: Record<string, never>;
+    TxAPI_Sync_Request: {
       txId: string;
     };
-    Sync_Response: Record<string, never>;
-    Update_Request: {
-      controllerType: string;
-      filters: {
-        [key: string]: components["schemas"]["NotificationFilter"];
-      };
-      resourceSchemas: components["schemas"]["ResourceSchema"][];
-    };
-    Update_Response: Record<string, never>;
-    WriteAliasesAndUrls_Request: {
-      controllerType: string;
-      aliasesToUrls: {
-        [key: string]: string;
-      };
-    };
-    WriteAliasesAndUrls_Response: Record<string, never>;
+    TxAPI_Sync_Response: Record<string, never>;
   };
   responses: never;
   parameters: never;
@@ -857,7 +980,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GrantAccess_Request"];
+        "application/json": components["schemas"]["AuthAPI_GrantAccess_Request"];
       };
     };
     responses: {
@@ -867,7 +990,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GrantAccess_Response"];
+          "application/json": components["schemas"]["AuthAPI_GrantAccess_Response"];
         };
       };
       /** @description Default error response */
@@ -890,7 +1013,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GetJWTToken_Request"];
+        "application/json": components["schemas"]["AuthAPI_GetJWTToken_Request"];
       };
     };
     responses: {
@@ -900,7 +1023,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GetJWTToken_Response"];
+          "application/json": components["schemas"]["AuthAPI_GetJWTToken_Response"];
         };
       };
       /** @description Default error response */
@@ -929,7 +1052,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ListMethods_Response"];
+          "application/json": components["schemas"]["AuthAPI_ListMethods_Response"];
         };
       };
       /** @description Default error response */
@@ -943,7 +1066,7 @@ export interface operations {
       };
     };
   };
-  Platform_RevokeGrant: {
+  Platform_MintSignature: {
     parameters: {
       query?: never;
       header?: never;
@@ -952,7 +1075,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["RevokeGrant_Request"];
+        "application/json": components["schemas"]["AuthAPI_MintSignature_Request"];
       };
     };
     responses: {
@@ -962,7 +1085,106 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["RevokeGrant_Response"];
+          "application/json": components["schemas"]["AuthAPI_MintSignature_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_RevokeAccess: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_RevokeAccess_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_RevokeAccess_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_GetSessionInfo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_GetUserRoot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_GetUserRoot_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_GetUserRoot_Response"];
         };
       };
       /** @description Default error response */
@@ -985,7 +1207,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["WriteAliasesAndUrls_Request"];
+        "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Request"];
       };
     };
     responses: {
@@ -995,7 +1217,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["WriteAliasesAndUrls_Response"];
+          "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Response"];
         };
       };
       /** @description Default error response */
@@ -1018,7 +1240,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["RemoveAliasesAndUrls_Request"];
+        "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Request"];
       };
     };
     responses: {
@@ -1028,7 +1250,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["RemoveAliasesAndUrls_Response"];
+          "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Response"];
         };
       };
       /** @description Default error response */
@@ -1051,7 +1273,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AttachSubscription_Request"];
+        "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Request"];
       };
     };
     responses: {
@@ -1061,7 +1283,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AttachSubscription_Response"];
+          "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Response"];
         };
       };
       /** @description Default error response */
@@ -1084,7 +1306,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Create_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Create_Request"];
       };
     };
     responses: {
@@ -1094,7 +1316,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Create_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Create_Response"];
         };
       };
       /** @description Default error response */
@@ -1117,7 +1339,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Deregister_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Deregister_Request"];
       };
     };
     responses: {
@@ -1127,7 +1349,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Deregister_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Deregister_Response"];
         };
       };
       /** @description Default error response */
@@ -1150,7 +1372,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Exists_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Exists_Request"];
       };
     };
     responses: {
@@ -1160,7 +1382,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Exists_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Exists_Response"];
         };
       };
       /** @description Default error response */
@@ -1183,7 +1405,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["SetFeatures_Request"];
+        "application/json": components["schemas"]["ControllerAPI_SetFeatures_Request"];
       };
     };
     responses: {
@@ -1193,7 +1415,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["SetFeatures_Response"];
+          "application/json": components["schemas"]["ControllerAPI_SetFeatures_Response"];
         };
       };
       /** @description Default error response */
@@ -1216,7 +1438,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["ClearFeatures_Request"];
+        "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Request"];
       };
     };
     responses: {
@@ -1226,7 +1448,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ClearFeatures_Response"];
+          "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Response"];
         };
       };
       /** @description Default error response */
@@ -1249,7 +1471,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Get_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Get_Request"];
       };
     };
     responses: {
@@ -1259,7 +1481,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Get_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Get_Response"];
         };
       };
       /** @description Default error response */
@@ -1282,7 +1504,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GetNotifications_Request"];
+        "application/json": components["schemas"]["ControllerAPI_GetNotifications_Request"];
       };
     };
     responses: {
@@ -1292,7 +1514,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GetNotifications_Response"];
+          "application/json": components["schemas"]["ControllerAPI_GetNotifications_Response"];
         };
       };
       /** @description Default error response */
@@ -1315,7 +1537,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Register_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Register_Request"];
       };
     };
     responses: {
@@ -1325,7 +1547,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Register_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Register_Response"];
         };
       };
       /** @description Default error response */
@@ -1348,7 +1570,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Update_Request"];
+        "application/json": components["schemas"]["ControllerAPI_Update_Request"];
       };
     };
     responses: {
@@ -1358,7 +1580,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Update_Response"];
+          "application/json": components["schemas"]["ControllerAPI_Update_Response"];
         };
       };
       /** @description Default error response */
@@ -1381,7 +1603,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["GetUrl_Request"];
+        "application/json": components["schemas"]["ControllerAPI_GetUrl_Request"];
       };
     };
     responses: {
@@ -1391,7 +1613,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["GetUrl_Response"];
+          "application/json": components["schemas"]["ControllerAPI_GetUrl_Response"];
         };
       };
       /** @description Default error response */
@@ -1420,7 +1642,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["License_Response"];
+          "application/json": components["schemas"]["MaintenanceAPI_License_Response"];
         };
       };
       /** @description Default error response */
@@ -1443,7 +1665,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Create_Request"];
+        "application/json": components["schemas"]["LocksAPI_Lease_Create_Request"];
       };
     };
     responses: {
@@ -1453,7 +1675,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Create_Response"];
+          "application/json": components["schemas"]["LocksAPI_Lease_Create_Response"];
         };
       };
       /** @description Default error response */
@@ -1476,7 +1698,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Release_Request"];
+        "application/json": components["schemas"]["LocksAPI_Lease_Release_Request"];
       };
     };
     responses: {
@@ -1486,7 +1708,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Release_Response"];
+          "application/json": components["schemas"]["LocksAPI_Lease_Release_Response"];
         };
       };
       /** @description Default error response */
@@ -1509,7 +1731,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Update_Request"];
+        "application/json": components["schemas"]["LocksAPI_Lease_Update_Request"];
       };
     };
     responses: {
@@ -1519,7 +1741,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Update_Response"];
+          "application/json": components["schemas"]["LocksAPI_Lease_Update_Response"];
         };
       };
       /** @description Default error response */
@@ -1542,7 +1764,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Create_Request"];
+        "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Request"];
       };
     };
     responses: {
@@ -1552,7 +1774,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Create_Response"];
+          "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Response"];
         };
       };
       /** @description Default error response */
@@ -1575,7 +1797,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Get_Request"];
+        "application/json": components["schemas"]["NotificationAPI_Get_Request"];
       };
     };
     responses: {
@@ -1585,7 +1807,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Get_Response"];
+          "application/json": components["schemas"]["NotificationAPI_Get_Response"];
         };
       };
       /** @description Default error response */
@@ -1614,7 +1836,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Ping_Response"];
+          "application/json": components["schemas"]["MaintenanceAPI_Ping_Response"];
         };
       };
       /** @description Default error response */
@@ -1643,7 +1865,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ListResourceTypes_Response"];
+          "application/json": components["schemas"]["MiscAPI_ListResourceTypes_Response"];
         };
       };
       /** @description Default error response */
@@ -1666,7 +1888,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["AttachFilter_Request"];
+        "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Request"];
       };
     };
     responses: {
@@ -1676,7 +1898,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AttachFilter_Response"];
+          "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Response"];
         };
       };
       /** @description Default error response */
@@ -1699,7 +1921,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["DetachFilter_Request"];
+        "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Request"];
       };
     };
     responses: {
@@ -1709,7 +1931,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["DetachFilter_Response"];
+          "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Response"];
         };
       };
       /** @description Default error response */
@@ -1732,7 +1954,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["Sync_Request"];
+        "application/json": components["schemas"]["TxAPI_Sync_Request"];
       };
     };
     responses: {
@@ -1742,7 +1964,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Sync_Response"];
+          "application/json": components["schemas"]["TxAPI_Sync_Response"];
         };
       };
       /** @description Default error response */

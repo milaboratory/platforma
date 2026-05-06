@@ -104,7 +104,9 @@ export type LocalStorageProjection = {
 
 /** Allows to add parts of local FS as virtual storages, presenting homogeneous API to UI */
 export type VirtualLocalStorageSpec = {
-  /** Virtual storage ID, must not intersect with other storage ids */
+  /** Stable machine identifier, must not intersect with other storage ids */
+  readonly id: string;
+  /** Human-readable display name */
   readonly name: string;
 
   /** Local path to "chroot" the API in */

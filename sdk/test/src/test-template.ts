@@ -9,7 +9,7 @@ import type {
   MiddleLayerDriverKit,
   PlClient,
   PlTransaction,
-  ResourceId,
+  SignedResourceId,
   TemplateSpecAny,
 } from "@milaboratories/pl-middle-layer";
 import {
@@ -32,7 +32,7 @@ import path from "node:path";
 import { plTest } from "./test-pl";
 
 export type WorkflowRenderOps = {
-  parent?: ResourceId;
+  parent?: SignedResourceId;
   exportProcessor?: TemplateSpecAny;
   blockId?: string;
 };
@@ -64,14 +64,14 @@ export class TestWorkflowResults {
   /**
    * Returns context id of this workflow
    * */
-  public context(): ComputableStableDefined<ResourceId> {
+  public context(): ComputableStableDefined<SignedResourceId> {
     return this.renderResult.computeOutput("context", (cb) => cb?.id).withStableType();
   }
 
   /**
    * Returns context id of this workflow
    * */
-  public result(): ComputableStableDefined<ResourceId> {
+  public result(): ComputableStableDefined<SignedResourceId> {
     return this.renderResult.computeOutput("result", (cb) => cb?.id).withStableType();
   }
 
@@ -102,7 +102,7 @@ export class TestWorkflowResults {
 export class TplTestHelpers {
   constructor(
     private readonly pl: PlClient,
-    private readonly resultRootRid: ResourceId,
+    private readonly resultRootRid: SignedResourceId,
     private readonly resultRootTree: SynchronizedTreeState,
   ) {}
 

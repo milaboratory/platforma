@@ -118,13 +118,13 @@ export const blockTest = plTest.extend<{
     }
   },
   rawPrj: async ({ ml }, use) => {
-    const pRid1 = await ml.createProject({ label: "Test Project" }, "test_project");
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+    const prj1Id = await ml.createProject({ label: "Test Project" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
     try {
       await use(prj);
     } finally {
-      ml.closeProject(pRid1);
+      ml.closeProject(prj1Id);
     }
   },
   helpers: async ({ ml, rawPrj }, use) => {

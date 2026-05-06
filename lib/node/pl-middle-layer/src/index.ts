@@ -9,7 +9,7 @@ export * from "./model";
 export * from "./network_check/network_check";
 
 // explicitly override ProjectListEntry from SDK
-export { type ProjectListEntry } from "./model";
+export { type ProjectId, type ProjectListEntry } from "./model";
 
 // needed by users of middle-layer
 export * from "@milaboratories/pl-client";

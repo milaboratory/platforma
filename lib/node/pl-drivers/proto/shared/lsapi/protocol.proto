@@ -61,7 +61,7 @@ message LsAPI {
       // resource_id of 'LS/<Storage>' resource
       uint64 resource_id = 1;
       // Signature proving the caller is authorized to access this resource.
-      optional bytes resource_signature = 3;
+      bytes resource_signature = 3;
 
       // Location to list, relative to the storage root. Only items that have <full_name> starting
       // with <location> are included in the list response.

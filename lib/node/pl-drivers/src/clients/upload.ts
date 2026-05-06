@@ -3,7 +3,13 @@ import type {
   WireClientProviderFactory,
   PlClient,
 } from "@milaboratories/pl-client";
-import { addRTypeToMetadata, createRTypeRoutingHeader, RestAPI } from "@milaboratories/pl-client";
+import {
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
+  RestAPI,
+  parseSignedResourceId,
+  signatureToBase64Url,
+} from "@milaboratories/pl-client";
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
@@ -78,11 +84,16 @@ export class ClientUpload {
     checksumAlgorithm: UploadAPI_ChecksumAlgorithm;
     checksumHeader: string;
   }> {
+    const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
 
     if (client instanceof UploadClient) {
-      const init = (await client.init({ resourceId: id }, addRTypeToMetadata(type, options)))
-        .response;
+      const init = (
+        await client.init(
+          { resourceId: globalId, resourceSignature: signature },
+          addRTypeToMetadata(type, options),
+        )
+      ).response;
 
       return {
         overall: init.partsCount,
@@ -95,8 +106,8 @@ export class ClientUpload {
     const init = (
       await client.POST("/v1/upload/init", {
         body: {
-          resourceId: id.toString(),
-          resourceSignature: "",
+          resourceId: globalId.toString(),
+          resourceSignature: signatureToBase64Url(signature),
         },
         headers: { ...createRTypeRoutingHeader(type) },
       })
@@ -119,6 +130,7 @@ export class ClientUpload {
     checksumHeader: string,
     options?: RpcOptions,
   ) {
+    const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
 
     let info: UploadAPI_GetPartURL_Response;
@@ -127,7 +139,8 @@ export class ClientUpload {
       info = (
         await client.getPartURL(
           {
-            resourceId: id,
+            resourceId: globalId,
+            resourceSignature: signature,
             partNumber,
             uploadedPartSize: 0n,
             isInternalUse: false,
@@ -140,8 +153,8 @@ export class ClientUpload {
       const resp = (
         await client.POST("/v1/upload/get-part-url", {
           body: {
-            resourceId: id.toString(),
-            resourceSignature: "",
+            resourceId: globalId.toString(),
+            resourceSignature: signatureToBase64Url(signature),
             partNumber: partNumber.toString(),
             uploadedPartSize: "0",
             isInternalUse: false,
@@ -216,12 +229,14 @@ export class ClientUpload {
   }
 
   public async finalize(info: ResourceInfo, options?: RpcOptions) {
+    const { globalId, signature } = parseSignedResourceId(info.id);
     const client = this.wire.get();
 
     if (client instanceof UploadClient) {
       await client.finalize(
         {
-          resourceId: info.id,
+          resourceId: globalId,
+          resourceSignature: signature,
           checksumAlgorithm: UploadAPI_ChecksumAlgorithm.UNSPECIFIED,
           checksum: new Uint8Array(0),
         },
@@ -230,8 +245,8 @@ export class ClientUpload {
     } else {
       await client.POST("/v1/upload/finalize", {
         body: {
-          resourceId: info.id.toString(),
-          resourceSignature: "",
+          resourceId: globalId.toString(),
+          resourceSignature: signatureToBase64Url(signature),
           checksumAlgorithm: 0,
           checksum: "",
         },
@@ -258,12 +273,14 @@ export class ClientUpload {
     bytesProcessed: bigint,
     options?: RpcOptions,
   ): Promise<void> {
+    const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
 
     if (client instanceof UploadClient) {
       await client.updateProgress(
         {
-          resourceId: id,
+          resourceId: globalId,
+          resourceSignature: signature,
           bytesProcessed,
         },
         addRTypeToMetadata(type, options),
@@ -273,8 +290,8 @@ export class ClientUpload {
 
     await client.POST("/v1/upload/update-progress", {
       body: {
-        resourceId: id.toString(),
-        resourceSignature: "",
+        resourceId: globalId.toString(),
+        resourceSignature: signatureToBase64Url(signature),
         bytesProcessed: bytesProcessed.toString(),
       },
       headers: { ...createRTypeRoutingHeader(type) },

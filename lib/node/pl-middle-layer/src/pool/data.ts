@@ -12,12 +12,13 @@ import {
 import { makeResourceSnapshot, type PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import canonicalize from "canonicalize";
 import {
-  isNullResourceId,
+  anyResourceIdToBigint,
+  isNullSignedResourceId,
   resourceIdToString,
   resourceType,
   resourceTypeToString,
   resourceTypesEqual,
-  type ResourceId,
+  type SignedResourceId,
   type ResourceType,
 } from "@milaboratories/pl-client";
 import type { Writable } from "utility-types";
@@ -40,7 +41,7 @@ import { OnDemandBlobResourceSnapshot } from "@milaboratories/pl-drivers";
  */
 export class BlobResourceRef {
   constructor(
-    public readonly resourceInfo: { readonly id: ResourceId; readonly type: ResourceType },
+    public readonly resourceInfo: { readonly id: SignedResourceId; readonly type: ResourceType },
     /** Present only for on-demand (remote) blobs; needed for size and signed handle. */
     public readonly onDemandSnapshot: OnDemandBlobResourceSnapshot | undefined,
   ) {}
@@ -324,7 +325,8 @@ export function traverseParquetChunkResource(
 export function deriveLegacyPObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
   const hash = createHash("sha256");
   hash.update(canonicalize(spec)!);
-  hash.update(String(!isNullResourceId(data.originalId) ? data.originalId : data.id));
+  const rid = !isNullSignedResourceId(data.originalId) ? data.originalId : data.id;
+  hash.update(String(anyResourceIdToBigint(rid)));
   return hash.digest().toString("hex") as PObjectId;
 }
 

@@ -1,5 +1,5 @@
 import { Args, Flags } from "@oclif/core";
-import { field, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, resourceIdToString } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { PlCommand } from "../../base_command";
@@ -44,7 +44,7 @@ export default class ProjectDuplicate extends PlCommand {
 
     const newId = randomUUID();
 
-    const newRid = await pl.withWriteTx("duplicateProject", async (tx) => {
+    const result = await pl.withWriteTx("duplicateProject", async (tx) => {
       const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
       const sourceMeta = JSON.parse(sourceMetaStr);
       const sourceLabel: string = sourceMeta.label;
@@ -68,13 +68,15 @@ export default class ProjectDuplicate extends PlCommand {
       tx.createField(field(projectListRid, newId), "Dynamic", newPrj);
       await tx.commit();
 
-      return { rid: await toGlobalResourceId(newPrj), label: newLabel };
+      const projectResourceId = await newPrj.globalId;
+      const projectId = resourceIdToString(projectResourceId);
+      return { id: projectId, rid: projectResourceId, label: newLabel };
     });
 
     if (flags.format === "json") {
-      outputJson({ id: newId, rid: String(newRid.rid), label: newRid.label });
+      outputJson({ id: result.id, rid: resourceIdToString(result.rid), label: result.label });
     } else {
-      outputText(`Duplicated project as "${newRid.label}" (id: ${newId})`);
+      outputText(`Duplicated project as "${result.label}" (id: ${result.id})`);
     }
   }
 }

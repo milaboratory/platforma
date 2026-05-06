@@ -1,7 +1,7 @@
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { RpcOptions } from "@protobuf-ts/runtime-rpc";
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
-import { RestAPI } from "@milaboratories/pl-client";
+import { RestAPI, parseSignedResourceId, signatureToBase64Url } from "@milaboratories/pl-client";
 import { addRTypeToMetadata, createRTypeRoutingHeader } from "@milaboratories/pl-client";
 import type {
   LsAPI_List_Response,
@@ -42,10 +42,12 @@ export class ClientLs {
   ): Promise<LsAPI_List_Response> {
     const client = this.wire.get();
 
+    const { globalId, signature } = parseSignedResourceId(rInfo.id);
     if (client instanceof LSClient) {
       return await client.list(
         {
-          resourceId: rInfo.id,
+          resourceId: globalId,
+          resourceSignature: signature,
           location: path,
         },
         addRTypeToMetadata(rInfo.type, options),
@@ -54,8 +56,8 @@ export class ClientLs {
       const resp = (
         await client.POST("/v1/list", {
           body: {
-            resourceId: rInfo.id.toString(),
-            resourceSignature: "",
+            resourceId: globalId.toString(),
+            resourceSignature: signatureToBase64Url(signature),
             location: path,
           },
           headers: { ...createRTypeRoutingHeader(rInfo.type) },

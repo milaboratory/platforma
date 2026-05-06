@@ -1,5 +1,5 @@
 import { UiError } from "@milaboratories/pl-model-common";
-import type { PlClient, PlTransaction, ResourceId } from "@milaboratories/pl-client";
+import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
 import type { ProjectField, ProjectStructure } from "../model/project_model";
 import {
   projectFieldName,
@@ -10,7 +10,7 @@ import {
   SchemaVersionV3,
 } from "../model/project_model";
 import { BlockFrontendStateKeyPrefixV1, SchemaVersionV1 } from "../model/project_model_v1";
-import { field, isNullResourceId } from "@milaboratories/pl-client";
+import { field, isNullSignedResourceId } from "@milaboratories/pl-client";
 import { cachedDeserialize } from "@milaboratories/ts-helpers";
 import { allBlocks } from "../model/project_model_util";
 
@@ -20,7 +20,7 @@ import { allBlocks } from "../model/project_model_util";
  * @param pl - The client to use.
  * @param rid - The resource id of the project.
  */
-export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
+export async function applyProjectMigrations(pl: PlClient, rid: SignedResourceId) {
   await pl.withWriteTx("ProjectMigration", async (tx) => {
     let schemaVersion = await tx.getKValueJson<string>(rid, SchemaVersionKey);
     if (schemaVersion === SchemaVersionCurrent) return;
@@ -64,7 +64,7 @@ export async function applyProjectMigrations(pl: PlClient, rid: ResourceId) {
  * @param tx - The transaction to use.
  * @param rid - The resource id of the project.
  */
-async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
+async function migrateV1ToV2(tx: PlTransaction, rid: SignedResourceId) {
   const [structure, allKV] = await Promise.all([
     tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey),
     tx.listKeyValues(rid),
@@ -98,16 +98,16 @@ async function migrateV1ToV2(tx: PlTransaction, rid: ResourceId) {
  * @param tx - The transaction to use.
  * @param rid - The resource id of the project.
  */
-async function migrateV2ToV3(tx: PlTransaction, rid: ResourceId) {
+async function migrateV2ToV3(tx: PlTransaction, rid: SignedResourceId) {
   const [structure, fullResourceState] = await Promise.all([
     tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey),
     tx.getResourceData(rid, true),
   ]);
 
   // Build a map of field name -> resource id for quick lookup
-  const fieldMap = new Map<string, ResourceId>();
+  const fieldMap = new Map<string, SignedResourceId>();
   for (const f of fullResourceState.fields) {
-    if (!isNullResourceId(f.value)) {
+    if (!isNullSignedResourceId(f.value)) {
       fieldMap.set(f.name, f.value);
     }
   }

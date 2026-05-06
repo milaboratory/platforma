@@ -19,8 +19,8 @@ test("should ok when get all storages from ls driver", async () => {
     const got = await driver.getStorageList();
 
     expect(got.length).toBeGreaterThanOrEqual(1);
-    expect(got.find((se) => se.name == env.libraryStorage)?.handle).toContain(env.libraryStorage);
-    expect(got.find((se) => se.name == env.libraryStorage)?.initialFullPath).toEqual("");
+    expect(got.find((se) => se.id == env.libraryStorage)?.handle).toContain(env.libraryStorage);
+    expect(got.find((se) => se.id == env.libraryStorage)?.initialFullPath).toEqual("");
     // expect(got.find((se) => se.name == 'local')?.handle).toContain('/');
     // expect(got.find((se) => se.name == 'local')?.initialFullPath).toEqual(os.homedir());
 
@@ -39,7 +39,7 @@ test("should ok when list files from remote storage in ls driver", async () => {
     const universalPath = (path: string) => (path.startsWith("/") ? path.slice(1) : path);
 
     const storages = await driver.getStorageList();
-    const library = storages.find((se) => se.name == env.libraryStorage)!.handle;
+    const library = storages.find((se) => se.id == env.libraryStorage)!.handle;
 
     const topLevelDir = await driver.listFiles(library, "");
     expect(topLevelDir.entries.length).toBeGreaterThan(1);
@@ -75,7 +75,7 @@ test("should ok when list files from local storage in ls driver", async () => {
     });
 
     const storages = await driver.getStorageList();
-    const local = storages.find((se) => se.name == "local")!;
+    const local = storages.find((se) => se.id == "local")!;
 
     const defaultDir = await driver.listFiles(local.handle, local.initialFullPath);
     expect(defaultDir.entries.length).toBeGreaterThan(1);

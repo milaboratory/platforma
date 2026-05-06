@@ -1,6 +1,6 @@
 import type { ComputableCtx, ComputableStableDefined, Watcher } from "@milaboratories/computable";
 import { ChangeSource, Computable } from "@milaboratories/computable";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import {
   isNotFoundError,
   resourceIdToString,
@@ -630,7 +630,7 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     this.idToProgressLog.delete(blobKey(task.rInfo.id));
   }
 
-  private async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
+  private async releaseOnDemandBlob(blobId: SignedResourceId, callerId: string) {
     const deleted = this.keyToOnDemand.get(blobKey(blobId))?.release(callerId) ?? false;
     if (deleted) this.keyToOnDemand.delete(blobKey(blobId));
   }

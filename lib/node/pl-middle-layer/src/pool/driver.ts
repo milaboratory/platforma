@@ -36,9 +36,11 @@ import {
   traverseParquetChunkResource,
 } from "./data";
 import { isDownloadNetworkError400 } from "@milaboratories/pl-drivers";
+import { parseSignedResourceId } from "@milaboratories/pl-client";
 
 function makeBlobId(res: BlobResourceRef): PFrameInternal.PFrameBlobId {
-  return String(res.resourceInfo.id) as PFrameInternal.PFrameBlobId;
+  const { globalId } = parseSignedResourceId(res.resourceInfo.id);
+  return String(globalId) as PFrameInternal.PFrameBlobId;
 }
 
 type LocalBlob = ComputableStableDefined<LocalBlobHandleAndSize>;

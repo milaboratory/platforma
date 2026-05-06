@@ -1,4 +1,4 @@
-import type { ResourceId } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
 import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
 
 export interface TemplateFromRegistry {
@@ -19,7 +19,7 @@ export interface PreparedTemplate {
 
 export interface CachedTemplate {
   readonly type: "cached";
-  readonly resourceId: ResourceId;
+  readonly resourceId: SignedResourceId;
 }
 
 export interface TemplateFromFile {

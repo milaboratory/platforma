@@ -23,6 +23,11 @@ enum FieldType {
 
 message FieldRef {
   uint64 resource_id = 2;
-  optional bytes resource_signature = 4;
+  bytes resource_signature = 4;
   string field_name = 3;
+}
+
+message Color {
+  uint64 root = 1;
+  uint32 permissions = 2;
 }

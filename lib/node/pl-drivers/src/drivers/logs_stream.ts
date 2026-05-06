@@ -1,6 +1,6 @@
 import type { ComputableCtx, Watcher } from "@milaboratories/computable";
 import { ChangeSource, Computable, PollingComputableHooks } from "@milaboratories/computable";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import {
   isNotFoundError,
   resourceIdToString,
@@ -26,10 +26,10 @@ export type LogsStreamDriverOps = PollingOps & {
 
 export class LogsStreamDriver implements sdk.LogsDriver {
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
-  private readonly idToLastLines: Map<ResourceId, LogGetter> = new Map();
+  private readonly idToLastLines: Map<SignedResourceId, LogGetter> = new Map();
 
   /** Holds a map of StreamManager Resource Id to the last log line of this stream. */
-  private readonly idToProgressLog: Map<ResourceId, LogGetter> = new Map();
+  private readonly idToProgressLog: Map<SignedResourceId, LogGetter> = new Map();
 
   /** Holds a map of StreamManager Resource Id to log id smart object. */
   private readonly hooks: PollingComputableHooks;
@@ -239,12 +239,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     }
   }
 
-  private async releaseLastLogs(rId: ResourceId, callerId: string) {
+  private async releaseLastLogs(rId: SignedResourceId, callerId: string) {
     const deleted = this.idToLastLines.get(rId)?.release(callerId);
     if (deleted) this.idToLastLines.delete(rId);
   }
 
-  private async releaseProgressLog(rId: ResourceId, callerId: string) {
+  private async releaseProgressLog(rId: SignedResourceId, callerId: string) {
     const deleted = this.idToProgressLog.get(rId)?.release(callerId);
     if (deleted) this.idToProgressLog.delete(rId);
   }

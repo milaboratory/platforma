@@ -5,8 +5,12 @@ import { TaskProcessor } from "@milaboratories/ts-helpers";
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 import { FilesCache } from "../helpers/files_cache";
-import type { ResourceId } from "@milaboratories/pl-client";
-import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
+import {
+  resourceIdToString,
+  stringifyWithResourceId,
+  parseSignedResourceId,
+} from "@milaboratories/pl-client";
 import {
   type ArchiveFormat,
   type BlobToURLDriver,
@@ -150,7 +154,7 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
 
   /** Removes a directory and aborts a downloading task when all callers
    * are not interested in it. */
-  async releasePath(id: ResourceId, format: ArchiveFormat, callerId: string): Promise<void> {
+  async releasePath(id: SignedResourceId, format: ArchiveFormat, callerId: string): Promise<void> {
     const task = this.idToDownload.get(newId(id, format));
     if (task == undefined) return;
 
@@ -224,7 +228,8 @@ export class DownloadBlobToURLDriver implements BlobToURLDriver {
     this.idToDownload.delete(newId(task.rInfo.id, task.format));
   }
 
-  private getFilePath(id: ResourceId, format: ArchiveFormat): string {
-    return path.join(this.saveDir, `${String(BigInt(id))}_${format}`);
+  private getFilePath(id: SignedResourceId, format: ArchiveFormat): string {
+    const { globalId } = parseSignedResourceId(id);
+    return path.join(this.saveDir, `${String(globalId)}_${format}`);
   }
 }

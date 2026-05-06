@@ -1,8 +1,12 @@
 import type { PlClient } from "../core/client";
 import type { RetryOptions } from "@milaboratories/ts-helpers";
 import { createRetryState, nextRetryStateOrError, notEmpty } from "@milaboratories/ts-helpers";
-import type { FieldData, FieldType, ResourceData, ResourceId } from "../core/types";
-import { isNotNullResourceId, isNullResourceId, resourceIdToString } from "../core/types";
+import type { FieldData, FieldType, ResourceData, SignedResourceId } from "../core/types";
+import {
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
+  resourceIdToString,
+} from "../core/types";
 import type { PlTransaction } from "../core/transaction";
 import * as tp from "node:timers/promises";
 
@@ -38,7 +42,7 @@ export class PollResourceAccessor {
   }
 
   public async requireNoError(): Promise<PollResourceAccessor> {
-    if (isNullResourceId(this.data.error)) return this;
+    if (isNullSignedResourceId(this.data.error)) return this;
     await this.tx.throwError(this.data.error, this.path);
     // hmm... https://github.com/microsoft/TypeScript/issues/34955
     return this;
@@ -73,10 +77,13 @@ export class PollResourceAccessor {
     const path = [...this.path, name];
 
     const fieldData = this.getFieldData(name, expectedType);
-    if (isNotNullResourceId(fieldData.error) && (failOnError || isNullResourceId(fieldData.value)))
+    if (
+      isNotNullSignedResourceId(fieldData.error) &&
+      (failOnError || isNullSignedResourceId(fieldData.value))
+    )
       await this.tx.throwError(fieldData.error, path);
 
-    if (isNullResourceId(fieldData.value)) throw new ContinuePolling();
+    if (isNullSignedResourceId(fieldData.value)) throw new ContinuePolling();
 
     return await this.tx.get(fieldData.value, failOnError, path);
   }
@@ -103,7 +110,7 @@ export class PollResourceAccessor {
     return await this.getMultiObj(
       ops,
       ...this.data.fields
-        .filter((f) => f.valueIsFinal || isNotNullResourceId(f.error))
+        .filter((f) => f.valueIsFinal || isNotNullSignedResourceId(f.error))
         .map((f) => f.name),
     );
   }
@@ -123,7 +130,7 @@ export class PollTxAccessor {
   constructor(public readonly tx: PlTransaction) {}
 
   public async get(
-    rid: ResourceId,
+    rid: SignedResourceId,
     failOnError: boolean = true,
     path: string[] = [],
   ): Promise<PollResourceAccessor> {
@@ -133,7 +140,7 @@ export class PollTxAccessor {
     return accessor;
   }
 
-  async throwError(error: ResourceId, path: string[] = []): Promise<never> {
+  async throwError(error: SignedResourceId, path: string[] = []): Promise<never> {
     const errorRes = await this.get(error);
     const errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
     throw new Error(`${path.join(" -> ")} = ${errorText}`);

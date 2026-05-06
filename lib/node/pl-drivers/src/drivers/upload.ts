@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import type { Watcher, ComputableCtx } from "@milaboratories/computable";
 import { Computable, PollingComputableHooks } from "@milaboratories/computable";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
@@ -50,7 +50,7 @@ export type UploadDriverOps = PollingOps & {
  * Handles both Index and Upload blobs,
  * the client needs to pass concrete blobs from `handle` field. */
 export class UploadDriver {
-  private readonly idToProgress: Map<ResourceId, UploadTask> = new Map();
+  private readonly idToProgress: Map<SignedResourceId, UploadTask> = new Map();
 
   /** Holds a queue that upload blobs. */
   private readonly uploadQueue: TaskProcessor;
@@ -148,7 +148,7 @@ export class UploadDriver {
   }
 
   /** Decrement counters for the file and remove an uploading if counter == 0. */
-  private async release(id: ResourceId, callerId: string) {
+  private async release(id: SignedResourceId, callerId: string) {
     const task = this.idToProgress.get(id);
     if (task === undefined) return;
 

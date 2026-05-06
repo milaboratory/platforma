@@ -1,7 +1,7 @@
 import {
-  ensureResourceIdNotNull,
+  ensureSignedResourceIdNotNull,
   field,
-  isNotNullResourceId,
+  isNotNullSignedResourceId,
   poll,
   TestHelpers,
   toGlobalResourceId,
@@ -103,7 +103,7 @@ describe("dropTemplateCache", () => {
 // ─── loadTemplateCached ──────────────────────────────────────────────────────
 
 describe("loadTemplateCached", () => {
-  test("cache miss then cache hit returns same ResourceId", async () => {
+  test("cache miss then cache hit returns same SignedResourceId", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
       const testCache = await createTestCacheInTx(pl);
 
@@ -151,7 +151,7 @@ describe("loadTemplateCached", () => {
       // Verify the field was set correctly
       await pl.withReadTx("verify", async (tx) => {
         const fd = await tx.getField(field(pl.clientRoot, "test_result"));
-        expect(ensureResourceIdNotNull(fd.value)).toBe(resultId);
+        expect(ensureSignedResourceIdNotNull(fd.value)).toBe(resultId);
       });
     });
   }, 15000);
@@ -265,8 +265,8 @@ describe("template cache produces equivalent resources", () => {
 
       // After dedup, both should resolve to the same canonical resource.
       // Either one points to the other, or both point to a common original.
-      const resolvedCached = isNotNullResourceId(cachedOriginal) ? cachedOriginal : cachedId;
-      const resolvedLegacy = isNotNullResourceId(legacyOriginal) ? legacyOriginal : legacyId;
+      const resolvedCached = isNotNullSignedResourceId(cachedOriginal) ? cachedOriginal : cachedId;
+      const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal) ? legacyOriginal : legacyId;
       expect(resolvedCached).toBe(resolvedLegacy);
     });
   }, 30000);

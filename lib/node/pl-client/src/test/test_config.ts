@@ -5,8 +5,8 @@ import { plAddressToConfig } from "../core/config";
 import { UnauthenticatedPlClient } from "../core/unauth_client";
 import { PlClient } from "../core/client";
 import { randomUUID } from "node:crypto";
-import type { OptionalResourceId } from "../core/types";
-import { NullResourceId, resourceIdToString } from "../core/types";
+import type { OptionalSignedResourceId } from "../core/types";
+import { NullSignedResourceId, resourceIdToString } from "../core/types";
 import { inferAuthRefreshTime } from "../core/auth";
 import * as path from "node:path";
 import type { TestTcpProxy } from "./tcp-proxy";
@@ -89,8 +89,11 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
 }
 
 const cleanAuthInfoCallback = () => {
-  console.warn(`Removing: ${getFullAuthDataFilePath()}`);
-  fs.rmSync(getFullAuthDataFilePath());
+  const p = getFullAuthDataFilePath();
+  if (fs.existsSync(p)) {
+    console.warn(`Removing: ${p}`);
+    fs.rmSync(p);
+  }
 };
 
 export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
@@ -194,7 +197,7 @@ export async function withTempRoot<T>(
   options: WithTempRootOptions = {},
 ): Promise<T | undefined> {
   const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
-  let altRootId: OptionalResourceId = NullResourceId;
+  let altRootId: OptionalSignedResourceId = NullSignedResourceId;
   // Proxy management
   let proxy: Awaited<ReturnType<typeof startTcpProxy>> | undefined;
   let confOverrides: Partial<PlClientConfig> = {};

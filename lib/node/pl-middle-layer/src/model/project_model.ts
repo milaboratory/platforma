@@ -1,13 +1,16 @@
-import type { ResourceId, ResourceType } from "@milaboratories/pl-client";
+import type { ResourceType } from "@milaboratories/pl-client";
+import type { ProjectId } from "@milaboratories/pl-model-common";
 import type {
   ProjectListEntry as ProjectListEntryFromModel,
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
 import type { BlockRenderingMode } from "@platforma-sdk/model";
 
-export interface ProjectListEntry extends ProjectListEntryFromModel {
-  /** Project resource ID. */
-  rid: ResourceId;
+export type { ProjectId };
+
+export interface ProjectListEntry extends Omit<ProjectListEntryFromModel, "id"> {
+  /** Unique project identifier in middle layer. Use to operate with given project. */
+  id: ProjectId;
 }
 
 /** Entry representing a single block in block structure */
