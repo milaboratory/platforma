@@ -228,8 +228,8 @@ export class MiddleLayer {
     rename?: (previousLabel: string, existingLabels: string[]) => string,
   ): Promise<ProjectId> {
     const sourceRid = await this.resolveProjectId(srcProjectId);
-    let newPrj: ResourceRef;
-    await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
+
+    const newPrj: ResourceRef = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
       // Read source project meta
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
 
@@ -248,15 +248,18 @@ export class MiddleLayer {
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
       // Create the duplicate
-      newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
 
       // Attach to project list with a random UUID field name
       tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", newPrj);
       await tx.commit();
+
+      return newPrj;
     });
+
     await this.projectListTree.refreshState();
 
-    const signedRid = await newPrj!.globalId;
+    const signedRid = await newPrj.globalId;
     const newProjectId = resourceIdToString(signedRid) as ProjectId;
     this.projectIdCache.set(newProjectId, signedRid);
     return newProjectId;
