@@ -1,5 +1,12 @@
 # @milaboratories/pl-errors
 
+## 1.4.2
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.2
+- @milaboratories/pl-client@3.3.2
+
 ## 1.4.1
 
 ### Patch Changes
