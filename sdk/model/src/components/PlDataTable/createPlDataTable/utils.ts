@@ -6,6 +6,7 @@ import {
   Annotation,
   canonicalizeAxisId,
   DiscoveredPColumnId,
+  isLabelColumn,
   readAnnotation,
   readAnnotationJson,
 } from "@milaboratories/pl-model-common";
@@ -22,6 +23,7 @@ import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./cre
 import type { ColumnSelector } from "../../../columns";
 import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
 import { isNil } from "es-toolkit";
+import { getField } from "@milaboratories/helpers";
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
@@ -54,8 +56,12 @@ export function getOrderPriority(
   orderByColId?: Map<PObjectId, ColumnOrderRule>,
 ): undefined | number {
   const rule = orderByColId?.get(col.id);
-  if (rule !== undefined) return rule.priority;
-  return readAnnotationJson(col.spec, Annotation.Table.OrderPriority);
+  return (
+    rule?.priority ??
+    readAnnotationJson(col.spec, Annotation.Table.OrderPriority) ??
+    // Label columns for axes get highest priority to keep them leftmost;
+    (isLabelColumn(col.spec) && col.spec.axesSpec.length === 1 ? 110000 : undefined)
+  );
 }
 
 /**
@@ -276,9 +282,9 @@ export function deriveAllLabels(options: {
 
 /** Column shape required by tooltip derivation. */
 export type TooltipableColumn = {
-  readonly id: DiscoveredPColumnId;
+  readonly id: PObjectId | DiscoveredPColumnId;
   readonly spec: PColumnSpec;
-  readonly originalId: PObjectId;
+  readonly originalId?: PObjectId;
   readonly linkerPath?: MatchVariant["path"];
   readonly qualifications?: MatchQualifications;
 };
@@ -290,15 +296,15 @@ export function deriveAllTooltips(options: {
   const { columns } = options;
 
   const variantCountByOriginal = columns.reduce<Map<PObjectId, number>>((acc, c) => {
-    return acc.set(c.originalId, (acc.get(c.originalId) ?? 0) + 1);
+    return acc.set(getField(c, "originalId") ?? c.id, (acc.get(c.originalId ?? c.id) ?? 0) + 1);
   }, new Map());
 
   const { entries } = columns.reduce(
     ({ entries, variantSeen }, c) => {
-      const variantCount = variantCountByOriginal.get(c.originalId);
+      const id = getField(c, "originalId") ?? c.id;
+      const variantCount = variantCountByOriginal.get(id);
       const variantIndex =
-        (variantSeen.set(c.originalId, (variantSeen.get(c.originalId) ?? 0) + 1),
-        variantSeen.get(c.originalId));
+        (variantSeen.set(id, (variantSeen.get(id) ?? 0) + 1), variantSeen.get(id));
 
       entries.push({
         spec: c.spec,

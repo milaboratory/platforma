@@ -275,7 +275,8 @@ export function makeColDef(
     context: spec,
     field: `${iCol}`,
     headerName,
-    lockPosition: spec.type === "axis",
+    lockPosition:
+      spec.type === "axis" || (isLabelColumnSpec(spec.spec) && spec.spec.axesSpec.length === 1),
     hide: hiddenColIds !== undefined && hiddenColIds.includes(colId),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
@@ -396,17 +397,11 @@ function selectDisplayableIndices(
       switch (spec.type) {
         case "axis":
           return (
-            // show axis if not hidden or if it has a label column
-            (!isColumnHidden(spec.spec) ? true : getLabelColumnIndex(spec.id) > -1) &&
+            !(getLabelColumnIndex(spec.id) > -1 ? true : isColumnHidden(spec.spec)) &&
             !isPartitionedAxis(spec.id)
           );
         case "column":
-          return (
-            !isColumnHidden(spec.spec) &&
-            // hide label columns (their labeled axes are shown instead)
-            !isLabelColumnSpec(spec.spec) &&
-            !isLinkerColumnSpec(spec.spec)
-          );
+          return !isColumnHidden(spec.spec) && !isLinkerColumnSpec(spec.spec);
       }
     })
     .map(([i]) => i)
@@ -417,30 +412,28 @@ function selectDisplayableIndices(
 function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColumnSpec[]): number[] {
   const priorityOf = (i: number): number => {
     const spec = tableSpecs[i];
-    return spec.type === "column"
-      ? (readAnnotationJson(spec.spec, Annotation.Table.OrderPriority) ?? 0)
-      : 0;
+    const prior =
+      spec.type === "axis" || isLabelColumnSpec(spec.spec)
+        ? Infinity
+        : Number(readAnnotationJson(spec.spec, Annotation.Table.OrderPriority));
+
+    return isNaN(prior) ? 0 : prior;
   };
-  return [...indices].sort((a, b) => {
-    if (tableSpecs[a].type !== tableSpecs[b].type) {
-      return tableSpecs[a].type === "axis" ? -1 : 1;
-    }
-    return priorityOf(b) - priorityOf(a);
-  });
+  return [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
 }
 
-/** For each axis entry substitute the index of its matching label column when one exists. */
-function replaceAxesWithLabelColumns(
-  fields: number[],
-  tableSpecs: PTableColumnSpec[],
-  getLabelColumnIndex: (axisId: AxisId) => number,
-): number[] {
-  return fields.map((i) => {
-    const spec = tableSpecs[i];
-    const labelIdx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
-    return labelIdx === -1 ? i : labelIdx;
-  });
-}
+// /** For each axis entry substitute the index of its matching label column when one exists. */
+// function replaceAxesWithLabelColumns(
+//   fields: number[],
+//   tableSpecs: PTableColumnSpec[],
+//   getLabelColumnIndex: (axisId: AxisId) => number,
+// ): number[] {
+//   return fields.map((i) => {
+//     const spec = tableSpecs[i];
+//     const labelIdx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
+//     return labelIdx === -1 ? i : labelIdx;
+//   });
+// }
 
 /** Default hidden col ids built from columns marked with the Optional annotation. */
 function computeDefaultHiddenColIds(

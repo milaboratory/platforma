@@ -1,5 +1,5 @@
 import type { PColumnSpec, PlRef, PObjectId } from "@milaboratories/pl-model-common";
-import { createDiscoveredPColumnId, isPlRef } from "@milaboratories/pl-model-common";
+import { createDiscoveredPColumnId, isPlRef, PColumnName } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type {
   ColumnSource,
@@ -42,11 +42,62 @@ export function discoverTableColumnSnaphots(
   if (collection === undefined) return undefined;
 
   try {
-    const variants = collection.findColumnVariants({
-      ...(resolvedOptions.selector ?? {}),
-    });
+    const variants = collection.findColumnVariants(resolvedOptions.selector);
     const anchors = collection.getAnchors();
     return mapToTableColumnVariants(variants, anchors);
+  } finally {
+    collection.dispose();
+  }
+}
+
+/**
+ * Discover label columns matching the axes of the given value columns from
+ * ctx providers. Returns label snapshots wrapped as direct TableColumnVariants
+ * (path: [], empty qualifications, isPrimary: false).
+ */
+export function discoverLabelColumnVariants<A, U>(
+  ctx: RenderCtxBase<A, U>,
+  columns: TableColumnVariant[],
+): TableColumnVariant[] {
+  if (columns.length === 0) return [];
+  const collection = new ColumnCollectionBuilder(ctx.getService("pframeSpec"))
+    .addSources(collectCtxColumnSnapshotProviders(ctx))
+    .addSource(columns.map((c) => c.column))
+    .build({
+      allowPartialColumnList: true,
+      anchors: Object.fromEntries(
+        columns
+          .filter((col) => (col.path?.length ?? 0) === 0 && col.isPrimary)
+          .map((col, i) => [`anchor_${i}`, col.column.spec]),
+      ),
+    });
+
+  try {
+    const axes = columns.flatMap((col) => col.column.spec.axesSpec);
+    return collection
+      .findColumnVariants({
+        include: axes.map((a) => ({
+          name: { type: "exact", value: PColumnName.Label },
+          axes: [{ name: { type: "exact", value: a.name } }],
+        })),
+        maxHops: columns.reduce((acc, c) => Math.max(acc, c.path?.length ?? 0), 0),
+      })
+      .map((variant) => ({
+        ...variant,
+        column: {
+          ...variant.column,
+          id: createDiscoveredPColumnId({
+            column: variant.column.id,
+            path: variant.path?.map((p) => ({
+              type: "linker",
+              column: p.linker.id,
+            })),
+            columnQualifications: variant.qualifications?.forHit,
+            queriesQualifications: variant.qualifications?.forQueries,
+          }),
+          originalId: variant.column.id,
+        },
+      }));
   } finally {
     collection.dispose();
   }
@@ -99,12 +150,12 @@ function mapToTableColumnVariants(
 
     const discoveredId = createDiscoveredPColumnId({
       column: snap.id,
-      path: variant.path.map((p) => ({
+      path: variant.path?.map((p) => ({
         type: "linker",
         column: p.linker.id,
       })),
-      columnQualifications: variant.qualifications.forHit,
-      queriesQualifications: variant.qualifications.forQueries,
+      columnQualifications: variant.qualifications?.forHit,
+      queriesQualifications: variant.qualifications?.forQueries,
     });
     return {
       column: {
