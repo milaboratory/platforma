@@ -417,7 +417,7 @@ function convertPartitionFiltersToFilterSpec(
 function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
-      const { spec: _, ...column } = parseJson(item.colId).labeled;
+      const { spec: _, ...column } = parseJson(item.colId);
       return {
         column,
         ascending: item.sort === "asc",
@@ -430,7 +430,7 @@ function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]
 function getHiddenColIds(
   state: PlDataTableGridStateCore["columnVisibility"],
 ): PTableColumnId[] | null {
-  return state?.hiddenColIds?.map((json) => getPTableColumnId(parseJson(json).source)) ?? null;
+  return state?.hiddenColIds?.map((json) => getPTableColumnId(parseJson(json))) ?? null;
 }
 
 function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {

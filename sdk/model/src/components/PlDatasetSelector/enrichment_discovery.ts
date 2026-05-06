@@ -69,10 +69,10 @@ export function findEnrichmentColumns(
   });
   const predicate = options?.predicate;
   return variants.filter((v) => {
-    if (v.path.length === 0) return false;
+    if ((v.path?.length ?? 0) === 0) return false;
     if (predicate !== undefined && !predicate(v.column.spec)) return false;
     if (!isGloballyAddressable(v.column.id)) return false;
-    if (v.path.some((p) => !isGloballyAddressable(p.linker.id))) return false;
+    if (v.path?.some((p) => !isGloballyAddressable(p.linker.id))) return false;
     return true;
   });
 }
@@ -90,20 +90,20 @@ export function enrichmentVariantsToRefs(
 
   const entries: Entry[] = variants.map((variant) => ({
     spec: variant.column.spec,
-    linkerPath: variant.path.map((p) => ({ spec: p.linker.spec })),
+    linkerPath: variant.path?.map((p) => ({ spec: p.linker.spec })),
     qualifications: variant.qualifications,
   }));
   const labels = deriveDistinctLabels(entries, labelOptions);
 
   return variants.map((variant, i): LabeledEnrichmentRef => {
-    const path: EnrichmentStep[] = variant.path.map((step) => ({
+    const path: undefined | EnrichmentStep[] = variant.path?.map((step) => ({
       type: "linker",
       linker: step.linker.id,
     }));
     return {
       ref: createEnrichmentRef(variant.column.id, {
         path,
-        qualifications: variant.qualifications.forHit,
+        qualifications: variant.qualifications?.forHit,
       }),
       label: labels[i],
     };

@@ -4,10 +4,10 @@ import { AxisQualification } from "./selectors";
 import { canonicalizeJson } from "../../../json";
 
 export type DiscoveredPColumn = {
-  path: PathItem[];
   column: PObjectId;
-  columnQualifications: AxisQualification[];
-  queriesQualifications: Record<PObjectId, AxisQualification[]>;
+  path?: PathItem[];
+  columnQualifications?: AxisQualification[];
+  queriesQualifications?: Record<PObjectId, AxisQualification[]>;
 };
 
 export type DiscoveredPColumnId = Branded<PObjectId, "DiscoveredPColumnId">; // CanonicalizedJson<DiscoveredPColumn>;
@@ -28,22 +28,28 @@ export function isDiscoveredPColumn(obj: unknown): obj is DiscoveredPColumn {
   );
 }
 
-export function createDiscoveredPColumn(props: {
-  column: PObjectId;
-  path: PathItem[];
-  columnQualifications: AxisQualification[];
-  queriesQualifications: Record<PObjectId, AxisQualification[]>;
-}): DiscoveredPColumn {
-  return JSON.parse(JSON.stringify(props));
+export function distillDiscoveredPColumn(props: DiscoveredPColumn): DiscoveredPColumn {
+  return {
+    column: props.column,
+    path: Array.isArray(props.path) && props.path.length > 0 ? props.path : undefined,
+    columnQualifications:
+      Array.isArray(props.columnQualifications) && props.columnQualifications.length > 0
+        ? props.columnQualifications
+        : undefined,
+    queriesQualifications:
+      props.queriesQualifications && Object.keys(props.queriesQualifications).length > 0
+        ? props.queriesQualifications
+        : undefined,
+  };
 }
 
 export function createDiscoveredPColumnId(props: {
   column: PObjectId;
-  path: PathItem[];
-  columnQualifications: AxisQualification[];
-  queriesQualifications: Record<PObjectId, AxisQualification[]>;
+  path?: PathItem[];
+  columnQualifications?: AxisQualification[];
+  queriesQualifications?: Record<PObjectId, AxisQualification[]>;
 }): DiscoveredPColumnId {
-  return stringifyDiscoveredPColumnId(createDiscoveredPColumn(props));
+  return stringifyDiscoveredPColumnId(props);
 }
 
 export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPColumn {
@@ -60,5 +66,7 @@ export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPCo
 }
 
 export function stringifyDiscoveredPColumnId(id: DiscoveredPColumn) {
-  return canonicalizeJson<DiscoveredPColumn>(id) as string as DiscoveredPColumnId;
+  return canonicalizeJson<DiscoveredPColumn>(
+    distillDiscoveredPColumn(id),
+  ) as string as DiscoveredPColumnId;
 }

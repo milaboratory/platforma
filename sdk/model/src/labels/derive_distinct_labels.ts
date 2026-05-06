@@ -289,7 +289,7 @@ function enrichRecord(value: Entry, index: number, options: DeriveLabelsOptions)
     }
   }
 
-  if (qualifications !== undefined) {
+  if (qualifications !== undefined && qualifications.forQueries !== undefined) {
     for (const [anchorId, qs] of Object.entries(qualifications.forQueries)) {
       if (qs.length === 0) continue;
       const anchorText = isFunction(formatters?.anchorQualification)
@@ -302,7 +302,7 @@ function enrichRecord(value: Entry, index: number, options: DeriveLabelsOptions)
         importance: -11,
       });
     }
-    if (qualifications.forHit.length > 0) {
+    if (qualifications.forHit !== undefined && qualifications.forHit.length > 0) {
       const hitText = isFunction(formatters?.hitQualification)
         ? formatters.hitQualification(qualifications.forHit, spec, index)
         : `[${formatQualifications(qualifications.forHit)}]`;

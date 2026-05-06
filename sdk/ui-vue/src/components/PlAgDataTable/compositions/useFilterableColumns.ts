@@ -33,7 +33,7 @@ export function useFilterableColumns(
       const cols = dataColDefs
         .filter((def): def is typeof def & { colId: string } => !isNil(def.colId))
         .map((def) => ({
-          item: parseJson(def.colId satisfies string as PlTableColumnIdJson).labeled,
+          item: parseJson(def.colId satisfies string as PlTableColumnIdJson),
           hide: def.hide,
         }));
 
