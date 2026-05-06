@@ -807,6 +807,13 @@ export interface components {
       platform: string;
       os: string;
       arch: string;
+      /**
+       * @description Runtime capabilities advertised by this backend.
+       *      Block manifests declare what they need via meta.requiredCapabilities;
+       *      Desktop matches against this list at install time.
+       *      Tokens are loose strings; current set: "wasm".
+       */
+      capabilities: string[];
     };
     MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];

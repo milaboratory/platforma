@@ -55,6 +55,21 @@ export function BlockPackMeta<
      * If not provided, the block is supported on all operating systems.
      */
     supportedPlatforms: z.array(BlockPlatform).optional(),
+    /**
+     * Runtime capabilities the block needs from the backend (e.g. "wasm").
+     * Desktop refuses to install if any listed token is missing from the
+     * backend's `serverInfo.capabilities`.
+     *
+     * Tokens are loose strings (not an enum) so future capabilities don't
+     * break Desktops that ship before each token is added — the same
+     * forward-compat property `BlockPackMeta` itself enjoys at the field
+     * level, applied recursively at the token level.
+     *
+     * Hardcoded by `@platforma-sdk/block-tools` to ["wasm"] for every
+     * block built with the SDK release that introduces WASM support.
+     * See docs/text/work/projects/webassembly-libraries-tengo/wasm-bundling.md.
+     */
+    requiredCapabilities: z.array(z.string()).optional(),
   });
 }
 

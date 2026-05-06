@@ -17,6 +17,17 @@ export async function buildBlockPackDist(
   const files: string[] = [];
   const descriptionRelative: BlockPackDescriptionManifest =
     await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
+
+  // Hardcode the WASM runtime capability for every block packed by this
+  // SDK release. See docs/text/work/projects/webassembly-libraries-tengo/
+  // wasm-bundling.md for the rationale. Desktop matches this list against
+  // serverInfo.capabilities at install time; old Desktops strip the
+  // unknown field on parse and fall back to platform-only gating.
+  descriptionRelative.meta = {
+    ...descriptionRelative.meta,
+    requiredCapabilities: ["wasm"],
+  };
+
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {
       const bytes = await fsp.readFile(path.resolve(dst, f));
