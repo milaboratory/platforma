@@ -1,5 +1,14 @@
 # @platforma-sdk/block-tools
 
+## 2.7.22
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.41.1
+- @milaboratories/pl-model-middle-layer@1.19.2
+- @milaboratories/ts-helpers@1.8.2
+- @milaboratories/ts-helpers-oclif@1.1.41
+
 ## 2.7.21
 
 ### Patch Changes
