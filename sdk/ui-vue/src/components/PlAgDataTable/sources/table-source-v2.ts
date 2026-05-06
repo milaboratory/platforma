@@ -16,7 +16,6 @@ import {
   type AxisId,
   type PTableColumnSpec,
   type PTableKey,
-  type PlTableColumnId,
   type PlTableColumnIdJson,
   isLabelColumn as isLabelColumnSpec,
   isLinkerColumn as isLinkerColumnSpec,
@@ -121,7 +120,7 @@ export async function calculateGridOptions({
 
   const isPartitionedAxis = createPartitionedAxisPredicate(sheets);
 
-  // label columns indexed by labeled axis (for axis→label replacement later)
+  // label columns indexed by labeled axis (used for displayability filter)
   const getLabelColumnIndex = collectLabelColumnsByAxis(tableSpecs, isPartitionedAxis);
 
   // displayable column indices ordered: axes first, then columns by OrderPriority
@@ -130,34 +129,22 @@ export async function calculateGridOptions({
     tableSpecs,
   );
 
-  // same as fields, but each axis replaced by its label column index when available
-  const indices = replaceAxesWithLabelColumns(fields, tableSpecs, getLabelColumnIndex);
-
   // default hidden columns derived from Optional annotation when no saved state
-  const resolvedHiddenColIds =
-    hiddenColIds ?? computeDefaultHiddenColIds(fields, indices, tableSpecs);
+  const resolvedHiddenColIds = hiddenColIds ?? computeDefaultHiddenColIds(fields, tableSpecs);
 
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
-    ...fields.map((field, index) =>
-      makeColDef(
-        field,
-        tableSpecs[field],
-        tableSpecs[indices[index]],
-        resolvedHiddenColIds,
-        cellButtonAxisParams,
-      ),
+    ...fields.map((field) =>
+      makeColDef(field, tableSpecs[field], resolvedHiddenColIds, cellButtonAxisParams),
     ),
   ];
 
   // axes — taken directly from visible table (always present as part of join)
   const visibleAxes = collectVisibleAxes(visibleTableSpecs);
 
-  // request indices: non-hidden display fields + visible axes for row selection keys.
-  // Axes replaced by label columns request label data (display); original axis values
-  // are fetched via visibleAxes (row keys).
+  // request indices: display fields + visible axes for row selection keys.
   const { requestIndices, axesResultIndices, fieldResultMapping } = buildRequestIndices(
-    indices,
+    fields,
     visibleAxes.map(([idx]) => idx),
     specsToVisibleSpecsMapping,
   );
@@ -245,14 +232,10 @@ export type PlAgCellButtonAxisParams = {
 export function makeColDef(
   iCol: number,
   spec: PTableColumnSpec,
-  labeledSpec: PTableColumnSpec,
   hiddenColIds: PlTableColumnIdJson[] | undefined,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
-  const colId = canonicalizeJson<PlTableColumnId>({
-    source: spec,
-    labeled: labeledSpec,
-  });
+  const colId = canonicalizeJson<PTableColumnSpec>(spec);
   const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};
@@ -265,9 +248,7 @@ export function makeColDef(
     }
   }
   const headerName =
-    readAnnotation(labeledSpec.spec, Annotation.Label)?.trim() ??
-    readAnnotation(spec.spec, Annotation.Label)?.trim() ??
-    `Unlabeled ${spec.type} ${iCol}`;
+    readAnnotation(spec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`;
 
   return {
     colId,
@@ -314,12 +295,8 @@ export function makeColDef(
             throw Error(`unsupported data type: ${valueType}`);
         }
       })(),
-      tooltip:
-        readAnnotation(spec.spec, Annotation.Description)?.trim() ??
-        readAnnotation(labeledSpec.spec, Annotation.Description)?.trim(),
-      // info:
-      //   readAnnotation(spec.spec, Annotation.Table.Info)?.trim() ??
-      //   readAnnotation(labeledSpec.spec, Annotation.Table.Info)?.trim(),
+      tooltip: readAnnotation(spec.spec, Annotation.Description)?.trim(),
+      // info: readAnnotation(spec.spec, Annotation.Table.Info)?.trim(),
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
@@ -422,30 +399,16 @@ function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColum
   return [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
 }
 
-// /** For each axis entry substitute the index of its matching label column when one exists. */
-// function replaceAxesWithLabelColumns(
-//   fields: number[],
-//   tableSpecs: PTableColumnSpec[],
-//   getLabelColumnIndex: (axisId: AxisId) => number,
-// ): number[] {
-//   return fields.map((i) => {
-//     const spec = tableSpecs[i];
-//     const labelIdx = spec.type === "axis" ? getLabelColumnIndex(spec.id) : -1;
-//     return labelIdx === -1 ? i : labelIdx;
-//   });
-// }
-
 /** Default hidden col ids built from columns marked with the Optional annotation. */
 function computeDefaultHiddenColIds(
   fields: number[],
-  indices: number[],
   tableSpecs: PTableColumnSpec[],
 ): PlTableColumnIdJson[] {
-  return fields.reduce<PlTableColumnIdJson[]>((acc, field, i) => {
+  return fields.reduce<PlTableColumnIdJson[]>((acc, field) => {
     const spec = tableSpecs[field];
-    if (spec.type !== "column" || !isColumnOptional(spec.spec)) return acc;
-    const labeledSpec = tableSpecs[indices[i]];
-    return [...acc, canonicalizeJson<PlTableColumnId>({ source: spec, labeled: labeledSpec })];
+    return spec.type === "column" && isColumnOptional(spec.spec)
+      ? [...acc, canonicalizeJson<PTableColumnSpec>(spec)]
+      : acc;
   }, []);
 }
 

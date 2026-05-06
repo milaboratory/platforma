@@ -90,11 +90,6 @@ export function isCsvExportAvailable(): boolean {
  * ag-grid column defs, remapped onto the provided PTable spec array so the
  * indices match the current table handle (ColDef.field indices may be stale
  * or diverge from the spec order).
- *
- * Each grid column carries a `PlTableColumnId` ({ source, labeled }). When
- * the labeled spec differs from the source (axis replaced by a label
- * column), both indices are emitted so the export contains the raw axis
- * value alongside its human-readable label.
  */
 export function collectVisibleColumnIndices(
   gridApi: GridApi,
@@ -114,8 +109,7 @@ export function collectVisibleColumnIndices(
     if (def.hide === true) return [];
     if (isNil(def.colId)) return [];
     if (def.colId === PlAgDataTableRowNumberColId) return [];
-    const { labeled } = parseJson(def.colId as PlTableColumnIdJson);
-    return [labeled];
+    return [parseJson(def.colId as PlTableColumnIdJson)];
   };
 
   return [...new Set(columnDefs.flatMap(specsForDef).map(findIndex))].filter((idx) => idx !== -1);

@@ -14,14 +14,7 @@ import type {
 import type { FilterSpecLeaf } from "../../filters";
 import { Nil } from "@milaboratories/helpers";
 
-export type PlTableColumnId = {
-  /** Original column spec */
-  source: PTableColumnSpec;
-  /** Column spec with labeled axes replaced by label columns */
-  labeled: PTableColumnSpec;
-};
-
-export type PlTableColumnIdJson = CanonicalizedJson<PlTableColumnId>;
+export type PlTableColumnIdJson = CanonicalizedJson<PTableColumnSpec>;
 
 export type PlDataTableGridStateCore = {
   /** Includes column ordering */

@@ -1,7 +1,6 @@
 // If you need to export something from previous versions,
 // that mean you don't forget update deps to the latest version of the package.
 export type {
-  PlTableColumnId,
   PlTableColumnIdJson,
   PlDataTableGridStateCore,
   PlDataTableSheet,
