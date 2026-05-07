@@ -223,7 +223,10 @@ self.body(func(inputs) {
 				pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
 				json.encode({
 					partitionKeyLength: isolationKeyLength,
-					keyLength: output.keyLength
+					// Body returns a ResourceMap keyed by the batch-key axes;
+					// the wrapped resource carries that prefix on top of the
+					// body's own declared key components.
+					keyLength: batchKeyLength + output.keyLength
 				})
 			)
 		} else if output.type == "Xsv" {
@@ -355,9 +358,10 @@ self.body(func(inputs) {
 		}
 
 		// Two strategies driven by passContent (see split template header comment).
-		// passContent=false: N slice+save blobs; Tengo memory O(1).
+		// passContent=false: save one joined file + tiny count content; split
+		//                    template awaits count, slices via its own pt run.
+		//                    Avoids loading content into the orchestrator.
 		// passContent=true:  one saveContent + line-slicing in Tengo; Tengo memory O(scope_size).
-		_batchFileName := func(i) { return "batch_" + string(i) + "." + formatExt }
 
 		if passContent {
 			joinedName := "joined." + formatExt
@@ -365,13 +369,23 @@ self.body(func(inputs) {
 			ptResult := wf.run()
 			splitInputs.joinedContent = ptResult.getFileContent(joinedName)
 		} else {
-			for i := 0; i < batchCount; i++ {
-				df.slice(i * effectiveBatchSize, effectiveBatchSize).save(_batchFileName(i), { format: formatExt })
-			}
+			// Save the joined frame as a single file and emit a tiny count
+			// resource. The orchestrator can't read content from its own
+			// pt.run output (the future isn't materialized within this
+			// template's body), so the count is consumed in the split
+			// template, where it's awaited as an input.
+			joinedFileName := "joined." + formatExt
+			df.save(joinedFileName, { format: formatExt })
+			// pt.agg requires a preceding groupBy. Use withColumns (non-mutating
+			// — returns a new frame) to add a literal grouping column so the
+			// aggregation collapses to one row, without touching the saved df.
+			df.withColumns(pt.lit(1).alias("__grp__")).
+				groupBy("__grp__").
+				agg(pt.col("__grp__").count().alias("__count__")).
+				saveContent("count.tsv", { format: "tsv" })
 			ptResult := wf.run()
-			for i := 0; i < batchCount; i++ {
-				splitInputs["__batch_" + string(i) + "__"] = ptResult.getFile(_batchFileName(i))
-			}
+			splitInputs.joinedFile = ptResult.getFile(joinedFileName)
+			splitInputs.countContent = ptResult.getFileContent("count.tsv")
 		}
 
 		// Forward extra/meta inputs (names are preserved; split template strips prefixes).
@@ -410,7 +424,9 @@ self.body(func(inputs) {
 		if output.type == "ResourceMap" {
 			result[key] = smart.structBuilder(
 				pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-				json.encode({ keyLength: output.keyLength })
+				// Same shape as the populated case: body's ResourceMap is keyed
+				// by the batch-key axes plus its own declared key components.
+				json.encode({ keyLength: batchKeyLength + output.keyLength })
 			).lockAndBuild()
 		} else if output.type == "Xsv" {
 			result[key] = smart.structBuilder(

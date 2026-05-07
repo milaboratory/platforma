@@ -123,14 +123,49 @@ self.body(func(inputs) {
 		}
 	}
 
-	// In passContent mode the orchestrator's `batchCount` is an upper-bound
-	// estimate (recordsInGroup returns partition count for partitioned types,
-	// not record count). Recompute from the actual line count so we never
-	// silently drop trailing records when the estimate is too small.
-	if passContent {
-		actualBatchCount := (len(dataLines) + batchSize - 1) / batchSize
-		if actualBatchCount > batchCount {
-			batchCount = actualBatchCount
+	// passContent=false: orchestrator emitted one joined file + a tiny count
+	// content. Read the count to compute the true batchCount (orchestrator's
+	// `params.batchCount` is a partition-count upper-bound and may underestimate
+	// row count for parquet/json-partitioned data), then re-slice via an
+	// internal pt run. The joined file is materialized but never read into
+	// Tengo memory — it flows through pt as an input frame.
+	batchFileRefs := undefined
+	if !passContent {
+		ll.assert(!is_undefined(inputs.joinedFile),
+			"passContent=false but joinedFile input is missing")
+		ll.assert(!is_undefined(inputs.countContent),
+			"passContent=false but countContent input is missing")
+
+		countText := _readContent(inputs.countContent)
+		if !is_string(countText) {
+			countText = string(countText)
+		}
+		countLines := text.split(text.trim_space(countText), "\n")
+		actualRecords := 0
+		if len(countLines) >= 2 {
+			lastFields := text.split(countLines[len(countLines) - 1], "\t")
+			parsed := json.decode(text.trim_space(lastFields[len(lastFields) - 1]))
+			if is_int(parsed) {
+				actualRecords = parsed
+			}
+		}
+		batchCount = (actualRecords + batchSize - 1) / batchSize
+		if batchCount == 0 {
+			batchCount = 1
+		}
+
+		sliceWf := pt.workflow()
+		sliceDf := sliceWf.frame(inputs.joinedFile, { xsvType: formatExt })
+		batchFileNames := []
+		for batchIdx := 0; batchIdx < batchCount; batchIdx++ {
+			batchFileName := "batch_" + string(batchIdx) + "." + formatExt
+			batchFileNames = append(batchFileNames, batchFileName)
+			sliceDf.slice(batchIdx * batchSize, batchSize).save(batchFileName, { format: formatExt })
+		}
+		sliceResult := sliceWf.run()
+		batchFileRefs = []
+		for _, fname in batchFileNames {
+			batchFileRefs = append(batchFileRefs, sliceResult.getFile(fname))
 		}
 	}
 
@@ -152,9 +187,8 @@ self.body(func(inputs) {
 			}
 			valueInput = smart.createJsonResource(batchContent)
 		} else {
-			batchInputName := "__batch_" + string(batchIdx) + "__"
-			valueInput = rawInputs[batchInputName]
-			ll.assert(!is_undefined(valueInput), "batch input not found: %v", batchInputName)
+			valueInput = batchFileRefs[batchIdx]
+			ll.assert(!is_undefined(valueInput), "batch slice ref missing for index %v", batchIdx)
 		}
 
 		// Build render inputs for body template
@@ -212,9 +246,12 @@ self.body(func(inputs) {
 			// are the union of all batch-returned keys.
 			batchRMs := resourceMapBatchResults[output.name]
 			if len(batchRMs) == 0 {
+				batchKeyLength := len(params.batchKeyHeaders)
 				result[output.name] = smart.structBuilder(
 					pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-					json.encode({ keyLength: output.keyLength })
+					// Match the populated/merged shape: body's ResourceMap is
+					// keyed by batch-key axes plus its own declared key.
+					json.encode({ keyLength: batchKeyLength + output.keyLength })
 				).lockAndBuild()
 			} else if len(batchRMs) == 1 {
 				// Single batch — pass-through
