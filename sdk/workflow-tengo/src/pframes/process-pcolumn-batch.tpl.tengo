@@ -15,7 +15,7 @@ maps := import(":maps")
 
 json := import("json")
 
-batchHelpers := import(":pframes.process-pcolumn-batch")
+batchHelpers := import(":pframes.process-pcolumn-batch-helpers")
 batchSplitTpl := assets.importTemplate(":pframes.process-pcolumn-batch-split")
 
 self.awaitState("InputsLocked")

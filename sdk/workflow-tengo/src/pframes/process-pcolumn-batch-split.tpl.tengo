@@ -40,7 +40,10 @@ self.body(func(inputs) {
 	outputs := params.outputs
 	formatExt := params.formatExt
 	if is_undefined(formatExt) {
-		formatExt = "tsv"
+		// Defensive only — the orchestrator always sets formatExt. NDJSON is
+		// chosen so that a missing param doesn't cause us to silently drop the
+		// first content line as a TSV/CSV header.
+		formatExt = "ndjson"
 	}
 	passContent := params.passContent
 	if is_undefined(passContent) {
