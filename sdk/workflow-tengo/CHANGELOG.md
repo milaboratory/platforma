@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.21.0
+
+### Minor Changes
+
+- 5d5e60e: processColumn Batch Processing API implementation
+
 ## 5.20.1
 
 ### Patch Changes
