@@ -1,0 +1,343 @@
+/**
+ * Batch-mode implementation backing `pframes.processColumn` when called with
+ * the `{ primary, columns? }` input form and a `batch` option.
+ *
+ * Validates and defaults the `batch` options, normalizes input column entries
+ * via `:pframes.process-column-common`, matches batch-key axes against the
+ * shared primary axes, rejects header/axis-name collisions, prepares output
+ * specs (ResourceMap or Xsv), and renders the `:pframes.process-pcolumn-batch`
+ * orchestrator template with the assembled parameters. The return value is
+ * the shared processColumn result object produced by
+ * `pCommon.createProcessColumnResult`.
+ *
+ * See `processColumn` in `:pframes` for the public API docs.
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+sets := import(":sets")
+slices := import(":slices")
+smart := import(":smart")
+render := import(":render")
+assets := import(":assets")
+pSpec := import(":pframes.spec")
+pUtil := import(":pframes.util")
+pCommon := import(":pframes.process-column-common")
+
+llBatchProcessTpl := assets.importTemplate(":pframes.process-pcolumn-batch")
+
+__PRIMITIVE_VALUE_TYPES := sets.fromSlice(["Int", "Long", "Float", "Double", "String", "Bytes"])
+__VALID_BATCH_FORMATS := sets.fromSlice(["tsv", "csv", "ndjson", "parquet"])
+
+/**
+ * Entry point for batch-mode processColumn.
+ *
+ * Called from `pframes.processColumn` when batch-mode is detected. See the
+ * public `processColumn` docs in `:pframes` for the user-facing contract and
+ * the batch spec for the full option semantics. This function does not do the
+ * per-scope grouping/joining itself — that runs inside the
+ * `:pframes.process-pcolumn-batch` template (which in turn delegates per-batch
+ * body execution to `:pframes.process-pcolumn-batch-split`).
+ *
+ * @param input    { primary, columns?, primaryJoin? } — see processColumn docs
+ * @param bodyTpl  per-batch body template (receives one batch file + extras)
+ * @param outputs  array of output configs (ResourceMap or Xsv)
+ * @param opts     processColumn opts including `batch`, `cpu`/`mem`/`queue`,
+ *                 `traceSteps`/`overrideTrace`, `extra`/`metaExtra`,
+ *                 `isEphemeral`, `stepCache`
+ * @returns processColumn result object (same shape as standard mode)
+ */
+processColumnBatch := func(input, bodyTpl, outputs, opts) {
+	ll.assert(!is_undefined(opts.batch),
+		"processColumn: batch option is required when input uses the primary+columns form; " +
+			"set opts.batch or use the single-input form")
+	ll.assert(is_undefined(opts.aggregate),
+		"processColumn: aggregate and batch options are mutually exclusive; remove one of them")
+
+	batch := opts.batch
+	ll.assert(is_int(batch.size) && batch.size > 0,
+		"batch.size must be a positive integer (records per batch); got %v", batch.size)
+
+	// Empty keyColumns would collapse every record into one group, making
+	// batching degenerate. Reject explicitly rather than let it propagate into
+	// calculateGroupAxesIndices as a no-op.
+	ll.assert(is_array(batch.keyColumns) && len(batch.keyColumns) > 0,
+		"batch.keyColumns is required and must be a non-empty array of axis names to batch over; got %v",
+		batch.keyColumns)
+
+	if is_undefined(batch.format) {
+		batch.format = "tsv"
+	}
+	ll.assert(sets.hasElement(__VALID_BATCH_FORMATS, batch.format),
+		"batch.format must be one of \"tsv\", \"csv\", \"ndjson\", \"parquet\"; got %v", batch.format)
+
+	if is_undefined(batch.passContent) {
+		batch.passContent = false
+	}
+	// Parquet is binary, so there's no meaningful string payload to hand to
+	// the body when passContent=true.
+	ll.assert(!(batch.passContent && batch.format == "parquet"),
+		"batch.passContent=true is not applicable to batch.format=\"parquet\" (binary format has no text payload); " +
+			"set passContent=false or choose a text format (tsv, csv, ndjson)")
+
+	// Soft limit on total batch count to prevent runaway graph growth on
+	// high-diversity inputs; enforced in the orchestrator template.
+	if is_undefined(batch.maxBatches) {
+		batch.maxBatches = 10000
+	}
+	ll.assert(is_int(batch.maxBatches) && batch.maxBatches > 0,
+		"batch.maxBatches must be a positive integer (soft cap on total batch count); got %v", batch.maxBatches)
+
+	primaryJoin := input.primaryJoin
+	if is_undefined(primaryJoin) {
+		primaryJoin = "full"
+	}
+	ll.assert(primaryJoin == "full" || primaryJoin == "inner",
+		"input.primaryJoin must be \"full\" or \"inner\"; got %v", primaryJoin)
+
+	isEph := false
+	if !is_undefined(opts.isEphemeral) {
+		isEph = opts.isEphemeral
+	}
+
+	// `input.columns` is the outer-joined non-primary input.
+	primaryEntries := pCommon.normalizeColumnEntries(input.primary)
+	secondaryEntries := pCommon.normalizeColumnEntries(input.columns)
+	ll.assert(len(primaryEntries) > 0,
+		"input.primary must contain at least one column")
+
+	// Batch mode joins columns via pt, which supports only primitive-valued
+	// PColumns. Reject non-primitive inputs up front rather than let them fail
+	// deep in pt.
+	_assertPrimitive := func(role, header, spec) {
+		ll.assert(sets.hasElement(__PRIMITIVE_VALUE_TYPES, spec.valueType),
+			"batch mode %s column %q has non-primitive valueType %q; " +
+				"use one of Int, Long, Float, Double, String, Bytes",
+			role, header, spec.valueType)
+	}
+	for entry in primaryEntries {
+		_assertPrimitive("primary", entry.header, entry.src.spec)
+	}
+	for entry in secondaryEntries {
+		_assertPrimitive("non-primary", entry.header, entry.src.spec)
+	}
+
+	// All primaries share axesSpec; take it from the first.
+	allAxesSpec := primaryEntries[0].src.spec.axesSpec
+	ll.assert(!is_undefined(allAxesSpec),
+		"primary column %q is missing axesSpec; every input PColumn spec must define axesSpec",
+		primaryEntries[0].header)
+
+	// Match batch key columns against axes
+	batchKeyIndices := pSpec.matchAxes(allAxesSpec, batch.keyColumns)
+	isolationIndices := pUtil.calculateGroupAxesIndices(len(allAxesSpec), batchKeyIndices)
+
+	isolationAxesSpec := []
+	for i in isolationIndices {
+		isolationAxesSpec = append(isolationAxesSpec, allAxesSpec[i])
+	}
+
+	batchKeyAxesSpec := []
+	for i in batchKeyIndices {
+		batchKeyAxesSpec = append(batchKeyAxesSpec, allAxesSpec[i])
+	}
+
+	// Reject header/axis-name collisions. The orchestrator aliases batch-key
+	// axis columns to their axis name AND selects value columns by `header`;
+	// any collision would produce ambiguous/duplicate column names in the
+	// exported file. `reservedNames` maps name → origin (for a clear error).
+	reservedNames := {}
+	_claimName := func(kind, name) {
+		prior := reservedNames[name]
+		ll.assert(is_undefined(prior),
+			"%s header %q collides with %s of the same name; rename one of them so every column and batch-key axis has a unique header",
+			kind, name, prior)
+		reservedNames[name] = kind
+	}
+	for axSpec in batchKeyAxesSpec {
+		_claimName("batch-key axis", axSpec.name)
+	}
+	for entry in primaryEntries {
+		_claimName("primary column", entry.header)
+	}
+	for entry in secondaryEntries {
+		_claimName("non-primary column", entry.header)
+	}
+
+	// iterationAxesSpec = isolation axes (outer iteration level of the output).
+	iterationAxesSpec := copy(isolationAxesSpec)
+
+	// Quick lookup from axis name → axis spec, used by Xsv `batchKeyColumns`
+	// to bind each referenced axis name to its spec without a nested loop.
+	batchKeyAxisByName := {}
+	for axSpec in batchKeyAxesSpec {
+		batchKeyAxisByName[axSpec.name] = axSpec
+	}
+
+	// Build output specs and processed outputs.
+	processedOutputs := []
+	outputSpecs := {}
+	outputsMap := {}
+
+	// Batch mode seeds trace from the first primary column's spec — no single
+	// canonical input spec exists across multiple inputs.
+	batchTraceInputSpec := primaryEntries[0].src.spec
+
+	for output in outputs {
+		outputsMap[output.name] = output
+		traceInfo := pCommon.buildOutputTrace(opts, output, batchTraceInputSpec)
+		_maybeInjectTrace := func(spec) {
+			if !is_undefined(traceInfo.trace) {
+				return traceInfo.trace.inject(spec, { override: traceInfo.overrideTrace })
+			}
+			return spec
+		}
+
+		ll.assert(output.type != "Resource",
+			"output %q: Resource output type is not supported in batch mode; use ResourceMap or Xsv instead",
+			output.name)
+		ll.assert(output.type == "ResourceMap" || output.type == "Xsv",
+			"output %q has unsupported output type %q in batch mode; use ResourceMap or Xsv instead",
+			output.name, output.type)
+
+		if output.type == "ResourceMap" {
+			spec := maps.merge(output.spec, {
+				axesSpec: copy(iterationAxesSpec) + copy(batchKeyAxesSpec) + slices.normalize(output.spec.axesSpec)
+			})
+			outputSpecs[output.name] = _maybeInjectTrace(spec)
+			processedOutputs = append(processedOutputs, maps.merge(output, {
+				keyLength: len(output.spec.axesSpec),
+				spec: undefined,
+				traceSteps: undefined,
+				overrideTrace: undefined
+			}))
+		} else { // output.type == "Xsv"
+			ll.assert(!is_undefined(output.settings),
+				"Xsv output %q is missing `settings` (required: an xsv import config)", output.name)
+
+			// Xsv importFile supports only csv|tsv|parquet. When batch.format=ndjson,
+			// the body must produce one of the importable formats and declare it
+			// via output.xsvType — the batch format applies to the file handed to
+			// the body, not to the body's output. Reject ambiguity here rather
+			// than let xsv.importFile fail with an opaque message.
+			if is_undefined(output.xsvType) {
+				ll.assert(batch.format != "ndjson",
+					"Xsv output %q requires explicit xsvType when batch.format=\"ndjson\" — " +
+						"set xsvType to csv, tsv, or parquet (xsv.importFile cannot read ndjson)",
+					output.name)
+			} else {
+				pUtil.validateXsvType(output.xsvType)
+			}
+
+			// batchKeyColumns references existing batch axes; axes defines new
+			// ones — mutually exclusive within one Xsv output.
+			batchKeyColumnsNames := output.settings.batchKeyColumns
+			ll.assert(!is_undefined(batchKeyColumnsNames),
+				"Xsv output %q is missing settings.batchKeyColumns (required in batch mode; list the axis names emitted by the body)",
+				output.name)
+			ll.assert(is_undefined(output.settings.axes),
+				"Xsv output %q cannot set both batchKeyColumns and axes in settings; these are mutually exclusive — keep batchKeyColumns only",
+				output.name)
+
+			batchAxes := slices.map(batchKeyColumnsNames, func(colName) {
+				axSpec := batchKeyAxisByName[colName]
+				ll.assert(!is_undefined(axSpec),
+					"Xsv output %q: settings.batchKeyColumns entry %q does not match any batch.keyColumns axis",
+					output.name, colName)
+				return { column: colName, spec: axSpec }
+			})
+
+			// Replace batchKeyColumns with the built axes and pin
+			// partitionKeyLength=0. pfconv MUST have partitionKeyLength < len(axes);
+			// with 0 it embeds all rows as a single "[]" partition whose JSON maps
+			// axis_value → column_value.
+			modifiedSettings := maps.merge(output.settings, {
+				axes: batchAxes,
+				batchKeyColumns: undefined,
+				partitionKeyLength: 0
+			})
+			decomposition := pUtil.decomposePfconvImportCfg(modifiedSettings, {
+				additionalAxesSpec: iterationAxesSpec
+			})
+			columnsSpec := decomposition.columnsSpec
+			for columnName, spec in columnsSpec {
+				columnsSpec[columnName] = _maybeInjectTrace(spec)
+			}
+			outputSpecs[output.name] = columnsSpec
+			processedOutputs = append(processedOutputs, maps.merge(output, {
+				settings: decomposition.purifiedCfg,
+				flattenWithDelimiter: "/",
+				traceSteps: undefined,
+				overrideTrace: undefined
+			}))
+		}
+	}
+
+	primaryHeaders := slices.map(primaryEntries, func(e) { return e.header })
+	secondaryHeaders := slices.map(secondaryEntries, func(e) { return e.header })
+
+	// Content-affecting params — anything that changes what the orchestrator
+	// produces (batch structure, joined columns, declared outputs).
+	batchTemplateParams := {
+		batchSize: batch.size,
+		maxBatches: batch.maxBatches,
+		batchFormat: batch.format,
+		passContent: batch.passContent,
+		batchKeyIndices: batchKeyIndices,
+		isolationIndices: isolationIndices,
+		primaryJoin: primaryJoin,
+		eph: isEph,
+		outputs: processedOutputs,
+		primaryColumnCount: len(primaryEntries),
+		secondaryColumnCount: len(secondaryEntries),
+		primaryHeaders: primaryHeaders,
+		secondaryHeaders: secondaryHeaders
+	}
+
+	renderInputs := {
+		params: smart.createJsonResource(batchTemplateParams),
+		body: bodyTpl
+	}
+	for i, entry in primaryEntries {
+		renderInputs["__col_primary_" + string(i) + "_data"] = entry.src.data
+		renderInputs["__col_primary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
+		if !is_undefined(entry.filter) {
+			renderInputs["__col_primary_" + string(i) + "_filter_data"] = entry.filter.data
+			renderInputs["__col_primary_" + string(i) + "_filter_spec"] = smart.createJsonResource(entry.filter.spec)
+		}
+	}
+	for i, entry in secondaryEntries {
+		renderInputs["__col_secondary_" + string(i) + "_data"] = entry.src.data
+		renderInputs["__col_secondary_" + string(i) + "_spec"] = smart.createJsonResource(entry.src.spec)
+	}
+
+	extra := opts.extra
+	if !is_undefined(extra) {
+		for k, v in extra {
+			renderInputs["__extra_" + k] = v
+		}
+	}
+	metaExtra := opts.metaExtra
+	if !is_undefined(metaExtra) {
+		for k, v in metaExtra {
+			renderInputs["__meta_" + k] = v
+		}
+	}
+
+	// Meta inputs — resource/cache hints that must NOT contribute to the
+	// rendered resource's content hash. Same convention as pt's `runMetaInputs`.
+	renderMetaInputs := {
+		globalCpu: opts.cpu,
+		globalMem: opts.mem,
+		globalQueue: opts.queue,
+		stepCache: opts.stepCache,
+		cacheInputs: opts.cacheInputs
+	}
+
+	renderResult := render.createEphemeral(llBatchProcessTpl, renderInputs, { metaInputs: renderMetaInputs })
+	return pCommon.createProcessColumnResult(renderResult, outputsMap, outputSpecs)
+}
+
+export ll.toStrict({
+	processColumnBatch: processColumnBatch
+})

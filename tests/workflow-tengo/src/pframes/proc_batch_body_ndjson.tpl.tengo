@@ -1,0 +1,46 @@
+// proc_batch_body_ndjson — body template for ndjson batch format test.
+// Receives NDJSON content as __value__ (string) and emits a ResourceMap keyed
+// by the first JSON field of each line, mapping to a JsonObject with the parsed
+// row. Verifies the ndjson content path without routing back through pt (which
+// would reorder columns and break per-batch concat).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+text := import("text")
+json := import("json")
+
+self.defineOutputs(
+	"resMap"
+)
+
+self.body(func(inputs) {
+	batchContent := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(batchContent) {
+		ll.panic("expected string ndjson batch content, got: %v", batchContent)
+	}
+
+	rmBuilder := smart.structBuilder(
+		pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 1 })
+	)
+
+	for line in text.split(batchContent, "\n") {
+		if line == "" {
+			continue
+		}
+		row := json.decode(line)
+		// NDJSON row: { key: "...", heavyChain: "..." } — key column is "key".
+		if is_undefined(row.key) {
+			ll.panic("ndjson row missing \"key\" field: %v", line)
+		}
+		rmBuilder.createInputField(json.encode([row.key])).set(smart.createJsonResource(row))
+	}
+
+	return {
+		resMap: rmBuilder.lockAndBuild()
+	}
+})
