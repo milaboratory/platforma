@@ -1,5 +1,17 @@
 # @platforma-sdk/pl-cli
 
+## 0.7.0
+
+### Minor Changes
+
+- e65c3b9: Support fresh contract of user root creation
+
+### Patch Changes
+
+- Updated dependencies [e65c3b9]
+  - @milaboratories/pl-client@3.4.0
+  - @milaboratories/pl-middle-layer@1.59.5
+
 ## 0.6.4
 
 ### Patch Changes

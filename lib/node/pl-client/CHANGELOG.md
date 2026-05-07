@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.4.0
+
+### Minor Changes
+
+- e65c3b9: Support fresh contract of user root creation
+
 ## 3.3.3
 
 ### Patch Changes
