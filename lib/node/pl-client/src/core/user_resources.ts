@@ -52,7 +52,7 @@ type BackendCapability = "getUserRoot" | "listUserResources" | "legacy";
  *
  * Detects backend capability on the first getUserRoot() call and remembers
  * the result. Three-tier fallback:
- * 1. getUserRoot RPC (newest, supports doNotCreate)
+ * 1. getUserRoot RPC (newest, supports createIfNotExists)
  * 2. listUserResources RPC (streams all resources, picks userRoot)
  * 3. Named resource lookup/creation via transaction (legacy)
  */
@@ -73,15 +73,13 @@ export class UserResources {
    * 2. listUserResources RPC
    * 3. Named resource lookup/creation via transaction (legacy)
    */
-  async getUserRoot(): Promise<SignedResourceId>;
-  async getUserRoot(opts: { login?: string }): Promise<SignedResourceId>;
-  async getUserRoot(opts: { login?: string; doNotCreate: false }): Promise<SignedResourceId>;
-  async getUserRoot(opts: {
+  async getUserRoot(opts: { login?: string; createIfNotExists: true }): Promise<SignedResourceId>;
+  async getUserRoot(opts?: {
     login?: string;
-    doNotCreate: true;
+    createIfNotExists?: boolean;
   }): Promise<SignedResourceId | undefined>;
   async getUserRoot(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     if (this.backendCapability === undefined) {
       return await this.detectAndGetUserRoot(opts);
@@ -89,8 +87,16 @@ export class UserResources {
     return await this.getUserRootWith(this.backendCapability, opts);
   }
 
+  private async detectAndGetUserRoot(opts: {
+    login?: string;
+    createIfNotExists: true;
+  }): Promise<SignedResourceId>;
+  private async detectAndGetUserRoot(opts?: {
+    login?: string;
+    createIfNotExists?: boolean;
+  }): Promise<SignedResourceId | undefined>;
   private async detectAndGetUserRoot(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     // 1. Try getUserRoot RPC
     try {
@@ -117,7 +123,15 @@ export class UserResources {
 
   private async getUserRootWith(
     capability: BackendCapability,
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists: true },
+  ): Promise<SignedResourceId>;
+  private async getUserRootWith(
+    capability: BackendCapability,
+    opts?: { login?: string; createIfNotExists?: boolean },
+  ): Promise<SignedResourceId | undefined>;
+  private async getUserRootWith(
+    capability: BackendCapability,
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     switch (capability) {
       case "getUserRoot":
@@ -134,7 +148,7 @@ export class UserResources {
    * Always fetches fresh from the server (no caching).
    */
   async getDataLibraries(
-    opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
+    opts: { login?: string; createUserRootIfNotExists?: boolean } = {},
   ): Promise<ReadonlyMap<string, StorageInfo>> {
     if (this.backendCapability === undefined) {
       // First call — detect backend capability
@@ -158,24 +172,23 @@ export class UserResources {
     return await this.getDataLibrariesViaLegacy();
   }
 
-  private async getUserRootViaRpc(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaRpc(opts: {
     login?: string;
-    doNotCreate: false;
+    createIfNotExists: true;
   }): Promise<SignedResourceId>;
-  private async getUserRootViaRpc(opts: {
+  private async getUserRootViaRpc(opts?: {
     login?: string;
-    doNotCreate: true;
+    createIfNotExists?: boolean;
   }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaRpc(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     const resp = await this.ll.getUserRoot({
       login: opts.login,
-      doNotCreate: opts.doNotCreate,
+      createIfNotExists: opts.createIfNotExists,
     });
     if (resp.userRoot === undefined) {
-      if (opts.doNotCreate) return undefined;
+      if (!opts.createIfNotExists) return undefined;
       throw new Error("getUserRoot returned no userRoot entry");
     }
     return createSignedResourceId(
@@ -184,17 +197,16 @@ export class UserResources {
     );
   }
 
-  private async getUserRootViaList(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaList(opts: {
     login?: string;
-    doNotCreate: false;
+    createIfNotExists: true;
   }): Promise<SignedResourceId>;
-  private async getUserRootViaList(opts: {
+  private async getUserRootViaList(opts?: {
     login?: string;
-    doNotCreate: true;
+    createIfNotExists?: boolean;
   }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaList(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     const responses = await this.ll.listUserResources({ login: opts.login, limit: 1 });
     for (const msg of responses) {
@@ -205,7 +217,12 @@ export class UserResources {
         );
       }
     }
-    throw new Error("listUserResources returned no userRoot entry");
+
+    if (opts.createIfNotExists) {
+      throw new Error("listUserResources returned no userRoot entry");
+    }
+
+    return undefined;
   }
 
   private async getDataLibrariesViaList(
@@ -276,17 +293,16 @@ export class UserResources {
     return result;
   }
 
-  private async getUserRootViaLegacy(opts: { login?: string }): Promise<SignedResourceId>;
   private async getUserRootViaLegacy(opts: {
     login?: string;
-    doNotCreateUserRoot: false;
+    createIfNotExists: true;
   }): Promise<SignedResourceId>;
-  private async getUserRootViaLegacy(opts: {
+  private async getUserRootViaLegacy(opts?: {
     login?: string;
-    doNotCreateUserRoot: true;
+    createIfNotExists?: boolean;
   }): Promise<SignedResourceId | undefined>;
   private async getUserRootViaLegacy(
-    opts: { login?: string; doNotCreateUserRoot?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     const login = opts.login ?? this.authUser;
     const mainRootName =
@@ -297,7 +313,7 @@ export class UserResources {
         return await tx.getResourceByName(mainRootName);
       }
 
-      if (opts.doNotCreateUserRoot) {
+      if (!opts.createIfNotExists) {
         return undefined;
       }
 

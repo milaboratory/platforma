@@ -1604,7 +1604,9 @@ message AuthAPI {
   message GetUserRoot {
     message Request {
       string login = 1;
-      bool do_not_create = 2;
+      bool create_if_not_exists = 3;
+
+      // next free: 4;
     }
 
     message Response {
