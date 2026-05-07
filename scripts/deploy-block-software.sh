@@ -7,7 +7,7 @@
 # Examples:
 #   ./scripts/deploy-block-software.sh blocks/gpu-test/software/gpu-info
 #   ./scripts/deploy-block-software.sh blocks/gpu-test/software/gpu-info --tag my-feature
-#   ./scripts/deploy-block-software.sh /abs/path/to/software/my-sw --ecr 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl-block-software-dev
+#   ./scripts/deploy-block-software.sh /abs/path/to/software/my-sw --ecr <account>.dkr.ecr.<region>.amazonaws.com/pl-block-software-dev
 #
 # What it does:
 #   1. Runs pl-pkg build --docker-build to generate Dockerfile and build context
@@ -26,8 +26,9 @@ set -euo pipefail
 
 SOFTWARE_DIR=""
 TAG=""
-ECR_REPO="511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl-block-software-dev"
+ECR_REPO=""  # auto-detected from AWS account ID if not set
 REGION="${AWS_REGION:-eu-central-1}"
+ECR_REPO_NAME="${ECR_REPO_NAME:-pl-block-software-dev}"
 
 usage() {
     echo "Usage: $0 <software-dir> [--tag <tag>] [--ecr <repo-url>] [--region <region>]"
@@ -57,6 +58,15 @@ done
 SOFTWARE_DIR=$(cd "$SOFTWARE_DIR" && pwd)
 
 [[ ! -f "$SOFTWARE_DIR/package.json" ]] && { echo "Error: $SOFTWARE_DIR/package.json not found"; exit 1; }
+
+# Auto-detect ECR repo URL from AWS account if not explicitly set
+if [[ -z "$ECR_REPO" ]]; then
+    PROFILE_FLAG=""
+    [[ -n "${AWS_PROFILE:-}" ]] && PROFILE_FLAG="--profile $AWS_PROFILE"
+    ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_FLAG --query Account --output text 2>/dev/null) \
+        || { echo "Error: could not detect AWS account ID. Set --ecr explicitly or configure AWS credentials."; exit 1; }
+    ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO_NAME"
+fi
 
 # Extract package name from package.json
 PKG_NAME=$(python3 -c "import json; print(json.load(open('$SOFTWARE_DIR/package.json'))['name'])" 2>/dev/null || echo "unknown")
