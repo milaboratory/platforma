@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.41.2
+
+### Patch Changes
+
+- 641c845: Fix table migration to v6
+
 ## 1.41.1
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @platforma-sdk/model
 
+## 1.75.2
+
+### Patch Changes
+
+- 641c845: Fix table migration to v6
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @milaboratories/pl-model-middle-layer@1.19.3
+  - @milaboratories/ptabler-expression-js@1.2.24
+
 ## 1.75.1
 
 ### Patch Changes
