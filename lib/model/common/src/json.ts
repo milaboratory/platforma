@@ -10,7 +10,6 @@ export type JsonSerializable =
   | { [key: string]: JsonSerializable }
   | { toJSON(): JsonValue };
 
-//
 type NotAssignableToJson = bigint | symbol | Function;
 
 export type JsonCompatible<T> = unknown extends T
