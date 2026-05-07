@@ -184,8 +184,16 @@ export class PlClient {
    * @returns SignedResourceId of the user root, or undefined if the server returned no userRoot entry.
    * @throws if the backend does not implement ListUserResources (callers should catch with isUnimplementedError).
    */
+  public async getUserRoot(opts: {
+    login?: string;
+    createIfNotExists: true;
+  }): Promise<SignedResourceId>;
+  public async getUserRoot(opts?: {
+    login?: string;
+    createIfNotExists?: boolean;
+  }): Promise<SignedResourceId | undefined>;
   public async getUserRoot(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     return this.userResources.getUserRoot(opts);
   }
@@ -251,7 +259,7 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    const userRoot = await this.userResources.getUserRoot();
+    const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
 
     if (this.conf.alternativeRoot === undefined) {
       this._clientRoot = userRoot;

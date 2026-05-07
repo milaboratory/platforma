@@ -3520,9 +3520,9 @@ export interface AuthAPI_GetUserRoot_Request {
      */
     login: string;
     /**
-     * @generated from protobuf field: bool do_not_create = 2
+     * @generated from protobuf field: bool create_if_not_exists = 3
      */
-    doNotCreate: boolean;
+    createIfNotExists: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GetUserRoot.Response
@@ -17635,13 +17635,13 @@ class AuthAPI_GetUserRoot_Request$Type extends MessageType<AuthAPI_GetUserRoot_R
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.GetUserRoot.Request", [
             { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "do_not_create", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 3, name: "create_if_not_exists", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_GetUserRoot_Request>): AuthAPI_GetUserRoot_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.login = "";
-        message.doNotCreate = false;
+        message.createIfNotExists = false;
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_GetUserRoot_Request>(this, message, value);
         return message;
@@ -17654,8 +17654,8 @@ class AuthAPI_GetUserRoot_Request$Type extends MessageType<AuthAPI_GetUserRoot_R
                 case /* string login */ 1:
                     message.login = reader.string();
                     break;
-                case /* bool do_not_create */ 2:
-                    message.doNotCreate = reader.bool();
+                case /* bool create_if_not_exists */ 3:
+                    message.createIfNotExists = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -17672,9 +17672,9 @@ class AuthAPI_GetUserRoot_Request$Type extends MessageType<AuthAPI_GetUserRoot_R
         /* string login = 1; */
         if (message.login !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.login);
-        /* bool do_not_create = 2; */
-        if (message.doNotCreate !== false)
-            writer.tag(2, WireType.Varint).bool(message.doNotCreate);
+        /* bool create_if_not_exists = 3; */
+        if (message.createIfNotExists !== false)
+            writer.tag(3, WireType.Varint).bool(message.createIfNotExists);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

@@ -593,14 +593,14 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async getUserRoot(
-    opts: { login?: string; doNotCreate?: boolean } = {},
+    opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {
       return (
         await cl.getUserRoot({
           login: opts.login ?? "",
-          doNotCreate: opts.doNotCreate ?? false,
+          createIfNotExists: opts.createIfNotExists ?? false,
         })
       ).response;
     } else {
@@ -609,7 +609,7 @@ export class LLPlClient implements WireClientProviderFactory {
           await cl.POST("/v1/auth/user-root", {
             body: {
               login: opts.login ?? "",
-              doNotCreate: opts.doNotCreate ?? false,
+              createIfNotExists: opts.createIfNotExists ?? false,
             },
           })
         ).data,
