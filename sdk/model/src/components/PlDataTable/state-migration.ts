@@ -7,7 +7,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, safeParseJson } from "@milaboratories/pl-model-common";
+import { canonicalizeJson, parseJsonSafely } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
@@ -198,7 +198,7 @@ function migrateV5toV6(
  * gridState colIds may include the row-number sentinel (a JSON-stringified
  * literal, not a wrapped spec) — those pass through unchanged. */
 function unwrapV5ColId(json: string): string {
-  const parsed: unknown = safeParseJson(json as CanonicalizedJson<unknown>);
+  const parsed: unknown = parseJsonSafely(json as CanonicalizedJson<unknown>);
   return !isNil(parsed) && typeof parsed === "object" && "source" in parsed
     ? canonicalizeJson((parsed as PlDataTableV5ColIdWrapper).source)
     : json;

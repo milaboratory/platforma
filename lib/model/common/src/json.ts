@@ -56,7 +56,7 @@ export function parseJson<T>(value: StringifiedJson<T> | CanonicalizedJson<T>): 
   return JSON.parse(value) as T;
 }
 
-export function safeParseJson<T, F = undefined>(value: string, fallback?: F): T | F {
+export function parseJsonSafely<T, F = undefined>(value: string, fallback?: F): T | F {
   try {
     return JSON.parse(value) as T;
   } catch {
