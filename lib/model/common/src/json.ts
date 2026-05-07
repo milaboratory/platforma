@@ -10,7 +10,7 @@ export type JsonSerializable =
   | { [key: string]: JsonSerializable }
   | { toJSON(): JsonValue };
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+//
 type NotAssignableToJson = bigint | symbol | Function;
 
 export type JsonCompatible<T> = unknown extends T
@@ -55,6 +55,14 @@ export function canonicalizeJson(value: unknown): string {
 
 export function parseJson<T>(value: StringifiedJson<T> | CanonicalizedJson<T>): T {
   return JSON.parse(value) as T;
+}
+
+export function safeParseJson<T, F = undefined>(value: string, fallback?: F): T | F {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback as F;
+  }
 }
 
 export function bigintReplacer(_key: string, value: unknown): unknown {

@@ -7,7 +7,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, parseJson } from "@milaboratories/pl-model-common";
+import { canonicalizeJson, safeParseJson } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
@@ -18,7 +18,12 @@ import type {
   PlDataTableStateV2Normalized,
   PTableParamsV2,
 } from "./typesV6";
-import type { PlDataTableGridStateV5, PlDataTableV5ColIdJson } from "./typesV5";
+import type {
+  PlDataTableGridStateV5,
+  PlDataTableV5ColIdJson,
+  PlDataTableV5ColIdWrapper,
+} from "./typesV5";
+import { isNil } from "es-toolkit";
 
 /**
  * PlDataTableV2 persisted state
@@ -189,26 +194,33 @@ function migrateV5toV6(
   };
 }
 
-/** Convert v5 wrapped colId JSON to bare PTableColumnSpec JSON, taking `.source`. */
-function unwrapV5ColId(json: PlDataTableV5ColIdJson): CanonicalizedJson<PTableColumnSpec> {
-  return canonicalizeJson(parseJson(json).source);
+/** Convert v5 wrapped colId JSON to bare PTableColumnSpec JSON, taking `.source`.
+ * gridState colIds may include the row-number sentinel (a JSON-stringified
+ * literal, not a wrapped spec) — those pass through unchanged. */
+function unwrapV5ColId(json: string): string {
+  const parsed: unknown = safeParseJson(json as CanonicalizedJson<unknown>);
+  return !isNil(parsed) && typeof parsed === "object" && "source" in parsed
+    ? canonicalizeJson((parsed as PlDataTableV5ColIdWrapper).source)
+    : json;
 }
 
 function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridStateCore {
+  const unwrapAs = (json: PlDataTableV5ColIdJson) =>
+    unwrapV5ColId(json) as CanonicalizedJson<PTableColumnSpec>;
   return {
     columnOrder: gridState.columnOrder
-      ? { orderedColIds: gridState.columnOrder.orderedColIds.map(unwrapV5ColId) }
+      ? { orderedColIds: gridState.columnOrder.orderedColIds.map(unwrapAs) }
       : undefined,
     sort: gridState.sort
       ? {
           sortModel: gridState.sort.sortModel.map((s) => ({
-            colId: unwrapV5ColId(s.colId),
+            colId: unwrapAs(s.colId),
             sort: s.sort,
           })),
         }
       : undefined,
     columnVisibility: gridState.columnVisibility
-      ? { hiddenColIds: gridState.columnVisibility.hiddenColIds.map(unwrapV5ColId) }
+      ? { hiddenColIds: gridState.columnVisibility.hiddenColIds.map(unwrapAs) }
       : undefined,
   };
 }
