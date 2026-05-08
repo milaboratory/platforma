@@ -31,7 +31,7 @@ check        ← ^build       (needs dependencies built)
 |:--------|:-------------|
 | `pnpm build` | Build all packages in dependency order. Turbo caches — unchanged packages skip. |
 | `pnpm build:local` | Same but with `PL_PKG_DEV=local` — software descriptors point to local filesystem instead of remote registry. Use when testing local software binaries. |
-| `pnpm build --force` | Rebuild everything, ignoring turbo cache. |
+| `pnpm build -- --force` | Rebuild everything, ignoring turbo cache. |
 | `pnpm build --filter="@platforma-sdk/model"` | Build a single package (+ its deps). |
 
 **Outputs cached by turbo:** `dist/`, `block-pack/`, `pkg-*.tgz`
