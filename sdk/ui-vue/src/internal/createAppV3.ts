@@ -8,7 +8,7 @@ import type {
   ValueWithUTag,
   AuthorMarker,
   PlatformaExtended,
-  InferPluginHandles,
+  InferPluginUiEntries,
   PluginHandle,
   InferFactoryData,
   InferFactoryOutputs,
@@ -119,11 +119,11 @@ export function createAppV3<
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
   const snapshot = ref<{
-    outputs: Partial<Outputs>;
+    outputs: Partial<Readonly<Outputs>>;
     blockStorage: unknown;
     navigationState: NavigationState<Href>;
   }>(state.value) as Ref<{
-    outputs: Partial<Outputs>;
+    outputs: Partial<Readonly<Outputs>>;
     blockStorage: unknown;
     navigationState: NavigationState<Href>;
   }>;
@@ -397,8 +397,31 @@ export function createAppV3<
   };
 
   const plugins = Object.fromEntries(
-    platforma.blockModelInfo.pluginIds.map((id) => [id, { handle: id }]),
-  ) as InferPluginHandles<Plugins>;
+    platforma.blockModelInfo.pluginIds.map((id) => {
+      const rawDef = platforma.blockModelInfo.pluginPublicOutputs?.[id] ?? {};
+      const keys = Object.keys(rawDef);
+      if (keys.length === 0) {
+        return [id, { handle: id, publicOutputs: {} }];
+      }
+      const state = pluginAccess.getOrCreatePluginState(id);
+      // reactive() ensures publicOutputs is its own proxy, so access via toRaw(app) still unwraps correctly.
+      const publicOutputs = reactive(
+        Object.fromEntries(
+          keys.map((key) => {
+            const { getter } = rawDef[key];
+            return [
+              key,
+              computed(() => {
+                const data = state.model.data;
+                return data != null ? getter(data) : undefined;
+              }),
+            ];
+          }),
+        ),
+      );
+      return [id, { handle: id, publicOutputs }];
+    }),
+  ) as InferPluginUiEntries<Plugins>;
 
   const getters = {
     closedRef,
