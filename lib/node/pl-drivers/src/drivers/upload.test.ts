@@ -193,7 +193,7 @@ test("upload lots of duplicate blobs concurrently", async () => {
           expect(p.lastError).toBeUndefined();
           expect(p.status?.bytesProcessed).toBe(25);
           expect(p.status?.bytesTotal).toBe(25);
-          return;
+          break;
         }
 
         await c.awaitChange();
