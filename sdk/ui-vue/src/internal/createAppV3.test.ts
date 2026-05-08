@@ -13,11 +13,18 @@ import {
   type PlatformaV3,
   type BlockModelInfo,
   type PluginHandle,
+  type PluginName,
+  type PluginRecord,
+  type InferFactoryData,
+  type InferFactoryParams,
+  type InferFactoryOutputs,
   createBlockStorage,
   updateStorageData,
   wrapAsyncCallback,
   pluginOutputKey,
   type PluginFactory,
+  PluginModel,
+  PluginDataModelBuilder,
 } from "@platforma-sdk/model";
 import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import { compare, type Operation } from "fast-json-patch";
@@ -199,6 +206,7 @@ const defaultBlockModelInfo = (pluginIds: PluginHandle[] = []): BlockModelInfo =
   },
   pluginIds,
   featureFlags: {},
+  pluginPublicOutputs: {},
 });
 
 function createDefaultState(plugins?: Record<string, unknown>) {
@@ -299,6 +307,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicOutputs: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -338,6 +347,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicOutputs: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -505,6 +515,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicOutputs: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -547,6 +558,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicOutputs: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -593,6 +605,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       },
       pluginIds: [pluginId],
       featureFlags: {},
+      pluginPublicOutputs: {},
     };
 
     const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
@@ -614,6 +627,75 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     expect(pFrame.ok).toBe(true);
     expect(pFrame.stable).toBe(false);
     expect(pFrame.value).toBeUndefined();
+  });
+
+  it("should expose publicOutputs without status", async () => {
+    const dataChain = new PluginDataModelBuilder()
+      .from<PluginData, "v1">("v1")
+      .init(() => defaultPluginData());
+
+    const factory = PluginModel.define({
+      name: "testPlugin" as PluginName,
+      data: dataChain,
+    })
+      .publicOutput("doubled", (data: PluginData) => data.value * 2)
+      .build();
+
+    type F = typeof factory;
+    type FactoryPublicOutputs<Factory> = Factory extends {
+      __types?: { publicOutputs: infer PublicOutputs };
+    }
+      ? NonNullable<PublicOutputs>
+      : never;
+    type TestPlugins = {
+      [K in typeof pluginId]: PluginRecord<
+        InferFactoryData<F>,
+        InferFactoryParams<F>,
+        InferFactoryOutputs<F>,
+        FactoryPublicOutputs<F>
+      >;
+    };
+    const pluginId = "counter" as PluginHandle<F>;
+
+    const state = createDefaultState({ [pluginId]: defaultPluginData() });
+
+    const blockModelInfo: BlockModelInfo = {
+      outputs: {},
+      pluginIds: [pluginId],
+      featureFlags: {},
+      pluginPublicOutputs: { [pluginId]: factory.publicOutputDef },
+    };
+
+    const platforma = createMockApiV3<Data, Args, Outputs, `/${string}`, TestPlugins>(
+      state,
+      blockModelInfo,
+    );
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { app } = createAppV3<Data, Args, Outputs, `/${string}`, TestPlugins>(
+      initialState.value,
+      platforma,
+      {
+        debug: false,
+        debounceSpan: 10,
+      },
+    );
+
+    // Initial plugin data is { value: 10 }, so doubled = 20
+    expect(app.plugins[pluginId].publicOutputs.doubled).toBe(20);
+
+    // Simulate external plugin data change
+    state.mutateStorage(
+      { operation: "update-plugin-data", pluginId, value: { value: 7 } },
+      { authorId: "external", localVersion: 1 },
+    );
+
+    await delay(patchPoolingDelay + 50);
+
+    expect(app.plugins[pluginId].publicOutputs.doubled).toBe(14);
+
+    app.closedRef = true;
   });
 
   it("should navigate to href", async () => {
