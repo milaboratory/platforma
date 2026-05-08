@@ -302,8 +302,8 @@ export function isSignedResourceId(resourceId: bigint | string): resourceId is S
 export function asSignedResourceId(str: string): SignedResourceId {
   const pipeIdx = str.indexOf("|");
   if (pipeIdx < 0) throw new Error(`Not a signed resource id (no '|' separator): ${str}`);
-  if (pipeIdx === str.length - 1)
-    throw new Error(`Signed resource id has empty signature: ${str}`);
+  if (pipeIdx === 0) throw new Error(`Signed resource id has empty globalId: ${str}`);
+  if (pipeIdx === str.length - 1) throw new Error(`Signed resource id has empty signature: ${str}`);
   return str as SignedResourceId;
 }
 

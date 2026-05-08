@@ -1,6 +1,10 @@
 import type * as sdk from "@milaboratories/pl-model-common";
 import type { ResourceType, SignedResourceId, StorageInfo } from "@milaboratories/pl-client";
-import { resourceTypeToString, parseResourceType, asSignedResourceId } from "@milaboratories/pl-client";
+import {
+  resourceTypeToString,
+  parseResourceType,
+  asSignedResourceId,
+} from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
