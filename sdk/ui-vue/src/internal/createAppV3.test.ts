@@ -14,6 +14,10 @@ import {
   type BlockModelInfo,
   type PluginHandle,
   type PluginName,
+  type PluginRecord,
+  type InferFactoryData,
+  type InferFactoryParams,
+  type InferFactoryOutputs,
   createBlockStorage,
   updateStorageData,
   wrapAsyncCallback,
@@ -638,28 +642,48 @@ describe("createAppV3", { timeout: 20_000 }, () => {
       .build();
 
     type F = typeof factory;
+    type FactoryPublicOutputs<Factory> = Factory extends {
+      __types?: { publicOutputs: infer PublicOutputs };
+    }
+      ? NonNullable<PublicOutputs>
+      : never;
+    type TestPlugins = {
+      [K in typeof pluginId]: PluginRecord<
+        InferFactoryData<F>,
+        InferFactoryParams<F>,
+        InferFactoryOutputs<F>,
+        FactoryPublicOutputs<F>
+      >;
+    };
     const pluginId = "counter" as PluginHandle<F>;
 
     const state = createDefaultState({ [pluginId]: defaultPluginData() });
 
     const blockModelInfo: BlockModelInfo = {
-      outputs: { doubled: { withStatus: false } },
+      outputs: {},
       pluginIds: [pluginId],
       featureFlags: {},
       pluginPublicOutputs: { [pluginId]: factory.publicOutputDef },
     };
 
-    const platforma = createMockApiV3<Data, Args, Outputs>(state, blockModelInfo);
+    const platforma = createMockApiV3<Data, Args, Outputs, `/${string}`, TestPlugins>(
+      state,
+      blockModelInfo,
+    );
     const initialState = await platforma.loadBlockState();
     if ("error" in initialState) throw initialState.error;
 
-    const { app } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
-      debug: false,
-      debounceSpan: 10,
-    });
+    const { app } = createAppV3<Data, Args, Outputs, `/${string}`, TestPlugins>(
+      initialState.value,
+      platforma,
+      {
+        debug: false,
+        debounceSpan: 10,
+      },
+    );
 
     // Initial plugin data is { value: 10 }, so doubled = 20
-    expect((app.plugins as any)[pluginId].publicOutputs.doubled).toBe(20);
+    expect(app.plugins[pluginId].publicOutputs.doubled).toBe(20);
 
     // Simulate external plugin data change
     state.mutateStorage(
@@ -669,7 +693,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
 
     await delay(patchPoolingDelay + 50);
 
-    expect((app.plugins as any)[pluginId].publicOutputs.doubled).toBe(14);
+    expect(app.plugins[pluginId].publicOutputs.doubled).toBe(14);
 
     app.closedRef = true;
   });

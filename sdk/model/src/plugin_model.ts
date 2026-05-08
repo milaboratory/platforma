@@ -61,6 +61,10 @@ export type PublicOutputFieldDef = {
   readonly getter: (data: unknown) => unknown;
 };
 
+export type PublicOutputDef<PublicOutputs extends PluginPublicOutputs> = {
+  [K in keyof PublicOutputs]: PublicOutputFieldDef;
+};
+
 export type PluginData = Record<string, unknown>;
 export type PluginParams = undefined | Record<string, unknown>;
 export type PluginOutputs = Record<string, unknown>;
@@ -336,13 +340,21 @@ export class PluginInstance<
     Data,
     Params,
     Outputs,
+    PublicOutputs,
     ModelServices,
     UiServices
   >;
 
   private constructor(
     id: Id,
-    createPluginModel: () => PluginModel<Data, Params, Outputs, ModelServices, UiServices>,
+    createPluginModel: () => PluginModel<
+      Data,
+      Params,
+      Outputs,
+      PublicOutputs,
+      ModelServices,
+      UiServices
+    >,
     transferVersion: string,
   ) {
     this.id = id;
@@ -389,7 +401,14 @@ export class PluginInstance<
   }
 
   /** @internal Create a PluginModel from this instance. Used by BlockModelV3.plugin(). */
-  [CREATE_PLUGIN_MODEL](): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
+  [CREATE_PLUGIN_MODEL](): PluginModel<
+    Data,
+    Params,
+    Outputs,
+    PublicOutputs,
+    ModelServices,
+    UiServices
+  > {
     return this.createPluginModel();
   }
 }
@@ -402,6 +421,7 @@ export class PluginModel<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
+  PublicOutputs extends PluginPublicOutputs = PluginPublicOutputs,
   ModelServices = {},
   UiServices = {},
 > {
@@ -416,7 +436,7 @@ export class PluginModel<
   /** Create fresh default data. Config (if any) is captured at creation time. */
   readonly getDefaultData: () => DataVersioned<Data>;
   /** Public output definitions — accessible without usePlugin() via app.plugins */
-  readonly publicOutputDef: Record<string, PublicOutputFieldDef>;
+  readonly publicOutputDef: PublicOutputDef<PublicOutputs>;
 
   private constructor(options: {
     name: PluginName;
@@ -424,14 +444,14 @@ export class PluginModel<
     outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
   }) {
     this.name = options.name;
     this.dataModel = options.dataModel;
     this.outputs = options.outputs;
     this.featureFlags = options.featureFlags;
     this.getDefaultData = options.getDefaultData;
-    this.publicOutputDef = options.publicOutputDef ?? {};
+    this.publicOutputDef = options.publicOutputDef;
   }
 
   /**
@@ -443,6 +463,7 @@ export class PluginModel<
     Data extends PluginData,
     Params extends PluginParams,
     Outputs extends PluginOutputs,
+    PublicOutputs extends PluginPublicOutputs = PluginPublicOutputs,
     ModelServices = {},
     UiServices = {},
   >(options: {
@@ -451,9 +472,11 @@ export class PluginModel<
     outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
     getDefaultData: () => DataVersioned<Data>;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
-  }): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
-    return new PluginModel<Data, Params, Outputs, ModelServices, UiServices>(options);
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
+  }): PluginModel<Data, Params, Outputs, PublicOutputs, ModelServices, UiServices> {
+    return new PluginModel<Data, Params, Outputs, PublicOutputs, ModelServices, UiServices>(
+      options,
+    );
   }
 
   /**
@@ -566,7 +589,7 @@ export interface PluginFactory<
   >;
 
   /** Public output field definitions declared via .publicOutput(). */
-  readonly publicOutputDef: Record<string, PublicOutputFieldDef>;
+  readonly publicOutputDef: PublicOutputDef<PublicOutputs>;
 
   /**
    * @internal Phantom field for structural type extraction.
@@ -608,7 +631,7 @@ class PluginModelFactory<
   private readonly getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
   readonly outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
   private readonly featureFlags?: BlockCodeKnownFeatureFlags;
-  readonly publicOutputDef: Record<string, PublicOutputFieldDef>;
+  readonly publicOutputDef: PublicOutputDef<PublicOutputs>;
 
   private constructor(options: {
     name: PluginName;
@@ -616,14 +639,14 @@ class PluginModelFactory<
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
     outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
   }) {
     this.name = options.name;
     this.dataFn = options.dataFn;
     this.getDefaultDataFn = options.getDefaultDataFn;
     this.outputs = options.outputs;
     this.featureFlags = options.featureFlags;
-    this.publicOutputDef = options.publicOutputDef ?? {};
+    this.publicOutputDef = options.publicOutputDef;
   }
 
   /** @internal */
@@ -642,7 +665,7 @@ class PluginModelFactory<
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
     outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
   }): PluginModelFactory<
     Data,
     Params,
@@ -687,10 +710,17 @@ class PluginModelFactory<
   /** @internal Create a PluginModel from config. Config is captured in getDefaultData closure. */
   [CREATE_PLUGIN_MODEL](
     config?: Config,
-  ): PluginModel<Data, Params, Outputs, ModelServices, UiServices> {
+  ): PluginModel<Data, Params, Outputs, PublicOutputs, ModelServices, UiServices> {
     const dataModel = this.dataFn(config);
     const getDefaultDataFn = this.getDefaultDataFn;
-    return PluginModel[FROM_BUILDER]<Data, Params, Outputs, ModelServices, UiServices>({
+    return PluginModel[FROM_BUILDER]<
+      Data,
+      Params,
+      Outputs,
+      PublicOutputs,
+      ModelServices,
+      UiServices
+    >({
       name: this.name,
       dataModel,
       outputs: this.outputs,
@@ -737,7 +767,7 @@ class PluginModelBuilder<
   protected readonly getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
   private readonly outputs: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
   protected readonly featureFlags?: BlockCodeKnownFeatureFlags;
-  private readonly publicOutputDef: Record<string, PublicOutputFieldDef>;
+  private readonly publicOutputDef: PublicOutputDef<PublicOutputs>;
 
   protected constructor(options: {
     name: PluginName;
@@ -745,7 +775,7 @@ class PluginModelBuilder<
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
     outputs?: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
   }) {
     this.name = options.name;
     this.dataFn = options.dataFn;
@@ -753,7 +783,7 @@ class PluginModelBuilder<
     this.outputs =
       options.outputs ?? ({} as PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>);
     this.featureFlags = options.featureFlags;
-    this.publicOutputDef = options.publicOutputDef ?? {};
+    this.publicOutputDef = options.publicOutputDef;
   }
 
   /** @internal */
@@ -772,7 +802,7 @@ class PluginModelBuilder<
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
     outputs?: PluginOutputFns<Data, Params, Outputs, ModelServices, UiServices>;
     featureFlags?: BlockCodeKnownFeatureFlags;
-    publicOutputDef?: Record<string, PublicOutputFieldDef>;
+    publicOutputDef: PublicOutputDef<PublicOutputs>;
   }): PluginModelBuilder<
     Data,
     Params,
@@ -889,7 +919,7 @@ class PluginModelBuilder<
       publicOutputDef: {
         ...this.publicOutputDef,
         [key]: { getter: getter as (data: unknown) => unknown },
-      },
+      } as PublicOutputDef<PublicOutputs & { [K in Key]: T }>,
     });
   }
 
@@ -961,7 +991,7 @@ class PluginModelInitialBuilder<
     getDefaultDataFn?: (config?: Config) => DataVersioned<Data>;
     featureFlags?: BlockCodeKnownFeatureFlags;
   }): PluginModelInitialBuilder<Data, undefined, Config, Versions, ModelServices, UiServices> {
-    return new PluginModelInitialBuilder(options);
+    return new PluginModelInitialBuilder({ ...options, publicOutputDef: {} });
   }
 
   /**
@@ -997,6 +1027,7 @@ class PluginModelInitialBuilder<
       dataFn: this.dataFn,
       getDefaultDataFn: this.getDefaultDataFn,
       featureFlags: this.featureFlags,
+      publicOutputDef: {},
     });
   }
 }

@@ -152,11 +152,11 @@ export type InferPluginData<Pl, PluginId extends string> =
     : never;
 
 /**
- * Map each plugin instance to a type-safe opaque handle branded with normalized phantom.
- * Uses the same brand structure as InferPluginHandle — only data/params/outputs, no config —
- * because PluginRecord doesn't carry Config (lost after factory.create()).
+ * Derives the UI-facing entry map for a plugin registry.
+ * For each plugin instance, produces a typed handle and its public outputs —
+ * the subset of plugin state accessible to block UI without usePlugin().
  */
-export type InferPluginHandles<T extends Record<string, unknown>> = {
+export type InferPluginUiEntries<T extends Record<string, unknown>> = {
   readonly [K in keyof T]: T[K] extends PluginRecord<
     infer Data,
     infer Params,

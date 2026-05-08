@@ -90,8 +90,6 @@ function mergeFeatureFlags(
 
 /**
  * Plugin record: model + param derivation lambdas.
- * Type parameters are carried by PluginModel generic.
- * PublicOutputs is a phantom type param used by InferPluginHandles for type inference only.
  */
 export type PluginRecord<
   Data extends PluginData = PluginData,
@@ -101,10 +99,8 @@ export type PluginRecord<
   ModelServices = unknown,
   UiServices = unknown,
 > = {
-  readonly model: PluginModel<Data, Params, Outputs, ModelServices, UiServices>;
+  readonly model: PluginModel<Data, Params, Outputs, PublicOutputs, ModelServices, UiServices>;
   readonly inputs: ParamsInputErased;
-  /** @internal phantom only — never set at runtime */
-  readonly __publicOutputs?: PublicOutputs;
 };
 
 interface BlockModelV3Config<
