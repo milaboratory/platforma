@@ -17,3 +17,5 @@ Avoid deep reactivity. Treat all reactive state as immutable — never mutate ob
 5. **Computed getters must not return shared references.** If source is already in the right shape, return a copy, not the same object.
 
 6. **`:model-value` + `@update:model-value`** over `v-model` for complex objects — makes data flow explicit.
+
+7. **use standard scripts** Tend to use standard scripts defined in package.json to do standard things with code (see monorepo-operations skill). I.e. run pnpm build instead of direct tsc call.
