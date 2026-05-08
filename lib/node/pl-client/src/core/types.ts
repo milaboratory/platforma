@@ -1,3 +1,4 @@
+/* oxlint-disable eslint-js/no-restricted-syntax -- this file is the canonical place to construct SignedResourceId values; outside callers must use asSignedResourceId(). */
 import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
@@ -282,7 +283,6 @@ export function isNullSignedResourceId(
 export function isNotNullSignedResourceId(
   resourceId: OptionalSignedResourceId,
 ): resourceId is SignedResourceId {
-  // lint-allow-cast
   return resourceId !== NullSignedResourceId;
 }
 
@@ -294,8 +294,17 @@ export function ensureSignedResourceIdNotNull(
 }
 
 export function isSignedResourceId(resourceId: bigint | string): resourceId is SignedResourceId {
-  // lint-allow-cast
   return typeof resourceId === "string" && resourceId.includes("|");
+}
+
+/** Validate a string as a SignedResourceId and return it with the branded type.
+ *  Requires the format "<globalId>|<signatureHex>" with a non-empty signature. */
+export function asSignedResourceId(str: string): SignedResourceId {
+  const pipeIdx = str.indexOf("|");
+  if (pipeIdx < 0) throw new Error(`Not a signed resource id (no '|' separator): ${str}`);
+  if (pipeIdx === str.length - 1)
+    throw new Error(`Signed resource id has empty signature: ${str}`);
+  return str as SignedResourceId;
 }
 
 /** Encode resource signature to base64url for embedding in URL-based handles. */
@@ -326,7 +335,7 @@ export function createSignedResourceId(
   if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
 
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return `${String(globalId)}|${sigHex}` as SignedResourceId; // lint-allow-cast
+  return `${String(globalId)}|${sigHex}` as SignedResourceId;
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
