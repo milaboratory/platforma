@@ -105,12 +105,14 @@ export function createPlDataTableV3<A, U>(
   const splited = splitDiscoveredColumns(discovered);
 
   const derivedLabels = deriveAllLabels({
-    columns: discovered.map((dc) => ({
-      id: dc.column.id,
-      spec: dc.column.spec,
-      linkerPath: dc.path,
-      qualifications: dc.qualifications,
-    })),
+    columns: discovered
+      .map((dc) => ({
+        id: dc.column.id,
+        spec: dc.column.spec,
+        linkerPath: dc.path,
+        qualifications: dc.qualifications,
+      }))
+      .filter((v) => !isColumnHidden(v.spec)),
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,
