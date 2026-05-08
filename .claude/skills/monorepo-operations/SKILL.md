@@ -94,10 +94,9 @@ pnpm -C <package-path> fmt    # e.g. pnpm -C sdk/model fmt
 Pass `--filter` to any turbo-based command to scope it:
 
 ```bash
---filter="pkg"       # the package + its dependencies
+--filter="pkg"       # just the package (deps run via task graph, not added to scope)
 --filter="pkg..."    # the package + all its dependencies (what it needs)
 --filter="...pkg"    # the package + all its dependents (what needs it)
-```
 
 Examples:
 ```bash
