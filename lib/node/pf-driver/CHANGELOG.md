@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.4.10
+
+### Patch Changes
+
+- 846df2e: PFrames update - fixed bug in PColumn combination
+
 ## 1.4.9
 
 ### Patch Changes
