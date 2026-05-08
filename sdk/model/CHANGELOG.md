@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.75.5
+
+### Patch Changes
+
+- 63dc54d: Filter out hidden columns when deriving labels in createPlDataTableV3
+
 ## 1.75.2
 
 ### Patch Changes
