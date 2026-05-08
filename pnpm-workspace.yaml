@@ -249,8 +249,8 @@ catalog:
 
   "@milaboratories/tengo-tester": ^1.6.4
   # When bumping, also update `REQUIRES_PFRAMES_VERSION` in lib/model/common/src/flags/block_flags.ts.
-  "@milaboratories/pframes-rs-node": 1.1.31
-  "@milaboratories/pframes-rs-wasm": 1.1.31
+  "@milaboratories/pframes-rs-node": 1.1.34
+  "@milaboratories/pframes-rs-wasm": 1.1.34
 
   "quickjs-emscripten": 0.31.0
 
