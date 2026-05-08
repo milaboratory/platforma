@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.75.8
+
+### Patch Changes
+
+- dd5db77: public outputs for plugins
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+  - @milaboratories/uikit@2.14.6
+
 ## 1.75.7
 
 ### Patch Changes
