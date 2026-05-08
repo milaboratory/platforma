@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.75.7
+
+### Patch Changes
+
+- 5a70c0f: Fix `@cell-button-clicked` not firing on PlAgDataTableV2 when the configured axis has a label column. Since the predefined-label change in 1.75.0, labelled axes are replaced in the grid by their label column, so the cell-button cellRendererSelector — which only matched `type:"axis"` ColDefs — never installed. Now also resolve the axis on single-axis label columns whose labeled axis equals `showCellButtonForAxisId`.
+- Updated dependencies [5a70c0f]
+  - @milaboratories/uikit@2.14.5
+
 ## 1.75.6
 
 ### Patch Changes
