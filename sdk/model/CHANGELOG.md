@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.75.8
+
+### Patch Changes
+
+- dd5db77: public outputs for plugins
+
 ## 1.75.5
 
 ### Patch Changes
