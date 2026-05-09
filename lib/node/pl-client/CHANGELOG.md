@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.4.1
+
+### Patch Changes
+
+- bcf1107: Compatibility with backend 3.0.2 and some prev versions
+
 ## 3.4.0
 
 ### Minor Changes
