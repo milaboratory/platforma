@@ -24,37 +24,114 @@ export type OneOfKind<T extends { oneofKind: unknown }, Kind extends T["oneofKin
   { oneofKind: Kind }
 >;
 
-interface SingleResponseHandler<Kind extends ServerMessageResponse["oneofKind"]> {
-  kind: Kind;
-  expectMultiResponse: false;
-  resolve: (v: OneOfKind<ServerMessageResponse, Kind>) => void;
+interface SingleResponseHandler {
+  mode: "single";
+  kind: ServerMessageResponse["oneofKind"];
+  resolve: (v: ServerMessageResponse) => void;
   reject: (e: Error) => void;
 }
 
-interface MultiResponseHandler<Kind extends ServerMessageResponse["oneofKind"]> {
-  kind: Kind;
-  expectMultiResponse: true;
-  resolve: (v: OneOfKind<ServerMessageResponse, Kind>[]) => void;
+interface MultiResponseHandler {
+  mode: "multiBuffered";
+  kind: ServerMessageResponse["oneofKind"];
+  resolve: (v: ServerMessageResponse[]) => void;
   reject: (e: Error) => void;
 }
 
-type AnySingleResponseHandler = SingleResponseHandler<ServerMessageResponse["oneofKind"]>;
+interface MultiStreamResponseHandler {
+  mode: "multiStream";
+  kind: ServerMessageResponse["oneofKind"];
+  stream: AsyncMessageStream<ServerMessageResponse>;
+}
 
-type AnyMultiResponseHandler = MultiResponseHandler<ServerMessageResponse["oneofKind"]>;
+type AnySingleResponseHandler = SingleResponseHandler;
+type AnyMultiStreamResponseHandler = MultiStreamResponseHandler;
 
 type AnyResponseHandler =
-  | SingleResponseHandler<ServerMessageResponse["oneofKind"]>
-  | MultiResponseHandler<ServerMessageResponse["oneofKind"]>;
+  | AnySingleResponseHandler
+  | MultiResponseHandler
+  | AnyMultiStreamResponseHandler;
 
-function createResponseHandler<Kind extends ServerMessageResponse["oneofKind"]>(
-  kind: Kind,
-  expectMultiResponse: boolean,
-  resolve:
-    | ((v: OneOfKind<ServerMessageResponse, Kind>) => void)
-    | ((v: OneOfKind<ServerMessageResponse, Kind>[]) => void),
-  reject: (e: Error) => void,
-): AnyResponseHandler {
-  return { kind, expectMultiResponse, resolve, reject } as AnyResponseHandler;
+class AsyncMessageStream<T> implements AsyncIterable<T> {
+  private readonly queue = new Denque<T>();
+  private done = false;
+  private cancelled = false;
+  private failure?: Error;
+  private waitingResolve?: (value: IteratorResult<T>) => void;
+  private waitingReject?: (reason?: unknown) => void;
+
+  public push(value: T): void {
+    if (this.done || this.cancelled) return;
+    if (this.waitingResolve) {
+      const resolve = this.waitingResolve;
+      this.waitingResolve = undefined;
+      this.waitingReject = undefined;
+      resolve({ value, done: false });
+      return;
+    }
+    this.queue.push(value);
+  }
+
+  public end(): void {
+    if (this.done) return;
+    this.done = true;
+    if (this.waitingResolve) {
+      const resolve = this.waitingResolve;
+      this.waitingResolve = undefined;
+      this.waitingReject = undefined;
+      resolve({ value: undefined, done: true });
+    }
+  }
+
+  public fail(error: Error): void {
+    if (this.done) return;
+    this.failure = error;
+    this.done = true;
+    if (this.waitingReject) {
+      const reject = this.waitingReject;
+      this.waitingResolve = undefined;
+      this.waitingReject = undefined;
+      reject(error);
+    }
+  }
+
+  public cancel(): void {
+    this.cancelled = true;
+    this.done = true;
+    this.queue.clear();
+    if (this.waitingResolve) {
+      const resolve = this.waitingResolve;
+      this.waitingResolve = undefined;
+      this.waitingReject = undefined;
+      resolve({ value: undefined, done: true });
+    }
+  }
+
+  [Symbol.asyncIterator](): AsyncIterator<T> {
+    return {
+      next: async (): Promise<IteratorResult<T>> => {
+        if (this.failure) throw this.failure;
+
+        const value = this.queue.shift();
+        if (value !== undefined) return { value, done: false };
+
+        if (this.done) return { value: undefined, done: true };
+
+        return await new Promise<IteratorResult<T>>((resolve, reject) => {
+          this.waitingResolve = resolve;
+          this.waitingReject = reject;
+        });
+      },
+      return: async (): Promise<IteratorResult<T>> => {
+        this.cancel();
+        return { value: undefined, done: true };
+      },
+      throw: async (error?: unknown): Promise<IteratorResult<T>> => {
+        this.cancel();
+        throw error;
+      },
+    };
+  }
 }
 
 function isRecoverable(status: Status): boolean {
@@ -81,6 +158,7 @@ export class LLPlTransaction {
 
   /** Queue from which incoming message processor takes handlers to which pass incoming messages */
   private readonly responseHandlerQueue = new Denque<AnyResponseHandler>();
+
 
   /** Each new resource, created by the transaction, is assigned with virtual (local) resource id, to make it possible
    * to populate its fields without awaiting actual resource id. This counter tracks those ids on client side, the
@@ -127,6 +205,7 @@ export class LLPlTransaction {
     // to the specific request on which it happened
     let currentHandler: AnyResponseHandler | undefined = undefined;
     let responseAggregator: ServerMessageResponse[] | undefined = undefined;
+    let currentMultiIdx = 0;
     try {
       for await (const message of this.stream.responses) {
         if (currentHandler === undefined) {
@@ -139,9 +218,8 @@ export class LLPlTransaction {
             break;
           }
 
-          // allocating response aggregator array
-          if (currentHandler.expectMultiResponse) responseAggregator = [];
-
+          if (currentHandler.mode === "multiBuffered") responseAggregator = [];
+          currentMultiIdx = 0;
           expectedId++;
         }
 
@@ -157,11 +235,14 @@ export class LLPlTransaction {
           const status = message.error;
 
           if (isRecoverable(status)) {
-            currentHandler.reject(
-              new RethrowError(() => {
-                throw new RecoverablePlError(status);
-              }),
-            );
+            const recoverableError = new RethrowError(() => {
+              throw new RecoverablePlError(status);
+            });
+            if (currentHandler.mode === "single" || currentHandler.mode === "multiBuffered") {
+              currentHandler.reject(recoverableError);
+            } else {
+              currentHandler.stream.fail(recoverableError);
+            }
             currentHandler = undefined;
 
             if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
@@ -176,7 +257,12 @@ export class LLPlTransaction {
           } else {
             this.assignErrorFactoryIfNotSet(() => {
               throw new UnrecoverablePlError(status);
-            }, currentHandler.reject);
+            }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+              ? currentHandler.reject
+              : undefined);
+            if (currentHandler.mode === "multiStream") {
+              currentHandler.stream.fail(new UnrecoverablePlError(status));
+            }
             currentHandler = undefined;
 
             // In case of unrecoverable errors we close the transaction
@@ -192,18 +278,30 @@ export class LLPlTransaction {
 
           this.assignErrorFactoryIfNotSet(() => {
             throw new Error(errorMessage);
-          }, currentHandler.reject);
+          }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+            ? currentHandler.reject
+            : undefined);
+          if (currentHandler.mode === "multiStream") {
+            currentHandler.stream.fail(new Error(errorMessage));
+          }
           currentHandler = undefined;
 
           break;
         }
 
-        if (currentHandler.expectMultiResponse !== (message.multiMessage !== undefined)) {
-          const errorMessage = `inconsistent multi state: ${currentHandler.expectMultiResponse} !== ${message.multiMessage !== undefined}`;
+        const expectMultiResponse =
+          currentHandler.mode === "multiBuffered" || currentHandler.mode === "multiStream";
+        if (expectMultiResponse !== (message.multiMessage !== undefined)) {
+          const errorMessage = `inconsistent multi state: ${expectMultiResponse} !== ${message.multiMessage !== undefined}`;
 
           this.assignErrorFactoryIfNotSet(() => {
             throw new Error(errorMessage);
-          }, currentHandler.reject);
+          }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+            ? currentHandler.reject
+            : undefined);
+          if (currentHandler.mode === "multiStream") {
+            currentHandler.stream.fail(new Error(errorMessage));
+          }
           currentHandler = undefined;
 
           break;
@@ -213,23 +311,35 @@ export class LLPlTransaction {
 
         if (message.multiMessage !== undefined) {
           if (!message.multiMessage.isEmpty) {
-            if (message.multiMessage.id !== responseAggregator!.length + 1) {
-              const errorMessage = `inconsistent multi id: ${message.multiMessage.id} !== ${responseAggregator!.length + 1}`;
+            if (message.multiMessage.id !== currentMultiIdx + 1) {
+              const errorMessage = `inconsistent multi id: ${message.multiMessage.id} !== ${currentMultiIdx + 1}`;
 
               this.assignErrorFactoryIfNotSet(() => {
                 throw new Error(errorMessage);
-              }, currentHandler.reject);
+              }, currentHandler.mode === "multiBuffered" ? currentHandler.reject : undefined);
+              if (currentHandler.mode === "multiStream") {
+                currentHandler.stream.fail(new Error(errorMessage));
+              }
               currentHandler = undefined;
 
               break;
             }
 
-            responseAggregator!.push(message.response);
+            currentMultiIdx++;
+            if (currentHandler.mode === "multiBuffered") {
+              responseAggregator!.push(message.response);
+            } else if (currentHandler.mode === "multiStream") {
+              currentHandler.stream.push(message.response);
+            }
           }
 
           if (message.multiMessage.isLast) {
-            (currentHandler as AnyMultiResponseHandler).resolve(responseAggregator!);
-            responseAggregator = undefined;
+            if (currentHandler.mode === "multiBuffered") {
+              currentHandler.resolve(responseAggregator!);
+              responseAggregator = undefined;
+            } else if (currentHandler.mode === "multiStream") {
+              currentHandler.stream.end();
+            }
             currentHandler = undefined;
           }
         } else {
@@ -245,9 +355,14 @@ export class LLPlTransaction {
         }
       }
     } catch (e: any) {
-      return this.assignErrorFactoryIfNotSet(() => {
-        rethrowMeaningfulError(e, true);
-      }, currentHandler?.reject);
+      return this.assignErrorFactoryIfNotSet(
+        () => {
+          rethrowMeaningfulError(e, true);
+        },
+        currentHandler && (currentHandler.mode === "single" || currentHandler.mode === "multiBuffered")
+          ? currentHandler.reject
+          : undefined,
+      );
     } finally {
       await this.close();
     }
@@ -265,8 +380,14 @@ export class LLPlTransaction {
     while (true) {
       const handler = this.responseHandlerQueue.shift();
       if (!handler) break;
-      if (this.errorFactory) handler.reject(new RethrowError(this.errorFactory));
-      else handler.reject(new Error("no reply"));
+      const noReplyError = this.errorFactory
+        ? new RethrowError(this.errorFactory)
+        : new Error("no reply");
+      if (handler.mode === "single" || handler.mode === "multiBuffered") {
+        handler.reject(noReplyError);
+      } else {
+        handler.stream.fail(noReplyError);
+      }
     }
 
     // closing outgoing stream
@@ -311,10 +432,24 @@ export class LLPlTransaction {
 
     // Note: Promise synchronously executes a callback passed to a constructor
     const result = StatefulPromise.fromDeferredReject(
-      new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
-        this.responseHandlerQueue.push(
-          createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject),
-        );
+      new Promise<
+        OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]
+      >((resolve, reject) => {
+        if (expectMultiResponse) {
+          this.responseHandlerQueue.push({
+            mode: "multiBuffered",
+            kind: r.oneofKind,
+            resolve: resolve as (v: ServerMessageResponse[]) => void,
+            reject,
+          });
+        } else {
+          this.responseHandlerQueue.push({
+            mode: "single",
+            kind: r.oneofKind,
+            resolve: resolve as (v: ServerMessageResponse) => void,
+            reject,
+          });
+        }
       }),
     );
 
@@ -331,6 +466,25 @@ export class LLPlTransaction {
       if (e instanceof RethrowError) e.rethrowLambda();
       throw new Error("Error while waiting for response", { cause: e });
     }
+  }
+
+  public sendStream<Kind extends ClientMessageRequest["oneofKind"]>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
+  ): AsyncIterable<OneOfKind<ServerMessageResponse, Kind>> {
+    if (this.errorFactory) throw new RethrowError(this.errorFactory);
+    if (this.closed) throw new Error("Transaction already closed");
+
+    const stream = new AsyncMessageStream<ServerMessageResponse>();
+    this.responseHandlerQueue.push({ mode: "multiStream", kind: r.oneofKind, stream });
+
+    void this.stream.requests
+      .send({ requestId: this.requestIdxCounter++, request: r })
+      .catch((e: unknown) => {
+        if (e instanceof Error) stream.fail(e);
+        else stream.fail(new Error("Error while sending request", { cause: e }));
+      });
+
+    return stream as AsyncIterable<OneOfKind<ServerMessageResponse, Kind>>;
   }
 
   private _completed = false;

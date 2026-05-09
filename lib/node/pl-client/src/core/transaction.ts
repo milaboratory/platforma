@@ -30,6 +30,7 @@ import type {
   OneOfKind,
   ServerMessageResponse,
 } from "./ll_transaction";
+import type { ResourceAPI_Tree_Filter, ResourceAPI_Tree_SeedResource } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
@@ -73,6 +74,8 @@ export interface KeyValueString {
   key: string;
   value: string;
 }
+
+export type ResourceTreeItem = ResourceData & { kv: KeyValue[]; traverseWasStopped: boolean };
 
 interface _FieldId<RId> {
   /** Parent resource id */
@@ -1055,6 +1058,94 @@ export class PlTransaction {
    * any leftover errors if it was unsuccessful */
   public async await() {
     await this.ll.await();
+  }
+
+  //
+  // Tree streaming
+  //
+
+  /**
+   * Perform a single `ResourceTree` walk and yield each visited resource.
+   *
+   * Items are yielded incrementally as stream frames arrive from server.
+   *
+   * The low-level transaction stream is still ordered, so each active request
+   * must be consumed to completion (or closed via iterator `return()`/`throw()`)
+   * before later responses can be dispatched.
+   *
+   * @param seeds - Roots for the traversal. May include both {@link ResourceData}
+   *   and {@link SignedResourceId} values in the same array.
+   * @param opts.fieldFilters      - Per-field predicates; matching field edges are not descended.
+   * @param opts.traverseStopRules - Per-resource predicate; matching resources are returned
+   *   with `traverseWasStopped = true` and their children are not visited.
+   *   This wire field accepts only one filter. Compose multiple rules via
+   *   `treeFilter.and(...)` / `treeFilter.or(...)`.
+   * @param opts.includeKv         - When true, each yielded item includes KV entries.
+   * @param opts.maxDepth          - Optional depth cap.
+   */
+  public resourceTree(
+    seeds: (ResourceData | SignedResourceId)[],
+    opts?: {
+      fieldFilters?: ResourceAPI_Tree_Filter[];
+      traverseStopRules?: ResourceAPI_Tree_Filter;
+      includeKv?: boolean;
+      maxDepth?: number;
+    },
+  ): AsyncIterable<ResourceTreeItem> {
+    if (seeds.length === 0) {
+      throw new Error("resourceTree: at least one seed must be provided");
+    }
+
+    const seedProtos = seeds.map((seed): ResourceAPI_Tree_SeedResource => {
+      const signedId = typeof seed === "string" ? seed : seed.id;
+      const { globalId, signature } = parseSignedResourceId(signedId);
+      return { resourceId: globalId, resourceSignature: signature };
+    });
+
+    const firstSeed = seedProtos[0];
+
+    const responseStream = this.ll.sendStream({
+      oneofKind: "resourceTree",
+      resourceTree: {
+        // Keep compatibility with request shape that requires non-optional fields.
+        resourceId: firstSeed?.resourceId ?? 0n,
+        resourceSignature: firstSeed?.resourceSignature ?? new Uint8Array(0),
+        seeds: seedProtos,
+        fieldFilters: opts?.fieldFilters ?? [],
+        traverseStopRules: opts?.traverseStopRules,
+        includeKv: opts?.includeKv ?? false,
+        maxDepth: opts?.maxDepth,
+      },
+    });
+
+    return {
+      [Symbol.asyncIterator](): AsyncIterator<ResourceTreeItem> {
+        const iterator = responseStream[Symbol.asyncIterator]();
+
+        return {
+          async next(): Promise<IteratorResult<ResourceTreeItem>> {
+            const item = await iterator.next();
+            if (item.done) return { value: undefined, done: true };
+            return {
+              value: {
+                ...protoToResource(notEmpty(item.value.resourceTree.resource)),
+                kv: item.value.resourceTree.kv,
+                traverseWasStopped: item.value.resourceTree.traverseWasStopped,
+              },
+              done: false,
+            };
+          },
+          async return(): Promise<IteratorResult<ResourceTreeItem>> {
+            if (iterator.return) await iterator.return();
+            return { value: undefined, done: true };
+          },
+          async throw(error?: unknown): Promise<IteratorResult<ResourceTreeItem>> {
+            if (iterator.throw) await iterator.throw(error);
+            throw error;
+          },
+        };
+      },
+    };
   }
 
   //

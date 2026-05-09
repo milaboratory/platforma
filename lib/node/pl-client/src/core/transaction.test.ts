@@ -177,3 +177,41 @@ test("handle KV storage 2", async () => {
     });
   });
 });
+
+test("resourceTree accepts mixed seed types and returns kv entries", async () => {
+  await withTempRoot(async (pl) => {
+    const [rootId, childId] = await pl.withWriteTx("resourceTreeSetup", async (tx) => {
+      const root = tx.createStruct(StructTestResource);
+      const child = tx.createStruct(StructTestResource);
+
+      tx.createField(field(root, "child"), "Dynamic", child);
+      tx.createField(field(tx.clientRoot, "treeRoot"), "Dynamic", root);
+      tx.setKValue(root, "root-k", "root-v");
+
+      await tx.commit();
+      return [await root.globalId, await child.globalId];
+    });
+
+    await pl.withReadTx("resourceTreeRead", async (tx) => {
+      const rootData = await tx.getResourceData(rootId, true);
+      const visitedIds = new Set<string>();
+      const iter = tx.resourceTree([rootData, childId], { includeKv: true });
+
+      for await (const item of iter) {
+        visitedIds.add(item.id);
+        expect(typeof item.traverseWasStopped).toBe("boolean");
+      }
+
+      expect(visitedIds.has(rootId)).toBe(true);
+      expect(visitedIds.has(childId)).toBe(true);
+    });
+  });
+});
+
+test("resourceTree empty seeds fails", async () => {
+  await withTempRoot(async (pl) => {
+    await pl.withReadTx("resourceTreeEmptySeeds", async (tx) => {
+      expect(() => tx.resourceTree([])).toThrow("resourceTree: at least one seed must be provided");
+    });
+  });
+});
