@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.10.5
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-errors@1.4.5
+
 ## 1.10.4
 
 ### Patch Changes
