@@ -47,6 +47,19 @@ function alternativeRootFieldName(alternativeRoot: string): string {
   return `alternative_root_${alternativeRoot}`;
 }
 
+// Parses leading "<major>.<minor>.<patch>" from a version string like
+// "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
+// Returns false for unparseable versions (safer to assume an old backend).
+function isVersionAtLeast(version: string, target: [number, number, number]): boolean {
+  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
+  if (!match) return false;
+  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  for (let i = 0; i < 3; i++) {
+    if (parsed[i] !== target[i]) return parsed[i] > target[i];
+  }
+  return true;
+}
+
 /** Client to access core PL API. */
 export class PlClient {
   private readonly drivers = new Map<string, PlDriver>();
@@ -78,6 +91,9 @@ export class PlClient {
   private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
+
+  // method setDefaultColor is safe to use in transactions
+  private _supportsSetDefaultColor: boolean = false;
 
   private _userResources?: UserResources;
 
@@ -259,6 +275,8 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
+    this.detectBackendCompatibility(this._serverInfo);
+
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
 
     if (this.conf.alternativeRoot === undefined) {
@@ -279,6 +297,10 @@ export class PlClient {
         return await altRoot.globalId;
       });
     }
+  }
+
+  private detectBackendCompatibility(serverInfo: MaintenanceAPI_Ping_Response): void {
+    this._supportsSetDefaultColor = isVersionAtLeast(serverInfo.coreVersion, [3, 3, 0]);
   }
 
   /** Returns true if field existed */
@@ -324,8 +346,10 @@ export class PlClient {
           this.resourceDataCache,
         );
 
-        // Auto-set default color proof from the client root's signature
-        if (!isNullSignedResourceId(clientRoot) && writable) {
+        // Auto-set default color proof from the client root's signature.
+        // Skip when backend doesn't implement the `set_default_color` TX request.
+        // See `detectBackendCompatibility`.
+        if (this._supportsSetDefaultColor && !isNullSignedResourceId(clientRoot) && writable) {
           const parsed = parseSignedResourceId(clientRoot);
           if (parsed.signature) {
             tx.setDefaultColor(parsed.signature as ColorProof);
