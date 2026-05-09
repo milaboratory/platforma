@@ -496,7 +496,11 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       return (await cl.ping({})).response;
     } else {
-      return notEmpty((await cl.GET("/v1/ping")).data, "REST: empty response for ping request");
+      // The REST ping response predates the `capabilities` field (proto field 9).
+      // Old servers omit it; treat absence as empty capability list.
+      const pingData = notEmpty((await cl.GET("/v1/ping")).data, "REST: empty response for ping request");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return { ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response), capabilities: (pingData as any).capabilities ?? [] };
     }
   }
 

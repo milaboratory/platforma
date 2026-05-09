@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package MiLaboratories.PL.API;
 
-import "github.com/googleapis/googleapis/google/rpc/status.proto";
 import "github.com/googleapis/googleapis/google/api/annotations.proto";
+import "github.com/googleapis/googleapis/google/rpc/status.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
@@ -179,9 +179,7 @@ service Platform {
   // Authentication
   //
   rpc AuthMethods(AuthAPI.ListMethods.Request) returns (AuthAPI.ListMethods.Response) {
-    option (google.api.http) = {
-      get: "/v1/auth/methods"
-    };
+    option (google.api.http) = {get: "/v1/auth/methods"};
   }
   rpc GetJWTToken(AuthAPI.GetJWTToken.Request) returns (AuthAPI.GetJWTToken.Response) {
     option (google.api.http) = {
@@ -233,23 +231,17 @@ service Platform {
   // Other stuff
   //
   rpc ListResourceTypes(MiscAPI.ListResourceTypes.Request) returns (MiscAPI.ListResourceTypes.Response) {
-    option (google.api.http) = {
-      get: "/v1/resource-types"
-    };
+    option (google.api.http) = {get: "/v1/resource-types"};
   }
 
   //
   // Various service requests
   //
   rpc Ping(MaintenanceAPI.Ping.Request) returns (MaintenanceAPI.Ping.Response) {
-    option (google.api.http) = {
-      get: "/v1/ping"
-    };
+    option (google.api.http) = {get: "/v1/ping"};
   }
   rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {
-    option (google.api.http) = {
-      get: "/v1/license"
-    };
+    option (google.api.http) = {get: "/v1/license"};
   }
 }
 
@@ -877,11 +869,118 @@ message ResourceAPI {
       // A 0 value makes the API return only a single resource <resource_id> and is actually
       // equal to Get.Request
       optional uint32 max_depth = 2;
+
+      // Optional per-(resource, field) filter. Unset / nil means
+      // "keep all fields" (current Tree behavior). Servers advertise
+      // support via "treeFilter:v1" in
+      // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
+      // field.
+      //
+      // If fields match the predicate, the traversal does not descend into
+      // that field's value.
+      //
+      // Filters combine via AND.
+      repeated Filter field_filters = 5;
+
+      // If true, the response carries per-resource key-values alongside
+      // each visited resource. Defaults to false. Old servers ignore this
+      // field and never populate Response.kv.
+      bool include_kv = 6;
+
+      // Optional predicate evaluated at the resource (not field) level.
+      // When set, the traversal does not descend into child resources that do not
+      // satisfy the predicate but resource still returns in the response.
+      //
+      // Each Tree.Response carries traverse_was_stopped=true if this
+      // resource satisfies the predicate.
+      //
+      // Available properties: resource_type (string), is_final (bool),
+      // resource_ready (bool), has_errors (bool), inputs_locked (bool),
+      // outputs_locked (bool). Old servers ignore this field and never
+      // set traverse_was_stopped.
+      optional Filter traverse_stop_rules = 7;
+
+      // Optional alternative entry points for multi-root traversal.
+      // When non-empty, the traversal starts from each listed seed instead
+      // of resource_id. Servers advertise support via "treeSeeds:v1" in
+      // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
+      // field. resource_id is used as the sole root when seeds is empty.
+      repeated SeedResource seeds = 8;
+    }
+
+    // A single entry point for multi-root tree traversal.
+    message SeedResource {
+      uint64 resource_id        = 1;
+      bytes  resource_signature = 2;
+    }
+
+    // Filter applied to each visited resource's fields during the walk.
+    // The filter is evaluated per (resource, field) pair. If the property
+    // specified by `key` matches the `value` according to the `operator`,
+    // the field is kept; otherwise, it is dropped. A dropped field is not
+    // descended into. Resources are always emitted; when all of a resource's
+    // fields are dropped, descent stops naturally.
+    // Filter evaluated per (resource, field) pair.
+    //
+    // Leaf filter (EQUAL/NOT_EQUAL/MATCH/NOT_MATCH): key is required and
+    // selects which property to test; value carries the expected scalar.
+    //
+    // Composite filter (OR/AND/NOT): key is absent, filters_value carries
+    // sub-filters combined with the chosen operator. OR/AND/NOT may be nested
+    // arbitrarily. Top-level filters (in Tree.Request.filters) are AND-combined.
+    // NOT requires exactly one sub-filter. Dropped fields are not descended into.
+    message Filter {
+      enum OperatorType {
+        UNSPECIFIED = 0;
+        EQUAL = 1;
+        MATCH = 2;
+        OR = 3;
+        AND = 4;
+        NOT = 5;
+      }
+
+      enum Property {
+        FIELD_NAME = 0;
+        RESOURCE_TYPE = 1;
+        IS_FINAL = 2;
+        // Evaluated per resource node (traverse_stop_rules only). True when every non-error
+        // output field has a final value. Matches the TypeScript readyAndHasAllOutputsFilled check.
+        ALL_OUTPUTS_FINAL = 3;
+      }
+
+      // Required for leaf operators (EQUAL/MATCH).
+      // Absent when operator == OR, AND, or NOT.
+      optional Property key = 1;
+      OperatorType operator = 2;
+
+      oneof value {
+        bool bool_value = 3;
+        string string_value = 4;
+        // Used when operator == OR, AND, or NOT.
+        FilterGroup filters_value = 5;
+      }
+
+      // Wrapper for repeated Filter (oneof cannot contain repeated fields directly).
+      message FilterGroup {
+        repeated Filter filters = 1;
+      }
+    }
+
+    message KV {
+      string key = 1;
+      bytes value = 2;
     }
 
     // Multi-message
     message Response {
       Resource resource = 1;
+
+      // Populated only when include_kv=true in the request.
+      repeated KV kv = 2;
+
+      // True when the request specified a traverse_stop_rules and this resource
+      // satisfied it. Always false when traverse_stop_rules was absent.
+      bool traverse_was_stopped = 3;
     }
   }
 
@@ -1406,7 +1505,6 @@ message CacheAPI {
     }
     message Response {}
   }
-
 }
 
 message LocksAPI {
@@ -1496,7 +1594,7 @@ message AuthAPI {
 
   enum Role {
     ROLE_UNSPECIFIED = 0; // issue JWT with caller's natural role. Never appears in server responses.
-    
+
     // Controller roles
     ROLE_CONTROLLER = 2;
     ROLE_WORKFLOW = 3;
@@ -1514,7 +1612,7 @@ message AuthAPI {
 
     message Response {
       string token = 1;
-      
+
       // Session info fields
       bytes session_id = 2;
       Role role = 3;
@@ -1522,8 +1620,7 @@ message AuthAPI {
   }
 
   message GetSessionInfo {
-    message Request {
-    }
+    message Request {}
 
     message Response {
       bytes session_id = 1;
@@ -1688,7 +1785,19 @@ message MaintenanceAPI {
       string os = 7; // linux / windows / macosx
       string arch = 8; // x64 / aarch64
 
-      // next free: 9
+      // Opt-in capabilities advertised by this server instance, used by
+      // clients to pick between fast and fallback code paths without waiting
+      // for a failed RPC.
+      //
+      // Each entry is an opaque token "<feature>:<version>" (e.g.
+      // "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+      // The field is unset on servers predating this mechanism, which the
+      // client treats as "no optional capabilities advertised".
+      //
+      // All list see pl/platform/api/plapiserver/server_capabilities.go
+      repeated string capabilities = 9;
+
+      // next free: 10
     }
   }
 
