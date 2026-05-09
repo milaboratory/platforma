@@ -6,6 +6,7 @@ import type {
   SignedResourceId,
   TxOps,
 } from "@milaboratories/pl-client";
+import type { Filter } from "@milaboratories/pl-client";
 import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
@@ -20,9 +21,14 @@ export type SynchronizedTreeOps = {
   /** Override final predicate from the PlClient */
   finalPredicateOverride?: FinalResourceDataPredicate;
 
-  /** Pruning function to limit set of fields through which tree will
-   * traverse during state synchronization */
+  /** Pruning function for legacy fallback path. */
   pruning?: PruningFunction;
+
+  /** ResourceTree field filters for modern backend path. */
+  fieldFilters?: Filter[];
+
+  /** ResourceTree traversal stop rules for modern backend path. */
+  traverseStopRules?: Filter;
 
   /** Interval after last sync to sleep before the next one */
   pollingInterval: number;
@@ -46,6 +52,8 @@ export class SynchronizedTreeState {
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
+  private readonly fieldFilters?: Filter[];
+  private readonly traverseStopRules?: Filter;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -56,8 +64,18 @@ export class SynchronizedTreeState {
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger,
   ) {
-    const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
+    const {
+      finalPredicateOverride,
+      pruning,
+      fieldFilters,
+      traverseStopRules,
+      pollingInterval,
+      stopPollingDelay,
+      logStat,
+    } = ops;
     this.pruning = pruning;
+    this.fieldFilters = fieldFilters;
+    this.traverseStopRules = traverseStopRules;
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
@@ -123,11 +141,15 @@ export class SynchronizedTreeState {
   /** Executed from the main loop, and initialization procedure. */
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error("tree synchronization is terminated");
-    const request = constructTreeLoadingRequest(this.state, this.pruning);
+    const request = constructTreeLoadingRequest(this.state, {
+      pruningFunction: this.pruning,
+      fieldFilters: this.fieldFilters,
+      traverseStopRules: this.traverseStopRules,
+    });
     const data = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(tx, request, stats);
+        return await loadTreeState(tx, request, stats, this.pl.serverInfo.capabilities ?? []);
       },
       txOps,
     );

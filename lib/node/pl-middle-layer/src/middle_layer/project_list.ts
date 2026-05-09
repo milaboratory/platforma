@@ -1,7 +1,7 @@
 import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { PlClient, SignedResourceId, ResourceType } from "@milaboratories/pl-client";
-import { resourceIdToString, resourceTypesEqual } from "@milaboratories/pl-client";
+import type { Filter, PlClient, ResourceType, SignedResourceId } from "@milaboratories/pl-client";
+import { resourceIdToString, resourceTypesEqual, treeFilter } from "@milaboratories/pl-client";
 import type { TreeAndComputableU } from "./types";
 import type { WatchableValue } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
@@ -23,6 +23,8 @@ export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
   return resource.fields;
 };
 
+export const projectsListFieldFilters: Filter[] = [treeFilter.resourceTypeEq("Projects")];
+
 export async function createProjectList(
   pl: PlClient,
   rid: SignedResourceId,
@@ -35,6 +37,7 @@ export async function createProjectList(
     {
       ...env.ops.defaultTreeOptions,
       pruning: ProjectsListTreePruningFunction,
+      fieldFilters: projectsListFieldFilters,
     },
     env.logger,
   );
