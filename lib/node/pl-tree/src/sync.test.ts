@@ -7,6 +7,7 @@ import {
 } from "@milaboratories/pl-client";
 import { PlTreeState } from "./state";
 import { constructTreeLoadingRequest, loadTreeState } from "./sync";
+import type { TraversalMode } from "./sync";
 import { Computable } from "@milaboratories/computable";
 import { TestStructuralResourceType1 } from "./test_utils";
 import * as tp from "node:timers/promises";
@@ -262,4 +263,110 @@ test("load resources", async () => {
       value: "hi!",
     });
   });
+});
+
+// ─── TraversalMode tests ──────────────────────────────────────────────────────
+
+/** Build a minimal mock tx that records whether resourceTree / getResourceDataIfExists
+ * was called.  Both surfaces are instrumented so we can assert which path ran. */
+function buildMockTx(opts: { capable: boolean }): {
+  tx: Parameters<typeof loadTreeState>[0];
+  calls: { bfs: number; streaming: number };
+} {
+  const calls = { bfs: 0, streaming: 0 };
+
+  const bfsResource = {
+    id: "NG:0x1",
+    type: { name: "Test", version: "1" },
+    kind: "Structural" as const,
+    data: undefined,
+    resourceReady: false,
+    error: NullSignedResourceId,
+    originalResourceId: NullSignedResourceId,
+    final: false,
+    inputsLocked: false,
+    outputsLocked: false,
+    fields: [],
+  };
+
+  const streamingResource = {
+    ...bfsResource,
+    kv: [],
+    traverseWasStopped: false,
+  };
+
+  const tx = {
+    getResourceDataIfExists: async () => {
+      calls.bfs++;
+      return bfsResource;
+    },
+    listKeyValuesIfResourceExists: async () => [],
+    resourceTree: opts.capable
+      ? () => {
+          calls.streaming++;
+          return (async function* () {
+            yield streamingResource;
+          })();
+        }
+      : undefined,
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  return { tx, calls };
+}
+
+const baseRequest = {
+  seedResources: ["NG:0x1"],
+  finalResources: new Set<string>(),
+} as unknown as Parameters<typeof loadTreeState>[1];
+
+test("traversalMode=client-bfs forces BFS on capable backend", async () => {
+  const { tx, calls } = buildMockTx({ capable: true });
+  const mode: TraversalMode = "client-bfs";
+
+  const result = await loadTreeState(tx, baseRequest, undefined, ["treeFilter:v1"], mode);
+
+  expect(result).toHaveLength(1);
+  expect(calls.bfs).toBeGreaterThan(0);
+  expect(calls.streaming).toBe(0);
+});
+
+test("traversalMode=backend-streaming falls back to BFS when capability is absent, warns once", async () => {
+  const { tx, calls } = buildMockTx({ capable: false });
+  const mode: TraversalMode = "backend-streaming";
+
+  const warnings: string[] = [];
+  const logger = { warn: (msg: string) => warnings.push(msg) };
+
+  const result = await loadTreeState(tx, baseRequest, undefined, [], mode, logger);
+
+  expect(result).toHaveLength(1);
+  expect(calls.bfs).toBeGreaterThan(0);
+  expect(calls.streaming).toBe(0);
+  expect(warnings).toHaveLength(1);
+  expect(warnings[0]).toMatch(/treeFilter:v1/);
+});
+
+test("traversalMode=backend-streaming uses streaming on capable backend", async () => {
+  const { tx, calls } = buildMockTx({ capable: true });
+  const mode: TraversalMode = "backend-streaming";
+
+  const result = await loadTreeState(tx, baseRequest, undefined, ["treeFilter:v1"], mode);
+
+  expect(result).toHaveLength(1);
+  expect(calls.streaming).toBeGreaterThan(0);
+  expect(calls.bfs).toBe(0);
+});
+
+test("traversalMode=auto default regression: streaming on capable, BFS on incapable", async () => {
+  // capable backend → streaming
+  const { tx: txCap, calls: callsCap } = buildMockTx({ capable: true });
+  await loadTreeState(txCap, baseRequest, undefined, ["treeFilter:v1"]);
+  expect(callsCap.streaming).toBeGreaterThan(0);
+  expect(callsCap.bfs).toBe(0);
+
+  // incapable backend → BFS
+  const { tx: txNoCap, calls: callsNoCap } = buildMockTx({ capable: false });
+  await loadTreeState(txNoCap, baseRequest, undefined, []);
+  expect(callsNoCap.bfs).toBeGreaterThan(0);
+  expect(callsNoCap.streaming).toBe(0);
 });

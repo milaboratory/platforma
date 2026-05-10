@@ -36,6 +36,15 @@ export interface TreeLoadingRequest {
 
 const CapabilityTreeFilter = "treeFilter:v1";
 
+/** Controls which tree-loading path is used.
+ * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v1`,
+ *   fall back to client-side BFS otherwise.
+ * - `"client-bfs"`: always use client-side BFS, even on capable backends.
+ * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
+ *   logs a warning and falls back to BFS (never throws).
+ */
+export type TraversalMode = "auto" | "client-bfs" | "backend-streaming";
+
 /** Given the current tree state, build the request object to pass to
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
@@ -257,16 +266,28 @@ export async function loadTreeState(
   loadingRequest: TreeLoadingRequest,
   stats?: TreeLoadingStat,
   capabilities: readonly string[] = [],
+  mode: TraversalMode = "auto",
+  logger?: { warn: (msg: string) => void },
 ): Promise<ExtendedResourceData[]> {
   const startTimestamp = Date.now();
   if (stats) stats.requests++;
 
   try {
-    if (supportsResourceTreeTraversal(capabilities)) {
-      return await loadTreeStateViaResourceTree(tx, loadingRequest, stats);
+    const wantsStreaming =
+      mode === "backend-streaming" ||
+      (mode === "auto" && supportsResourceTreeTraversal(capabilities));
+
+    if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
+      const msg =
+        "traversalMode=backend-streaming but backend lacks treeFilter:v1 capability; falling back to BFS";
+      if (logger) logger.warn(msg);
+      else console.warn(msg);
+      return await loadTreeStateViaBfs(tx, loadingRequest, stats);
     }
 
-    return await loadTreeStateViaBfs(tx, loadingRequest, stats);
+    return wantsStreaming
+      ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats)
+      : await loadTreeStateViaBfs(tx, loadingRequest, stats);
   } finally {
     if (stats) stats.millisSpent += Date.now() - startTimestamp;
   }

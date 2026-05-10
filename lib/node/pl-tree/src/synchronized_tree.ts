@@ -10,7 +10,7 @@ import type { Filter } from "@milaboratories/pl-client";
 import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
-import type { PruningFunction, TreeLoadingStat } from "./sync";
+import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
 import * as tp from "node:timers/promises";
 import type { MiLogger } from "@milaboratories/ts-helpers";
@@ -40,6 +40,9 @@ export type SynchronizedTreeOps = {
 
   /** Timeout for initial tree loading. If not specified, will use default for RO tx from pl-client. */
   initialTreeLoadingTimeout?: number;
+
+  /** Controls which tree-loading path to use.  Default `"auto"`. */
+  traversalMode?: TraversalMode;
 };
 
 type ScheduledRefresh = {
@@ -54,6 +57,7 @@ export class SynchronizedTreeState {
   private readonly pruning?: PruningFunction;
   private readonly fieldFilters?: Filter[];
   private readonly traverseStopRules?: Filter;
+  private readonly traversalMode: TraversalMode;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -69,6 +73,7 @@ export class SynchronizedTreeState {
       pruning,
       fieldFilters,
       traverseStopRules,
+      traversalMode,
       pollingInterval,
       stopPollingDelay,
       logStat,
@@ -76,6 +81,7 @@ export class SynchronizedTreeState {
     this.pruning = pruning;
     this.fieldFilters = fieldFilters;
     this.traverseStopRules = traverseStopRules;
+    this.traversalMode = traversalMode ?? "auto";
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
@@ -149,7 +155,14 @@ export class SynchronizedTreeState {
     const data = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(tx, request, stats, this.pl.serverInfo.capabilities ?? []);
+        return await loadTreeState(
+          tx,
+          request,
+          stats,
+          this.pl.serverInfo.capabilities ?? [],
+          this.traversalMode,
+          this.logger,
+        );
       },
       txOps,
     );
