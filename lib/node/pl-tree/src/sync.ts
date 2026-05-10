@@ -231,6 +231,7 @@ async function loadTreeStateViaResourceTree(
       outputsLocked: item.outputsLocked,
       fields: item.fields,
       kv: item.kv,
+      traverseWasStopped: item.traverseWasStopped,
     };
 
     if (pruningFunction !== undefined) {

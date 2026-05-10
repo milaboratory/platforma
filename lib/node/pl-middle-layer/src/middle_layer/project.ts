@@ -746,6 +746,10 @@ export class Project {
 
 export function projectTreePruning(logger: MiLogger): PruningFunction {
   return (r: ExtendedResourceData): FieldData[] => {
+    // Backend stopped traversal here — children were not streamed.
+    // Strip fields to keep pl-tree's refCount invariant (mirrors BFS behaviour
+    // where the stop equivalent is "pruner returns []").
+    if (r.traverseWasStopped) return [];
     if (r.fields.length > 1000)
       logger.warn(
         `resource with excessive field count: type=${r.type.name} id=${r.id} fields=${r.fields.length}` +

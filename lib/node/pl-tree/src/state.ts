@@ -28,6 +28,10 @@ import type { FinalResourceDataPredicate } from "@milaboratories/pl-client";
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[];
+  /** Set by the ResourceTree backend path when traversal stop rules matched
+   * this node — its children were not streamed. Pruners must treat such a
+   * node as a leaf (drop fields) to keep the refCount invariant. */
+  traverseWasStopped?: boolean;
 };
 
 export class TreeStateUpdateError extends Error {
