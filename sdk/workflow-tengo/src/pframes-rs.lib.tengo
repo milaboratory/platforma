@@ -4,15 +4,37 @@
  * that imports it (transitively). Blocks that don't need pframes-rs should not
  * import this library so their packs stay small.
  *
- * See docs/text/work/projects/webassembly-libraries-tengo/README.md for the
- * bundling story.
+ * The WIT interface (milaboratories:pframes/spec, see
+ * core/pframes-rs/packages/wasip2/wit/world.wit) exposes three resources —
+ * `frame`, `table`, `axes` — with JSON-in/JSON-out static + instance methods.
+ *
+ * Runtime status. `importWasm()` is the build-time bundle tag today; it
+ * returns `undefined` at template-render time because the wasm-call runtime
+ * (planned `@platforma-sdk/workflow-tengo:wasm` SDK module, branch
+ * plan/tengo-wasm-call) is not yet wired. Once that lands, this function
+ * will route through `wasm.load("@milaboratories/pframes-rs-wasip2:main")`
+ * and return a component handle whose `frame` / `table` / `axes` namespaces
+ * map onto the WIT exports.
+ *
+ * Until then, calling `importWasm()` from a workflow is safe (no-op) but
+ * the return value is not yet usable.
+ *
+ * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
+ * the bundling story.
  */
 
 ll := import(":ll")
 assets := import(":assets")
 
 importWasm := func() {
-	return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+	// Build-time tag: tengo-builder's regex matches the literal call below
+	// and embeds the wasm bytes into every template that imports this lib.
+	// The branch is unreachable at runtime; once the wasm SDK module lands
+	// the body becomes the real load path.
+	if false {
+		return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+	}
+	return undefined
 }
 
 export ll.toStrict({
