@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.75.10
+
+### Patch Changes
+
+- b631ce0: Fix `deriveDistinctLabels` adding redundant "via …" linker suffix to records whose native label is already unique when other records collide on a shared linker.
+
 ## 1.75.8
 
 ### Patch Changes
