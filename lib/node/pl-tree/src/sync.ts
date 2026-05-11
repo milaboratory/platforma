@@ -81,6 +81,10 @@ export type TreeLoadingStat = {
   prunedFields: number;
   finalResourcesSkipped: number;
   millisSpent: number;
+  /** Stop-marker frames whose id was already final locally and were skipped. */
+  stopMarkersSkipped: number;
+  /** Number of follow-up resourceTree() calls issued to resolve unknown stop markers. */
+  stopMarkerFollowUpRoundTrips: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -95,6 +99,8 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     prunedFields: 0,
     finalResourcesSkipped: 0,
     millisSpent: 0,
+    stopMarkersSkipped: 0,
+    stopMarkerFollowUpRoundTrips: 0,
   };
 }
 
@@ -108,7 +114,9 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
   result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
   result += `Pruned fields: ${stat.prunedFields}\n`;
-  result += `Final resources skipped: ${stat.finalResourcesSkipped}`;
+  result += `Final resources skipped: ${stat.finalResourcesSkipped}\n`;
+  result += `Stop markers skipped: ${stat.stopMarkersSkipped}\n`;
+  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}`;
   return result;
 }
 
@@ -202,6 +210,65 @@ async function loadTreeStateViaBfs(
   return result;
 }
 
+
+type ResourceTreeFrame = ExtendedResourceData & { frameKind: string; traverseWasStopped: boolean };
+
+async function processResourceTreeStream(
+  treeItems: AsyncIterable<ResourceTreeFrame>,
+  finalResources: Set<SignedResourceId>,
+  pruningFunction: PruningFunction | undefined,
+  stats: TreeLoadingStat | undefined,
+): Promise<{ result: ExtendedResourceData[]; followUpSeeds: SignedResourceId[] }> {
+  const result: ExtendedResourceData[] = [];
+  const followUpSeeds: SignedResourceId[] = [];
+
+  for await (const frame of treeItems) {
+    if (frame.frameKind === 'stopMarker') {
+      if (finalResources.has(frame.id)) {
+        if (stats) stats.stopMarkersSkipped++;
+        continue;
+      }
+      followUpSeeds.push(frame.id);
+      continue;
+    }
+
+    // Normal resource frame.
+    if (finalResources.has(frame.id)) {
+      if (stats) stats.finalResourcesSkipped++;
+      continue;
+    }
+
+    let nextResource: ExtendedResourceData = {
+      id: frame.id,
+      type: frame.type,
+      kind: frame.kind,
+      data: frame.data,
+      resourceReady: frame.resourceReady,
+      error: frame.error,
+      originalResourceId: frame.originalResourceId,
+      // traverseWasStopped: backend matched traverse stop rules — children were not streamed.
+      // Mark as terminal; fields are resolved below.
+      final: frame.final || frame.traverseWasStopped,
+      inputsLocked: frame.inputsLocked,
+      outputsLocked: frame.outputsLocked,
+      fields: frame.fields,
+      kv: frame.kv,
+    };
+
+    // Apply field rules: traverseWasStopped drops all fields to keep the refCount
+    // invariant; pruning function further filters the remaining fields.
+    const rawFields = frame.traverseWasStopped ? [] : nextResource.fields;
+    const resolvedFields = pruningFunction !== undefined ? pruningFunction({ ...nextResource, fields: rawFields }) : rawFields;
+    if (stats) stats.prunedFields += nextResource.fields.length - resolvedFields.length;
+    nextResource = { ...nextResource, fields: resolvedFields };
+
+    collectStatsForResource(nextResource, stats);
+    result.push(nextResource);
+  }
+
+  return { result, followUpSeeds };
+}
+
 async function loadTreeStateViaResourceTree(
   tx: PlTransaction,
   loadingRequest: TreeLoadingRequest,
@@ -210,50 +277,35 @@ async function loadTreeStateViaResourceTree(
   const { seedResources, finalResources, pruningFunction, fieldFilters, traverseStopRules } =
     loadingRequest;
 
-  const result: ExtendedResourceData[] = [];
+  const treeAny = tx as any;
 
-  const treeItems = (tx as any).resourceTree(seedResources, {
+  // Round 0: initial tree traversal.
+  const treeItems = treeAny.resourceTree(seedResources, {
     includeKv: true,
     fieldFilters,
     traverseStopRules,
-  }) as AsyncIterable<ExtendedResourceData & { traverseWasStopped: boolean }>;
+  });
 
-  // ResourceTree yields incrementally; this loop consumes stream frames one by one.
-  for await (const item of treeItems) {
-    if (finalResources.has(item.id)) {
-      if (stats) stats.finalResourcesSkipped++;
-      continue;
-    }
-
-    let nextResource: ExtendedResourceData = {
-      id: item.id,
-      type: item.type,
-      kind: item.kind,
-      data: item.data,
-      resourceReady: item.resourceReady,
-      error: item.error,
-      originalResourceId: item.originalResourceId,
-      // traverseWasStopped means backend matched traverse stop rules for this node.
-      // We propagate this into `final` so the tree can treat this node as terminal.
-      final: item.final || item.traverseWasStopped,
-      inputsLocked: item.inputsLocked,
-      outputsLocked: item.outputsLocked,
-      fields: item.fields,
-      kv: item.kv,
-      traverseWasStopped: item.traverseWasStopped,
-    };
-
-    if (pruningFunction !== undefined) {
-      const fieldsAfterPruning = pruningFunction(nextResource);
-      if (stats) stats.prunedFields += nextResource.fields.length - fieldsAfterPruning.length;
-      nextResource = { ...nextResource, fields: fieldsAfterPruning };
-    }
-
-    collectStatsForResource(nextResource, stats);
-    result.push(nextResource);
-  }
-
+  const { result, followUpSeeds } = await processResourceTreeStream(treeItems, finalResources, pruningFunction, stats);
   if (stats) stats.roundTrips++;
+
+  // Single follow-up for unknown stop markers.
+  // traverseStopRules is omitted so the server performs a full traversal and
+  // cannot emit further stop markers — one round is sufficient.
+  // Old backends emit no stop-marker frames, so followUpSeeds stays empty
+  // and this block is skipped — backward compatible.
+  if (followUpSeeds.length > 0) {
+    const followUpItems = treeAny.resourceTree(followUpSeeds, {
+      includeKv: true,
+      fieldFilters,
+    });
+    const { result: followUpResult } = await processResourceTreeStream(followUpItems, finalResources, pruningFunction, stats);
+    result.push(...followUpResult);
+    if (stats) {
+      stats.roundTrips++;
+      stats.stopMarkerFollowUpRoundTrips++;
+    }
+  }
 
   return result;
 }

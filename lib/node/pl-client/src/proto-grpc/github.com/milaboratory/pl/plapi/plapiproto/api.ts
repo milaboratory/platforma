@@ -1949,6 +1949,8 @@ export interface ResourceAPI_Tree_KV {
  */
 export interface ResourceAPI_Tree_Response {
     /**
+     * Full resource payload. Absent on stop-marker frames.
+     *
      * @generated from protobuf field: MiLaboratories.PL.API.Resource resource = 1
      */
     resource?: Resource;
@@ -1961,10 +1963,26 @@ export interface ResourceAPI_Tree_Response {
     /**
      * True when the request specified a traverse_stop_rules and this resource
      * satisfied it. Always false when traverse_stop_rules was absent.
+     * On stop-marker frames (treeStopMarker:v1), resource is absent and
+     * resourceId/resourceSignature carry the stopped node's identity.
      *
      * @generated from protobuf field: bool traverse_was_stopped = 3
      */
     traverseWasStopped: boolean;
+    /**
+     * Populated only on stop-marker frames (resource is absent).
+     * Zero on normal frames; use resource.resourceId instead.
+     *
+     * @generated from protobuf field: uint64 resource_id = 4
+     */
+    resourceId: bigint;
+    /**
+     * Populated only on stop-marker frames (resource is absent).
+     * Empty on normal frames; use resource.resourceSignature instead.
+     *
+     * @generated from protobuf field: bytes resource_signature = 5
+     */
+    resourceSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.TreeSize
@@ -9451,13 +9469,17 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         super("MiLaboratories.PL.API.ResourceAPI.Tree.Response", [
             { no: 1, name: "resource", kind: "message", T: () => Resource },
             { no: 2, name: "kv", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_KV },
-            { no: 3, name: "traverse_was_stopped", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 3, name: "traverse_was_stopped", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 4, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/ },
+            { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Tree_Response>): ResourceAPI_Tree_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.kv = [];
         message.traverseWasStopped = false;
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Tree_Response>(this, message, value);
         return message;
@@ -9475,6 +9497,12 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
                     break;
                 case /* bool traverse_was_stopped */ 3:
                     message.traverseWasStopped = reader.bool();
+                    break;
+                case /* uint64 resource_id */ 4:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 5:
+                    message.resourceSignature = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -9497,6 +9525,12 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         /* bool traverse_was_stopped = 3; */
         if (message.traverseWasStopped !== false)
             writer.tag(3, WireType.Varint).bool(message.traverseWasStopped);
+        /* uint64 resource_id = 4; */
+        if (message.resourceId !== 0n)
+            writer.tag(4, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 5; */
+        if (message.resourceSignature.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.resourceSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

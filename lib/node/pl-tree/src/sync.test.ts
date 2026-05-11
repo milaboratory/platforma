@@ -6,7 +6,7 @@ import {
   TestHelpers,
 } from "@milaboratories/pl-client";
 import { PlTreeState } from "./state";
-import { constructTreeLoadingRequest, loadTreeState } from "./sync";
+import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
 import type { TraversalMode } from "./sync";
 import { Computable } from "@milaboratories/computable";
 import { TestStructuralResourceType1 } from "./test_utils";
@@ -369,4 +369,158 @@ test("traversalMode=auto default regression: streaming on capable, BFS on incapa
   await loadTreeState(txNoCap, baseRequest, undefined, []);
   expect(callsNoCap.bfs).toBeGreaterThan(0);
   expect(callsNoCap.streaming).toBe(0);
+});
+
+// ─── Stop-marker handling tests ───────────────────────────────────────────────
+
+/** Capabilities for backends that support streaming traversal. */
+const stopMarkerCaps = ["treeFilter:v1"] as const;
+
+/** Minimal full-resource frame suitable for stop-marker tests. */
+function makeFullResource(id: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id,
+    type: { name: "Test", version: "1" },
+    kind: "Structural",
+    data: undefined,
+    resourceReady: false,
+    error: NullSignedResourceId,
+    originalResourceId: NullSignedResourceId,
+    final: false,
+    inputsLocked: false,
+    outputsLocked: false,
+    fields: [],
+    kv: [],
+    traverseWasStopped: false,
+    ...overrides,
+  };
+}
+
+/** Minimal stop-marker frame. */
+function makeStopMarker(id: string): Record<string, unknown> {
+  return { frameKind: "stopMarker", id, traverseWasStopped: true };
+}
+
+test("stop-marker-final-locally-skipped: marker for final id is not followed up", async () => {
+  let callCount = 0;
+  const tx = {
+    resourceTree: () => {
+      callCount++;
+      return (async function* () {
+        yield makeStopMarker("NG:0x1");
+      })();
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x99"],
+    finalResources: new Set<string>(["NG:0x1"]),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const stats = initialTreeLoadingStat();
+  const result = await loadTreeState(tx, request, stats, stopMarkerCaps);
+
+  expect(result).toHaveLength(0);
+  expect(stats.stopMarkersSkipped).toBe(1);
+  expect(callCount).toBe(1); // no follow-up call issued
+});
+
+test("stop-marker-unknown-triggers-followup: unknown marker fetched in follow-up", async () => {
+  let callCount = 0;
+  const tx = {
+    resourceTree: () => {
+      callCount++;
+      if (callCount === 1) {
+        // Round 0: emit a stop marker for an unknown id
+        return (async function* () {
+          yield makeStopMarker("NG:0x1");
+        })();
+      } else {
+        // Follow-up: return full resource for that id
+        return (async function* () {
+          yield makeFullResource("NG:0x1");
+        })();
+      }
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x99"],
+    finalResources: new Set<string>(),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const stats = initialTreeLoadingStat();
+  const result = await loadTreeState(tx, request, stats, stopMarkerCaps);
+
+  expect(result).toHaveLength(1);
+  expect(result[0]?.id).toBe("NG:0x1");
+  expect(stats.stopMarkerFollowUpRoundTrips).toBe(1);
+  expect(callCount).toBe(2);
+});
+
+
+test("legacy-backend-compat: no stop markers in stream → no follow-up call", async () => {
+  // Old backends emit only full-resource frames; pendingFollowUp stays empty
+  // and the follow-up loop body never executes.
+  let callCount = 0;
+  const tx = {
+    resourceTree: () => {
+      callCount++;
+      return (async function* () {
+        yield makeFullResource("NG:0x1");
+      })();
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x1"],
+    finalResources: new Set<string>(),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const stats = initialTreeLoadingStat();
+  const result = await loadTreeState(tx, request, stats, ["treeFilter:v1"]);
+
+  expect(result).toHaveLength(1);
+  expect(callCount).toBe(1);
+  expect(stats.stopMarkerFollowUpRoundTrips).toBe(0);
+});
+
+test("orphan-invariant-preserved: error referent streamed alongside stop marker", async () => {
+  // Server streams the error referent (errY) as a normal frame and the
+  // stopped node (X) as a stop marker.  Follow-up returns X as a full
+  // resource with error pointing to errY.  Both should appear in the result.
+  const errY = makeFullResource("NG:0xE", { final: true, inputsLocked: true, outputsLocked: true });
+  const stoppedX = makeFullResource("NG:0x1", {
+    error: "NG:0xE", // X's error field points to errY
+    traverseWasStopped: true,
+  });
+
+  let callCount = 0;
+  const tx = {
+    resourceTree: () => {
+      callCount++;
+      if (callCount === 1) {
+        return (async function* () {
+          yield errY;                       // error referent — normal frame
+          yield makeStopMarker("NG:0x1");   // stopped node — marker frame
+        })();
+      } else {
+        return (async function* () {
+          yield stoppedX;                   // follow-up returns full resource
+        })();
+      }
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x1"],
+    finalResources: new Set<string>(),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const result = await loadTreeState(tx, request, undefined, stopMarkerCaps);
+
+  // Both the error referent and the stopped resource must be present
+  const ids = result.map((r) => r.id).sort();
+  expect(ids).toEqual(["NG:0x1", "NG:0xE"]);
+  // No throw means the invariant held throughout loadTreeState
 });

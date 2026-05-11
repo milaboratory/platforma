@@ -77,6 +77,17 @@ export interface KeyValueString {
 
 export type ResourceTreeItem = ResourceData & { kv: KeyValue[]; traverseWasStopped: boolean };
 
+/** A single frame from the resourceTree() stream.
+ *
+ * When the server advertises `treeStopMarker:v1`, a stop-matched node is emitted
+ * as a lightweight marker instead of a full resource payload. Callers must
+ * narrow on `frameKind` before accessing type-specific fields.
+ * Note: `frameKind` is distinct from `ResourceData.kind` (which is the resource kind).
+ */
+export type ResourceTreeFrame =
+  | (ResourceTreeItem & { frameKind: 'resource' })
+  | { frameKind: 'stopMarker'; id: SignedResourceId; traverseWasStopped: true };
+
 interface _FieldId<RId> {
   /** Parent resource id */
   resourceId: RId;
@@ -1091,7 +1102,7 @@ export class PlTransaction {
       includeKv?: boolean;
       maxDepth?: number;
     },
-  ): AsyncIterable<ResourceTreeItem> {
+  ): AsyncIterable<ResourceTreeFrame> {
     if (seeds.length === 0) {
       throw new Error("resourceTree: at least one seed must be provided");
     }
@@ -1119,27 +1130,40 @@ export class PlTransaction {
     });
 
     return {
-      [Symbol.asyncIterator](): AsyncIterator<ResourceTreeItem> {
+      [Symbol.asyncIterator](): AsyncIterator<ResourceTreeFrame> {
         const iterator = responseStream[Symbol.asyncIterator]();
 
         return {
-          async next(): Promise<IteratorResult<ResourceTreeItem>> {
+          async next(): Promise<IteratorResult<ResourceTreeFrame>> {
             const item = await iterator.next();
             if (item.done) return { value: undefined, done: true };
+            const frame = item.value.resourceTree;
+            if (!frame.resource) {
+              // Stop-marker frame: no resource body; server advertised treeStopMarker:v1.
+              const id = createSignedResourceId(
+                frame.resourceId,
+                toResourceSignature(frame.resourceSignature),
+              );
+              return {
+                value: { frameKind: 'stopMarker', id, traverseWasStopped: true },
+                done: false,
+              };
+            }
             return {
               value: {
-                ...protoToResource(notEmpty(item.value.resourceTree.resource)),
-                kv: item.value.resourceTree.kv,
-                traverseWasStopped: item.value.resourceTree.traverseWasStopped,
+                frameKind: 'resource',
+                ...protoToResource(frame.resource),
+                kv: frame.kv,
+                traverseWasStopped: frame.traverseWasStopped,
               },
               done: false,
             };
           },
-          async return(): Promise<IteratorResult<ResourceTreeItem>> {
+          async return(): Promise<IteratorResult<ResourceTreeFrame>> {
             if (iterator.return) await iterator.return();
             return { value: undefined, done: true };
           },
-          async throw(error?: unknown): Promise<IteratorResult<ResourceTreeItem>> {
+          async throw(error?: unknown): Promise<IteratorResult<ResourceTreeFrame>> {
             if (iterator.throw) await iterator.throw(error);
             throw error;
           },
