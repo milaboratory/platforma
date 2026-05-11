@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.7.24
+
+### Patch Changes
+
+- d93d296: Support AbortSignal
+
 ## 2.7.23
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.59.11
+
+### Patch Changes
+
+- d93d296: Support AbortSignal
+- Updated dependencies [d93d296]
+  - @platforma-sdk/block-tools@2.7.24
+
 ## 1.59.10
 
 ### Patch Changes
