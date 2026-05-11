@@ -706,6 +706,28 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     expect(deriveDistinctLabels(entries)).toEqual(["Read counts", "Read counts via Sample mapper"]);
   });
 
+  test("linker suffix is NOT added to records whose native label is already unique, even when other records collide", () => {
+    // Repro for "Cluster Id via Clone to cluster link" bug:
+    // - "Representative Sequence" exists both as a direct column and via a linker → collision
+    //   forces algorithm to include LINKER_TYPE in the type set.
+    // - As a side effect, every linked entry gets the "via …" suffix appended — including
+    //   ones whose native label ("Cluster Id") is unique and needs no disambiguation.
+    const linker = linkerSpec("Clone to cluster link");
+    const entries: Entry[] = [
+      { spec: labeledSpec("Representative Sequence", "rep_direct") },
+      {
+        spec: labeledSpec("Representative Sequence", "rep_linked"),
+        linkerPath: [{ spec: linker }],
+      },
+      { spec: labeledSpec("Cluster Id", "cluster_id"), linkerPath: [{ spec: linker }] },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual([
+      "Representative Sequence",
+      "Representative Sequence via Clone to cluster link",
+      "Cluster Id",
+    ]);
+  });
+
   test("two linker paths → both get distinguishing via-suffix", () => {
     const s = labeledSpec("Counts");
     const entries: Entry[] = [
