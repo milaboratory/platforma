@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer.workflow",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "type": "module",
   "description": "Tengo-based template",
   "scripts": {
