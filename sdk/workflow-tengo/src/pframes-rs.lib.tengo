@@ -1,0 +1,20 @@
+/** Opt-in access to the @milaboratories/pframes-rs-wasip2 WebAssembly component.
+ *
+ * Importing this library makes the upstream wasm bytes part of every template
+ * that imports it (transitively). Blocks that don't need pframes-rs should not
+ * import this library so their packs stay small.
+ *
+ * See docs/text/work/projects/webassembly-libraries-tengo/README.md for the
+ * bundling story.
+ */
+
+ll := import(":ll")
+assets := import(":assets")
+
+importWasm := func() {
+	return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+}
+
+export ll.toStrict({
+	importWasm: importWasm
+})

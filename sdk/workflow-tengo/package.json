@@ -26,6 +26,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/pframes-rs-wasip2": "1.1.34",
     "@milaboratories/software-pframes-conv": "catalog:",
     "@platforma-open/milaboratories.software-small-binaries": "catalog:",
     "@platforma-open/milaboratories.software-ptabler": "workspace:*",
