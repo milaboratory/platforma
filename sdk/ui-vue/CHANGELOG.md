@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.76.0
+
+### Minor Changes
+
+- 9310b53: `PlDatasetSelector` now renders datasets and their filters in a single dropdown — each dataset row is followed by its filter rows, with the parent dataset label shown as the row description. Removed the `filterLabel` and `filterPlaceholder` props (no longer applicable).
+
 ## 1.75.10
 
 ### Patch Changes
