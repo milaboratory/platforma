@@ -112,7 +112,9 @@ export class RegistryV2Reader {
   private listCacheTimestamp: number = 0;
   private listCache: BlockPackOverviewNoRegistryId[] | undefined = undefined;
 
-  public async listBlockPacks(): Promise<BlockPackOverviewNoRegistryId[]> {
+  public async listBlockPacks(options?: {
+    signal?: AbortSignal;
+  }): Promise<BlockPackOverviewNoRegistryId[]> {
     if (
       this.listCache !== undefined &&
       Date.now() - this.listCacheTimestamp <= this.ops.cacheBlockListFor
@@ -123,7 +125,11 @@ export class RegistryV2Reader {
         // const rootContentReader = this.v2RootFolderReader.getContentReader();
         const globalOverview = GlobalOverviewReg.parse(
           JSON.parse(
-            Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString(),
+            Buffer.from(
+              await this.v2RootFolderReader.readFile(GlobalOverviewFileName, {
+                signal: options?.signal,
+              }),
+            ).toString(),
           ),
         );
 

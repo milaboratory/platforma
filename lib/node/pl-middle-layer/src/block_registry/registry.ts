@@ -69,17 +69,20 @@ export class BlockPackRegistry {
     private readonly http?: Dispatcher,
   ) {}
 
-  private async getPackagesForRoot(regEntry: RegistryEntry): Promise<BlockPackOverview[]> {
+  private async getPackagesForRoot(
+    regEntry: RegistryEntry,
+    options?: { signal?: AbortSignal },
+  ): Promise<BlockPackOverview[]> {
     const result: BlockPackOverview[] = [];
     const regSpec = regEntry.spec;
     switch (regSpec.type) {
       case "remote-v1": {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const overviewResponse = await request(
-          `${regSpec.url}/${RegistryV1.GlobalOverviewPath}`,
-          httpOptions,
-        );
+        const overviewResponse = await request(`${regSpec.url}/${RegistryV1.GlobalOverviewPath}`, {
+          ...httpOptions,
+          signal: options?.signal,
+        });
         const overview = (await overviewResponse.body.json()) as RegistryV1.GlobalOverview;
         for (const overviewEntry of overview) {
           const { organization, package: pkg, latestMeta, latestVersion } = overviewEntry;
@@ -118,7 +121,9 @@ export class BlockPackRegistry {
       }
 
       case "remote-v2":
-        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) => ({
+        return (
+          await this.v2Provider.getRegistry(regSpec.url).listBlockPacks({ signal: options?.signal })
+        ).map((e) => ({
           ...e,
           registryId: regEntry.id,
         }));
@@ -233,12 +238,12 @@ export class BlockPackRegistry {
     }
   }
 
-  public async listBlockPacks(): Promise<BlockPackListing> {
+  public async listBlockPacks(options?: { signal?: AbortSignal }): Promise<BlockPackListing> {
     const blockPacks: BlockPackOverview[] = [];
     const registries: RegistryStatus[] = [];
     for (const regSpecs of this.registries) {
       registries.push({ ...regSpecs, status: "online" });
-      blockPacks.push(...(await this.getPackagesForRoot(regSpecs)));
+      blockPacks.push(...(await this.getPackagesForRoot(regSpecs, options)));
     }
     return { registries, blockPacks };
   }
