@@ -1949,9 +1949,11 @@ export interface ResourceAPI_Tree_KV {
  */
 export interface ResourceAPI_Tree_Response {
     /**
-     * Full resource payload. Absent on stop-marker frames.
+     * Full resource payload. Absent on stop-marker frames (when the server
+     * advertises `treeStopMarker:v1` and traverse_was_stopped is true).
+     * Always populated on normal frames.
      *
-     * @generated from protobuf field: MiLaboratories.PL.API.Resource resource = 1
+     * @generated from protobuf field: optional MiLaboratories.PL.API.Resource resource = 1
      */
     resource?: Resource;
     /**
@@ -1963,23 +1965,25 @@ export interface ResourceAPI_Tree_Response {
     /**
      * True when the request specified a traverse_stop_rules and this resource
      * satisfied it. Always false when traverse_stop_rules was absent.
-     * On stop-marker frames (treeStopMarker:v1), resource is absent and
-     * resourceId/resourceSignature carry the stopped node's identity.
+     *
+     * When the server advertises `treeStopMarker:v1`, a stop-marker frame has
+     * traverse_was_stopped=true with resource unset; resource_id and
+     * resource_signature carry the identity of the stopped node instead.
+     * On normal frames (traverse_was_stopped=false or server without the
+     * capability) resource is always populated and resource_id/resource_signature
+     * are zero/empty.
      *
      * @generated from protobuf field: bool traverse_was_stopped = 3
      */
     traverseWasStopped: boolean;
     /**
-     * Populated only on stop-marker frames (resource is absent).
-     * Zero on normal frames; use resource.resourceId instead.
+     * Populated only on stop-marker frames (resource is unset).
+     * Zero / empty on normal frames; use resource.resource_id instead.
      *
      * @generated from protobuf field: uint64 resource_id = 4
      */
     resourceId: bigint;
     /**
-     * Populated only on stop-marker frames (resource is absent).
-     * Empty on normal frames; use resource.resourceSignature instead.
-     *
      * @generated from protobuf field: bytes resource_signature = 5
      */
     resourceSignature: Uint8Array;
@@ -9470,7 +9474,7 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
             { no: 1, name: "resource", kind: "message", T: () => Resource },
             { no: 2, name: "kv", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_KV },
             { no: 3, name: "traverse_was_stopped", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 4, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/ },
+            { no: 4, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
@@ -9489,7 +9493,7 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* MiLaboratories.PL.API.Resource resource */ 1:
+                case /* optional MiLaboratories.PL.API.Resource resource */ 1:
                     message.resource = Resource.internalBinaryRead(reader, reader.uint32(), options, message.resource);
                     break;
                 case /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.KV kv */ 2:
@@ -9516,7 +9520,7 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         return message;
     }
     internalBinaryWrite(message: ResourceAPI_Tree_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* MiLaboratories.PL.API.Resource resource = 1; */
+        /* optional MiLaboratories.PL.API.Resource resource = 1; */
         if (message.resource)
             Resource.internalBinaryWrite(message.resource, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
         /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.KV kv = 2; */

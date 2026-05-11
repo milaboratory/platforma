@@ -13,6 +13,11 @@ import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
 import * as tp from "node:timers/promises";
+
+/** Hard floor between consecutive tree-refresh calls.
+ * Applies even when {@link scheduleOnNextState} has woken the loop early,
+ * preventing tight polling loops during rapid state transitions. */
+const MIN_POLLING_INTERVAL_MS = 100;
 import type { MiLogger } from "@milaboratories/ts-helpers";
 
 type StatLoggingMode = "cumulative" | "per-request";
@@ -239,23 +244,40 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
+      // Phase 1: mandatory floor — always wait at least MIN_POLLING_INTERVAL_MS.
+      // Not interruptible by scheduleOnNextState; only termination aborts it.
+      try {
+        await tp.setTimeout(MIN_POLLING_INTERVAL_MS, undefined, {
+          signal: this.abortController.signal,
+        });
+      } catch (e: unknown) {
+        if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+        if (this.abortController.signal.aborted) break;
+      }
+
+      if (!this.keepRunning || this.terminated) break;
+
+      // Phase 2: optional remainder up to pollingInterval — interruptible by
+      // scheduleOnNextState so that an external nudge wakes the loop promptly.
       if (this.scheduledOnNextState.length === 0) {
-        try {
-          this.currentLoopDelayInterrupt = new AbortController();
-          await tp.setTimeout(this.pollingInterval, undefined, {
-            signal: AbortSignal.any([
-              this.abortController.signal,
-              this.currentLoopDelayInterrupt.signal,
-            ]),
-          });
-        } catch (e: unknown) {
-          if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
-          // If the main abort controller fired, this is a permanent termination
-          if (this.abortController.signal.aborted) break;
-          // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
-          // continue to the next iteration
-        } finally {
-          this.currentLoopDelayInterrupt = undefined;
+        const remaining = Math.max(0, this.pollingInterval - MIN_POLLING_INTERVAL_MS);
+        if (remaining > 0) {
+          try {
+            this.currentLoopDelayInterrupt = new AbortController();
+            await tp.setTimeout(remaining, undefined, {
+              signal: AbortSignal.any([
+                this.abortController.signal,
+                this.currentLoopDelayInterrupt.signal,
+              ]),
+            });
+          } catch (e: unknown) {
+            if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+            if (this.abortController.signal.aborted) break;
+            // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
+            // continue to the next iteration
+          } finally {
+            this.currentLoopDelayInterrupt = undefined;
+          }
         }
       }
     }

@@ -910,8 +910,8 @@ message ResourceAPI {
 
     // A single entry point for multi-root tree traversal.
     message SeedResource {
-      uint64 resource_id        = 1;
-      bytes  resource_signature = 2;
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
     }
 
     // Filter applied to each visited resource's fields during the walk.
@@ -973,14 +973,29 @@ message ResourceAPI {
 
     // Multi-message
     message Response {
-      Resource resource = 1;
+      // Full resource payload. Absent on stop-marker frames (when the server
+      // advertises `treeStopMarker:v1` and traverse_was_stopped is true).
+      // Always populated on normal frames.
+      optional Resource resource = 1;
 
       // Populated only when include_kv=true in the request.
       repeated KV kv = 2;
 
       // True when the request specified a traverse_stop_rules and this resource
       // satisfied it. Always false when traverse_stop_rules was absent.
+      //
+      // When the server advertises `treeStopMarker:v1`, a stop-marker frame has
+      // traverse_was_stopped=true with resource unset; resource_id and
+      // resource_signature carry the identity of the stopped node instead.
+      // On normal frames (traverse_was_stopped=false or server without the
+      // capability) resource is always populated and resource_id/resource_signature
+      // are zero/empty.
       bool traverse_was_stopped = 3;
+
+      // Populated only on stop-marker frames (resource is unset).
+      // Zero / empty on normal frames; use resource.resource_id instead.
+      uint64 resource_id        = 4;
+      bytes  resource_signature = 5;
     }
   }
 
