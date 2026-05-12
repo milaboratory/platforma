@@ -159,7 +159,6 @@ export class LLPlTransaction {
   /** Queue from which incoming message processor takes handlers to which pass incoming messages */
   private readonly responseHandlerQueue = new Denque<AnyResponseHandler>();
 
-
   /** Each new resource, created by the transaction, is assigned with virtual (local) resource id, to make it possible
    * to populate its fields without awaiting actual resource id. This counter tracks those ids on client side, the
    * same way it is tracked on the server, so client can synchronously return such ids to the user. */
@@ -255,11 +254,14 @@ export class LLPlTransaction {
             // We can continue to work after recoverable errors
             continue;
           } else {
-            this.assignErrorFactoryIfNotSet(() => {
-              throw new UnrecoverablePlError(status);
-            }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
-              ? currentHandler.reject
-              : undefined);
+            this.assignErrorFactoryIfNotSet(
+              () => {
+                throw new UnrecoverablePlError(status);
+              },
+              currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+                ? currentHandler.reject
+                : undefined,
+            );
             if (currentHandler.mode === "multiStream") {
               currentHandler.stream.fail(new UnrecoverablePlError(status));
             }
@@ -276,11 +278,14 @@ export class LLPlTransaction {
         ) {
           const errorMessage = `inconsistent request response types: ${currentHandler.kind} !== ${message.response.oneofKind}`;
 
-          this.assignErrorFactoryIfNotSet(() => {
-            throw new Error(errorMessage);
-          }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
-            ? currentHandler.reject
-            : undefined);
+          this.assignErrorFactoryIfNotSet(
+            () => {
+              throw new Error(errorMessage);
+            },
+            currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+              ? currentHandler.reject
+              : undefined,
+          );
           if (currentHandler.mode === "multiStream") {
             currentHandler.stream.fail(new Error(errorMessage));
           }
@@ -294,11 +299,14 @@ export class LLPlTransaction {
         if (expectMultiResponse !== (message.multiMessage !== undefined)) {
           const errorMessage = `inconsistent multi state: ${expectMultiResponse} !== ${message.multiMessage !== undefined}`;
 
-          this.assignErrorFactoryIfNotSet(() => {
-            throw new Error(errorMessage);
-          }, currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
-            ? currentHandler.reject
-            : undefined);
+          this.assignErrorFactoryIfNotSet(
+            () => {
+              throw new Error(errorMessage);
+            },
+            currentHandler.mode === "single" || currentHandler.mode === "multiBuffered"
+              ? currentHandler.reject
+              : undefined,
+          );
           if (currentHandler.mode === "multiStream") {
             currentHandler.stream.fail(new Error(errorMessage));
           }
@@ -314,9 +322,12 @@ export class LLPlTransaction {
             if (message.multiMessage.id !== currentMultiIdx + 1) {
               const errorMessage = `inconsistent multi id: ${message.multiMessage.id} !== ${currentMultiIdx + 1}`;
 
-              this.assignErrorFactoryIfNotSet(() => {
-                throw new Error(errorMessage);
-              }, currentHandler.mode === "multiBuffered" ? currentHandler.reject : undefined);
+              this.assignErrorFactoryIfNotSet(
+                () => {
+                  throw new Error(errorMessage);
+                },
+                currentHandler.mode === "multiBuffered" ? currentHandler.reject : undefined,
+              );
               if (currentHandler.mode === "multiStream") {
                 currentHandler.stream.fail(new Error(errorMessage));
               }
@@ -359,7 +370,8 @@ export class LLPlTransaction {
         () => {
           rethrowMeaningfulError(e, true);
         },
-        currentHandler && (currentHandler.mode === "single" || currentHandler.mode === "multiBuffered")
+        currentHandler &&
+          (currentHandler.mode === "single" || currentHandler.mode === "multiBuffered")
           ? currentHandler.reject
           : undefined,
       );

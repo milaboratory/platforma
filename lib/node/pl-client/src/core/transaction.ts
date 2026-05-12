@@ -88,8 +88,8 @@ export type ResourceTreeItem = ResourceData & { kv: KeyValue[]; traverseWasStopp
  * Note: `frameKind` is distinct from `ResourceData.kind` (which is the resource kind).
  */
 export type ResourceTreeFrame =
-  | (ResourceTreeItem & { frameKind: 'resource' })
-  | { frameKind: 'stopMarker'; id: SignedResourceId; traverseWasStopped: true };
+  | (ResourceTreeItem & { frameKind: "resource" })
+  | { frameKind: "stopMarker"; id: SignedResourceId; traverseWasStopped: true };
 
 interface _FieldId<RId> {
   /** Parent resource id */
@@ -1150,13 +1150,13 @@ export class PlTransaction {
                 toResourceSignature(frame.resourceSignature),
               );
               return {
-                value: { frameKind: 'stopMarker', id, traverseWasStopped: true },
+                value: { frameKind: "stopMarker", id, traverseWasStopped: true },
                 done: false,
               };
             }
             return {
               value: {
-                frameKind: 'resource',
+                frameKind: "resource",
                 ...protoToResource(frame.resource),
                 kv: frame.kv,
                 traverseWasStopped: frame.traverseWasStopped,
