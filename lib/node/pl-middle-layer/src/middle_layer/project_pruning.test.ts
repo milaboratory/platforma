@@ -35,10 +35,7 @@ const noopLogger: MiLogger = {
 };
 
 /** Build a minimal ExtendedResourceData for tests. */
-function makeResource(
-  typeName: string,
-  fieldNames: string[],
-): ExtendedResourceData {
+function makeResource(typeName: string, fieldNames: string[]): ExtendedResourceData {
   return {
     id: "NG:0x1" as any,
     type: { name: typeName, version: "1" },
@@ -158,9 +155,7 @@ function evaluateFieldFilter(
   resource: { type: { name: string }; fields: { name: string }[] },
 ): string[] {
   return resource.fields
-    .filter((f) =>
-      evalFilter(filter, { resourceType: resource.type.name, fieldName: f.name }),
-    )
+    .filter((f) => evalFilter(filter, { resourceType: resource.type.name, fieldName: f.name }))
     .map((f) => f.name);
 }
 
@@ -341,46 +336,72 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
 
   // isFinal=true conditional stops — json/resourceError
   it("json/resourceError + isFinal=true → stops", () => {
-    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: true })).toBe(true);
+    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: true })).toBe(
+      true,
+    );
   });
   it("json/resourceError + isFinal=false → continues", () => {
-    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(
+      false,
+    );
   });
 
   it("PColumnData/Int32 + isFinal=true → stops", () => {
     expect(evaluateStopRule(rule, { resourceType: "PColumnData/Int32", isFinal: true })).toBe(true);
   });
   it("PColumnData/Int32 + isFinal=false → continues", () => {
-    expect(evaluateStopRule(rule, { resourceType: "PColumnData/Int32", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "PColumnData/Int32", isFinal: false })).toBe(
+      false,
+    );
   });
 
   it("StreamWorkdir/run-42 + isFinal=true → stops", () => {
-    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: true })).toBe(true);
+    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: true })).toBe(
+      true,
+    );
   });
   it("StreamWorkdir/run-42 + isFinal=false → continues", () => {
-    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: false })).toBe(
+      false,
+    );
   });
 
   // isFinal + allOutputsFinal stops
   it("BlobUpload/v1 + isFinal=true + allOutputsFinal=true → stops", () => {
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobUpload/v1", isFinal: true, allOutputsFinal: true }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobUpload/v1",
+        isFinal: true,
+        allOutputsFinal: true,
+      }),
     ).toBe(true);
   });
   it("BlobUpload/v1 + isFinal=false → continues", () => {
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobUpload/v1", isFinal: false, allOutputsFinal: true }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobUpload/v1",
+        isFinal: false,
+        allOutputsFinal: true,
+      }),
     ).toBe(false);
   });
   it("BlobUpload/v1 + isFinal=true but allOutputsFinal=false → continues", () => {
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobUpload/v1", isFinal: true, allOutputsFinal: false }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobUpload/v1",
+        isFinal: true,
+        allOutputsFinal: false,
+      }),
     ).toBe(false);
   });
 
   it("BlobIndex/v2 + isFinal=true + allOutputsFinal=true → stops", () => {
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobIndex/v2", isFinal: true, allOutputsFinal: true }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobIndex/v2",
+        isFinal: true,
+        allOutputsFinal: true,
+      }),
     ).toBe(true);
   });
 
@@ -496,19 +517,25 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
   it("PColumnData/Int32 — not-ready resource: predicate=false, stop does NOT fire with isFinal=false", () => {
     const r = makeResource("PColumnData/Int32", []);
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
-    expect(evaluateStopRule(rule, { resourceType: "PColumnData/Int32", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "PColumnData/Int32", isFinal: false })).toBe(
+      false,
+    );
   });
 
   it("StreamWorkdir/run-42 — ready resource: predicate=true, stop fires with isFinal=true", () => {
     const r = makeReadyResource("StreamWorkdir/run-42");
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(true);
-    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: true })).toBe(true);
+    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: true })).toBe(
+      true,
+    );
   });
 
   it("StreamWorkdir/run-42 — not-ready: predicate=false, stop does NOT fire with isFinal=false", () => {
     const r = makeResource("StreamWorkdir/run-42", []);
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
-    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "StreamWorkdir/run-42", isFinal: false })).toBe(
+      false,
+    );
   });
 
   // ── Group C: isFinal+allOutputsFinal-conditional — readyAndHasAllOutputsFilled ──
@@ -517,7 +544,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     const r = makeAllOutputsFinalResource("BlobUpload/v1");
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(true);
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobUpload/v1", isFinal: true, allOutputsFinal: true }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobUpload/v1",
+        isFinal: true,
+        allOutputsFinal: true,
+      }),
     ).toBe(true);
   });
 
@@ -525,7 +556,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     const r = makeResource("BlobUpload/v1", []);
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobUpload/v1", isFinal: false, allOutputsFinal: false }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobUpload/v1",
+        isFinal: false,
+        allOutputsFinal: false,
+      }),
     ).toBe(false);
   });
 
@@ -533,7 +568,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     const r = makeAllOutputsFinalResource("BlobIndex/v2");
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(true);
     expect(
-      evaluateStopRule(rule, { resourceType: "BlobIndex/v2", isFinal: true, allOutputsFinal: true }),
+      evaluateStopRule(rule, {
+        resourceType: "BlobIndex/v2",
+        isFinal: true,
+        allOutputsFinal: true,
+      }),
     ).toBe(true);
   });
 
@@ -542,13 +581,20 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
   it("json/resourceError v1: predicate=true (version check), stop fires with isFinal=true", () => {
     const r = makeReadyResource("json/resourceError", "1");
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(true);
-    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: true })).toBe(true);
+    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: true })).toBe(
+      true,
+    );
   });
 
   it("json/resourceError v2: predicate=false (version check), stop does NOT fire with isFinal=false", () => {
-    const r = { ...makeResource("json/resourceError", []), type: { name: "json/resourceError", version: "2" } };
+    const r = {
+      ...makeResource("json/resourceError", []),
+      type: { name: "json/resourceError", version: "2" },
+    };
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
-    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(false);
+    expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(
+      false,
+    );
   });
 
   // ── Group E: never-final types — predicate=false, stop rule does not fire ──

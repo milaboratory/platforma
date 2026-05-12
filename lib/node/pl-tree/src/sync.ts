@@ -230,7 +230,6 @@ async function loadTreeStateViaBfs(
   return result;
 }
 
-
 type ResourceTreeFrame = ExtendedResourceData & { frameKind: string; traverseWasStopped: boolean };
 
 async function processResourceTreeStream(
@@ -249,7 +248,7 @@ async function processResourceTreeStream(
   // Usually stop rules indicates the resources with final state. In that case middle layer
   // should make a decision: has it already loaded the resource or should it be requested for get the latest state?
   for await (const frame of treeItems) {
-    if (frame.frameKind === 'stopMarker') {
+    if (frame.frameKind === "stopMarker") {
       if (finalResources.has(frame.id)) {
         if (stats) stats.stopMarkersSkipped++;
         continue;
@@ -284,7 +283,10 @@ async function processResourceTreeStream(
     // Apply field rules: traverseWasStopped drops all fields to keep the refCount
     // invariant; pruning function further filters the remaining fields.
     const rawFields = frame.traverseWasStopped ? [] : nextResource.fields;
-    const resolvedFields = pruningFunction !== undefined ? pruningFunction({ ...nextResource, fields: rawFields }) : rawFields;
+    const resolvedFields =
+      pruningFunction !== undefined
+        ? pruningFunction({ ...nextResource, fields: rawFields })
+        : rawFields;
     if (stats) stats.prunedFields += nextResource.fields.length - resolvedFields.length;
     nextResource = { ...nextResource, fields: resolvedFields };
 
@@ -313,7 +315,12 @@ async function loadTreeStateViaResourceTree(
     traverseStopRules,
   });
 
-  const { result, followUpSeeds } = await processResourceTreeStream(treeItems, finalResources, pruningFunction, stats);
+  const { result, followUpSeeds } = await processResourceTreeStream(
+    treeItems,
+    finalResources,
+    pruningFunction,
+    stats,
+  );
   if (stats) stats.roundTrips++;
 
   // Client must request full resource tree in case when stop-marker seeds are returned,
@@ -323,10 +330,17 @@ async function loadTreeStateViaResourceTree(
       includeKv: true,
       fieldFilter,
     });
-    const { result: followUpResult } = await processResourceTreeStream(followUpItems, finalResources, pruningFunction, stats);
+    const { result: followUpResult } = await processResourceTreeStream(
+      followUpItems,
+      finalResources,
+      pruningFunction,
+      stats,
+    );
     result.push(...followUpResult);
     if (stats) {
-      logger?.info?.(`loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`)
+      logger?.info?.(
+        `loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`,
+      );
       stats.roundTrips++;
       stats.stopMarkerFollowUpRoundTrips++;
     }

@@ -13,10 +13,18 @@ import { TestStructuralResourceType1 } from "./test_utils";
 import * as tp from "node:timers/promises";
 
 test("loadTreeState uses ResourceTree path with full options", async () => {
-  const received: { seeds?: string[]; includeKv?: boolean; hasFilters?: boolean; hasStopRules?: boolean } = {};
+  const received: {
+    seeds?: string[];
+    includeKv?: boolean;
+    hasFilters?: boolean;
+    hasStopRules?: boolean;
+  } = {};
 
   const tx = {
-    resourceTree: (seeds: string[], opts?: { includeKv?: boolean; fieldFilter?: unknown; traverseStopRules?: unknown }) => {
+    resourceTree: (
+      seeds: string[],
+      opts?: { includeKv?: boolean; fieldFilter?: unknown; traverseStopRules?: unknown },
+    ) => {
       received.seeds = seeds;
       received.includeKv = opts?.includeKv;
       received.hasFilters = opts?.fieldFilter !== undefined;
@@ -33,7 +41,16 @@ test("loadTreeState uses ResourceTree path with full options", async () => {
         final: false,
         inputsLocked: false,
         outputsLocked: false,
-        fields: [{ name: "keep", type: "Dynamic", value: NullSignedResourceId, error: NullSignedResourceId, status: "Resolved", valueIsFinal: false }],
+        fields: [
+          {
+            name: "keep",
+            type: "Dynamic",
+            value: NullSignedResourceId,
+            error: NullSignedResourceId,
+            status: "Resolved",
+            valueIsFinal: false,
+          },
+        ],
         kv: [],
         traverseWasStopped: false,
       };
@@ -70,7 +87,7 @@ test("loadTreeState propagates ResourceTree stream failure", async () => {
   const tx = {
     resourceTree: () =>
       (async function* () {
-        throw new Error("stream failed");
+        yield await Promise.reject(new Error("stream failed"));
       })(),
   } as unknown as Parameters<typeof loadTreeState>[0];
 
@@ -79,8 +96,9 @@ test("loadTreeState propagates ResourceTree stream failure", async () => {
     finalResources: new Set<string>(),
   } as unknown as Parameters<typeof loadTreeState>[1];
 
-  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"]))
-    .rejects.toThrow("stream failed");
+  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"])).rejects.toThrow(
+    "stream failed",
+  );
 });
 
 test("loadTreeState cancels ResourceTree iterator on pruning failure", async () => {
@@ -132,8 +150,9 @@ test("loadTreeState cancels ResourceTree iterator on pruning failure", async () 
     },
   } as unknown as Parameters<typeof loadTreeState>[1];
 
-  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"]))
-    .rejects.toThrow("pruning failed");
+  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"])).rejects.toThrow(
+    "pruning failed",
+  );
   expect(returnCalled).toBe(true);
 });
 
@@ -377,7 +396,10 @@ test("traversalMode=auto default regression: streaming on capable, BFS on incapa
 const stopMarkerCaps = ["treeFilter:v1"] as const;
 
 /** Minimal full-resource frame suitable for stop-marker tests. */
-function makeFullResource(id: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function makeFullResource(
+  id: string,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     id,
     type: { name: "Test", version: "1" },
@@ -458,7 +480,6 @@ test("stop-marker-unknown-triggers-followup: unknown marker fetched in follow-up
   expect(callCount).toBe(2);
 });
 
-
 test("legacy-backend-compat: no stop markers in stream → no follow-up call", async () => {
   // Old backends emit only full-resource frames; pendingFollowUp stays empty
   // and the follow-up loop body never executes.
@@ -501,12 +522,12 @@ test("orphan-invariant-preserved: error referent streamed alongside stop marker"
       callCount++;
       if (callCount === 1) {
         return (async function* () {
-          yield errY;                       // error referent — normal frame
-          yield makeStopMarker("NG:0x1");   // stopped node — marker frame
+          yield errY; // error referent — normal frame
+          yield makeStopMarker("NG:0x1"); // stopped node — marker frame
         })();
       } else {
         return (async function* () {
-          yield stoppedX;                   // follow-up returns full resource
+          yield stoppedX; // follow-up returns full resource
         })();
       }
     },
