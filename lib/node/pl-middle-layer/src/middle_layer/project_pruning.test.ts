@@ -138,6 +138,17 @@ function evalFilter(
         return isFinal === want;
       case FilterProperty.ALL_OUTPUTS_FINAL:
         return allOutputsFinal === want;
+      // readyOrDuplicateOrError() expands to OR(resourceReady, isDuplicate, hasErrors);
+      // model the "ready" branch as isFinal and the other two as always-false so
+      // the OR collapses to the test's isFinal flag.
+      case FilterProperty.RESOURCE_READY_FOR_CALCULATION:
+        return isFinal === want;
+      case FilterProperty.IS_DUPLICATE:
+        return want === false;
+      case FilterProperty.HAS_ERRORS:
+        return want === false;
+      case FilterProperty.OUTPUTS_LOCKED:
+        return allOutputsFinal === want;
       default:
         return false;
     }
@@ -334,15 +345,17 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
     expect(evaluateStopRule(rule, { resourceType: "BlockPackCustom", isFinal: false })).toBe(false);
   });
 
-  // isFinal=true conditional stops — json/resourceError
+  // json/resourceError — unconditional stop (BFS treats v1 as always-final; impl
+  // matches the type regardless of version since the proto filter has no version
+  // property).
   it("json/resourceError + isFinal=true → stops", () => {
     expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: true })).toBe(
       true,
     );
   });
-  it("json/resourceError + isFinal=false → continues", () => {
+  it("json/resourceError + isFinal=false → stops (unconditional)", () => {
     expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(
-      false,
+      true,
     );
   });
 
@@ -586,14 +599,17 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     );
   });
 
-  it("json/resourceError v2: predicate=false (version check), stop does NOT fire with isFinal=false", () => {
+  // Intentional divergence: the predicate is version-aware (false for v2), but
+  // the ResourceTree filter proto has no version property — the stop rule fires
+  // for any json/resourceError regardless of version. Documented gap.
+  it("json/resourceError v2: predicate=false (version check), stop still fires (no version filter)", () => {
     const r = {
       ...makeResource("json/resourceError", []),
       type: { name: "json/resourceError", version: "2" },
     };
     expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
     expect(evaluateStopRule(rule, { resourceType: "json/resourceError", isFinal: false })).toBe(
-      false,
+      true,
     );
   });
 
