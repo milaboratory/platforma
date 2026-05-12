@@ -115,7 +115,11 @@ describe("traverseQuerySpec", () => {
       type: "sort",
       input: col("a"),
       sortBy: [
-        { expression: { type: "columnRef", value: pid("id1") }, ascending: true, nullsFirst: null },
+        {
+          expression: { type: "columnRef", value: pid("id1") },
+          ascending: true,
+          nullsFirst: false,
+        },
       ],
     } as Q;
     const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
@@ -123,7 +127,7 @@ describe("traverseQuerySpec", () => {
       type: "sort",
       input: { type: "column", column: "A" },
       sortBy: [
-        { expression: { type: "columnRef", value: "id1" }, ascending: true, nullsFirst: null },
+        { expression: { type: "columnRef", value: "id1" }, ascending: true, nullsFirst: false },
       ],
     });
   });

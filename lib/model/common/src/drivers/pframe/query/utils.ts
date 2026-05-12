@@ -7,7 +7,7 @@ import type {
   SpecQueryJoinEntry,
 } from "./query_spec";
 
-const booleanTypesSet = new Set<SpecQueryBooleanExpression["type"]>([
+const BOOLEAN_TYPES = new Set<SpecQueryBooleanExpression["type"]>([
   "numericComparison",
   "stringEquals",
   "stringContains",
@@ -18,10 +18,11 @@ const booleanTypesSet = new Set<SpecQueryBooleanExpression["type"]>([
   "and",
   "or",
   "isIn",
+  "isInPolygon",
 ]);
 
 export function isBooleanExpression(expr: SpecQueryExpression): expr is SpecQueryBooleanExpression {
-  return booleanTypesSet.has(
+  return BOOLEAN_TYPES.has(
     // @ts-expect-error -- TypeScript doesn't understand the discriminated union here, but we do at runtime
     expr.type,
   );
@@ -126,11 +127,13 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
         case "sparseToDenseColumn":
           return {
             ...node,
-            axes: [...node.axes].sort((a, b) => {
+            // toSorted preserves array length but the type system widens
+            // the non-empty tuple back to a plain array, so re-narrow.
+            axes: node.axes.toSorted((a, b) => {
               const ak = canonicalizeJson(a);
               const bk = canonicalizeJson(b);
               return ak < bk ? -1 : ak > bk ? 1 : 0;
-            }),
+            }) as typeof node.axes,
           };
         case "innerJoin":
         case "fullJoin": {
@@ -244,8 +247,16 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "filter":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
-    case "transformColumns":
-      return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
+    case "transformColumns": {
+      const rhsTc = rhs as typeof lhs;
+      const cmp = cmpQuerySpec(lhs.input, rhsTc.input);
+      if (cmp !== 0) return cmp;
+      if (lhs.mode !== rhsTc.mode) return lhs.mode < rhsTc.mode ? -1 : 1;
+      // Column entries are positional; compare by canonical JSON.
+      const lk = canonicalizeJson(lhs.columns);
+      const rk = canonicalizeJson(rhsTc.columns);
+      return lk < rk ? -1 : lk > rk ? 1 : 0;
+    }
     default:
       assertNever(lhs);
   }

@@ -540,7 +540,7 @@ export interface ExprConditionalCase<I> {
 export interface ExprConditional<I> {
   type: "conditional";
   /** Cases evaluated in order; first matching wins. At least one. */
-  cases: ExprConditionalCase<I>[];
+  cases: [ExprConditionalCase<I>, ...ExprConditionalCase<I>[]];
   /** Fallback value when no case matches. */
   otherwise?: I;
 }
@@ -565,7 +565,7 @@ export interface ExprIsInPolygon<I> {
   /** Y-coordinate expression. */
   y: I;
   /** Polygon vertices as `[x, y]` tuples; at least one. */
-  polygon: Point2D[];
+  polygon: [Point2D, ...Point2D[]];
   /** If true, the predicate is inverted (true for points OUTSIDE the polygon). */
   negate: boolean;
 }
@@ -612,7 +612,10 @@ export interface ExprAggregation<I, A, C> {
    * window function and the result is broadcast to every row in the
    * partition. At least one entry when supplied.
    */
-  over?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+  over?: [
+    QueryAxisSelector<A> | QueryColumnSelector<C>,
+    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
+  ];
 }
 
 /** Ranking function kind. */
@@ -637,7 +640,10 @@ export interface ExprRanking<I, A, C> {
   /** If true (default), sort ascending; if false, descending. */
   ascending?: boolean;
   /** Partition specification — at least one entry when supplied. */
-  partitionBy?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+  partitionBy?: [
+    QueryAxisSelector<A> | QueryColumnSelector<C>,
+    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
+  ];
 }
 
 /** Cumulative aggregation operand (always a window function). */
@@ -669,7 +675,10 @@ export interface ExprCumulative<I, A, C> {
   /** If true (default), order ascending; if false, descending. */
   ascending?: boolean;
   /** Partition specification — at least one entry when supplied. */
-  partitionBy?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+  partitionBy?: [
+    QueryAxisSelector<A> | QueryColumnSelector<C>,
+    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
+  ];
 }
 
 // ============ Reference Expression Types ============
@@ -880,8 +889,8 @@ export interface QuerySliceAxes<Q, A> {
  *   type: 'sort',
  *   input: dataQuery,
  *   sortBy: [
- *     { expression: { type: 'columnRef', value: 'score' }, ascending: false, nullsFirst: null },
- *     { expression: { type: 'axisRef', value: { name: 'name' } }, ascending: true, nullsFirst: null }
+ *     { expression: { type: 'columnRef', value: 'score' }, ascending: false, nullsFirst: false },
+ *     { expression: { type: 'axisRef', value: { name: 'name' } }, ascending: true, nullsFirst: false }
  *   ]
  * }
  */
@@ -1044,7 +1053,7 @@ export interface QuerySparseToDenseColumn<C, A, SO> {
    * indices during spec→data lowering. The Rust runtime also accepts
    * the legacy field name `axesIndices` as a serde alias.
    */
-  axes: A[];
+  axes: [A, ...A[]];
 }
 
 /**
@@ -1192,5 +1201,5 @@ export interface QueryTransformColumns<Q, E, SO> {
   /** `"append"` to add new columns; `"replace"` to keep only listed columns. */
   mode: TransformColumnsMode;
   /** Derived columns to compute (at least one). */
-  columns: TransformColumnEntry<E, SO>[];
+  columns: [TransformColumnEntry<E, SO>, ...TransformColumnEntry<E, SO>[]];
 }
