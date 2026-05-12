@@ -312,6 +312,7 @@ describe("filterSpecToSpecQueryExpr", () => {
       type: "isIn",
       input: { type: "columnRef", value: "col1" },
       set: ["a", "b", "c"],
+      negate: false,
     });
   });
 
@@ -322,12 +323,10 @@ describe("filterSpecToSpecQueryExpr", () => {
       value: ["x"],
     };
     expect(filterSpecToSpecQueryExpr(filter)).toEqual({
-      type: "not",
-      input: {
-        type: "isIn",
-        input: { type: "columnRef", value: "col1" },
-        set: ["x"],
-      },
+      type: "isIn",
+      input: { type: "columnRef", value: "col1" },
+      set: ["x"],
+      negate: true,
     });
   });
 
