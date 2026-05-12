@@ -1,8 +1,14 @@
 ---
 "@milaboratories/pl-model-common": minor
+"@milaboratories/pf-driver": patch
+"@milaboratories/pf-spec-driver": patch
 ---
 
 `pframe/query` types now mirror the pframes-rs wire format.
+Tracks `@milaboratories/pframes-rs-node` / `-wasm` v1.1.34 → v1.1.35;
+`REQUIRES_PFRAMES_VERSION` in `lib/model/common/src/flags/block_flags.ts`
+bumped to `1_001_035` so blocks built against the new SDK refuse to
+load on older desktop apps.
 
 New variants on `SpecQuery` / `DataQuery`:
 
