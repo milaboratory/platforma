@@ -578,10 +578,7 @@ export interface ExprConditional<I> {
 //   type: "aggregation";
 //   kind: AggregationKind;
 //   input: I;
-//   over?: [
-//     QueryAxisSelector<A> | QueryColumnSelector<C>,
-//     ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
-//   ];
+//   over?: [QuerySelector<A, C>, ...QuerySelector<A, C>[]];
 // }
 
 /** Ranking function kind. */
@@ -606,10 +603,7 @@ export interface ExprRanking<I, A, C> {
   /** If true (default), sort ascending; if false, descending. */
   ascending?: boolean;
   /** Partition specification — at least one entry when supplied. */
-  partitionBy?: [
-    QueryAxisSelector<A> | QueryColumnSelector<C>,
-    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
-  ];
+  partitionBy?: [QuerySelector<A, C>, ...QuerySelector<A, C>[]];
 }
 
 // ============ Disabled — type defined in pframes-rs, runtime not wired yet ============
@@ -630,10 +624,7 @@ export interface ExprRanking<I, A, C> {
 //   input: I;
 //   orderBy: I;
 //   ascending?: boolean;
-//   partitionBy?: [
-//     QueryAxisSelector<A> | QueryColumnSelector<C>,
-//     ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
-//   ];
+//   partitionBy?: [QuerySelector<A, C>, ...QuerySelector<A, C>[]];
 // }
 
 // ============ Reference Expression Types ============
@@ -741,6 +732,15 @@ export interface QueryColumnSelector<C> {
   /** Column identifier (name or index depending on context) */
   id: C;
 }
+
+/**
+ * Axis-or-column selector — mirrors the Rust `Selector<AxisSelector,
+ * ColumnSelector>` enum
+ * (`packages/bridge/src/query/query_sort.rs`). Used for the
+ * `partitionBy` / `over` fields of window expressions where either an
+ * axis or a column can drive the partition.
+ */
+export type QuerySelector<A, C> = QueryAxisSelector<A> | QueryColumnSelector<C>;
 
 /**
  * Left outer join query operation.
