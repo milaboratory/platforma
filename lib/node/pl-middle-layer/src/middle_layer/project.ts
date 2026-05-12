@@ -801,7 +801,7 @@ export function projectTreeFieldFilter(): Filter {
  *
  *   BFS predicate: readyOrDuplicateOrError(r)
  *     → readyOrDuplicateOrError(): stops when resource_ready_for_calculation,
- *       is_duplicate, or is_error is true — exactly mirroring the BFS predicate.
+ *       is_duplicate, or has_errors is true — exactly mirroring the BFS predicate.
  *
  *   BFS predicate: readyAndHasAllOutputsFilled(r)
  *     → isFinal(true) + allOutputsFinal(true).

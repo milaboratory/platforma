@@ -87,12 +87,6 @@ export interface Resource {
      */
     isFinal: boolean;
     /**
-     * Status() == Error; distinct from has_errors (which means any field has an error value)
-     *
-     * @generated from protobuf field: bool is_error = 20
-     */
-    isError: boolean;
-    /**
      * @generated from protobuf field: uint64 original_resource_id = 10
      */
     originalResourceId: bigint;
@@ -571,7 +565,6 @@ class Resource$Type extends MessageType<Resource> {
             { no: 9, name: "outputs_locked", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 14, name: "resource_ready", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 15, name: "is_final", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 20, name: "is_error", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 10, name: "original_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 19, name: "original_resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 11, name: "parent_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
@@ -592,7 +585,6 @@ class Resource$Type extends MessageType<Resource> {
         message.outputsLocked = false;
         message.resourceReady = false;
         message.isFinal = false;
-        message.isError = false;
         message.originalResourceId = 0n;
         message.originalResourceSignature = new Uint8Array(0);
         message.parentResourceId = 0n;
@@ -643,9 +635,6 @@ class Resource$Type extends MessageType<Resource> {
                     break;
                 case /* bool is_final */ 15:
                     message.isFinal = reader.bool();
-                    break;
-                case /* bool is_error */ 20:
-                    message.isError = reader.bool();
                     break;
                 case /* uint64 original_resource_id */ 10:
                     message.originalResourceId = reader.uint64().toBigInt();
@@ -728,9 +717,6 @@ class Resource$Type extends MessageType<Resource> {
         /* bytes original_resource_signature = 19; */
         if (message.originalResourceSignature.length)
             writer.tag(19, WireType.LengthDelimited).bytes(message.originalResourceSignature);
-        /* bool is_error = 20; */
-        if (message.isError !== false)
-            writer.tag(20, WireType.Varint).bool(message.isError);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
