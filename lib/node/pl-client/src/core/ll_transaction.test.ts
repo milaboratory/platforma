@@ -1,6 +1,6 @@
-import { getTestLLClient } from "../test/test_config";
+import { getTestClient, getTestLLClient } from "../test/test_config";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { createLocalResourceId } from "./types";
+import { createLocalResourceId, parseSignedResourceId } from "./types";
 import { test, expect } from "vitest";
 
 import { isTimeoutOrCancelError } from "./errors";
@@ -11,15 +11,14 @@ let cachedRootSig: Uint8Array | undefined;
 
 async function getRootSignature(): Promise<Uint8Array> {
   if (cachedRootSig !== undefined) return cachedRootSig;
-  const client = await getTestLLClient();
-  const responses = await client.listUserResources({ limit: 1 });
-  for (const msg of responses) {
-    if (msg.entry.oneofKind === "userRoot" && msg.entry.userRoot.resourceSignature) {
-      cachedRootSig = msg.entry.userRoot.resourceSignature;
-      return cachedRootSig;
-    }
+  // Use PlClient (not LLPlClient) so UserResources auto-creates the root if missing.
+  const client = await getTestClient();
+  try {
+    const rootId = await client.getUserRoot({ createIfNotExists: true });
+    cachedRootSig = parseSignedResourceId(rootId).signature;
+  } finally {
+    await client.close();
   }
-  cachedRootSig = new Uint8Array(0);
   return cachedRootSig;
 }
 
@@ -100,7 +99,7 @@ test("check timeout error type (active)", async () => {
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { timeout: 500 });
 
-  try {
+  await expect(async () => {
     const openResponse = await tx.send(
       {
         oneofKind: "txOpen",
@@ -163,9 +162,7 @@ test("check timeout error type (active)", async () => {
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);
     }
-  } catch (err: unknown) {
-    expect(isTimeoutOrCancelError(err)).toBe(true);
-  }
+  }).rejects.toSatisfy(isTimeoutOrCancelError);
 });
 
 test("check is abort error (active)", async () => {
@@ -173,7 +170,7 @@ test("check is abort error (active)", async () => {
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
-  try {
+  await expect(async () => {
     const openResponse = await tx.send(
       {
         oneofKind: "txOpen",
@@ -236,7 +233,5 @@ test("check is abort error (active)", async () => {
 
       expect(Buffer.compare(vr.resourceGet.resource!.data, rData)).toBe(0);
     }
-  } catch (err: unknown) {
-    expect(isTimeoutOrCancelError(err)).toBe(true);
-  }
+  }).rejects.toSatisfy(isTimeoutOrCancelError);
 });
