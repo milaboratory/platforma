@@ -52,7 +52,11 @@ type AnyResponseHandler =
   | MultiResponseHandler
   | AnyMultiStreamResponseHandler;
 
-class AsyncMessageStream<T> implements AsyncIterable<T> {
+// Implements both AsyncIterable and AsyncIterator: `[Symbol.asyncIterator]()` returns
+// `this`, so multiple `for await` loops over the same stream share state instead of
+// creating independent iterators that would race on `waitingResolve`/`waitingReject`.
+// Only one active consumer is supported; concurrent `next()` calls are not safe.
+class AsyncMessageStream<T> implements AsyncIterable<T>, AsyncIterator<T> {
   private readonly queue = new Denque<T>();
   private done = false;
   private cancelled = false;
@@ -83,6 +87,11 @@ class AsyncMessageStream<T> implements AsyncIterable<T> {
     }
   }
 
+  // Fail-fast: any frames still buffered in `this.queue` are intentionally dropped.
+  // `next()` checks `this.failure` before draining the queue, so consumers see the
+  // error immediately. This differs from `end()`, which drains buffered frames first.
+  // Rationale: when the upstream stream errors, the in-flight response is treated as
+  // corrupt and partial frames must not be surfaced.
   public fail(error: Error): void {
     if (this.done) return;
     this.failure = error;
@@ -107,30 +116,32 @@ class AsyncMessageStream<T> implements AsyncIterable<T> {
     }
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<T> {
-    return {
-      next: async (): Promise<IteratorResult<T>> => {
-        if (this.failure) throw this.failure;
+  public async next(): Promise<IteratorResult<T>> {
+    if (this.failure) throw this.failure;
 
-        const value = this.queue.shift();
-        if (value !== undefined) return { value, done: false };
+    const value = this.queue.shift();
+    if (value !== undefined) return { value, done: false };
 
-        if (this.done) return { value: undefined, done: true };
+    if (this.done) return { value: undefined, done: true };
 
-        return await new Promise<IteratorResult<T>>((resolve, reject) => {
-          this.waitingResolve = resolve;
-          this.waitingReject = reject;
-        });
-      },
-      return: async (): Promise<IteratorResult<T>> => {
-        this.cancel();
-        return { value: undefined, done: true };
-      },
-      throw: async (error?: unknown): Promise<IteratorResult<T>> => {
-        this.cancel();
-        throw error;
-      },
-    };
+    return await new Promise<IteratorResult<T>>((resolve, reject) => {
+      this.waitingResolve = resolve;
+      this.waitingReject = reject;
+    });
+  }
+
+  public async return(): Promise<IteratorResult<T>> {
+    this.cancel();
+    return { value: undefined, done: true };
+  }
+
+  public async throw(error?: unknown): Promise<IteratorResult<T>> {
+    this.cancel();
+    throw error;
+  }
+
+  [Symbol.asyncIterator](): this {
+    return this;
   }
 }
 

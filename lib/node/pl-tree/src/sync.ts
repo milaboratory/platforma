@@ -3,6 +3,7 @@ import type {
   Filter,
   OptionalSignedResourceId,
   PlTransaction,
+  ResourceTreeFrame,
   SignedResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
@@ -230,8 +231,6 @@ async function loadTreeStateViaBfs(
   return result;
 }
 
-type ResourceTreeFrame = ExtendedResourceData & { frameKind: string; traverseWasStopped: boolean };
-
 async function processResourceTreeStream(
   treeItems: AsyncIterable<ResourceTreeFrame>,
   finalResources: Set<SignedResourceId>,
@@ -306,10 +305,8 @@ async function loadTreeStateViaResourceTree(
   const { seedResources, finalResources, pruningFunction, fieldFilter, traverseStopRules } =
     loadingRequest;
 
-  const treeAny = tx as any;
-
   // Round 0: initial tree traversal.
-  const treeItems = treeAny.resourceTree(seedResources, {
+  const treeItems = tx.resourceTree(seedResources, {
     includeKv: true,
     fieldFilter,
     traverseStopRules,
@@ -326,7 +323,7 @@ async function loadTreeStateViaResourceTree(
   // Client must request full resource tree in case when stop-marker seeds are returned,
   // to ensure all resources are loaded and stop-marker frames are processed.
   if (followUpSeeds.length > 0) {
-    const followUpItems = treeAny.resourceTree(followUpSeeds, {
+    const followUpItems = tx.resourceTree(followUpSeeds, {
       includeKv: true,
       fieldFilter,
     });
