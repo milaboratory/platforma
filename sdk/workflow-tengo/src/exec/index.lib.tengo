@@ -19,6 +19,7 @@ constants := import(":constants")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 units := import(":units")
+feats := import(":feats")
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -1220,5 +1221,11 @@ builder := func() {
 }
 
 export ll.toStrict({
-	builder: builder
+	builder: builder,
+
+	// True when at least one backend runner advertises GPU availability.
+	// Gate .gpuMemory() calls in blocks that have a CPU fallback path:
+	//   if exec.hasGpu { builder = builder.gpuMemory("16GiB") }
+	// Calling .gpuMemory() against a backend without GPU produces a permanent error.
+	hasGpu: feats.hasGpu
 })
