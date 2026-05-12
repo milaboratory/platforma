@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.monetization-test
 
+## 1.4.22
+
+### Patch Changes
+
+- @milaboratories/milaboratories.monetization-test.workflow@1.2.18
+
 ## 1.4.21
 
 ### Patch Changes
