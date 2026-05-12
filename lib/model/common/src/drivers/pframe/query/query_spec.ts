@@ -1,22 +1,25 @@
 import type { PObjectId } from "../../../pool";
 import type {
   ExprAxisRef,
+  ExprCast,
   ExprColumnRef,
-  ExprNumericBinary,
-  ExprNumericComparison,
+  ExprConditional,
   ExprConstant,
+  ExprFillNull,
   ExprIsIn,
   ExprIsNull,
-  ExprIfNull,
   ExprLogicalUnary,
   ExprLogicalVariadic,
+  ExprNumericBinary,
+  ExprNumericComparison,
+  ExprNumericUnary,
+  ExprRanking,
   ExprStringContains,
   ExprStringContainsFuzzy,
   ExprStringEquals,
   ExprStringRegex,
-  ExprNumericUnary,
+  InferBooleanExpressionUnion,
   QueryColumn,
-  QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -24,8 +27,9 @@ import type {
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
+  QuerySparseToDenseColumn,
   QuerySymmetricJoin,
-  InferBooleanExpressionUnion,
+  QueryTransformColumns,
 } from "./query_common";
 import type { Domain, PColumnIdAndSpec, SingleAxisSelector } from "../spec";
 
@@ -55,6 +59,7 @@ export type SpecQueryInlineColumn = QueryInlineColumn<PColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
 export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColumn<
   C,
+  SingleAxisSelector,
   PColumnIdAndSpec
 >;
 /** @see QuerySymmetricJoin */
@@ -82,6 +87,12 @@ export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<SpecQuery<C>, Sin
 export type SpecQuerySort<C = PObjectId> = QuerySort<SpecQuery<C>, SpecQueryExpression>;
 /** @see QueryFilter */
 export type SpecQueryFilter<C = PObjectId> = QueryFilter<SpecQuery<C>, SpecQueryBooleanExpression>;
+/** @see QueryTransformColumns */
+export type SpecQueryTransformColumns<C = PObjectId> = QueryTransformColumns<
+  SpecQuery<C>,
+  SpecQueryExpression,
+  PColumnIdAndSpec
+>;
 
 /**
  * Union of all spec layer query types.
@@ -95,8 +106,8 @@ export type SpecQueryFilter<C = PObjectId> = QueryFilter<SpecQuery<C>, SpecQuery
  *
  * Includes:
  * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
- * - Join operations: innerJoin, fullJoin, outerJoin
- * - Transformations: sliceAxes, sort, filter
+ * - Join operations: innerJoin, fullJoin, outerJoin, linkerJoin
+ * - Transformations: sliceAxes, sort, filter, transformColumns
  */
 export type SpecQuery<C = PObjectId> =
   | SpecQueryColumn<C>
@@ -107,7 +118,8 @@ export type SpecQuery<C = PObjectId> =
   | SpecQueryLinkerJoin<C>
   | SpecQuerySliceAxes<C>
   | SpecQuerySort<C>
-  | SpecQueryFilter<C>;
+  | SpecQueryFilter<C>
+  | SpecQueryTransformColumns<C>;
 
 /** @see ExprAxisRef */
 export type SpecExprAxisRef = ExprAxisRef<SingleAxisSelector>;
@@ -126,10 +138,16 @@ export type SpecQueryExpression =
   | ExprStringRegex<SpecQueryExpression>
   | ExprStringContainsFuzzy<SpecQueryExpression>
   | ExprIsNull<SpecQueryExpression>
-  | ExprIfNull<SpecQueryExpression>
+  | ExprFillNull<SpecQueryExpression>
   | ExprLogicalUnary<SpecQueryExpression>
   | ExprLogicalVariadic<SpecQueryExpression>
   | ExprIsIn<SpecQueryExpression, string>
-  | ExprIsIn<SpecQueryExpression, number>;
+  | ExprIsIn<SpecQueryExpression, number>
+  // | ExprIsInPolygon<SpecQueryExpression>  -- runtime not wired (see query_common.ts)
+  | ExprCast<SpecQueryExpression>
+  | ExprConditional<SpecQueryExpression>
+  // | ExprAggregation<SpecQueryExpression, SingleAxisSelector, PObjectId>  -- runtime not wired
+  | ExprRanking<SpecQueryExpression, SingleAxisSelector, PObjectId>;
+// | ExprCumulative<SpecQueryExpression, SingleAxisSelector, PObjectId>  -- runtime not wired
 
 export type SpecQueryBooleanExpression = InferBooleanExpressionUnion<SpecQueryExpression>;
