@@ -23,7 +23,7 @@ export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
   return resource.fields;
 };
 
-export const projectsListFieldFilters: Filter[] = [treeFilter.resourceTypeEq("Projects")];
+export const projectsListFieldFilter: Filter = treeFilter.resourceTypeEq("Projects");
 
 export async function createProjectList(
   pl: PlClient,
@@ -37,7 +37,7 @@ export async function createProjectList(
     {
       ...env.ops.defaultTreeOptions,
       pruning: ProjectsListTreePruningFunction,
-      fieldFilters: projectsListFieldFilters,
+      fieldFilter: projectsListFieldFilter,
     },
     env.logger,
   );

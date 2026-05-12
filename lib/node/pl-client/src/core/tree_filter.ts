@@ -18,11 +18,11 @@ export { ResourceAPI_Tree_Filter_Property as FilterProperty };
 
 /**
  * Builder helpers for {@link ResourceAPI_Tree_Filter} predicates used in
- * `ResourceAPI_Tree_Request.fieldFilters` and `traverseStopRules`.
+ * `ResourceAPI_Tree_Request.fieldFilter` and `traverseStopRules`.
  *
  * Property restrictions (not enforced here; the backend rejects invalid combinations):
- *   - `FIELD_NAME` is only valid inside `fieldFilters`.
- *   - `IS_FINAL` and `ALL_OUTPUTS_FINAL` are only valid inside `traverseStopRules`.
+ *   - `FIELD_NAME` is only valid inside `fieldFilter`.
+ *   - `IS_FINAL`, `ALL_OUTPUTS_FINAL`, and resource-level boolean predicates are only valid inside `traverseStopRules`.
  */
 export const treeFilter = {
   // ── Group operators ──────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export const treeFilter = {
 
   /**
    * Match field edges whose name equals `name` exactly.
-   * Valid only inside `fieldFilters`.
+   * Valid only inside `fieldFilter`.
    */
   fieldNameEq(name: string): Filter {
     return treeFilter.eq(ResourceAPI_Tree_Filter_Property.FIELD_NAME, name);
@@ -99,7 +99,7 @@ export const treeFilter = {
 
   /**
    * Match field edges whose name satisfies the regex `pattern`.
-   * Valid only inside `fieldFilters`.
+   * Valid only inside `fieldFilter`.
    */
   fieldNameMatch(pattern: string): Filter {
     return treeFilter.match(ResourceAPI_Tree_Filter_Property.FIELD_NAME, pattern);

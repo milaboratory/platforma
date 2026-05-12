@@ -30,7 +30,10 @@ import type {
   OneOfKind,
   ServerMessageResponse,
 } from "./ll_transaction";
-import type { ResourceAPI_Tree_Filter, ResourceAPI_Tree_SeedResource } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import type {
+  ResourceAPI_Tree_Filter,
+  ResourceAPI_Tree_SeedResource,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
@@ -1086,7 +1089,9 @@ export class PlTransaction {
    *
    * @param seeds - Roots for the traversal. May include both {@link ResourceData}
    *   and {@link SignedResourceId} values in the same array.
-   * @param opts.fieldFilters      - Per-field predicates; matching field edges are not descended.
+   * @param opts.fieldFilter       - Per-field predicate; matching field edges are not descended.
+   *   This wire field accepts only one filter. Compose multiple rules via
+   *   `treeFilter.and(...)` / `treeFilter.or(...)`.
    * @param opts.traverseStopRules - Per-resource predicate; matching resources are returned
    *   with `traverseWasStopped = true` and their children are not visited.
    *   This wire field accepts only one filter. Compose multiple rules via
@@ -1097,7 +1102,7 @@ export class PlTransaction {
   public resourceTree(
     seeds: (ResourceData | SignedResourceId)[],
     opts?: {
-      fieldFilters?: ResourceAPI_Tree_Filter[];
+      fieldFilter?: ResourceAPI_Tree_Filter;
       traverseStopRules?: ResourceAPI_Tree_Filter;
       includeKv?: boolean;
       maxDepth?: number;
@@ -1122,7 +1127,7 @@ export class PlTransaction {
         resourceId: firstSeed?.resourceId ?? 0n,
         resourceSignature: firstSeed?.resourceSignature ?? new Uint8Array(0),
         seeds: seedProtos,
-        fieldFilters: opts?.fieldFilters ?? [],
+        fieldFilter: opts?.fieldFilter,
         traverseStopRules: opts?.traverseStopRules,
         includeKv: opts?.includeKv ?? false,
         maxDepth: opts?.maxDepth,

@@ -876,11 +876,12 @@ message ResourceAPI {
       // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
       // field.
       //
-      // If fields match the predicate, the traversal does not descend into
-      // that field's value.
+      // If a field matches the predicate, the traversal does not descend
+      // into that field's value.
       //
-      // Filters combine via AND.
-      repeated Filter field_filters = 5;
+      // Only one filter is accepted. Compose multiple rules into a single
+      // predicate via AND/OR/NOT groups.
+      optional Filter field_filter = 5;
 
       // If true, the response carries per-resource key-values alongside
       // each visited resource. Defaults to false. Old servers ignore this

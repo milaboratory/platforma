@@ -726,7 +726,7 @@ export class Project {
       {
         ...env.ops.defaultTreeOptions,
         pruning: projectTreePruning(env.logger),
-        fieldFilters: projectTreeFieldFilters(),
+        fieldFilter: projectTreeFieldFilter(),
         traverseStopRules: projectTreeTraverseStopRules(),
       },
       env.logger,
@@ -769,27 +769,25 @@ export function projectTreePruning(logger: MiLogger): PruningFunction {
 }
 
 /** ResourceTree analogue of projectTreePruning() used by modern backend path. */
-export function projectTreeFieldFilters(): Filter[] {
-  return [
-    treeFilter.not(
-      treeFilter.or(
-        // StreamWorkdir/* — pruned entirely
-        treeFilter.resourceTypeMatch("^StreamWorkdir/"),
-        // BlockPackCustom: drop `template`
-        treeFilter.and(
-          treeFilter.resourceTypeEq("BlockPackCustom"),
-          treeFilter.fieldNameEq("template"),
-        ),
-        // UserProject: drop `__serviceTemplate*`
-        treeFilter.and(
-          treeFilter.resourceTypeEq("UserProject"),
-          treeFilter.fieldNameMatch("^__serviceTemplate"),
-        ),
-        // Blob — pruned entirely
-        treeFilter.resourceTypeEq("Blob"),
+export function projectTreeFieldFilter(): Filter {
+  return treeFilter.not(
+    treeFilter.or(
+      // StreamWorkdir/* — pruned entirely
+      treeFilter.resourceTypeMatch("^StreamWorkdir/"),
+      // BlockPackCustom: drop `template`
+      treeFilter.and(
+        treeFilter.resourceTypeEq("BlockPackCustom"),
+        treeFilter.fieldNameEq("template"),
       ),
+      // UserProject: drop `__serviceTemplate*`
+      treeFilter.and(
+        treeFilter.resourceTypeEq("UserProject"),
+        treeFilter.fieldNameMatch("^__serviceTemplate"),
+      ),
+      // Blob — pruned entirely
+      treeFilter.resourceTypeEq("Blob"),
     ),
-  ];
+  );
 }
 
 /**

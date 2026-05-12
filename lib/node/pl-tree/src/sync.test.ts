@@ -16,10 +16,10 @@ test("loadTreeState uses ResourceTree path with full options", async () => {
   const received: { seeds?: string[]; includeKv?: boolean; hasFilters?: boolean; hasStopRules?: boolean } = {};
 
   const tx = {
-    resourceTree: (seeds: string[], opts?: { includeKv?: boolean; fieldFilters?: unknown[]; traverseStopRules?: unknown }) => {
+    resourceTree: (seeds: string[], opts?: { includeKv?: boolean; fieldFilter?: unknown; traverseStopRules?: unknown }) => {
       received.seeds = seeds;
       received.includeKv = opts?.includeKv;
-      received.hasFilters = (opts?.fieldFilters?.length ?? 0) > 0;
+      received.hasFilters = opts?.fieldFilter !== undefined;
       received.hasStopRules = opts?.traverseStopRules !== undefined;
 
       const itemA = {
@@ -50,7 +50,7 @@ test("loadTreeState uses ResourceTree path with full options", async () => {
     seedResources: ["NG:0x1", "NG:0x2"],
     finalResources: new Set<string>(["NG:0x2"]),
     pruningFunction: (r: any) => r.fields.filter((f: any) => f.name === "keep"),
-    fieldFilters: [{}],
+    fieldFilter: {},
     traverseStopRules: {},
   } as unknown as Parameters<typeof loadTreeState>[1];
 

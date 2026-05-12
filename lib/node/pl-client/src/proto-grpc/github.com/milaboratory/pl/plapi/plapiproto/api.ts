@@ -1749,14 +1749,15 @@ export interface ResourceAPI_Tree_Request {
      * MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
      * field.
      *
-     * If fields match the predicate, the traversal does not descend into
-     * that field's value.
+     * If a field matches the predicate, the traversal does not descend
+     * into that field's value.
      *
-     * Filters combine via AND.
+     * Only one filter is accepted. Compose multiple rules into a single
+     * predicate via AND/OR/NOT groups.
      *
-     * @generated from protobuf field: repeated MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filters = 5
+     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filter = 5
      */
-    fieldFilters: ResourceAPI_Tree_Filter[];
+    fieldFilter?: ResourceAPI_Tree_Filter;
     /**
      * If true, the response carries per-resource key-values alongside
      * each visited resource. Defaults to false. Old servers ignore this
@@ -9139,7 +9140,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "max_depth", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ },
-            { no: 5, name: "field_filters", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_Filter },
+            { no: 5, name: "field_filter", kind: "message", T: () => ResourceAPI_Tree_Filter },
             { no: 6, name: "include_kv", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 7, name: "traverse_stop_rules", kind: "message", T: () => ResourceAPI_Tree_Filter },
             { no: 8, name: "seeds", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_SeedResource }
@@ -9149,7 +9150,6 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         const message = globalThis.Object.create((this.messagePrototype!));
         message.resourceId = 0n;
         message.resourceSignature = new Uint8Array(0);
-        message.fieldFilters = [];
         message.includeKv = false;
         message.seeds = [];
         if (value !== undefined)
@@ -9170,8 +9170,8 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                 case /* optional uint32 max_depth */ 2:
                     message.maxDepth = reader.uint32();
                     break;
-                case /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filters */ 5:
-                    message.fieldFilters.push(ResourceAPI_Tree_Filter.internalBinaryRead(reader, reader.uint32(), options));
+                case /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filter */ 5:
+                    message.fieldFilter = ResourceAPI_Tree_Filter.internalBinaryRead(reader, reader.uint32(), options, message.fieldFilter);
                     break;
                 case /* bool include_kv */ 6:
                     message.includeKv = reader.bool();
@@ -9203,9 +9203,9 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* bytes resource_signature = 3; */
         if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
-        /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filters = 5; */
-        for (let i = 0; i < message.fieldFilters.length; i++)
-            ResourceAPI_Tree_Filter.internalBinaryWrite(message.fieldFilters[i], writer.tag(5, WireType.LengthDelimited).fork(), options).join();
+        /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter field_filter = 5; */
+        if (message.fieldFilter)
+            ResourceAPI_Tree_Filter.internalBinaryWrite(message.fieldFilter, writer.tag(5, WireType.LengthDelimited).fork(), options).join();
         /* bool include_kv = 6; */
         if (message.includeKv !== false)
             writer.tag(6, WireType.Varint).bool(message.includeKv);

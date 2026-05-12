@@ -29,8 +29,8 @@ export type SynchronizedTreeOps = {
   /** Pruning function for legacy fallback path. */
   pruning?: PruningFunction;
 
-  /** ResourceTree field filters for modern backend path. */
-  fieldFilters?: Filter[];
+  /** ResourceTree field filter for modern backend path. */
+  fieldFilter?: Filter;
 
   /** ResourceTree traversal stop rules for modern backend path. */
   traverseStopRules?: Filter;
@@ -60,7 +60,7 @@ export class SynchronizedTreeState {
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
-  private readonly fieldFilters?: Filter[];
+  private readonly fieldFilter?: Filter;
   private readonly traverseStopRules?: Filter;
   private readonly traversalMode: TraversalMode;
   private readonly logStat?: StatLoggingMode;
@@ -76,7 +76,7 @@ export class SynchronizedTreeState {
     const {
       finalPredicateOverride,
       pruning,
-      fieldFilters,
+      fieldFilter,
       traverseStopRules,
       traversalMode,
       pollingInterval,
@@ -84,7 +84,7 @@ export class SynchronizedTreeState {
       logStat,
     } = ops;
     this.pruning = pruning;
-    this.fieldFilters = fieldFilters;
+    this.fieldFilter = fieldFilter;
     this.traverseStopRules = traverseStopRules;
     this.traversalMode = traversalMode ?? "auto";
     this.pollingInterval = pollingInterval;
@@ -154,7 +154,7 @@ export class SynchronizedTreeState {
     if (this.terminated) throw new Error("tree synchronization is terminated");
     const request = constructTreeLoadingRequest(this.state, {
       pruningFunction: this.pruning,
-      fieldFilters: this.fieldFilters,
+      fieldFilter: this.fieldFilter,
       traverseStopRules: this.traverseStopRules,
     });
     const data = await this.pl.withReadTx(

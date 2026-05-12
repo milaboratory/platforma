@@ -27,8 +27,8 @@ export interface TreeLoadingRequest {
   /** Applied to each resource field list in fallback BFS mode and to streamed results. */
   readonly pruningFunction?: PruningFunction;
 
-  /** ResourceTree field filters passed to the backend when supported. */
-  readonly fieldFilters?: Filter[];
+  /** ResourceTree field filter passed to the backend when supported. */
+  readonly fieldFilter?: Filter;
 
   /** ResourceTree traversal stop rules passed to the backend when supported. */
   readonly traverseStopRules?: Filter;
@@ -49,7 +49,7 @@ export type TraversalMode = "auto" | "client-bfs" | "backend-streaming";
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
   tree: PlTreeState,
-  options: Pick<TreeLoadingRequest, "pruningFunction" | "fieldFilters" | "traverseStopRules"> = {},
+  options: Pick<TreeLoadingRequest, "pruningFunction" | "fieldFilter" | "traverseStopRules"> = {},
 ): TreeLoadingRequest {
   const seedResources: SignedResourceId[] = [];
   const finalResources = new Set<SignedResourceId>();
@@ -65,7 +65,7 @@ export function constructTreeLoadingRequest(
     seedResources,
     finalResources,
     pruningFunction: options.pruningFunction,
-    fieldFilters: options.fieldFilters,
+    fieldFilter: options.fieldFilter,
     traverseStopRules: options.traverseStopRules,
   };
 }
@@ -273,8 +273,9 @@ async function loadTreeStateViaResourceTree(
   tx: PlTransaction,
   loadingRequest: TreeLoadingRequest,
   stats?: TreeLoadingStat,
+  logger?: { warn: (msg: string) => void; info?: (msg: unknown) => void },
 ): Promise<ExtendedResourceData[]> {
-  const { seedResources, finalResources, pruningFunction, fieldFilters, traverseStopRules } =
+  const { seedResources, finalResources, pruningFunction, fieldFilter, traverseStopRules } =
     loadingRequest;
 
   const treeAny = tx as any;
@@ -282,26 +283,24 @@ async function loadTreeStateViaResourceTree(
   // Round 0: initial tree traversal.
   const treeItems = treeAny.resourceTree(seedResources, {
     includeKv: true,
-    fieldFilters,
+    fieldFilter,
     traverseStopRules,
   });
 
   const { result, followUpSeeds } = await processResourceTreeStream(treeItems, finalResources, pruningFunction, stats);
   if (stats) stats.roundTrips++;
 
-  // Single follow-up for unknown stop markers.
-  // traverseStopRules is omitted so the server performs a full traversal and
-  // cannot emit further stop markers — one round is sufficient.
-  // Old backends emit no stop-marker frames, so followUpSeeds stays empty
-  // and this block is skipped — backward compatible.
+  // Client must request full resource tree in case when stop-marker seeds are returned,
+  // to ensure all resources are loaded and stop-marker frames are processed.
   if (followUpSeeds.length > 0) {
     const followUpItems = treeAny.resourceTree(followUpSeeds, {
       includeKv: true,
-      fieldFilters,
+      fieldFilter,
     });
     const { result: followUpResult } = await processResourceTreeStream(followUpItems, finalResources, pruningFunction, stats);
     result.push(...followUpResult);
     if (stats) {
+      logger?.info?.(`loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`)
       stats.roundTrips++;
       stats.stopMarkerFollowUpRoundTrips++;
     }
@@ -319,7 +318,7 @@ export async function loadTreeState(
   stats?: TreeLoadingStat,
   capabilities: readonly string[] = [],
   mode: TraversalMode = "auto",
-  logger?: { warn: (msg: string) => void },
+  logger?: { warn: (msg: string) => void; info?: (msg: unknown) => void },
 ): Promise<ExtendedResourceData[]> {
   const startTimestamp = Date.now();
   if (stats) stats.requests++;
@@ -338,7 +337,7 @@ export async function loadTreeState(
     }
 
     return wantsStreaming
-      ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats)
+      ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats, logger)
       : await loadTreeStateViaBfs(tx, loadingRequest, stats);
   } finally {
     if (stats) stats.millisSpent += Date.now() - startTimestamp;

@@ -2,19 +2,19 @@
  * Parity tests verifying that the new ResourceTree field-filter + traversal-stop-rule
  * predicates produce the same outcome as the legacy BFS pruning functions.
  *
- * §4.1 — pruning parity: projectTreePruning ⇄ projectTreeFieldFilters
- *         and ProjectsListTreePruningFunction ⇄ projectsListFieldFilters
+ * §4.1 — pruning parity: projectTreePruning ⇄ projectTreeFieldFilter
+ *         and ProjectsListTreePruningFunction ⇄ projectsListFieldFilter
  * §4.2 — stop-rule isolation coverage for projectTreeTraverseStopRules
  * §4.3 — final-predicate parity: DefaultFinalResourceDataPredicate ⇄ projectTreeTraverseStopRules
  */
 
 import { describe, expect, it } from "vitest";
 import {
-  projectTreeFieldFilters,
+  projectTreeFieldFilter,
   projectTreePruning,
   projectTreeTraverseStopRules,
 } from "./project";
-import { projectsListFieldFilters, ProjectsListTreePruningFunction } from "./project_list";
+import { projectsListFieldFilter, ProjectsListTreePruningFunction } from "./project_list";
 import type { Filter } from "@milaboratories/pl-client";
 import {
   DefaultFinalResourceDataPredicate,
@@ -150,19 +150,16 @@ function evalFilter(
 }
 
 /**
- * Apply fieldFilters to a resource's fields.
- * A field is kept when every filter in the array evaluates true for that (resource, field) pair.
- * This mirrors the backend's AND-across-array semantics.
+ * Apply fieldFilter to a resource's fields.
+ * A field is kept when the filter evaluates true for that (resource, field) pair.
  */
-function evaluateFieldFilters(
-  filters: Filter[],
+function evaluateFieldFilter(
+  filter: Filter,
   resource: { type: { name: string }; fields: { name: string }[] },
 ): string[] {
   return resource.fields
     .filter((f) =>
-      filters.every((filter) =>
-        evalFilter(filter, { resourceType: resource.type.name, fieldName: f.name }),
-      ),
+      evalFilter(filter, { resourceType: resource.type.name, fieldName: f.name }),
     )
     .map((f) => f.name);
 }
@@ -175,7 +172,7 @@ function evaluateStopRule(
   return evalFilter(rule, ctx);
 }
 
-// ── §4.1 — Pruning parity: projectTreePruning ⇄ projectTreeFieldFilters ────
+// ── §4.1 — Pruning parity: projectTreePruning ⇄ projectTreeFieldFilter ────
 
 const projectPruningCases: Array<{
   name: string;
@@ -217,7 +214,7 @@ const projectPruningCases: Array<{
 
 describe("§4.1 project tree pruning parity", () => {
   const pruner = projectTreePruning(noopLogger);
-  const filters = projectTreeFieldFilters();
+  const filter = projectTreeFieldFilter();
 
   for (const c of projectPruningCases) {
     it(`${c.name} — BFS keeps [${c.expected.join(",")}]`, () => {
@@ -226,15 +223,15 @@ describe("§4.1 project tree pruning parity", () => {
       expect(kept).toEqual(c.expected);
     });
 
-    it(`${c.name} — fieldFilters keep [${c.expected.join(",")}]`, () => {
+    it(`${c.name} — fieldFilter keeps [${c.expected.join(",")}]`, () => {
       const resource = makeResource(c.typeName, c.fields);
-      const kept = evaluateFieldFilters(filters, resource);
+      const kept = evaluateFieldFilter(filter, resource);
       expect(kept).toEqual(c.expected);
     });
   }
 });
 
-// ── §4.1 — Pruning parity: ProjectsListTreePruningFunction ⇄ projectsListFieldFilters
+// ── §4.1 — Pruning parity: ProjectsListTreePruningFunction ⇄ projectsListFieldFilter
 
 const projectsListPruningCases: Array<{
   name: string;
@@ -263,7 +260,7 @@ const projectsListPruningCases: Array<{
 ];
 
 describe("§4.1 projects-list pruning parity", () => {
-  const filters = projectsListFieldFilters;
+  const filter = projectsListFieldFilter;
 
   for (const c of projectsListPruningCases) {
     it(`${c.name} — BFS keeps [${c.expected.join(",")}]`, () => {
@@ -272,9 +269,9 @@ describe("§4.1 projects-list pruning parity", () => {
       expect(kept).toEqual(c.expected);
     });
 
-    it(`${c.name} — fieldFilters keep [${c.expected.join(",")}]`, () => {
+    it(`${c.name} — fieldFilter keeps [${c.expected.join(",")}]`, () => {
       const resource = makeResource(c.typeName, c.fields);
-      const kept = evaluateFieldFilters(filters, resource);
+      const kept = evaluateFieldFilter(filter, resource);
       expect(kept).toEqual(c.expected);
     });
   }
