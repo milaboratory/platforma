@@ -7,7 +7,55 @@ import type { BlockPackDescriptionAbsolute } from "./model";
 import { BlockPackDescriptionConsolidateToFolder } from "./model";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { gunzipSync } from "node:zlib";
 import { calculateSha256 } from "../util";
+
+/**
+ * templateHasWasm walks a parsed v3 template tree (or any nested fragment)
+ * and returns true if any node carries a non-empty `wasm` map. Recursion
+ * descends into `templates` so transitively-imported sub-templates with
+ * wasm dependencies are detected too.
+ *
+ * Exposed for unit tests; not part of the public block-tools API.
+ */
+export function templateHasWasm(tpl: unknown): boolean {
+  if (tpl === null || typeof tpl !== "object") return false;
+  const node = tpl as { wasm?: Record<string, unknown>; templates?: Record<string, unknown> };
+  if (node.wasm && Object.keys(node.wasm).length > 0) return true;
+  for (const sub of Object.values(node.templates ?? {})) {
+    if (templateHasWasm(sub)) return true;
+  }
+  return false;
+}
+
+/**
+ * workflowUsesWasm reads the workflow's compiled `main.plj.gz` (already
+ * consolidated under `dst`) and returns true if its template tree carries
+ * any wasm sections. Returns false for v2 packs (which have no wasm field)
+ * and for malformed packs — fail-safe because the worst case is "block
+ * installs anywhere" which is the pre-WASM status quo.
+ */
+async function workflowUsesWasm(
+  descriptionRelative: BlockPackDescriptionManifest,
+  dst: string,
+): Promise<boolean> {
+  // After BlockPackDescriptionConsolidateToFolder runs, components.workflow.main
+  // is always a {type: "relative", path: ...} reference into dst.
+  const main = descriptionRelative.components.workflow.main;
+  const bytes = await fsp.readFile(path.resolve(dst, main.path));
+
+  let parsed: unknown;
+  try {
+    const json = gunzipSync(bytes).toString("utf-8");
+    parsed = JSON.parse(json);
+  } catch {
+    return false;
+  }
+
+  const pack = parsed as { type?: string; template?: unknown };
+  if (pack.type !== "pl.tengo-template.v3") return false;
+  return templateHasWasm(pack.template);
+}
 
 export async function buildBlockPackDist(
   description: BlockPackDescriptionAbsolute,
@@ -18,15 +66,21 @@ export async function buildBlockPackDist(
   const descriptionRelative: BlockPackDescriptionManifest =
     await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
 
-  // Hardcode the WASM runtime capability for every block packed by this
-  // SDK release. See docs/text/work/projects/webassembly-libraries-tengo/
-  // wasm-bundling.md for the rationale. Desktop matches this list against
-  // serverInfo.capabilities at install time; old Desktops strip the
-  // unknown field on parse and fall back to platform-only gating.
-  descriptionRelative.meta = {
-    ...descriptionRelative.meta,
-    requiredCapabilities: ["wasm"],
-  };
+  // Per-block WASM-requirement detection: inspect the consolidated workflow
+  // `main.plj.gz` for actual wasm sections instead of stamping every block
+  // built with this SDK release. Blocks whose workflow doesn't reach a
+  // WASM-backed SDK lib install on any backend; only blocks that do force
+  // the customer to run a wasm-capable backend.
+  //
+  // See docs/text/work/projects/webassembly-libraries-tengo/README.md,
+  // "Capability declaration: detected from main.plj.gz, not the SDK release"
+  // for the rationale.
+  if (await workflowUsesWasm(descriptionRelative, dst)) {
+    descriptionRelative.meta = {
+      ...descriptionRelative.meta,
+      requiredCapabilities: ["wasm"],
+    };
+  }
 
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {
