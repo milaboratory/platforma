@@ -140,14 +140,21 @@ async function loadTreeStateViaBfs(
 ): Promise<ExtendedResourceData[]> {
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
+  // Limits the number of concurrent gRPC fetches to bound peak memory
+  // from in-flight request/response buffers.
   const limiter = new ConcurrencyLimitingExecutor(100);
+
+  // Promises of resource states, in the order they were requested.
   const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
-  let roundTripToggle = true;
+  // vars to calculate number of roundtrips for stats
+  let roundTripToggle: boolean = true;
   let numberOfRoundTrips = 0;
 
+  // tracking resources we already requested or queued
   const requested = new Set<SignedResourceId>();
 
+  /** Mark a resource for fetching. Deduplicates and respects final-resource set. */
   const requestState = (rid: OptionalSignedResourceId) => {
     if (isNullSignedResourceId(rid) || requested.has(rid)) return;
 
@@ -163,11 +170,14 @@ async function loadTreeStateViaBfs(
         const resourceData = tx.getResourceDataIfExists(rid, true);
         const kvData = tx.listKeyValuesIfResourceExists(rid);
 
+        // counting round-trip (begin)
         const addRT = roundTripToggle;
         if (roundTripToggle) roundTripToggle = false;
 
         const [resource, kv] = await Promise.all([resourceData, kvData]);
 
+        // counting round-trip, actually incrementing counter and returning toggle back,
+        // so the next request can acquire it
         if (addRT) {
           numberOfRoundTrips++;
           roundTripToggle = true;
@@ -181,27 +191,37 @@ async function loadTreeStateViaBfs(
     );
   };
 
+  // sending seed requests
   seedResources.forEach((rid) => requestState(rid));
 
   const result: ExtendedResourceData[] = [];
   let nextPromise: Promise<ExtendedResourceData | undefined> | undefined;
   while ((nextPromise = pending.shift()) !== undefined) {
+    // at this point we pause and wait for the next requested resource state to arrive
     let nextResource = await nextPromise;
-    if (nextResource === undefined) continue;
+    if (nextResource === undefined)
+      // ignoring resources that were not found (this may happen for seed resource ids)
+      continue;
 
     if (pruningFunction !== undefined) {
+      // apply field pruning, if requested
       const fieldsAfterPruning = pruningFunction(nextResource);
+      // collecting stats
       if (stats) stats.prunedFields += nextResource.fields.length - fieldsAfterPruning.length;
       nextResource = { ...nextResource, fields: fieldsAfterPruning };
     }
 
+    // continue traversal over the referenced resources
     requestState(nextResource.error);
     for (const field of nextResource.fields) {
       requestState(field.value);
       requestState(field.error);
     }
 
+    // collecting stats
     collectStatsForResource(nextResource, stats);
+
+    // aggregating the state
     result.push(nextResource);
   }
 
@@ -222,6 +242,12 @@ async function processResourceTreeStream(
   const result: ExtendedResourceData[] = [];
   const followUpSeeds: SignedResourceId[] = [];
 
+  // backend returns two types of frames:
+  // - 'resource' frames contain the resource state and are processed normally
+  // - 'stopMarker' frames indicate resources that are ignored due stop rules fired
+  //
+  // Usually stop rules indicates the resources with final state. In that case middle layer
+  // should make a decision: has it already loaded the resource or should it be requested for get the latest state?
   for await (const frame of treeItems) {
     if (frame.frameKind === 'stopMarker') {
       if (finalResources.has(frame.id)) {
