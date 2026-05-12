@@ -248,7 +248,7 @@ function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
 
     case "ifNa":
       return {
-        type: "ifNull",
+        type: "fillNull",
         input: resolveColumnRef(filter.column),
         replacement: { type: "constant", value: filter.replacement },
       };

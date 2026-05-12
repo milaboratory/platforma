@@ -88,6 +88,7 @@ export function traverseQuerySpec<C1, C2>(
     case "filter":
     case "sort":
     case "sliceAxes":
+    case "transformColumns":
       result = { ...query, input: traverseQuerySpec(query.input, visitor) };
       break;
     default:
@@ -235,6 +236,8 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
     case "sort":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "filter":
+      return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
+    case "transformColumns":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     default:
       assertNever(lhs);

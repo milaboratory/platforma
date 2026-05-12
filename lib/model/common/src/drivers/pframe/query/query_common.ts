@@ -61,8 +61,9 @@ export type NumericUnaryOperand =
  * - `mul` - Multiplication: left * right
  * - `div` - Division: left / right (division by zero returns Infinity or NaN)
  * - `mod` - Modulo: left % right
+ * - `power` - Exponentiation: left ** right
  */
-export type NumericBinaryOperand = "add" | "sub" | "mul" | "div" | "mod";
+export type NumericBinaryOperand = "add" | "sub" | "mul" | "div" | "mod" | "power";
 
 /**
  * Numeric comparison operation kinds.
@@ -83,16 +84,16 @@ export type NumericComparisonOperand = "eq" | "ne" | "lt" | "le" | "gt" | "ge";
 // ============ Geometric Types ============
 
 /**
- * 2D point coordinates.
+ * 2D point coordinates as an `[x, y]` tuple.
  *
- * Used for geometric operations like point-in-polygon tests.
+ * Used for geometric operations like point-in-polygon tests. The wire
+ * form is a tuple (matching Rust's `(f64, f64)` serialisation), not an
+ * object with `x` / `y` fields.
+ *
  * Common use case: flow cytometry gating where points are tested
  * against user-defined polygon regions.
  */
-export type Point2D = {
-  x: number;
-  y: number;
-};
+export type Point2D = [number, number];
 
 // ============ Constant Expression ============
 
@@ -148,17 +149,20 @@ export interface ExprIsNull<I> {
  * **Output**: Same type as input/replacement.
  * **Null handling**: If input is null, returns replacement; otherwise returns input.
  *
+ * The Rust runtime also accepts the legacy `"ifNull"` tag as a serde
+ * alias; new code should emit `"fillNull"`.
+ *
  * @template I - The expression type (for recursion)
  *
  * @example
  * // Replace null values with 0
- * { type: 'ifNull', input: columnRef, replacement: { type: 'constant', value: 0 } }
+ * { type: 'fillNull', input: columnRef, replacement: { type: 'constant', value: 0 } }
  *
  * // Replace null strings with 'unknown'
- * { type: 'ifNull', input: nameColumn, replacement: { type: 'constant', value: 'unknown' } }
+ * { type: 'fillNull', input: nameColumn, replacement: { type: 'constant', value: 'unknown' } }
  */
-export interface ExprIfNull<I> {
-  type: "ifNull";
+export interface ExprFillNull<I> {
+  type: "fillNull";
   /** Value to check for null */
   input: I;
   /** Replacement value if input is null */
@@ -475,6 +479,197 @@ export interface ExprIsIn<I, T extends string | number> {
   input: I;
   /** Set of allowed values */
   set: T[];
+  /** If true, the predicate is inverted (true for values NOT in `set`). */
+  negate?: boolean;
+}
+
+/**
+ * Type cast expression.
+ *
+ * Converts the input value to a different column value type. Mirrors
+ * SQL `CAST(input AS U)`.
+ *
+ * **Input**: any expression.
+ * **Output**: a value of `targetType`.
+ * **Null handling**: null in → null out.
+ *
+ * @template I - The expression type (for recursion)
+ */
+export interface ExprCast<I> {
+  type: "cast";
+  /** Expression to cast. */
+  input: I;
+  /** Target column value type. */
+  targetType: ColumnValueType;
+}
+
+/**
+ * A single `when → then` case in a {@link ExprConditional} expression.
+ *
+ * @template I - The expression type (for recursion)
+ */
+export interface ExprConditionalCase<I> {
+  /** Boolean predicate that selects this branch. */
+  when: I;
+  /** Value produced when `when` evaluates to true. */
+  then: I;
+}
+
+/**
+ * Conditional (CASE WHEN) expression.
+ *
+ * Evaluates `cases` in order; the value of the first case whose `when`
+ * is true is returned. If no case matches, `otherwise` is used (or
+ * null when omitted).
+ *
+ * **Result type**: the type of the first case's `then`; subsequent
+ * `then`s and `otherwise` are cast to it.
+ *
+ * @template I - The expression type (for recursion)
+ *
+ * @example
+ * {
+ *   type: 'conditional',
+ *   cases: [
+ *     { when: gtTwenty, then: { type: 'constant', value: 'high' } },
+ *     { when: gtTen,    then: { type: 'constant', value: 'mid'  } }
+ *   ],
+ *   otherwise: { type: 'constant', value: 'low' }
+ * }
+ */
+export interface ExprConditional<I> {
+  type: "conditional";
+  /** Cases evaluated in order; first matching wins. At least one. */
+  cases: ExprConditionalCase<I>[];
+  /** Fallback value when no case matches. */
+  otherwise?: I;
+}
+
+/**
+ * Point-in-polygon test (commonly used for graph-maker lasso /
+ * flow-cytometry gating).
+ *
+ * **Input**: two numeric expressions (`x`, `y`).
+ * **Output**: logical Boolean; materialises as `Int` (0/1) when used
+ * as a derived column.
+ *
+ * The polygon is automatically closed (last vertex connects to first).
+ * Non-convex polygons are supported.
+ *
+ * @template I - The expression type (for recursion)
+ */
+export interface ExprIsInPolygon<I> {
+  type: "isInPolygon";
+  /** X-coordinate expression. */
+  x: I;
+  /** Y-coordinate expression. */
+  y: I;
+  /** Polygon vertices as `[x, y]` tuples; at least one. */
+  polygon: Point2D[];
+  /** If true, the predicate is inverted (true for points OUTSIDE the polygon). */
+  negate?: boolean;
+}
+
+/**
+ * Aggregation function kind (flat string; tagged form with payloads is
+ * planned per the change log).
+ */
+export type AggregationKind =
+  | "sum"
+  | "avg"
+  | "count"
+  | "min"
+  | "max"
+  | "first"
+  | "last"
+  | "stddev"
+  | "variance"
+  | "median";
+
+/**
+ * Aggregation expression — scalar form (inside `aggregate`) or window
+ * form (inside `transformColumns` with `over` set).
+ *
+ * Without `over`: scalar reducer. Valid only inside an `aggregate`
+ * query node.
+ *
+ * With `over`: window function. Valid inside `transformColumns`;
+ * preserves all axes, broadcasting the per-partition result to every
+ * row.
+ *
+ * @template I - The expression type (for recursion)
+ * @template A - Axis selector type
+ * @template C - Column selector type
+ */
+export interface ExprAggregation<I, A, C> {
+  type: "aggregation";
+  /** Aggregation kind. */
+  kind: AggregationKind;
+  /** Expression to aggregate. */
+  input: I;
+  /**
+   * Partition specification — when present, the aggregation becomes a
+   * window function and the result is broadcast to every row in the
+   * partition. At least one entry when supplied.
+   */
+  over?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+}
+
+/** Ranking function kind. */
+export type RankingKind = "rank" | "denseRank" | "rowNumber";
+
+/**
+ * Ranking expression (always a window function).
+ *
+ * Orders rows by `orderBy` within each partition and assigns ranks
+ * according to `kind`. Output is always `Long`.
+ *
+ * @template I - The expression type (for recursion)
+ * @template A - Axis selector type
+ * @template C - Column selector type
+ */
+export interface ExprRanking<I, A, C> {
+  type: "ranking";
+  /** Ranking semantics. */
+  kind: RankingKind;
+  /** Expression to order by within each partition. */
+  orderBy: I;
+  /** If true (default), sort ascending; if false, descending. */
+  ascending?: boolean;
+  /** Partition specification — at least one entry when supplied. */
+  partitionBy?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
+}
+
+/** Cumulative aggregation operand (always a window function). */
+export type CumulativeOperand =
+  | "cumulativeSum"
+  | "cumulativeMin"
+  | "cumulativeMax"
+  | "cumulativeAvg";
+
+/**
+ * Cumulative aggregation expression — a window function with the
+ * implicit frame `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
+ *
+ * Accumulates `input` across rows within each partition, ordered by
+ * `orderBy`. Resets at partition boundaries.
+ *
+ * @template I - The expression type (for recursion)
+ * @template A - Axis selector type
+ * @template C - Column selector type
+ */
+export interface ExprCumulative<I, A, C> {
+  type: "cumulative";
+  /** Cumulative operand (sum / min / max / avg). */
+  operand: CumulativeOperand;
+  /** Expression to accumulate. */
+  input: I;
+  /** Expression to order rows by within each partition. */
+  orderBy: I;
+  /** If true (default), order ascending; if false, descending. */
+  ascending?: boolean;
+  /** Partition specification — at least one entry when supplied. */
+  partitionBy?: (QueryAxisSelector<A> | QueryColumnSelector<C>)[];
 }
 
 // ============ Reference Expression Types ============
@@ -531,6 +726,7 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: "not" }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: "and" | "or" }> : never,
   E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: "isIn" }> : never,
+  E extends ExprIsInPolygon<unknown> ? Extract<E, { type: "isInPolygon" }> : never,
 ][number];
 
 // ============ Generic Query Types ============
@@ -702,9 +898,8 @@ export interface QuerySort<Q, E> {
      * Null placement control:
      * - true: nulls sort before non-null values
      * - false: nulls sort after non-null values
-     * - null: use default behavior (typically nulls last)
      */
-    nullsFirst: null | boolean;
+    nullsFirst: boolean;
   }[];
 }
 
@@ -927,4 +1122,55 @@ export interface QueryLinkerJoin<L, JE extends QueryJoinEntry<unknown>> {
   linker: L;
   /** Rest side — one or more subqueries joined with the linker (at least one). */
   secondary: JE[];
+}
+
+/**
+ * `transformColumns` mode.
+ *
+ * - `"append"` — existing columns pass through; the new columns are
+ *   appended.
+ * - `"replace"` — only the listed columns are kept; everything else is
+ *   dropped.
+ *
+ * The Rust runtime accepts the legacy `"add"` tag as a serde alias;
+ * new code should emit `"append"`.
+ */
+export type TransformColumnsMode = "append" | "replace";
+
+/**
+ * Single column entry for {@link QueryTransformColumns}.
+ *
+ * @template E - Expression type
+ * @template SO - Spec override type (typically `PColumnIdAndSpec` at
+ *   the spec layer, or layer-specific id+typespec at the data layer)
+ */
+export interface TransformColumnEntry<E, SO> {
+  /** Expression computing the column values. */
+  expression: E;
+  /**
+   * Optional spec override. If omitted, the runtime auto-derives the
+   * column's spec from the host's input and the expression.
+   * `valueType` is always inferred from the expression.
+   */
+  specOverride?: SO;
+}
+
+/**
+ * Transform-columns query operation.
+ *
+ * Computes one or more derived columns from `input`. Axes are
+ * preserved.
+ *
+ * @template Q - Input query type
+ * @template E - Expression type
+ * @template SO - Spec override type
+ */
+export interface QueryTransformColumns<Q, E, SO> {
+  type: "transformColumns";
+  /** Input query. */
+  input: Q;
+  /** `"append"` to add new columns; `"replace"` to keep only listed columns. */
+  mode: TransformColumnsMode;
+  /** Derived columns to compute (at least one). */
+  columns: TransformColumnEntry<E, SO>[];
 }
