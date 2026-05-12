@@ -943,10 +943,29 @@ message ResourceAPI {
       enum Property {
         FIELD_NAME = 0;
         RESOURCE_TYPE = 1;
+        // Status().IsFinal(): true when status is Original, Duplicate, or Error.
+        // Does NOT require AllInputsFinal — a resource with unresolved input fields
+        // can still report IS_FINAL=true if its own status is terminal. Use
+        // RESOURCE_READY_FOR_CALCULATION + IS_DUPLICATE + HAS_ERRORS to mirror the
+        // client-side readyOrDuplicateOrError predicate precisely.
         IS_FINAL = 2;
         // Evaluated per resource node (traverse_stop_rules only). True when every non-error
         // output field has a final value. Matches the TypeScript readyAndHasAllOutputsFilled check.
         ALL_OUTPUTS_FINAL = 3;
+        // IsReadyForCalculation(): Status==Original AND AllInputsFinal AND no input errors AND IO feature.
+        // Mirrors the client-side r.resourceReady property used in readyOrDuplicateOrError.
+        RESOURCE_READY_FOR_CALCULATION = 4;
+        // True when status is Duplicate (original_resource_id != 0). Mirrors the
+        // isNotNullSignedResourceId(r.originalResourceId) branch of readyOrDuplicateOrError.
+        IS_DUPLICATE = 5;
+        // True when the resource has at least one field carrying an error
+        // (aggregated has-error flag). Mirrors the isNotNullSignedResourceId(r.error)
+        // branch of readyOrDuplicateOrError. Note: this can be true even when the
+        // resource's own status is not Error (e.g., an Original resource with a
+        // failed input field).
+        HAS_ERRORS = 6;
+        // True when no further output fields can be added to the resource.
+        OUTPUTS_LOCKED = 7;
       }
 
       // Required for leaf operators (EQUAL/MATCH).

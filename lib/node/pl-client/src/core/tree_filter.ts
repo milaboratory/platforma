@@ -120,4 +120,63 @@ export const treeFilter = {
   allOutputsFinal(value: boolean): Filter {
     return treeFilter.boolEq(ResourceAPI_Tree_Filter_Property.ALL_OUTPUTS_FINAL, value);
   },
+
+  /**
+   * Match resources where `resource_ready_for_calculation == value`.
+   * True when the resource is Original, inputs are locked, and all inputs are final.
+   * Valid only inside `traverseStopRules`.
+   */
+  resourceReadyForCalculation(value: boolean): Filter {
+    return treeFilter.boolEq(
+      ResourceAPI_Tree_Filter_Property.RESOURCE_READY_FOR_CALCULATION,
+      value,
+    );
+  },
+
+  /**
+   * Match resources where `is_duplicate == value`.
+   * True when the resource has a non-zero original_resource_id.
+   * Valid only inside `traverseStopRules`.
+   */
+  isDuplicate(value: boolean): Filter {
+    return treeFilter.boolEq(ResourceAPI_Tree_Filter_Property.IS_DUPLICATE, value);
+  },
+
+  /**
+   * Match resources where `has_errors == value`.
+   * True when the resource has at least one field carrying an error (aggregated
+   * has-error flag). Can be true even when the resource's own status is not
+   * Error (e.g., an Original resource with a failed input field).
+   * Valid only inside `traverseStopRules`.
+   */
+  hasErrors(value: boolean): Filter {
+    return treeFilter.boolEq(ResourceAPI_Tree_Filter_Property.HAS_ERRORS, value);
+  },
+
+  /**
+   * Match resources where `outputs_locked == value`.
+   * Valid only inside `traverseStopRules`.
+   */
+  outputsLocked(value: boolean): Filter {
+    return treeFilter.boolEq(ResourceAPI_Tree_Filter_Property.OUTPUTS_LOCKED, value);
+  },
+
+  /**
+   * Match resources that are ready-or-duplicate-or-error: mirrors the BFS
+   * `readyOrDuplicateOrError` predicate used by pl-tree to decide whether a
+   * resource subtree needs further polling.
+   *
+   * Use this as `traverseStopRules` to stop the server-side tree walk at
+   * exactly the same nodes where the client BFS would stop, eliminating
+   * unnecessary follow-up calls.
+   *
+   * Valid only inside `traverseStopRules`.
+   */
+  readyOrDuplicateOrError(): Filter {
+    return treeFilter.or(
+      treeFilter.resourceReadyForCalculation(true),
+      treeFilter.isDuplicate(true),
+      treeFilter.hasErrors(true),
+    );
+  },
 } as const;

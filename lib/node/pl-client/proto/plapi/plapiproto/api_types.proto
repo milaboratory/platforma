@@ -41,6 +41,8 @@ message Resource {
   bool outputs_locked = 9;
   bool resource_ready = 14;
   bool is_final = 15;
+  // Status() == Error; distinct from has_errors (which means any field has an error value)
+  bool is_error = 20;
 
   uint64 original_resource_id = 10;
   bytes original_resource_signature = 19;
@@ -48,8 +50,6 @@ message Resource {
 
   google.protobuf.Timestamp created_time = 12;
   google.protobuf.Timestamp deleted_time = 13;
-
-  // next free: 20
 }
 
 message Field {

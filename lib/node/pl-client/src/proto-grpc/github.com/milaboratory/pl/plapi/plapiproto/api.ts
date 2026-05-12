@@ -1919,6 +1919,12 @@ export enum ResourceAPI_Tree_Filter_Property {
      */
     RESOURCE_TYPE = 1,
     /**
+     * Status().IsFinal(): true when status is Original, Duplicate, or Error.
+     * Does NOT require AllInputsFinal — a resource with unresolved input fields
+     * can still report IS_FINAL=true if its own status is terminal. Use
+     * RESOURCE_READY_FOR_CALCULATION + IS_DUPLICATE + HAS_ERRORS to mirror the
+     * client-side readyOrDuplicateOrError predicate precisely.
+     *
      * @generated from protobuf enum value: IS_FINAL = 2;
      */
     IS_FINAL = 2,
@@ -1928,7 +1934,37 @@ export enum ResourceAPI_Tree_Filter_Property {
      *
      * @generated from protobuf enum value: ALL_OUTPUTS_FINAL = 3;
      */
-    ALL_OUTPUTS_FINAL = 3
+    ALL_OUTPUTS_FINAL = 3,
+    /**
+     * IsReadyForCalculation(): Status==Original AND AllInputsFinal AND no input errors AND IO feature.
+     * Mirrors the client-side r.resourceReady property used in readyOrDuplicateOrError.
+     *
+     * @generated from protobuf enum value: RESOURCE_READY_FOR_CALCULATION = 4;
+     */
+    RESOURCE_READY_FOR_CALCULATION = 4,
+    /**
+     * True when status is Duplicate (original_resource_id != 0). Mirrors the
+     * isNotNullSignedResourceId(r.originalResourceId) branch of readyOrDuplicateOrError.
+     *
+     * @generated from protobuf enum value: IS_DUPLICATE = 5;
+     */
+    IS_DUPLICATE = 5,
+    /**
+     * True when the resource has at least one field carrying an error
+     * (aggregated has-error flag). Mirrors the isNotNullSignedResourceId(r.error)
+     * branch of readyOrDuplicateOrError. Note: this can be true even when the
+     * resource's own status is not Error (e.g., an Original resource with a
+     * failed input field).
+     *
+     * @generated from protobuf enum value: HAS_ERRORS = 6;
+     */
+    HAS_ERRORS = 6,
+    /**
+     * True when no further output fields can be added to the resource.
+     *
+     * @generated from protobuf enum value: OUTPUTS_LOCKED = 7;
+     */
+    OUTPUTS_LOCKED = 7
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Tree.KV

@@ -68,6 +68,65 @@ describe("treeFilter builders — wire shape", () => {
     });
   });
 
+  test("resourceReadyForCalculation(true) produces EQUAL / RESOURCE_READY_FOR_CALCULATION / boolValue:true", () => {
+    const f = treeFilter.resourceReadyForCalculation(true);
+    expect(f).toEqual<Filter>({
+      key: FilterProperty.RESOURCE_READY_FOR_CALCULATION,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+  });
+
+  test("isDuplicate(false) produces EQUAL / IS_DUPLICATE / boolValue:false", () => {
+    const f = treeFilter.isDuplicate(false);
+    expect(f).toEqual<Filter>({
+      key: FilterProperty.IS_DUPLICATE,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: false },
+    });
+  });
+
+  test("hasErrors(true) produces EQUAL / HAS_ERRORS / boolValue:true", () => {
+    const f = treeFilter.hasErrors(true);
+    expect(f).toEqual<Filter>({
+      key: FilterProperty.HAS_ERRORS,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+  });
+
+  test("outputsLocked(true) produces EQUAL / OUTPUTS_LOCKED / boolValue:true", () => {
+    const f = treeFilter.outputsLocked(true);
+    expect(f).toEqual<Filter>({
+      key: FilterProperty.OUTPUTS_LOCKED,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+  });
+
+  test("readyOrDuplicateOrError() produces OR of the three conditions", () => {
+    const f = treeFilter.readyOrDuplicateOrError();
+    expect(f.operator).toBe(FilterOperatorType.OR);
+    if (f.value.oneofKind !== "filtersValue") throw new Error("expected filtersValue");
+    const { filters } = f.value.filtersValue;
+    expect(filters).toHaveLength(3);
+    expect(filters[0]).toEqual<Filter>({
+      key: FilterProperty.RESOURCE_READY_FOR_CALCULATION,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+    expect(filters[1]).toEqual<Filter>({
+      key: FilterProperty.IS_DUPLICATE,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+    expect(filters[2]).toEqual<Filter>({
+      key: FilterProperty.HAS_ERRORS,
+      operator: FilterOperatorType.EQUAL,
+      value: { oneofKind: "boolValue", boolValue: true },
+    });
+  });
+
   test("generic eq() and match() use supplied property", () => {
     expect(treeFilter.eq(FilterProperty.RESOURCE_TYPE, "Foo")).toEqual<Filter>({
       key: FilterProperty.RESOURCE_TYPE,
