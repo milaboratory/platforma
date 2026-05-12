@@ -1,15 +1,12 @@
 import type { PObjectId } from "../../../pool";
 import type {
-  ExprAggregation,
   ExprAxisRef,
   ExprCast,
   ExprColumnRef,
   ExprConditional,
   ExprConstant,
-  ExprCumulative,
   ExprFillNull,
   ExprIsIn,
-  ExprIsInPolygon,
   ExprIsNull,
   ExprLogicalUnary,
   ExprLogicalVariadic,
@@ -146,11 +143,11 @@ export type SpecQueryExpression =
   | ExprLogicalVariadic<SpecQueryExpression>
   | ExprIsIn<SpecQueryExpression, string>
   | ExprIsIn<SpecQueryExpression, number>
-  | ExprIsInPolygon<SpecQueryExpression>
+  // | ExprIsInPolygon<SpecQueryExpression>  -- runtime not wired (see query_common.ts)
   | ExprCast<SpecQueryExpression>
   | ExprConditional<SpecQueryExpression>
-  | ExprAggregation<SpecQueryExpression, SingleAxisSelector, PObjectId>
-  | ExprRanking<SpecQueryExpression, SingleAxisSelector, PObjectId>
-  | ExprCumulative<SpecQueryExpression, SingleAxisSelector, PObjectId>;
+  // | ExprAggregation<SpecQueryExpression, SingleAxisSelector, PObjectId>  -- runtime not wired
+  | ExprRanking<SpecQueryExpression, SingleAxisSelector, PObjectId>;
+// | ExprCumulative<SpecQueryExpression, SingleAxisSelector, PObjectId>  -- runtime not wired
 
 export type SpecQueryBooleanExpression = InferBooleanExpressionUnion<SpecQueryExpression>;

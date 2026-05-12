@@ -18,7 +18,7 @@ const BOOLEAN_TYPES = new Set<SpecQueryBooleanExpression["type"]>([
   "and",
   "or",
   "isIn",
-  "isInPolygon",
+  // "isInPolygon",  -- disabled until the Rust executor wires it up
 ]);
 
 export function isBooleanExpression(expr: SpecQueryExpression): expr is SpecQueryBooleanExpression {

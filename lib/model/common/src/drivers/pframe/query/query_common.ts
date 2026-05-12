@@ -545,78 +545,44 @@ export interface ExprConditional<I> {
   otherwise?: I;
 }
 
-/**
- * Point-in-polygon test (commonly used for graph-maker lasso /
- * flow-cytometry gating).
- *
- * **Input**: two numeric expressions (`x`, `y`).
- * **Output**: logical Boolean; materialises as `Int` (0/1) when used
- * as a derived column.
- *
- * The polygon is automatically closed (last vertex connects to first).
- * Non-convex polygons are supported.
- *
- * @template I - The expression type (for recursion)
- */
-export interface ExprIsInPolygon<I> {
-  type: "isInPolygon";
-  /** X-coordinate expression. */
-  x: I;
-  /** Y-coordinate expression. */
-  y: I;
-  /** Polygon vertices as `[x, y]` tuples; at least one. */
-  polygon: [Point2D, ...Point2D[]];
-  /** If true, the predicate is inverted (true for points OUTSIDE the polygon). */
-  negate: boolean;
-}
+// ============ Disabled — type defined in pframes-rs, runtime not wired yet ============
+//
+// `isInPolygon` and `aggregation` are defined in the Rust query model
+// (`packages/bridge/src/query/expressions/`) but the DataFusion backend
+// returns errors when it tries to evaluate them (filter.rs:276 / :340).
+// Until those stubs land, exposing the TS types here would let block
+// authors construct queries the runtime cannot execute. Re-enable in
+// lock-step with the Rust executor.
 
-/**
- * Aggregation function kind (flat string; tagged form with payloads is
- * planned per the change log).
- */
-export type AggregationKind =
-  | "sum"
-  | "avg"
-  | "count"
-  | "min"
-  | "max"
-  | "first"
-  | "last"
-  | "stddev"
-  | "variance"
-  | "median";
+// export interface ExprIsInPolygon<I> {
+//   type: "isInPolygon";
+//   x: I;
+//   y: I;
+//   polygon: [Point2D, ...Point2D[]];
+//   negate: boolean;
+// }
 
-/**
- * Aggregation expression — scalar form (inside `aggregate`) or window
- * form (inside `transformColumns` with `over` set).
- *
- * Without `over`: scalar reducer. Valid only inside an `aggregate`
- * query node.
- *
- * With `over`: window function. Valid inside `transformColumns`;
- * preserves all axes, broadcasting the per-partition result to every
- * row.
- *
- * @template I - The expression type (for recursion)
- * @template A - Axis selector type
- * @template C - Column selector type
- */
-export interface ExprAggregation<I, A, C> {
-  type: "aggregation";
-  /** Aggregation kind. */
-  kind: AggregationKind;
-  /** Expression to aggregate. */
-  input: I;
-  /**
-   * Partition specification — when present, the aggregation becomes a
-   * window function and the result is broadcast to every row in the
-   * partition. At least one entry when supplied.
-   */
-  over?: [
-    QueryAxisSelector<A> | QueryColumnSelector<C>,
-    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
-  ];
-}
+// export type AggregationKind =
+//   | "sum"
+//   | "avg"
+//   | "count"
+//   | "min"
+//   | "max"
+//   | "first"
+//   | "last"
+//   | "stddev"
+//   | "variance"
+//   | "median";
+
+// export interface ExprAggregation<I, A, C> {
+//   type: "aggregation";
+//   kind: AggregationKind;
+//   input: I;
+//   over?: [
+//     QueryAxisSelector<A> | QueryColumnSelector<C>,
+//     ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
+//   ];
+// }
 
 /** Ranking function kind. */
 export type RankingKind = "rank" | "denseRank" | "rowNumber";
@@ -646,40 +612,29 @@ export interface ExprRanking<I, A, C> {
   ];
 }
 
-/** Cumulative aggregation operand (always a window function). */
-export type CumulativeOperand =
-  | "cumulativeSum"
-  | "cumulativeMin"
-  | "cumulativeMax"
-  | "cumulativeAvg";
+// ============ Disabled — type defined in pframes-rs, runtime not wired yet ============
+//
+// `cumulative` is defined in the Rust query model but the DataFusion
+// backend returns an error (filter.rs:387). Re-enable in lock-step
+// with the Rust executor.
 
-/**
- * Cumulative aggregation expression — a window function with the
- * implicit frame `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW`.
- *
- * Accumulates `input` across rows within each partition, ordered by
- * `orderBy`. Resets at partition boundaries.
- *
- * @template I - The expression type (for recursion)
- * @template A - Axis selector type
- * @template C - Column selector type
- */
-export interface ExprCumulative<I, A, C> {
-  type: "cumulative";
-  /** Cumulative operand (sum / min / max / avg). */
-  operand: CumulativeOperand;
-  /** Expression to accumulate. */
-  input: I;
-  /** Expression to order rows by within each partition. */
-  orderBy: I;
-  /** If true (default), order ascending; if false, descending. */
-  ascending?: boolean;
-  /** Partition specification — at least one entry when supplied. */
-  partitionBy?: [
-    QueryAxisSelector<A> | QueryColumnSelector<C>,
-    ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
-  ];
-}
+// export type CumulativeOperand =
+//   | "cumulativeSum"
+//   | "cumulativeMin"
+//   | "cumulativeMax"
+//   | "cumulativeAvg";
+
+// export interface ExprCumulative<I, A, C> {
+//   type: "cumulative";
+//   operand: CumulativeOperand;
+//   input: I;
+//   orderBy: I;
+//   ascending?: boolean;
+//   partitionBy?: [
+//     QueryAxisSelector<A> | QueryColumnSelector<C>,
+//     ...(QueryAxisSelector<A> | QueryColumnSelector<C>)[],
+//   ];
+// }
 
 // ============ Reference Expression Types ============
 
@@ -735,7 +690,6 @@ export type InferBooleanExpressionUnion<E> = [
   E extends ExprLogicalUnary<unknown> ? Extract<E, { type: "not" }> : never,
   E extends ExprLogicalVariadic<unknown> ? Extract<E, { type: "and" | "or" }> : never,
   E extends ExprIsIn<unknown, string | number> ? Extract<E, { type: "isIn" }> : never,
-  E extends ExprIsInPolygon<unknown> ? Extract<E, { type: "isInPolygon" }> : never,
 ][number];
 
 // ============ Generic Query Types ============
