@@ -124,7 +124,14 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
     node: (node) => {
       switch (node.type) {
         case "sparseToDenseColumn":
-          return { ...node, axesIndices: node.axesIndices.toSorted((a, b) => a - b) };
+          return {
+            ...node,
+            axes: [...node.axes].sort((a, b) => {
+              const ak = canonicalizeJson(a);
+              const bk = canonicalizeJson(b);
+              return ak < bk ? -1 : ak > bk ? 1 : 0;
+            }),
+          };
         case "innerJoin":
         case "fullJoin": {
           const sorted = [...node.entries].sort(cmpQueryJoinEntrySpec);

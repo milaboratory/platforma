@@ -994,37 +994,57 @@ export interface QueryInlineColumn<T> {
 /**
  * Sparse to dense column query operation.
  *
- * Expands a column across additional axes using Cartesian product.
- * Creates all combinations of existing axis values with new axis values.
+ * Densifies a sparse column over the Cartesian product of distinct
+ * axis values: `axes` partitions the column's own axes into two sets
+ * (the listed axes on one side, the rest on the other); both sides
+ * contribute their distinct values, and the cross product fills in
+ * the missing tuples (null on rows that have no underlying value).
  *
- * **Use case**: When you need to repeat/broadcast a column across
- * new dimensions that it doesn't originally have.
+ * **Use case**: graph-maker and other UI surfaces that need a dense
+ * grid to plot.
  *
  * **Behavior**:
- * - Takes an existing column
- * - Expands it across specified axes indices
- * - Result has Cartesian product of original axes × new axes
+ * - Output axes = input axes (no axes are added).
+ * - Missing axis-tuple combinations become null in the output (or
+ *   filled later via `pl7.app/graph/isDenseAxis` /
+ *   `treatAbsentValuesAs` annotations).
  *
  * @template C - Column reference type
+ * @template A - Axis selector type (named selectors at the spec layer,
+ *   numeric axis indices at the data layer)
  * @template SO - Spec override type
  *
  * @example
- * // Expand column across axes at indices 0 and 2
+ * // Spec layer: name the axis to expand across.
  * {
  *   type: 'sparseToDenseColumn',
  *   column: 'col_abc123',
- *   axesIndices: [0, 2],
+ *   axes: [{ name: 'sample' }],
  *   specOverride: { ... } // optional spec modifications
  * }
+ *
+ * @example
+ * // Data layer: the same query after spec→data lowering.
+ * {
+ *   type: 'sparseToDenseColumn',
+ *   column: 'col_abc123',
+ *   axes: [0],
+ *   specOverride: { ... }
+ * }
  */
-export interface QuerySparseToDenseColumn<C, SO> {
+export interface QuerySparseToDenseColumn<C, A, SO> {
   type: "sparseToDenseColumn";
   /** Column reference (ID or full column object depending on context) */
   column: C;
   /** Optional override for the column specification */
   specOverride?: SO;
-  /** Indices of axes to expand across */
-  axesIndices: number[];
+  /**
+   * Axes that participate in the cartesian-product densification.
+   * Named selectors at the spec layer; resolved to numeric axis
+   * indices during spec→data lowering. The Rust runtime also accepts
+   * the legacy field name `axesIndices` as a serde alias.
+   */
+  axes: A[];
 }
 
 /**

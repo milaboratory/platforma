@@ -62,6 +62,7 @@ export type SpecQueryInlineColumn = QueryInlineColumn<PColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
 export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColumn<
   C,
+  SingleAxisSelector,
   PColumnIdAndSpec
 >;
 /** @see QuerySymmetricJoin */

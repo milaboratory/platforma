@@ -71,7 +71,11 @@ export type DataQueryColumn = QueryColumn;
 /** @see QueryInlineColumn */
 export type DataQueryInlineColumn = QueryInlineColumn<ColumnIdAndTypeSpec>;
 /** @see QuerySparseToDenseColumn */
-export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<PObjectId, ColumnIdAndTypeSpec>;
+export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<
+  PObjectId,
+  number,
+  ColumnIdAndTypeSpec
+>;
 /** @see QuerySymmetricJoin */
 export type DataQuerySymmetricJoin = QuerySymmetricJoin<DataQueryJoinEntry>;
 /** @see QueryOuterJoin */
