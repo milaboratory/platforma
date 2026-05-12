@@ -221,15 +221,14 @@ function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
         type: "isIn",
         input: resolveColumnRef(filter.column),
         set: filter.value,
+        negate: false,
       };
     case "notInSet":
       return {
-        type: "not",
-        input: {
-          type: "isIn",
-          input: resolveColumnRef(filter.column),
-          set: filter.value,
-        },
+        type: "isIn",
+        input: resolveColumnRef(filter.column),
+        set: filter.value,
+        negate: true,
       };
 
     case "isNA":

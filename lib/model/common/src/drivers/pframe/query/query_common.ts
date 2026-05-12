@@ -480,7 +480,7 @@ export interface ExprIsIn<I, T extends string | number> {
   /** Set of allowed values */
   set: T[];
   /** If true, the predicate is inverted (true for values NOT in `set`). */
-  negate?: boolean;
+  negate: boolean;
 }
 
 /**
@@ -567,7 +567,7 @@ export interface ExprIsInPolygon<I> {
   /** Polygon vertices as `[x, y]` tuples; at least one. */
   polygon: Point2D[];
   /** If true, the predicate is inverted (true for points OUTSIDE the polygon). */
-  negate?: boolean;
+  negate: boolean;
 }
 
 /**
