@@ -129,11 +129,9 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
             ...node,
             // toSorted preserves array length but the type system widens
             // the non-empty tuple back to a plain array, so re-narrow.
-            axes: node.axes.toSorted((a, b) => {
-              const ak = canonicalizeJson(a);
-              const bk = canonicalizeJson(b);
-              return ak < bk ? -1 : ak > bk ? 1 : 0;
-            }) as typeof node.axes,
+            axes: node.axes.toSorted((a, b) =>
+              canonicalizeJson(a).localeCompare(canonicalizeJson(b)),
+            ) as typeof node.axes,
           };
         case "innerJoin":
         case "fullJoin": {
@@ -251,11 +249,10 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       const rhsTc = rhs as typeof lhs;
       const cmp = cmpQuerySpec(lhs.input, rhsTc.input);
       if (cmp !== 0) return cmp;
-      if (lhs.mode !== rhsTc.mode) return lhs.mode < rhsTc.mode ? -1 : 1;
+      const modeCmp = lhs.mode.localeCompare(rhsTc.mode);
+      if (modeCmp !== 0) return modeCmp;
       // Column entries are positional; compare by canonical JSON.
-      const lk = canonicalizeJson(lhs.columns);
-      const rk = canonicalizeJson(rhsTc.columns);
-      return lk < rk ? -1 : lk > rk ? 1 : 0;
+      return canonicalizeJson(lhs.columns).localeCompare(canonicalizeJson(rhsTc.columns));
     }
     default:
       assertNever(lhs);

@@ -29,7 +29,7 @@ export type BlockCodeKnownFeatureFlags = {
  * version in `pnpm-workspace.yaml` so blocks built against the new SDK refuse to load on
  * older desktop apps.
  */
-export const REQUIRES_PFRAMES_VERSION = 1_001_035;
+export const REQUIRES_PFRAMES_VERSION = 1_001_031;
 
 export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframeQueryRanking"] as const;
 
