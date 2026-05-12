@@ -68,9 +68,9 @@ export ll.toStrict({
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
 	// true when at least one backend runner advertises GPU availability.
-	// Use to gate .gpuMemory() calls in blocks that have a CPU fallback path:
-	//   if feats.hasGpu { builder = builder.gpuMemory("16GiB") }
-	// Calling .gpuMemory() against a backend without GPU produces a permanent error.
+	// Internal flag — block code should read `exec.hasGpu` instead of importing
+	// this catalogue directly, to keep feature-flag plumbing out of the public
+	// block-developer surface.
 	hasGpu:                   _isEnabled("gpuAvailable"),
 
 	// true when backend supports 'secret' argType for environment variables
