@@ -37,7 +37,12 @@ import type {
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
-import { fieldTypeToProto, protoToField, protoToResource } from "./type_conversion";
+import {
+  fieldTypeToProto,
+  protoToField,
+  protoToResource,
+  resourceIsDeleted,
+} from "./type_conversion";
 import {
   canonicalJsonBytes,
   canonicalJsonGzBytes,
@@ -1140,29 +1145,39 @@ export class PlTransaction {
 
         return {
           async next(): Promise<IteratorResult<ResourceTreeFrame>> {
-            const item = await iterator.next();
-            if (item.done) return { value: undefined, done: true };
-            const frame = item.value.resourceTree;
-            if (!frame.resource) {
-              // Stop-marker frame: no resource body; server advertised treeStopMarker:v1.
-              const id = createSignedResourceId(
-                frame.resourceId,
-                toResourceSignature(frame.resourceSignature),
-              );
+            while (true) {
+              const item = await iterator.next();
+              if (item.done) return { value: undefined, done: true };
+
+              const frame = item.value.resourceTree;
+              if (frame === undefined) continue;
+
+              if (frame.resource && resourceIsDeleted(frame.resource)) {
+                continue;
+              }
+
+              if (!frame.resource) {
+                // Stop-marker frame: no resource body; server advertised treeStopMarker:v1.
+                const id = createSignedResourceId(
+                  frame.resourceId,
+                  toResourceSignature(frame.resourceSignature),
+                );
+                return {
+                  value: { frameKind: "stopMarker", id, traverseWasStopped: true },
+                  done: false,
+                };
+              }
+
               return {
-                value: { frameKind: "stopMarker", id, traverseWasStopped: true },
+                value: {
+                  frameKind: "resource",
+                  ...protoToResource(frame.resource),
+                  kv: frame.kv,
+                  traverseWasStopped: frame.traverseWasStopped,
+                },
                 done: false,
               };
             }
-            return {
-              value: {
-                frameKind: "resource",
-                ...protoToResource(frame.resource),
-                kv: frame.kv,
-                traverseWasStopped: frame.traverseWasStopped,
-              },
-              done: false,
-            };
           },
           async return(): Promise<IteratorResult<ResourceTreeFrame>> {
             if (iterator.return) await iterator.return();
