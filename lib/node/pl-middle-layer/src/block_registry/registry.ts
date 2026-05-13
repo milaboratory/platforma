@@ -8,6 +8,7 @@ import YAML from "yaml";
 import { assertNever } from "@milaboratories/ts-helpers";
 import { LegacyDevBlockPackFiles } from "../dev_env";
 import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
+import { deriveRequiredCapabilities } from "../mutator/block-pack/required_capabilities";
 import type { V2RegistryProvider } from "./registry-v2-provider";
 import type {
   BlockPackId,
@@ -207,9 +208,24 @@ export class BlockPackRegistry {
             if (v2Description !== undefined) {
               const mtime = await getDevV2PacketMtime(v2Description);
 
+              const meta = await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta);
+
+              // Dev-v2 blocks don't have pack-time-derived requiredCapabilities
+              // in their source manifest (that's a block-tools build artifact).
+              // Re-derive here so the UI can disable "Add to Project" before
+              // the user clicks — matches the install-time check in
+              // mutator/block-pack/block_pack.ts.
+              if (meta.requiredCapabilities === undefined) {
+                const workflowBytes = await fs.promises.readFile(
+                  v2Description.components.workflow.main.file,
+                );
+                const derived = deriveRequiredCapabilities(workflowBytes);
+                if (derived !== undefined) meta.requiredCapabilities = derived;
+              }
+
               const latestOverview: SingleBlockPackOverview = {
                 id: v2Description.id,
-                meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
+                meta,
                 featureFlags: v2Description.featureFlags,
                 spec: {
                   type: "dev-v2",
