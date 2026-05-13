@@ -103,6 +103,7 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
     for (const filter of o.filters ?? []) {
       out.push({
         label: filter.label,
+        description: o.primary.label,
         value: makeSelection(o.primary.ref, filter.ref, o.enrichments),
       });
     }
