@@ -14,7 +14,13 @@ import type { BlockDefaultUiServices } from "./services/service_resolve";
 import { BLOCK_SERVICE_FLAGS } from "./services/block_services";
 import type { InferRenderFunctionReturn, RenderFunction } from "./render";
 import { BlockRenderCtx, PluginRenderCtx } from "./render";
-import type { PluginData, PluginModel, PluginOutputs, PluginParams } from "./plugin_model";
+import type {
+  PluginData,
+  PluginModel,
+  PluginOutputs,
+  PluginParams,
+  PluginPublicOutputs,
+} from "./plugin_model";
 import { PluginInstance as PluginInstanceClass, CREATE_PLUGIN_MODEL } from "./plugin_model";
 import { type PluginHandle, pluginOutputKey } from "./plugin_handle";
 import type { RenderCtxBase } from "./render";
@@ -84,16 +90,16 @@ function mergeFeatureFlags(
 
 /**
  * Plugin record: model + param derivation lambdas.
- * Type parameters are carried by PluginModel generic.
  */
 export type PluginRecord<
   Data extends PluginData = PluginData,
   Params extends PluginParams = undefined,
   Outputs extends PluginOutputs = PluginOutputs,
+  PublicOutputs extends PluginPublicOutputs = PluginPublicOutputs,
   ModelServices = unknown,
   UiServices = unknown,
 > = {
-  readonly model: PluginModel<Data, Params, Outputs, ModelServices, UiServices>;
+  readonly model: PluginModel<Data, Params, Outputs, PublicOutputs, ModelServices, UiServices>;
   readonly inputs: ParamsInputErased;
 };
 
@@ -430,6 +436,7 @@ export class BlockModelV3<
     PData extends PluginData,
     PParams extends PluginParams,
     POutputs extends PluginOutputs,
+    PPublicOutputs extends PluginPublicOutputs,
     PTransferData,
     PluginModelServices,
     PluginUiServices,
@@ -447,6 +454,7 @@ export class BlockModelV3<
       PData,
       PParams,
       POutputs,
+      PPublicOutputs,
       PTransferData,
       PluginModelServices,
       PluginUiServices
@@ -462,6 +470,7 @@ export class BlockModelV3<
         PData,
         PParams,
         POutputs,
+        PPublicOutputs,
         PluginModelServices,
         PluginUiServices
       >;
@@ -581,13 +590,12 @@ export class BlockModelV3<
 
       // Register plugin outputs (in config pack, evaluated by middle layer)
       const outputs = model.outputs as Record<string, (ctx: PluginRenderCtx) => unknown>;
-      const { outputFlags } = model;
       for (const [outputKey, outputFn] of Object.entries(outputs)) {
         const key = pluginOutputKey(handle, outputKey);
         pluginOutputs[key] = createAndRegisterRenderLambda({
           handle: key,
           lambda: () => outputFn(new PluginRenderCtx(handle, wrappedInputs)),
-          withStatus: outputFlags[outputKey]?.withStatus,
+          withStatus: true,
         });
       }
     }
@@ -643,6 +651,9 @@ export class BlockModelV3<
           ),
           pluginIds: pluginHandles,
           featureFlags: this.config.featureFlags,
+          pluginPublicOutputs: Object.fromEntries(
+            pluginHandles.map((handle) => [handle, plugins[handle].model.publicOutputDef]),
+          ),
         },
       } as any;
     }

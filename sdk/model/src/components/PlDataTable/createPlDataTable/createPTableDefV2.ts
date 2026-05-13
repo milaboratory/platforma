@@ -9,7 +9,7 @@ import type {
 import { getColumnIdAndSpec } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal, TreeNodeAccessor } from "../../../render";
 import { isFunction } from "es-toolkit";
-import type { PlDataTableFilters } from "../typesV5";
+import type { PlDataTableFilters } from "../typesV6";
 import { createPTableDefV3 } from "./createPTableDefV3";
 
 export function createPTableDefV2(params: {

@@ -402,12 +402,8 @@ describe("AnchoredColumnCollection", () => {
 
     expect(col1Match.variants.length).toBeGreaterThan(0);
     for (const v of col1Match.variants) {
-      expect(v.qualifications.forQueries).toBeDefined();
-      expect(v.qualifications.forHit).toBeDefined();
-      // forQueries keys are a subset of anchor ids
-      for (const key of Object.keys(v.qualifications.forQueries)) {
-        expect([anchorSnap.id]).toContain(key);
-      }
+      expect(v.qualifications.forQueries).toBeUndefined();
+      expect(v.qualifications.forHit).toBeUndefined();
     }
   });
 
@@ -432,7 +428,7 @@ describe("AnchoredColumnCollection", () => {
 
     for (const v of c1.variants) {
       const forQueries = v.qualifications.forQueries;
-      if (anchorASnap.id in forQueries && anchorBSnap.id in forQueries) {
+      if (forQueries && anchorASnap.id in forQueries && anchorBSnap.id in forQueries) {
         // Shared axes group → equal qualifications for both anchor keys.
         expect(forQueries[anchorASnap.id]).toStrictEqual(forQueries[anchorBSnap.id]);
       }

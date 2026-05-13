@@ -20,8 +20,6 @@ import type { PFrameSpecDriver, PoolEntry, SpecFrameHandle } from "@milaboratori
 import { throwError } from "@milaboratories/helpers";
 import { getService } from "../services";
 
-// --- FindColumnsOptions ---
-
 /** Options for plain collection findColumns. */
 export interface FindColumnsOptions {
   /** Include columns matching these selectors. If omitted, includes all columns. */
@@ -29,8 +27,6 @@ export interface FindColumnsOptions {
   /** Exclude columns matching these selectors. */
   exclude?: ColumnSelector;
 }
-
-// --- ColumnCollection ---
 
 /** Plain collection — no axis context, selector-based filtering only. */
 export interface ColumnCollection extends Disposable {
@@ -42,8 +38,6 @@ export interface ColumnCollection extends Disposable {
    *  Never returns undefined — the "not ready" state was absorbed by the builder. */
   findColumns(options?: FindColumnsOptions): ColumnSnapshot<PObjectId>[];
 }
-
-// --- AnchoredColumnCollection ---
 
 /** Axis-aware column collection with anchored identity derivation. */
 export interface AnchoredColumnCollection extends Disposable {
@@ -82,12 +76,10 @@ export interface ColumnMatch {
 export interface ColumnVariant<Id extends PObjectId = PObjectId> {
   /** Column snapshot with anchored SUniversalPColumnId. */
   readonly column: ColumnSnapshot<Id>;
-  /** Full qualifications needed for integration. */
-  readonly qualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
-  readonly path: {
-    linker: ColumnSnapshot<PObjectId>;
-  }[];
+  readonly path?: { linker: ColumnSnapshot<PObjectId> }[];
+  /** Full qualifications needed for integration. */
+  readonly qualifications?: MatchQualifications;
 }
 
 /** A single mapping variant describing how a hit column can be integrated. */
@@ -95,20 +87,16 @@ export interface MatchVariant {
   /** Full qualifications needed for integration. */
   readonly qualifications: MatchQualifications;
   /** Linker steps traversed to reach this hit; empty for direct matches. */
-  readonly path: {
-    linker: ColumnSnapshot<PObjectId>;
-  }[];
+  readonly path: { linker: ColumnSnapshot<PObjectId> }[];
 }
 
 /** Qualifications needed for both already-integrated anchor columns and the hit column. */
 export interface MatchQualifications {
   /** Qualifications for already-integrated anchor columns */
-  readonly forQueries: Record<PObjectId, AxisQualification[]>;
+  readonly forQueries?: Record<PObjectId, AxisQualification[]>;
   /** Qualifications for the hit column. */
-  readonly forHit: AxisQualification[];
+  readonly forHit?: AxisQualification[];
 }
-
-// --- Build options ---
 
 export interface BuildOptions {
   allowPartialColumnList?: true;
@@ -119,8 +107,6 @@ export type AnchorEntry = PObjectId | PColumnSpec | RelaxedColumnSelector;
 export interface AnchoredBuildOptions extends BuildOptions {
   anchors: Record<string, AnchorEntry>;
 }
-
-// --- ColumnCollectionBuilder ---
 
 /**
  * Mutable builder that accumulates column sources, then produces
@@ -197,8 +183,6 @@ export class ColumnCollectionBuilder {
   }
 }
 
-// --- ColumnCollectionImpl ---
-
 interface ColumnCollectionImplOptions {
   readonly columns: ColumnSnapshot<PObjectId>[];
 }
@@ -245,8 +229,6 @@ class ColumnCollectionImpl implements ColumnCollection, Disposable {
     return results;
   }
 }
-
-// --- AnchoredColumnCollectionImpl ---
 
 interface AnchoredColumnCollectionImplOptions extends ColumnCollectionImplOptions {
   readonly anchors: Record<string, AnchorEntry>;
@@ -368,14 +350,10 @@ function collectColumns(providers: ColumnSnapshotProvider[]): ColumnSnapshot<POb
   return result;
 }
 
-// --- Shared snapshot helpers ---
-
 /** Normalize ColumnSelector (relaxed, single or array) to MultiColumnSelector[]. */
 function toMultiColumnSelectors(input: ColumnSelector): MultiColumnSelector[] {
   return convertColumnSelectorToMultiColumnSelector(input);
 }
-
-// --- Anchor resolution ---
 
 /**
  * Resolve each anchor entry to a ColumnSnapshot from the collected columns.
@@ -423,7 +401,7 @@ function resolveAnchorMap(
         excludeColumns: undefined,
         axes: [],
         maxHops: 0,
-        constraints: matchingModeToConstraints("exact"),
+        constraints: matchingModeToConstraints("related"),
       });
 
       if (matched.hits.length === 0) {
@@ -461,14 +439,15 @@ function remapFromIdxToId(
   },
   anchors: ColumnSnapshot<PObjectId>[],
 ): MatchQualifications {
-  const forQueries = qualifications.forQueries.reduce<Record<PObjectId, AxisQualification[]>>(
-    (acc, qs, i) => (anchors[i] ? ((acc[anchors[i].id] = qs), acc) : acc),
-    {},
+  const forQueries = qualifications.forQueries.reduce(
+    (acc, qs, i) => (anchors[i] && qs.length > 0 ? acc.set(anchors[i].id, qs) : acc),
+    new Map<PObjectId, AxisQualification[]>(),
   );
-  return { forQueries, forHit: qualifications.forHit };
+  return {
+    forQueries: forQueries.size > 0 ? Object.fromEntries(forQueries) : undefined,
+    forHit: qualifications.forHit.length > 0 ? qualifications.forHit : undefined,
+  };
 }
-
-// --- MatchingMode → DiscoverColumnsConstraints ---
 
 function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsConstraints {
   switch (mode) {

@@ -25,7 +25,7 @@ import type {
 } from "../../../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
-import type { CreatePlDataTableOps, PlDataTableModel } from "../typesV5";
+import type { CreatePlDataTableOps, PlDataTableModel } from "../typesV6";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import { getMatchingLabelColumns } from "../labels";

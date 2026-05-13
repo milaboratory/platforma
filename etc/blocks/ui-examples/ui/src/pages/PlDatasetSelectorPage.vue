@@ -37,7 +37,7 @@ const optionsBase: DatasetOption[] = [
       { label: "High confidence", ref: filterHighConfidence },
     ],
   },
-  // No `filters` — component hides the filter dropdown when this is picked.
+  // No filters — only the primary row is rendered.
   { primary: { label: "Raw — Clonotypes", ref: datasetWithoutFilters } },
 ];
 
@@ -68,8 +68,7 @@ const emptyOptions = computed<readonly DatasetOption[] | undefined>(() =>
             :disabled="data.disabled"
             :clearable="data.clearable"
             :required="data.required"
-            label="Dataset with filters"
-            filter-label="Filter"
+            label="Dataset"
             loading-options-helper="Loading datasets…"
           />
 

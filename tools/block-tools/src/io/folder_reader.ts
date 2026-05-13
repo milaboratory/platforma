@@ -6,10 +6,12 @@ import pathPosix from "node:path/posix";
 import fsp from "node:fs/promises";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 
+export type ReadFileOptions = { signal?: AbortSignal };
+
 export interface FolderReader {
   readonly rootUrl: URL;
   relativeReader(relativePath: string): FolderReader;
-  readFile(file: string): Promise<Buffer>;
+  readFile(file: string, options?: ReadFileOptions): Promise<Buffer>;
   getContentReader(relativePath?: string): RelativeContentReader;
 }
 
@@ -19,10 +21,11 @@ class HttpFolderReader implements FolderReader {
     private readonly httpDispatcher: Dispatcher,
   ) {}
 
-  public async readFile(file: string): Promise<Buffer> {
+  public async readFile(file: string, options?: ReadFileOptions): Promise<Buffer> {
     const targetUrl = new URL(file, this.rootUrl);
     const response = await request(targetUrl, {
       dispatcher: this.httpDispatcher,
+      signal: options?.signal,
     });
     return Buffer.from(await response.body.arrayBuffer());
   }
@@ -45,9 +48,9 @@ class FSFolderReader implements FolderReader {
     private readonly root: string,
   ) {}
 
-  public async readFile(file: string): Promise<Buffer> {
+  public async readFile(file: string, options?: ReadFileOptions): Promise<Buffer> {
     const targetPath = path.join(this.root, ...file.split(pathPosix.sep));
-    return await fsp.readFile(targetPath);
+    return await fsp.readFile(targetPath, { signal: options?.signal });
   }
 
   public relativeReader(relativePath: string): FSFolderReader {

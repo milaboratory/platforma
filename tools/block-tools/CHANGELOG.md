@@ -1,5 +1,44 @@
 # @platforma-sdk/block-tools
 
+## 2.7.25
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pl-model-middle-layer@1.19.4
+
+## 2.7.24
+
+### Patch Changes
+
+- d93d296: Support AbortSignal
+
+## 2.7.23
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @milaboratories/pl-model-middle-layer@1.19.3
+
+## 2.7.22
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.41.1
+- @milaboratories/pl-model-middle-layer@1.19.2
+- @milaboratories/ts-helpers@1.8.2
+- @milaboratories/ts-helpers-oclif@1.1.41
+
+## 2.7.21
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @milaboratories/pl-model-common@1.41.0
+  - @milaboratories/pl-model-middle-layer@1.19.1
+
 ## 2.7.20
 
 ### Patch Changes

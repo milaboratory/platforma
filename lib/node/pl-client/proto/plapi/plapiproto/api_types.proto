@@ -48,8 +48,6 @@ message Resource {
 
   google.protobuf.Timestamp created_time = 12;
   google.protobuf.Timestamp deleted_time = 13;
-
-  // next free: 20
 }
 
 message Field {
@@ -159,15 +157,15 @@ message ResourceSchema {
   message AccessFlags {
     // Deny-list approach: default = allowed (true)
     // Controllers set these to false to restrict non-controller roles (role='u', role='w')
-    optional bool create_resource = 1;  // default: true (creation allowed)
+    optional bool create_resource = 1; // default: true (creation allowed)
 
     // IMPORTANT: read_fields=false with write_fields=true is a forbidden combination
-    optional bool read_fields = 2;    // default: true (reads allowed)
-    optional bool write_fields = 3;   // default: true (writes allowed)
+    optional bool read_fields = 2; // default: true (reads allowed)
+    optional bool write_fields = 3; // default: true (writes allowed)
 
     // IMPORTANT: read_kv=false with write_kv=true is a forbidden combination
-    optional bool read_kv = 4;   // if unset, falls back to read_fields
-    optional bool write_kv = 5;  // if unset, falls back to write_fields
+    optional bool read_kv = 4; // if unset, falls back to read_fields
+    optional bool write_kv = 5; // if unset, falls back to write_fields
 
     // Per-field-type overrides (map: field_type → bool)
     // When defined for a field type, overrides resource-level flags
@@ -178,8 +176,8 @@ message ResourceSchema {
   // Access restriction flags for non-controller roles
   optional AccessFlags access_flags = 3;
 
-  bool free_inputs = 4;   // if true, skip automatic input locking on creation
-  bool free_outputs = 5;  // if true, skip automatic output locking on creation
+  bool free_inputs = 4; // if true, skip automatic input locking on creation
+  bool free_outputs = 5; // if true, skip automatic output locking on creation
 }
 
 message FieldSchema {

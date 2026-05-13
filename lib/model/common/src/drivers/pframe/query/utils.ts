@@ -7,7 +7,7 @@ import type {
   SpecQueryJoinEntry,
 } from "./query_spec";
 
-const booleanTypesSet = new Set<SpecQueryBooleanExpression["type"]>([
+const BOOLEAN_TYPES = new Set<SpecQueryBooleanExpression["type"]>([
   "numericComparison",
   "stringEquals",
   "stringContains",
@@ -18,10 +18,11 @@ const booleanTypesSet = new Set<SpecQueryBooleanExpression["type"]>([
   "and",
   "or",
   "isIn",
+  // "isInPolygon",  -- disabled until the Rust executor wires it up
 ]);
 
 export function isBooleanExpression(expr: SpecQueryExpression): expr is SpecQueryBooleanExpression {
-  return booleanTypesSet.has(
+  return BOOLEAN_TYPES.has(
     // @ts-expect-error -- TypeScript doesn't understand the discriminated union here, but we do at runtime
     expr.type,
   );
@@ -88,6 +89,7 @@ export function traverseQuerySpec<C1, C2>(
     case "filter":
     case "sort":
     case "sliceAxes":
+    case "transformColumns":
       result = { ...query, input: traverseQuerySpec(query.input, visitor) };
       break;
     default:
@@ -123,7 +125,14 @@ export function sortSpecQuery(query: SpecQuery): SpecQuery {
     node: (node) => {
       switch (node.type) {
         case "sparseToDenseColumn":
-          return { ...node, axesIndices: node.axesIndices.toSorted((a, b) => a - b) };
+          return {
+            ...node,
+            // toSorted preserves array length but the type system widens
+            // the non-empty tuple back to a plain array, so re-narrow.
+            axes: node.axes.toSorted((a, b) =>
+              canonicalizeJson(a).localeCompare(canonicalizeJson(b)),
+            ) as typeof node.axes,
+          };
         case "innerJoin":
         case "fullJoin": {
           const sorted = [...node.entries].sort(cmpQueryJoinEntrySpec);
@@ -236,6 +245,15 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "filter":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
+    case "transformColumns": {
+      const rhsTc = rhs as typeof lhs;
+      const cmp = cmpQuerySpec(lhs.input, rhsTc.input);
+      if (cmp !== 0) return cmp;
+      const modeCmp = lhs.mode.localeCompare(rhsTc.mode);
+      if (modeCmp !== 0) return modeCmp;
+      // Column entries are positional; compare by canonical JSON.
+      return canonicalizeJson(lhs.columns).localeCompare(canonicalizeJson(rhsTc.columns));
+    }
     default:
       assertNever(lhs);
   }

@@ -1,14 +1,11 @@
 <script lang="ts">
 /**
- * Select a dataset and (optionally) a filter column, emitting a {@link DatasetSelection}.
- *
- * The filter dropdown is always rendered and is clearable — leaving it empty
- * means "no filter". When the selected dataset has no compatible filters, the
- * dropdown opens to an empty option list.
- *
- * The emitted value bundles the user's pick (`primary`) with the auto-attached
- * `enrichments` payload from the matching `DatasetOption`. Enrichments are
- * opaque to the UI — block authors unbundle them inside their args resolver.
+ * Select a dataset or one of its filters in a single dropdown, emitting a
+ * {@link DatasetSelection}. Filter labels carry the dataset name as a
+ * prefix (e.g. "Bulk / Top 10"), so no separate subtitle is rendered.
+ * Enrichments from the matching `DatasetOption` are bundled into the
+ * emitted value opaquely — block authors unbundle them in their args
+ * resolver.
  */
 export default {
   name: "PlDatasetSelector",
@@ -16,10 +13,15 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { DatasetOption, DatasetSelection, PlRef } from "@platforma-sdk/model";
+import type {
+  DatasetOption,
+  DatasetSelection,
+  LabeledEnrichmentRefs,
+  PlRef,
+} from "@platforma-sdk/model";
 import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
-import { PlDropdown, PlDropdownRef } from "@milaboratories/uikit";
+import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
 
 const slots = defineSlots<{
@@ -32,25 +34,21 @@ const props = withDefaults(
   defineProps<{
     /** Available datasets, each optionally carrying compatible filter choices. */
     options?: Readonly<DatasetOption[]>;
-    /** Label above the dataset dropdown. */
+    /** Label above the dropdown. */
     label?: string;
-    /** Helper text below the dataset dropdown (shown when there is no error). */
+    /** Helper text below the dropdown (shown when there is no error). */
     helper?: string;
     /** Helper text shown while `options` is undefined (loading). */
     loadingOptionsHelper?: string;
-    /** Error message displayed below the dataset dropdown. */
+    /** Error message displayed below the dropdown. */
     error?: unknown;
-    /** Placeholder when no dataset is selected. */
+    /** Placeholder when nothing is selected. */
     placeholder?: string;
-    /** Label above the filter dropdown. */
-    filterLabel?: string;
-    /** Placeholder for the filter dropdown. */
-    filterPlaceholder?: string;
-    /** Show a clear button on the dataset dropdown. */
+    /** Show a clear button. */
     clearable?: boolean;
-    /** Mark the dataset dropdown as required. */
+    /** Mark the dropdown as required. */
     required?: boolean;
-    /** Disable all interaction. */
+    /** Disable interaction. */
     disabled?: boolean;
   }>(),
   {
@@ -60,92 +58,86 @@ const props = withDefaults(
     loadingOptionsHelper: undefined,
     error: undefined,
     placeholder: "...",
-    filterLabel: "",
-    filterPlaceholder: "...",
     clearable: false,
     required: false,
     disabled: false,
   },
 );
 
-const selectedDataset = computed<PlRef | undefined>(() => model.value?.primary.column);
+type Selection = { primary: PlRef; filter?: PlRef; enrichments?: LabeledEnrichmentRefs };
 
-const selectedFilter = computed<PlRef | undefined>(() => model.value?.primary.filter);
-
-const currentDatasetOption = computed<DatasetOption | undefined>(() => {
-  const dataset = selectedDataset.value;
-  if (!dataset) return undefined;
-  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
-});
-
-// PlDropdownRef expects `Option[]`; project the primary out of each entry.
-const primaryOptions = computed<readonly { ref: PlRef; label: string }[] | undefined>(() =>
-  props.options?.map((o) => o.primary),
-);
-
-const filterOptions = computed<ListOption<PlRef>[]>(
-  () => currentDatasetOption.value?.filters?.map((f) => ({ label: f.label, value: f.ref })) ?? [],
-);
-
-// Resolve from `props.options` directly — `currentDatasetOption` may not have
-// recomputed yet when this runs synchronously inside a change handler.
-function findOption(dataset: PlRef): DatasetOption | undefined {
-  return props.options?.find((o) => plRefsEqual(o.primary.ref, dataset, true));
+// `deepEqual` (used by PlDropdown for matching) treats `{a, b: undefined}` and
+// `{a}` as different shapes, so the option list and the selection value must
+// agree on optional-key presence.
+function makeSelection(
+  primary: PlRef,
+  filter: PlRef | undefined,
+  enrichments: LabeledEnrichmentRefs | undefined,
+): Selection {
+  return {
+    primary,
+    ...(filter !== undefined && { filter }),
+    ...(enrichments !== undefined && enrichments.length > 0 && { enrichments }),
+  };
 }
 
-function onDatasetChange(dataset: PlRef | undefined) {
-  if (dataset === undefined) {
+const selectionValue = computed<Selection | undefined>(() => {
+  const primary = model.value?.primary;
+  if (primary === undefined) return undefined;
+  // Read enrichments from the current option, not from `model.value`: the
+  // stored enrichments are a snapshot at selection time and won't match
+  // `dropdownOptions` after `props.options` recomputes (e.g. when the
+  // result pool gains or loses an enrichment column).
+  const option = props.options?.find((o) => plRefsEqual(o.primary.ref, primary.column, true));
+  return makeSelection(primary.column, primary.filter, option?.enrichments);
+});
+
+const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
+  if (props.options === undefined) return undefined;
+  const out: ListOption<Selection>[] = [];
+  for (const o of props.options) {
+    out.push({
+      label: o.primary.label,
+      value: makeSelection(o.primary.ref, undefined, o.enrichments),
+    });
+    for (const filter of o.filters ?? []) {
+      out.push({
+        label: filter.label,
+        value: makeSelection(o.primary.ref, filter.ref, o.enrichments),
+      });
+    }
+  }
+  return out;
+});
+
+function onChange(selection: Selection | undefined) {
+  if (selection === undefined) {
     model.value = undefined;
     return;
   }
-  model.value = createDatasetSelection(createPrimaryRef(dataset), findOption(dataset)?.enrichments);
-}
-
-function onFilterChange(filter: PlRef | undefined) {
-  const dataset = selectedDataset.value;
-  if (!dataset) return;
   model.value = createDatasetSelection(
-    createPrimaryRef(dataset, filter),
-    findOption(dataset)?.enrichments,
+    createPrimaryRef(selection.primary, selection.filter),
+    selection.enrichments,
   );
 }
 </script>
 
 <template>
-  <div class="pl-dataset-selector">
-    <PlDropdownRef
-      :model-value="selectedDataset"
-      :options="primaryOptions"
-      :label="label"
-      :helper="helper"
-      :loading-options-helper="loadingOptionsHelper"
-      :error="error"
-      :placeholder="placeholder"
-      :clearable="clearable"
-      :required="required"
-      :disabled="disabled"
-      @update:model-value="onDatasetChange"
-    >
-      <template v-if="slots.tooltip" #tooltip>
-        <slot name="tooltip" />
-      </template>
-    </PlDropdownRef>
-    <PlDropdown
-      :model-value="selectedFilter"
-      :options="filterOptions"
-      :label="filterLabel"
-      :placeholder="filterPlaceholder"
-      :disabled="disabled"
-      clearable
-      @update:model-value="onFilterChange"
-    />
-  </div>
+  <PlDropdown
+    :model-value="selectionValue"
+    :options="dropdownOptions"
+    :label="label"
+    :helper="helper"
+    :loading-options-helper="loadingOptionsHelper"
+    :error="error"
+    :placeholder="placeholder"
+    :clearable="clearable"
+    :required="required"
+    :disabled="disabled"
+    @update:model-value="onChange"
+  >
+    <template v-if="slots.tooltip" #tooltip>
+      <slot name="tooltip" />
+    </template>
+  </PlDropdown>
 </template>
-
-<style scoped>
-.pl-dataset-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-</style>
