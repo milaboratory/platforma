@@ -238,7 +238,7 @@ export const DefaultMiddleLayerOpsSettings: Pick<
 > = {
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
-    pollingInterval: 350,
+    pollingInterval: 200,
     stopPollingDelay: 2500,
     initialTreeLoadingTimeout: 100 * 60 * 60 * 1000, // disable timeout for loading project tree (100 hours)
   },
