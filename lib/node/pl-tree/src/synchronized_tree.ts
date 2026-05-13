@@ -6,12 +6,18 @@ import type {
   SignedResourceId,
   TxOps,
 } from "@milaboratories/pl-client";
+import type { Filter } from "@milaboratories/pl-client";
 import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
-import type { PruningFunction, TreeLoadingStat } from "./sync";
+import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
 import * as tp from "node:timers/promises";
+
+/** Hard floor between consecutive tree-refresh calls.
+ * Applies even when {@link scheduleOnNextState} has woken the loop early,
+ * preventing tight polling loops during rapid state transitions. */
+const MIN_POLLING_INTERVAL_MS = 100;
 import type { MiLogger } from "@milaboratories/ts-helpers";
 
 type StatLoggingMode = "cumulative" | "per-request";
@@ -20,9 +26,14 @@ export type SynchronizedTreeOps = {
   /** Override final predicate from the PlClient */
   finalPredicateOverride?: FinalResourceDataPredicate;
 
-  /** Pruning function to limit set of fields through which tree will
-   * traverse during state synchronization */
+  /** Pruning function for legacy fallback path. */
   pruning?: PruningFunction;
+
+  /** ResourceTree field filter for modern backend path. */
+  fieldFilter?: Filter;
+
+  /** ResourceTree traversal stop rules for modern backend path. */
+  traverseStopRules?: Filter;
 
   /** Interval after last sync to sleep before the next one */
   pollingInterval: number;
@@ -34,6 +45,9 @@ export type SynchronizedTreeOps = {
 
   /** Timeout for initial tree loading. If not specified, will use default for RO tx from pl-client. */
   initialTreeLoadingTimeout?: number;
+
+  /** Controls which tree-loading path to use.  Default `"auto"`. */
+  traversalMode?: TraversalMode;
 };
 
 type ScheduledRefresh = {
@@ -46,6 +60,9 @@ export class SynchronizedTreeState {
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
+  private readonly fieldFilter?: Filter;
+  private readonly traverseStopRules?: Filter;
+  private readonly traversalMode: TraversalMode;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -56,8 +73,20 @@ export class SynchronizedTreeState {
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger,
   ) {
-    const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
+    const {
+      finalPredicateOverride,
+      pruning,
+      fieldFilter,
+      traverseStopRules,
+      traversalMode,
+      pollingInterval,
+      stopPollingDelay,
+      logStat,
+    } = ops;
     this.pruning = pruning;
+    this.fieldFilter = fieldFilter;
+    this.traverseStopRules = traverseStopRules;
+    this.traversalMode = traversalMode ?? "auto";
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
@@ -123,11 +152,22 @@ export class SynchronizedTreeState {
   /** Executed from the main loop, and initialization procedure. */
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error("tree synchronization is terminated");
-    const request = constructTreeLoadingRequest(this.state, this.pruning);
+    const request = constructTreeLoadingRequest(this.state, {
+      pruningFunction: this.pruning,
+      fieldFilter: this.fieldFilter,
+      traverseStopRules: this.traverseStopRules,
+    });
     const data = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(tx, request, stats);
+        return await loadTreeState(
+          tx,
+          request,
+          stats,
+          this.pl.serverInfo.capabilities ?? [],
+          this.traversalMode,
+          this.logger,
+        );
       },
       txOps,
     );
@@ -204,23 +244,40 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
+      // Phase 1: mandatory floor — always wait at least MIN_POLLING_INTERVAL_MS.
+      // Not interruptible by scheduleOnNextState; only termination aborts it.
+      try {
+        await tp.setTimeout(MIN_POLLING_INTERVAL_MS, undefined, {
+          signal: this.abortController.signal,
+        });
+      } catch (e: unknown) {
+        if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+        if (this.abortController.signal.aborted) break;
+      }
+
+      if (!this.keepRunning || this.terminated) break;
+
+      // Phase 2: optional remainder up to pollingInterval — interruptible by
+      // scheduleOnNextState so that an external nudge wakes the loop promptly.
       if (this.scheduledOnNextState.length === 0) {
-        try {
-          this.currentLoopDelayInterrupt = new AbortController();
-          await tp.setTimeout(this.pollingInterval, undefined, {
-            signal: AbortSignal.any([
-              this.abortController.signal,
-              this.currentLoopDelayInterrupt.signal,
-            ]),
-          });
-        } catch (e: unknown) {
-          if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
-          // If the main abort controller fired, this is a permanent termination
-          if (this.abortController.signal.aborted) break;
-          // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
-          // continue to the next iteration
-        } finally {
-          this.currentLoopDelayInterrupt = undefined;
+        const remaining = Math.max(0, this.pollingInterval - MIN_POLLING_INTERVAL_MS);
+        if (remaining > 0) {
+          try {
+            this.currentLoopDelayInterrupt = new AbortController();
+            await tp.setTimeout(remaining, undefined, {
+              signal: AbortSignal.any([
+                this.abortController.signal,
+                this.currentLoopDelayInterrupt.signal,
+              ]),
+            });
+          } catch (e: unknown) {
+            if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+            if (this.abortController.signal.aborted) break;
+            // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
+            // continue to the next iteration
+          } finally {
+            this.currentLoopDelayInterrupt = undefined;
+          }
         }
       }
     }

@@ -1,7 +1,9 @@
 import type {
   FieldData,
+  Filter,
   OptionalSignedResourceId,
   PlTransaction,
+  ResourceTreeFrame,
   SignedResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
@@ -23,19 +25,32 @@ export interface TreeLoadingRequest {
    * be retrieved for them. */
   readonly finalResources: Set<SignedResourceId>;
 
-  /** This function is applied to each resource data field list, before
-   * using it continue traversal. This modification also is applied to
-   * output data to make result self-consistent in terms that it will contain
-   * all referenced resources, this is required to be able to pass it to tree
-   * to update the state. */
+  /** Applied to each resource field list in fallback BFS mode and to streamed results. */
   readonly pruningFunction?: PruningFunction;
+
+  /** ResourceTree field filter passed to the backend when supported. */
+  readonly fieldFilter?: Filter;
+
+  /** ResourceTree traversal stop rules passed to the backend when supported. */
+  readonly traverseStopRules?: Filter;
 }
+
+const CapabilityTreeFilter = "treeFilter:v1";
+
+/** Controls which tree-loading path is used.
+ * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v1`,
+ *   fall back to client-side BFS otherwise.
+ * - `"client-bfs"`: always use client-side BFS, even on capable backends.
+ * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
+ *   logs a warning and falls back to BFS (never throws).
+ */
+export type TraversalMode = "auto" | "client-bfs" | "backend-streaming";
 
 /** Given the current tree state, build the request object to pass to
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
   tree: PlTreeState,
-  pruningFunction?: PruningFunction,
+  options: Pick<TreeLoadingRequest, "pruningFunction" | "fieldFilter" | "traverseStopRules"> = {},
 ): TreeLoadingRequest {
   const seedResources: SignedResourceId[] = [];
   const finalResources = new Set<SignedResourceId>();
@@ -47,7 +62,13 @@ export function constructTreeLoadingRequest(
   // if tree is empty, seeding tree reconstruction from the specified root
   if (seedResources.length === 0 && finalResources.size === 0) seedResources.push(tree.root);
 
-  return { seedResources, finalResources, pruningFunction };
+  return {
+    seedResources,
+    finalResources,
+    pruningFunction: options.pruningFunction,
+    fieldFilter: options.fieldFilter,
+    traverseStopRules: options.traverseStopRules,
+  };
 }
 
 export type TreeLoadingStat = {
@@ -61,6 +82,10 @@ export type TreeLoadingStat = {
   prunedFields: number;
   finalResourcesSkipped: number;
   millisSpent: number;
+  /** Stop-marker frames whose id was already final locally and were skipped. */
+  stopMarkersSkipped: number;
+  /** Number of follow-up resourceTree() calls issued to resolve unknown stop markers. */
+  stopMarkerFollowUpRoundTrips: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -75,6 +100,8 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     prunedFields: 0,
     finalResourcesSkipped: 0,
     millisSpent: 0,
+    stopMarkersSkipped: 0,
+    stopMarkerFollowUpRoundTrips: 0,
   };
 }
 
@@ -88,24 +115,30 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
   result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
   result += `Pruned fields: ${stat.prunedFields}\n`;
-  result += `Final resources skipped: ${stat.finalResourcesSkipped}`;
+  result += `Final resources skipped: ${stat.finalResourcesSkipped}\n`;
+  result += `Stop markers skipped: ${stat.stopMarkersSkipped}\n`;
+  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}`;
   return result;
 }
 
-/** Given the transaction (preferably read-only) and loading request, executes
- * the tree traversal algorithm, and collects fresh states of resources
- * to update the tree state. */
-export async function loadTreeState(
+function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
+  return capabilities.includes(CapabilityTreeFilter);
+}
+
+function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
+  if (!stats) return;
+  stats.retrievedResources++;
+  stats.retrievedFields += resource.fields.length;
+  stats.retrievedKeyValues += resource.kv.length;
+  stats.retrievedResourceDataBytes += resource.data?.length ?? 0;
+  for (const kv of resource.kv) stats.retrievedKeyValueBytes += kv.value.length;
+}
+
+async function loadTreeStateViaBfs(
   tx: PlTransaction,
   loadingRequest: TreeLoadingRequest,
   stats?: TreeLoadingStat,
 ): Promise<ExtendedResourceData[]> {
-  // saving start timestamp to add time spent in this function to the stats at the end of the method
-  const startTimestamp = Date.now();
-
-  // counting the request
-  if (stats) stats.requests++;
-
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
   // Limits the number of concurrent gRPC fetches to bound peak memory
@@ -187,23 +220,163 @@ export async function loadTreeState(
     }
 
     // collecting stats
-    if (stats) {
-      stats.retrievedResources++;
-      stats.retrievedFields += nextResource.fields.length;
-      stats.retrievedKeyValues += nextResource.kv.length;
-      stats.retrievedResourceDataBytes += nextResource.data?.length ?? 0;
-      for (const kv of nextResource.kv) stats.retrievedKeyValueBytes += kv.value.length;
-    }
+    collectStatsForResource(nextResource, stats);
 
     // aggregating the state
     result.push(nextResource);
   }
 
-  // adding the time we spent in this method to stats
-  if (stats) {
-    stats.millisSpent += Date.now() - startTimestamp;
-    stats.roundTrips += numberOfRoundTrips;
+  if (stats) stats.roundTrips += numberOfRoundTrips;
+
+  return result;
+}
+
+async function processResourceTreeStream(
+  treeItems: AsyncIterable<ResourceTreeFrame>,
+  finalResources: Set<SignedResourceId>,
+  pruningFunction: PruningFunction | undefined,
+  stats: TreeLoadingStat | undefined,
+): Promise<{ result: ExtendedResourceData[]; followUpSeeds: SignedResourceId[] }> {
+  const result: ExtendedResourceData[] = [];
+  const followUpSeeds: SignedResourceId[] = [];
+
+  // backend returns two types of frames:
+  // - 'resource' frames contain the resource state and are processed normally
+  // - 'stopMarker' frames indicate resources that are ignored due stop rules fired
+  //
+  // Usually stop rules indicates the resources with final state. In that case middle layer
+  // should make a decision: has it already loaded the resource or should it be requested for get the latest state?
+  for await (const frame of treeItems) {
+    if (frame.frameKind === "stopMarker") {
+      if (finalResources.has(frame.id)) {
+        if (stats) stats.stopMarkersSkipped++;
+        continue;
+      }
+      followUpSeeds.push(frame.id);
+      continue;
+    }
+
+    // Normal resource frame.
+    if (finalResources.has(frame.id)) {
+      if (stats) stats.finalResourcesSkipped++;
+      continue;
+    }
+
+    let nextResource: ExtendedResourceData = {
+      id: frame.id,
+      type: frame.type,
+      kind: frame.kind,
+      data: frame.data,
+      resourceReady: frame.resourceReady,
+      error: frame.error,
+      originalResourceId: frame.originalResourceId,
+      // traverseWasStopped: backend matched traverse stop rules — children were not streamed.
+      // Mark as terminal; fields are resolved below.
+      final: frame.final || frame.traverseWasStopped,
+      inputsLocked: frame.inputsLocked,
+      outputsLocked: frame.outputsLocked,
+      fields: frame.fields,
+      kv: frame.kv,
+    };
+
+    // Apply field rules: traverseWasStopped drops all fields to keep the refCount
+    // invariant; pruning function further filters the remaining fields.
+    const rawFields = frame.traverseWasStopped ? [] : nextResource.fields;
+    const resolvedFields =
+      pruningFunction !== undefined
+        ? pruningFunction({ ...nextResource, fields: rawFields })
+        : rawFields;
+    if (stats) stats.prunedFields += nextResource.fields.length - resolvedFields.length;
+    nextResource = { ...nextResource, fields: resolvedFields };
+
+    collectStatsForResource(nextResource, stats);
+    result.push(nextResource);
+  }
+
+  return { result, followUpSeeds };
+}
+
+async function loadTreeStateViaResourceTree(
+  tx: PlTransaction,
+  loadingRequest: TreeLoadingRequest,
+  stats?: TreeLoadingStat,
+  logger?: { warn: (msg: string) => void; info?: (msg: unknown) => void },
+): Promise<ExtendedResourceData[]> {
+  const { seedResources, finalResources, pruningFunction, fieldFilter, traverseStopRules } =
+    loadingRequest;
+
+  // Round 0: initial tree traversal.
+  const treeItems = tx.resourceTree(seedResources, {
+    includeKv: true,
+    fieldFilter,
+    traverseStopRules,
+  });
+
+  const { result, followUpSeeds } = await processResourceTreeStream(
+    treeItems,
+    finalResources,
+    pruningFunction,
+    stats,
+  );
+  if (stats) stats.roundTrips++;
+
+  // Client must request full resource tree in case when stop-marker seeds are returned,
+  // to ensure all resources are loaded and stop-marker frames are processed.
+  if (followUpSeeds.length > 0) {
+    const followUpItems = tx.resourceTree(followUpSeeds, {
+      includeKv: true,
+      fieldFilter,
+    });
+    const { result: followUpResult } = await processResourceTreeStream(
+      followUpItems,
+      finalResources,
+      pruningFunction,
+      stats,
+    );
+    result.push(...followUpResult);
+    if (stats) {
+      logger?.info?.(
+        `loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`,
+      );
+      stats.roundTrips++;
+      stats.stopMarkerFollowUpRoundTrips++;
+    }
   }
 
   return result;
+}
+
+/** Given the transaction (preferably read-only) and loading request, executes
+ * the tree traversal algorithm, and collects fresh states of resources
+ * to update the tree state. */
+export async function loadTreeState(
+  tx: PlTransaction,
+  loadingRequest: TreeLoadingRequest,
+  stats?: TreeLoadingStat,
+  capabilities: readonly string[] = [],
+  mode: TraversalMode = "auto",
+  logger?: { warn: (msg: string) => void; info?: (msg: unknown) => void },
+): Promise<ExtendedResourceData[]> {
+  const startTimestamp = Date.now();
+  if (stats) stats.requests++;
+
+  try {
+    const wantsStreaming =
+      mode === "backend-streaming" ||
+      (mode === "auto" && supportsResourceTreeTraversal(capabilities));
+
+    if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
+      const msg =
+        "traversalMode=backend-streaming but backend lacks treeFilter:v1 capability; falling back to BFS";
+      if (logger) logger.warn(msg);
+      else console.warn(msg);
+      return await loadTreeStateViaBfs(tx, loadingRequest, stats);
+    }
+
+    return wantsStreaming
+      ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats, logger)
+      : await loadTreeStateViaBfs(tx, loadingRequest, stats);
+  } finally {
+    if (stats) stats.millisSpent += Date.now() - startTimestamp;
+  }
 }

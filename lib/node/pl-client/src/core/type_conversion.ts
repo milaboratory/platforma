@@ -26,7 +26,7 @@ import { throwPlNotFoundError } from "./errors";
 
 const ResourceErrorField = "resourceError";
 
-function resourceIsDeleted(proto: Resource): boolean {
+export function resourceIsDeleted(proto: Resource): boolean {
   return proto.deletedTime !== undefined && proto.deletedTime.seconds !== 0n;
 }
 
