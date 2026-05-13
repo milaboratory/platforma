@@ -1,44 +1,61 @@
 #!/usr/bin/env bash
-# Build block software Docker image and push to dev ECR registry.
+# Build block software Docker image and push to the shared block-dev ECR on AWS.
 #
 # Usage:
-#   ./scripts/deploy-block-software.sh <software-dir> [--tag <tag>] [--ecr <repo-url>] [--region <region>]
+#   ./scripts/deploy-block-aws.sh <software-dir> [--tag <tag>] [--ecr <repo-url>] [--region <region>]
 #
 # Examples:
-#   ./scripts/deploy-block-software.sh blocks/gpu-test/software/gpu-info
-#   ./scripts/deploy-block-software.sh blocks/gpu-test/software/gpu-info --tag my-feature
-#   ./scripts/deploy-block-software.sh /abs/path/to/software/my-sw --ecr <account>.dkr.ecr.<region>.amazonaws.com/pl-block-software-dev
+#   ./scripts/deploy-block-aws.sh ../../blocks/gpu-test/software/gpu-info
+#   ./scripts/deploy-block-aws.sh /abs/path/to/software/my-sw --tag my-feature
+#   ./scripts/deploy-block-aws.sh ../../blocks/gpu-test/software/gpu-info \
+#       --ecr <account>.dkr.ecr.<region>.amazonaws.com/<repo>
 #
 # What it does:
-#   1. Runs pl-pkg build --docker-build to generate Dockerfile and build context
+#   1. pnpm run build in the software dir (pl-pkg generates Dockerfile + context)
 #   2. Builds linux/amd64 Docker image
-#   3. Pushes to the dev ECR registry
-#   4. Creates dist/artifacts/*/docker_x64.json so the block can reference the image
-#   5. Rebuilds the block so the .sw.json descriptor picks up the new image
+#   3. Logs in to ECR and pushes the image
+#   4. Writes dist/artifacts/<entrypoint>/docker_{x64,aarch64}.json so the block's
+#      .sw.json descriptor references the remote image
+#   5. Re-runs the block-level build so .sw.json picks the new artifact descriptor
 #
-# After running, rsync or re-add the dev block to use the new image on K8s.
+# After running, deploy the dev block (e.g. via ./scripts/deploy-block-remote.sh
+# for bare-metal hosts, or by adding the dev block path in the Desktop App when
+# pointing at the K8s cluster — see docs/dev-block-remote-testing.md).
 #
 # Environment:
-#   AWS_PROFILE   - AWS profile for ECR auth (optional)
-#   AWS_REGION    - AWS region (default: eu-central-1)
+#   AWS_PROFILE       - AWS profile that has push access to the target ECR
+#                       (the account hosting the ECR is auto-detected from STS).
+#   AWS_REGION        - AWS region of the ECR (default: eu-north-1).
+#   ECR_REPO_NAME     - ECR repository name within the account
+#                       (default: platforma-internal-production/milaboratories/pl-containers).
+#
+# Notes:
+#   * No account IDs, profile names, or other org-specific secrets are hardcoded
+#     in this script. The defaults match the canonical block-dev ECR; override
+#     with --ecr/--region or env vars for any other registry.
 
 set -euo pipefail
 
 SOFTWARE_DIR=""
 TAG=""
-ECR_REPO=""  # auto-detected from AWS account ID if not set
-REGION="${AWS_REGION:-eu-central-1}"
-ECR_REPO_NAME="${ECR_REPO_NAME:-pl-block-software-dev}"
+ECR_REPO=""  # auto-composed from <account>.dkr.ecr.<region>.amazonaws.com/$ECR_REPO_NAME
+REGION="${AWS_REGION:-eu-north-1}"
+ECR_REPO_NAME="${ECR_REPO_NAME:-platforma-internal-production/milaboratories/pl-containers}"
 
 usage() {
     echo "Usage: $0 <software-dir> [--tag <tag>] [--ecr <repo-url>] [--region <region>]"
     echo ""
-    echo "Builds block software Docker image and pushes to dev ECR."
+    echo "Builds a block-software Docker image and pushes it to the AWS block-dev ECR."
     echo ""
     echo "Options:"
-    echo "  --tag <tag>      Image tag (default: auto-generated from content hash)"
-    echo "  --ecr <repo-url> ECR repository URL (default: pl-block-software-dev in eu-central-1)"
-    echo "  --region <region> AWS region for ECR auth (default: eu-central-1)"
+    echo "  --tag <tag>       Image tag (default: auto-generated from content hash)"
+    echo "  --ecr <repo-url>  Full ECR URL <account>.dkr.ecr.<region>.amazonaws.com/<name>"
+    echo "                    (default: auto-detected account + \$ECR_REPO_NAME)"
+    echo "  --region <region> AWS region for ECR auth (default: \$AWS_REGION or eu-north-1)"
+    echo ""
+    echo "Env:"
+    echo "  AWS_PROFILE       Profile with push access to the target ECR."
+    echo "  ECR_REPO_NAME     Repository name within the account."
     exit 1
 }
 
@@ -59,7 +76,7 @@ SOFTWARE_DIR=$(cd "$SOFTWARE_DIR" && pwd)
 
 [[ ! -f "$SOFTWARE_DIR/package.json" ]] && { echo "Error: $SOFTWARE_DIR/package.json not found"; exit 1; }
 
-# Auto-detect ECR repo URL from AWS account if not explicitly set
+# Auto-detect ECR repo URL from AWS account if not explicitly set.
 if [[ -z "$ECR_REPO" ]]; then
     PROFILE_FLAG=""
     [[ -n "${AWS_PROFILE:-}" ]] && PROFILE_FLAG="--profile $AWS_PROFILE"
@@ -94,7 +111,6 @@ SRC_DIR="src"
 # Generate tag from content hash if not provided
 if [[ -z "$TAG" ]]; then
     CONTENT_HASH=$(find "$SRC_DIR" -type f | sort | xargs shasum 2>/dev/null | shasum | cut -c1-12)
-    # Format: <sanitized-pkg-name>.<entrypoint>.<hash>
     SAFE_NAME=$(echo "$PKG_NAME" | sed 's|@||; s|/|.|g')
     TAG="${SAFE_NAME}.${ENTRYPOINT}.${CONTENT_HASH}"
 fi
@@ -122,18 +138,15 @@ echo "=== Creating docker artifact descriptor ==="
 ARTIFACT_DIR="dist/artifacts/$ENTRYPOINT"
 mkdir -p "$ARTIFACT_DIR"
 
-# Create docker_x64.json so pl-pkg prepublish and .sw.json generation work
 cat > "$ARTIFACT_DIR/docker_x64.json" <<EOF
 {"type":"docker","platform":"linux-x64","remoteArtifactLocation":"$IMAGE","entrypoint":[]}
 EOF
 
-# Also create aarch64 pointing to same image (no native ARM build for dev)
 cat > "$ARTIFACT_DIR/docker_aarch64.json" <<EOF
 {"type":"docker","platform":"linux-aarch64","remoteArtifactLocation":"$IMAGE","entrypoint":[]}
 EOF
 
 echo "=== Rebuilding block to pick up new image ==="
-# Go to block root (parent of software dir, then parent of software/)
 BLOCK_ROOT=$(cd "$SOFTWARE_DIR/../.." && pwd)
 if [[ -f "$BLOCK_ROOT/turbo.json" ]]; then
     cd "$BLOCK_ROOT"
@@ -147,5 +160,5 @@ echo "Image: $IMAGE"
 echo "Artifact: $ARTIFACT_DIR/docker_x64.json"
 echo ""
 echo "Next steps:"
-echo "  1. Rsync block to remote: ./scripts/deploy-block-remote.sh $BLOCK_ROOT <remote-host>"
-echo "  2. Or remove and re-add the dev block in Desktop App"
+echo "  1. Rsync block to remote (bare-metal): ./scripts/deploy-block-remote.sh $BLOCK_ROOT <remote-host>"
+echo "  2. Or add the dev block at $BLOCK_ROOT in Desktop App and run it against your K8s Platforma."
