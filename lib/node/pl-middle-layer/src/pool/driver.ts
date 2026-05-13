@@ -312,13 +312,15 @@ export async function createPFrameDriver(params: {
   });
 
   const resolveDataInfo = (spec: PColumnSpec, data: PColumnDataUniversal<PlTreeNodeAccessor>) => {
-    return isPlTreeNodeAccessor(data)
-      ? parseDataInfoResource(data)
-      : isDataInfo(data)
-        ? data.type === "ParquetPartitioned"
-          ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
-          : mapDataInfo(data, (a) => makeLocalBlobRef(a))
-        : makeJsonDataInfo(spec, data);
+    if (isPlTreeNodeAccessor(data)) {
+      return parseDataInfoResource(data) ?? makeJsonDataInfo(spec, []);
+    }
+
+    return isDataInfo(data)
+      ? data.type === "ParquetPartitioned"
+        ? mapDataInfo(data, (a) => traverseParquetChunkResource(a))
+        : mapDataInfo(data, (a) => makeLocalBlobRef(a))
+      : makeJsonDataInfo(spec, data);
   };
 
   return new AbstractPFrameDriver({
