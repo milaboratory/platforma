@@ -1,5 +1,10 @@
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import type { FieldData, OptionalAnyResourceId, SignedResourceId } from "@milaboratories/pl-client";
+import type {
+  FieldData,
+  OptionalAnyResourceId,
+  PlClient,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
 import {
   DefaultRetryOptions,
   ensureSignedResourceIdNotNull,
@@ -211,6 +216,7 @@ export class Project {
     const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+    throwIfMissingServerCapabilities(this.env.pl, preparedBp.requiredCapabilities);
 
     // Pre-materialize template via cache (separate transaction(s))
     const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp);
@@ -304,6 +310,7 @@ export class Project {
     const blockCfg = extractConfig(preparedBp.config);
 
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+    throwIfMissingServerCapabilities(this.env.pl, preparedBp.requiredCapabilities);
 
     // Pre-materialize template via cache (separate transaction(s))
     const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp);
@@ -808,4 +815,27 @@ function convertErrorsToStrings(
   }
 
   return result;
+}
+
+/** Throws when the connected backend doesn't advertise every capability the
+ * block-pack requires (as declared in `meta.requiredCapabilities`).
+ *
+ * The matching set is the desktop's install gate moved server-side so both
+ * the UI (`AddBlockModal`) and direct middle-layer callers (the MCP server's
+ * `add_block` tool, programmatic block installs, tests) reject incompatible
+ * blocks consistently. */
+function throwIfMissingServerCapabilities(
+  pl: PlClient,
+  requiredCapabilities: readonly string[] | undefined,
+): void {
+  if (!requiredCapabilities || requiredCapabilities.length === 0) return;
+  const advertised = (pl.serverInfo.capabilities ?? []) as readonly string[];
+  const missing = requiredCapabilities.filter((c) => !advertised.includes(c));
+  if (missing.length === 0) return;
+  throw new Error(
+    `Block cannot be added: connected backend does not advertise capabilities ` +
+      `${JSON.stringify(missing)}. ` +
+      `Backend advertises ${JSON.stringify(advertised)}. ` +
+      `Upgrade the backend or remove the requirement from the block manifest.`,
+  );
 }

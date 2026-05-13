@@ -43,6 +43,11 @@ export interface BlockPackExplicit {
   config: BlockConfigContainer;
   frontend: FrontendSpec;
   source: BlockPackSpec;
+  /** Backend-side runtime capabilities the block requires at install time.
+   * Sourced from the block-pack manifest's `meta.requiredCapabilities`.
+   * `Project.addBlock` matches this list against `pl.serverInfo.capabilities`
+   * and refuses to install when anything is missing. */
+  requiredCapabilities?: string[];
 }
 
 /** Block-pack spec that can be materialized in pl. */
@@ -52,6 +57,7 @@ export type BlockPackSpecPrepared = {
   config: BlockConfigContainer;
   frontend: FrontendSpec;
   source: BlockPackSpec;
+  requiredCapabilities?: string[];
 };
 
 /** All block-pack specs. */
