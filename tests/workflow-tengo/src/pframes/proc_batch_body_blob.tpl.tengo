@@ -1,0 +1,38 @@
+// proc_batch_body_blob — body template for passContent=false tests.
+// Receives __value__ as a Blob file reference. Verifies it via exec.addFile
+// (which asserts the argument is a reference — panics on JsonObject values).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchFile := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !smart.isReference(batchFile) {
+		ll.panic("expected __value__ to be a file reference (passContent=false), got: %v", batchFile)
+	}
+
+	// Pass the blob through hello-world via addFile, then save it back out.
+	// addFile panics if batchFile is not a reference — this is the assertion.
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(hwSoftware).
+		arg("a").
+		addFile("batch.tsv", batchFile).
+		saveFile("batch.tsv").
+		run()
+
+	return {
+		tsv: run.getFile("batch.tsv")
+	}
+})

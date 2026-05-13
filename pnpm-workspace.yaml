@@ -249,14 +249,14 @@ catalog:
 
   "@milaboratories/tengo-tester": ^1.6.4
   # When bumping, also update `REQUIRES_PFRAMES_VERSION` in lib/model/common/src/flags/block_flags.ts.
-  "@milaboratories/pframes-rs-node": 1.1.31
-  "@milaboratories/pframes-rs-wasm": 1.1.31
+  "@milaboratories/pframes-rs-node": 1.1.35
+  "@milaboratories/pframes-rs-wasm": 1.1.35
 
   "quickjs-emscripten": 0.31.0
 
   # UI
 
-  "vue": ^3.5.24
+  "vue": 3.5.24
   "@vueuse/core": ^13.3.0
   "@vueuse/integrations": ^13.3.0
   "vue-tsc": ^3.2.6

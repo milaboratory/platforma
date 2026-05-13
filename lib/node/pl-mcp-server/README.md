@@ -30,14 +30,14 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
 
 1. **Start the Platforma Desktop App and enable MCP** — the MCP server feature marked as Alpha for now. To enable it open Settings, scroll down to the bottom, enable checkbox "Enable MCP Server". Then copy MCP Server URL.
 
-2. **Add the MCP server to Claude Code** by creating or editing `.claude/settings.json`:
+2. **Add the MCP server to Claude Code** by creating or editing `.claude/settings.json` (don't forget to change the MCP URL):
 
    ```json
    {
      "mcpServers": {
        "pl": {
          "type": "sse",
-         "url": "http://localhost:4200/mcp"
+         "url": "http://127.0.0.1:4200/<!!CHANGE ME!!>/mcp"
        }
      }
    }

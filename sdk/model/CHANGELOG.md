@@ -1,5 +1,52 @@
 # @platforma-sdk/model
 
+## 1.76.4
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pl-model-middle-layer@1.19.4
+  - @milaboratories/ptabler-expression-js@1.2.25
+
+## 1.75.10
+
+### Patch Changes
+
+- b631ce0: Fix `deriveDistinctLabels` adding redundant "via …" linker suffix to records whose native label is already unique when other records collide on a shared linker.
+
+## 1.75.8
+
+### Patch Changes
+
+- dd5db77: public outputs for plugins
+
+## 1.75.5
+
+### Patch Changes
+
+- 63dc54d: Filter out hidden columns when deriving labels in createPlDataTableV3
+
+## 1.75.2
+
+### Patch Changes
+
+- 641c845: Fix table migration to v6
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @milaboratories/pl-model-middle-layer@1.19.3
+  - @milaboratories/ptabler-expression-js@1.2.24
+
+## 1.75.1
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+  - @milaboratories/pl-model-common@1.41.1
+  - @milaboratories/pl-model-middle-layer@1.19.2
+  - @milaboratories/ptabler-expression-js@1.2.23
+
 ## 1.75.0
 
 ### Minor Changes

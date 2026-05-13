@@ -527,7 +527,7 @@ export interface components {
     };
     AuthAPI_GetUserRoot_Request: {
       login: string;
-      doNotCreate: boolean;
+      createIfNotExists: boolean;
     };
     AuthAPI_GetUserRoot_Response: {
       userRoot: components["schemas"]["AuthAPI_UserRoot"];

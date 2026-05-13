@@ -40,11 +40,26 @@ createV2 := func(allocationRef) {
 	return wdCreate.getField(_WD_CREATE_FIELD_WORKDIR)
 }
 
+// Input fill rules default to read-only (0o400). The backend hardlinks the
+// file from its content-addressable archive cache to the workdir — fast,
+// inode-shared with the archive entry, immutable.
+//
+// If a workflow legitimately needs a writable copy of an input (rare — it
+// usually means the tool mutates the input in place, which violates
+// immutability), pass permissions: 0o600 explicitly. The backend will copy
+// the file to a fresh inode in the workdir, leaving the archive entry
+// untouched. The copy costs throughput per byte; default RO is the right
+// choice for input data.
+//
+// See the symmetric note in pl: drv_fs.HashAndArchive sets the archive
+// entry to mifs.ArchiveEntryPerms (0o400). The hardlink-or-copy decision in
+// task_wd_fill.addFileToWorkdir is an exact mode comparison against that
+// constant — anything other than 0o400 forces the copy branch.
 _getFileFillRule := func(filePath, extension) {
 	return {
 		type: "file",
 		path: filePath,
-		permissions: 0o600,
+		permissions: 0o400,
 		pathKey: filePath,
 		blobKey: filePath,
 		copyOptional: false,
@@ -58,7 +73,7 @@ _getArchiveFillRule := func(dstDir, whatToExtract, archiveBlobKey) {
 		extractRules = append(extractRules, {
 			srcPath: f,
 			dstPath: f,
-			filePerms: 0o600,
+			filePerms: 0o400,
 			dirPerms: 0o700
 		})
 	}
@@ -82,7 +97,7 @@ _getValueFillRule := func(filePath) {
 	return {
 		type: "value",
 		path: filePath,
-		permissions: 0o600,
+		permissions: 0o400,
 		pathKey: filePath,
 		valueKey: filePath
 	}

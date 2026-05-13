@@ -1,5 +1,38 @@
 # @milaboratories/pl-client
 
+## 3.4.2
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+
+## 3.4.1
+
+### Patch Changes
+
+- bcf1107: Compatibility with backend 3.0.2 and some prev versions
+
+## 3.4.0
+
+### Minor Changes
+
+- e65c3b9: Support fresh contract of user root creation
+
+## 3.3.3
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+
+## 3.3.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.41.1
+- @milaboratories/ts-helpers@1.8.2
+
 ## 3.3.1
 
 ### Patch Changes
