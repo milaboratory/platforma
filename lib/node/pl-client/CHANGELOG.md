@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.5.0
+
+### Minor Changes
+
+- b1ea44e: optimize resource tree updates
+
 ## 3.4.2
 
 ### Patch Changes
