@@ -1,5 +1,44 @@
 # @milaboratories/pl-tree
 
+## 1.10.6
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.4.2
+- @milaboratories/pl-errors@1.4.6
+
+## 1.10.5
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-errors@1.4.5
+
+## 1.10.4
+
+### Patch Changes
+
+- Updated dependencies [e65c3b9]
+  - @milaboratories/pl-client@3.4.0
+  - @milaboratories/pl-errors@1.4.4
+
+## 1.10.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.3.3
+- @milaboratories/pl-errors@1.4.3
+
+## 1.10.2
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.2
+- @milaboratories/pl-client@3.3.2
+- @milaboratories/computable@2.9.4
+- @milaboratories/pl-errors@1.4.2
+
 ## 1.10.1
 
 ### Patch Changes

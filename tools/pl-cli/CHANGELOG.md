@@ -1,5 +1,95 @@
 # @platforma-sdk/pl-cli
 
+## 0.7.9
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.4.2
+- @milaboratories/pl-middle-layer@1.59.14
+
+## 0.7.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.13
+
+## 0.7.7
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.12
+
+## 0.7.6
+
+### Patch Changes
+
+- Updated dependencies [d93d296]
+  - @milaboratories/pl-middle-layer@1.59.11
+
+## 0.7.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.10
+
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-middle-layer@1.59.9
+
+## 0.7.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.8
+
+## 0.7.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.7
+
+## 0.7.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.6
+
+## 0.7.0
+
+### Minor Changes
+
+- e65c3b9: Support fresh contract of user root creation
+
+### Patch Changes
+
+- Updated dependencies [e65c3b9]
+  - @milaboratories/pl-client@3.4.0
+  - @milaboratories/pl-middle-layer@1.59.5
+
+## 0.6.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.4
+
+## 0.6.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.3.3
+- @milaboratories/pl-middle-layer@1.59.3
+
+## 0.6.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.59.2
+- @milaboratories/pl-client@3.3.2
+
 ## 0.6.1
 
 ### Patch Changes

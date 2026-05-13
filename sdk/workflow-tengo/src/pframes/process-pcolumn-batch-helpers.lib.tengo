@@ -1,0 +1,242 @@
+/**
+ * Template-side helpers for the pframes batch-mode orchestrator template
+ * (`:pframes.process-pcolumn-batch`). Extracted into a sibling lib so the
+ * template body stays focused on control flow; every exported function is
+ * a pure transformation with no template-engine side effects.
+ *
+ * Exports:
+ *   - resolveData          — unwrap a raw-input field to its backing resource
+ *   - classifyPColumnData  — classify the partitioning shape of a PColumn data resource
+ *   - recordsInGroup       — count records in a per-isolation-scope resource
+ *   - forEachOutputField   — iterate (output, dataKey) pairs for ResourceMap/Xsv outputs
+ *   - groupColumnData      — split a column's data by isolation key into per-scope resources
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+maps := import(":maps")
+text := import("text")
+json := import("json")
+pConstants := import(":pframes.constants")
+pUtil := import(":pframes.util")
+
+/**
+ * Unwraps a raw-input field to its backing resource.
+ *
+ * `self.rawInputs()` returns field references (not values) so that fields not
+ * yet assigned don't block iteration. For fields we actually want to read, we
+ * call `.getValue()` to get the underlying resource. Non-field arguments pass
+ * through unchanged — convenient when the caller may or may not have a field.
+ *
+ * @param data  raw input field reference or an already-resolved resource
+ * @returns the backing resource
+ */
+resolveData := func(data) {
+	if smart.isField(data) {
+		return data.getValue()
+	}
+	return data
+}
+
+/**
+ * Classifies a PColumn data resource by its partitioning shape.
+ *
+ * Drives the grouping dispatch in `groupColumnData`: JSON holds records as a
+ * map and is iterated in-memory; the partitioned variants hold per-partition
+ * sub-fields on the resource and are re-structured by partition key.
+ * BinaryPartitioned keys carry a `.index|.values` suffix that must be stripped
+ * before decoding — `isBinary: true` flags that case.
+ *
+ * Panics on any other resource type; batch mode does not support them.
+ *
+ * @param res  PColumn data resource (JSON, JsonPartitioned, BinaryPartitioned,
+ *             or ParquetPartitioned)
+ * @returns { type: string, isBinary: boolean, isJson?: boolean }
+ */
+classifyPColumnData := func(res) {
+	if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
+		return { type: pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED, isBinary: true }
+	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) {
+		return { type: pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED, isBinary: false }
+	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED) {
+		return { type: pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED, isBinary: false }
+	} else if res.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
+		return { type: pConstants.RTYPE_P_COLUMN_DATA_JSON, isBinary: false, isJson: true }
+	}
+	ll.panic("Unsupported data type for batch mode grouping: %v", res)
+}
+
+/**
+ * Counts records in a per-isolation-scope intermediate resource.
+ *
+ * Used for the maxBatches estimate and to skip empty scopes. The count is an
+ * upper bound — over-counting only yields empty trailing slices, which the
+ * split template tolerates. Undefined input (scope missing from a primary's
+ * groups) returns 0 so the caller can fold absent primaries naturally into
+ * the min/sum reduction.
+ *
+ * @param groupRes  per-scope resource produced by `groupColumnData`, or undefined
+ * @returns non-negative integer record count
+ */
+recordsInGroup := func(groupRes) {
+	if is_undefined(groupRes) {
+		return 0
+	}
+	if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
+		return len(groupRes.getDataAsJson().data)
+	}
+	if groupRes.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
+		// .index + .values per partition → halve
+		return len(groupRes.inputs()) / 2
+	}
+	// JsonPartitioned / ParquetPartitioned
+	return len(groupRes.inputs())
+}
+
+/**
+ * Iterates output resource fields, yielding one `(output, dataKey)` pair per
+ * logical stored resource.
+ *
+ * ResourceMap outputs produce a single field named after the output; Xsv
+ * outputs fan out to one field per declared column, keyed
+ * `"<outputName>/<columnId>"`. Using this iterator keeps the "allocate
+ * container / collect per-scope result / finalize" loops in the orchestrator
+ * template free of per-type dispatch.
+ *
+ * @param outputDefs  array of processed output configs ({ type: "ResourceMap" | "Xsv", … })
+ * @param fn          callback `(output, dataKey)` — dataKey is the resource map key
+ */
+forEachOutputField := func(outputDefs, fn) {
+	for output in outputDefs {
+		if output.type == "ResourceMap" {
+			fn(output, output.name)
+		} else if output.type == "Xsv" {
+			for column in output.settings.columns {
+				id := pUtil.xsvColumnId(column)
+				fn(output, output.name + "/" + id)
+			}
+		}
+	}
+}
+
+/**
+ * Groups a column's data by isolation key, producing one per-scope PColumn
+ * data resource per distinct isolation key.
+ *
+ * Mirrors the structural grouping pattern used by
+ * `process-pcolumn-data.tpl.tengo`: for each record / partition, split the
+ * record key into an isolation key (the axes not part of the batch key) and
+ * an in-group key (the batch-key axes), then re-emit one resource per
+ * isolation group keyed by the in-group key. For partitioned inputs,
+ * per-partition sub-fields are re-attached to intermediate `structBuilder`s
+ * in sorted key order — the built resource is content-addressed, but stable
+ * insertion order is cheap defense-in-depth for cache reproducibility.
+ *
+ * When there are no isolation axes (`hasIsolation == false`), returns
+ * `{ "[]": res }` — a single pass-through group with the empty-tuple key,
+ * so callers can iterate "scopes" uniformly.
+ *
+ * @param data              raw-input field or resolved PColumn data resource
+ * @param isolationIndices  axes-spec indices that form the isolation key
+ * @param batchKeyIndices   axes-spec indices that form the batch (in-group) key
+ * @param batchKeyLength    len(batchKeyIndices), cached by caller
+ * @param hasIsolation      len(isolationIndices) > 0
+ * @returns map from JSON-encoded isolation key to per-scope data resource
+ */
+groupColumnData := func(data, isolationIndices, batchKeyIndices, batchKeyLength, hasIsolation) {
+	res := resolveData(data)
+	if !hasIsolation {
+		return { "[]": res }
+	}
+	typeInfo := classifyPColumnData(res)
+	groups := {}
+
+	if typeInfo.isJson {
+		meta := res.getDataAsJson()
+		for sKey, value in meta.data {
+			keyArray := json.decode(sKey)
+
+			isolationKey := []
+			for i in isolationIndices {
+				isolationKey = append(isolationKey, keyArray[i])
+			}
+			inGroupKey := []
+			for i in batchKeyIndices {
+				inGroupKey = append(inGroupKey, keyArray[i])
+			}
+
+			sIsolationKey := json.encode(isolationKey)
+			sInGroupKey := json.encode(inGroupKey)
+
+			group := groups[sIsolationKey]
+			if is_undefined(group) {
+				group = {}
+				groups[sIsolationKey] = group
+			}
+			group[sInGroupKey] = value
+		}
+		for sIsolationKey, groupData in groups {
+			groups[sIsolationKey] = smart.structBuilder(
+				pConstants.RTYPE_P_COLUMN_DATA_JSON,
+				json.encode({ keyLength: batchKeyLength, data: groupData })
+			).lockAndBuild()
+		}
+	} else {
+		// Partitioned types (JsonPartitioned, BinaryPartitioned, ParquetPartitioned).
+		// Iterate in sorted key order so every run inserts fields into the
+		// intermediate structBuilder in the same sequence — the built
+		// resource's hash is content-addressed, but stable insertion order
+		// is cheap defense-in-depth against any hashing regressions and
+		// keeps cache behavior reproducible.
+		resInputs := res.inputs()
+		for sKey in maps.getKeys(resInputs) {
+			field := resInputs[sKey]
+			sKeyP := sKey
+			suffix := ""
+			if typeInfo.isBinary {
+				dotIdx := text.last_index(sKey, ".")
+				ll.assert(dotIdx != -1, "BinaryPartitioned key must contain a dot: %v", sKey)
+				suffix = sKey[dotIdx:]
+				sKeyP = sKey[:dotIdx]
+			}
+			keyArray := json.decode(sKeyP)
+
+			isolationKey := []
+			for i in isolationIndices {
+				isolationKey = append(isolationKey, keyArray[i])
+			}
+			inGroupKey := []
+			for i in batchKeyIndices {
+				ll.assert(i < len(keyArray),
+					"malformed partition key %v: fewer components than the axes spec (index %v out of range)", sKeyP, i)
+				inGroupKey = append(inGroupKey, keyArray[i])
+			}
+
+			sIsolationKey := json.encode(isolationKey)
+			sInGroupKey := json.encode(inGroupKey)
+
+			group := groups[sIsolationKey]
+			if is_undefined(group) {
+				group = smart.structBuilder(
+					typeInfo.type,
+					json.encode({ partitionKeyLength: batchKeyLength })
+				)
+				groups[sIsolationKey] = group
+			}
+			group.createInputField(sInGroupKey + suffix).set(field)
+		}
+		for sIsolationKey in maps.getKeys(groups) {
+			groups[sIsolationKey] = groups[sIsolationKey].lockAndBuild()
+		}
+	}
+
+	return groups
+}
+
+export ll.toStrict({
+	resolveData: resolveData,
+	classifyPColumnData: classifyPColumnData,
+	recordsInGroup: recordsInGroup,
+	forEachOutputField: forEachOutputField,
+	groupColumnData: groupColumnData
+})

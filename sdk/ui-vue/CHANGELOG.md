@@ -1,5 +1,81 @@
 # @platforma-sdk/ui-vue
 
+## 1.76.4
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pf-spec-driver@1.3.16
+  - @platforma-sdk/model@1.76.4
+  - @milaboratories/uikit@2.14.8
+
+## 1.76.0
+
+### Minor Changes
+
+- 9310b53: `PlDatasetSelector` now renders datasets and their filters in a single dropdown — each dataset row is followed by its filter rows, with the parent dataset label shown as the row description. Removed the `filterLabel` and `filterPlaceholder` props (no longer applicable).
+
+## 1.75.10
+
+### Patch Changes
+
+- Updated dependencies [b631ce0]
+  - @platforma-sdk/model@1.75.10
+  - @milaboratories/uikit@2.14.7
+
+## 1.75.8
+
+### Patch Changes
+
+- dd5db77: public outputs for plugins
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+  - @milaboratories/uikit@2.14.6
+
+## 1.75.7
+
+### Patch Changes
+
+- 5a70c0f: Fix `@cell-button-clicked` not firing on PlAgDataTableV2 when the configured axis has a label column. Since the predefined-label change in 1.75.0, labelled axes are replaced in the grid by their label column, so the cell-button cellRendererSelector — which only matched `type:"axis"` ColDefs — never installed. Now also resolve the axis on single-axis label columns whose labeled axis equals `showCellButtonForAxisId`.
+- Updated dependencies [5a70c0f]
+  - @milaboratories/uikit@2.14.5
+
+## 1.75.6
+
+### Patch Changes
+
+- Updated dependencies [846df2e]
+  - @milaboratories/pf-spec-driver@1.3.15
+  - @platforma-sdk/model@1.75.5
+
+## 1.75.5
+
+### Patch Changes
+
+- Updated dependencies [63dc54d]
+  - @platforma-sdk/model@1.75.5
+  - @milaboratories/uikit@2.14.4
+
+## 1.75.2
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @platforma-sdk/model@1.75.2
+  - @milaboratories/pf-spec-driver@1.3.14
+  - @milaboratories/uikit@2.14.3
+
+## 1.75.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.41.1
+- @milaboratories/pf-spec-driver@1.3.13
+- @milaboratories/uikit@2.14.2
+- @platforma-sdk/model@1.75.1
+
 ## 1.75.0
 
 ### Minor Changes

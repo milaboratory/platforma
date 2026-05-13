@@ -61,7 +61,7 @@ export type InferFactoryUiServices<F extends PluginFactoryLike> =
 /**
  * Derive a typed PluginHandle from a PluginFactory type.
  * Normalizes the brand to data/params/outputs/services (strips config) so handles
- * from InferPluginHandles match handles from InferPluginHandle.
+ * from InferPluginUiEntries match handles from InferPluginHandle.
  */
 export type InferPluginHandle<F extends PluginFactoryLike> = NonNullable<
   F extends PluginFactoryLike<

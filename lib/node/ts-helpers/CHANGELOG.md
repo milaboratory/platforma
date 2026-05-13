@@ -1,5 +1,12 @@
 # @milaboratories/ts-helpers
 
+## 1.8.2
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+
 ## 1.8.1
 
 ### Patch Changes

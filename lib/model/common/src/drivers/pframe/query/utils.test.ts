@@ -27,9 +27,17 @@ describe("traverseQuerySpec", () => {
   });
 
   it("transforms sparseToDenseColumn leaf", () => {
-    const q: Q = { type: "sparseToDenseColumn", column: "a", axesIndices: [0, 1] } as Q;
+    const q: Q = {
+      type: "sparseToDenseColumn",
+      column: "a",
+      axes: [{ name: "s" }, { name: "g" }],
+    } as Q;
     const result = traverseQuerySpec(q, { column: (c) => `${c}!` });
-    expect(result).toEqual({ type: "sparseToDenseColumn", column: "a!", axesIndices: [0, 1] });
+    expect(result).toEqual({
+      type: "sparseToDenseColumn",
+      column: "a!",
+      axes: [{ name: "s" }, { name: "g" }],
+    });
   });
 
   it("passes inlineColumn through unchanged", () => {
@@ -107,7 +115,11 @@ describe("traverseQuerySpec", () => {
       type: "sort",
       input: col("a"),
       sortBy: [
-        { expression: { type: "columnRef", value: pid("id1") }, ascending: true, nullsFirst: null },
+        {
+          expression: { type: "columnRef", value: pid("id1") },
+          ascending: true,
+          nullsFirst: false,
+        },
       ],
     } as Q;
     const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
@@ -115,7 +127,7 @@ describe("traverseQuerySpec", () => {
       type: "sort",
       input: { type: "column", column: "A" },
       sortBy: [
-        { expression: { type: "columnRef", value: "id1" }, ascending: true, nullsFirst: null },
+        { expression: { type: "columnRef", value: "id1" }, ascending: true, nullsFirst: false },
       ],
     });
   });
@@ -197,7 +209,11 @@ describe("collectSpecQueryColumns", () => {
   });
 
   it("collects from sparseToDenseColumn", () => {
-    const q: Q = { type: "sparseToDenseColumn", column: "s", axesIndices: [0] } as Q;
+    const q: Q = {
+      type: "sparseToDenseColumn",
+      column: "s",
+      axes: [{ name: "s" }],
+    } as Q;
     expect(collectSpecQueryColumns(q)).toEqual(["s"]);
   });
 
@@ -258,17 +274,17 @@ describe("sortSpecQuery", () => {
     });
   });
 
-  it("sorts sparseToDenseColumn axesIndices", () => {
+  it("sorts sparseToDenseColumn axes", () => {
     const q: SpecQuery = {
       type: "sparseToDenseColumn",
       column: pid("a"),
-      axesIndices: [2, 0, 1],
+      axes: [{ name: "z" }, { name: "x" }, { name: "y" }],
     } as SpecQuery;
     const result = sortSpecQuery(q);
     expect(result).toEqual({
       type: "sparseToDenseColumn",
       column: "a",
-      axesIndices: [0, 1, 2],
+      axes: [{ name: "x" }, { name: "y" }, { name: "z" }],
     });
   });
 

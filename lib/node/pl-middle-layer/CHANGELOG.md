@@ -1,5 +1,148 @@
 # @milaboratories/pl-middle-layer
 
+## 1.59.14
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pf-driver@1.4.11
+  - @milaboratories/pf-spec-driver@1.3.16
+  - @milaboratories/pl-model-middle-layer@1.19.4
+  - @milaboratories/pl-client@3.4.2
+  - @milaboratories/pl-deployments@2.17.17
+  - @milaboratories/pl-drivers@1.14.6
+  - @platforma-sdk/model@1.76.4
+  - @platforma-sdk/block-tools@2.7.25
+  - @milaboratories/pl-model-backend@1.2.28
+  - @milaboratories/pl-errors@1.4.6
+  - @milaboratories/pl-tree@1.10.6
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.13
+
+### Patch Changes
+
+- Updated dependencies [e5e1ed5]
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.12
+
+### Patch Changes
+
+- Updated dependencies [8dd1fa4]
+  - @platforma-sdk/workflow-tengo@5.22.0
+
+## 1.59.11
+
+### Patch Changes
+
+- d93d296: Support AbortSignal
+- Updated dependencies [d93d296]
+  - @platforma-sdk/block-tools@2.7.24
+
+## 1.59.10
+
+### Patch Changes
+
+- Updated dependencies [b631ce0]
+  - @platforma-sdk/model@1.75.10
+
+## 1.59.9
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-model-backend@1.2.27
+  - @milaboratories/pl-drivers@1.14.5
+  - @milaboratories/pl-errors@1.4.5
+  - @milaboratories/pl-tree@1.10.5
+  - @platforma-sdk/workflow-tengo@5.21.0
+
+## 1.59.8
+
+### Patch Changes
+
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+
+## 1.59.7
+
+### Patch Changes
+
+- Updated dependencies [846df2e]
+  - @milaboratories/pf-spec-driver@1.3.15
+  - @milaboratories/pf-driver@1.4.10
+  - @platforma-sdk/model@1.75.5
+
+## 1.59.6
+
+### Patch Changes
+
+- Updated dependencies [63dc54d]
+  - @platforma-sdk/model@1.75.5
+
+## 1.59.5
+
+### Patch Changes
+
+- Updated dependencies [e65c3b9]
+  - @milaboratories/pl-client@3.4.0
+  - @milaboratories/pl-model-backend@1.2.26
+  - @milaboratories/pl-drivers@1.14.4
+  - @milaboratories/pl-errors@1.4.4
+  - @milaboratories/pl-tree@1.10.4
+  - @platforma-sdk/workflow-tengo@5.21.0
+
+## 1.59.4
+
+### Patch Changes
+
+- Updated dependencies [5d5e60e]
+  - @platforma-sdk/workflow-tengo@5.21.0
+
+## 1.59.3
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @platforma-sdk/model@1.75.2
+  - @milaboratories/pl-model-middle-layer@1.19.3
+  - @milaboratories/pf-spec-driver@1.3.14
+  - @milaboratories/pf-driver@1.4.9
+  - @milaboratories/pl-client@3.3.3
+  - @milaboratories/pl-deployments@2.17.16
+  - @milaboratories/pl-drivers@1.14.3
+  - @platforma-sdk/block-tools@2.7.23
+  - @milaboratories/pl-model-backend@1.2.25
+  - @milaboratories/pl-errors@1.4.3
+  - @milaboratories/pl-tree@1.10.3
+  - @platforma-sdk/workflow-tengo@5.20.1
+
+## 1.59.2
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+  - @milaboratories/pl-model-common@1.41.1
+  - @milaboratories/pl-model-middle-layer@1.19.2
+  - @milaboratories/pf-spec-driver@1.3.13
+  - @milaboratories/pf-driver@1.4.8
+  - @milaboratories/pl-drivers@1.14.2
+  - @milaboratories/ts-helpers@1.8.2
+  - @platforma-sdk/model@1.75.1
+  - @milaboratories/pl-client@3.3.2
+  - @milaboratories/pl-deployments@2.17.15
+  - @platforma-sdk/block-tools@2.7.22
+  - @milaboratories/computable@2.9.4
+  - @milaboratories/pl-errors@1.4.2
+  - @milaboratories/pl-tree@1.10.2
+  - @milaboratories/pl-model-backend@1.2.24
+  - @platforma-sdk/workflow-tengo@5.20.1
+
 ## 1.59.1
 
 ### Patch Changes

@@ -1,0 +1,123 @@
+// proc_batch — test template for batch processColumn
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+times := import("times")
+
+bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
+bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
+bodyTplResourceMap := assets.importTemplate(":pframes.proc_batch_body_resource_map")
+bodyTplNdjson := assets.importTemplate(":pframes.proc_batch_body_ndjson")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+
+	// Select body template:
+	// - params.bodyMode == "resourceMap" → body returns a ResourceMap keyed by batch key
+	// - params.bodyMode == "ndjson"      → body parses NDJSON content via pt, writes parquet
+	// - params.batch.passContent=false   → body treats __value__ as a Blob file ref
+	// - default                          → body reads __value__ as a content string
+	bodyTpl := bodyTplContent
+	if params.bodyMode == "resourceMap" {
+		bodyTpl = bodyTplResourceMap
+	} else if params.bodyMode == "ndjson" {
+		bodyTpl = bodyTplNdjson
+	} else if !is_undefined(params.batch.passContent) && !params.batch.passContent {
+		bodyTpl = bodyTplBlob
+	}
+
+	primaryEntries := []
+	for entry in params.primaryEntries {
+		// If the entry carries filterDataInputName/filterSpec, build a
+		// ResolvedPrimaryRef shape (exercises the filter path in processColumn).
+		// Otherwise build a plain { spec, data } column.
+		src := undefined
+		if !is_undefined(entry.filterDataInputName) {
+			src = {
+				__isPrimaryRef: "v1",
+				column: {
+					spec: entry.spec,
+					data: inputs[entry.dataInputName]
+				},
+				filter: {
+					spec: entry.filterSpec,
+					data: inputs[entry.filterDataInputName]
+				}
+			}
+		} else {
+			src = {
+				spec: entry.spec,
+				data: inputs[entry.dataInputName]
+			}
+		}
+		primaryEntries = append(primaryEntries, {
+			src: src,
+			header: entry.header
+		})
+	}
+
+	secondaryEntries := []
+	if !is_undefined(params.secondaryEntries) {
+		for entry in params.secondaryEntries {
+			secondaryEntries = append(secondaryEntries, {
+				src: {
+					spec: entry.spec,
+					data: inputs[entry.dataInputName]
+				},
+				header: entry.header
+			})
+		}
+	}
+
+	opts := {
+		batch: params.batch
+	}
+	if !is_undefined(params.stepCache) {
+		opts.stepCache = params.stepCache
+	}
+	// Always set a short (1 second) cache on the internal pt workflow so
+	// repeated test runs don't reuse stale cached executions on the backend.
+	// Tests can override via params.cacheInputs, but the default is 1s.
+	opts.cacheInputs = times.second
+	if !is_undefined(params.cacheInputs) {
+		opts.cacheInputs = params.cacheInputs
+	}
+	// Allow tests to inject additional opts (e.g. `aggregate` to exercise the
+	// aggregate+batch mutual-exclusion check).
+	if !is_undefined(params.opts) {
+		for k, v in params.opts {
+			opts[k] = v
+		}
+	}
+
+	// Tests can set `singlePrimary: true` to pass primaryEntries[0] directly
+	// (unwrapped) — exercises the `primary: { src, header }` overload path.
+	primaryArg := primaryEntries
+	if params.singlePrimary {
+		primaryArg = primaryEntries[0]
+	}
+
+	processResult := pframes.processColumn({
+		primary: primaryArg,
+		columns: secondaryEntries,
+		primaryJoin: params.primaryJoin
+	}, bodyTpl, params.outputs, opts)
+
+	// For ResourceMap outputs, return the raw ResourceMap resource (PFrame export
+	// only makes sense for typed PColumn outputs).
+	if params.bodyMode == "resourceMap" || params.bodyMode == "ndjson" {
+		return {
+			result: processResult.outputData(params.outputs[0].name)
+		}
+	}
+
+	return {
+		result: pframes.exportFrame(processResult.allOutputsFrame())
+	}
+})
