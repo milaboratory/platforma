@@ -5,7 +5,11 @@ import type {
   AnchoredColumnCollection,
   ColumnMatch,
 } from "../../columns/column_collection_builder";
-import { deriveDistinctLabels, type Entry } from "../../labels/derive_distinct_labels";
+import {
+  deriveDistinctLabels,
+  type DeriveLabelsOptions,
+  type Entry,
+} from "../../labels/derive_distinct_labels";
 
 /**
  * Columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes.
@@ -25,6 +29,13 @@ export type FilterMatchOptions = {
   refsByObjectId: ReadonlyMap<PObjectId, PlRef>;
   /** Spec of the dataset the filters are subsets of. */
   datasetSpec: PObjectSpec;
+  /**
+   * Forwarded to `deriveDistinctLabels`. Any `formatters.native` caller
+   * sets is silently overridden — the function relies on a no-op native
+   * formatter to keep the algorithm from short-circuiting on filters'
+   * inherited `pl7.app/label`.
+   */
+  labelOptions?: DeriveLabelsOptions;
 };
 
 /**
@@ -38,7 +49,7 @@ export function filterMatchesToOptions(
 ): Option[] {
   if (matches.length === 0) return [];
 
-  const { refsByObjectId, datasetSpec } = options;
+  const { refsByObjectId, datasetSpec, labelOptions } = options;
 
   // One entry per match-variant (different paths to the same column are
   // exposed as separate Options). The `ref` field rides along on the
@@ -56,11 +67,13 @@ export function filterMatchesToOptions(
 
   // Appending the dataset forces a discriminating trace step into every
   // filter label (yielding e.g. "Bulk / Top 10"); the dataset's own label
-  // is dropped because we only zip `entries`. Native label is suppressed
-  // because filters inherit the dataset's `pl7.app/label` (often generic)
-  // and would otherwise satisfy uniqueness before any trace step.
+  // is dropped because we only zip `entries`. Native label is force-
+  // suppressed (the override sits after caller's spread) — filters
+  // inherit the dataset's `pl7.app/label` and would otherwise satisfy
+  // uniqueness before any trace step is consulted.
   const labels = deriveDistinctLabels([...entries, { spec: datasetSpec }], {
-    formatters: { native: () => undefined },
+    ...labelOptions,
+    formatters: { ...labelOptions?.formatters, native: () => undefined },
   });
 
   return entries.map(({ ref }, i) => ({ ref, label: labels[i] }));

@@ -31,7 +31,11 @@ export type BuildDatasetOptions = {
    * accept-all.
    */
   filter?: SpecPredicateOption;
-  /** Formatting options for filter labels. */
+  /**
+   * Formatting options forwarded to label derivation for both filter and
+   * enrichment rows. `formatters.native` on the filter path is overridden
+   * — see `FilterMatchOptions.labelOptions`.
+   */
   labelOptions?: DeriveLabelsOptions;
   /**
    * Enables enrichment discovery and filters hits attached to
@@ -99,6 +103,7 @@ export function buildDatasetOptions(
           : filterMatchesToOptions(filterMatches, {
               refsByObjectId: refMap,
               datasetSpec,
+              labelOptions: opts?.labelOptions,
             });
 
       let enrichments;

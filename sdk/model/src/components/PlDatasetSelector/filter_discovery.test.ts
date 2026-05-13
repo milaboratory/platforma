@@ -165,6 +165,24 @@ describe("filterMatchesToOptions", () => {
     const options = filterMatchesToOptions(matches, { refsByObjectId: refMap, datasetSpec });
     expect(options).toHaveLength(1);
     expect(options[0].label).toBe("Bulk / Top 10");
+
+    // Caller's `formatters.native` must NOT override the internal
+    // suppression — otherwise the algorithm short-circuits on the
+    // inherited "Selected Leads" label.
+    const withCustomNative = filterMatchesToOptions(matches, {
+      refsByObjectId: refMap,
+      datasetSpec,
+      labelOptions: { formatters: { native: (l) => `<<${l}>>` } },
+    });
+    expect(withCustomNative[0].label).toBe("Bulk / Top 10");
+
+    // Non-native label options (here `separator`) flow through.
+    const withSeparator = filterMatchesToOptions(matches, {
+      refsByObjectId: refMap,
+      datasetSpec,
+      labelOptions: { separator: " :: " },
+    });
+    expect(withSeparator[0].label).toBe("Bulk :: Top 10");
   });
 
   test("multiple filters with shared dataset trace disambiguate by filter-specific steps", () => {

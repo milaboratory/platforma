@@ -19,7 +19,7 @@ import type {
   LabeledEnrichmentRefs,
   PlRef,
 } from "@platforma-sdk/model";
-import { createDatasetSelection, createPrimaryRef } from "@platforma-sdk/model";
+import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
@@ -84,7 +84,12 @@ function makeSelection(
 const selectionValue = computed<Selection | undefined>(() => {
   const primary = model.value?.primary;
   if (primary === undefined) return undefined;
-  return makeSelection(primary.column, primary.filter, model.value?.enrichments);
+  // Read enrichments from the current option, not from `model.value`: the
+  // stored enrichments are a snapshot at selection time and won't match
+  // `dropdownOptions` after `props.options` recomputes (e.g. when the
+  // result pool gains or loses an enrichment column).
+  const option = props.options?.find((o) => plRefsEqual(o.primary.ref, primary.column, true));
+  return makeSelection(primary.column, primary.filter, option?.enrichments);
 });
 
 const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
