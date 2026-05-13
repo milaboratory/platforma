@@ -96,7 +96,10 @@ export function buildDatasetOptions(
       const filters =
         filterMatches.length === 0
           ? undefined
-          : filterMatchesToOptions(filterMatches, refMap, opts?.labelOptions);
+          : filterMatchesToOptions(filterMatches, {
+              refsByObjectId: refMap,
+              datasetSpec,
+            });
 
       let enrichments;
       if (enrichmentCollection && withEnrichments) {

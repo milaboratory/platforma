@@ -1,17 +1,11 @@
 <script lang="ts">
 /**
  * Select a dataset or one of its filters in a single dropdown, emitting a
- * {@link DatasetSelection}.
- *
- * Each `DatasetOption` contributes one row for its primary plus one row per
- * filter — filters are listed directly underneath their parent dataset and
- * carry the parent's primary label as the row description. Filter labels are
- * derived by `buildDatasetOptions` from each filter column's latest
- * `pl7.app/trace` step (the producing block's self-description).
- *
- * The emitted value bundles the user's pick (`primary`) with the auto-attached
- * `enrichments` payload from the matching `DatasetOption`. Enrichments are
- * opaque to the UI — block authors unbundle them inside their args resolver.
+ * {@link DatasetSelection}. Filter labels carry the dataset name as a
+ * prefix (e.g. "Bulk / Top 10"), so no separate subtitle is rendered.
+ * Enrichments from the matching `DatasetOption` are bundled into the
+ * emitted value opaquely — block authors unbundle them in their args
+ * resolver.
  */
 export default {
   name: "PlDatasetSelector",
@@ -104,7 +98,6 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
     for (const filter of o.filters ?? []) {
       out.push({
         label: filter.label,
-        description: o.primary.label,
         value: makeSelection(o.primary.ref, filter.ref, o.enrichments),
       });
     }
