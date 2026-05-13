@@ -38,40 +38,35 @@ export function filterMatchesToOptions(
 ): Option[] {
   if (matches.length === 0) return [];
 
-  // Refs and entries are built in parallel so the ref stays out of the
-  // labeling input. One Option per match-variant.
   const { refsByObjectId, datasetSpec } = options;
-  const refs: PlRef[] = [];
-  const entries: Entry[] = [];
-  for (const match of matches) {
+
+  // One entry per match-variant (different paths to the same column are
+  // exposed as separate Options). The `ref` field rides along on the
+  // Entry-shaped objects via structural typing; `deriveDistinctLabels`
+  // ignores extra fields.
+  const entries = matches.flatMap((match): (Entry & { ref: PlRef })[] => {
     const ref = refsByObjectId.get(match.column.id);
-    if (ref === undefined) continue;
-    for (const variant of match.variants) {
-      refs.push(ref);
-      entries.push({
-        spec: match.column.spec,
-        linkerPath: variant.path.map((p) => ({ spec: p.linker.spec })),
-      });
-    }
-  }
+    if (ref === undefined) return [];
+    return match.variants.map((variant) => ({
+      ref,
+      spec: match.column.spec,
+      linkerPath: variant.path.map((p) => ({ spec: p.linker.spec })),
+    }));
+  });
 
   // Appending the dataset forces a discriminating trace step into every
   // filter label (yielding e.g. "Bulk / Top 10"); the dataset's own label
-  // is dropped by indexing only `refs`. Native label is suppressed because
-  // filters inherit the dataset's `pl7.app/label` (often generic) and it
-  // would otherwise satisfy uniqueness before any trace step is consulted.
-  const allLabels = deriveDistinctLabels([...entries, { spec: datasetSpec }], {
+  // is dropped because we only zip `entries`. Native label is suppressed
+  // because filters inherit the dataset's `pl7.app/label` (often generic)
+  // and would otherwise satisfy uniqueness before any trace step.
+  const labels = deriveDistinctLabels([...entries, { spec: datasetSpec }], {
     formatters: { native: () => undefined },
   });
 
-  return refs.map((ref, i) => ({ ref, label: allLabels[i] }));
+  return entries.map(({ ref }, i) => ({ ref, label: labels[i] }));
 }
 
 /** Build the `refsByObjectId` map from `ctx.resultPool.getSpecs().entries`. */
 export function buildRefMap(entries: readonly { readonly ref: PlRef }[]): Map<PObjectId, PlRef> {
-  const map = new Map<PObjectId, PlRef>();
-  for (const entry of entries) {
-    map.set(canonicalize(entry.ref)! as PObjectId, entry.ref);
-  }
-  return map;
+  return new Map(entries.map((e) => [canonicalize(e.ref)! as PObjectId, e.ref]));
 }
