@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.76.7
+
+### Patch Changes
+
+- c1d7e8f: PlDatasetSelector - returned description for filter variants
+
 ## 1.76.5
 
 ### Patch Changes
