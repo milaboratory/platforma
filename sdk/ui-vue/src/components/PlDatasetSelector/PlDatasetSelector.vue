@@ -19,8 +19,13 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import type { DatasetOption, DatasetSelection, PlRef } from "@platforma-sdk/model";
-import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import type {
+  DatasetOption,
+  DatasetSelection,
+  LabeledEnrichmentRefs,
+  PlRef,
+} from "@platforma-sdk/model";
+import { createDatasetSelection, createPrimaryRef } from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
@@ -65,38 +70,47 @@ const props = withDefaults(
   },
 );
 
-type Selection = { primary: PlRef; filter?: PlRef };
+type Selection = { primary: PlRef; filter?: PlRef; enrichments?: LabeledEnrichmentRefs };
+
+// `deepEqual` (used by PlDropdown for matching) treats `{a, b: undefined}` and
+// `{a}` as different shapes, so the option list and the selection value must
+// agree on optional-key presence.
+function makeSelection(
+  primary: PlRef,
+  filter: PlRef | undefined,
+  enrichments: LabeledEnrichmentRefs | undefined,
+): Selection {
+  return {
+    primary,
+    ...(filter !== undefined && { filter }),
+    ...(enrichments !== undefined && enrichments.length > 0 && { enrichments }),
+  };
+}
 
 const selectionValue = computed<Selection | undefined>(() => {
   const primary = model.value?.primary;
   if (primary === undefined) return undefined;
-  return primary.filter === undefined
-    ? { primary: primary.column }
-    : { primary: primary.column, filter: primary.filter };
+  return makeSelection(primary.column, primary.filter, model.value?.enrichments);
 });
 
-// `deepEqual` (used by PlDropdown for matching) treats `{a, b: undefined}` and
-// `{a}` as different shapes, so the option list and the selection value must
-// agree on filter-key presence.
 const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
   if (props.options === undefined) return undefined;
   const out: ListOption<Selection>[] = [];
   for (const o of props.options) {
-    out.push({ label: o.primary.label, value: { primary: o.primary.ref } });
+    out.push({
+      label: o.primary.label,
+      value: makeSelection(o.primary.ref, undefined, o.enrichments),
+    });
     for (const filter of o.filters ?? []) {
       out.push({
         label: filter.label,
         description: o.primary.label,
-        value: { primary: o.primary.ref, filter: filter.ref },
+        value: makeSelection(o.primary.ref, filter.ref, o.enrichments),
       });
     }
   }
   return out;
 });
-
-function findOption(primary: PlRef): DatasetOption | undefined {
-  return props.options?.find((o) => plRefsEqual(o.primary.ref, primary, true));
-}
 
 function onChange(selection: Selection | undefined) {
   if (selection === undefined) {
@@ -105,7 +119,7 @@ function onChange(selection: Selection | undefined) {
   }
   model.value = createDatasetSelection(
     createPrimaryRef(selection.primary, selection.filter),
-    findOption(selection.primary)?.enrichments,
+    selection.enrichments,
   );
 }
 </script>
