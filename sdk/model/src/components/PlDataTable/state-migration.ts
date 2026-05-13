@@ -7,7 +7,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson } from "@milaboratories/pl-model-common";
+import { canonicalizeJson, parseJsonSafely } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
@@ -17,7 +17,13 @@ import type {
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
   PTableParamsV2,
+} from "./typesV6";
+import type {
+  PlDataTableGridStateV5,
+  PlDataTableV5ColIdJson,
+  PlDataTableV5ColIdWrapper,
 } from "./typesV5";
+import { isNil } from "es-toolkit";
 
 /**
  * PlDataTableV2 persisted state
@@ -111,6 +117,19 @@ export type PlDataTableStateV2 =
         sorting: PTableSorting[];
       };
     }
+  // v5 stored colIds as `{source, labeled}` wrappers; only the gridState shape differs.
+  | {
+      version: 5;
+      stateCache: {
+        sourceId: string;
+        gridState: PlDataTableGridStateV5;
+        sheetsState: PlDataTableSheetState[];
+        filtersState: null | PlDataTableFiltersWithMeta;
+        defaultFiltersState: null | PlDataTableFiltersWithMeta;
+        searchString?: string;
+      }[];
+      pTableParams: PTableParamsV2;
+    }
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -143,15 +162,71 @@ export function upgradePlDataTableStateV2(
     // Non upgradeable as column ids calculation algorithm has changed, resetting state to default
     state = createPlDataTableStateV2();
   }
-  // v4 -> v5: migrate per-column filters to tree-based format
+  // v4 -> v6: migrate per-column filters to tree-based format (skips v5).
+  // v4 gridState already used bare PTableColumnSpec colIds, so we jump
+  // straight to v6 without going through the v5 wrapper format.
   if (state.version === 4) {
-    state = migrateV4toV5(state);
+    state = migrateV4toV6(state);
+  }
+  // v5 -> v6: unwrap `{source, labeled}` colIds in gridState back to bare PTableColumnSpec.
+  if (state.version === 5) {
+    state = migrateV5toV6(state);
   }
   return state;
 }
 
-/** Migrate v4 state to v5: convert per-column filters to tree-based format */
-function migrateV4toV5(
+/** Migrate v5 to v6: unwrap `{source, labeled}` colIds in gridState. */
+function migrateV5toV6(
+  state: Extract<PlDataTableStateV2, { version: 5 }>,
+): PlDataTableStateV2Normalized {
+  // pTableParams reset: v5 stored DiscoveredPColumnId-based hiddenColIds with
+  // empty-array fields (e.g. `{column, path: [], columnQualifications: [], ...}`).
+  // v6 distills empty fields, so the same logical column serialises differently
+  // and lookups would silently miss every previously-hidden discovered column.
+  // gridState colIds are derived from PTableColumnSpec and unaffected.
+  return {
+    version: 6,
+    stateCache: state.stateCache.map((entry) => ({
+      ...entry,
+      gridState: unwrapV5GridState(entry.gridState),
+    })),
+    pTableParams: createDefaultPTableParams(),
+  };
+}
+
+/** Convert v5 wrapped colId JSON to bare PTableColumnSpec JSON, taking `.source`.
+ * gridState colIds may include the row-number sentinel (a JSON-stringified
+ * literal, not a wrapped spec) — those pass through unchanged. */
+function unwrapV5ColId(json: string): string {
+  const parsed: unknown = parseJsonSafely(json as CanonicalizedJson<unknown>);
+  return !isNil(parsed) && typeof parsed === "object" && "source" in parsed
+    ? canonicalizeJson((parsed as PlDataTableV5ColIdWrapper).source)
+    : json;
+}
+
+function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridStateCore {
+  const unwrapAs = (json: PlDataTableV5ColIdJson) =>
+    unwrapV5ColId(json) as CanonicalizedJson<PTableColumnSpec>;
+  return {
+    columnOrder: gridState.columnOrder
+      ? { orderedColIds: gridState.columnOrder.orderedColIds.map(unwrapAs) }
+      : undefined,
+    sort: gridState.sort
+      ? {
+          sortModel: gridState.sort.sortModel.map((s) => ({
+            colId: unwrapAs(s.colId),
+            sort: s.sort,
+          })),
+        }
+      : undefined,
+    columnVisibility: gridState.columnVisibility
+      ? { hiddenColIds: gridState.columnVisibility.hiddenColIds.map(unwrapAs) }
+      : undefined,
+  };
+}
+
+/** Migrate v4 state to v6: convert per-column filters to tree-based format (skips v5). */
+function migrateV4toV6(
   state: Extract<PlDataTableStateV2, { version: 4 }>,
 ): PlDataTableStateV2Normalized {
   let idCounter = 0;
@@ -183,7 +258,7 @@ function migrateV4toV5(
     : undefined;
 
   return {
-    version: 5,
+    version: 6,
     stateCache: migratedCache,
     pTableParams:
       currentCache && oldSourceId
@@ -283,7 +358,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
 
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 5,
+    version: 6,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };

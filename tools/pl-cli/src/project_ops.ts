@@ -235,7 +235,7 @@ export async function navigateToUserRoot(
 ): Promise<{ userRoot: SignedResourceId; projectListRid: SignedResourceId }> {
   let userRootRid: SignedResourceId | undefined;
 
-  userRootRid = await pl.getUserRoot({ login: username, doNotCreate: true });
+  userRootRid = await pl.getUserRoot({ login: username });
   if (userRootRid === undefined) {
     throw new Error(`User "${username}" not found on this server (no root resource).`);
   }

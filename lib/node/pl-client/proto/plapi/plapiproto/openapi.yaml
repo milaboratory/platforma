@@ -792,7 +792,7 @@ components:
       properties:
         login:
           type: string
-        doNotCreate:
+        createIfNotExists:
           type: boolean
     AuthAPI_GetUserRoot_Response:
       type: object

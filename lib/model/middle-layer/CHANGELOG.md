@@ -1,5 +1,34 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.19.4
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+
+## 1.19.3
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+
+## 1.19.2
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+  - @milaboratories/pl-model-common@1.41.1
+
+## 1.19.1
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @milaboratories/pl-model-common@1.41.0
+
 ## 1.19.0
 
 ### Minor Changes

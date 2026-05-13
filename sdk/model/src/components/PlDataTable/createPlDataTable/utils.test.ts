@@ -114,7 +114,7 @@ describe("deriveAllLabels", () => {
       makeLabelableColumn(
         "c1",
         { name: "shared", annotations: { [Annotation.Label]: "Cluster size" } },
-        [{ linker: { id: "lk" as PObjectId, spec: linkerSpec } as never, qualifications: [] }],
+        [{ linker: { id: "lk" as PObjectId, spec: linkerSpec } as never }],
       ),
       makeLabelableColumn("c2", {
         name: "shared",

@@ -1,5 +1,68 @@
 # @milaboratories/pl-drivers
 
+## 1.14.7
+
+### Patch Changes
+
+- Updated dependencies [b1ea44e]
+  - @milaboratories/pl-client@3.5.0
+  - @milaboratories/pl-tree@1.11.0
+
+## 1.14.6
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pl-client@3.4.2
+  - @milaboratories/pl-tree@1.10.6
+
+## 1.14.5
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-tree@1.10.5
+
+## 1.14.4
+
+### Patch Changes
+
+- Updated dependencies [e65c3b9]
+  - @milaboratories/pl-client@3.4.0
+  - @milaboratories/pl-tree@1.10.4
+
+## 1.14.3
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @milaboratories/pl-model-common@1.41.2
+  - @milaboratories/pl-client@3.3.3
+  - @milaboratories/pl-tree@1.10.3
+
+## 1.14.2
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+  - @milaboratories/pl-model-common@1.41.1
+  - @milaboratories/ts-helpers@1.8.2
+  - @milaboratories/pl-client@3.3.2
+  - @milaboratories/computable@2.9.4
+  - @milaboratories/pl-tree@1.10.2
+
+## 1.14.1
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @milaboratories/pl-model-common@1.41.0
+  - @milaboratories/pl-client@3.3.1
+  - @milaboratories/pl-tree@1.10.1
+
 ## 1.14.0
 
 ### Minor Changes

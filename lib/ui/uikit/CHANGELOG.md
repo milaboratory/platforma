@@ -1,5 +1,67 @@
 # @milaboratories/uikit
 
+## 2.14.9
+
+### Patch Changes
+
+- Updated dependencies [b4f9e33]
+  - @platforma-sdk/model@1.76.5
+
+## 2.14.8
+
+### Patch Changes
+
+- @platforma-sdk/model@1.76.4
+
+## 2.14.7
+
+### Patch Changes
+
+- Updated dependencies [b631ce0]
+  - @platforma-sdk/model@1.75.10
+
+## 2.14.6
+
+### Patch Changes
+
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+
+## 2.14.5
+
+### Patch Changes
+
+- 5a70c0f: Fix `@cell-button-clicked` not firing on PlAgDataTableV2 when the configured axis has a label column. Since the predefined-label change in 1.75.0, labelled axes are replaced in the grid by their label column, so the cell-button cellRendererSelector — which only matched `type:"axis"` ColDefs — never installed. Now also resolve the axis on single-axis label columns whose labeled axis equals `showCellButtonForAxisId`.
+
+## 2.14.4
+
+### Patch Changes
+
+- Updated dependencies [63dc54d]
+  - @platforma-sdk/model@1.75.5
+
+## 2.14.3
+
+### Patch Changes
+
+- Updated dependencies [641c845]
+  - @platforma-sdk/model@1.75.2
+
+## 2.14.2
+
+### Patch Changes
+
+- Updated dependencies [6bac267]
+  - @milaboratories/helpers@1.14.2
+  - @platforma-sdk/model@1.75.1
+
+## 2.14.1
+
+### Patch Changes
+
+- Updated dependencies [cb9e0ba]
+  - @platforma-sdk/model@1.75.0
+
 ## 2.14.0
 
 ### Minor Changes

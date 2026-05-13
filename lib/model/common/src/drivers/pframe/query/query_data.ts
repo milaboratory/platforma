@@ -1,22 +1,25 @@
 import type { PObjectId } from "../../../pool";
 import type {
   ExprAxisRef,
+  ExprCast,
   ExprColumnRef,
-  ExprNumericBinary,
-  ExprNumericComparison,
+  ExprConditional,
   ExprConstant,
+  ExprFillNull,
   ExprIsIn,
   ExprIsNull,
-  ExprIfNull,
   ExprLogicalUnary,
   ExprLogicalVariadic,
+  ExprNumericBinary,
+  ExprNumericComparison,
+  ExprNumericUnary,
+  ExprRanking,
   ExprStringContains,
   ExprStringContainsFuzzy,
   ExprStringEquals,
   ExprStringRegex,
-  ExprNumericUnary,
+  InferBooleanExpressionUnion,
   QueryColumn,
-  QuerySparseToDenseColumn,
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
@@ -24,9 +27,10 @@ import type {
   QueryOuterJoin,
   QuerySliceAxes,
   QuerySort,
+  QuerySparseToDenseColumn,
   QuerySymmetricJoin,
+  QueryTransformColumns,
   TypeSpec,
-  InferBooleanExpressionUnion,
 } from "./query_common";
 
 /**
@@ -64,7 +68,11 @@ export type DataQueryColumn = QueryColumn;
 /** @see QueryInlineColumn */
 export type DataQueryInlineColumn = QueryInlineColumn<ColumnIdAndTypeSpec>;
 /** @see QuerySparseToDenseColumn */
-export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<PObjectId, ColumnIdAndTypeSpec>;
+export type DataQuerySparseToDenseColumn = QuerySparseToDenseColumn<
+  PObjectId,
+  number,
+  ColumnIdAndTypeSpec
+>;
 /** @see QuerySymmetricJoin */
 export type DataQuerySymmetricJoin = QuerySymmetricJoin<DataQueryJoinEntry>;
 /** @see QueryOuterJoin */
@@ -93,6 +101,12 @@ export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, number>;
 export type DataQuerySort = QuerySort<DataQuery, DataQueryExpression>;
 /** @see QueryFilter */
 export type DataQueryFilter = QueryFilter<DataQuery, DataQueryBooleanExpression>;
+/** @see QueryTransformColumns */
+export type DataQueryTransformColumns = QueryTransformColumns<
+  DataQuery,
+  DataQueryExpression,
+  ColumnIdAndTypeSpec
+>;
 
 /**
  * Union of all data layer query types.
@@ -102,8 +116,8 @@ export type DataQueryFilter = QueryFilter<DataQuery, DataQueryBooleanExpression>
  *
  * Includes:
  * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
- * - Join operations: innerJoin, fullJoin, outerJoin
- * - Transformations: sliceAxes, sort, filter
+ * - Join operations: innerJoin, fullJoin, outerJoin, linkerJoin
+ * - Transformations: sliceAxes, sort, filter, transformColumns
  */
 export type DataQuery =
   | DataQueryColumn
@@ -114,7 +128,8 @@ export type DataQuery =
   | DataQueryLinkerJoin
   | DataQuerySliceAxes
   | DataQuerySort
-  | DataQueryFilter;
+  | DataQueryFilter
+  | DataQueryTransformColumns;
 
 /** @see ExprAxisRef */
 export type DataExprAxisRef = ExprAxisRef<number>;
@@ -133,10 +148,16 @@ export type DataQueryExpression =
   | ExprStringRegex<DataQueryExpression>
   | ExprStringContainsFuzzy<DataQueryExpression>
   | ExprIsNull<DataQueryExpression>
-  | ExprIfNull<DataQueryExpression>
+  | ExprFillNull<DataQueryExpression>
   | ExprLogicalUnary<DataQueryExpression>
   | ExprLogicalVariadic<DataQueryExpression>
   | ExprIsIn<DataQueryExpression, string>
-  | ExprIsIn<DataQueryExpression, number>;
+  | ExprIsIn<DataQueryExpression, number>
+  // | ExprIsInPolygon<DataQueryExpression>  -- runtime not wired (see query_common.ts)
+  | ExprCast<DataQueryExpression>
+  | ExprConditional<DataQueryExpression>
+  // | ExprAggregation<DataQueryExpression, number, number>  -- runtime not wired
+  | ExprRanking<DataQueryExpression, number, number>;
+// | ExprCumulative<DataQueryExpression, number, number>  -- runtime not wired
 
 export type DataQueryBooleanExpression = InferBooleanExpressionUnion<DataQueryExpression>;

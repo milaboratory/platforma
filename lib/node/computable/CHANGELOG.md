@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.9.4
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.2
+
 ## 2.9.3
 
 ### Patch Changes
