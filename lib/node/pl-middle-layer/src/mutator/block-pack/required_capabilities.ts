@@ -26,14 +26,15 @@ function templateHasWasm(tpl: unknown): boolean {
  * workflow off-thread via the worker, and the parsed result feeds straight
  * into this function — no second gunzip+JSON.parse on the main thread.
  *
- * Returns `["wasm"]` if the v3 tree carries any wasm sections, else
+ * Returns `["wasm:v1"]` if the v3 tree carries any wasm sections, else
  * `undefined`. v2 templates have no wasm field and always return
- * `undefined`. */
+ * `undefined`. The token follows the backend's `<feature>:<version>`
+ * capability format (see `server_capabilities.go`). */
 export function requiredCapabilitiesFromTemplate(
   parsed: TemplateData | CompiledTemplateV3,
 ): string[] | undefined {
   if (parsed.type !== "pl.tengo-template.v3") return undefined;
-  return templateHasWasm(parsed.template) ? ["wasm"] : undefined;
+  return templateHasWasm(parsed.template) ? ["wasm:v1"] : undefined;
 }
 
 /** Same derivation, starting from raw `main.plj.gz` bytes.

@@ -11,9 +11,9 @@ describe("BlockPackMeta requiredCapabilities", () => {
   test("accepts and round-trips the field", () => {
     const parsed = BlockPackMetaDescriptionRaw.parse({
       ...minimal,
-      requiredCapabilities: ["wasm"],
+      requiredCapabilities: ["wasm:v1"],
     });
-    expect(parsed.requiredCapabilities).toEqual(["wasm"]);
+    expect(parsed.requiredCapabilities).toEqual(["wasm:v1"]);
   });
 
   test("accepts arbitrary token strings (loose, not enum)", () => {
@@ -35,10 +35,10 @@ describe("BlockPackMeta requiredCapabilities", () => {
     // (mark-stable, refresh-registry, restore-overview-from-snapshot).
     const parsed = BlockPackMetaDescriptionRaw.parse({
       ...minimal,
-      requiredCapabilities: ["wasm"],
+      requiredCapabilities: ["wasm:v1"],
       futureFieldNoOldDesktopKnowsAbout: { x: 1 },
     });
     expect(parsed).toHaveProperty("futureFieldNoOldDesktopKnowsAbout", { x: 1 });
-    expect(parsed.requiredCapabilities).toEqual(["wasm"]);
+    expect(parsed.requiredCapabilities).toEqual(["wasm:v1"]);
   });
 });
