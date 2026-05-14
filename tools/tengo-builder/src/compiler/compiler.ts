@@ -260,7 +260,7 @@ export class TengoTemplateCompiler {
 
   getWasm(name: TypedArtifactName): ArtifactSource | undefined {
     if (name.type !== "wasm")
-      throw new Error(`illegal artifact type: got ${name.type} instead of 'wasm`);
+      throw new Error(`illegal artifact type: got ${name.type} instead of 'wasm'`);
 
     return this.wasm.get(this.compileMode, name);
   }
