@@ -3,6 +3,7 @@ import type {
   ManifestFileInfo,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
+import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 import { templateHasWasm } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import { BlockPackDescriptionConsolidateToFolder } from "./model";
@@ -35,8 +36,8 @@ async function workflowUsesWasm(
     return false;
   }
 
-  const pack = parsed as { type?: string; template?: unknown };
-  if (pack.type !== "pl.tengo-template.v3") return false;
+  const pack = parsed as Partial<CompiledTemplateV3>;
+  if (pack.type !== "pl.tengo-template.v3" || !pack.template) return false;
   return templateHasWasm(pack.template);
 }
 

@@ -81,15 +81,10 @@ export interface CompiledTemplateV3 {
  * `block-tools` pack-time detection and by `pl-middle-layer` install-time
  * gating — keeping the two in sync avoids a class of bug where a block
  * embedding wasm could slip past the install gate (or vice versa) after
- * a template-format change applied to only one copy.
- *
- * Accepts `unknown` so callers can pass parsed JSON without a prior
- * type assertion. */
-export function templateHasWasm(tpl: unknown): boolean {
-  if (tpl === null || typeof tpl !== "object") return false;
-  const node = tpl as { wasm?: Record<string, unknown>; templates?: Record<string, unknown> };
-  if (node.wasm && Object.keys(node.wasm).length > 0) return true;
-  for (const sub of Object.values(node.templates ?? {})) {
+ * a template-format change applied to only one copy. */
+export function templateHasWasm(tpl: TemplateDataV3): boolean {
+  if (tpl.wasm && Object.keys(tpl.wasm).length > 0) return true;
+  for (const sub of Object.values(tpl.templates)) {
     if (templateHasWasm(sub)) return true;
   }
   return false;
