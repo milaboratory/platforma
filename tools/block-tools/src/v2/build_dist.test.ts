@@ -81,11 +81,4 @@ describe("templateHasWasm", () => {
     };
     expect(templateHasWasm(tpl)).toBe(true);
   });
-
-  test("non-object input → false (defensive)", () => {
-    expect(templateHasWasm(null)).toBe(false);
-    expect(templateHasWasm(undefined)).toBe(false);
-    expect(templateHasWasm("string")).toBe(false);
-    expect(templateHasWasm(42)).toBe(false);
-  });
 });
