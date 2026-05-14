@@ -808,10 +808,13 @@ export interface components {
       os: string;
       arch: string;
       /**
-       * @description Runtime capabilities advertised by this backend.
-       *      Block manifests declare what they need via meta.requiredCapabilities;
-       *      Desktop matches against this list at install time.
-       *      Tokens are loose strings; current set: "wasm".
+       * @description Opt-in capabilities advertised by this server instance.
+       *      Tokens follow the "<feature>:<version>" format
+       *      (e.g. "treeFilter:v1", "wasm:v1"); current set:
+       *      see pl/platform/api/plapiserver/server_capabilities.go.
+       *      Block manifests declare what they need via
+       *      meta.requiredCapabilities; Desktop matches against this list
+       *      at install time.
        */
       capabilities: string[];
     };

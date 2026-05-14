@@ -78,7 +78,10 @@ export async function buildBlockPackDist(
   if (await workflowUsesWasm(descriptionRelative, dst)) {
     descriptionRelative.meta = {
       ...descriptionRelative.meta,
-      requiredCapabilities: ["wasm"],
+      // Capability tokens follow the backend's "<feature>:<version>" format
+      // (see core/pl/platform/api/plapiserver/server_capabilities.go). Bump
+      // to wasm:v2 if the wasm wire contract becomes backward-incompatible.
+      requiredCapabilities: ["wasm:v1"],
     };
   }
 

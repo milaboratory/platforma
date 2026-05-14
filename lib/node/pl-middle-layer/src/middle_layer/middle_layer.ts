@@ -107,10 +107,10 @@ export class MiddleLayer {
   }
 
   /**
-   * Runtime capabilities advertised by the connected backend (e.g. "wasm").
-   * Empty list if the backend predates the capability mechanism — that's
-   * the desired fail-closed behaviour for blocks declaring any
-   * `requiredCapabilities`.
+   * Runtime capabilities advertised by the connected backend (tokens of
+   * the form `<feature>:<version>`, e.g. "wasm:v1"). Empty list if the
+   * backend predates the capability mechanism — that's the desired
+   * fail-closed behaviour for blocks declaring any `requiredCapabilities`.
    */
   public get serverCapabilities(): string[] {
     return this.pl.serverInfo.capabilities ?? [];

@@ -57,14 +57,16 @@ export function BlockPackMeta<
        */
       supportedPlatforms: z.array(BlockPlatform).optional(),
       /**
-       * Runtime capabilities the block needs from the backend (e.g. "wasm").
-       * Desktop refuses to install if any listed token is missing from the
-       * backend's `serverInfo.capabilities`.
+       * Runtime capabilities the block needs from the backend (e.g.
+       * "wasm:v1"). Desktop refuses to install if any listed token is
+       * missing from the backend's `serverInfo.capabilities`.
        *
-       * Tokens are loose strings (not an enum) so future capabilities don't
-       * break Desktops that ship before each token is added — the same
-       * forward-compat property `BlockPackMeta` itself enjoys at the field
-       * level, applied recursively at the token level.
+       * Tokens follow the backend's `<feature>:<version>` format defined in
+       * `core/pl/platform/api/plapiserver/server_capabilities.go`. The
+       * schema itself accepts loose strings (not an enum) so future
+       * capabilities don't break Desktops that ship before each token is
+       * added — the same forward-compat property `BlockPackMeta` itself
+       * enjoys at the field level, applied recursively at the token level.
        */
       requiredCapabilities: z.array(z.string()).optional(),
     })
