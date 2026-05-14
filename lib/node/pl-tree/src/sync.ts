@@ -7,7 +7,7 @@ import type {
   SignedResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
-import { isNullSignedResourceId } from "@milaboratories/pl-client";
+import { CapabilityTreeFilter, isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
@@ -34,8 +34,6 @@ export interface TreeLoadingRequest {
   /** ResourceTree traversal stop rules passed to the backend when supported. */
   readonly traverseStopRules?: Filter;
 }
-
-const CapabilityTreeFilter = "treeFilter:v1";
 
 /** Controls which tree-loading path is used.
  * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v1`,

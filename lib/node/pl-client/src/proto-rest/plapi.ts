@@ -29,7 +29,33 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /**
+     * @description Deprecated: Use Login for session creation and role transitions,
+     *      and RefreshToken for token renewal. Backends implementing this API always return
+     *      codes.Unimplemented. Kept here so clients can still call old backends.
+     */
     post: operations["Platform_GetJWTToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description Login authenticates with the given credentials and returns a new Platforma JWT.
+     *      Every Login call creates a new session. Use RefreshToken to renew an existing one.
+     *      This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_Login"];
     delete?: never;
     options?: never;
     head?: never;
@@ -68,6 +94,28 @@ export interface paths {
      *      so the workflow can access them under its own isolated session.
      */
     post: operations["Platform_MintSignature"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/refresh": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description RefreshToken accepts a valid Platforma JWT and re-issues it with the same
+     *      session ID and role. Only the token expiration may be changed.
+     *      Workflow-scoped tokens cannot be refreshed; call Login instead.
+     *      This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_RefreshToken"];
     delete?: never;
     options?: never;
     head?: never;
@@ -546,15 +594,49 @@ export interface components {
     AuthAPI_Grant_Permissions: {
       writable: boolean;
     };
-    AuthAPI_ListMethods_MethodInfo: {
-      type: string;
-      name: string;
-      info: {
+    AuthAPI_ListMethods_BasicAuthMethod: {
+      metadata: {
         [key: string]: string;
       };
     };
+    AuthAPI_ListMethods_MethodInfo: {
+      name: string;
+      basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
+      token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
+    };
     AuthAPI_ListMethods_Response: {
       methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
+    };
+    AuthAPI_ListMethods_TokenAuthMethod: {
+      metadata: {
+        [key: string]: string;
+      };
+    };
+    AuthAPI_Login_BasicCredentials: {
+      login: string;
+      password: string;
+    };
+    AuthAPI_Login_Request: {
+      basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
+      token: components["schemas"]["AuthAPI_Login_TokenCredentials"];
+      expiration: string;
+      /** Format: enum */
+      requestedRole: number;
+    };
+    AuthAPI_Login_Response: {
+      token: string;
+      /** Format: bytes */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
+    };
+    /**
+     * @description TokenCredentials accepts any opaque bearer-style string: a controller
+     *      pre-shared secret, an existing Platforma JWT, or a future OIDC id-token.
+     */
+    AuthAPI_Login_TokenCredentials: {
+      /** Format: bytes */
+      token: string;
     };
     AuthAPI_MintSignature_Request: {
       resourceId: string;
@@ -566,6 +648,17 @@ export interface components {
       resourceId: string;
       /** Format: bytes */
       resourceSignature: string;
+    };
+    AuthAPI_RefreshToken_Request: {
+      token: string;
+      expiration: string;
+    };
+    AuthAPI_RefreshToken_Response: {
+      token: string;
+      /** Format: bytes */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
     };
     AuthAPI_RevokeAccess_Request: {
       resourceId: string;
@@ -807,6 +900,19 @@ export interface components {
       platform: string;
       os: string;
       arch: string;
+      /**
+       * @description Opt-in capabilities advertised by this server instance, used by
+       *      clients to pick between fast and fallback code paths without waiting
+       *      for a failed RPC.
+       *
+       *      Each entry is an opaque token "<feature>:<version>" (e.g.
+       *      "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+       *      The field is unset on servers predating this mechanism, which the
+       *      client treats as "no optional capabilities advertised".
+       *
+       *      All list see pl/platform/api/plapiserver/server_capabilities.go
+       */
+      capabilities: string[];
     };
     MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];
@@ -1037,6 +1143,39 @@ export interface operations {
       };
     };
   };
+  Platform_Login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_Login_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_Login_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
   Platform_AuthMethods: {
     parameters: {
       query?: never;
@@ -1086,6 +1225,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AuthAPI_MintSignature_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_RefreshToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_RefreshToken_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_RefreshToken_Response"];
         };
       };
       /** @description Default error response */

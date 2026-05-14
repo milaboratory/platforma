@@ -51,7 +51,7 @@ function alternativeRootFieldName(alternativeRoot: string): string {
 // "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
 // Returns false for unparseable versions (safer to assume an old backend).
 function isVersionAtLeast(version: string, target: [number, number, number]): boolean {
-  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
+  const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version);
   if (!match) return false;
   const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
   for (let i = 0; i < 3; i++) {
@@ -89,8 +89,6 @@ export class PlClient {
 
   /** Stores client root (this abstraction is intended for future implementation of the security model) */
   private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
-
-  private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
 
   // method setDefaultColor is safe to use in transactions
   private _supportsSetDefaultColor: boolean = false;
@@ -241,7 +239,12 @@ export class PlClient {
 
   public get serverInfo(): MaintenanceAPI_Ping_Response {
     this.checkInitialized();
-    return this._serverInfo!;
+    return this._ll!.serverInfo;
+  }
+
+  public hasCapability(name: string): boolean {
+    this.checkInitialized();
+    return this._ll!.hasCapability(name);
   }
 
   /** User resources index for discovering data libraries and other shared resources. */
@@ -269,13 +272,14 @@ export class PlClient {
     this._ll = await this.buildLLPlClient(false);
     const wireProtocol = this._ll.wireProtocol;
 
-    this._serverInfo = await this.ping();
-    if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
+    // LLPlClient.build() guarantees a successful ping; read the cached response instead of pinging again.
+    const info = this._ll.serverInfo;
+    if (info.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
       await this._ll.close();
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    this.detectBackendCompatibility(this._serverInfo);
+    this.detectBackendCompatibility(info);
 
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
 
