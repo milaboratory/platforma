@@ -29,13 +29,16 @@ describe("BlockPackMeta requiredCapabilities", () => {
     expect(parsed.requiredCapabilities).toBeUndefined();
   });
 
-  test("forward-compat: unknown sibling fields strip silently", () => {
+  test("forward-compat: unknown sibling fields pass through (not stripped)", () => {
+    // Schema uses `.passthrough()` so older block-tools versions don't drop
+    // fields they don't know about during registry-mutating round-trips
+    // (mark-stable, refresh-registry, restore-overview-from-snapshot).
     const parsed = BlockPackMetaDescriptionRaw.parse({
       ...minimal,
       requiredCapabilities: ["wasm"],
       futureFieldNoOldDesktopKnowsAbout: { x: 1 },
     });
-    expect(parsed).not.toHaveProperty("futureFieldNoOldDesktopKnowsAbout");
+    expect(parsed).toHaveProperty("futureFieldNoOldDesktopKnowsAbout", { x: 1 });
     expect(parsed.requiredCapabilities).toEqual(["wasm"]);
   });
 });
