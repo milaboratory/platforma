@@ -24,6 +24,9 @@ catalogs:
     '@milaboratories/pframes-rs-node':
       specifier: 1.1.35
       version: 1.1.35
+    '@milaboratories/pframes-rs-wasip2':
+      specifier: 1.1.35
+      version: 1.1.35
     '@milaboratories/pframes-rs-wasm':
       specifier: 1.1.35
       version: 1.1.35
@@ -3086,8 +3089,8 @@ importers:
   sdk/workflow-tengo:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
-        specifier: 1.1.34
-        version: 1.1.34
+        specifier: 'catalog:'
+        version: 1.1.35
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -4991,9 +4994,6 @@ packages:
   '@milaboratories/pframes-rs-serv@1.1.35':
     resolution: {integrity: sha512-xr0zztZZX9V7i6iRpbqy12TiFRP3q73UDkjX6sn5KuP7kdmQLExVzhud7Mgd1G293vVAkD2ZBmMRiMoOu2bsMQ==}
     hasBin: true
-
-  '@milaboratories/pframes-rs-wasip2@1.1.34':
-    resolution: {integrity: sha512-OgmExo52JzdFdY+jJ4+75zwBBfgO8QLoosY/RN4r8cvwxZHo0PJ8Pcmw+N54/eoDCocDkuUFDmRnlCGcRzB7TQ==}
 
   '@milaboratories/pframes-rs-wasip2@1.1.35':
     resolution: {integrity: sha512-kcR9YLWAbKYSpksPOoJWkcrkSiUUAEKj/Wuyc9aFsd2bNbWcIb7mLGptFOuvhLn07bZHn0oNcVgupEqd/6Ftbw==}
@@ -11234,8 +11234,6 @@ snapshots:
       '@milaboratories/pl-model-middle-layer': 1.18.5
       commander: 14.0.3
       selfsigned: 5.5.0
-
-  '@milaboratories/pframes-rs-wasip2@1.1.34': {}
 
   '@milaboratories/pframes-rs-wasip2@1.1.35': {}
 
