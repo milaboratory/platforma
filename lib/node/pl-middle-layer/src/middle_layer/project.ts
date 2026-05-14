@@ -1002,8 +1002,9 @@ function throwIfMissingServerCapabilities(
 ): void {
   if (!requiredCapabilities || requiredCapabilities.length === 0) return;
   const advertised = (pl.serverInfo.capabilities ?? []) as readonly string[];
-  const missing = requiredCapabilities.filter((c) => !advertised.includes(c));
-  if (missing.length === 0) return;
+  const filterFn = (c: string) => !advertised.includes(c);
+  if (!requiredCapabilities.some(filterFn)) return;
+  const missing = requiredCapabilities.filter(filterFn);
   throw new Error(
     `Block cannot be added: connected backend does not advertise capabilities ` +
       `${JSON.stringify(missing)}. ` +
