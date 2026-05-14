@@ -354,6 +354,12 @@ export class MiddleLayer {
     // overriding debug options from environment variables
     ops.defaultTreeOptions.logStat = getDebugFlags().logTreeStats;
     ops.debugOps.dumpInitialTreeState = getDebugFlags().dumpInitialTreeState;
+    // apply MI_TREE_TRAVERSAL only when the embedder hasn't set an explicit mode
+    if (
+      ops.defaultTreeOptions.traversalMode === undefined &&
+      getDebugFlags().treeTraversalMode !== undefined
+    )
+      ops.defaultTreeOptions.traversalMode = getDebugFlags().treeTraversalMode;
 
     const projects = await pl.withWriteTx("MLInitialization", async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);

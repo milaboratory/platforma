@@ -1,5 +1,35 @@
 # @milaboratories/pl-middle-layer
 
+## 1.60.1
+
+### Patch Changes
+
+- Updated dependencies [33b2425]
+  - @milaboratories/pl-deployments@2.17.18
+
+## 1.60.0
+
+### Minor Changes
+
+- b1ea44e: optimize resource tree updates
+
+### Patch Changes
+
+- Updated dependencies [b1ea44e]
+  - @milaboratories/pl-client@3.5.0
+  - @milaboratories/pl-tree@1.11.0
+  - @milaboratories/pl-model-backend@1.2.29
+  - @milaboratories/pl-drivers@1.14.7
+  - @milaboratories/pl-errors@1.4.7
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.15
+
+### Patch Changes
+
+- Updated dependencies [b4f9e33]
+  - @platforma-sdk/model@1.76.5
+
 ## 1.59.14
 
 ### Patch Changes

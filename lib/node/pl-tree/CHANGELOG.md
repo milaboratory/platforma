@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.11.0
+
+### Minor Changes
+
+- b1ea44e: optimize resource tree updates
+
+### Patch Changes
+
+- Updated dependencies [b1ea44e]
+  - @milaboratories/pl-client@3.5.0
+  - @milaboratories/pl-errors@1.4.7
+
 ## 1.10.6
 
 ### Patch Changes
