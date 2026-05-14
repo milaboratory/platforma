@@ -3,30 +3,13 @@ import type {
   ManifestFileInfo,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
+import { templateHasWasm } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import { BlockPackDescriptionConsolidateToFolder } from "./model";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
 import { calculateSha256 } from "../util";
-
-/**
- * templateHasWasm walks a parsed v3 template tree (or any nested fragment)
- * and returns true if any node carries a non-empty `wasm` map. Recursion
- * descends into `templates` so transitively-imported sub-templates with
- * wasm dependencies are detected too.
- *
- * Exposed for unit tests; not part of the public block-tools API.
- */
-export function templateHasWasm(tpl: unknown): boolean {
-  if (tpl === null || typeof tpl !== "object") return false;
-  const node = tpl as { wasm?: Record<string, unknown>; templates?: Record<string, unknown> };
-  if (node.wasm && Object.keys(node.wasm).length > 0) return true;
-  for (const sub of Object.values(node.templates ?? {})) {
-    if (templateHasWasm(sub)) return true;
-  }
-  return false;
-}
 
 /**
  * workflowUsesWasm reads the workflow's compiled `main.plj.gz` (already

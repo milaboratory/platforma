@@ -72,3 +72,25 @@ export interface CompiledTemplateV3 {
 
   template: TemplateDataV3;
 }
+
+/** Returns true if a v3 template tree (or any nested fragment) carries
+ * a non-empty `wasm` map. Recursion descends into `templates`, so wasm
+ * deps in transitively-imported sub-templates are detected too.
+ *
+ * Single source of truth for "does this template require wasm?". Used by
+ * `block-tools` pack-time detection and by `pl-middle-layer` install-time
+ * gating — keeping the two in sync avoids a class of bug where a block
+ * embedding wasm could slip past the install gate (or vice versa) after
+ * a template-format change applied to only one copy.
+ *
+ * Accepts `unknown` so callers can pass parsed JSON without a prior
+ * type assertion. */
+export function templateHasWasm(tpl: unknown): boolean {
+  if (tpl === null || typeof tpl !== "object") return false;
+  const node = tpl as { wasm?: Record<string, unknown>; templates?: Record<string, unknown> };
+  if (node.wasm && Object.keys(node.wasm).length > 0) return true;
+  for (const sub of Object.values(node.templates ?? {})) {
+    if (templateHasWasm(sub)) return true;
+  }
+  return false;
+}

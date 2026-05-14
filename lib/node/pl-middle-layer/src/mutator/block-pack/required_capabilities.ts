@@ -1,24 +1,11 @@
 import { gunzipSync } from "node:zlib";
 import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
+import { templateHasWasm } from "@milaboratories/pl-model-backend";
 
-/** Walks a parsed v3 template tree and returns true if any node carries a
- * non-empty `wasm` map. Mirrors the build-time check in block-tools' pack
- * (templateHasWasm in tools/block-tools/src/v2/build_dist.ts) so install
- * time, listing time, and pack time stay in sync.
- * Why do we need this code duplication?
- * Only for development cycle. Block developer won't call do-pack on every
- * workflow change, so manifest.json won't be populated with 'wasm'
- * capability.
- * */
-function templateHasWasm(tpl: unknown): boolean {
-  if (tpl === null || typeof tpl !== "object") return false;
-  const node = tpl as { wasm?: Record<string, unknown>; templates?: Record<string, unknown> };
-  if (node.wasm && Object.keys(node.wasm).length > 0) return true;
-  for (const sub of Object.values(node.templates ?? {})) {
-    if (templateHasWasm(sub)) return true;
-  }
-  return false;
-}
+// `templateHasWasm` is the single source of truth for "does this template
+// require wasm?", shared with block-tools' pack-time detection so that
+// pack/install/listing-time derivations cannot silently diverge after a
+// template-format change.
 
 /** Derives required capabilities from an already-parsed template tree.
  *

@@ -3514,6 +3514,9 @@ importers:
       '@milaboratories/pl-http':
         specifier: workspace:*
         version: link:../../lib/node/pl-http
+      '@milaboratories/pl-model-backend':
+        specifier: workspace:*
+        version: link:../../lib/model/backend
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common

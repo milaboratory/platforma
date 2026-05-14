@@ -2,7 +2,8 @@ import { randomUUID } from "crypto";
 import { describe, expect, test } from "vitest";
 import { loadPackDescription } from "./source_package";
 import path from "path";
-import { buildBlockPackDist, templateHasWasm } from "./build_dist";
+import { templateHasWasm } from "@milaboratories/pl-model-backend";
+import { buildBlockPackDist } from "./build_dist";
 
 test.skip("create dist test", async () => {
   const description = await loadPackDescription(
