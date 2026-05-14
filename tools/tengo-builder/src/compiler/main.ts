@@ -108,15 +108,11 @@ function resolvePackageJsonPackage(root: string, depPackageName: string): string
 }
 
 function findInNodeModules(root: string, depPackageName: string): string | undefined {
-  let dir = root;
-  for (let i = 0; i < 12; i++) {
-    const candidate = path.join(dir, "node_modules", depPackageName, "package.json");
-    if (pathType(candidate) === "file") return candidate;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return undefined;
+  const candidate = path.join(root, "node_modules", depPackageName, "package.json");
+  if (pathType(candidate) === "file") return candidate;
+  const parent = path.dirname(root);
+  if (parent === root) return undefined;
+  return findInNodeModules(parent, depPackageName);
 }
 
 export function resolvePackageJsonRoot(root: string): string {
