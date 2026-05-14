@@ -48,6 +48,19 @@ export interface PlCallOps {
   abortSignal?: AbortSignal;
 }
 
+// Parses leading "<major>.<minor>.<patch>" from a version string like
+// "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
+// Returns false for unparseable versions (safer to assume an old backend).
+function isVersionAtLeast(version: string, target: [number, number, number]): boolean {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version);
+  if (!match) return false;
+  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  for (let i = 0; i < 3; i++) {
+    if (parsed[i] !== target[i]) return parsed[i] > target[i];
+  }
+  return true;
+}
+
 class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
   private client: Client | undefined = undefined;
 
@@ -641,6 +654,11 @@ export class LLPlClient implements WireClientProviderFactory {
   /** Synchronous capability check against the cached Ping response. */
   public hasCapability(name: string): boolean {
     return this.serverInfo.capabilities.includes(name);
+  }
+
+  /** True if the backend implements the setDefaultColor TX request. */
+  public get supportsSetDefaultColor(): boolean {
+    return isVersionAtLeast(this.serverInfo.coreVersion, [3, 3, 0]);
   }
 
   /**
