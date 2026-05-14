@@ -301,6 +301,7 @@ The block's `turbo.json` includes `PL_PKG_DEV` in the build task's `env` array, 
 ## Running a local platforma server for tests
 
 For server download, startup, and environment variables, see [local-server.md](./local-server.md).
+Start latest binary backend release unless explicitly asked to use sources.
 
 ### Run monorepo tests
 
