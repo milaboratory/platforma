@@ -61,9 +61,9 @@ _runtimeUnavailable := func() {
 }
 
 // _load returns the wasm component handle, or undefined if the runtime
-// is not yet wired. Once the planned SDK module ships, replace the body:
-//     wasm := import(":wasm")
-//     return wasm.load(WASM_NAME, limit)
+// is not yet wired. Once the planned SDK module ships, replace the body
+// with an import of the wasm SDK lib and a call to its load(WASM_NAME,
+// limit) entry point.
 _load := func(limit) {
 	return undefined
 }
