@@ -1,4 +1,5 @@
 import { gunzipSync } from "node:zlib";
+import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
 
 /** Walks a parsed v3 template tree and returns true if any node carries a
  * non-empty `wasm` map. Mirrors the build-time check in block-tools' pack
@@ -19,18 +20,33 @@ function templateHasWasm(tpl: unknown): boolean {
   return false;
 }
 
-/** Derives the list of backend capabilities a block requires by scanning the
- * workflow's compiled `main.plj.gz` for wasm sections. Returns `["wasm"]` if
- * any template (or nested sub-template) carries wasm bytes, else `undefined`.
+/** Derives required capabilities from an already-parsed template tree.
+ *
+ * Use this on the install path: `BlockPackPreparer.prepare` parses the
+ * workflow off-thread via the worker, and the parsed result feeds straight
+ * into this function — no second gunzip+JSON.parse on the main thread.
+ *
+ * Returns `["wasm"]` if the v3 tree carries any wasm sections, else
+ * `undefined`. v2 templates have no wasm field and always return
+ * `undefined`. */
+export function requiredCapabilitiesFromTemplate(
+  parsed: TemplateData | CompiledTemplateV3,
+): string[] | undefined {
+  if (parsed.type !== "pl.tengo-template.v3") return undefined;
+  return templateHasWasm(parsed.template) ? ["wasm"] : undefined;
+}
+
+/** Same derivation, starting from raw `main.plj.gz` bytes.
+ *
+ * Used only at catalog-listing time for local-dev blocks where the worker
+ * pipeline isn't in play (block_registry/registry.ts). Install paths go
+ * through `requiredCapabilitiesFromTemplate` instead to avoid parsing the
+ * workflow twice.
  *
  * Bytes-driven so dev-v2 / from-registry-v2 / explicit installs all derive
  * the same answer regardless of what the source manifest says (dev blocks
  * have no pack-time-generated `requiredCapabilities` in their source
- * `package.json#block.meta`; only block-tools-built block-packs do).
- *
- * Called from:
- *   - mutator/block-pack/block_pack.ts (install path: throwIfMissingServerCapabilities)
- *   - block_registry/registry.ts (listing path: BlockPackOverview.meta.requiredCapabilities) */
+ * `package.json#block.meta`; only block-tools-built block-packs do). */
 export function deriveRequiredCapabilities(
   workflowContent: Uint8Array | Buffer,
 ): string[] | undefined {
@@ -41,7 +57,5 @@ export function deriveRequiredCapabilities(
   } catch {
     return undefined;
   }
-  const pack = parsed as { type?: string; template?: unknown };
-  if (pack.type !== "pl.tengo-template.v3") return undefined;
-  return templateHasWasm(pack.template) ? ["wasm"] : undefined;
+  return requiredCapabilitiesFromTemplate(parsed as TemplateData | CompiledTemplateV3);
 }

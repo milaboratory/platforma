@@ -212,7 +212,7 @@ export class BlockPackRegistry {
 
               // Dev-v2 blocks don't have pack-time-derived requiredCapabilities
               // in their source manifest (that's a block-tools build artifact).
-              // Re-derive here so the UI can disable "Add to Project" before
+              // Re-derive here so the UI can raise a modal on "Add to Project" after
               // the user clicks — matches the install-time check in
               // mutator/block-pack/block_pack.ts.
               if (meta.requiredCapabilities === undefined) {
