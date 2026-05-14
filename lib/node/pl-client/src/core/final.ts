@@ -47,7 +47,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       if (isNotNullSignedResourceId(r.error)) return true;
       const downloadable = getField(r as ResourceData, "downloadable");
       const stream = getField(r as ResourceData, "stream");
-      return stream.value === downloadable.value;
+      return stream.value === downloadable.value; // it's equal to the resource is marked as final on backend side
     }
     case ResourceTypeName.StdMap:
     case ResourceTypeName.StdMapSlash:
