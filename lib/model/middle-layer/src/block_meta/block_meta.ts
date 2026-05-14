@@ -64,10 +64,6 @@ export function BlockPackMeta<
      * break Desktops that ship before each token is added — the same
      * forward-compat property `BlockPackMeta` itself enjoys at the field
      * level, applied recursively at the token level.
-     *
-     * Hardcoded by `@platforma-sdk/block-tools` to ["wasm"] for every
-     * block built with the SDK release that introduces WASM support.
-     * See docs/text/work/projects/webassembly-libraries-tengo/wasm-bundling.md.
      */
     requiredCapabilities: z.array(z.string()).optional(),
   });
