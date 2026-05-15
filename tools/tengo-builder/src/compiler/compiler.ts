@@ -13,7 +13,18 @@ import {
 import { ArtifactStore } from "./artifactset";
 import { assertNever } from "./util";
 import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from "./compileroptions";
-import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV3, TemplateDataV3 } from "@milaboratories/pl-model-backend";
+import { CapabilityWasm } from "@milaboratories/pl-model-backend";
+
+/** Add a capability token to a template's `requiredCapabilities` list,
+ * skipping duplicates. Initializes the array lazily so the field stays
+ * absent for templates that need nothing. */
+function addRequiredCapability(template: TemplateDataV3, capability: string): void {
+  template.requiredCapabilities = template.requiredCapabilities ?? [];
+  if (!template.requiredCapabilities.includes(capability)) {
+    template.requiredCapabilities.push(capability);
+  }
+}
 
 /** A compilation result. */
 export interface TemplatesAndLibs {
@@ -99,6 +110,10 @@ export class TengoTemplateCompiler {
             sourceHash: wasm.sourceHash,
           };
           data.hashToSource[wasm.sourceHash] = wasm.src;
+          // Embedding a wasm artifact means this template requires the
+          // backend's wasm runtime to run. The token is propagated upward
+          // when this template is in turn embedded as a sub-template.
+          addRequiredCapability(data.template, CapabilityWasm);
           break;
         }
         case "template": {
@@ -113,6 +128,13 @@ export class TengoTemplateCompiler {
           // add all the sources of transitivedependencies to the resulted hashToSource
           for (const [hash, src] of Object.entries(tpl.data.hashToSource)) {
             data.hashToSource[hash] = src;
+          }
+
+          // Union the sub-template's compile-time-computed capability
+          // requirements into ours, so the top template carries the full
+          // transitive set without consumers having to walk the tree.
+          for (const cap of tpl.data.template.requiredCapabilities ?? []) {
+            addRequiredCapability(data.template, cap);
           }
 
           break;

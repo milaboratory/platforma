@@ -61,6 +61,24 @@ export interface TemplateDataV3 {
    * The actual wasm bytes are base64-encoded and stored under sourceHash in the
    * parent CompiledTemplateV3.hashToSource map. */
   wasm?: Record<string, TemplateWasmDataV3>;
+
+  /**
+   * Backend capability tokens this template (and its transitively-imported
+   * sub-templates) requires to run. Populated by `tengo-builder` at compile
+   * time:
+   *   - `CapabilityWasm` ("wasm:v1") is added when a wasm artifact is
+   *     embedded (via `assets.importWasm`, directly or through a library).
+   *   - Child templates contribute their own `requiredCapabilities` —
+   *     unioned transitively, so the top template carries the full set.
+   *
+   * Consumers (`block-tools pack`, `pl-middle-layer` install gate,
+   * `pl-middle-layer` catalog listing) read this directly; the recursive
+   * tree walk that previously rediscovered the same fact at every
+   * consumer is gone. Tokens are the same vocabulary the backend
+   * advertises in `MaintenanceAPI.Ping.Response.capabilities` — see
+   * `./capabilities.ts`.
+   */
+  requiredCapabilities?: string[];
 }
 
 export interface CompiledTemplateV3 {
@@ -71,21 +89,4 @@ export interface CompiledTemplateV3 {
   hashToSource: Record<string, string>;
 
   template: TemplateDataV3;
-}
-
-/** Returns true if a v3 template tree (or any nested fragment) carries
- * a non-empty `wasm` map. Recursion descends into `templates`, so wasm
- * deps in transitively-imported sub-templates are detected too.
- *
- * Single source of truth for "does this template require wasm?". Used by
- * `block-tools` pack-time detection and by `pl-middle-layer` install-time
- * gating — keeping the two in sync avoids a class of bug where a block
- * embedding wasm could slip past the install gate (or vice versa) after
- * a template-format change applied to only one copy. */
-export function templateHasWasm(tpl: TemplateDataV3): boolean {
-  if (tpl.wasm && Object.keys(tpl.wasm).length > 0) return true;
-  for (const sub of Object.values(tpl.templates)) {
-    if (templateHasWasm(sub)) return true;
-  }
-  return false;
 }

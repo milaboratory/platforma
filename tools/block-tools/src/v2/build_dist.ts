@@ -4,7 +4,6 @@ import type {
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
 import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
-import { templateHasWasm } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import { BlockPackDescriptionConsolidateToFolder } from "./model";
 import fsp from "node:fs/promises";
@@ -13,16 +12,17 @@ import { gunzipSync } from "node:zlib";
 import { calculateSha256 } from "../util";
 
 /**
- * workflowUsesWasm reads the workflow's compiled `main.plj.gz` (already
- * consolidated under `dst`) and returns true if its template tree carries
- * any wasm sections. Returns false for v2 packs (which have no wasm field)
- * and for malformed packs — fail-safe because the worst case is "block
- * installs anywhere" which is the pre-WASM status quo.
+ * Returns the capability tokens the workflow's compiled template declares
+ * it needs (via `TemplateDataV3.requiredCapabilities`, populated by
+ * tengo-builder at compile time). Returns `undefined` for v2 packs, for
+ * malformed packs, or when the template carries no requirements — fail-
+ * safe so the worst case is "block installs anywhere", the pre-WASM
+ * status quo.
  */
-async function workflowUsesWasm(
+async function workflowRequiredCapabilities(
   descriptionRelative: BlockPackDescriptionManifest,
   dst: string,
-): Promise<boolean> {
+): Promise<string[] | undefined> {
   // After BlockPackDescriptionConsolidateToFolder runs, components.workflow.main
   // is always a {type: "relative", path: ...} reference into dst.
   const main = descriptionRelative.components.workflow.main;
@@ -33,12 +33,12 @@ async function workflowUsesWasm(
     const json = gunzipSync(bytes).toString("utf-8");
     parsed = JSON.parse(json);
   } catch {
-    return false;
+    return undefined;
   }
 
   const pack = parsed as Partial<CompiledTemplateV3>;
-  if (pack.type !== "pl.tengo-template.v3" || !pack.template) return false;
-  return templateHasWasm(pack.template);
+  if (pack.type !== "pl.tengo-template.v3" || !pack.template) return undefined;
+  return pack.template.requiredCapabilities;
 }
 
 export async function buildBlockPackDist(
@@ -50,22 +50,21 @@ export async function buildBlockPackDist(
   const descriptionRelative: BlockPackDescriptionManifest =
     await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
 
-  // Per-block WASM-requirement detection: inspect the consolidated workflow
-  // `main.plj.gz` for actual wasm sections instead of stamping every block
-  // built with this SDK release. Blocks whose workflow doesn't reach a
-  // WASM-backed SDK lib install on any backend; only blocks that do force
-  // the customer to run a wasm-capable backend.
+  // Per-block capability detection: mirror the workflow's
+  // compile-time-computed `requiredCapabilities` onto the published
+  // manifest meta, so only blocks that actually need a feature force the
+  // customer to run a backend advertising it. Tengo-builder is the
+  // source of truth here — it populates the field when it embeds wasm
+  // bytes (or any future feature artifact); block-tools just propagates
+  // upward.
   //
   // See docs/text/work/projects/webassembly-libraries-tengo/README.md,
-  // "Capability declaration: detected from main.plj.gz, not the SDK release"
-  // for the rationale.
-  if (await workflowUsesWasm(descriptionRelative, dst)) {
+  // "Capability declaration: detected from main.plj.gz, not the SDK release".
+  const workflowCapabilities = await workflowRequiredCapabilities(descriptionRelative, dst);
+  if (workflowCapabilities && workflowCapabilities.length > 0) {
     descriptionRelative.meta = {
       ...descriptionRelative.meta,
-      // Capability tokens follow the backend's "<feature>:<version>" format
-      // (see core/pl/platform/api/plapiserver/server_capabilities.go). Bump
-      // to wasm:v2 if the wasm wire contract becomes backward-incompatible.
-      requiredCapabilities: ["wasm:v1"],
+      requiredCapabilities: workflowCapabilities,
     };
   }
 
