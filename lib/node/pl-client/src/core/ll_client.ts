@@ -349,7 +349,7 @@ export class LLPlClient implements WireClientProviderFactory {
     if (!this.authenticated) throw new Error("Client is not authenticated");
     if (this.authInformation?.jwtToken) {
       if (this.hasCapability(CapabilityAuthV2)) {
-        return parsePlJwt(this.authInformation?.jwtToken).uid;
+        return parsePlJwt(this.authInformation?.jwtToken).sub;
       }
       return parsePlJwt(this.authInformation?.jwtToken).user.login;
     } else return null;

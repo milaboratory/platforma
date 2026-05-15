@@ -1,5 +1,6 @@
 export type PlJWTPayload = {
-  uid: string;
+  sub: string; // user ID
+  iss: string; // backend instance ID
 
   // deprecated. Prior backend capability auth:v2. Use uid instead.
   user: {
