@@ -13,7 +13,7 @@ import type {
 import { isBooleanExpression } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../../../render";
 import { isNil } from "es-toolkit";
-import type { PlDataTableFilters } from "../typesV6";
+import type { PlDataTableFilters } from "../typesV7";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
 
