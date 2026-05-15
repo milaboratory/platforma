@@ -772,7 +772,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public get authMethodsSync(): grpcTypes.AuthAPI_ListMethods_Response {
     if (!this._authMethodsSync) {
-      throw new Error("LLPlClient.authMethodsStatic accessed before build() completed");
+      throw new Error("LLPlClient.authMethodsSync accessed before build() completed");
     }
     return this._authMethodsSync;
   }
