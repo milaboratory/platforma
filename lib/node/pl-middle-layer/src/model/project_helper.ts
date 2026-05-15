@@ -12,6 +12,7 @@ import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
+import { getDebugFlags } from "../debug";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -212,6 +213,17 @@ export class ProjectHelper {
       throw new Error("applyStorageUpdateInVM is only supported for model API version 2");
     }
 
+    let payloadJsonSize: number | undefined;
+    const computeSizes = () => {
+      if (payloadJsonSize === undefined) payloadJsonSize = JSON.stringify(payload).length;
+      return { currentStorageJsonSize: currentStorageJson.length, payloadJsonSize };
+    };
+    if (getDebugFlags().logJsExecStat) {
+      const { currentStorageJsonSize, payloadJsonSize: payloadSize } = computeSizes();
+      this.logger.info(
+        `[ProjectHelper.applyStorageUpdateInVM] currentStorageJson=${currentStorageJsonSize}B, payload=${payloadSize}B, operation=${payload.operation}`,
+      );
+    }
     try {
       const result = executeSingleLambda(
         this.quickJs,
@@ -222,8 +234,12 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
+      const { currentStorageJsonSize, payloadJsonSize: payloadSize } = computeSizes();
       this.logger.error(
-        new Error("[ProjectHelper.applyStorageUpdateInVM] Storage update failed", { cause: e }),
+        new Error(
+          `[ProjectHelper.applyStorageUpdateInVM] Storage update failed (currentStorageJson=${currentStorageJsonSize}B, payload=${payloadSize}B, operation=${payload.operation})`,
+          { cause: e },
+        ),
       );
       throw new Error(`Block storage update failed: ${e}`);
     }

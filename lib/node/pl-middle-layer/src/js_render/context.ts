@@ -378,7 +378,15 @@ export class ErrorRepository {
     }
 
     const causeName = cause.name;
-    const errorId = causeName.slice(causeName.indexOf("/uuid:") + "/uuid:".length);
+    const uuidIdx = causeName.indexOf("/uuid:");
+    if (uuidIdx === -1) {
+      const causeMsg = "message" in cause && typeof cause.message === "string" ? cause.message : "";
+      throw new Error(
+        `QuickJS native error: ${causeName}: ${causeMsg}, ${stringifyWithResourceId(quickJSError)}`,
+        { cause: quickJSError },
+      );
+    }
+    const errorId = causeName.slice(uuidIdx + "/uuid:".length);
     if (!errorId) {
       throw new Error(
         `ErrorRepo: quickJSError.cause.name does not contain errorId: ${causeName}, ${stringifyWithResourceId(quickJSError)}`,

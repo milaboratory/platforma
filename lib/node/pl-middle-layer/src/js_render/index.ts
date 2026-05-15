@@ -106,7 +106,7 @@ export function computableFromRF(
 
     try {
       const runtime = scope.manage(env.quickJs.newRuntime());
-      runtime.setMemoryLimit(1024 * 1024 * 8);
+      runtime.setMemoryLimit(1024 * 1024 * 16);
       runtime.setMaxStackSize(1024 * 320);
 
       let deadlineSettings: DeadlineSettings | undefined;
@@ -189,7 +189,7 @@ export function executeSingleLambda(
   const scope = new Scope();
   try {
     const runtime = scope.manage(quickJs.newRuntime());
-    runtime.setMemoryLimit(1024 * 1024 * 8);
+    runtime.setMemoryLimit(1024 * 1024 * 16);
     runtime.setMaxStackSize(1024 * 320);
 
     let deadlineSettings: DeadlineSettings | undefined;
