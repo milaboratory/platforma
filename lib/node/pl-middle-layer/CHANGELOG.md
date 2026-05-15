@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.60.2
+
+### Patch Changes
+
+- f302c2f: Fix block VM OOM diagnostics
+
+  - Fix off-by-one bug in `ErrorRepository.getOriginal` that mangled native QuickJS error names into nonsense like `nalError` when `cause.name` did not contain a `/uuid:` suffix; native errors (`InternalError: out of memory`, stack overflow) now surface verbatim.
+  - Log `currentStorageJson` and payload (full JSON content + sizes) on storage-update failure, and log sizes on entry when `MI_LOG_JS_EXEC_STAT` is set, so VM OOMs are diagnosable from logs.
+
+- Updated dependencies [f302c2f]
+- Updated dependencies [f302c2f]
+  - @platforma-sdk/model@1.77.0
+
 ## 1.60.1
 
 ### Patch Changes
