@@ -430,6 +430,43 @@ function addWasmFile(
   compiler.addWasm(wasm);
 }
 
+/**
+ * Discover wasm artifacts declared by a package's `package.json` via the
+ * node `exports` conditional-exports map.
+ *
+ * Convention: a package that wants to ship one or more wasm components to
+ * tengo-builder publishes them under a `"wasm"` condition keyed by an
+ * `exports` subpath. The subpath becomes the wasm artifact id (`.` →
+ * `main`, `./foo` → `foo`). Example shape we look for:
+ *
+ *   {
+ *     "exports": {
+ *       ".": {
+ *         "wasm": "./dist/pframes_rs_wasip2.wasm",  // ← discovered
+ *         "wit":  "./wit/world.wit"
+ *       },
+ *       "./extra": {
+ *         "wasm": "./dist/extra.wasm"               // ← discovered as id "extra"
+ *       }
+ *     }
+ *   }
+ *
+ * Why raw traversal instead of Zod / a typed schema:
+ *   1. `package.json#exports` is a community convention with no fixed shape
+ *      — any combination of strings, objects, arrays, and conditions is
+ *      legal node syntax. A strict schema would either reject valid
+ *      packages or have to admit `unknown` for half of it anyway.
+ *   2. We care about exactly one condition (`wasm`) on subpath entries,
+ *      not the rest of the exports tree. A targeted walk reads more
+ *      directly than a schema that re-describes the conditional-exports
+ *      grammar.
+ *   3. Errors here should always mean "this package contributes no wasm";
+ *      never crash the build. Every check returns `[]` or `continue`s.
+ *
+ * Returns the discovered wasm exports; empty when the file is missing,
+ * malformed, has no `exports`, or has no subpath with a `"wasm"`
+ * condition pointing at a string path.
+ */
 function collectWasmExportPaths(packageRoot: string): WasmExport[] {
   const packageJsonPath = path.join(packageRoot, "package.json");
   if (pathType(packageJsonPath) !== "file") return [];
