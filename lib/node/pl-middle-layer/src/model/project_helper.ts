@@ -213,15 +213,9 @@ export class ProjectHelper {
       throw new Error("applyStorageUpdateInVM is only supported for model API version 2");
     }
 
-    let payloadJsonSize: number | undefined;
-    const computeSizes = () => {
-      if (payloadJsonSize === undefined) payloadJsonSize = JSON.stringify(payload).length;
-      return { currentStorageJsonSize: currentStorageJson.length, payloadJsonSize };
-    };
     if (getDebugFlags().logJsExecStat) {
-      const { currentStorageJsonSize, payloadJsonSize: payloadSize } = computeSizes();
       this.logger.info(
-        `[ProjectHelper.applyStorageUpdateInVM] currentStorageJson=${currentStorageJsonSize}B, payload=${payloadSize}B, operation=${payload.operation}`,
+        `[ProjectHelper.applyStorageUpdateInVM] currentStorageJson=${currentStorageJson.length}B, payload=${JSON.stringify(payload).length}B, operation=${payload.operation}`,
       );
     }
     try {
@@ -234,10 +228,10 @@ export class ProjectHelper {
       ) as string;
       return result;
     } catch (e) {
-      const { currentStorageJsonSize, payloadJsonSize: payloadSize } = computeSizes();
+      const payloadJson = JSON.stringify(payload);
       this.logger.error(
         new Error(
-          `[ProjectHelper.applyStorageUpdateInVM] Storage update failed (currentStorageJson=${currentStorageJsonSize}B, payload=${payloadSize}B, operation=${payload.operation})`,
+          `[ProjectHelper.applyStorageUpdateInVM] Storage update failed (currentStorageJson=${currentStorageJson.length}B, payload=${payloadJson.length}B, operation=${payload.operation})`,
           { cause: e },
         ),
       );
