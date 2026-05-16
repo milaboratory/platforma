@@ -184,22 +184,21 @@ test("upload lots of duplicate blobs concurrently", async () => {
     const handles = await Promise.all(uploadIds.map((id) => getSnapshot(client, id)));
     const computables = handles.map((handle) => uploader.getProgressId(handle));
 
-    for (const c of computables) {
+    const waitDone = async (c: (typeof computables)[number]) => {
       while (true) {
         const p = await c.getValue();
-
-        if (p.done) {
-          expect(p.isUploadSignMatch).toBeTruthy();
-          expect(p.lastError).toBeUndefined();
-          expect(p.status?.bytesProcessed).toBe(25);
-          expect(p.status?.bytesTotal).toBe(25);
-
-          break;
-        }
-
+        if (p.done) return p;
         await c.awaitChange();
       }
-    }
+    };
+
+    const p = await Promise.race(computables.map(waitDone));
+    expect(p.isUploadSignMatch).toBeTruthy();
+    expect(p.lastError).toBeUndefined();
+    expect(p.status?.bytesProcessed).toBe(25);
+    expect(p.status?.bytesTotal).toBe(25);
+
+    // await uploader.releaseAll();
   });
 });
 

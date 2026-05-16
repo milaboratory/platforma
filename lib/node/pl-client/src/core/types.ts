@@ -1,4 +1,5 @@
-/* oxlint-disable eslint-js/no-restricted-syntax -- this file is the canonical place to construct SignedResourceId values; outside callers must use asSignedResourceId(). */
+/* eslint-disable eslint-js/no-restricted-syntax -- this file is the canonical place to construct SignedResourceId values; outside callers must use asSignedResourceId(). */
+
 import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
 
