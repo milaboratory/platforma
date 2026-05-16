@@ -8,9 +8,9 @@ function makeStub(opts: { hasAuthV2: boolean; scheme?: Scheme }) {
   const scheme = opts.scheme ?? "basic";
   const methods =
     scheme === "basic"
-      ? [{ name: "basic", method: { oneofKind: "basic", basic: {} } }]
+      ? [{ id: "basic", method: { oneofKind: "basic", basic: {} } }]
       : scheme === "token"
-        ? [{ name: "token", method: { oneofKind: "token", token: {} } }]
+        ? [{ id: "token", method: { oneofKind: "token", token: {} } }]
         : [];
   const ll = {
     hasCapability: vi.fn((name: string) => name === CapabilityAuthV2 && opts.hasAuthV2),

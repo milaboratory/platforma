@@ -210,6 +210,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /v1/auth/sso/begin-login:
+    post:
+      tags:
+        - Platform
+      description: |-
+        BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+         into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+         login flow. This method is public: no Authorization header is required.
+      operationId: Platform_BeginSSOLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /v1/auth/user-root:
     post:
       tags:
@@ -815,6 +843,22 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
+    AuthAPI_BeginSSOLogin_PublicPKCE:
+      type: object
+      properties:
+        nonce:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    AuthAPI_BeginSSOLogin_Request:
+      type: object
+      properties: {}
+    AuthAPI_BeginSSOLogin_Response:
+      type: object
+      properties:
+        publicPkce:
+          $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_PublicPKCE"
     AuthAPI_GetJWTToken_Request:
       type: object
       properties:
@@ -886,20 +930,24 @@ components:
       description: Permissions describes access level for a grant.
     AuthAPI_ListMethods_BasicAuthMethod:
       type: object
-      properties:
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
+      properties: {}
     AuthAPI_ListMethods_MethodInfo:
       type: object
       properties:
-        name:
+        id:
           type: string
+          description: |-
+            id is the stable, machine-readable identifier of the login method
+             instance. Unique across the entire server.
+        description:
+          type: string
+          description: description is the human-readable label in case we'd like to render it in UI.
         basic:
           $ref: "#/components/schemas/AuthAPI_ListMethods_BasicAuthMethod"
         token:
           $ref: "#/components/schemas/AuthAPI_ListMethods_TokenAuthMethod"
+        sso:
+          $ref: "#/components/schemas/AuthAPI_ListMethods_SSOAuthMethod"
     AuthAPI_ListMethods_Response:
       type: object
       properties:
@@ -907,13 +955,40 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuthAPI_ListMethods_MethodInfo"
-    AuthAPI_ListMethods_TokenAuthMethod:
+    AuthAPI_ListMethods_SSOAuthMethod:
       type: object
       properties:
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
+        issuer:
+          type: string
+        clientId:
+          type: string
+        scopes:
+          type: string
+        resource:
+          type: string
+        prompt:
+          type: string
+        redirectPorts:
+          type: array
+          items:
+            type: integer
+            format: uint32
+        subjectTokenSource:
+          type: string
+        userIdClaim:
+          type: string
+        groupsClaim:
+          type: string
+        flowType:
+          type: integer
+          format: enum
+      description: |-
+        SSOAuthMethod advertises an external IdP-based login flow. The desktop
+         app uses the contents to drive the PKCE exchange locally, then hands the
+         resulting IdP token-response back via Login.SSOCredentials.
+    AuthAPI_ListMethods_TokenAuthMethod:
+      type: object
+      properties: {}
     AuthAPI_Login_BasicCredentials:
       type: object
       properties:
@@ -928,6 +1003,8 @@ components:
           $ref: "#/components/schemas/AuthAPI_Login_BasicCredentials"
         token:
           $ref: "#/components/schemas/AuthAPI_Login_TokenCredentials"
+        sso:
+          $ref: "#/components/schemas/AuthAPI_Login_SSOCredentials"
         expiration:
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
           type: string
@@ -945,6 +1022,15 @@ components:
         role:
           type: integer
           format: enum
+    AuthAPI_Login_SSOCredentials:
+      type: object
+      properties:
+        tokenResponse:
+          type: string
+          format: bytes
+      description: |-
+        SSOCredentials carries the raw JSON body returned by the IdP's /token
+         endpoint after the desktop completes a PKCE exchange.
     AuthAPI_Login_TokenCredentials:
       type: object
       properties:

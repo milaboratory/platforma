@@ -200,6 +200,15 @@ service Platform {
       body: "*"
     };
   }
+  // BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+  // into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+  // login flow. This method is public: no Authorization header is required.
+  rpc BeginSSOLogin(AuthAPI.BeginSSOLogin.Request) returns (AuthAPI.BeginSSOLogin.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/sso/begin-login"
+      body: "*"
+    };
+  }
   // RefreshToken accepts a valid Platforma JWT and re-issues it with the same
   // session ID and role. Only the token expiration may be changed.
   // Workflow-scoped tokens cannot be refreshed; call Login instead.
@@ -1668,25 +1677,70 @@ message AuthAPI {
       repeated MethodInfo methods = 1;
     }
 
-    message BasicAuthMethod {
-      map<string, string> metadata = 1;
-    }
+    message BasicAuthMethod {}
 
-    message TokenAuthMethod {
-      map<string, string> metadata = 1;
+    message TokenAuthMethod {}
+
+    // SSOAuthMethod advertises an external IdP-based login flow. The desktop
+    // app uses the contents to drive the PKCE exchange locally, then hands the
+    // resulting IdP token-response back via Login.SSOCredentials.
+    message SSOAuthMethod {
+      enum FlowType {
+        PUBLIC_PKCE = 0;
+      }
+
+      string issuer = 1;
+      string client_id = 2;
+      string scopes = 3; // space-separated
+      string resource = 4; // optional (RFC 8707), may be empty
+      string prompt = 5; // login | none | consent | select_account
+      repeated uint32 redirect_ports = 6; // pre-registered loopback ports; desktop picks one
+      string subject_token_source = 7; // "access_token" | "id_token"
+      string user_id_claim = 8;
+      string groups_claim = 9;
+      FlowType flow_type = 10;
+
+      // next free: 11;
     }
 
     message MethodInfo {
-      string name = 2;
+      // id is the stable, machine-readable identifier of the login method
+      // instance. Unique across the entire server.
+      string id = 6;
+
+      // description is the human-readable label in case we'd like to render it in UI.
+      string description = 7;
+
       oneof method {
         BasicAuthMethod basic = 4;
         TokenAuthMethod token = 5;
+        SSOAuthMethod sso = 8;
       }
 
       reserved 1; // string type
+      reserved 2; // string name - replaced by id + description
       reserved 3; // map<string, string> info
 
-      // next free: 6;
+      // next free: 8;
+    }
+  }
+
+  // BeginSSOLogin issues a fresh, one-time login nonce to the desktop. The
+  // desktop is expected to place the nonce verbatim into the OIDC auth-request
+  // before redirecting to the IdP. The current stub implementation forgets the
+  // nonce immediately and does not validate it on Login.
+  message BeginSSOLogin {
+    message Request {}
+
+    message PublicPKCE {
+      string nonce = 1; // server-issued one-time value
+      google.protobuf.Timestamp expires_at = 2; // after this, nonce is no longer valid (when enforced)
+    }
+
+    message Response {
+      oneof flow {
+        PublicPKCE public_pkce = 1;
+      }
     }
   }
 
@@ -1730,10 +1784,17 @@ message AuthAPI {
       bytes token = 1;
     }
 
+    // SSOCredentials carries the raw JSON body returned by the IdP's /token
+    // endpoint after the desktop completes a PKCE exchange.
+    message SSOCredentials {
+      bytes token_response = 1;
+    }
+
     message Request {
       oneof credentials {
         BasicCredentials basic = 1; // validated by htpasswd / ldap authenticators
         TokenCredentials token = 2; // validated by controller / jwt authenticators
+        SSOCredentials sso = 5; // validated by sso authenticator
       }
       optional google.protobuf.Duration expiration = 3;
       optional Role requested_role = 4;

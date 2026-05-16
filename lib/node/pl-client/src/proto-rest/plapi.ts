@@ -154,6 +154,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/auth/sso/begin-login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+     *      into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+     *      login flow. This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_BeginSSOLogin"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/user-root": {
     parameters: {
       query?: never;
@@ -551,6 +572,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AuthAPI_BeginSSOLogin_PublicPKCE: {
+      nonce: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    AuthAPI_BeginSSOLogin_Request: Record<string, never>;
+    AuthAPI_BeginSSOLogin_Response: {
+      publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
+    };
     AuthAPI_GetJWTToken_Request: {
       expiration: string;
       /** Format: enum */
@@ -594,24 +624,41 @@ export interface components {
     AuthAPI_Grant_Permissions: {
       writable: boolean;
     };
-    AuthAPI_ListMethods_BasicAuthMethod: {
-      metadata: {
-        [key: string]: string;
-      };
-    };
+    AuthAPI_ListMethods_BasicAuthMethod: Record<string, never>;
     AuthAPI_ListMethods_MethodInfo: {
-      name: string;
+      /**
+       * @description id is the stable, machine-readable identifier of the login method
+       *      instance. Unique across the entire server.
+       */
+      id: string;
+      /** @description description is the human-readable label in case we'd like to render it in UI. */
+      description: string;
       basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
       token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
+      sso: components["schemas"]["AuthAPI_ListMethods_SSOAuthMethod"];
     };
     AuthAPI_ListMethods_Response: {
       methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
     };
-    AuthAPI_ListMethods_TokenAuthMethod: {
-      metadata: {
-        [key: string]: string;
-      };
+    /**
+     * @description SSOAuthMethod advertises an external IdP-based login flow. The desktop
+     *      app uses the contents to drive the PKCE exchange locally, then hands the
+     *      resulting IdP token-response back via Login.SSOCredentials.
+     */
+    AuthAPI_ListMethods_SSOAuthMethod: {
+      issuer: string;
+      clientId: string;
+      scopes: string;
+      resource: string;
+      prompt: string;
+      redirectPorts: number[];
+      subjectTokenSource: string;
+      userIdClaim: string;
+      groupsClaim: string;
+      /** Format: enum */
+      flowType: number;
     };
+    AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
     AuthAPI_Login_BasicCredentials: {
       login: string;
       password: string;
@@ -619,6 +666,7 @@ export interface components {
     AuthAPI_Login_Request: {
       basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
       token: components["schemas"]["AuthAPI_Login_TokenCredentials"];
+      sso: components["schemas"]["AuthAPI_Login_SSOCredentials"];
       expiration: string;
       /** Format: enum */
       requestedRole: number;
@@ -629,6 +677,14 @@ export interface components {
       sessionId: string;
       /** Format: enum */
       role: number;
+    };
+    /**
+     * @description SSOCredentials carries the raw JSON body returned by the IdP's /token
+     *      endpoint after the desktop completes a PKCE exchange.
+     */
+    AuthAPI_Login_SSOCredentials: {
+      /** Format: bytes */
+      tokenResponse: string;
     };
     /**
      * @description TokenCredentials accepts any opaque bearer-style string: a controller
@@ -1324,6 +1380,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_BeginSSOLogin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Response"];
         };
       };
       /** @description Default error response */
