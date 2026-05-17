@@ -4,7 +4,6 @@ exec := import(":exec")
 validation := import(":validation")
 objects := import(":objects")
 util := import(":pframes.util")
-json := import("json")
 constants := import(":pframes.constants")
 execConstants := import(":exec.constants")
 xsvImportPt := import(":pframes.xsv-import-pt")
@@ -187,7 +186,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		arg("-p").arg("spec.json").
 		arg("-o").arg("out").
 		addFile(xsvFileName, xsvFile).
-		writeFile("spec.json", json.encode(pureSpec)).
+		writeFile("spec.json", pureSpec).
 		processWorkdir("pf", importDirTpl, pureSpec)
 
 	if ops.queue != undefined {

@@ -16,6 +16,7 @@ render := import(":render")
 enum := import("enum")
 oop := import(":oop")
 constants := import(":constants")
+canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 units := import(":units")
@@ -796,11 +797,20 @@ builder := func() {
 		 * When called with the same fileName multiple times,
 		 * the last call will overwrite the previous ones.
 		 *
+		 * Maps and arrays are serialized via `canonical.encode` (sorted keys at
+		 * every level) so the resulting bytes — and therefore the exec step's
+		 * dedup CID — are stable across runs. Callers that previously did
+		 * `writeFile(name, json.encode(value))` should pass `value` directly.
+		 *
 		 * @param fileName: string - the name of the content.
-		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to
-		 *        a resource from which data we create a file.
+		 * @param data: string|bytes|map|array|reference - the content to write.
+		 *        Maps and arrays are canonicalized to JSON; strings / bytes /
+		 *        references are passed through unchanged.
 		 */
 		writeFile: func(fileName, data, ...opts) {
+			if is_map(data) || is_array(data) {
+				data = canonical.encode(data)
+			}
 			validation.assertType(data, ["or",
 				"string",
 				"bytes",

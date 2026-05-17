@@ -1,6 +1,5 @@
 assets := import(":assets")
 exec := import(":exec")
-json := import("json")
 ll := import(":ll")
 util := import(":pt.util")
 pframesUtil := import(":pframes.util")
@@ -41,7 +40,7 @@ self.body(func(inputs) {
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").arg(spillFolder).
-        writeFile("workflow_sc.json", json.encode(workflowJsonStruct));
+        writeFile("workflow_sc.json", workflowJsonStruct);
     if !is_undefined(cpu) {
         ptCmd.cpu(cpu)
     }
