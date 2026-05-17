@@ -808,7 +808,11 @@ builder := func() {
 		 *        references are passed through unchanged.
 		 */
 		writeFile: func(fileName, data, ...opts) {
-			if is_map(data) || is_array(data) {
+			// Auto-encode value-like inputs (regular / immutable / strict maps
+			// and arrays) into canonical JSON. Explicitly exclude smart
+			// references — they're implemented as strict maps and would
+			// otherwise be stringified, breaking downstream resource handling.
+			if (ll.isMap(data) || is_array(data)) && !smart.isReference(data) {
 				data = canonical.encode(data)
 			}
 			validation.assertType(data, ["or",
