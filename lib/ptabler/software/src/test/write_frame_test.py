@@ -178,13 +178,14 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="name", type="String")
                         ],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="2f269f4d875838522664842e2bba6f580ac9898df8eab4ef3b7941c784961572",
+                        data_digest="501a0f0f5facf5e8e6bf23a00488bfeeb99103a9c8f0043343fa718d4c790a68",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
                                 axes=[66, 69],
                                 column=66
-                            )
+                            ),
+                            format_version="V2",
                         )
                     )
                 }
@@ -250,26 +251,28 @@ class WriteFrameTests(unittest.TestCase):
                         data="partition_0.parquet",
                         axes=[DataInfoAxis(id="name", type="String")],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="c4070b5df733973e7cdc4060a0b5454e9b829ffb9b5222ee7aa3d08dd783e718",
+                        data_digest="71520d3724a30b6a735dfd1716aff5392f2fca060ae64531703ea772d4a45790",
                         stats=Stats(
                             number_of_rows=2,
                             number_of_bytes=NumberOfBytes(
                                 axes=[57],
                                 column=57
-                            )
+                            ),
+                            format_version="V2",
                         )
                     ),
                     "[2]": DataInfoPart(
                         data="partition_1.parquet",
                         axes=[DataInfoAxis(id="name", type="String")],
                         column=DataInfoColumn(id="value", type="Double"),
-                        data_digest="5308529447672d700c681e93ebe41d8100eb6af58581be80fd00fb69f6d1c674",
+                        data_digest="5f23b532f575ffcde7e232e9e5329ef8d9ef6dc709cbbbea3b277e5e6f78b336",
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
                                 axes=[52],
                                 column=49
-                            )
+                            ),
+                            format_version="V2",
                         )
                     )
                 }
@@ -430,13 +433,14 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="item.type", type="String")
                         ],
                         column=DataInfoColumn(id='us*r "sc%re"', type="Double"),
-                        data_digest="6a1134916a7af2be13f77ade445cd084a3196d725a445e46e17301ea5d99d68f",
+                        data_digest="a8857a51363993a093f8bbb1f12faa5328913a8efb68d77630da4f980abc022a",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
                                 axes=[66, 57],
                                 column=57
-                            )
+                            ),
+                            format_version="V2",
                         )
                     )
                 }
@@ -514,13 +518,14 @@ class WriteFrameTests(unittest.TestCase):
                         data="partition_0.parquet",
                         axes=[DataInfoAxis(id="axis2", type="Long")],
                         column=DataInfoColumn(id="column", type="Double"),
-                        data_digest="1680161128e9ac671159aa6e343206a731f41234bf455ab1ac31208302544696",
+                        data_digest="d5743cb38e6a0a5054e338e0b18e81a28666bde2cfb78ba9d2e12b364090542e",
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
                                 axes=[49],
                                 column=49
-                            )
+                            ),
+                            format_version="V2",
                         )
                     )
                 }
@@ -647,13 +652,14 @@ class WriteFrameTests(unittest.TestCase):
                             DataInfoAxis(id="axis1", type="Long")
                         ],
                         column=DataInfoColumn(id="column1", type="Double"),
-                        data_digest="20ef062a74c50d88a14691e169cad0343fc3311c79962cb7ca828af66d7fdf8e",
+                        data_digest="3b2c28a16c8475742adb1ee2208a80d19ade2c8f513605897b5f87d5fe0f8570",
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
                                 axes=[66],
                                 column=66
-                            )
+                            ),
+                            format_version="V2",
                         )
                     )
                 }

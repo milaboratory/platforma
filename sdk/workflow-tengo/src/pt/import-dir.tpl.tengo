@@ -25,7 +25,8 @@ _DATA_INFO_SCHEMA := {
                 `numberOfBytes,?`: {
                     `axes`: [`number`],
                     `column`: `number`
-                }
+                },
+                `formatVersion,?`: `string`
             },
             `axes`: [
                 {

@@ -36,6 +36,7 @@ class NumberOfBytes(Struct, rename="camel"):
 class Stats(Struct, rename="camel"):
     number_of_rows: Optional[int] = None
     number_of_bytes: Optional[NumberOfBytes] = None
+    format_version: Optional[str] = None
 
 class DataInfoPart(Struct, rename="camel"):
     data: str
@@ -190,8 +191,7 @@ class WriteFrame(PStep, tag="write_frame"):
 
                 column_hash = hash(column.type, pl.scan_parquet(data_path), pl.col(column.column))
                 column_nbytes = get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
-                # Do not forget to update V-suffix when changing format!
-                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}V2".encode()).hexdigest()
+                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}".encode()).hexdigest()
                 
                 return DataInfoPart(
                     data=data_file,
@@ -203,7 +203,10 @@ class WriteFrame(PStep, tag="write_frame"):
                         number_of_bytes=NumberOfBytes(
                             axes=axes_nbytes,
                             column=column_nbytes,
-                        )),
+                        ),
+                        # IMPORTANT: update this version when changing anything that affect parquet file hash
+                        format_version = "V2",
+                    ),
                 )
             
             def get_common_part_info(data_file, column):
