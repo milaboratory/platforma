@@ -121,6 +121,12 @@ export type ParquetChunkStats = {
     /** Byte size for the data column */
     column: number;
   };
+  /**
+   * Tag identifying the writer-side parquet format used to produce this chunk.
+   * Set by ptabler's WriteFrame and bumped whenever the on-disk byte layout
+   * changes (e.g. compression, page index, encoding).
+   */
+  formatVersion: string;
 };
 
 export type ParquetChunkMetadata = {
