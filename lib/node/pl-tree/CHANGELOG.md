@@ -1,5 +1,15 @@
 # @milaboratories/pl-tree
 
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [6066082]
+  - @milaboratories/pl-client@3.6.0
+  - @milaboratories/computable@2.9.4
+  - @milaboratories/pl-errors@1.4.8
+  - @milaboratories/ts-helpers@1.8.2
+
 ## 1.11.0
 
 ### Minor Changes
