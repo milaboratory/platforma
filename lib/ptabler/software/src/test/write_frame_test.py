@@ -182,8 +182,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[127, 130],
-                                column=127
+                                axes=[66, 69],
+                                column=66
                             )
                         )
                     )
@@ -254,8 +254,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=2,
                             number_of_bytes=NumberOfBytes(
-                                axes=[119],
-                                column=119
+                                axes=[57],
+                                column=57
                             )
                         )
                     ),
@@ -267,8 +267,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[50],
-                                column=47
+                                axes=[52],
+                                column=49
                             )
                         )
                     )
@@ -434,8 +434,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[127, 118],
-                                column=150
+                                axes=[66, 57],
+                                column=57
                             )
                         )
                     )
@@ -518,8 +518,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[47],
-                                column=47
+                                axes=[49],
+                                column=49
                             )
                         )
                     )
@@ -651,8 +651,8 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[127],
-                                column=127
+                                axes=[66],
+                                column=66
                             )
                         )
                     )
@@ -749,6 +749,326 @@ class WriteFrameTests(unittest.TestCase):
         finally:
             if os.path.exists(frame_dir):
                 shutil.rmtree(frame_dir)
+
+    def _assert_join_pushdown_metadata(
+        self,
+        parquet_file: str,
+        bloom_axes: list[str],
+        value_columns: list[str],
+        expected_num_row_groups: int | None = None,
+    ):
+        """
+        Verifies that a written parquet carries the metadata DataFusion's
+        HashJoin DynamicFilter pushdown needs to prune the right side of a
+        left join without reading the full column chunk:
+
+          1. Bloom filter present on every axis (join-key) column, in every
+             row group. Verified via DuckDB's `parquet_metadata` which exposes
+             per-(row_group, column) bloom_filter_offset. PyArrow 24's
+             ParquetReader has no `read_bloom_filter` method, and
+             pyarrow.metadata.to_dict() doesn't expose the offset either.
+          2. Bloom filter absent on the listed value columns (would be wasted
+             bytes — value columns are never probed by joins).
+          3. Page Index (column index + offset index) on every (row group,
+             column). DuckDB does NOT write this (duckdb/duckdb#2755), which
+             is why the writer was switched to PyArrow.
+          4. `sorting_columns` metadata declared per row group, in the order
+             the writer sorted, ascending. Readers won't rely on the data
+             being sorted unless this is declared.
+          5. Dictionary encoding on axis columns — prerequisite for the bloom.
+        """
+        pf = pq.ParquetFile(parquet_file)
+        md = pf.metadata
+
+        # Parquet format version pin — '2.6' enables encodings DataFusion uses.
+        self.assertEqual(md.format_version, '2.6', "parquet format version must be 2.6")
+        if expected_num_row_groups is not None:
+            self.assertEqual(md.num_row_groups, expected_num_row_groups)
+        else:
+            self.assertGreaterEqual(md.num_row_groups, 1)
+
+        schema_names = [md.schema.column(i).name for i in range(md.num_columns)]
+        # Schema sanity: no duplicate column names, every advertised axis/value
+        # is actually in the file.
+        self.assertEqual(
+            len(set(schema_names)), len(schema_names),
+            f"duplicate column names in schema: {schema_names}",
+        )
+        for name in bloom_axes + value_columns:
+            self.assertIn(name, schema_names, f"column {name!r} not in file schema")
+
+        # Dictionary encoding on axes — checked BEFORE the bloom assertion
+        # below because dict encoding is the precondition for bloom-filter
+        # generation. If the dictionary is gone, bloom is also gone; running
+        # this check first surfaces the root cause rather than the symptom.
+        for rg_idx in range(md.num_row_groups):
+            rg = md.row_group(rg_idx)
+            for axis_name in bloom_axes:
+                col = rg.column(schema_names.index(axis_name))
+                self.assertTrue(
+                    col.has_dictionary_page,
+                    f"row group {rg_idx} axis {axis_name!r} must be dictionary-encoded "
+                    f"(otherwise the bloom filter would not be written)",
+                )
+
+        # Bloom filter presence per (row_group, path) — must NOT collapse rows
+        # across row groups; a regression that drops the bloom on later row
+        # groups would otherwise slip through.
+        con = duckdb.connect()
+        try:
+            rows = con.execute(
+                """
+                SELECT row_group_id, path_in_schema, bloom_filter_offset, bloom_filter_length
+                FROM parquet_metadata(?)
+                """,
+                [parquet_file],
+            ).fetchall()
+        finally:
+            con.close()
+        bloom_by_rg_path = {(rg, path): (off, length) for rg, path, off, length in rows}
+        # Cover every row group × every relevant column.
+        for rg_idx in range(md.num_row_groups):
+            for axis_name in bloom_axes:
+                self.assertIn(
+                    (rg_idx, axis_name), bloom_by_rg_path,
+                    f"row group {rg_idx} has no metadata row for axis {axis_name!r}",
+                )
+                off, length = bloom_by_rg_path[(rg_idx, axis_name)]
+                self.assertIsNotNone(
+                    off,
+                    f"row group {rg_idx} axis {axis_name!r} must have a bloom filter "
+                    f"(bloom_filter_offset is NULL)",
+                )
+                self.assertIsNotNone(
+                    length,
+                    f"row group {rg_idx} axis {axis_name!r} bloom_filter_length is NULL",
+                )
+            for value_name in value_columns:
+                self.assertIn((rg_idx, value_name), bloom_by_rg_path)
+                off, length = bloom_by_rg_path[(rg_idx, value_name)]
+                self.assertIsNone(
+                    off,
+                    f"row group {rg_idx} value column {value_name!r} should NOT carry "
+                    f"a bloom filter (only axes are probed by joins)",
+                )
+                self.assertIsNone(length)
+
+        # Page index (column index + offset index) per (row group, column).
+        # pyarrow exposes presence via has_column_index / has_offset_index;
+        # the actual offsets aren't surfaced in the Python API.
+        for rg_idx in range(md.num_row_groups):
+            rg = md.row_group(rg_idx)
+            for col_idx in range(rg.num_columns):
+                col = rg.column(col_idx)
+                self.assertTrue(
+                    col.has_column_index,
+                    f"row group {rg_idx} column {col.path_in_schema!r} "
+                    f"is missing column index (Parquet Page Index) — "
+                    f"sub-row-group pruning will not work",
+                )
+                self.assertTrue(
+                    col.has_offset_index,
+                    f"row group {rg_idx} column {col.path_in_schema!r} "
+                    f"is missing offset index (Parquet Page Index)",
+                )
+
+        # sorting_columns metadata: per row group, points at the axes in
+        # writer order, ascending. nulls_first is intentionally not asserted —
+        # axis columns never carry nulls (filtered or rejected upstream), so
+        # the writer's `nulls_first` value is unobservable and locking it
+        # would constrain a reasonable refactor of the polars sort options.
+        axis_indices = {name: schema_names.index(name) for name in bloom_axes}
+        for rg_idx in range(md.num_row_groups):
+            sorting_columns = md.row_group(rg_idx).sorting_columns
+            self.assertEqual(
+                len(sorting_columns), len(bloom_axes),
+                f"row group {rg_idx}: expected {len(bloom_axes)} sorting columns "
+                f"(one per axis), got {len(sorting_columns)}",
+            )
+            for axis_name, sc in zip(bloom_axes, sorting_columns):
+                self.assertEqual(
+                    sc.column_index, axis_indices[axis_name],
+                    f"row group {rg_idx}: sorting column does not point at {axis_name!r}",
+                )
+                self.assertFalse(
+                    sc.descending,
+                    f"row group {rg_idx} axis {axis_name!r}: sort must be ascending",
+                )
+
+    def test_parquet_metadata_for_join_pushdown(self):
+        """Single row-group, non-partitioned: smoke-tests the metadata contract."""
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("metadata_frame"))
+
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="metadata_frame",
+            axes=[
+                AxisMapping(column="axis1", type="Long"),
+                AxisMapping(column="axis2", type="String"),
+            ],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=0,
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+        lf = pl.LazyFrame({
+            "axis1": [3, 1, 2, 4, 5],
+            "axis2": ["c", "a", "b", "d", "e"],
+            "value": [30.0, 10.0, 20.0, 40.0, 50.0],
+        })
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space={"input_table": lf})
+            parquet_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(parquet_file))
+
+            self._assert_join_pushdown_metadata(
+                parquet_file,
+                bloom_axes=["axis1", "axis2"],
+                value_columns=["value"],
+                expected_num_row_groups=1,
+            )
+
+            # Data still reads back sorted by the declared axes.
+            actual = pl.read_parquet(parquet_file)
+            self.assertEqual(actual["axis1"].to_list(), [1, 2, 3, 4, 5])
+            self.assertEqual(actual["axis2"].to_list(), ["a", "b", "c", "d", "e"])
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
+    def test_parquet_metadata_multi_row_group(self):
+        """
+        Multi-row-group write: with >ROW_GROUP_SIZE rows the writer flushes more
+        than one row group. This is the case where the QA-critical "bloom must
+        be present on EVERY row group, not just the first" guarantee bites — a
+        single-row-group test cannot catch a regression that emits the bloom
+        for only the first batch.
+
+        We also exercise the page-index contract on a file that has multiple
+        pages per row group, which is the regime DataFusion actually exploits
+        for sub-row-group pruning.
+        """
+        # Just over 2× the writer's ROW_GROUP_SIZE (122880) → 3 row groups.
+        n_rows = 122880 * 2 + 1000
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("multi_rg_frame"))
+
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="multi_rg_frame",
+            axes=[AxisMapping(column="axis1", type="Long")],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=0,
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+        lf = pl.LazyFrame({
+            "axis1": list(range(n_rows)),
+            "value": [float(i) for i in range(n_rows)],
+        })
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space={"input_table": lf})
+            parquet_file = os.path.join(frame_dir, "partition_0.parquet")
+            self.assertTrue(os.path.exists(parquet_file))
+
+            # Three row groups expected at 122880-row batching.
+            md = pq.ParquetFile(parquet_file).metadata
+            self.assertGreater(md.num_row_groups, 1, "test must exercise multi-row-group path")
+
+            self._assert_join_pushdown_metadata(
+                parquet_file,
+                bloom_axes=["axis1"],
+                value_columns=["value"],
+                # don't pin the exact number — robust to writer chunking changes
+                expected_num_row_groups=None,
+            )
+
+            # Every row group is sorted within itself, and the min/max of
+            # consecutive row groups don't overlap — that's what makes
+            # row-group-level pruning possible on the join side. Without this
+            # check the test would still pass if the writer sorted globally
+            # but happened to shuffle rows across row groups.
+            prev_max: int | None = None
+            for rg_idx in range(md.num_row_groups):
+                col = md.row_group(rg_idx).column(0)  # axis1 is column 0
+                stats = col.statistics
+                self.assertIsNotNone(stats)
+                if prev_max is not None:
+                    self.assertGreater(
+                        stats.min, prev_max,
+                        f"row group {rg_idx} min {stats.min} overlaps prev row group "
+                        f"max {prev_max} — DataFusion row-group pruning will be lossy",
+                    )
+                prev_max = stats.max
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
+    def test_parquet_metadata_partitioned(self):
+        """
+        Partitioned write: `create_part_data(row=...)` builds a different
+        `sort_axis_names` (the non-partition axes only) and writes one parquet
+        per distinct partition key. This branch is the one most likely to drift
+        on a refactor — the partition axes must NOT appear in the file schema
+        (the partition value is encoded in the file name + DataInfoPart), and
+        the bloom/sort metadata must reference only the non-partition axes.
+        """
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path("partitioned_md_frame"))
+
+        write_frame_step = WriteFrame(
+            input_table="input_table",
+            frame_name="partitioned_md_frame",
+            axes=[
+                AxisMapping(column="pkey", type="String"),
+                AxisMapping(column="axis2", type="Long"),
+            ],
+            columns=[ColumnMapping(column="value", type="Double")],
+            partition_key_length=1,
+        )
+        ptw = PWorkflow(workflow=[write_frame_step])
+        lf = pl.LazyFrame({
+            "pkey": ["A", "A", "A", "B", "B"],
+            "axis2": [3, 1, 2, 2, 1],
+            "value": [10.0, 20.0, 30.0, 40.0, 50.0],
+        })
+
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+        try:
+            ptw.execute(global_settings=global_settings, initial_table_space={"input_table": lf})
+
+            # Two partition files (one per distinct pkey).
+            part_files = sorted(
+                f for f in os.listdir(frame_dir) if f.endswith(".parquet")
+            )
+            self.assertEqual(len(part_files), 2, f"expected 2 partition files, got {part_files}")
+
+            for part_file in part_files:
+                full = os.path.join(frame_dir, part_file)
+                schema_names = pq.read_schema(full).names
+                self.assertIn("axis2", schema_names)
+                self.assertIn("value", schema_names)
+                self.assertNotIn(
+                    "pkey", schema_names,
+                    f"partition-key axis 'pkey' must not appear in {part_file} schema "
+                    f"(it's encoded in the file name and DataInfoPart)",
+                )
+
+                # Bloom + sort metadata reference only the remaining axes —
+                # i.e. axis2, not pkey. This is the branch the original
+                # single-test coverage missed.
+                self._assert_join_pushdown_metadata(
+                    full,
+                    bloom_axes=["axis2"],
+                    value_columns=["value"],
+                )
+        finally:
+            if os.path.exists(frame_dir):
+                shutil.rmtree(frame_dir)
+
 
 if __name__ == '__main__':
     unittest.main()
