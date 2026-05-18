@@ -13,6 +13,11 @@ import { newTemplateFromContent, templateToSource } from "./template";
 import type winston from "winston";
 import { tryResolve, tryResolveOrError } from "@milaboratories/resolve-helper";
 import { serializeTemplate } from "@milaboratories/pl-model-backend";
+import {
+  assertTemplatePackSize,
+  assertWasmFileSize,
+  collectWasmContributions,
+} from "./pack_limits";
 
 // Convention: wasm component packages declare their wasm under a "wasm" condition
 // in package.json `exports`. Subpath "." maps to the tengo id "main"; subpath
@@ -423,6 +428,7 @@ function addWasmFile(
   // the bytes; the sourceHash is sha256 of the base64 string so it stays consistent
   // with the existing `hashToSource[hash] === stored value` invariant.
   const bytes = fs.readFileSync(file);
+  assertWasmFileSize(file, bytes.length, fullName);
   const source = bytes.toString("base64");
   const wasm = new ArtifactSource(mode, fullName, getSha256(source), source, file, [], []);
 
@@ -650,8 +656,14 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
     fs.mkdirSync(tplOutput, { recursive: true });
     for (const tpl of compiled.templates) {
       const file = path.resolve(tplOutput, tpl.fullName.id + compiledTplSuffix);
+      const packed = serializeTemplate(tpl.data);
+      assertTemplatePackSize(
+        fullNameToString(tpl.fullName),
+        packed.byteLength,
+        collectWasmContributions(tpl.data),
+      );
       logger.info(`  - writing ${file}`);
-      fs.writeFileSync(file, serializeTemplate(tpl.data));
+      fs.writeFileSync(file, packed);
     }
   }
 
