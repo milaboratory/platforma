@@ -6,13 +6,32 @@ import {
   PlRef,
   readAnnotation,
 } from "@platforma-sdk/model";
-import { z } from "zod";
 
-export const BlockData = z.object({
-  sources: z.array(PlRef).optional(),
-});
+/**
+ * Persistent block state — user input for the sum-numbers-v3 block.
+ *
+ * Spike probe — JSDoc on the alias and on each property must reach the
+ * bundled facade `.d.ts` through `InferDataType<typeof platforma>`.
+ */
+export type BlockData = {
+  /** Refs the user picked as input sources. Empty until at least one is selected. */
+  sources?: PlRef[];
+};
 
-export type BlockData = z.infer<typeof BlockData>;
+/**
+ * Outcome shape produced by the workflow once the run completes. Returned by
+ * the `sum` output lambda so the inferred property of `BlockOutputs` carries
+ * this named type and its JSDoc.
+ *
+ * Spike probe — named return type whose JSDoc must propagate downstream
+ * through `InferOutputsType`.
+ */
+export type SumOutcome = {
+  /** Computed sum of all input numbers. */
+  sum: number;
+  /** Number of input values used. */
+  count: number;
+};
 
 const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({ sources: undefined }));
 
@@ -55,7 +74,11 @@ export const platforma = BlockModelV3.create(dataModel)
       })),
   )
 
-  .output("sum", (ctx) => ctx.outputs?.resolve("sum")?.getDataAsJson<number>())
+  .output("sum", (ctx): SumOutcome | undefined => {
+    const sum = ctx.outputs?.resolve("sum")?.getDataAsJson<number>();
+    if (sum === undefined) return undefined;
+    return { sum, count: ctx.args?.sources?.length ?? 0 };
+  })
 
   .output("prerunArgsJson", (ctx) =>
     ctx.prerun?.resolve("prerunArgsJson")?.getDataAsJson<Record<string, unknown>>(),
@@ -73,3 +96,17 @@ export const platforma = BlockModelV3.create(dataModel)
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
+
+/**
+ * Reference shape exposed by this block — nominal record so downstream blocks
+ * can pin against it regardless of future shape changes.
+ *
+ * Spike probe — JSDoc on a hand-written helper type re-exported through the
+ * facade. Both alias-level JSDoc and per-property JSDoc must survive.
+ */
+export type SumNumbersRef = {
+  /** Nominal tag pinning this ref to the sum-numbers-v3 block. */
+  readonly kind: "sum-numbers-v3";
+  /** Sum value, populated once the workflow run completes. */
+  sum: number | undefined;
+};

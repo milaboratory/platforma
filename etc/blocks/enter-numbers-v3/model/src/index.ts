@@ -1,6 +1,5 @@
 import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
-import { z } from "zod";
 
 // Data version 1: just numbers
 type BlockDataV1 = {
@@ -13,14 +12,20 @@ type BlockDataV2 = {
   labels: string[];
 };
 
-// Data version 3 (current): added description
-export const $BlockData = z.object({
-  numbers: z.array(z.coerce.number()),
-  labels: z.array(z.string()),
-  description: z.string(),
-});
-
-export type BlockData = z.infer<typeof $BlockData>;
+/**
+ * Persistent block state for enter-numbers-v3. Version 3 of the schema.
+ *
+ * Spike probe — JSDoc on the alias and on each property must reach the
+ * bundled facade `.d.ts` through `InferDataType<typeof platforma>`.
+ */
+export type BlockData = {
+  /** Raw numbers entered by the user, in input order. */
+  numbers: number[];
+  /** Optional labels paired with each number. Empty until user provides one. */
+  labels: string[];
+  /** Human-friendly description of the dataset. */
+  description: string;
+};
 
 // Define data model with migrations from v1 to current
 const dataModel = new DataModelBuilder()
@@ -91,3 +96,17 @@ export const platforma = BlockModelV3.create(dataModel)
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
+
+/**
+ * Reference shape exposed by this block — nominal record pinning the entered
+ * numbers to the block identity.
+ *
+ * Spike probe — JSDoc on a hand-written helper type re-exported through the
+ * facade. Both alias-level JSDoc and per-property JSDoc must survive.
+ */
+export type EnterNumbersRef = {
+  /** Nominal tag pinning this ref to the enter-numbers-v3 block. */
+  readonly kind: "enter-numbers-v3";
+  /** Sorted numbers from the most recent run. */
+  numbers: readonly number[];
+};
