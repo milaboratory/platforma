@@ -17,3 +17,4 @@ MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime re
   compatible with old Desktops (Zod's `z.object` strips unknown keys).
 - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
 - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+- `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
