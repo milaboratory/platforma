@@ -4,7 +4,7 @@
 "@milaboratories/pl-model-backend": minor
 "@milaboratories/pl-model-middle-layer": minor
 "@platforma-sdk/block-tools": minor
-"@platforma-sdk/tengo-builder": minor
+"@platforma-sdk/tengo-builder": major
 "@platforma-sdk/workflow-tengo": minor
 ---
 
