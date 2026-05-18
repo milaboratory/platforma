@@ -980,16 +980,23 @@ class WriteFrameTests(unittest.TestCase):
             parquet_file = os.path.join(frame_dir, "partition_0.parquet")
             self.assertTrue(os.path.exists(parquet_file))
 
-            # Three row groups expected at 122880-row batching.
+            # Exactly ceil(n_rows / ROW_GROUP_SIZE) = 3 row groups expected:
+            # DuckDB yields one record batch per `rows_per_batch=ROW_GROUP_SIZE`,
+            # and pyarrow's ParquetWriter.write_batch flushes each batch as a
+            # single row group. Asserting `> 1` would mask a regression that
+            # consolidates batches into fewer row groups; pin the exact count.
             md = pq.ParquetFile(parquet_file).metadata
-            self.assertGreater(md.num_row_groups, 1, "test must exercise multi-row-group path")
+            self.assertEqual(
+                md.num_row_groups, 3,
+                f"expected 3 row groups for {n_rows} rows at ROW_GROUP_SIZE=122880, "
+                f"got {md.num_row_groups} — has write_batch's per-call flush behavior changed?",
+            )
 
             self._assert_join_pushdown_metadata(
                 parquet_file,
                 bloom_axes=["axis1"],
                 value_columns=["value"],
-                # don't pin the exact number — robust to writer chunking changes
-                expected_num_row_groups=None,
+                expected_num_row_groups=3,
             )
 
             # Every row group is sorted within itself, and the min/max of
@@ -997,9 +1004,11 @@ class WriteFrameTests(unittest.TestCase):
             # row-group-level pruning possible on the join side. Without this
             # check the test would still pass if the writer sorted globally
             # but happened to shuffle rows across row groups.
+            schema_col_names = [md.schema.column(i).name for i in range(md.num_columns)]
+            axis1_idx = schema_col_names.index("axis1")
             prev_max: int | None = None
             for rg_idx in range(md.num_row_groups):
-                col = md.row_group(rg_idx).column(0)  # axis1 is column 0
+                col = md.row_group(rg_idx).column(axis1_idx)
                 stats = col.statistics
                 self.assertIsNotNone(stats)
                 if prev_max is not None:
