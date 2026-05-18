@@ -1,5 +1,138 @@
 # @milaboratories/pl-middle-layer
 
+## 1.60.3
+
+### Patch Changes
+
+- Updated dependencies [40f11d2]
+  - @platforma-sdk/workflow-tengo@5.24.0
+
+## 1.60.2
+
+### Patch Changes
+
+- f302c2f: Fix block VM OOM diagnostics
+
+  - Fix off-by-one bug in `ErrorRepository.getOriginal` that mangled native QuickJS error names into nonsense like `nalError` when `cause.name` did not contain a `/uuid:` suffix; native errors (`InternalError: out of memory`, stack overflow) now surface verbatim.
+  - Log `currentStorageJson` and payload (full JSON content + sizes) on storage-update failure, and log sizes on entry when `MI_LOG_JS_EXEC_STAT` is set, so VM OOMs are diagnosable from logs.
+
+- Updated dependencies [f302c2f]
+- Updated dependencies [f302c2f]
+  - @platforma-sdk/model@1.77.0
+
+## 1.60.1
+
+### Patch Changes
+
+- Updated dependencies [33b2425]
+  - @milaboratories/pl-deployments@2.17.18
+
+## 1.60.0
+
+### Minor Changes
+
+- b1ea44e: optimize resource tree updates
+
+### Patch Changes
+
+- Updated dependencies [b1ea44e]
+  - @milaboratories/pl-client@3.5.0
+  - @milaboratories/pl-tree@1.11.0
+  - @milaboratories/pl-model-backend@1.2.29
+  - @milaboratories/pl-drivers@1.14.7
+  - @milaboratories/pl-errors@1.4.7
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.15
+
+### Patch Changes
+
+- Updated dependencies [b4f9e33]
+  - @platforma-sdk/model@1.76.5
+
+## 1.59.14
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pf-driver@1.4.11
+  - @milaboratories/pf-spec-driver@1.3.16
+  - @milaboratories/pl-model-middle-layer@1.19.4
+  - @milaboratories/pl-client@3.4.2
+  - @milaboratories/pl-deployments@2.17.17
+  - @milaboratories/pl-drivers@1.14.6
+  - @platforma-sdk/model@1.76.4
+  - @platforma-sdk/block-tools@2.7.25
+  - @milaboratories/pl-model-backend@1.2.28
+  - @milaboratories/pl-errors@1.4.6
+  - @milaboratories/pl-tree@1.10.6
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.13
+
+### Patch Changes
+
+- Updated dependencies [e5e1ed5]
+  - @platforma-sdk/workflow-tengo@5.23.0
+
+## 1.59.12
+
+### Patch Changes
+
+- Updated dependencies [8dd1fa4]
+  - @platforma-sdk/workflow-tengo@5.22.0
+
+## 1.59.11
+
+### Patch Changes
+
+- d93d296: Support AbortSignal
+- Updated dependencies [d93d296]
+  - @platforma-sdk/block-tools@2.7.24
+
+## 1.59.10
+
+### Patch Changes
+
+- Updated dependencies [b631ce0]
+  - @platforma-sdk/model@1.75.10
+
+## 1.59.9
+
+### Patch Changes
+
+- Updated dependencies [bcf1107]
+  - @milaboratories/pl-client@3.4.1
+  - @milaboratories/pl-model-backend@1.2.27
+  - @milaboratories/pl-drivers@1.14.5
+  - @milaboratories/pl-errors@1.4.5
+  - @milaboratories/pl-tree@1.10.5
+  - @platforma-sdk/workflow-tengo@5.21.0
+
+## 1.59.8
+
+### Patch Changes
+
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+
+## 1.59.7
+
+### Patch Changes
+
+- Updated dependencies [846df2e]
+  - @milaboratories/pf-spec-driver@1.3.15
+  - @milaboratories/pf-driver@1.4.10
+  - @platforma-sdk/model@1.75.5
+
+## 1.59.6
+
+### Patch Changes
+
+- Updated dependencies [63dc54d]
+  - @platforma-sdk/model@1.75.5
+
 ## 1.59.5
 
 ### Patch Changes

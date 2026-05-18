@@ -16,9 +16,11 @@ render := import(":render")
 enum := import("enum")
 oop := import(":oop")
 constants := import(":constants")
+canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 units := import(":units")
+feats := import(":feats")
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -795,11 +797,24 @@ builder := func() {
 		 * When called with the same fileName multiple times,
 		 * the last call will overwrite the previous ones.
 		 *
+		 * Maps and arrays are serialized via `canonical.encode` (sorted keys at
+		 * every level) so the resulting bytes — and therefore the exec step's
+		 * dedup CID — are stable across runs. Callers that previously did
+		 * `writeFile(name, json.encode(value))` should pass `value` directly.
+		 *
 		 * @param fileName: string - the name of the content.
-		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to
-		 *        a resource from which data we create a file.
+		 * @param data: string|bytes|map|array|reference - the content to write.
+		 *        Maps and arrays are canonicalized to JSON; strings / bytes /
+		 *        references are passed through unchanged.
 		 */
 		writeFile: func(fileName, data, ...opts) {
+			// Auto-encode value-like inputs (regular / immutable / strict maps
+			// and arrays) into canonical JSON. Explicitly exclude smart
+			// references — they're implemented as strict maps and would
+			// otherwise be stringified, breaking downstream resource handling.
+			if (ll.isMap(data) || is_array(data)) && !smart.isReference(data) {
+				data = canonical.encode(data)
+			}
 			validation.assertType(data, ["or",
 				"string",
 				"bytes",
@@ -1220,5 +1235,11 @@ builder := func() {
 }
 
 export ll.toStrict({
-	builder: builder
+	builder: builder,
+
+	// True when at least one backend runner advertises GPU availability.
+	// Gate .gpuMemory() calls in blocks that have a CPU fallback path:
+	//   if exec.hasGpu { builder = builder.gpuMemory("16GiB") }
+	// Calling .gpuMemory() against a backend without GPU produces a permanent error.
+	hasGpu: feats.hasGpu
 })

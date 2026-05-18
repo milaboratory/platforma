@@ -1,5 +1,24 @@
 # @milaboratories/pl-client
 
+## 3.5.0
+
+### Minor Changes
+
+- b1ea44e: optimize resource tree updates
+
+## 3.4.2
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+
+## 3.4.1
+
+### Patch Changes
+
+- bcf1107: Compatibility with backend 3.0.2 and some prev versions
+
 ## 3.4.0
 
 ### Minor Changes

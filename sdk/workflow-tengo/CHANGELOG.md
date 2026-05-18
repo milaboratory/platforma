@@ -1,5 +1,61 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.24.0
+
+### Minor Changes
+
+- 40f11d2: `exec.builder().writeFile(name, data)` now accepts maps and arrays directly and serializes them via `canonical.encode` (sorted keys at every level). Previously, callers wrote `writeFile(name, json.encode(value))` and relied on Tengo stdlib `json.encode`, which preserves Go's randomized map iteration order — so the file bytes (and the exec step's dedup CID) varied across runs of identical input.
+
+  Strings, bytes, and resource references pass through unchanged.
+
+  Migrated all internal call sites in the SDK (`pframes/util.lib.tengo`, `pframes/xsv-import-file.lib.tengo`, `pt/workflow-run.tpl.tengo`) to pass the map/array directly. External callers that already use `writeFile(name, json.encode(value))` are not broken — but should migrate to `writeFile(name, value)` to get CID stability.
+
+## 5.23.0
+
+### Minor Changes
+
+- e5e1ed5: Re-export `hasGpu` from the `exec` library so block code reads `exec.hasGpu` instead of pulling the feature-flag catalogue directly. Feature flags are an internal mechanism — exposing the public GPU-availability signal through `exec` keeps the block-developer surface aligned with `exec.builder().gpuMemory()`, the call it gates.
+
+  ```go
+  exec := import("@platforma-sdk/workflow-tengo:exec")
+
+  builder := exec.builder().software(sw).cpu(8).mem("24GiB")
+  if exec.hasGpu {
+      builder = builder.gpuMemory("16GiB")
+  }
+  ```
+
+  `feats.hasGpu` continues to exist; new block code should prefer `exec.hasGpu`.
+
+## 5.22.0
+
+### Minor Changes
+
+- 8dd1fa4: Workdir fill rules now default to read-only (0o400). The backend hardlinks
+  the input from its content-addressable archive cache to the workdir
+  instead of copying — the workdir entry shares the inode with the archive
+  entry and is immutable.
+
+  Three fill-rule shapes change:
+
+  - `_getFileFillRule.permissions`: 0o600 → 0o400
+  - `_getArchiveFillRule.extractRules.filePerms`: 0o600 → 0o400
+  - `_getValueFillRule.permissions`: 0o600 → 0o400
+
+  Workflows that legitimately need a writable copy of an input (rare; it
+  usually means the tool mutates the input in place, which violates
+  immutability) should pass `permissions: 0o600` explicitly. The backend
+  will then copy the file to a fresh inode in the workdir, leaving the
+  archive entry untouched.
+
+  Pairs with the FS-storage honor-request change in pl: `addFileToWorkdir`
+  takes the hardlink fast path iff the rule's permissions exactly match
+  the archive entry's canonical mode (0o400). Anything else copies. Old
+  workflows built against this SDK that did not pass an explicit mode (and
+  therefore relied on the previous 0o600 default) will land in the copy
+  branch on upgrade — observable behaviour matches the pre-PR-1810 era for
+  those flows, with the archive entry safe.
+
 ## 5.21.0
 
 ### Minor Changes

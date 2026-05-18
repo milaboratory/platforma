@@ -1,5 +1,125 @@
 # @platforma-sdk/ui-vue
 
+## 1.77.0
+
+### Minor Changes
+
+- f302c2f: PlAgDataTableV2: shrink persisted grid colIds by ~16×
+
+  The AG Grid `colId` produced by `PlAgDataTableV2` is now `canonicalizeJson<PTableColumnId>(getPTableColumnId(spec))` instead of `canonicalizeJson<PTableColumnSpec>(spec)`. The full column spec (including all annotations and the `pl7.app/trace` chain) used to be embedded in every entry of `orderedColIds` and `hiddenColIds`; for tables with ~1,500+ columns this could push persisted block storage past 10 MB and trip the QuickJS heap cap during `mutate-block-storage`.
+
+  Measured on a real ~1,600-column overlap table: persisted block-storage payload drops from 11.5 MB to 0.7 MB.
+
+  The full `PTableColumnSpec` remains available on each `ColDef.context` for callsites that have a live ColDef (`useFilterableColumns`, CSV export). State-only callsites (sort model, hidden column ids) now parse the colId directly as a `PTableColumnId` instead of a full spec.
+
+  State version bumped to 7; a v6→v7 migration rewrites every persisted colId in place. v4 and v5 chains pass through v6 first.
+
+### Patch Changes
+
+- Updated dependencies [f302c2f]
+- Updated dependencies [f302c2f]
+  - @platforma-sdk/model@1.77.0
+  - @milaboratories/uikit@2.14.10
+
+## 1.76.7
+
+### Patch Changes
+
+- c1d7e8f: PlDatasetSelector - returned description for filter variants
+
+## 1.76.5
+
+### Patch Changes
+
+- b4f9e33: `PlDatasetSelector` filter rows used to render as the dataset's name (e.g.
+  "Bulk") instead of the producing block's name (e.g. "Top 10"). Root cause:
+  the parent dataset's trace ends with a high-importance
+  `samples-and-data/dataset` step ("Bulk", importance 100); with a single
+  filter `deriveDistinctLabels` had no peer to disambiguate against and
+  picked that step.
+
+  Fix: `filterMatchesToOptions` now includes the dataset spec as an extra
+  entry when calling `deriveDistinctLabels`, then discards its label. The
+  algorithm is forced to pick types that distinguish each filter from the
+  dataset, surfacing the filter-specific trace step. Filter labels carry the
+  dataset name as a prefix (e.g. "Bulk / Top 10"); `PlDatasetSelector` drops
+  the now-redundant dataset-name subtitle on filter rows.
+
+  Filter columns inherit the dataset's `pl7.app/label` annotation; the
+  filter-discovery code now suppresses native labels via
+  `formatters.native` so the algorithm reaches into the trace for
+  disambiguation.
+
+  `filterMatchesToOptions` signature: `(matches, options)` where
+  `FilterMatchOptions = { refsByObjectId, datasetSpec }`. The previous
+  trailing `labelOptions?` positional is removed — it had no real callers,
+  and the function's native-label suppression is load-bearing so accepting
+  arbitrary formatter overrides would risk regressing the fix.
+
+- b4f9e33: `PlDatasetSelector`: carry `enrichments` inside the dropdown `Selection`
+  value so `onChange` no longer needs a separate `findOption` lookup over
+  `props.options`.
+- Updated dependencies [b4f9e33]
+  - @platforma-sdk/model@1.76.5
+  - @milaboratories/uikit@2.14.9
+
+## 1.76.4
+
+### Patch Changes
+
+- Updated dependencies [2b928af]
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pf-spec-driver@1.3.16
+  - @platforma-sdk/model@1.76.4
+  - @milaboratories/uikit@2.14.8
+
+## 1.76.0
+
+### Minor Changes
+
+- 9310b53: `PlDatasetSelector` now renders datasets and their filters in a single dropdown — each dataset row is followed by its filter rows, with the parent dataset label shown as the row description. Removed the `filterLabel` and `filterPlaceholder` props (no longer applicable).
+
+## 1.75.10
+
+### Patch Changes
+
+- Updated dependencies [b631ce0]
+  - @platforma-sdk/model@1.75.10
+  - @milaboratories/uikit@2.14.7
+
+## 1.75.8
+
+### Patch Changes
+
+- dd5db77: public outputs for plugins
+- Updated dependencies [dd5db77]
+  - @platforma-sdk/model@1.75.8
+  - @milaboratories/uikit@2.14.6
+
+## 1.75.7
+
+### Patch Changes
+
+- 5a70c0f: Fix `@cell-button-clicked` not firing on PlAgDataTableV2 when the configured axis has a label column. Since the predefined-label change in 1.75.0, labelled axes are replaced in the grid by their label column, so the cell-button cellRendererSelector — which only matched `type:"axis"` ColDefs — never installed. Now also resolve the axis on single-axis label columns whose labeled axis equals `showCellButtonForAxisId`.
+- Updated dependencies [5a70c0f]
+  - @milaboratories/uikit@2.14.5
+
+## 1.75.6
+
+### Patch Changes
+
+- Updated dependencies [846df2e]
+  - @milaboratories/pf-spec-driver@1.3.15
+  - @platforma-sdk/model@1.75.5
+
+## 1.75.5
+
+### Patch Changes
+
+- Updated dependencies [63dc54d]
+  - @platforma-sdk/model@1.75.5
+  - @milaboratories/uikit@2.14.4
+
 ## 1.75.2
 
 ### Patch Changes

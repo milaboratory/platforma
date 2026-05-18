@@ -17,7 +17,7 @@ import { canonicalizeJson, getAxisId, parseJson, uniqueBy } from "@milaboratorie
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import type { RenderCtxBase, PColumnDataUniversal } from "../../../render";
 import { isEmpty } from "es-toolkit/compat";
-import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV6";
+import type { PlDataTableFilters, PlDataTableFilterSpecLeaf, PlDataTableModel } from "../typesV7";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { ColumnSelector, ColumnSnapshot, ColumnVariant, MatchingMode } from "../../../columns";
@@ -105,12 +105,14 @@ export function createPlDataTableV3<A, U>(
   const splited = splitDiscoveredColumns(discovered);
 
   const derivedLabels = deriveAllLabels({
-    columns: discovered.map((dc) => ({
-      id: dc.column.id,
-      spec: dc.column.spec,
-      linkerPath: dc.path,
-      qualifications: dc.qualifications,
-    })),
+    columns: discovered
+      .map((dc) => ({
+        id: dc.column.id,
+        spec: dc.column.spec,
+        linkerPath: dc.path,
+        qualifications: dc.qualifications,
+      }))
+      .filter((v) => !isColumnHidden(v.spec)),
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,

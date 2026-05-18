@@ -24,17 +24,11 @@ const optionsWithFilters: DatasetOption[] = [
     ],
     enrichments: enrichmentsA,
   },
-  // Dataset B has no filters — filter dropdown is rendered but with no options.
+  // Dataset B has no filters — it appears as a single row with no children.
   { primary: { label: "Dataset B", ref: datasetB } },
 ];
 
-const datasetC = createPlRef("3", "out-c", true);
-
 const optionsNoFilters: DatasetOption[] = [{ primary: { label: "Dataset B", ref: datasetB } }];
-
-const optionsWithEmptyFilters: DatasetOption[] = [
-  { primary: { label: "Dataset C", ref: datasetC }, filters: [] },
-];
 
 function selection(
   ref: typeof datasetA,
@@ -45,57 +39,46 @@ function selection(
 }
 
 async function pickOption(index: number) {
-  const options = [...document.body.querySelectorAll(".dropdown-list-item")] as HTMLElement[];
-  options[index].click();
+  const items = [...document.body.querySelectorAll(".dropdown-list-item")] as HTMLElement[];
+  items[index].click();
   await flushPromises();
 }
 
 describe("PlDatasetSelector", () => {
-  it("always renders both dataset and filter dropdowns", async () => {
+  it("renders a single dropdown that lists datasets and filters together", async () => {
     const wrapper = mount(PlDatasetSelector, {
-      props: { modelValue: undefined, options: optionsNoFilters },
+      props: { modelValue: undefined, options: optionsWithFilters },
       attachTo: document.body,
     });
     await flushPromises();
 
-    const selector = wrapper.find(".pl-dataset-selector");
-    expect(selector.exists()).toBe(true);
-    expect(selector.element.children.length).toBe(2);
+    expect(wrapper.findAll("input").length).toBe(1);
+    await wrapper.find("input").trigger("focus");
+
+    const items = document.body.querySelectorAll(".dropdown-list-item");
+    // Dataset A + 2 filters under it + Dataset B.
+    expect(items.length).toBe(4);
     wrapper.unmount();
   });
 
-  it("filter dropdown is rendered when the selected dataset has filters", async () => {
+  it("uses the filter option's label as the row's display label", async () => {
     const wrapper = mount(PlDatasetSelector, {
-      props: { modelValue: selection(datasetA), options: optionsWithFilters },
+      props: { modelValue: undefined, options: optionsWithFilters },
       attachTo: document.body,
     });
     await flushPromises();
 
-    expect(wrapper.find(".pl-dataset-selector").element.children.length).toBe(2);
+    await wrapper.find("input").trigger("focus");
+    const items = [...document.body.querySelectorAll(".dropdown-list-item")] as HTMLElement[];
+    expect(items[1].textContent).toContain("Top 1000");
+    expect(items[2].textContent).toContain("High quality");
     wrapper.unmount();
   });
 
-  it("filter dropdown is still rendered (with no options) when the selected dataset has no filters", async () => {
-    const wrapper = mount(PlDatasetSelector, {
-      props: { modelValue: selection(datasetB), options: optionsWithFilters },
-      attachTo: document.body,
-    });
-    await flushPromises();
-
-    expect(wrapper.find(".pl-dataset-selector").element.children.length).toBe(2);
-
-    // Opening the filter dropdown shows no options.
-    const inputs = wrapper.findAll("input");
-    expect(inputs.length).toBe(2);
-    await inputs[1].trigger("focus");
-    expect(document.body.querySelectorAll(".dropdown-list-item").length).toBe(0);
-    wrapper.unmount();
-  });
-
-  it("emits DatasetSelection bundling primary + enrichments when dataset changes", async () => {
+  it("emits DatasetSelection bundling primary + enrichments when a dataset is picked", async () => {
     const wrapper = mount(PlDatasetSelector, {
       props: {
-        modelValue: selection(datasetA, filterA1, enrichmentsA),
+        modelValue: undefined,
         options: optionsWithFilters,
         "onUpdate:modelValue": (e: DatasetSelection | undefined) =>
           wrapper.setProps({ modelValue: e }),
@@ -104,25 +87,25 @@ describe("PlDatasetSelector", () => {
     });
     await flushPromises();
 
-    const inputs = wrapper.findAll("input");
-    await inputs[0].trigger("focus");
-    // Dataset A is index 0; pick Dataset B (index 1) — has no enrichments.
-    await pickOption(1);
+    await wrapper.find("input").trigger("focus");
+    // Items in order: Dataset A, filterA1, filterA2, Dataset B.
+    await pickOption(0);
 
     const emitted = wrapper.emitted("update:modelValue");
     expect(emitted).toBeDefined();
     const last = emitted![emitted!.length - 1][0] as DatasetSelection;
     expect(last).toEqual({
       __isDatasetSelection: "v1",
-      primary: { __isPrimaryRef: "v1", column: datasetB },
+      primary: { __isPrimaryRef: "v1", column: datasetA },
+      enrichments: enrichmentsA,
     });
     wrapper.unmount();
   });
 
-  it("emits DatasetSelection with filter set when a filter is picked", async () => {
+  it("emits DatasetSelection with filter set when a filter row is picked", async () => {
     const wrapper = mount(PlDatasetSelector, {
       props: {
-        modelValue: selection(datasetA, undefined, enrichmentsA),
+        modelValue: undefined,
         options: optionsWithFilters,
         "onUpdate:modelValue": (e: DatasetSelection | undefined) =>
           wrapper.setProps({ modelValue: e }),
@@ -131,11 +114,9 @@ describe("PlDatasetSelector", () => {
     });
     await flushPromises();
 
-    const inputs = wrapper.findAll("input");
-    expect(inputs.length).toBe(2);
-    await inputs[1].trigger("focus");
-    // Options: [Top 1000, High quality]. Pick "Top 1000".
-    await pickOption(0);
+    await wrapper.find("input").trigger("focus");
+    // Pick filterA1 — index 1 in the flat list.
+    await pickOption(1);
 
     const emitted = wrapper.emitted("update:modelValue");
     expect(emitted).toBeDefined();
@@ -148,72 +129,7 @@ describe("PlDatasetSelector", () => {
     wrapper.unmount();
   });
 
-  it("emits DatasetSelection with no filter key when the filter dropdown is cleared", async () => {
-    const wrapper = mount(PlDatasetSelector, {
-      props: {
-        modelValue: selection(datasetA, filterA1, enrichmentsA),
-        options: optionsWithFilters,
-        "onUpdate:modelValue": (e: DatasetSelection | undefined) =>
-          wrapper.setProps({ modelValue: e }),
-      },
-      attachTo: document.body,
-    });
-    await flushPromises();
-
-    // The filter dropdown is the second .clear button (the first belongs to
-    // the dataset dropdown, but it's only present when the dataset selector
-    // itself is clearable; here only the filter is clearable by default).
-    const clearBtns = wrapper.findAll(".clear");
-    expect(clearBtns.length).toBeGreaterThan(0);
-    await clearBtns[clearBtns.length - 1].trigger("click");
-
-    const emitted = wrapper.emitted("update:modelValue");
-    expect(emitted).toBeDefined();
-    const last = emitted![emitted!.length - 1][0] as DatasetSelection;
-    expect(last.primary).toEqual({ __isPrimaryRef: "v1", column: datasetA });
-    expect("filter" in last.primary).toBe(false);
-    expect(last.enrichments).toEqual(enrichmentsA);
-    wrapper.unmount();
-  });
-
-  it("filter dropdown is still rendered (with no options) when dataset has filters: [] (empty array)", async () => {
-    const wrapper = mount(PlDatasetSelector, {
-      props: { modelValue: selection(datasetC), options: optionsWithEmptyFilters },
-      attachTo: document.body,
-    });
-    await flushPromises();
-
-    expect(wrapper.find(".pl-dataset-selector").element.children.length).toBe(2);
-
-    const inputs = wrapper.findAll("input");
-    await inputs[1].trigger("focus");
-    expect(document.body.querySelectorAll(".dropdown-list-item").length).toBe(0);
-    wrapper.unmount();
-  });
-
-  it("does not emit on mount when no filter is selected", async () => {
-    const wrapper = mount(PlDatasetSelector, {
-      props: {
-        modelValue: selection(datasetA),
-        options: optionsWithFilters,
-        "onUpdate:modelValue": (e: DatasetSelection | undefined) =>
-          wrapper.setProps({ modelValue: e }),
-      },
-      attachTo: document.body,
-    });
-    await flushPromises();
-
-    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
-
-    const inputs = wrapper.findAll("input");
-    expect(inputs.length).toBe(2);
-    await inputs[1].trigger("focus");
-    const items = document.body.querySelectorAll(".dropdown-list-item");
-    expect(items.length).toBe(2); // Top 1000, High quality — no synthetic "No filter"
-    wrapper.unmount();
-  });
-
-  it("emits DatasetSelection without enrichments when the option carries none", async () => {
+  it("emits DatasetSelection without enrichments when the picked option carries none", async () => {
     const wrapper = mount(PlDatasetSelector, {
       props: {
         modelValue: undefined,
@@ -225,8 +141,7 @@ describe("PlDatasetSelector", () => {
     });
     await flushPromises();
 
-    const inputs = wrapper.findAll("input");
-    await inputs[0].trigger("focus");
+    await wrapper.find("input").trigger("focus");
     await pickOption(0);
 
     const emitted = wrapper.emitted("update:modelValue");
@@ -240,7 +155,7 @@ describe("PlDatasetSelector", () => {
     wrapper.unmount();
   });
 
-  it("emits undefined when cleared via the dataset dropdown", async () => {
+  it("emits undefined when cleared", async () => {
     const wrapper = mount(PlDatasetSelector, {
       props: {
         modelValue: selection(datasetA, filterA1, enrichmentsA),
@@ -253,15 +168,30 @@ describe("PlDatasetSelector", () => {
     });
     await flushPromises();
 
-    // First .clear button is on the dataset dropdown (clearable: true).
-    const clearBtns = wrapper.findAll(".clear");
-    expect(clearBtns.length).toBeGreaterThan(0);
-    await clearBtns[0].trigger("click");
+    const clearBtn = wrapper.find(".clear");
+    expect(clearBtn.exists()).toBe(true);
+    await clearBtn.trigger("click");
 
     const emitted = wrapper.emitted("update:modelValue");
     expect(emitted).toBeDefined();
     const last = emitted![emitted!.length - 1][0];
     expect(last).toBeUndefined();
+    wrapper.unmount();
+  });
+
+  it("does not emit on mount when a value is provided", async () => {
+    const wrapper = mount(PlDatasetSelector, {
+      props: {
+        modelValue: selection(datasetA),
+        options: optionsWithFilters,
+        "onUpdate:modelValue": (e: DatasetSelection | undefined) =>
+          wrapper.setProps({ modelValue: e }),
+      },
+      attachTo: document.body,
+    });
+    await flushPromises();
+
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
     wrapper.unmount();
   });
 });

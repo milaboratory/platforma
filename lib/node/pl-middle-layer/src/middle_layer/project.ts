@@ -1,5 +1,10 @@
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import type { FieldData, OptionalAnyResourceId, SignedResourceId } from "@milaboratories/pl-client";
+import type {
+  FieldData,
+  Filter,
+  OptionalAnyResourceId,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
 import {
   DefaultRetryOptions,
   ensureSignedResourceIdNotNull,
@@ -8,6 +13,9 @@ import {
   isTimeoutOrCancelError,
   Pl,
   resourceIdToString,
+  ResourceTypeName,
+  ResourceTypePrefix,
+  treeFilter,
 } from "@milaboratories/pl-client";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
@@ -723,6 +731,8 @@ export class Project {
       {
         ...env.ops.defaultTreeOptions,
         pruning: projectTreePruning(env.logger),
+        fieldFilter: projectTreeFieldFilter(),
+        traverseStopRules: projectTreeTraverseStopRules(),
       },
       env.logger,
     );
@@ -739,7 +749,7 @@ export class Project {
   }
 }
 
-function projectTreePruning(logger: MiLogger): PruningFunction {
+export function projectTreePruning(logger: MiLogger): PruningFunction {
   return (r: ExtendedResourceData): FieldData[] => {
     if (r.fields.length > 1000)
       logger.warn(
@@ -761,6 +771,172 @@ function projectTreePruning(logger: MiLogger): PruningFunction {
         return r.fields;
     }
   };
+}
+
+/** ResourceTree analogue of projectTreePruning() used by modern backend path. */
+export function projectTreeFieldFilter(): Filter {
+  return treeFilter.not(
+    treeFilter.or(
+      // StreamWorkdir/* — pruned entirely
+      treeFilter.resourceTypeMatch("^StreamWorkdir/"),
+      // BlockPackCustom: drop `template`
+      treeFilter.and(
+        treeFilter.resourceTypeEq("BlockPackCustom"),
+        treeFilter.fieldNameEq("template"),
+      ),
+      // UserProject: drop `__serviceTemplate*`
+      treeFilter.and(
+        treeFilter.resourceTypeEq("UserProject"),
+        treeFilter.fieldNameMatch("^__serviceTemplate"),
+      ),
+      // Blob — pruned entirely
+      treeFilter.resourceTypeEq("Blob"),
+    ),
+  );
+}
+
+/**
+ * Stop-rules for the ResourceTree backend path.
+ *
+ * Mirrors every case of DefaultFinalResourceDataPredicate in the same order.
+ * The mapping from BFS predicate logic to backend filter conditions:
+ *
+ *   BFS predicate always true
+ *     → no readyOrDuplicateOrError guard; backend stops traversal unconditionally.
+ *
+ *   BFS predicate: readyOrDuplicateOrError(r)
+ *     → readyOrDuplicateOrError(): stops when resource_ready_for_calculation,
+ *       is_duplicate, or has_errors is true — exactly mirroring the BFS predicate.
+ *
+ *   BFS predicate: readyAndHasAllOutputsFilled(r)
+ *     → isFinal(true) + allOutputsFinal(true).
+ *
+ *   BFS predicate always false (UserProject, Projects, ClientRoot)
+ *     → no entry here; traversal always continues into them.
+ */
+export function projectTreeTraverseStopRules(): Filter {
+  return treeFilter.or(
+    // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR stream.value===downloadable.value).
+    // datactl sets stream field to point at the same resource as downloadable once processing
+    // is complete, so stream.value===downloadable.value is the "done" signal.
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.StreamManager),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    // BFS: readyOrDuplicateOrError(r)
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.StdMap),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.StdMapSlash),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.EphStdMap),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.PFrame),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.ParquetChunk),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BContext),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BlockPackCustom),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BinaryMap),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BinaryValue),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BlobMap),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingle),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingleNoResult),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.BQueryResult),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.TengoTemplate),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.TengoLib),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.SoftwareInfo),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeEq(ResourceTypeName.Dummy),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    // BFS: r.type.version === "1" → always true → no state guard needed
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonResourceError),
+    // BFS: return true (unconditionally) → no readyOrDuplicateOrError guard needed
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonObject),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonGzObject),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonString),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonArray),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonNumber),
+    treeFilter.resourceTypeEq(ResourceTypeName.BContextEnd),
+    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromUrl),
+    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromFolder),
+    treeFilter.resourceTypeEq(ResourceTypeName.BObjectSpec),
+    treeFilter.resourceTypeEq(ResourceTypeName.Blob),
+    treeFilter.resourceTypeEq(ResourceTypeName.Null),
+    treeFilter.resourceTypeEq(ResourceTypeName.Binary),
+    treeFilter.resourceTypeEq(ResourceTypeName.LSProvider),
+    treeFilter.resourceTypeEq(ResourceTypeName.WorkingDirectory),
+    // BFS default branch: startsWith prefix → return true → no guard needed
+    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.Blob),
+    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.LS),
+    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.WorkingDirectory),
+    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StorageSpaceAllocation),
+    // BFS default branch: readyAndHasAllOutputsFilled → readyOrDuplicateOrError() + outputsLocked(true) + allOutputsFinal(true)
+    treeFilter.and(
+      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobUpload),
+      treeFilter.readyOrDuplicateOrError(),
+      treeFilter.outputsLocked(true),
+      treeFilter.allOutputsFinal(true),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobIndex),
+      treeFilter.readyOrDuplicateOrError(),
+      treeFilter.outputsLocked(true),
+      treeFilter.allOutputsFinal(true),
+    ),
+    // BFS default branch: readyOrDuplicateOrError
+    treeFilter.and(
+      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.PColumnData),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+    treeFilter.and(
+      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StreamWorkdir),
+      treeFilter.readyOrDuplicateOrError(),
+    ),
+  );
 }
 
 /** Returns true if sdk version of the block is old and we need to convert

@@ -152,7 +152,16 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
         forcedSet,
         separator,
       );
-      return build(minimized, false) ?? throwError("Failed to derive unique labels");
+      const minimizedLabels =
+        build(minimized, false) ?? throwError("Failed to derive unique labels");
+      return dropRedundantLinkerSuffix(
+        records,
+        minimized,
+        forceTraceElements,
+        forcedSet,
+        separator,
+        minimizedLabels,
+      );
     }
 
     additionalType++;
@@ -171,7 +180,15 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
     forcedSet,
     separator,
   );
-  return build(minimized, true) ?? throwError("Failed to derive unique labels");
+  const minimizedLabels = build(minimized, true) ?? throwError("Failed to derive unique labels");
+  return dropRedundantLinkerSuffix(
+    records,
+    minimized,
+    forceTraceElements,
+    forcedSet,
+    separator,
+    minimizedLabels,
+  );
 }
 
 // --- Pure helpers ---
@@ -359,6 +376,44 @@ function classifyTypes(
   return { mainTypes, secondaryTypes };
 }
 
+function renderRecordLabel(
+  record: EnrichedRecord,
+  includedTypes: Set<string>,
+  forceTraceElements: Set<string> | undefined,
+  separator: string,
+): string | undefined {
+  const traceParts: string[] = [];
+  const anchorParts: string[] = [];
+  let linkerLabel: string | undefined;
+  let hitLabel: string | undefined;
+
+  for (const ft of record.fullTrace) {
+    if (!(includedTypes.has(ft.fullType) || forceTraceElements?.has(ft.type))) continue;
+    if (ft.type === LINKER_TYPE) linkerLabel = ft.label;
+    else if (ft.type === HIT_QUAL_TYPE) hitLabel = ft.label;
+    else if (isAnchorQualType(ft.type)) anchorParts.push(ft.label);
+    else traceParts.push(ft.label);
+  }
+
+  const isEmpty =
+    traceParts.length === 0 &&
+    anchorParts.length === 0 &&
+    linkerLabel === undefined &&
+    hitLabel === undefined;
+
+  if (isEmpty) return undefined;
+
+  let label = traceParts.join(separator);
+  const append = (part: string) => {
+    label = label.length === 0 ? part : `${label} ${part}`;
+  };
+  if (linkerLabel !== undefined) append(linkerLabel);
+  for (const a of anchorParts) append(a);
+  if (hitLabel !== undefined) append(hitLabel);
+
+  return label;
+}
+
 function buildLabels(
   records: EnrichedRecord[],
   includedTypes: Set<string>,
@@ -369,43 +424,58 @@ function buildLabels(
   const result: string[] = [];
 
   for (const r of records) {
-    const traceParts: string[] = [];
-    const anchorParts: string[] = [];
-    let linkerLabel: string | undefined;
-    let hitLabel: string | undefined;
-
-    for (const ft of r.fullTrace) {
-      if (!(includedTypes.has(ft.fullType) || forceTraceElements?.has(ft.type))) continue;
-      if (ft.type === LINKER_TYPE) linkerLabel = ft.label;
-      else if (ft.type === HIT_QUAL_TYPE) hitLabel = ft.label;
-      else if (isAnchorQualType(ft.type)) anchorParts.push(ft.label);
-      else traceParts.push(ft.label);
-    }
-
-    const isEmpty =
-      traceParts.length === 0 &&
-      anchorParts.length === 0 &&
-      linkerLabel === undefined &&
-      hitLabel === undefined;
-
-    if (isEmpty) {
+    const rendered = renderRecordLabel(r, includedTypes, forceTraceElements, separator);
+    if (rendered === undefined) {
       if (!force) return undefined;
       result.push("Unlabeled");
       continue;
     }
-
-    let label = traceParts.join(separator);
-    const append = (part: string) => {
-      label = label.length === 0 ? part : `${label} ${part}`;
-    };
-    if (linkerLabel !== undefined) append(linkerLabel);
-    for (const a of anchorParts) append(a);
-    if (hitLabel !== undefined) append(hitLabel);
-
-    result.push(label);
+    result.push(rendered);
   }
 
   return result;
+}
+
+/**
+ * Drop the "via …" linker suffix from records whose label is already unique without it.
+ *
+ * Global minimization may include `LINKER_TYPE_FULL` solely to resolve a collision between a
+ * subset of records — but `buildLabels` then renders the suffix on every record that carries a
+ * linker trace entry, including ones whose stem is already unique. We strip the suffix where it
+ * isn't load-bearing while keeping the symmetric rendering required by `linkerForced` /
+ * `forceTraceElements`.
+ *
+ * Rule: a record's linker suffix is redundant iff its stem (label rendered without LINKER) does
+ * not appear anywhere else in the set.
+ */
+function dropRedundantLinkerSuffix(
+  records: EnrichedRecord[],
+  globalTypeSet: Set<string>,
+  forceTraceElements: Set<string> | undefined,
+  forcedSet: Set<string>,
+  separator: string,
+  labels: string[],
+): string[] {
+  if (!globalTypeSet.has(LINKER_TYPE_FULL)) return labels;
+  if (forcedSet.has(LINKER_TYPE_FULL) || forceTraceElements?.has(LINKER_TYPE)) return labels;
+
+  const setWithoutLinker = new Set(globalTypeSet);
+  setWithoutLinker.delete(LINKER_TYPE_FULL);
+
+  const stems = records.map((r) =>
+    renderRecordLabel(r, setWithoutLinker, forceTraceElements, separator),
+  );
+
+  const stemOccurrences = new Map<string, number>();
+  for (const s of stems) {
+    if (s !== undefined) stemOccurrences.set(s, (stemOccurrences.get(s) ?? 0) + 1);
+  }
+
+  return labels.map((label, i) => {
+    const stem = stems[i];
+    if (stem === undefined) return label;
+    return stemOccurrences.get(stem) === 1 ? stem : label;
+  });
 }
 
 function countUniqueLabels(result: string[] | undefined): number {
