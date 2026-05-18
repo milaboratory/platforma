@@ -34,7 +34,7 @@ const tableSettings = usePlDataTableSettingsV2({
 
 const verbose = ref(false);
 const cellRendererSelector = computed(() => {
-  if (!verbose.value) return;
+  if (!verbose.value) return undefined;
   return (params: ICellRendererParams) => {
     if (params.colDef?.cellDataType === "number") {
       return {
@@ -73,7 +73,7 @@ const now = ref(new Date());
 const timeFormatter = new Intl.DateTimeFormat("en", { timeStyle: "medium" });
 
 const reactiveTextProps = computed(() => {
-  if (!reactiveText.value) return;
+  if (!reactiveText.value) return undefined;
   const formattedNow = timeFormatter.format(now.value);
   return {
     loadingText: "Loading at " + formattedNow,
