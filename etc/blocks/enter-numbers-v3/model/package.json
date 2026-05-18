@@ -16,8 +16,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@platforma-sdk/model": "workspace:*",
-    "zod": "catalog:"
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

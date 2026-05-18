@@ -1,0 +1,12 @@
+{
+  "extends": "@milaboratories/ts-configs/node",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist-types",
+    "customConditions": []
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "dist-types", "dist-dbg", "dist-rdp", "**/*.test.ts"]
+}
