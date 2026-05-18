@@ -190,7 +190,8 @@ class WriteFrame(PStep, tag="write_frame"):
 
                 column_hash = hash(column.type, pl.scan_parquet(data_path), pl.col(column.column))
                 column_nbytes = get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
-                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}".encode()).hexdigest()
+                # Do not forget to update V-suffix when changing format!
+                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}V2".encode()).hexdigest()
                 
                 return DataInfoPart(
                     data=data_file,
