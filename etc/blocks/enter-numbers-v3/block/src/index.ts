@@ -2,7 +2,6 @@ import type { InferDataType, InferHrefType, InferOutputsType } from "@platforma-
 import type {
   BlockData,
   EnterNumbersRef,
-  SortedNumbers,
 } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
 import { platforma } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
 
@@ -44,7 +43,7 @@ export type HrefOf<S> = S extends { href: infer H } ? H : never;
  */
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 
-export type { BlockData, EnterNumbersRef, SortedNumbers };
+export type { BlockData, EnterNumbersRef };
 
 const __facadeDir__ = new URL(".", import.meta.url).pathname;
 

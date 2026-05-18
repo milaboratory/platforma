@@ -27,21 +27,6 @@ export type BlockData = {
   description: string;
 };
 
-/**
- * Sorted view of the numbers entered by the user. Returned by the `numbers`
- * output lambda so the inferred property of `BlockOutputs` carries this named
- * type and its JSDoc.
- *
- * Spike probe — named return type whose JSDoc must propagate downstream
- * through `InferOutputsType`.
- */
-export type SortedNumbers = {
-  /** Numbers in ascending order. */
-  values: readonly number[];
-  /** Count of unique values in `values`. */
-  unique: number;
-};
-
 // Define data model with migrations from v1 to current
 const dataModel = new DataModelBuilder()
   .from<BlockDataV1>("v1")
@@ -72,12 +57,7 @@ export const platforma = BlockModelV3.create(dataModel)
     return { evenNumbers: data.numbers.toSorted().filter((n) => n % 2 === 0) };
   })
 
-  .output("numbers", (ctx): SortedNumbers | undefined => {
-    const raw = ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>();
-    if (raw === undefined) return undefined;
-    const values = [...raw].sort((a, b) => a - b);
-    return { values, unique: new Set(values).size };
-  })
+  .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 
   .output("activeArgs", (ctx) => ctx.activeArgs)
 
