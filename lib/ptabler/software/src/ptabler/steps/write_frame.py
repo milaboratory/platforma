@@ -5,6 +5,7 @@ import os
 import polars as pl
 import duckdb
 import hashlib
+import pyarrow.parquet as pq
 
 from .base import PStep, StepContext
 from ..common import toPolarsType
@@ -227,7 +228,7 @@ class WriteFrame(PStep, tag="write_frame"):
                     for i, value in enumerate(row):
                         where_conditions.append(f"{axis_identifiers[i]} = ?")
                         query_params.append(value)
-                    
+
                     query = f"""
                         WITH filtered_data AS (
                             SELECT *
@@ -238,33 +239,75 @@ class WriteFrame(PStep, tag="write_frame"):
                         FROM filtered_data
                         ORDER BY {', '.join(axis_identifiers[len(row):])}
                     """
+                    sort_axis_names = [axis.column for axis in self.axes[len(row):]]
                 else:
                     query = f"""
                         SELECT {', '.join(all_column_identifiers)}
                         FROM read_parquet(?)
                         ORDER BY {', '.join(axis_identifiers)}
                     """
-                
-                # To disable bloom filters set `DICTIONARY_SIZE_LIMIT 1`
-                # <https://duckdb.org/2025/03/07/parquet-bloom-filters-in-duckdb.html>
-                # PARQUET_VERSION ensures consistent uncompressed byte sizes across DuckDB versions
-                # <https://duckdb.org/2025/01/22/parquet-encodings.html>
-                # Changes in COPY parameters must be indicated as a new field in stats
-                # to ensure correct deduplication!
-                duckdb_conn.execute(f"""
-                    COPY ({query})
-                    TO '{os.path.join(frame_dir, data_file)}'
-                    (
-                        PRESERVE_ORDER TRUE,
-                        FORMAT PARQUET,
-                        PARQUET_VERSION 'V2',
-                        ROW_GROUP_SIZE 122880,
-                        DICTIONARY_SIZE_LIMIT 12288,
-                        BLOOM_FILTER_FALSE_POSITIVE_RATIO 0.01,
-                        COMPRESSION 'ZSTD',
-                        COMPRESSION_LEVEL 3
-                    )
-                """, query_params)
+                    sort_axis_names = [axis.column for axis in self.axes]
+
+                # We stream the DuckDB result into a PyArrow ParquetWriter rather
+                # than using `COPY ... TO ... (FORMAT PARQUET, ...)`. Reasons:
+                #   * PyArrow writes the Parquet Page Index (column index +
+                #     offset index), which DuckDB does not (duckdb/duckdb#2755).
+                #     The Page Index is what lets DataFusion's DynamicFilter
+                #     join pushdown prune at sub-row-group granularity on the
+                #     right side of a left join. Without it a 100-key probe on
+                #     a sorted right side still reads the full column chunk.
+                #   * Bloom filters are written only for the axis columns (the
+                #     join keys). Value columns don't benefit and the overhead
+                #     is wasted there.
+                #   * `sorting_columns` metadata is declared so readers can
+                #     rely on the sort without inferring it.
+                # Streaming preserves larger-than-memory writes: one row group
+                # at a time, same memory profile as DuckDB's COPY.
+                # Changes here must be reflected in a new field in stats to
+                # ensure correct deduplication!
+                row_group_size = 122880
+                reader = duckdb_conn.execute(query, query_params).fetch_record_batch(
+                    rows_per_batch=row_group_size,
+                )
+                schema = reader.schema
+                schema_names = list(schema.names)
+                # Polars sorts with nulls_last=False (line 137), so declare
+                # nulls_first=True here. In practice axis columns have no nulls
+                # by the time they get here (filtered out in non-strict mode,
+                # raised on in strict mode), but the metadata should still
+                # match the sort the writer actually performed.
+                sorting_columns = [
+                    pq.SortingColumn(schema_names.index(name), descending=False, nulls_first=True)
+                    for name in sort_axis_names
+                ]
+                # `ndv` sized to row_group_size: bloom is per row group, and a
+                # row group cannot contain more distinct values than it has rows.
+                bloom_filter_options = {
+                    name: {'ndv': row_group_size, 'fpp': 0.01}
+                    for name in sort_axis_names
+                }
+                out_path = os.path.join(frame_dir, data_file)
+                with pq.ParquetWriter(
+                    out_path,
+                    schema,
+                    compression='zstd',
+                    compression_level=3,
+                    use_dictionary=True,
+                    write_statistics=True,
+                    write_page_index=True,
+                    bloom_filter_options=bloom_filter_options,
+                    sorting_columns=sorting_columns,
+                    version='2.6',
+                    # DataPage v2: definition/repetition levels stored
+                    # uncompressed (RLE-only) and separately from data, so
+                    # ZSTD operates on values only. Smaller pages on sparse
+                    # / nullable columns, faster decode. We have a single
+                    # reader (DataFusion / arrow-rs) which fully supports
+                    # DataPage v2 — no compatibility tradeoff.
+                    data_page_version='2.0',
+                ) as writer:
+                    for batch in reader:
+                        writer.write_batch(batch)
             
             if self.partition_key_length > 0:
                 partitioned_axes = [axis.column for axis in self.axes][:self.partition_key_length]
