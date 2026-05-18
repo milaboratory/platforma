@@ -213,20 +213,12 @@ export class BlockPackRegistry {
               // `tryLoadPackDescription` reads `package.json#block.meta` —
               // the dev SOURCE meta the developer wrote.
               // `requiredCapabilities` is a PACK-TIME artifact written by
-              // `block-tools pack` into `block-pack/manifest.json`, never
-              // into the source `package.json`. So for any dev block, with
-              // any tengo-builder/block-tools version, the source meta
-              // never carries the field — pinning the toolchain to the
-              // latest via the CI `require-latest` gate does not close
-              // this gap, because the gate enforces published artifacts,
-              // not the dev source.
+              // `block-tools pack` into `block-pack/manifest.json`.
+              // So for any dev block, the source meta never carries the field.
               //
               // To surface the gate at listing time without requiring the
               // developer to re-pack on every workflow change, derive from
-              // the compiled workflow bytes directly — the same artifact
-              // `block-tools pack` would scan, so the answer here matches
-              // what install-time derivation in
-              // mutator/block-pack/block_pack.ts produces.
+              // the compiled workflow bytes directly.
               if (meta.requiredCapabilities === undefined) {
                 const workflowBytes = await fs.promises.readFile(
                   v2Description.components.workflow.main.file,
