@@ -88,6 +88,15 @@ export function dumpArtifacts(
     }
   }
 
+  // Wasm
+
+  if (!aType || aType === "wasm") {
+    for (const wasm of compiler.allWasm()) {
+      logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(wasm.fullName)}`);
+      stream.write(JSON.stringify(wasm) + "\n");
+    }
+  }
+
   // Tests
 
   if (!aType || aType === "test") {

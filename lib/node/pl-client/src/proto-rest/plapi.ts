@@ -807,6 +807,16 @@ export interface components {
       platform: string;
       os: string;
       arch: string;
+      /**
+       * @description Opt-in capabilities advertised by this server instance.
+       *      Tokens follow the "<feature>:<version>" format
+       *      (e.g. "treeFilter:v1", "wasm:v1"); current set:
+       *      see pl/platform/api/plapiserver/server_capabilities.go.
+       *      Block manifests declare what they need via
+       *      meta.requiredCapabilities; Desktop matches against this list
+       *      at install time.
+       */
+      capabilities: string[];
     };
     MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];

@@ -24,6 +24,9 @@ catalogs:
     '@milaboratories/pframes-rs-node':
       specifier: 1.1.35
       version: 1.1.35
+    '@milaboratories/pframes-rs-wasip2':
+      specifier: 1.1.35
+      version: 1.1.35
     '@milaboratories/pframes-rs-wasm':
       specifier: 1.1.35
       version: 1.1.35
@@ -1777,9 +1780,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.5.2
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.1.3(vitest@4.1.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
 
   lib/model/common:
     dependencies:
@@ -3085,6 +3094,9 @@ importers:
 
   sdk/workflow-tengo:
     dependencies:
+      '@milaboratories/pframes-rs-wasip2':
+        specifier: 'catalog:'
+        version: 1.1.35
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -3511,6 +3523,9 @@ importers:
       '@milaboratories/pl-http':
         specifier: workspace:*
         version: link:../../lib/node/pl-http
+      '@milaboratories/pl-model-backend':
+        specifier: workspace:*
+        version: link:../../lib/model/backend
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../lib/model/common

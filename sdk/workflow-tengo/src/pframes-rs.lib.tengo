@@ -1,0 +1,223 @@
+/** Opt-in access to the @milaboratories/pframes-rs-wasip2 WebAssembly component.
+ *
+ * Importing this library makes the upstream wasm bytes part of every template
+ * that imports it (transitively). Blocks that don't need pframes-rs should
+ * not import this library so their packs stay small.
+ *
+ * The WIT interface (milaboratories:pframes/spec, see
+ * core/pframes-rs/packages/wasip2/wit/world.wit) exposes three resources —
+ * `frame`, `table`, `axes` — with JSON-in / JSON-out static + instance
+ * methods. This wrapper mirrors them as nested namespaces and takes / returns
+ * Tengo maps (JSON encode/decode is done internally):
+ *
+ *     pframesRs := import("@platforma-sdk/workflow-tengo:pframes-rs")
+ *
+ *     // static methods on the WIT `frame` resource
+ *     resp := pframesRs.frame.buildQuery({ version: "v1", column: "abundance" })
+ *     if is_error(resp) {
+ *         ll.panic("buildQuery failed: " + string(resp))
+ *     }
+ *
+ *     // *.fromJson returns a stateful handle whose methods proxy to the
+ *     // host-side WIT instance methods
+ *     frame := pframesRs.frame.fromJson(spec)
+ *     if !is_error(frame) {
+ *         list := frame.listColumns()
+ *     }
+ *
+ * Runtime status. The wasm-call host builtin (`plapi.loadWasm`) and its
+ * thin SDK wrapper `@platforma-sdk/workflow-tengo:wasm` are planned (see
+ * branch plan/tengo-wasm-call in core/pl), not yet wired. Until they land,
+ * every wrapper call returns a Tengo error with a clear message — blocks
+ * that already use this surface will start working unmodified once the
+ * runtime ships.
+ *
+ * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
+ * the bundling story.
+ */
+
+ll := import(":ll")
+assets := import(":assets")
+json := import("json")
+
+WASM_NAME := "@milaboratories/pframes-rs-wasip2:main"
+
+// Build-time bundle tag.
+//
+// Build time: tengo-builder's regex matches the literal
+// `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")` below and
+// embeds the wasm bytes into every template that imports this lib.
+// Runtime: the dead branch is unreachable, so the missing
+// `assets.importWasm` host call is never made.
+_bundleTag := func() {
+	if false {
+		return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+	}
+	return undefined
+}
+
+_runtimeUnavailable := func() {
+	return error("pframes-rs wasm runtime not yet wired (see plan/tengo-wasm-call); the wasm bytes are bundled but cannot be invoked from Tengo today")
+}
+
+// _load returns the wasm component handle, or undefined if the runtime
+// is not yet wired. Once the planned SDK module ships, replace the body
+// with an import of the wasm SDK lib and a call to its load(WASM_NAME,
+// limit) entry point.
+_load := func(limit) {
+	return undefined
+}
+
+// _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).
+// Returns the resolved value, undefined if any intermediate is missing.
+_resolve := func(handle, path) {
+	node := handle
+	for name in path {
+		if is_undefined(node) {
+			return undefined
+		}
+		node = node[name]
+	}
+	return node
+}
+
+// _staticCall returns a Tengo function bound to a WIT static-method path.
+// Each call: loads the wasm, resolves the path, JSON-encodes the request,
+// invokes the host method, JSON-decodes the response. Errors propagate.
+_staticCall := func(path) {
+	return func(request) {
+		h := _load(undefined)
+		if is_undefined(h) {
+			return _runtimeUnavailable()
+		}
+		fn := _resolve(h, path)
+		if is_undefined(fn) {
+			return error("pframes-rs wasm export missing: " + string(path))
+		}
+		requestJson := ""
+		if !is_undefined(request) {
+			requestJson = json.encode(request)
+		}
+		responseJson := fn(requestJson)
+		if is_error(responseJson) {
+			return responseJson
+		}
+		return json.decode(responseJson)
+	}
+}
+
+// _instanceMethod returns a closure bound to (hostHandle, methodName).
+// `takesArgs` selects between JSON-arg vs no-arg invocation. Each call:
+// resolves the method, invokes with JSON-encoded args (if any),
+// JSON-decodes the response. Errors propagate.
+_instanceMethod := func(hostHandle, methodName, takesArgs) {
+	return func(args) {
+		method := hostHandle[methodName]
+		if is_undefined(method) {
+			return error("pframes-rs handle method missing: " + methodName)
+		}
+		responseJson := undefined
+		if takesArgs {
+			requestJson := ""
+			if !is_undefined(args) {
+				requestJson = json.encode(args)
+			}
+			responseJson = method(requestJson)
+		} else {
+			responseJson = method()
+		}
+		if is_error(responseJson) {
+			return responseJson
+		}
+		return json.decode(responseJson)
+	}
+}
+
+// === frame namespace ==========================================================
+
+_wrapFrame := func(hostFrame) {
+	if is_error(hostFrame) {
+		return hostFrame
+	}
+	return ll.toStrict({
+		listColumns:        _instanceMethod(hostFrame, "listColumns", false),
+		discoverColumns:    _instanceMethod(hostFrame, "discoverColumns", true),
+		findColumns:        _instanceMethod(hostFrame, "findColumns", true),
+		evaluateQuery:      _instanceMethod(hostFrame, "evaluateQuery", true),
+		rewriteLegacyQuery: _instanceMethod(hostFrame, "rewriteLegacyQuery", true)
+	})
+}
+
+frameFromJson := func(spec) {
+	h := _load(undefined)
+	if is_undefined(h) {
+		return _runtimeUnavailable()
+	}
+	specJson := json.encode(spec)
+	hostFrame := h.frame.fromJson(specJson)
+	return _wrapFrame(hostFrame)
+}
+
+frameNS := ll.toStrict({
+	fromJson:      frameFromJson,
+	deleteColumns: _staticCall(["frame", "deleteColumns"]),
+	buildQuery:    _staticCall(["frame", "buildQuery"])
+})
+
+// === table namespace ==========================================================
+
+_wrapTable := func(hostTable) {
+	if is_error(hostTable) {
+		return hostTable
+	}
+	return ll.toStrict({
+		findColumn: _instanceMethod(hostTable, "findColumn", true)
+	})
+}
+
+tableFromJson := func(spec) {
+	h := _load(undefined)
+	if is_undefined(h) {
+		return _runtimeUnavailable()
+	}
+	specJson := json.encode(spec)
+	hostTable := h.table.fromJson(specJson)
+	return _wrapTable(hostTable)
+}
+
+tableNS := ll.toStrict({
+	fromJson: tableFromJson
+})
+
+// === axes namespace ===========================================================
+
+_wrapAxes := func(hostAxes) {
+	if is_error(hostAxes) {
+		return hostAxes
+	}
+	return ll.toStrict({
+		expand: _instanceMethod(hostAxes, "expand", false),
+		find:   _instanceMethod(hostAxes, "find", true)
+	})
+}
+
+axesFromJson := func(spec) {
+	h := _load(undefined)
+	if is_undefined(h) {
+		return _runtimeUnavailable()
+	}
+	specJson := json.encode(spec)
+	hostAxes := h.axes.fromJson(specJson)
+	return _wrapAxes(hostAxes)
+}
+
+axesNS := ll.toStrict({
+	fromJson: axesFromJson,
+	collapse: _staticCall(["axes", "collapse"])
+})
+
+export ll.toStrict({
+	frame: frameNS,
+	table: tableNS,
+	axes:  axesNS
+})

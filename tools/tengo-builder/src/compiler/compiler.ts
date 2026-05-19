@@ -13,7 +13,18 @@ import {
 import { ArtifactStore } from "./artifactset";
 import { assertNever } from "./util";
 import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from "./compileroptions";
-import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV3, TemplateDataV3 } from "@milaboratories/pl-model-backend";
+import { CapabilityWasm } from "@milaboratories/pl-model-backend";
+
+/** Add a capability token to a template's `requiredCapabilities` list,
+ * skipping duplicates. Initializes the array lazily so the field stays
+ * absent for templates that need nothing. */
+function addRequiredCapability(template: TemplateDataV3, capability: string): void {
+  template.requiredCapabilities = template.requiredCapabilities ?? [];
+  if (!template.requiredCapabilities.includes(capability)) {
+    template.requiredCapabilities.push(capability);
+  }
+}
 
 /** A compilation result. */
 export interface TemplatesAndLibs {
@@ -21,12 +32,14 @@ export interface TemplatesAndLibs {
   libs: ArtifactSource[];
   software: ArtifactSource[];
   assets: ArtifactSource[];
+  wasm: ArtifactSource[];
 }
 
 export class TengoTemplateCompiler {
   private readonly libs = new ArtifactStore<ArtifactSource>((src) => src.fullName);
   private readonly software = new ArtifactStore<ArtifactSource>((src) => src.fullName);
   private readonly assets = new ArtifactStore<ArtifactSource>((src) => src.fullName);
+  private readonly wasm = new ArtifactStore<ArtifactSource>((src) => src.fullName);
   private readonly templates = new ArtifactStore<TemplateWithSource>((tpl) => tpl.fullName);
 
   constructor(private readonly compileMode: CompileMode) {}
@@ -89,6 +102,20 @@ export class TengoTemplateCompiler {
           data.hashToSource[asset.sourceHash] = asset.src;
           break;
         }
+        case "wasm": {
+          const wasm = this.getWasmOrError(dep);
+          data.template.wasm = data.template.wasm ?? {};
+          data.template.wasm[artifactNameToString(dep)] = {
+            ...formatArtefactNameAndVersion(wasm.fullName),
+            sourceHash: wasm.sourceHash,
+          };
+          data.hashToSource[wasm.sourceHash] = wasm.src;
+          // Embedding a wasm artifact means this template requires the
+          // backend's wasm runtime to run. The token is propagated upward
+          // when this template is in turn embedded as a sub-template.
+          addRequiredCapability(data.template, CapabilityWasm);
+          break;
+        }
         case "template": {
           if (typedArtifactNamesEquals(fullName, dep))
             // skipping self reference
@@ -101,6 +128,13 @@ export class TengoTemplateCompiler {
           // add all the sources of transitivedependencies to the resulted hashToSource
           for (const [hash, src] of Object.entries(tpl.data.hashToSource)) {
             data.hashToSource[hash] = src;
+          }
+
+          // Union the sub-template's compile-time-computed capability
+          // requirements into ours, so the top template carries the full
+          // transitive set without consumers having to walk the tree.
+          for (const cap of tpl.data.template.requiredCapabilities ?? []) {
+            addRequiredCapability(data.template, cap);
           }
 
           break;
@@ -234,6 +268,31 @@ export class TengoTemplateCompiler {
     return asset;
   }
 
+  addWasm(wasm: ArtifactSource) {
+    const wasmFromMap = this.wasm.add(wasm.compileMode, wasm, false);
+    if (wasmFromMap && !fullNameEquals(wasm.fullName, wasmFromMap.fullName))
+      throw new Error(
+        `compiler already contain info for wasm: adding = ${fullNameToString(wasm.fullName)}, contains = ${fullNameToString(wasmFromMap.fullName)}`,
+      );
+  }
+
+  allWasm(): ArtifactSource[] {
+    return this.wasm.array(this.compileMode);
+  }
+
+  getWasm(name: TypedArtifactName): ArtifactSource | undefined {
+    if (name.type !== "wasm")
+      throw new Error(`illegal artifact type: got ${name.type} instead of 'wasm'`);
+
+    return this.wasm.get(this.compileMode, name);
+  }
+
+  getWasmOrError(name: TypedArtifactName): ArtifactSource {
+    const wasm = this.getWasm(name);
+    if (!wasm) throw new Error(`wasm info not found: ${artifactNameToString(name)}`);
+    return wasm;
+  }
+
   addTemplate(tpl: TemplateWithSource) {
     const tplFromMap = this.templates.add(tpl.compileMode, tpl, false);
     if (tplFromMap && !fullNameEquals(tpl.fullName, tplFromMap.fullName))
@@ -268,6 +327,8 @@ export class TengoTemplateCompiler {
         return this.getSoftware(name);
       case "asset":
         return this.getAsset(name);
+      case "wasm":
+        return this.getWasm(name);
       case "test":
         // Tests are ignored by the complier. They should never be compiled into templates or libs and
         // should never be a dependency.
@@ -283,6 +344,7 @@ export class TengoTemplateCompiler {
       libs: [],
       software: [],
       assets: [],
+      wasm: [],
     };
 
     let current: ArtifactSource[] = [];
@@ -300,6 +362,10 @@ export class TengoTemplateCompiler {
         // add assets 'as-is' to be able to resolve them as dependencies
         this.addAsset(src);
         result.assets.push(src);
+      } else if (src.fullName.type === "wasm") {
+        // add wasm 'as-is' to be able to resolve them as dependencies
+        this.addWasm(src);
+        result.wasm.push(src);
       } else {
         current.push(src);
       }
@@ -348,6 +414,11 @@ export class TengoTemplateCompiler {
             // software dependencies are added as is
             this.addAsset(src);
             result.assets.push(src);
+            break;
+          case "wasm":
+            // wasm dependencies are added as is
+            this.addWasm(src);
+            result.wasm.push(src);
             break;
           case "template":
             // templates are compiled and then added
