@@ -27,7 +27,7 @@ export type CompilerOption = {
   args: string[];
 };
 
-export type ArtifactType = "library" | "template" | "test" | "software" | "asset";
+export type ArtifactType = "library" | "template" | "test" | "software" | "asset" | "wasm";
 
 /** Artifact Name including package version */
 export interface FullArtifactName {

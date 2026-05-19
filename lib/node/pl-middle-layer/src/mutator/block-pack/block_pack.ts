@@ -9,6 +9,7 @@ import fs from "node:fs";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
 import { createFrontend } from "./frontend";
+import { requiredCapabilitiesFromTemplate } from "./required_capabilities";
 import type { BlockConfigContainer } from "@platforma-sdk/model";
 import { Code } from "@platforma-sdk/model";
 import { loadPackDescription, RegistryV1 } from "@platforma-sdk/block-tools";
@@ -143,13 +144,16 @@ export class BlockPackPreparer {
 
     await using workerManager = new WorkerManager();
 
+    const parsed = await workerManager.process("parseTemplate", explicit.template.content);
+
     const result: BlockPackSpecPrepared = {
       ...explicit,
       type: "prepared",
       template: {
         type: "prepared",
-        data: await workerManager.process("parseTemplate", explicit.template.content),
+        data: parsed,
       },
+      requiredCapabilities: requiredCapabilitiesFromTemplate(parsed),
     };
 
     if (key) {
@@ -263,12 +267,13 @@ export class BlockPackPreparer {
           await this.remoteContentCache.forceFetch(components.workflow.main.url);
 
         const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
+        const workflowContent = Buffer.from(workflow);
 
         return {
           type: "explicit",
           template: {
             type: "explicit",
-            content: Buffer.from(workflow),
+            content: workflowContent,
           },
           config: model,
           frontend: {

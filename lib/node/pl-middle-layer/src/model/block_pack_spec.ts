@@ -52,6 +52,12 @@ export type BlockPackSpecPrepared = {
   config: BlockConfigContainer;
   frontend: FrontendSpec;
   source: BlockPackSpec;
+  /** Backend-side runtime capabilities the block requires at install time.
+   * Derived from the parsed workflow template by
+   * `requiredCapabilitiesFromTemplate` during `BlockPackPreparer.prepare`.
+   * `Project.addBlock` matches this list against `pl.serverInfo.capabilities`
+   * and refuses to install when anything is missing. */
+  requiredCapabilities?: string[];
 };
 
 /** All block-pack specs. */

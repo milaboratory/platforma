@@ -31,7 +31,7 @@ export const ArtifactTypeFlag = {
   type: Flags.string({
     aliases: ["t"],
     description: "artifact type",
-    options: ["all", "library", "template", "test", "software", "asset"],
+    options: ["all", "library", "template", "test", "software", "asset", "wasm"],
     default: "all",
   }),
 };
