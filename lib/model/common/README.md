@@ -7,7 +7,7 @@ The purpose of this package is to keep primitives and functions, that have to be
 - browser
 - browser preload
 
-We have code that can work in single specific context (like UI of the block) or in a mixture of contexts.
+We have code that can work in a single specific context (like UI of the block) or in a mixture of contexts.
 
 This package is a meeting point for code that can exist in all possible places.
 
