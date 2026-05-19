@@ -1,4 +1,4 @@
-/* eslint-disable eslint-js/no-restricted-syntax -- this file is the canonical place to construct SignedResourceId values; outside callers must use asSignedResourceId(). */
+/**/
 
 import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
@@ -349,7 +349,7 @@ export function createSignedResourceId(
   if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
 
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return `${String(globalId)}|${sigHex}` as SignedResourceId;
+  return `${String(globalId)}|${sigHex}` as SignedResourceId; // lint-allow-cast
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
