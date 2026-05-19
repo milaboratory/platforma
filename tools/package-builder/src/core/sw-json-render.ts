@@ -533,11 +533,10 @@ export class SwJsonRenderer {
       `could not render 'docker' entrypoint`,
     );
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(
-      dockerArtifact.id,
-      "docker",
-      util.currentArch(),
-    );
+    // Matches the "x64" write in core.buildDockerImage — docker artifacts are
+    // always cross-compiled to linux/amd64 so we look up the x64 descriptor
+    // regardless of host.
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(dockerArtifact.id, "docker", "x64");
     const artInfo = readArtifactInfoIfExists(artInfoPath, epName, requireArtifactInfo);
     if (!artInfo) {
       return undefined;
