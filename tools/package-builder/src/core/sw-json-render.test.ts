@@ -187,7 +187,9 @@ function writeTestArtifactInfo(
 ) {
   let artInfoPath: string;
   if (artifactType === "docker") {
-    artInfoPath = i.artifactInfoLocation(artifact.id, "docker", util.currentArch());
+    // Docker artifacts are always cross-compiled to linux/amd64 (see
+    // core.buildDockerImage + sw-json-render.renderDockerInfo).
+    artInfoPath = i.artifactInfoLocation(artifact.id, "docker", "x64");
   } else if (artifacts.isCrossPlatform(artifact.type)) {
     artInfoPath = i.artifactInfoLocation(artifact.id, "archive", undefined);
   } else {
