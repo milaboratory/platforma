@@ -314,7 +314,8 @@ export function loginToECR(registry: string): void {
     throw util.CLIError(
       `'aws ${awsArgs.join(" ")}' failed with status ${auth.status}:\n` +
         `${auth.stderr?.toString() ?? ""}\n` +
-        `Refresh AWS credentials (e.g. 'aws sso login --profile <profile>') and retry.`,
+        `Check that AWS_PROFILE points at credentials with push access to ${ecrInfo.loginRegistry} ` +
+        `and that 'aws sts get-caller-identity' works.`,
     );
   }
 
