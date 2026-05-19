@@ -235,7 +235,7 @@ export function makeColDef(
   hiddenColIds: PlTableColumnIdJson[] | undefined,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
-  const colId = canonicalizeJson<PTableColumnSpec>(spec);
+  const colId = canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
   const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
   const columnRenderingSpec = getColumnRenderingSpec(spec);
   const cellStyle: CellStyle = {};
@@ -410,7 +410,7 @@ function computeDefaultHiddenColIds(
   return fields.reduce<PlTableColumnIdJson[]>((acc, field) => {
     const spec = tableSpecs[field];
     return spec.type === "column" && isColumnOptional(spec.spec)
-      ? [...acc, canonicalizeJson<PTableColumnSpec>(spec)]
+      ? [...acc, canonicalizeJson<PTableColumnId>(getPTableColumnId(spec))]
       : acc;
   }, []);
 }

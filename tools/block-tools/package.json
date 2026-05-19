@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.7.25",
+  "version": "2.8.0",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "license": "UNLICENSED",
   "bin": {
@@ -37,6 +37,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@milaboratories/pl-http": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/resolve-helper": "workspace:*",

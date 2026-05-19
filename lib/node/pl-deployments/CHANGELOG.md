@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.17.18
+
+### Patch Changes
+
+- 33b2425: update backend version
+
 ## 2.17.17
 
 ### Patch Changes

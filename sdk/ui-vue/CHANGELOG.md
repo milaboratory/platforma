@@ -1,5 +1,40 @@
 # @platforma-sdk/ui-vue
 
+## 1.77.4
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.17
+- @platforma-sdk/model@1.77.4
+- @milaboratories/uikit@2.14.11
+
+## 1.77.0
+
+### Minor Changes
+
+- f302c2f: PlAgDataTableV2: shrink persisted grid colIds by ~16×
+
+  The AG Grid `colId` produced by `PlAgDataTableV2` is now `canonicalizeJson<PTableColumnId>(getPTableColumnId(spec))` instead of `canonicalizeJson<PTableColumnSpec>(spec)`. The full column spec (including all annotations and the `pl7.app/trace` chain) used to be embedded in every entry of `orderedColIds` and `hiddenColIds`; for tables with ~1,500+ columns this could push persisted block storage past 10 MB and trip the QuickJS heap cap during `mutate-block-storage`.
+
+  Measured on a real ~1,600-column overlap table: persisted block-storage payload drops from 11.5 MB to 0.7 MB.
+
+  The full `PTableColumnSpec` remains available on each `ColDef.context` for callsites that have a live ColDef (`useFilterableColumns`, CSV export). State-only callsites (sort model, hidden column ids) now parse the colId directly as a `PTableColumnId` instead of a full spec.
+
+  State version bumped to 7; a v6→v7 migration rewrites every persisted colId in place. v4 and v5 chains pass through v6 first.
+
+### Patch Changes
+
+- Updated dependencies [f302c2f]
+- Updated dependencies [f302c2f]
+  - @platforma-sdk/model@1.77.0
+  - @milaboratories/uikit@2.14.10
+
+## 1.76.7
+
+### Patch Changes
+
+- c1d7e8f: PlDatasetSelector - returned description for filter variants
+
 ## 1.76.5
 
 ### Patch Changes

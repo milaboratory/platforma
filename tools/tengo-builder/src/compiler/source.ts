@@ -42,6 +42,8 @@ const newImportSoftwareDetector = (moduleName: string) =>
 const newImportAssetRE = (moduleName: string) => functionCallRE(moduleName, "importAsset");
 const newImportAssetDetector = (moduleName: string) =>
   functionCallLikeRE(moduleName, "importAsset");
+const newImportWasmRE = (moduleName: string) => functionCallRE(moduleName, "importWasm");
+const newImportWasmDetector = (moduleName: string) => functionCallLikeRE(moduleName, "importWasm");
 
 const emptyLineRE = /^\s*$/;
 const compilerOptionRE = /^\/\/tengo:[\w]/;
@@ -369,11 +371,13 @@ function processModuleImport(
         ["template", newImportTemplateRE(iInfo.alias)],
         ["software", newImportSoftwareRE(iInfo.alias)],
         ["asset", newImportAssetRE(iInfo.alias)],
+        ["wasm", newImportWasmRE(iInfo.alias)],
       ]);
       context.importLikeREs.set(iInfo.module, [
         ["template", newImportTemplateDetector(iInfo.alias)],
         ["software", newImportSoftwareDetector(iInfo.alias)],
         ["asset", newImportAssetDetector(iInfo.alias)],
+        ["wasm", newImportWasmDetector(iInfo.alias)],
       ]);
     }
   }
