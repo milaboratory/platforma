@@ -305,7 +305,7 @@ export function asSignedResourceId(str: string): SignedResourceId {
   if (pipeIdx < 0) throw new Error(`Not a signed resource id (no '|' separator): ${str}`);
   if (pipeIdx === 0) throw new Error(`Signed resource id has empty globalId: ${str}`);
   if (pipeIdx === str.length - 1) throw new Error(`Signed resource id has empty signature: ${str}`);
-  return str as SignedResourceId;
+  return str as SignedResourceId; // lint-allow-cast
 }
 
 /** Encode resource signature to base64url for embedding in URL-based handles. */
@@ -336,7 +336,7 @@ export function createSignedResourceId(
   if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
 
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return `${String(globalId)}|${sigHex}` as SignedResourceId;
+  return `${String(globalId)}|${sigHex}` as SignedResourceId; // lint-allow-cast
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
