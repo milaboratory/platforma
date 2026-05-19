@@ -368,21 +368,8 @@ export class Core {
         continue;
       }
 
-      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(
-          options?.strictPlatformMatching ? "debug" : "warn",
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
-            ` is currently not supported by Platforma Backend docker feature`,
-        );
-        continue;
-      }
-
-      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
-        this.logger.debug(
-          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
-        );
-        continue;
-      }
+      // Docker images are always built as linux/amd64 (Platforma's K8s target).
+      // On non-x64 hosts the build cross-compiles via qemu; no host-arch gate.
 
       this.buildDockerImage(artifact.id, artifact, options?.registry);
     }
@@ -432,10 +419,11 @@ export class Core {
     docker.addTag(localTag, dstTag);
     // do not remove local tag to make 'local' builds to also work with docker.
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, "docker", util.currentArch());
+    // Docker images target linux/amd64 regardless of host (see docker.build).
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, "docker", "x64");
     writeBuiltArtifactInfo(artInfoPath, {
       type: "docker",
-      platform: util.currentPlatform(),
+      platform: "linux-x64",
       remoteArtifactLocation: dstTag,
       entrypoint: docker.getImageEntrypoint(localTag),
     });
@@ -731,21 +719,8 @@ export class Core {
         continue;
       }
 
-      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(
-          options?.strictPlatformMatching ? "debug" : "warn",
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
-            ` is currently not supported by Platforma Backend docker feature`,
-        );
-        continue;
-      }
-
-      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
-        this.logger.debug(
-          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
-        );
-        continue;
-      }
+      // Images are cross-compiled to linux/amd64 (see buildDockerImages); host
+      // arch/OS don't gate the push.
 
       this.publishDockerImage(pkg, options?.pushTo);
     }
@@ -759,11 +734,10 @@ export class Core {
       throw util.CLIError(`package '${artifact.id}' is not a docker package`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(
-      artifact.id,
-      "docker",
-      util.currentArch(),
-    );
+    // Matches the "x64" write in buildDockerImage — docker artifacts are always
+    // cross-compiled to linux/amd64 so we look up the x64 descriptor regardless
+    // of host.
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, "docker", "x64");
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
     const pushTag = pushTo ? `${pushTo}:${tag.split(":").slice(-1)[0]}` : tag;
