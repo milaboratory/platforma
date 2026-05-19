@@ -59,7 +59,7 @@ def sum_blob_length(arr: pa.Array) -> int:
         return s or 0
     return (len(arr) - arr.null_count) * (t.bit_width // 8)
 
-def update_hasher_with_row_hashes(hasher: "hashlib._Hash", df: pl.DataFrame, expr: pl.Expr) -> None:
+def update_hasher_with_row_hashes(hasher, df: pl.DataFrame, expr: pl.Expr) -> None:
     """Feed sha2_256(expr) of every row into `hasher`, "|~|" for nulls."""
     blob = df.select(
         expr.cast(pl.String).chash.sha2_256().fill_null("|~|").str.join("")
@@ -193,7 +193,7 @@ class WriteFrame(PStep, tag="write_frame"):
             axis_identifiers = [escape(axis.column) for axis in self.axes]
             all_column_identifiers = axis_identifiers + [escape(column.column) for column in self.columns]
 
-            def write_part(data_file: str, partition_total_rows: int, row=None) -> Dict[str, DataInfoPart]:
+            def write_partition(data_file: str, partition_total_rows: int, row=None) -> Dict[str, DataInfoPart]:
                 """Stream-write one partition file and return a `{value_column: DataInfoPart}` dict."""
                 query_params = [intermediate_parquet]
                 if row is not None:
@@ -339,7 +339,7 @@ class WriteFrame(PStep, tag="write_frame"):
                     partition_total_rows = row[-1]
                     part_key = msgspec.json.encode(list(key_values)).decode('utf-8')
                     data_file = f"partition_{i}.parquet"
-                    parts = write_part(data_file, partition_total_rows, row=key_values)
+                    parts = write_partition(data_file, partition_total_rows, row=key_values)
                     for column_name, part_info in parts.items():
                         data_info_by_column[column_name].parts[part_key] = part_info
             else:
@@ -347,7 +347,7 @@ class WriteFrame(PStep, tag="write_frame"):
                 if partition_total_rows > 0:
                     part_key = msgspec.json.encode(list()).decode('utf-8')
                     data_file = "partition_0.parquet"
-                    parts = write_part(data_file, partition_total_rows)
+                    parts = write_partition(data_file, partition_total_rows)
                     for column_name, part_info in parts.items():
                         data_info_by_column[column_name].parts[part_key] = part_info
 
