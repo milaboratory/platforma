@@ -34,25 +34,31 @@
 # for bare-metal hosts, or by adding the dev block path in the Desktop App when
 # pointing at the K8s cluster — see docs/dev-block-remote-testing.md).
 #
+# Default registry:
+#   public.ecr.aws/u5p1x5q2/pl-containers   (public ECR — anonymous pulls,
+#                                            authenticated pushes via your
+#                                            normal AWS credentials).
+#
 # Environment:
-#   AWS_PROFILE       - AWS profile that has push access to the target ECR
-#                       (the account hosting the ECR is auto-detected from STS).
-#   AWS_REGION        - AWS region of the ECR (default: eu-north-1).
-#   ECR_REPO_NAME     - ECR repository name within the account
-#                       (default: platforma-internal-production/milaboratories/pl-containers).
+#   AWS_PROFILE       - AWS profile that has push access to the target ECR.
+#   AWS_REGION        - AWS region for auth against a *private* ECR override
+#                       (default: eu-north-1). Ignored for public ECR pushes —
+#                       public ECR auth always uses us-east-1.
+#   ECR_REPO          - Full ECR repository URL to push to. Overrides the
+#                       default public.ecr.aws/u5p1x5q2/pl-containers.
 #
 # Notes:
 #   * No account IDs, profile names, or other org-specific secrets are hardcoded
-#     in this script. The defaults match the canonical block-dev ECR; override
-#     with --ecr/--region or env vars for any other registry.
+#     in this script. Override with --ecr/--region or env vars for any other
+#     registry.
 
 set -euo pipefail
 
 INPUT_PATH=""
 TAG=""
-ECR_REPO=""  # auto-composed from <account>.dkr.ecr.<region>.amazonaws.com/$ECR_REPO_NAME
+DEFAULT_ECR_REPO="public.ecr.aws/u5p1x5q2/pl-containers"
+ECR_REPO="${ECR_REPO:-$DEFAULT_ECR_REPO}"
 REGION="${AWS_REGION:-eu-north-1}"
-ECR_REPO_NAME="${ECR_REPO_NAME:-platforma-internal-production/milaboratories/pl-containers}"
 
 usage() {
     cat <<EOF
@@ -64,13 +70,18 @@ software package directory.
 Options:
   --tag <tag>       Image tag (default: auto-generated per entrypoint from content hash).
                     Only meaningful when a single entrypoint is being pushed.
-  --ecr <repo-url>  Full ECR URL <account>.dkr.ecr.<region>.amazonaws.com/<name>
-                    (default: auto-detected account + \$ECR_REPO_NAME).
-  --region <region> AWS region for ECR auth (default: \$AWS_REGION or eu-north-1).
+  --ecr <repo-url>  Full ECR repository URL. Default:
+                      $DEFAULT_ECR_REPO
+                    Use public.ecr.aws/<alias>/<repo> for public ECR (pulls
+                    are anonymous), or <account>.dkr.ecr.<region>.amazonaws.com/<repo>
+                    for a private ECR.
+  --region <region> AWS region for *private* ECR auth (default: \$AWS_REGION
+                    or eu-north-1). Ignored for public ECR — public auth uses
+                    us-east-1 by AWS convention.
 
 Env:
   AWS_PROFILE       Profile with push access to the target ECR.
-  ECR_REPO_NAME     Repository name within the account.
+  ECR_REPO          Full ECR URL override (same as --ecr).
 EOF
     exit 1
 }
@@ -155,27 +166,33 @@ done
 [[ -z "$BLOCK_ROOT" ]] && BLOCK_ROOT=$(dirname "${SOFTWARE_DIRS[0]}")
 
 # ---------------------------------------------------------------------------
-# Resolve ECR repo URL. Surface the real AWS error if STS fails.
+# Classify the registry (public vs private) and figure out the login endpoint.
 # ---------------------------------------------------------------------------
 PROFILE_FLAG=""
 [[ -n "${AWS_PROFILE:-}" ]] && PROFILE_FLAG="--profile $AWS_PROFILE"
 
-if [[ -z "$ECR_REPO" ]]; then
-    if ! ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_FLAG --query Account --output text); then
-        echo ""
-        echo "Error: could not detect AWS account ID via 'aws sts get-caller-identity'."
-        echo "       See the error above. Set --ecr explicitly, or refresh AWS credentials"
-        echo "       (e.g. 'aws sso login --profile <profile>' or 'aws login') and retry."
-        exit 1
-    fi
-    ECR_REPO="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO_NAME"
+if [[ "$ECR_REPO" == public.ecr.aws/* ]]; then
+    IS_PUBLIC=1
+    LOGIN_REGISTRY="public.ecr.aws"
+    # Public ECR auth is always us-east-1 by AWS convention.
+    AUTH_REGION="us-east-1"
+    AUTH_CMD="ecr-public"
+else
+    IS_PUBLIC=0
+    # Private ECR URL is <account>.dkr.ecr.<region>.amazonaws.com/<name>.
+    LOGIN_REGISTRY=$(echo "$ECR_REPO" | cut -d/ -f1)
+    AUTH_REGION="$REGION"
+    AUTH_CMD="ecr"
 fi
-ACCOUNT_ID=$(echo "$ECR_REPO" | cut -d. -f1)
 
 echo "=== Plan ==="
 echo "    Block root:   $BLOCK_ROOT"
 echo "    ECR:          $ECR_REPO"
-echo "    Region:       $REGION"
+if [[ $IS_PUBLIC -eq 1 ]]; then
+    echo "    Mode:         public (anonymous pulls, authenticated push)"
+else
+    echo "    Mode:         private (region $AUTH_REGION)"
+fi
 echo "    Packages:"
 for d in "${SOFTWARE_DIRS[@]}"; do
     echo "      - $d"
@@ -193,10 +210,14 @@ fi
 # ---------------------------------------------------------------------------
 # ECR login (once).
 # ---------------------------------------------------------------------------
-echo "=== Logging in to ECR ==="
-if ! aws ecr get-login-password --region "$REGION" $PROFILE_FLAG \
-        | docker login --username AWS --password-stdin "$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com"; then
+echo "=== Logging in to $LOGIN_REGISTRY ==="
+if ! aws "$AUTH_CMD" get-login-password --region "$AUTH_REGION" $PROFILE_FLAG \
+        | docker login --username AWS --password-stdin "$LOGIN_REGISTRY"; then
+    echo ""
     echo "Error: ECR login failed (see above)."
+    echo "       Make sure AWS_PROFILE points to credentials with push access"
+    echo "       to $ECR_REPO. For SSO sessions, refresh with"
+    echo "       'aws sso login --profile <profile>' (or your equivalent) and retry."
     exit 1
 fi
 
