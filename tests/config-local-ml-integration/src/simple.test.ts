@@ -11,7 +11,7 @@ import { MiddleLayer } from "@milaboratories/pl-middle-layer";
 
 test(
   "should generate config, start local platforma and middle-layer from this config, create project, stop everything gracefully",
-  { timeout: 15000 },
+  { timeout: 20000 }, // downloads pl binary, time can vary depending on speed on agent's side
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const workingDir = path.resolve(path.join(__dirname, "..", ".test"));
@@ -32,23 +32,21 @@ test(
 
     // start local platforma
     console.log("Starting local platforma...");
+    const grpcPort = Number(genResult.plAddress.split(":").pop());
     const plLocal = await localPlatformaInit(logger, {
       workingDir: genResult.workingDir,
       config: genResult.plConfigContent,
+      grpcPort,
       onCloseAndErrorNoStop: async (pl: LocalPl) => await pl.start(),
     });
 
+    // wait for backend to bind its gRPC port before constructing a client —
+    // LLPlClient.build now does an eager ping, so build() will fail otherwise.
+    console.log("Waiting for local platforma to be ready...");
+    while (!(await plLocal.isAlive())) await sleep(30);
+
     // start pl-client
     const uaClient = await UnauthenticatedPlClient.build(genResult.plAddress);
-    console.log("Waiting for local platforma to be ready...");
-    while (true) {
-      try {
-        await uaClient.ping();
-        break;
-      } catch {
-        await sleep(30);
-      }
-    }
     const auth = await uaClient.login(genResult.plUser, genResult.plPassword);
     const client = await PlClient.init(genResult.plAddress, { authInformation: auth });
 
