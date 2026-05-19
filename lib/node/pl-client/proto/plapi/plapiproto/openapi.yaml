@@ -34,6 +34,10 @@ paths:
     post:
       tags:
         - Platform
+      description: |-
+        Deprecated: Use Login for session creation and role transitions,
+         and RefreshToken for token renewal. Backends implementing this API always return
+         codes.Unimplemented. Kept here so clients can still call old backends.
       operationId: Platform_GetJWTToken
       requestBody:
         content:
@@ -48,6 +52,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthAPI_GetJWTToken_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /v1/auth/login:
+    post:
+      tags:
+        - Platform
+      description: |-
+        Login authenticates with the given credentials and returns a new Platforma JWT.
+         Every Login call creates a new session. Use RefreshToken to renew an existing one.
+         This method is public: no Authorization header is required.
+      operationId: Platform_Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthAPI_Login_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAPI_Login_Response"
         default:
           description: Default error response
           content:
@@ -101,6 +133,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+  /v1/auth/refresh:
+    post:
+      tags:
+        - Platform
+      description: |-
+        RefreshToken accepts a valid Platforma JWT and re-issues it with the same
+         session ID and role. Only the token expiration may be changed.
+         Workflow-scoped tokens cannot be refreshed; call Login instead.
+         This method is public: no Authorization header is required.
+      operationId: Platform_RefreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthAPI_RefreshToken_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAPI_RefreshToken_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
   /v1/auth/revoke-access:
     post:
       tags:
@@ -143,6 +204,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthAPI_GetSessionInfo_Response"
+        default:
+          description: Default error response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+  /v1/auth/sso/begin-login:
+    post:
+      tags:
+        - Platform
+      description: |-
+        BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+         into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+         login flow. This method is public: no Authorization header is required.
+      operationId: Platform_BeginSSOLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_Request"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_Response"
         default:
           description: Default error response
           content:
@@ -754,6 +843,22 @@ paths:
                 $ref: "#/components/schemas/Status"
 components:
   schemas:
+    AuthAPI_BeginSSOLogin_PublicPKCE:
+      type: object
+      properties:
+        nonce:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    AuthAPI_BeginSSOLogin_Request:
+      type: object
+      properties: {}
+    AuthAPI_BeginSSOLogin_Response:
+      type: object
+      properties:
+        publicPkce:
+          $ref: "#/components/schemas/AuthAPI_BeginSSOLogin_PublicPKCE"
     AuthAPI_GetJWTToken_Request:
       type: object
       properties:
@@ -823,17 +928,26 @@ components:
         writable:
           type: boolean
       description: Permissions describes access level for a grant.
+    AuthAPI_ListMethods_BasicAuthMethod:
+      type: object
+      properties: {}
     AuthAPI_ListMethods_MethodInfo:
       type: object
       properties:
-        type:
+        id:
           type: string
-        name:
+          description: |-
+            id is the stable, machine-readable identifier of the login method
+             instance. Unique across the entire server.
+        description:
           type: string
-        info:
-          type: object
-          additionalProperties:
-            type: string
+          description: description is the human-readable label in case we'd like to render it in UI.
+        basic:
+          $ref: "#/components/schemas/AuthAPI_ListMethods_BasicAuthMethod"
+        token:
+          $ref: "#/components/schemas/AuthAPI_ListMethods_TokenAuthMethod"
+        sso:
+          $ref: "#/components/schemas/AuthAPI_ListMethods_SSOAuthMethod"
     AuthAPI_ListMethods_Response:
       type: object
       properties:
@@ -841,6 +955,91 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuthAPI_ListMethods_MethodInfo"
+    AuthAPI_ListMethods_SSOAuthMethod:
+      type: object
+      properties:
+        issuer:
+          type: string
+        clientId:
+          type: string
+        scopes:
+          type: string
+        resource:
+          type: string
+        prompt:
+          type: string
+        redirectPorts:
+          type: array
+          items:
+            type: integer
+            format: uint32
+        subjectTokenSource:
+          type: string
+        userIdClaim:
+          type: string
+        groupsClaim:
+          type: string
+        flowType:
+          type: integer
+          format: enum
+      description: |-
+        SSOAuthMethod advertises an external IdP-based login flow. The desktop
+         app uses the contents to drive the PKCE exchange locally, then hands the
+         resulting IdP token-response back via Login.SSOCredentials.
+    AuthAPI_ListMethods_TokenAuthMethod:
+      type: object
+      properties: {}
+    AuthAPI_Login_BasicCredentials:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+    AuthAPI_Login_Request:
+      type: object
+      properties:
+        basic:
+          $ref: "#/components/schemas/AuthAPI_Login_BasicCredentials"
+        token:
+          $ref: "#/components/schemas/AuthAPI_Login_TokenCredentials"
+        sso:
+          $ref: "#/components/schemas/AuthAPI_Login_SSOCredentials"
+        expiration:
+          pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+          type: string
+        requestedRole:
+          type: integer
+          format: enum
+    AuthAPI_Login_Response:
+      type: object
+      properties:
+        token:
+          type: string
+        sessionId:
+          type: string
+          format: bytes
+        role:
+          type: integer
+          format: enum
+    AuthAPI_Login_SSOCredentials:
+      type: object
+      properties:
+        tokenResponse:
+          type: string
+          format: bytes
+      description: |-
+        SSOCredentials carries the raw JSON body returned by the IdP's /token
+         endpoint after the desktop completes a PKCE exchange.
+    AuthAPI_Login_TokenCredentials:
+      type: object
+      properties:
+        token:
+          type: string
+          format: bytes
+      description: |-
+        TokenCredentials accepts any opaque bearer-style string: a controller
+         pre-shared secret, an existing Platforma JWT, or a future OIDC id-token.
     AuthAPI_MintSignature_Request:
       type: object
       properties:
@@ -859,6 +1058,25 @@ components:
         resourceSignature:
           type: string
           format: bytes
+    AuthAPI_RefreshToken_Request:
+      type: object
+      properties:
+        token:
+          type: string
+        expiration:
+          pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+          type: string
+    AuthAPI_RefreshToken_Response:
+      type: object
+      properties:
+        token:
+          type: string
+        sessionId:
+          type: string
+          format: bytes
+        role:
+          type: integer
+          format: enum
     AuthAPI_RevokeAccess_Request:
       type: object
       properties:
@@ -1246,6 +1464,21 @@ components:
           type: string
         arch:
           type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: |-
+            Opt-in capabilities advertised by this server instance, used by
+             clients to pick between fast and fallback code paths without waiting
+             for a failed RPC.
+
+             Each entry is an opaque token "<feature>:<version>" (e.g.
+             "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+             The field is unset on servers predating this mechanism, which the
+             client treats as "no optional capabilities advertised".
+
+             All list see pl/platform/api/plapiserver/server_capabilities.go
     MiscAPI_ListResourceTypes_Response:
       type: object
       properties:
