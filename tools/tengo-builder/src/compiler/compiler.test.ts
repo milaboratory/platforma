@@ -333,3 +333,94 @@ describe("TengoTemplateCompiler.compileAndAdd", () => {
     expect(() => compiler.compileAndAdd(sources)).toThrow(/Unsatisfied dependencies/);
   });
 });
+
+describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
+  const wasmName: FullArtifactName = {
+    type: "wasm",
+    pkg: "@test/pkg",
+    id: "main",
+    version: "1.0.0",
+  };
+  const wasmSrc = new ArtifactSource(
+    "dist",
+    wasmName,
+    "wasm-hash",
+    "wasm-bytes-base64",
+    "wasm-file",
+    [],
+    [],
+  );
+
+  it("adds wasm:v1 when a template directly embeds a wasm artifact", () => {
+    const compiler = new TengoTemplateCompiler("dist");
+    compiler.addWasm(wasmSrc);
+
+    const tplName: FullArtifactName = {
+      type: "template",
+      pkg: "@test/pkg",
+      id: "tpl",
+      version: "1.0.0",
+    };
+    const result = compiler.compileAndAdd([
+      new ArtifactSource("dist", tplName, "tpl-hash", "tpl-src", "tpl-file", [wasmName], []),
+    ]);
+
+    expect(result.templates[0].data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+  });
+
+  it("unions child template requiredCapabilities into the parent", () => {
+    const compiler = new TengoTemplateCompiler("dist");
+    compiler.addWasm(wasmSrc);
+
+    const childName: FullArtifactName = {
+      type: "template",
+      pkg: "@test/pkg",
+      id: "child",
+      version: "1.0.0",
+    };
+    const parentName: FullArtifactName = {
+      type: "template",
+      pkg: "@test/pkg",
+      id: "parent",
+      version: "1.0.0",
+    };
+    const childSrc = new ArtifactSource(
+      "dist",
+      childName,
+      "child-hash",
+      "child-src",
+      "child-file",
+      [wasmName],
+      [],
+    );
+    const parentSrc = new ArtifactSource(
+      "dist",
+      parentName,
+      "parent-hash",
+      "parent-src",
+      "parent-file",
+      [childName],
+      [],
+    );
+
+    const result = compiler.compileAndAdd([childSrc, parentSrc]);
+    const parent = result.templates.find((t) => t.fullName.id === "parent")!;
+    expect(parent.data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+  });
+
+  it("leaves requiredCapabilities undefined when no capability is needed", () => {
+    const compiler = new TengoTemplateCompiler("dist");
+
+    const tplName: FullArtifactName = {
+      type: "template",
+      pkg: "@test/pkg",
+      id: "plain",
+      version: "1.0.0",
+    };
+    const result = compiler.compileAndAdd([
+      new ArtifactSource("dist", tplName, "plain-hash", "plain-src", "plain-file", [], []),
+    ]);
+
+    expect(result.templates[0].data.template.requiredCapabilities).toBeUndefined();
+  });
+});

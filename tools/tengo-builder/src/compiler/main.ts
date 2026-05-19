@@ -13,6 +13,18 @@ import { newTemplateFromContent, templateToSource } from "./template";
 import type winston from "winston";
 import { tryResolve, tryResolveOrError } from "@milaboratories/resolve-helper";
 import { serializeTemplate } from "@milaboratories/pl-model-backend";
+import {
+  assertTemplatePackSize,
+  assertWasmFileSize,
+  collectWasmContributions,
+} from "./pack_limits";
+
+// Convention: wasm component packages declare their wasm under a "wasm" condition
+// in package.json `exports`. Subpath "." maps to the tengo id "main"; subpath
+// "./foo" maps to id "foo". Other shapes of `exports` (string-valued, condition-only)
+// don't produce wasm artifacts.
+const wasmExportCondition = "wasm";
+const defaultWasmExportId = "main";
 
 interface PackageId {
   /** Package name from package.json */
@@ -44,6 +56,7 @@ const compiledTplSuffix = ".plj.gz";
 const compiledLibSuffix = ".lib.tengo";
 const compiledSoftwareSuffix = ".sw.json";
 const compiledAssetSuffix = ".as.json";
+const compiledWasmSuffix = ".wasm";
 
 // We need to keep track of dependencies for correct tgo-test CLI utility configuraiton.
 // It is much simpler to do this here, than duplicate all tle logic regarding dependencies
@@ -79,15 +92,32 @@ function resolvePackageJsonPackage(root: string, depPackageName: string): string
 
   // Second approach: trying to find package.json in the package dir.
   const resolved2 = tryResolveOrError(root, `${depPackageName}/package.json`);
-  if (resolved2.result === undefined) {
-    if (resolved2.err === "ERR_PACKAGE_PATH_NOT_EXPORTED")
-      // tolerating not-exported package.json for dev dependencies
-      return undefined;
-    throw new Error(
-      `Can't resolve package.json for package ${depPackageName ?? "."} relative to ${root}`,
-    );
+  if (resolved2.result !== undefined) {
+    return resolved2.result;
   }
-  return resolved2.result;
+
+  // Third approach: some packages (wasm-only components) don't expose any
+  // import-resolvable entry point — neither a default export nor `./package.json`.
+  // pnpm still installs them at <root>/node_modules/<depPackageName>/, so walk
+  // the parent chain and check that path directly.
+  if (resolved2.err === "ERR_PACKAGE_PATH_NOT_EXPORTED") {
+    const fromNodeModules = findInNodeModules(root, depPackageName);
+    if (fromNodeModules !== undefined) return fromNodeModules;
+    // tolerating not-exported package.json for dev dependencies even if no
+    // physical node_modules copy is found.
+    return undefined;
+  }
+  throw new Error(
+    `Can't resolve package.json for package ${depPackageName ?? "."} relative to ${root}`,
+  );
+}
+
+function findInNodeModules(root: string, depPackageName: string): string | undefined {
+  const candidate = path.join(root, "node_modules", depPackageName, "package.json");
+  if (pathType(candidate) === "file") return candidate;
+  const parent = path.dirname(root);
+  if (parent === root) return undefined;
+  return findInNodeModules(parent, depPackageName);
 }
 
 export function resolvePackageJsonRoot(root: string): string {
@@ -165,6 +195,10 @@ function resolveAssetsDst(mode: CompileMode, root: string) {
   return path.resolve(root, mode, "tengo", "asset");
 }
 
+function resolveWasmDst(mode: CompileMode, root: string) {
+  return path.resolve(root, mode, "tengo", "wasm");
+}
+
 function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
@@ -181,13 +215,23 @@ function loadDependencies(
   const tplDistFolder = resolveTemplatesDst("dist", packageInfo.root);
   const softwareDistFolder = resolveSoftwareDst("dist", packageInfo.root);
   const assetDistFolder = resolveAssetsDst("dist", packageInfo.root);
+  const wasmDistFolder = resolveWasmDst("dist", packageInfo.root);
 
   const libDistExists = pathType(libDistFolder) === "dir";
   const tplDistExists = pathType(tplDistFolder) === "dir";
   const softwareDistExists = pathType(softwareDistFolder) === "dir";
   const assetDistExists = pathType(assetDistFolder) === "dir";
+  const wasmDistExists = pathType(wasmDistFolder) === "dir";
+  const wasmExports = collectWasmExportPaths(packageInfo.root);
 
-  if (!libDistExists && !tplDistExists && !softwareDistExists && !assetDistExists)
+  if (
+    !libDistExists &&
+    !tplDistExists &&
+    !softwareDistExists &&
+    !assetDistExists &&
+    !wasmDistExists &&
+    wasmExports.length === 0
+  )
     // if neither of tengo-specific folders detected, skipping package
     return;
 
@@ -207,6 +251,14 @@ function loadDependencies(
 
   if (assetDistExists) {
     loadAssetsFromDir(logger, packageId, "dist", assetDistFolder, compiler);
+  }
+
+  if (wasmDistExists) {
+    loadWasmFromDir(logger, packageId, "dist", wasmDistFolder, compiler);
+  }
+
+  for (const wasmExport of wasmExports) {
+    loadWasmFromExport(logger, packageId, "dist", packageInfo.root, wasmExport, compiler);
   }
 }
 
@@ -311,6 +363,142 @@ function loadAssetsFromDir(
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addAsset(asset);
   }
+}
+
+function loadWasmFromDir(
+  logger: winston.Logger,
+  packageId: PackageId,
+  mode: CompileMode,
+  folder: string,
+  compiler: TengoTemplateCompiler,
+) {
+  for (const f of fs.readdirSync(folder)) {
+    const file = path.resolve(folder, f);
+    if (!f.endsWith(compiledWasmSuffix))
+      throw new Error(`unexpected file in 'wasm' folder: ${file}`);
+    const fullName: FullArtifactName = {
+      type: "wasm",
+      pkg: packageId.name,
+      id: f.slice(0, f.length - compiledWasmSuffix.length),
+      version: packageId.version,
+    };
+
+    addWasmFile(logger, mode, file, fullName, compiler);
+  }
+}
+
+interface WasmExport {
+  id: string;
+  /** wasm file path, relative to the package root */
+  relPath: string;
+}
+
+function loadWasmFromExport(
+  logger: winston.Logger,
+  packageId: PackageId,
+  mode: CompileMode,
+  packageRoot: string,
+  wasmExport: WasmExport,
+  compiler: TengoTemplateCompiler,
+) {
+  const file = path.resolve(packageRoot, wasmExport.relPath);
+  if (pathType(file) !== "file") {
+    throw new Error(
+      `wasm export "${wasmExport.id}" points to missing file: ${file} (package ${packageId.name})`,
+    );
+  }
+  const fullName: FullArtifactName = {
+    type: "wasm",
+    pkg: packageId.name,
+    id: wasmExport.id,
+    version: packageId.version,
+  };
+
+  addWasmFile(logger, mode, file, fullName, compiler);
+}
+
+function addWasmFile(
+  logger: winston.Logger,
+  mode: CompileMode,
+  file: string,
+  fullName: FullArtifactName,
+  compiler: TengoTemplateCompiler,
+) {
+  // wasm bytes are binary, but hashToSource carries strings only. We base64-encode
+  // the bytes; the sourceHash is sha256 of the base64 string so it stays consistent
+  // with the existing `hashToSource[hash] === stored value` invariant.
+  const bytes = fs.readFileSync(file);
+  assertWasmFileSize(file, bytes.length, fullName);
+  const source = bytes.toString("base64");
+  const wasm = new ArtifactSource(mode, fullName, getSha256(source), source, file, [], []);
+
+  logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+  compiler.addWasm(wasm);
+}
+
+/**
+ * Discover wasm artifacts declared by a package's `package.json` via the
+ * node `exports` conditional-exports map.
+ *
+ * Convention: a package that wants to ship one or more wasm components to
+ * tengo-builder publishes them under a `"wasm"` condition keyed by an
+ * `exports` subpath. The subpath becomes the wasm artifact id (`.` →
+ * `main`, `./foo` → `foo`). Example shape we look for:
+ *
+ *   {
+ *     "exports": {
+ *       ".": {
+ *         "wasm": "./dist/pframes_rs_wasip2.wasm",  // ← discovered
+ *         "wit":  "./wit/world.wit"
+ *       },
+ *       "./extra": {
+ *         "wasm": "./dist/extra.wasm"               // ← discovered as id "extra"
+ *       }
+ *     }
+ *   }
+ *
+ * Why raw traversal instead of Zod / a typed schema:
+ *   1. `package.json#exports` is a community convention with no fixed shape
+ *      — any combination of strings, objects, arrays, and conditions is
+ *      legal node syntax. A strict schema would either reject valid
+ *      packages or have to admit `unknown` for half of it anyway.
+ *   2. We care about exactly one condition (`wasm`) on subpath entries,
+ *      not the rest of the exports tree. A targeted walk reads more
+ *      directly than a schema that re-describes the conditional-exports
+ *      grammar.
+ *   3. Errors here should always mean "this package contributes no wasm";
+ *      never crash the build. Every check returns `[]` or `continue`s.
+ *
+ * Returns the discovered wasm exports; empty when the file is missing,
+ * malformed, has no `exports`, or has no subpath with a `"wasm"`
+ * condition pointing at a string path.
+ */
+function collectWasmExportPaths(packageRoot: string): WasmExport[] {
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  if (pathType(packageJsonPath) !== "file") return [];
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+  } catch {
+    return [];
+  }
+  if (typeof raw !== "object" || raw === null) return [];
+
+  const exportsField = (raw as { exports?: unknown }).exports;
+  if (typeof exportsField !== "object" || exportsField === null) return [];
+
+  const result: WasmExport[] = [];
+  for (const [subpath, value] of Object.entries(exportsField as Record<string, unknown>)) {
+    if (!subpath.startsWith(".")) continue; // skip condition-only entries
+    if (typeof value !== "object" || value === null) continue;
+    const wasmPath = (value as Record<string, unknown>)[wasmExportCondition];
+    if (typeof wasmPath !== "string") continue;
+    const id = subpath === "." ? defaultWasmExportId : subpath.replace(/^\.\/?/, "");
+    if (!id) continue;
+    result.push({ id, relPath: wasmPath });
+  }
+  return result;
 }
 
 export function parseSources(
@@ -468,8 +656,14 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
     fs.mkdirSync(tplOutput, { recursive: true });
     for (const tpl of compiled.templates) {
       const file = path.resolve(tplOutput, tpl.fullName.id + compiledTplSuffix);
+      const packed = serializeTemplate(tpl.data);
+      assertTemplatePackSize(
+        fullNameToString(tpl.fullName),
+        packed.byteLength,
+        collectWasmContributions(tpl.data),
+      );
       logger.info(`  - writing ${file}`);
-      fs.writeFileSync(file, serializeTemplate(tpl.data));
+      fs.writeFileSync(file, packed);
     }
   }
 
@@ -492,6 +686,18 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
       const file = path.resolve(swOutput, sw.fullName.id + compiledAssetSuffix);
       logger.info(`  - writing ${file}`);
       fs.writeFileSync(file, sw.src);
+    }
+  }
+
+  // writing wasm
+  if (compiled.wasm.length > 0) {
+    const wasmOutput = resolveWasmDst(mode, ".");
+    fs.mkdirSync(wasmOutput, { recursive: true });
+    for (const wasm of compiled.wasm) {
+      const file = path.resolve(wasmOutput, wasm.fullName.id + compiledWasmSuffix);
+      logger.info(`  - writing ${file}`);
+      // wasm.src holds base64-encoded bytes; decode back to raw bytes on disk
+      fs.writeFileSync(file, Buffer.from(wasm.src, "base64"));
     }
   }
 }

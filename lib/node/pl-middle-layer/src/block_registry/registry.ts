@@ -8,6 +8,7 @@ import YAML from "yaml";
 import { assertNever } from "@milaboratories/ts-helpers";
 import { LegacyDevBlockPackFiles } from "../dev_env";
 import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
+import { deriveRequiredCapabilities } from "../mutator/block-pack/required_capabilities";
 import type { V2RegistryProvider } from "./registry-v2-provider";
 import type {
   BlockPackId,
@@ -207,9 +208,28 @@ export class BlockPackRegistry {
             if (v2Description !== undefined) {
               const mtime = await getDevV2PacketMtime(v2Description);
 
+              const meta = await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta);
+
+              // `tryLoadPackDescription` reads `package.json#block.meta` —
+              // the dev SOURCE meta the developer wrote.
+              // `requiredCapabilities` is a PACK-TIME artifact written by
+              // `block-tools pack` into `block-pack/manifest.json`.
+              // So for any dev block, the source meta never carries the field.
+              //
+              // To surface the gate at listing time without requiring the
+              // developer to re-pack on every workflow change, derive from
+              // the compiled workflow bytes directly.
+              if (meta.requiredCapabilities === undefined) {
+                const workflowBytes = await fs.promises.readFile(
+                  v2Description.components.workflow.main.file,
+                );
+                const derived = deriveRequiredCapabilities(workflowBytes);
+                if (derived !== undefined) meta.requiredCapabilities = derived;
+              }
+
               const latestOverview: SingleBlockPackOverview = {
                 id: v2Description.id,
-                meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
+                meta,
                 featureFlags: v2Description.featureFlags,
                 spec: {
                   type: "dev-v2",
