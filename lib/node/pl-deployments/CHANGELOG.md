@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 2.18.0
+
+### Minor Changes
+
+- c097727: Make local platforma startup script to wait for real service start: test TCP port readiness before reporting 'isAlive'
+
 ## 2.17.18
 
 ### Patch Changes

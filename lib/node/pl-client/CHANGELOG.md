@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.8.0
+
+### Minor Changes
+
+- c097727: Support auth:v2 authentication flow
+
 ## 3.7.0
 
 ### Minor Changes
