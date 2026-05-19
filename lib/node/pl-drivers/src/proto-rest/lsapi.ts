@@ -42,6 +42,14 @@ export interface components {
       /** @description is_dir is true for an item that can have subitems. */
       isDir: boolean;
       /**
+       * @description additional_info carries the signed identity envelope for federative storages.
+       *      KV schema: v=1, path, uid, sid, role, exp, kid, signed, sig.
+       *      Empty for non-federative storages. Verifiers MUST ignore unknown keys.
+       */
+      additionalInfo?: {
+        [key: string]: string;
+      };
+      /**
        * @description full_name is the full name of the item, relative to the storage root.
        *      It is <directory> + <name>.
        *      The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
