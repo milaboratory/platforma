@@ -36,7 +36,6 @@ class NumberOfBytes(Struct, rename="camel"):
 class Stats(Struct, rename="camel"):
     number_of_rows: Optional[int] = None
     number_of_bytes: Optional[NumberOfBytes] = None
-    format_version: Optional[str] = None
 
 class DataInfoPart(Struct, rename="camel"):
     data: str
@@ -204,8 +203,6 @@ class WriteFrame(PStep, tag="write_frame"):
                             axes=axes_nbytes,
                             column=column_nbytes,
                         ),
-                        # IMPORTANT: update this version when changing anything that affect parquet file hash
-                        format_version = "V2",
                     ),
                 )
             
@@ -260,16 +257,20 @@ class WriteFrame(PStep, tag="write_frame"):
                 #     join pushdown prune at sub-row-group granularity on the
                 #     right side of a left join. Without it a 100-key probe on
                 #     a sorted right side still reads the full column chunk.
-                #   * Bloom filters are written only for the axis columns (the
-                #     join keys). Value columns don't benefit and the overhead
-                #     is wasted there.
+                #   * Bloom filters are written for every column (axes and
+                #     value columns alike): the UI issues exact-match lookups
+                #     on value columns, not just on join keys.
                 #   * `sorting_columns` metadata is declared so readers can
                 #     rely on the sort without inferring it.
                 # Streaming preserves larger-than-memory writes: one row group
                 # at a time, same memory profile as DuckDB's COPY.
-                # Changes here must be reflected in a new field in stats to
-                # ensure correct deduplication!
                 row_group_size = 122880
+                count_params = query_params[:]
+                if row is not None:
+                    count_query = f"SELECT COUNT(*) FROM read_parquet(?) WHERE {' AND '.join(where_conditions)}"
+                else:
+                    count_query = "SELECT COUNT(*) FROM read_parquet(?)"
+                total_rows = duckdb_conn.execute(count_query, count_params).fetchone()[0]
                 reader = duckdb_conn.execute(query, query_params).fetch_record_batch(
                     rows_per_batch=row_group_size,
                 )
@@ -284,11 +285,9 @@ class WriteFrame(PStep, tag="write_frame"):
                     pq.SortingColumn(schema_names.index(name), descending=False, nulls_first=True)
                     for name in sort_axis_names
                 ]
-                # `ndv` sized to row_group_size: bloom is per row group, and a
-                # row group cannot contain more distinct values than it has rows.
                 bloom_filter_options = {
-                    name: {'ndv': row_group_size, 'fpp': 0.01}
-                    for name in sort_axis_names
+                    name: {'ndv': max(total_rows, 1), 'fpp': 0.05}
+                    for name in schema_names
                 }
                 out_path = os.path.join(frame_dir, data_file)
                 with pq.ParquetWriter(
@@ -298,16 +297,21 @@ class WriteFrame(PStep, tag="write_frame"):
                     compression_level=3,
                     use_dictionary=True,
                     write_statistics=True,
+                    # We need the offset index first of all (the data-page
+                    # byte-range table that lets DataFusion seek directly to
+                    # a candidate page after a row-group prune). It's emitted
+                    # together with the column index by this single flag.
                     write_page_index=True,
+                    write_page_checksum=True,
+                    dictionary_pagesize_limit=256 * 1024,
+                    data_page_size=256 * 1024,
                     bloom_filter_options=bloom_filter_options,
                     sorting_columns=sorting_columns,
                     version='2.6',
-                    # DataPage v2: definition/repetition levels stored
-                    # uncompressed (RLE-only) and separately from data, so
-                    # ZSTD operates on values only. Smaller pages on sparse
-                    # / nullable columns, faster decode. We have a single
-                    # reader (DataFusion / arrow-rs) which fully supports
-                    # DataPage v2 — no compatibility tradeoff.
+                    # We need DataPage v2: v1 layout is tuned for sequential
+                    # scans (definition/repetition levels compressed inline
+                    # with values), but our access pattern includes point
+                    # reads where we decode a single page out of a chunk.
                     data_page_version='2.0',
                 ) as writer:
                     for batch in reader:
