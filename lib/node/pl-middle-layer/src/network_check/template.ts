@@ -20,7 +20,7 @@ import {
   isUpload,
   uploadBlob,
   type ClientUpload,
-  type LsEntryWithAdditionalInfo,
+  type LsEntryWithFileStats,
 } from "@milaboratories/pl-drivers";
 import type { Signer } from "@milaboratories/ts-helpers";
 import { notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
@@ -386,7 +386,7 @@ export async function chooseFile(
   maxSize: number,
   minLsRequests: number,
 ): Promise<{
-  file: LsEntryWithAdditionalInfo | undefined;
+  file: LsEntryWithFileStats | undefined;
   nLsRequests: number;
   nCheckedFiles: number;
 }> {
@@ -395,7 +395,7 @@ export async function chooseFile(
   // return small file in case we don't have many normal-sized files.
   // While we'll download only a small range of bytes from the file,
   // we don't want to return a big file in case the underlying S3 doesn't support range requests.
-  let smallFile: LsEntryWithAdditionalInfo | undefined;
+  let smallFile: LsEntryWithFileStats | undefined;
   let nCheckedFiles = 0;
   let maxNLsRequests = 0;
 
@@ -423,9 +423,9 @@ export async function* listFilesSequence(
   storage: StorageEntry,
   parent: string,
   nLsRequests: number,
-): AsyncGenerator<{ file: LsEntryWithAdditionalInfo; nLsRequests: number }, void, unknown> {
+): AsyncGenerator<{ file: LsEntryWithFileStats; nLsRequests: number }, void, unknown> {
   nLsRequests++;
-  const files = await lsDriver.listRemoteFilesWithAdditionalInfo(storage.handle, parent);
+  const files = await lsDriver.listRemoteFilesWithFileStats(storage.handle, parent);
 
   for (const file of files.entries) {
     if (file.type === "file" && file.fullPath.startsWith(parent)) {

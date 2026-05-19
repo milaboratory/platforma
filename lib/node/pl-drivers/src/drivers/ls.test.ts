@@ -1,10 +1,13 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from "@milaboratories/ts-helpers";
-import { LsDriver } from "./ls";
+import { LsDriver, type LsEntryWithFileStats } from "./ls";
 import { TestHelpers } from "@milaboratories/pl-client";
 import * as path from "node:path";
-import { test, expect } from "vitest";
+import { test, expect, describe } from "vitest";
 import { isImportFileHandleIndex, isImportFileHandleUpload } from "@milaboratories/pl-model-common";
+import type { StorageHandle } from "@milaboratories/pl-model-common";
 import * as env from "../test_env";
+import { parseIndexHandle } from "./helpers/ls_remote_import_handle";
+import { createRemoteStorageHandle } from "./helpers/ls_storage_entry";
 
 const assetsPath = path.resolve("../../../assets");
 
@@ -139,5 +142,137 @@ test("should ok when get file using local dialog, and read its content", async (
 
     const multiResult = await driver.showOpenMultipleFilesDialog();
     expect(multiResult.files![0]).toStrictEqual(result.file);
+  });
+});
+
+// Unit tests: verify that LsDriver.listFiles and listRemoteFilesWithFileStats correctly
+// thread additionalInfo from gRPC list items into the index:// handle.
+describe("LsDriver additionalInfo threading", () => {
+  const envelope = { uid: "u1", sid: "s1", sig: "sigval", exp: "9999999999", kid: "k1", v: "1" };
+
+  const storageInfo = {
+    storageId: "test-storage",
+    storageName: "Test Storage",
+    resourceId: "res-id" as any,
+    resourceType: { name: "LS/test-storage", version: "1" },
+  };
+
+  // Builds a minimal LsDriver instance with an injected mock lsClient via private-constructor bypass.
+  function makeMockDriver(listResponse: { items: any[]; delimiter: string }): LsDriver {
+    const mockLsClient = {
+      list: async () => listResponse,
+      close: () => {},
+    };
+    const mockUserResources = {
+      getDataLibraries: async () => new Map([[storageInfo.storageId, storageInfo]]),
+    };
+    const signer = new HmacSha256Signer("test");
+    // Bypass private constructor for unit testing only.
+    return new (LsDriver as any)(
+      new ConsoleLoggerAdapter(),
+      mockLsClient,
+      mockUserResources,
+      signer,
+      new Map(),
+      new Map(),
+      () => Promise.resolve(undefined),
+    ) as LsDriver;
+  }
+
+  function makeRemoteHandle(): StorageHandle {
+    return createRemoteStorageHandle(storageInfo) as StorageHandle;
+  }
+
+  test("listFiles: handle carries additionalInfo envelope from gRPC item", async () => {
+    const driver = makeMockDriver({
+      delimiter: "/",
+      items: [
+        {
+          name: "file.txt",
+          size: 100n,
+          isDir: false,
+          additionalInfo: envelope,
+          fullName: "dir/file.txt",
+          directory: "dir/",
+          version: "v1",
+        },
+      ],
+    });
+
+    const result = await driver.listFiles(makeRemoteHandle(), "dir/");
+    expect(result.entries).toHaveLength(1);
+
+    const parsed = parseIndexHandle(result.entries[0].handle as any);
+    expect(parsed.additionalInfo).toEqual(envelope);
+  });
+
+  test("listFiles: handle has no additionalInfo when item has empty envelope", async () => {
+    const driver = makeMockDriver({
+      delimiter: "/",
+      items: [
+        {
+          name: "plain.txt",
+          size: 50n,
+          isDir: false,
+          additionalInfo: {},
+          fullName: "plain.txt",
+          directory: "",
+          version: "v1",
+        },
+      ],
+    });
+
+    const result = await driver.listFiles(makeRemoteHandle(), "");
+    expect(result.entries).toHaveLength(1);
+
+    const parsed = parseIndexHandle(result.entries[0].handle as any);
+    expect(parsed.additionalInfo).toBeUndefined();
+  });
+
+  test("listRemoteFilesWithFileStats: handle carries additionalInfo envelope", async () => {
+    const driver = makeMockDriver({
+      delimiter: "/",
+      items: [
+        {
+          name: "data.csv",
+          size: 200n,
+          isDir: false,
+          additionalInfo: envelope,
+          fullName: "data.csv",
+          directory: "",
+          version: "v2",
+        },
+      ],
+    });
+
+    const result = await driver.listRemoteFilesWithFileStats(makeRemoteHandle(), "");
+    expect(result.entries).toHaveLength(1);
+    expect((result.entries[0] as LsEntryWithFileStats).size).toBe(200);
+
+    const parsed = parseIndexHandle(result.entries[0].handle as any);
+    expect(parsed.additionalInfo).toEqual(envelope);
+  });
+
+  test("listRemoteFilesWithFileStats: no additionalInfo when absent in item", async () => {
+    const driver = makeMockDriver({
+      delimiter: "/",
+      items: [
+        {
+          name: "plain.csv",
+          size: 10n,
+          isDir: false,
+          additionalInfo: {},
+          fullName: "plain.csv",
+          directory: "",
+          version: "v1",
+        },
+      ],
+    });
+
+    const result = await driver.listRemoteFilesWithFileStats(makeRemoteHandle(), "");
+    expect(result.entries).toHaveLength(1);
+
+    const parsed = parseIndexHandle(result.entries[0].handle as any);
+    expect(parsed.additionalInfo).toBeUndefined();
   });
 });

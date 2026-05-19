@@ -5,11 +5,17 @@ import { ImportFileHandleIndexData, ImportFileHandleUploadData } from "../types"
 export function createIndexImportHandle(
   storageId: string,
   path: string,
+  additionalInfo?: Record<string, string>,
 ): sdk.ImportFileHandleIndex {
   const data: ImportFileHandleIndexData = {
     storageId: storageId,
     path: path,
   };
+
+  // Only embed the envelope when non-empty; preserves byte-identical URL for non-federative storages.
+  if (additionalInfo && Object.keys(additionalInfo).length > 0) {
+    data.additionalInfo = additionalInfo;
+  }
 
   return `index://index/${encodeURIComponent(JSON.stringify(data))}`;
 }

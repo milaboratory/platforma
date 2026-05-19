@@ -41,6 +41,16 @@ export interface LsAPI_ListItem {
      */
     isDir: boolean;
     /**
+     * additional_info carries the signed identity envelope for federative storages.
+     * KV schema: v=1, path, uid, sid, role, exp, kid, signed, sig.
+     * Empty for non-federative storages. Verifiers MUST ignore unknown keys.
+     *
+     * @generated from protobuf field: map<string, string> additional_info = 8
+     */
+    additionalInfo: {
+        [key: string]: string;
+    };
+    /**
      * full_name is the full name of the item, relative to the storage root.
      * It is <directory> + <name>.
      * The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
@@ -169,6 +179,7 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
             { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "size", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "is_dir", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 8, name: "additional_info", kind: "map", K: 9 /*ScalarType.STRING*/, V: { kind: "scalar", T: 9 /*ScalarType.STRING*/ } },
             { no: 10, name: "full_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 11, name: "directory", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 12, name: "last_modified", kind: "message", T: () => Timestamp },
@@ -180,6 +191,7 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
         message.name = "";
         message.size = 0n;
         message.isDir = false;
+        message.additionalInfo = {};
         message.fullName = "";
         message.directory = "";
         message.version = "";
@@ -200,6 +212,9 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
                     break;
                 case /* bool is_dir */ 3:
                     message.isDir = reader.bool();
+                    break;
+                case /* map<string, string> additional_info */ 8:
+                    this.binaryReadMap8(message.additionalInfo, reader, options);
                     break;
                 case /* string full_name */ 10:
                     message.fullName = reader.string();
@@ -224,6 +239,22 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
         }
         return message;
     }
+    private binaryReadMap8(map: LsAPI_ListItem["additionalInfo"], reader: IBinaryReader, options: BinaryReadOptions): void {
+        let len = reader.uint32(), end = reader.pos + len, key: keyof LsAPI_ListItem["additionalInfo"] | undefined, val: LsAPI_ListItem["additionalInfo"][any] | undefined;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case 1:
+                    key = reader.string();
+                    break;
+                case 2:
+                    val = reader.string();
+                    break;
+                default: throw new globalThis.Error("unknown map entry field for MiLaboratories.Controller.Shared.LsAPI.ListItem.additional_info");
+            }
+        }
+        map[key ?? ""] = val ?? "";
+    }
     internalBinaryWrite(message: LsAPI_ListItem, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string name = 1; */
         if (message.name !== "")
@@ -234,6 +265,9 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
         /* bool is_dir = 3; */
         if (message.isDir !== false)
             writer.tag(3, WireType.Varint).bool(message.isDir);
+        /* map<string, string> additional_info = 8; */
+        for (let k of globalThis.Object.keys(message.additionalInfo))
+            writer.tag(8, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k).tag(2, WireType.LengthDelimited).string(message.additionalInfo[k]).join();
         /* string full_name = 10; */
         if (message.fullName !== "")
             writer.tag(10, WireType.LengthDelimited).string(message.fullName);
