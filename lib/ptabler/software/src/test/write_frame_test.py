@@ -182,10 +182,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[66, 69],
-                                column=66
+                                axes=[77, 80],
+                                column=77
                             ),
-                            format_version="V2",
                         )
                     )
                 }
@@ -255,10 +254,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=2,
                             number_of_bytes=NumberOfBytes(
-                                axes=[57],
-                                column=57
+                                axes=[69],
+                                column=69
                             ),
-                            format_version="V2",
                         )
                     ),
                     "[2]": DataInfoPart(
@@ -269,10 +267,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[52],
-                                column=49
+                                axes=[64],
+                                column=61
                             ),
-                            format_version="V2",
                         )
                     )
                 }
@@ -437,10 +434,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[66, 57],
-                                column=57
+                                axes=[77, 68],
+                                column=69
                             ),
-                            format_version="V2",
                         )
                     )
                 }
@@ -522,10 +518,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=1,
                             number_of_bytes=NumberOfBytes(
-                                axes=[49],
-                                column=49
+                                axes=[61],
+                                column=61
                             ),
-                            format_version="V2",
                         )
                     )
                 }
@@ -656,10 +651,9 @@ class WriteFrameTests(unittest.TestCase):
                         stats=Stats(
                             number_of_rows=3,
                             number_of_bytes=NumberOfBytes(
-                                axes=[66],
-                                column=66
+                                axes=[77],
+                                column=77
                             ),
-                            format_version="V2",
                         )
                     )
                 }
@@ -768,14 +762,14 @@ class WriteFrameTests(unittest.TestCase):
         HashJoin DynamicFilter pushdown needs to prune the right side of a
         left join without reading the full column chunk:
 
-          1. Bloom filter present on every axis (join-key) column, in every
-             row group. Verified via DuckDB's `parquet_metadata` which exposes
+          1. Bloom filter present on every column (axes AND value columns),
+             in every row group. The UI issues exact-match lookups on value
+             columns, not just on join keys, so the bloom must be there too.
+             Verified via DuckDB's `parquet_metadata` which exposes
              per-(row_group, column) bloom_filter_offset. PyArrow 24's
              ParquetReader has no `read_bloom_filter` method, and
              pyarrow.metadata.to_dict() doesn't expose the offset either.
-          2. Bloom filter absent on the listed value columns (would be wasted
-             bytes — value columns are never probed by joins).
-          3. Page Index (column index + offset index) on every (row group,
+          2. Page Index (column index + offset index) on every (row group,
              column). DuckDB does NOT write this (duckdb/duckdb#2755), which
              is why the writer was switched to PyArrow.
           4. `sorting_columns` metadata declared per row group, in the order
@@ -852,12 +846,12 @@ class WriteFrameTests(unittest.TestCase):
             for value_name in value_columns:
                 self.assertIn((rg_idx, value_name), bloom_by_rg_path)
                 off, length = bloom_by_rg_path[(rg_idx, value_name)]
-                self.assertIsNone(
+                self.assertIsNotNone(
                     off,
-                    f"row group {rg_idx} value column {value_name!r} should NOT carry "
-                    f"a bloom filter (only axes are probed by joins)",
+                    f"row group {rg_idx} value column {value_name!r} must have a "
+                    f"bloom filter (exact-match UI lookups probe value columns)",
                 )
-                self.assertIsNone(length)
+                self.assertIsNotNone(length)
 
         # Page index (column index + offset index) per (row group, column).
         # pyarrow exposes presence via has_column_index / has_offset_index;
