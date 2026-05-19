@@ -113,11 +113,14 @@ test("check timeout error type (active)", async () => {
     );
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
-    // Set default color so resource creation succeeds in strict mode
-    await tx.send(
-      { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
-      false,
-    );
+    // Set default color so resource creation succeeds in strict mode.
+    // Skip on older backends that don't implement the setDefaultColor TX request.
+    if (client.supportsSetDefaultColor) {
+      await tx.send(
+        { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
+        false,
+      );
+    }
 
     const rData = Uint8Array.from([
       (Math.random() * 256) & 0xff,
@@ -185,10 +188,13 @@ test("check is abort error (active)", async () => {
     expect(openResponse.txOpen.tx?.isValid).toBeTruthy();
 
     // Set default color so resource creation succeeds in strict mode
-    await tx.send(
-      { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
-      false,
-    );
+    // Skip on older backends that don't implement the setDefaultColor TX request.
+    if (client.supportsSetDefaultColor) {
+      await tx.send(
+        { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
+        false,
+      );
+    }
 
     const rData = Uint8Array.from([
       Math.random() & 0xff,

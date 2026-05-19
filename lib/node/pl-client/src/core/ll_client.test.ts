@@ -5,12 +5,15 @@ import {
   getTestLLClient,
   getTestClientConf,
 } from "../test/test_config";
-import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import {
+  AuthAPI_ListUserResources_Response,
+  TxAPI_Open_Request_WritableTx,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { request } from "undici";
 import * as tp from "node:timers/promises";
 import { test, expect } from "vitest";
 
-import { UnauthenticatedError } from "./errors";
+import { isUnimplementedError, UnauthenticatedError } from "./errors";
 
 test("wire protocol detection", async () => {
   const { conf, auth } = await getTestClientConf();
@@ -145,7 +148,17 @@ test("test https call via proxy", async () => {
 
 test("list user resources returns user root", async () => {
   const client = await getTestLLClient();
-  const responses = await client.listUserResources({ limit: 1 });
+
+  let responses: AuthAPI_ListUserResources_Response[] = [];
+  try {
+    responses = await client.listUserResources({ limit: 1 });
+  } catch (error) {
+    if (isUnimplementedError(error)) {
+      console.log("skipping test because backend doesn't support listUserResources");
+      return;
+    }
+    throw error;
+  }
 
   // First message is always the user root.
   expect(responses.length).toBeGreaterThanOrEqual(1);

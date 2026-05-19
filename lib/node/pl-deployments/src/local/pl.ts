@@ -10,6 +10,7 @@ import type { Trace } from "./trace";
 import { withTrace } from "./trace";
 import upath from "upath";
 import fsp from "node:fs/promises";
+import net from "node:net";
 import type { Required } from "utility-types";
 import * as os from "node:os";
 import type { ProxySettings } from "@milaboratories/pl-http";
@@ -35,6 +36,7 @@ export class LocalPl {
     private readonly workingDir: string,
     private readonly startOptions: ProcessOptions,
     private readonly initialStartHistory: Trace,
+    private readonly grpcPort?: number,
     private readonly onClose?: (pl: LocalPl) => Promise<void>,
     private readonly onError?: (pl: LocalPl) => Promise<void>,
     private readonly onCloseAndError?: (pl: LocalPl) => Promise<void>,
@@ -94,7 +96,9 @@ export class LocalPl {
   }
 
   async isAlive(): Promise<boolean> {
-    return await isProcessAlive(notEmpty(this.pid));
+    if (!(await isProcessAlive(notEmpty(this.pid)))) return false;
+    if (this.grpcPort === undefined) return true;
+    return await tcpProbe("127.0.0.1", this.grpcPort);
   }
 
   debugInfo() {
@@ -131,6 +135,14 @@ export type LocalPlOptions = {
    * Backend only supports Basic auth.
    */
   readonly proxy?: ProxySettings;
+
+  /**
+   * gRPC port the backend listens on (always on 127.0.0.1 for local).
+   * When set, {@link LocalPl.isAlive} additionally probes this TCP port so callers
+   * can distinguish a process that is alive but still binding from a process that is
+   * actually accepting gRPC connections.
+   */
+  readonly grpcPort?: number;
 
   readonly onClose?: (pl: LocalPl) => Promise<void>;
   readonly onError?: (pl: LocalPl) => Promise<void>;
@@ -204,6 +216,7 @@ Only Basic auth is supported by the backend.`);
       ops.workingDir,
       processOpts,
       t,
+      ops.grpcPort,
       ops.onClose,
       ops.onError,
       ops.onCloseAndError,
@@ -272,6 +285,28 @@ export function mergeDefaultOps(ops: LocalPlOptions, numCpu: number): LocalPlOpt
   delete withoutSpawnOps["spawnOptions"];
 
   return { ...result, ...withoutSpawnOps };
+}
+
+/** Resolves true if a TCP connect to host:port succeeds within timeoutMs. Used by
+ * {@link LocalPl.isAlive} to verify the gRPC listener has actually bound — the backend
+ * process can be alive long before its server sockets are accepting connections. */
+async function tcpProbe(host: string, port: number, timeoutMs = 500): Promise<boolean> {
+  return await new Promise<boolean>((resolve) => {
+    const socket = net.connect({ host, port });
+    const finalize = (ok: boolean) => {
+      socket.destroy();
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finalize(false), timeoutMs);
+    socket.once("connect", () => {
+      clearTimeout(timer);
+      finalize(true);
+    });
+    socket.once("error", () => {
+      clearTimeout(timer);
+      finalize(false);
+    });
+  });
 }
 
 /** Gets default options for a platforma local binary

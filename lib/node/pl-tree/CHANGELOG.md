@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.12.0
+
+### Minor Changes
+
+- c097727: Support auth:v2 authentication flow
+
+### Patch Changes
+
+- Updated dependencies [c097727]
+  - @milaboratories/pl-client@3.8.0
+  - @milaboratories/pl-errors@1.4.10
+
 ## 1.11.2
 
 ### Patch Changes
