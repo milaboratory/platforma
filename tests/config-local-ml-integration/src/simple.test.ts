@@ -11,7 +11,7 @@ import { MiddleLayer } from "@milaboratories/pl-middle-layer";
 
 test(
   "should generate config, start local platforma and middle-layer from this config, create project, stop everything gracefully",
-  { timeout: 1500000 },
+  { timeout: 20000 }, // downloads pl binary, time can vary depending on speed on agent's side
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const workingDir = path.resolve(path.join(__dirname, "..", ".test"));
