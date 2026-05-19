@@ -59,7 +59,7 @@ const onReloadParagraph = useFakeLoading(isParagraphLoading);
 
 const bodyLoading = computed(() => {
   if (!isBodyLoading.value) {
-    return;
+    return undefined;
   }
   if (isDefaultLoadingText.value) {
     return bodyLoadingPlaceholderVariant.value;

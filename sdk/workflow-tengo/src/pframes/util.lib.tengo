@@ -510,17 +510,17 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		jdataFile := "res" + data.id + ".jdata"
 
 		// write jdata
-		execBuilder.writeFile(makePath(jdataFile), json.encode(data.getDataAsJson().data))
+		execBuilder.writeFile(makePath(jdataFile), data.getDataAsJson().data)
 
 		// write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
 			partitionKeyLength: 0,
 			parts: { "[]": jdataFile }
-		}))
+		})
 
 		// write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED)) {
 
@@ -540,14 +540,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         }
 
         // write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED)) {
 
@@ -577,14 +577,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		}
 
 		// write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
     } else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED)) {
 
@@ -620,14 +620,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         }
 
         // write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "BinaryPartitioned",
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED)) {
 
@@ -678,14 +678,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		}
 
 		// write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "BinaryPartitioned",
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED)) {
 
@@ -709,14 +709,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         }
 
         // write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "ParquetPartitioned",
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED)) {
 
@@ -752,14 +752,14 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		}
 
 		// write data info
-		execBuilder.writeFile(makePath(name + ".datainfo"), json.encode({
+		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "ParquetPartitioned",
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
-		}))
+		})
 
         // write spec
-		execBuilder.writeFile(makePath(name + ".spec"), json.encode(spec))
+		execBuilder.writeFile(makePath(name + ".spec"), spec)
 
 	} else {
 		ll.panic("unsupported p-column data type: %v", data.info().Type)

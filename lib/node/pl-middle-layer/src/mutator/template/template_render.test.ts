@@ -1,6 +1,7 @@
 import {
   AnyRef,
   AnyResourceRef,
+  asSignedResourceId,
   field,
   getField,
   isNotNullSignedResourceId,
@@ -9,7 +10,6 @@ import {
   PlClient,
   PlTransaction,
   ResourceData,
-  SignedResourceId,
   TestHelpers,
   valErr,
 } from "@milaboratories/pl-client";
@@ -261,7 +261,7 @@ async function expectResource(tx: PlTransaction, res: ResourceData, fieldName: s
   const ve = await valErr(tx, f);
   expect(ve.error).toHaveLength(0);
   expect(isNotNullSignedResourceId(ve.valueId)).toBeTruthy();
-  return await tx.getResourceData(ve.valueId as SignedResourceId, true);
+  return await tx.getResourceData(asSignedResourceId(ve.valueId), true);
 }
 
 async function expectData(tx: PlTransaction, result: ResourceData, fieldName: string) {

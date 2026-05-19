@@ -126,6 +126,36 @@ describe("import statements", () => {
     const trickyCasesSrc = parseSource(logger, "dist", testTrickyCasesSrc, stubTplName, true);
     expect(trickyCasesSrc.src).toEqual(testTrickyCasesNormalized);
   });
+
+  test("assets.importWasm produces a wasm dependency", () => {
+    const logger = createLogger("error");
+
+    const wasmImport = `
+      assets := import("@platforma-sdk/workflow-tengo:assets")
+      wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+    `;
+
+    const parsed = parseSource(logger, "dist", wasmImport, stubTplName, true);
+    expect(parsed.dependencies).toContainEqual({
+      type: "wasm",
+      pkg: "@milaboratories/pframes-rs-wasip2",
+      id: "main",
+    });
+  });
+
+  test("assets.importWasm with variable id is rejected", () => {
+    const logger = createLogger("info");
+
+    const wasmByVar = `
+      assets := import("@platforma-sdk/workflow-tengo:assets")
+      wasmId := "@milaboratories/pframes-rs-wasip2:main"
+      wasm := assets.importWasm(wasmId)
+    `;
+
+    expect(() => parseSource(logger, "dist", wasmByVar, stubTplName, true)).toThrow(
+      "variables are not allowed",
+    );
+  });
 });
 
 describe("parseSingleSourceLine", () => {

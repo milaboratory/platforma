@@ -1,5 +1,32 @@
 # @milaboratories/pl-client
 
+## 3.7.0
+
+### Minor Changes
+
+- 030e8c2: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo` ships a new opt-in lib `:pframes-rs` that wraps `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")`. Blocks that import `:pframes-rs` automatically pull the 1.7 MB pframes-rs wasm into their templates' packs; blocks that don't stay lean.
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+
+## 3.6.0
+
+### Minor Changes
+
+- 6066082: Replace custom `as (Signed)?ResourceId` regex check with an oxlint-native rule. Bumps `oxlint` to `1.63.0` and adds `oxlint-plugin-eslint` to ship the ESLint `no-restricted-syntax` rule. The shared `oxlint-node.json` config bans `as SignedResourceId` casts via an AST selector. The pl-client `types.ts` — the canonical place to construct `SignedResourceId` values — opts out with a single file-wide `/* oxlint-disable */` directive, so no per-call suppressions are needed. Pl-client now exports `asSignedResourceId(str)` which validates the `<globalId>|<signatureHex>` format and returns a branded `SignedResourceId`; callers outside `types.ts` must use it instead of casting.
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.42.0
+- @milaboratories/pl-http@1.2.4
+- @milaboratories/ts-helpers@1.8.2
+
 ## 3.5.0
 
 ### Minor Changes

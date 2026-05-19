@@ -1,4 +1,14 @@
 {
   "extends": ["./oxlint-base.json"],
-  "plugins": ["oxc", "typescript", "unicorn", "node"]
+  "plugins": ["oxc", "typescript", "unicorn", "node"],
+  "jsPlugins": ["oxlint-plugin-eslint"],
+  "rules": {
+    "eslint-js/no-restricted-syntax": [
+      "error",
+      {
+        "selector": "TSAsExpression > TSTypeReference[typeName.name='SignedResourceId']",
+        "message": "Casting 'as SignedResourceId' is a code smell indicating a potential bug.\n\nSigned resource ID must come from typed API, not from type assertion: resource signatures are ephemeral and change from client session to session (never persist them). They also are required to access resource via Pl API at runtime.\n\nIf you know what you do, use asSignedResourceId() instead."
+      }
+    ]
+  }
 }

@@ -374,10 +374,17 @@ function resolveAnchorMap(
   const getDuplicateError = (key: string) =>
     `Anchor "${key}": selector matched a column that was already matched by another anchor; please refine the selector to match a different column`;
 
+  // O(1) lookup maps built lazily — only when an anchor of the matching kind is
+  // encountered. Avoids O(anchors × columns) `deriveNativeId` calls, which were
+  // tripping the QuickJS interrupt deadline on tables with many anchors.
+  let byId: Map<PObjectId, ColumnSnapshot<PObjectId>> | undefined;
+  let byNativeId: Map<NativePObjectId, ColumnSnapshot<PObjectId>> | undefined;
+
   for (const [name, anchor] of Object.entries(anchors)) {
     if (typeof anchor === "string") {
+      if (byId === undefined) byId = new Map(columns.map((col) => [col.id, col]));
       const found =
-        columns.find((col) => col.id === anchor) ??
+        byId.get(anchor) ??
         throwError(`Anchor "${name}": column with id "${anchor}" not found in sources`);
       if (resovedIds.has(found.id)) {
         throwError(getDuplicateError(name));
@@ -386,9 +393,11 @@ function resolveAnchorMap(
       resovedIds.add(found.id);
     } else if ("kind" in anchor) {
       if (!isPColumnSpec(anchor)) throwError(`Anchor "${name}": invalid PColumnSpec`);
-      const nativeId = deriveNativeId(anchor);
+      if (byNativeId === undefined) {
+        byNativeId = new Map(columns.map((col) => [deriveNativeId(col.spec), col]));
+      }
       const found =
-        columns.find((col) => deriveNativeId(col.spec) === nativeId) ??
+        byNativeId.get(deriveNativeId(anchor)) ??
         throwError(`Anchor "${name}": no column matching spec found in sources`);
       if (resovedIds.has(found.id)) {
         throwError(getDuplicateError(name));

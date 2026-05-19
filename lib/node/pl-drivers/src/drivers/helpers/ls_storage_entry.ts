@@ -1,6 +1,10 @@
 import type * as sdk from "@milaboratories/pl-model-common";
 import type { ResourceType, SignedResourceId, StorageInfo } from "@milaboratories/pl-client";
-import { resourceTypeToString, parseResourceType } from "@milaboratories/pl-client";
+import {
+  resourceTypeToString,
+  parseResourceType,
+  asSignedResourceId,
+} from "@milaboratories/pl-client";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
@@ -80,7 +84,7 @@ function parseRemoteStorageHandle(handle: string): RemoteStorageHandleData {
   const { storageId, resourceType: encodedRType, resourceId: encodedRId } = parsed.groups!;
 
   const resourceType = parseResourceType(decodeURIComponent(encodedRType));
-  const resourceId = decodeURIComponent(encodedRId) as SignedResourceId; // lint-allow-cast
+  const resourceId = asSignedResourceId(decodeURIComponent(encodedRId));
   return {
     isRemote: true,
     storageId,

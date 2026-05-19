@@ -1,10 +1,5 @@
 import { isNil } from "es-toolkit";
-import {
-  parseJson,
-  PlTableColumnIdJson,
-  PTableColumnSpec,
-  PTableValue,
-} from "@platforma-sdk/model";
+import { PTableColumnSpec, PTableValue } from "@platforma-sdk/model";
 import { ref } from "vue";
 import { PTableHidden } from "../sources/common";
 import { watchCached } from "@milaboratories/uikit";
@@ -33,7 +28,7 @@ export function useFilterableColumns(
       const cols = dataColDefs
         .filter((def): def is typeof def & { colId: string } => !isNil(def.colId))
         .map((def) => ({
-          item: parseJson(def.colId satisfies string as PlTableColumnIdJson),
+          item: def.context as PTableColumnSpec,
           hide: def.hide,
         }));
 

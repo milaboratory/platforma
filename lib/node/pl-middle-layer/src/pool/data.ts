@@ -100,8 +100,8 @@ const BinaryPartitionedValuesFieldSuffix = ".values";
 
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor,
-): PFrameInternal.DataInfo<BlobResourceRef> {
-  if (!data.getIsReadyOrError()) throw new PFrameDriverError("Data not ready.");
+): undefined | PFrameInternal.DataInfo<BlobResourceRef> {
+  if (!data.getIsReadyOrError()) return undefined;
 
   const resourceData = data.getDataAsJson();
   if (resourceData === undefined)
