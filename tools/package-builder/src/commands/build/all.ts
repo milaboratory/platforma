@@ -81,8 +81,11 @@ export default class BuildAll extends Command {
         packageIds: flags["package-id"] ? flags["package-id"] : undefined,
       });
 
+      // Never auto-push private packages, even in dev-local mode — the default
+      // ECR is public. Users can still opt in explicitly with --docker-autopush
+      // (or PL_DOCKER_AUTOPUSH=1) if they target a private registry via --ecr.
       const autopush = cmdOpts.shouldDoAction(
-        (envs.isCI() && !core.pkgInfo.isPrivate) || isDevLocal,
+        (envs.isCI() || isDevLocal) && !core.pkgInfo.isPrivate,
         flags["docker-autopush"],
         flags["docker-no-autopush"],
       );
