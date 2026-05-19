@@ -3,7 +3,6 @@ import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 import * as envs from "../../core/envs";
-import * as docker from "../../core/docker";
 import * as defaults from "../../defaults";
 
 export default class BuildAll extends Command {
@@ -92,12 +91,9 @@ export default class BuildAll extends Command {
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can publish everything here (not just docker).
 
-        // Auto-authenticate to ECR in dev-local mode. CI is expected to manage
-        // its own docker login step in the workflow.
-        if (isDevLocal && dockerRegistry) {
-          docker.loginToECR(flags["docker-push-to"] ?? dockerRegistry);
-        }
-
+        // The user is expected to have already 'docker login'-ed to the target
+        // registry (CI workflows handle their own login step). If push fails
+        // because of auth, docker.push surfaces a self-explanatory error.
         core.publishDockerImages({
           ids: flags["package-id"],
           pushTo: flags["docker-push-to"],

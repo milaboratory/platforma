@@ -154,7 +154,14 @@ export function push(tag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`'docker push' failed with status ${result.status}`);
+    const registry = tag.split("/")[0];
+    throw util.CLIError(
+      `'docker push ${tag}' failed with status ${result.status}.\n` +
+        `If the error above mentions authentication or denied access, log in first:\n` +
+        `  aws ecr-public get-login-password --region us-east-1 \\\n` +
+        `    | docker login --username AWS --password-stdin ${registry}\n` +
+        `(for a private ECR use 'aws ecr' and your region instead of 'ecr-public'/us-east-1).`,
+    );
   }
 }
 
@@ -282,78 +289,4 @@ function contentHash(contextFullPath: string, dockerfileFullPath: string): strin
 function dockerTag(packageName: string, contentHash: string, registry?: string): string {
   const dockerRegistry = registry ?? defaults.DOCKER_REGISTRY;
   return `${dockerRegistry}:${packageName.replaceAll("/", ".")}.${contentHash}`;
-}
-
-/**
- * Authenticate the local docker client against `registry` so the next push works.
- *
- * Detects ECR flavour from the URL:
- *   - public.ecr.aws/<alias>/<repo>            → aws ecr-public, us-east-1 (AWS convention)
- *   - <account>.dkr.ecr.<region>.amazonaws.com → aws ecr, region parsed from URL
- *
- * Non-ECR registries are a no-op (the caller is expected to have `docker login`-ed
- * already). The AWS_PROFILE env var is inherited from the parent process.
- *
- * Idempotent: re-running `docker login` with the same creds is cheap.
- */
-export function loginToECR(registry: string): void {
-  const ecrInfo = parseECR(registry);
-  if (!ecrInfo) {
-    return;
-  }
-
-  const awsArgs: string[] = [ecrInfo.awsCmd, "get-login-password", "--region", ecrInfo.region];
-
-  const auth = spawnSync("aws", awsArgs, {
-    env: { ...process.env, HOME: process.env.HOME || os.homedir() },
-  });
-  if (auth.error) {
-    throw auth.error;
-  }
-  if (auth.status !== 0) {
-    throw util.CLIError(
-      `'aws ${awsArgs.join(" ")}' failed with status ${auth.status}:\n` +
-        `${auth.stderr?.toString() ?? ""}\n` +
-        `Check that AWS_PROFILE points at credentials with push access to ${ecrInfo.loginRegistry} ` +
-        `and that 'aws sts get-caller-identity' works.`,
-    );
-  }
-
-  const login = spawnSync(
-    "docker",
-    ["login", "--username", "AWS", "--password-stdin", ecrInfo.loginRegistry],
-    {
-      input: auth.stdout,
-      stdio: ["pipe", "inherit", "inherit"],
-      env: { ...process.env, HOME: process.env.HOME || os.homedir() },
-    },
-  );
-  if (login.error) {
-    throw login.error;
-  }
-  if (login.status !== 0) {
-    throw util.CLIError(
-      `'docker login ${ecrInfo.loginRegistry}' failed with status ${login.status}`,
-    );
-  }
-}
-
-function parseECR(
-  registry: string,
-): { awsCmd: "ecr" | "ecr-public"; region: string; loginRegistry: string } | undefined {
-  if (registry.startsWith("public.ecr.aws/")) {
-    return { awsCmd: "ecr-public", region: "us-east-1", loginRegistry: "public.ecr.aws" };
-  }
-
-  // <account>.dkr.ecr.<region>.amazonaws.com/<repo>
-  const m = registry.match(/^([0-9]{12})\.dkr\.ecr\.([a-z0-9-]+)\.amazonaws\.com\//);
-  if (m) {
-    return {
-      awsCmd: "ecr",
-      region: m[2],
-      loginRegistry: `${m[1]}.dkr.ecr.${m[2]}.amazonaws.com`,
-    };
-  }
-
-  return undefined;
 }
