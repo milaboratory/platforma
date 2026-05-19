@@ -21,7 +21,7 @@ import { parsePlJwt } from "../util/pl";
 import { type Dispatcher, interceptors } from "undici";
 import type { Middleware } from "openapi-fetch";
 import { inferAuthRefreshTime } from "./auth";
-import { CapabilityAuthV2 } from "./capabilities";
+import { hasCapability, type BackendCapability } from "./capabilities";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
@@ -348,7 +348,7 @@ export class LLPlClient implements WireClientProviderFactory {
   public get authUser(): string | null {
     if (!this.authenticated) throw new Error("Client is not authenticated");
     if (this.authInformation?.jwtToken) {
-      if (this.hasCapability(CapabilityAuthV2)) {
+      if (this.hasCapability("auth:v2")) {
         return parsePlJwt(this.authInformation?.jwtToken).sub;
       }
       return parsePlJwt(this.authInformation?.jwtToken).user.login;
@@ -385,7 +385,7 @@ export class LLPlClient implements WireClientProviderFactory {
     void (async () => {
       try {
         const ttl = BigInt(this.conf.authTTLSeconds);
-        const token = this.hasCapability(CapabilityAuthV2)
+        const token = this.hasCapability("auth:v2")
           ? await this.refreshToken({ ttlSeconds: ttl })
           : await this.getJwtToken(ttl);
         this.authInformation = { jwtToken: token };
@@ -652,8 +652,8 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   /** Synchronous capability check against the cached Ping response. */
-  public hasCapability(name: string): boolean {
-    return this.serverInfo.capabilities.includes(name);
+  public hasCapability(capability: BackendCapability): boolean {
+    return hasCapability(this.serverInfo.capabilities, capability);
   }
 
   /** True if the backend implements the setDefaultColor TX request. */

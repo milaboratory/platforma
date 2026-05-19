@@ -7,7 +7,7 @@ import type {
   SignedResourceId,
 } from "@milaboratories/pl-client";
 import Denque from "denque";
-import { CapabilityTreeFilter, isNullSignedResourceId } from "@milaboratories/pl-client";
+import { hasCapability, isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
@@ -120,7 +120,7 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
-  return capabilities.includes(CapabilityTreeFilter);
+  return hasCapability(capabilities, "treeFilter:v1");
 }
 
 function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {

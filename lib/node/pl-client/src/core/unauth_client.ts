@@ -6,7 +6,7 @@ import type {
 import { LLPlClient } from "./ll_client";
 import { type MiLogger, notEmpty } from "@milaboratories/ts-helpers";
 import { UnauthenticatedError } from "./errors";
-import { CapabilityAuthV2 } from "./capabilities";
+import type { BackendCapability } from "./capabilities";
 
 /** Primarily used for initial authentication (login) */
 export class UnauthenticatedPlClient {
@@ -36,8 +36,8 @@ export class UnauthenticatedPlClient {
     return (await this.authMethods()).methods.length > 0;
   }
 
-  public hasCapability(name: string): boolean {
-    return this.ll.hasCapability(name);
+  public hasCapability(capability: BackendCapability): boolean {
+    return this.ll.hasCapability(capability);
   }
 
   /** Classifies the advertised authentication methods by credential scheme.
@@ -65,7 +65,7 @@ export class UnauthenticatedPlClient {
   public async login(user: string, password: string): Promise<AuthInformation> {
     try {
       let token: string;
-      if (this.ll.hasCapability(CapabilityAuthV2)) {
+      if (this.ll.hasCapability("auth:v2")) {
         const schemes = this.supportedAuthSchemes;
         if (schemes.basic) {
           token = await this.ll.loginBasic(user, password);

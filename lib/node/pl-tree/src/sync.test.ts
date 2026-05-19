@@ -1,6 +1,5 @@
 import { test, expect } from "vitest";
 import {
-  CapabilityTreeFilter,
   DefaultFinalResourceDataPredicate,
   field,
   NullSignedResourceId,
@@ -72,7 +71,7 @@ test("loadTreeState uses ResourceTree path with full options", async () => {
     traverseStopRules: {},
   } as unknown as Parameters<typeof loadTreeState>[1];
 
-  const result = await loadTreeState(tx, request, undefined, [CapabilityTreeFilter]);
+  const result = await loadTreeState(tx, request, undefined, ["treeFilter:v1"]);
 
   expect(received).toEqual({
     seeds: ["NG:0x1", "NG:0x2"],
@@ -97,7 +96,7 @@ test("loadTreeState propagates ResourceTree stream failure", async () => {
     finalResources: new Set<string>(),
   } as unknown as Parameters<typeof loadTreeState>[1];
 
-  await expect(loadTreeState(tx, request, undefined, [CapabilityTreeFilter])).rejects.toThrow(
+  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"])).rejects.toThrow(
     "stream failed",
   );
 });
@@ -151,7 +150,7 @@ test("loadTreeState cancels ResourceTree iterator on pruning failure", async () 
     },
   } as unknown as Parameters<typeof loadTreeState>[1];
 
-  await expect(loadTreeState(tx, request, undefined, [CapabilityTreeFilter])).rejects.toThrow(
+  await expect(loadTreeState(tx, request, undefined, ["treeFilter:v1"])).rejects.toThrow(
     "pruning failed",
   );
   expect(returnCalled).toBe(true);
@@ -343,7 +342,7 @@ test("traversalMode=client-bfs forces BFS on capable backend", async () => {
   const { tx, calls } = buildMockTx({ capable: true });
   const mode: TraversalMode = "client-bfs";
 
-  const result = await loadTreeState(tx, baseRequest, undefined, [CapabilityTreeFilter], mode);
+  const result = await loadTreeState(tx, baseRequest, undefined, ["treeFilter:v1"], mode);
 
   expect(result).toHaveLength(1);
   expect(calls.bfs).toBeGreaterThan(0);
@@ -370,7 +369,7 @@ test("traversalMode=backend-streaming uses streaming on capable backend", async 
   const { tx, calls } = buildMockTx({ capable: true });
   const mode: TraversalMode = "backend-streaming";
 
-  const result = await loadTreeState(tx, baseRequest, undefined, [CapabilityTreeFilter], mode);
+  const result = await loadTreeState(tx, baseRequest, undefined, ["treeFilter:v1"], mode);
 
   expect(result).toHaveLength(1);
   expect(calls.streaming).toBeGreaterThan(0);
@@ -380,7 +379,7 @@ test("traversalMode=backend-streaming uses streaming on capable backend", async 
 test("traversalMode=auto default regression: streaming on capable, BFS on incapable", async () => {
   // capable backend → streaming
   const { tx: txCap, calls: callsCap } = buildMockTx({ capable: true });
-  await loadTreeState(txCap, baseRequest, undefined, [CapabilityTreeFilter]);
+  await loadTreeState(txCap, baseRequest, undefined, ["treeFilter:v1"]);
   expect(callsCap.streaming).toBeGreaterThan(0);
   expect(callsCap.bfs).toBe(0);
 
@@ -394,7 +393,7 @@ test("traversalMode=auto default regression: streaming on capable, BFS on incapa
 // ─── Stop-marker handling tests ───────────────────────────────────────────────
 
 /** Capabilities for backends that support streaming traversal. */
-const stopMarkerCaps = [CapabilityTreeFilter] as const;
+const stopMarkerCaps = ["treeFilter:v1"] as const;
 
 /** Minimal full-resource frame suitable for stop-marker tests. */
 function makeFullResource(
@@ -500,7 +499,7 @@ test("legacy-backend-compat: no stop markers in stream → no follow-up call", a
   } as unknown as Parameters<typeof loadTreeState>[1];
 
   const stats = initialTreeLoadingStat();
-  const result = await loadTreeState(tx, request, stats, [CapabilityTreeFilter]);
+  const result = await loadTreeState(tx, request, stats, ["treeFilter:v1"]);
 
   expect(result).toHaveLength(1);
   expect(callCount).toBe(1);

@@ -1,6 +1,6 @@
 import { test, expect, vi } from "vitest";
 import { UnauthenticatedPlClient } from "./unauth_client";
-import { CapabilityAuthV2 } from "./capabilities";
+import type { BackendCapability } from "./capabilities";
 
 type Scheme = "basic" | "token" | "none";
 
@@ -13,7 +13,9 @@ function makeStub(opts: { hasAuthV2: boolean; scheme?: Scheme }) {
         ? [{ id: "token", method: { oneofKind: "token", token: {} } }]
         : [];
   const ll = {
-    hasCapability: vi.fn((name: string) => name === CapabilityAuthV2 && opts.hasAuthV2),
+    hasCapability: vi.fn(
+      (capability: BackendCapability) => capability === "auth:v2" && opts.hasAuthV2,
+    ),
     loginBasic: vi.fn().mockResolvedValue("jwt-from-loginBasic"),
     loginWithToken: vi.fn().mockResolvedValue("jwt-from-loginWithToken"),
     getJwtToken: vi.fn().mockResolvedValue("jwt-from-getJwtToken"),
@@ -61,7 +63,7 @@ test("login falls back to getJwtToken when backend lacks auth:v2", async () => {
 
 test("hasCapability proxies to underlying LLPlClient", () => {
   const { client, ll } = makeStub({ hasAuthV2: true });
-  expect(client.hasCapability(CapabilityAuthV2)).toBe(true);
-  expect(client.hasCapability("nope:v0")).toBe(false);
-  expect(ll.hasCapability).toHaveBeenCalledWith(CapabilityAuthV2);
+  expect(client.hasCapability("auth:v2")).toBe(true);
+  expect(client.hasCapability("treeFilter:v1")).toBe(false);
+  expect(ll.hasCapability).toHaveBeenCalledWith("auth:v2");
 });

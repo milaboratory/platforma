@@ -31,6 +31,7 @@ import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
 import { UserResources } from "./user_resources";
+import type { BackendCapability } from "./capabilities";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -226,9 +227,9 @@ export class PlClient {
     return this._ll!.serverInfo;
   }
 
-  public hasCapability(name: string): boolean {
+  public hasCapability(capability: BackendCapability): boolean {
     this.checkInitialized();
-    return this._ll!.hasCapability(name);
+    return this._ll!.hasCapability(capability);
   }
 
   /** User resources index for discovering data libraries and other shared resources. */
