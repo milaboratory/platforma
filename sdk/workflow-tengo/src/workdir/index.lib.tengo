@@ -267,7 +267,7 @@ _fill := func() {
 			files[fileName] = fileResource
 			blobs[fileName] = fileResource
 			self._addDirs(fileName)
-			if len(opts) > 0 && !is_undefined(opts[0]) && opts[0].writable == true {
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
 				sets.add(writableFiles, fileName)
 			}
 
@@ -301,7 +301,7 @@ _fill := func() {
 			validation.assertType(fileName, "string")
 			values[fileName] = contentRef
 			self._addDirs(fileName)
-			if len(opts) > 0 && !is_undefined(opts[0]) && opts[0].writable == true {
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
 				sets.add(writableFiles, fileName)
 			}
 

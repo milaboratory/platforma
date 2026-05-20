@@ -786,7 +786,7 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			if len(opts) > 0 && !is_undefined(opts[0]) && opts[0].writable == true {
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
 				sets.add(writableFiles, fileName)
 			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
@@ -845,11 +845,29 @@ builder := func() {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
-			if len(opts) > 0 && !is_undefined(opts[0]) && opts[0].writable == true {
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
 				sets.add(writableFiles, fileName)
 			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
 
+			return self
+		},
+
+		/**
+		 * Writes multiple files with their contents to the working directory.
+		 * Each entry follows the same encoding rules as `writeFile` — maps and
+		 * arrays are canonical-encoded, references and strings/bytes pass
+		 * through unchanged.
+		 *
+		 * @param filesMap: map[string]string|bytes|map|array|reference -
+		 *        a map of file names to contents.
+		 * @param opts: { writable?: bool, mnz?: ... } - applied to every entry.
+		 */
+		writeFiles: func(filesMap, ...opts) {
+			ll.assert(ll.isMap(filesMap), "exec.builder().writeFiles: filesMap must be map of file names to contents")
+			maps.forEach(filesMap, func(fileName, data) {
+				self.writeFile(fileName, data, opts...)
+			})
 			return self
 		},
 
