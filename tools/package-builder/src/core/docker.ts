@@ -158,8 +158,9 @@ export function push(tag: string) {
     throw util.CLIError(
       `'docker push ${tag}' failed with status ${result.status}.\n` +
         `If the error above mentions authentication or denied access, log in first:\n` +
-        `  aws ecr-public get-login-password --region us-east-1 \\\n` +
-        `    | docker login --username AWS --password-stdin ${registry}\n` +
+        `  aws login --profile <YOUR_PROFILE> \n` +
+        `Then login in docker:` +
+        `  aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${registry}\n` +
         `(for a private ECR use 'aws ecr' and your region instead of 'ecr-public'/us-east-1).`,
     );
   }

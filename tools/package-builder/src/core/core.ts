@@ -702,9 +702,14 @@ export class Core {
   }) {
     this.logger.info(`Publishing docker images...`);
 
-    const packagesToPublish = options?.ids ?? [
-      ...new Set([...this.buildablePackages.keys(), ...this.dockerPackages.keys()]),
-    ];
+    // Iterate only dockerPackages (matches buildDockerImages). Previously we
+    // also iterated buildablePackages.keys(), but for entrypoints with a python
+    // or conda binary that autogens a docker image, the binary key (e.g. "main")
+    // and the virtual docker key ("main:docker") both resolve to the same
+    // docker artifact via getArtifact's :docker fallback. That caused
+    // publishDockerImage to run twice — first push succeeded, second saw the
+    // tag in the registry and logged a misleading "Skipping push..." line.
+    const packagesToPublish = options?.ids ?? Array.from(this.dockerPackages.keys());
     this.logger.debug(`Selected packages:\n  ${packagesToPublish.join("\n  ")}`);
     this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
