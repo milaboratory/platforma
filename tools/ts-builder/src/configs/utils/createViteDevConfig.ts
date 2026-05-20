@@ -93,8 +93,11 @@ function relaxCspForDevWasm(): Plugin {
     name: "ts-builder:relax-csp-for-dev-wasm",
     apply: "serve",
     transformIndexHtml(html) {
+      // CSP source keywords (`'self'`, `'wasm-unsafe-eval'`, ...) are
+      // single-quoted inside the double-quoted content attribute, so the
+      // content character class must exclude only the delimiter.
       const cspMetaRegex =
-        /<meta\s+http-equiv=["']Content-Security-Policy["']\s+content=["']([^"']*)["']\s*\/?>/i;
+        /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)"\s*\/?>/i;
       return html.replace(cspMetaRegex, (match, content: string) => {
         if (content.includes("'wasm-unsafe-eval'")) return match;
         const relaxed = content.replace(
