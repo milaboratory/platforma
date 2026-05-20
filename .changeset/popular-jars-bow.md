@@ -2,4 +2,4 @@
 
 ---
 
-Add deploy-block-aws.sh for block-dev image push
+Deploy block docker images on `pnpm run build:dev`
