@@ -5,12 +5,10 @@ import {
   getConfigInfo,
   getGlobalOptions,
   getValidatedConfigPath,
-  installSidecarCleanup,
-  removeSidecar,
   requireTarget,
   resolveVite,
+  setupSidecarLifecycle,
   validateTargetForBrowser,
-  writeSidecar,
 } from "./utils/index";
 
 export const serveCommand = new Command("serve")
@@ -76,6 +74,14 @@ async function runBlockUiServe(opts: BlockUiServeOptions): Promise<void> {
     process.env.USE_SOURCES = "1";
   }
 
+  // Resolve sidecar path BEFORE starting Vite so lifecycle hooks register
+  // first — see `setupSidecarLifecycle` for the ordering rationale.
+  const sidecarDir = opts.sidecarOut
+    ? path.resolve(opts.sidecarOut)
+    : path.resolve(process.cwd(), "dist");
+  const sidecarPath = path.join(sidecarDir, ".dev-server");
+  const sidecar = setupSidecarLifecycle(sidecarPath);
+
   // Vite is a peer dep of ts-builder; resolve it from the consumer package
   // so we use the same version the project's config is written against.
   let vite: typeof import("vite");
@@ -104,20 +110,15 @@ async function runBlockUiServe(opts: BlockUiServeOptions): Promise<void> {
     return;
   }
 
-  const sidecarDir = opts.sidecarOut
-    ? path.resolve(opts.sidecarOut)
-    : path.resolve(process.cwd(), "dist");
-  const sidecarPath = path.join(sidecarDir, ".dev-server");
-
-  writeSidecar(sidecarPath, { schema: 1, url, pid: process.pid });
-  installSidecarCleanup(sidecarPath);
+  sidecar.publish({ schema: 1, url, pid: process.pid });
   console.log(`Wrote dev-server sidecar: ${sidecarPath}`);
 
   // Make Vite's own close path remove the sidecar too — covers programmatic
-  // shutdowns (e.g. test harnesses) where signal-based cleanup won't fire.
+  // shutdowns (e.g. test harnesses) and HMR-driven server restarts where
+  // signal-based cleanup wouldn't fire.
   const origClose = server.close.bind(server);
   server.close = async () => {
-    removeSidecar(sidecarPath);
+    sidecar.remove();
     return origClose();
   };
 }

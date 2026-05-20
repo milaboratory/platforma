@@ -27,20 +27,57 @@ export function removeSidecar(sidecarPath: string): void {
   }
 }
 
+export interface SidecarLifecycle {
+  /** Write the sidecar and mark it as live for cleanup. */
+  publish(payload: DevServerSidecar): void;
+  /** Remove the sidecar explicitly (idempotent). */
+  remove(): void;
+}
+
 /**
- * Install best-effort cleanup hooks. SIGINT/SIGTERM trigger an explicit
- * unlink and then a clean process exit so any downstream `process.on("exit")`
- * handlers also run.
+ * Set up lifecycle hooks for a sidecar file BEFORE the server that owns it
+ * is started.
+ *
+ * Registration order matters. Node fires same-signal handlers in registration
+ * order. Vite's `createServer` / `listen` registers its own SIGINT/SIGHUP/etc.
+ * handlers that exit the process — if we wait until after `createServer` to
+ * register ours, Vite's may run first, exit synchronously, and our cleanup
+ * is missed. Install everything up-front, then `publish()` once the URL is
+ * known. `remove()` and the signal-triggered cleanup are idempotent.
  */
-export function installSidecarCleanup(sidecarPath: string): void {
-  const cleanup = () => removeSidecar(sidecarPath);
+export function setupSidecarLifecycle(sidecarPath: string): SidecarLifecycle {
+  let live = false;
+
+  const cleanup = () => {
+    if (!live) return;
+    live = false;
+    removeSidecar(sidecarPath);
+  };
+
+  const exitOn = (signal: NodeJS.Signals) => {
+    process.on(signal, () => {
+      cleanup();
+      // Re-raise the default behavior with a clean exit code so callers
+      // (shell, pnpm) see the expected termination.
+      process.exit(0);
+    });
+  };
+
+  exitOn("SIGINT");
+  exitOn("SIGTERM");
+  exitOn("SIGHUP");
   process.on("exit", cleanup);
-  process.on("SIGINT", () => {
+  process.on("uncaughtException", (err) => {
     cleanup();
-    process.exit(0);
+    console.error(err);
+    process.exit(1);
   });
-  process.on("SIGTERM", () => {
-    cleanup();
-    process.exit(0);
-  });
+
+  return {
+    publish(payload) {
+      writeSidecar(sidecarPath, payload);
+      live = true;
+    },
+    remove: cleanup,
+  };
 }
