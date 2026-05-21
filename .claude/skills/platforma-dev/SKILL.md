@@ -298,25 +298,47 @@ The block's `turbo.json` includes `PL_PKG_DEV` in the build task's `env` array, 
 
 ---
 
-## Running a local platforma server for tests
+## Running tests against a local backend
 
-For server download, startup, and environment variables, see [local-server.md](./local-server.md).
+Spin up a local backend when the test task reads `PL_*` env (monorepo `turbo.json` `test` task passes through `PL_ADDRESS`, `PL_TEST_USER`, `PL_TEST_PASSWORD`). Not needed for unit tests, type checks, or anything that doesn't hit a server.
 
-### Run monorepo tests
-
-With the server running and env vars set:
+Use the workspace wrapper — see the `run-platforma` skill for full reference:
 
 ```bash
-cd /path/to/platforma
-
-# Run a specific test package
-(cd etc/blocks/model-test/test && pnpm test)
-
-# Or use turbo to run all tests
-pnpm test:local
+./scripts/run-platforma.sh start --bg    # downloads prebuilt on first run; '--from-source' to build core/pl
+eval "$(./scripts/run-platforma.sh env)"  # exports PL_ADDRESS / PL_TEST_* / PL_*
+# … run tests …
+./scripts/run-platforma.sh stop
 ```
 
-`pnpm test:local` sets `PL_PKG_DEV=local` and runs all tests via turbo.
+### Run a single test package
+
+Root `build`/`test` scripts are turbo wrappers. Pass `--filter=<pkg>` to them; turbo handles dependency scoping. `turbo run test` depends on `build`, so build deps first (the trailing `...` in the build filter pulls in dependencies):
+
+```bash
+cd /path/to/core/platforma
+pnpm install
+pnpm build --filter='@platforma-sdk/workflow-tengo-tests...'   # build pkg + deps
+
+eval "$(/path/to/workspace/scripts/run-platforma.sh env)"
+
+# whole package's test suite
+pnpm test --filter='@platforma-sdk/workflow-tengo-tests'
+
+# one test file (vitest args after `--`)
+pnpm test --filter='@platforma-sdk/workflow-tengo-tests' -- src/pt/pt.test.ts
+
+# one test by name
+pnpm test --filter='@platforma-sdk/workflow-tengo-tests' -- src/pt/pt.test.ts -t 'pt simple test'
+```
+
+The `--` separator is required to forward args through turbo to vitest; without it, turbo eats them. Verified end-to-end on 2026-05-22 against a wrapper-launched backend (`pt.test.ts`: 15 pass, 2 expected-fail retries, ~93s).
+
+### Run all integration tests
+
+```bash
+pnpm test:local        # turbo run test --concurrency 1 with PL_PKG_DEV=local
+```
 
 ---
 
@@ -515,25 +537,4 @@ pnpm install
 
 ### Running integration tests locally
 
-Start the platforma server and set env vars (see [local-server.md](./local-server.md)), then:
-
-```bash
-cd /path/to/platforma
-
-# Single test package:
-(cd etc/blocks/model-test/test && pnpm test)
-
-# All tests:
-pnpm test:local
-```
-
-### Running integration tests over specific instance of backend
-
-```bash
-PL_ADDRESS='http://<address>:6345/' \
-  PL_TEST_USER='user-name' \
-  PL_TEST_PASSWORD='password' \
-  pnpm test --filter="..." ...
-```
-User/password could be ommited if backend is started in anonymous mode (`--no-auth`)
-When backend uses 'token' auth mode, user is always `default`, password is `<token>`
+See the "Running tests against a local backend" section above. TL;DR: `./scripts/run-platforma.sh start --bg` + `eval "$(./scripts/run-platforma.sh env)"` + `pnpm test --filter='<pkg>'`.
