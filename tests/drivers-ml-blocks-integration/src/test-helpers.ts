@@ -349,7 +349,7 @@ export async function createProjectWatcher<Dump>(
       } catch (e) {
         clearTimeout(w.timer);
         waiters.delete(w);
-        w.reject(e instanceof Error ? e : new Error(String(e)));
+        w.reject(ensureError(e));
         continue;
       }
       if (matches && dump !== undefined) {
