@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-healthcheck",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Thin TypeScript client for the standard grpc.health.v1.Health service exposed by Platforma backend",
   "files": [
     "./dist/**/*",
