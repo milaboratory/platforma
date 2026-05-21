@@ -409,7 +409,7 @@ export async function createProjectWatcher<Dump>(
       try {
         if (current !== undefined && predicate(current)) return Promise.resolve(current);
       } catch (e) {
-        return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+        return Promise.reject(ensureError(e));
       }
 
       return new Promise<BlockDumpPresent>((resolve, reject) => {
