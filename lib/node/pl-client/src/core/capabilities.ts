@@ -15,7 +15,7 @@
  *   - `@platforma-sdk/block-tools`       — copies it onto the published manifest
  *   - `@milaboratories/pl-middle-layer`  — checks it at install time
  */
-export type BackendCapability = "auth:v2" | "treeFilter:v1" | "wasm:v1";
+export type BackendCapability = "auth:v2" | "treeFilter:v2" | "wasm:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(
