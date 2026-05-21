@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-healthcheck": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",

@@ -2145,6 +2145,9 @@ importers:
       '@milaboratories/pl-config':
         specifier: workspace:*
         version: link:../pl-config
+      '@milaboratories/pl-healthcheck':
+        specifier: workspace:*
+        version: link:../pl-healthcheck
       '@milaboratories/pl-http':
         specifier: workspace:*
         version: link:../pl-http
@@ -2322,6 +2325,49 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.1.3(vitest@4.1.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+
+  lib/node/pl-healthcheck:
+    dependencies:
+      '@grpc/grpc-js':
+        specifier: 'catalog:'
+        version: 1.13.4
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../ts-helpers
+      '@protobuf-ts/grpc-transport':
+        specifier: 'catalog:'
+        version: 2.11.1(@grpc/grpc-js@1.13.4)
+      '@protobuf-ts/runtime':
+        specifier: 'catalog:'
+        version: 2.11.1
+      '@protobuf-ts/runtime-rpc':
+        specifier: 'catalog:'
+        version: 2.11.1
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
+      '@protobuf-ts/plugin':
+        specifier: 'catalog:'
+        version: 2.11.1
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.3(vitest@4.1.3)
