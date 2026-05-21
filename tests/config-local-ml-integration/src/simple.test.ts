@@ -3,7 +3,7 @@ import {
   generateLocalPlConfigs,
   type LocalPlConfigGeneratorOptions,
 } from "@milaboratories/pl-config";
-import { ConsoleLoggerAdapter, sleep } from "@milaboratories/ts-helpers";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import path from "node:path";
 import { type LocalPl, localPlatformaInit } from "@milaboratories/pl-deployments";
 import { PlClient, UnauthenticatedPlClient } from "@milaboratories/pl-client";
@@ -43,7 +43,7 @@ test(
     // wait for backend to bind its gRPC port before constructing a client —
     // LLPlClient.build now does an eager ping, so build() will fail otherwise.
     console.log("Waiting for local platforma to be ready...");
-    while (!(await plLocal.isAlive())) await sleep(30);
+    await plLocal.isReady({ pollIntervalMs: 30 });
 
     // start pl-client
     const uaClient = await UnauthenticatedPlClient.build(genResult.plAddress);
@@ -62,7 +62,7 @@ test(
 
     // assertions that everything is working
     console.log("Checking if local platforma is ready...");
-    expect(await plLocal.isAlive()).toBeTruthy();
+    await plLocal.isReady();
     const rId = await ml.createProject({ label: "abc" });
     console.log("Project was created: ", rId);
     console.log("Local platforma info: %o", plLocal.debugInfo());

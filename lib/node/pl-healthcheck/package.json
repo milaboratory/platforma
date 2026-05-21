@@ -1,0 +1,52 @@
+{
+  "name": "@milaboratories/pl-healthcheck",
+  "version": "0.0.1",
+  "description": "Thin TypeScript client for the standard grpc.health.v1.Health service exposed by Platforma backend",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "update-proto": "./generate-grpc.sh",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "catalog:",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@protobuf-ts/grpc-transport": "catalog:",
+    "@protobuf-ts/runtime": "catalog:",
+    "@protobuf-ts/runtime-rpc": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@protobuf-ts/plugin": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}
