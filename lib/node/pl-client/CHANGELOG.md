@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.8.1
+
+### Patch Changes
+
+- af6f1c0: project with errors could not open
+
 ## 3.8.0
 
 ### Minor Changes

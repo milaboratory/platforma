@@ -1,5 +1,14 @@
 # @milaboratories/pl-tree
 
+## 1.12.1
+
+### Patch Changes
+
+- af6f1c0: project with errors could not open
+- Updated dependencies [af6f1c0]
+  - @milaboratories/pl-client@3.8.1
+  - @milaboratories/pl-errors@1.4.11
+
 ## 1.12.0
 
 ### Minor Changes
