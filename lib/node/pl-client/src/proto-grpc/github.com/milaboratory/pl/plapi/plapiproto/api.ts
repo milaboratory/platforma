@@ -1759,7 +1759,7 @@ export interface ResourceAPI_Tree_Request {
     /**
      * Optional per-(resource, field) filter. Unset / nil means
      * "keep all fields" (current Tree behavior). Servers advertise
-     * support via "treeFilter:v1" in
+     * support via "treeFilter:v2" in
      * MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
      * field.
      *
@@ -4303,13 +4303,13 @@ export interface MaintenanceAPI_Ping_Response {
      * per-token by the client:
      *   - Optimization hint. Client picks between a fast path and a
      *     fallback without probing by trial-and-error; missing tokens
-     *     just cause the fallback to run (e.g. "treeFilter:v1").
+     *     just cause the fallback to run (e.g. "treeFilter:v2").
      *   - Install-time gate. Client refuses to install a block whose
      *     manifest declares a required capability the server doesn't
      *     advertise; missing tokens fail closed (e.g. "wasm:v1").
      *
      * Each entry is an opaque token "<feature>:<version>" (e.g.
-     * "treeFilter:v1"). The field is unset on servers predating this
+     * "treeFilter:v2"). The field is unset on servers predating this
      * mechanism, which the client treats as "no optional capabilities
      * advertised" — fallback for hints, fail-closed for gates.
      *

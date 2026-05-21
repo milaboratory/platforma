@@ -36,7 +36,7 @@ export interface TreeLoadingRequest {
 }
 
 /** Controls which tree-loading path is used.
- * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v1`,
+ * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v2`,
  *   fall back to client-side BFS otherwise.
  * - `"client-bfs"`: always use client-side BFS, even on capable backends.
  * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
@@ -120,7 +120,7 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
-  return hasCapability(capabilities, "treeFilter:v1");
+  return hasCapability(capabilities, "treeFilter:v2");
 }
 
 function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
@@ -365,7 +365,7 @@ export async function loadTreeState(
 
     if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
       const msg =
-        "traversalMode=backend-streaming but backend lacks treeFilter:v1 capability; falling back to BFS";
+        "traversalMode=backend-streaming but backend lacks treeFilter:v2 capability; falling back to BFS";
       if (logger) logger.warn(msg);
       else console.warn(msg);
       return await loadTreeStateViaBfs(tx, loadingRequest, stats);
