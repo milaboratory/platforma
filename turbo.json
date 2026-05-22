@@ -32,6 +32,10 @@
         "GENERATE_TAGS",
         "TAGS_ADDITIONAL_ARGS",
         "TAGS_FILE",
+        "PL_PKG_DEV",
+        "PL_PKG_FULL_HASH",
+        "PL_PKG_VERSION",
+        "PL_DOCKER_REGISTRY",
         "PL_DOCKER_REGISTRY_PUSH_TO",
         "PL_DOCKER_BUILD",
         "PL_DOCKER_NO_BUILD",
@@ -62,7 +66,18 @@
     "do-pack": {
       "inputs": ["$TURBO_DEFAULT$"],
       "dependsOn": ["build"],
-      "outputs": ["package.tgz"]
+      "outputs": ["package.tgz"],
+      "passThroughEnv": [
+        "PL_PKG_DEV",
+        "PL_PKG_FULL_HASH",
+        "PL_PKG_VERSION",
+        "PL_DOCKER_REGISTRY",
+        "PL_DOCKER_REGISTRY_PUSH_TO",
+        "PL_DOCKER_BUILD",
+        "PL_DOCKER_NO_BUILD",
+        "PL_DOCKER_AUTOPUSH",
+        "PL_DOCKER_NO_AUTOPUSH"
+      ]
     }
   }
 }
