@@ -29,6 +29,11 @@ export type BlockPackMetaDescription = BlockPackMeta<
  * binary-content fields (`longDescription`, `changelog`, `logo`,
  * `organization.logo`). All other fields, including unknown passthrough keys,
  * pass through unchanged.
+ *
+ * Spread order matters: `...meta` first preserves every key (including
+ * passthrough); the conditional spreads at the end override the four
+ * transformed fields. Reading bottom-up: the per-field spreads win over
+ * the bulk spread.
  */
 async function transformBlockPackMeta<L1, B1, L2, B2>(
   meta: BlockPackMeta<L1, B1>,
