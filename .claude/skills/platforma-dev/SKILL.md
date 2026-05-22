@@ -302,13 +302,13 @@ The block's `turbo.json` includes `PL_PKG_DEV` in the build task's `env` array, 
 
 Spin up a local backend when the test task reads `PL_*` env (monorepo `turbo.json` `test` task passes through `PL_ADDRESS`, `PL_TEST_USER`, `PL_TEST_PASSWORD`). Not needed for unit tests, type checks, or anything that doesn't hit a server.
 
-Use the workspace wrapper — see the `run-platforma` skill for full reference:
+Below, `<workspace>` is the root of your mictx workspace — the directory holding `mictx-helper/`, `core/platforma/`, `blocks/`, and the `scripts/` symlink the workspace sync creates. The wrapper lives at `<workspace>/scripts/run-platforma.sh`. The wrapper auto-attaches `<workspace>/core/platforma/assets/` as data library `library` and enables `--debug-enabled` — required by some monorepo integration tests; see the `run-platforma` skill for the full list of hard-coded backend flags.
 
 ```bash
-./scripts/run-platforma.sh start --bg    # downloads prebuilt on first run; '--from-source' to build core/pl
-eval "$(./scripts/run-platforma.sh env)"  # exports PL_ADDRESS / PL_TEST_* / PL_*
+<workspace>/scripts/run-platforma.sh start --bg     # downloads prebuilt on first run; '--from-source' to build core/pl
+eval "$(<workspace>/scripts/run-platforma.sh env)"   # exports PL_ADDRESS / PL_TEST_* / PL_*
 # … run tests …
-./scripts/run-platforma.sh stop
+<workspace>/scripts/run-platforma.sh stop
 ```
 
 ### Run a single test package
@@ -316,11 +316,11 @@ eval "$(./scripts/run-platforma.sh env)"  # exports PL_ADDRESS / PL_TEST_* / PL_
 Root `build`/`test` scripts are turbo wrappers. Pass `--filter=<pkg>` to them; turbo handles dependency scoping. `turbo run test` depends on `build`, so build deps first (the trailing `...` in the build filter pulls in dependencies):
 
 ```bash
-cd /path/to/core/platforma
+cd <workspace>/core/platforma
 pnpm install
 pnpm build --filter='@platforma-sdk/workflow-tengo-tests...'   # build pkg + deps
 
-eval "$(/path/to/workspace/scripts/run-platforma.sh env)"
+eval "$(<workspace>/scripts/run-platforma.sh env)"
 
 # whole package's test suite
 pnpm test --filter='@platforma-sdk/workflow-tengo-tests'
@@ -332,7 +332,7 @@ pnpm test --filter='@platforma-sdk/workflow-tengo-tests' -- src/pt/pt.test.ts
 pnpm test --filter='@platforma-sdk/workflow-tengo-tests' -- src/pt/pt.test.ts -t 'pt simple test'
 ```
 
-The `--` separator is required to forward args through turbo to vitest; without it, turbo eats them. Verified end-to-end on 2026-05-22 against a wrapper-launched backend (`pt.test.ts`: 15 pass, 2 expected-fail retries, ~93s).
+The `--` separator is required to forward args through turbo to vitest; without it, turbo eats them.
 
 ### Run all integration tests
 
