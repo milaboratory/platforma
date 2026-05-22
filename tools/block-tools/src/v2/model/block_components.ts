@@ -2,7 +2,6 @@ import type {
   BlockComponents,
   BlockComponentsDescriptionRaw,
   BlockComponentsManifest,
-  ContentAbsoluteBinaryLocal,
   ContentAbsoluteFile,
   ContentAbsoluteFolder,
   ContentAbsoluteUrl,
@@ -51,23 +50,19 @@ export function resolveBlockComponents(
  * UI folder into `ui.tgz`, returning the manifest form with relative paths.
  */
 export async function consolidateBlockComponents(
-  description: BlockComponents<ContentAbsoluteBinaryLocal, ContentAbsoluteFolder>,
+  description: BlockComponentsDescription,
   dstFolder: string,
   fileAccumulator?: string[],
 ): Promise<BlockComponentsManifest> {
   const cpToRel = cpAbsoluteToRelative(dstFolder, fileAccumulator);
   const packToTgz = packFolderToRelativeTgz(dstFolder, "ui.tgz", fileAccumulator);
-  const workflowMain = await cpToRel(description.workflow.main);
-  const model = await cpToRel(description.model);
-  const ui = await packToTgz(description.ui);
-  if (workflowMain.type !== "relative" || model.type !== "relative")
-    throw new Error(
-      `consolidateBlockComponents: expected relative refs, got ${workflowMain.type}/${model.type}`,
-    );
   return {
-    workflow: { type: "workflow-v1", main: workflowMain },
-    model,
-    ui,
+    workflow: {
+      type: "workflow-v1",
+      main: await cpToRel(description.workflow.main),
+    },
+    model: await cpToRel(description.model),
+    ui: await packToTgz(description.ui),
   };
 }
 

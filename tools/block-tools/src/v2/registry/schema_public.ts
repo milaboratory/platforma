@@ -107,21 +107,38 @@ export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryRawSchema
  *   - Derives `allVersionsWithChannels` from deprecated `allVersions` when missing.
  *   - Ensures `latestByChannel[AnyChannel]` is populated from the deprecated
  *     `latest` / `latestManifestSha256` fields.
+ *
+ * When neither the new field nor its deprecated fallback is present we
+ * throw with a precise message rather than dragging the failure into a
+ * downstream non-null assertion. The registry writer always populates both
+ * the new and deprecated fields; this guard catches hand-written or
+ * partially-migrated overview files.
  */
 function normalizeGlobalOverviewEntry(
   parsed: z.infer<typeof GlobalOverviewEntryRawSchema>,
 ): GlobalOverviewEntryReg {
-  const allVersionsWithChannels =
-    parsed.allVersionsWithChannels ??
-    parsed.allVersions!.map((v) => ({ version: v, channels: [] }));
+  const id = `${parsed.id.organization}/${parsed.id.name}`;
+
+  let allVersionsWithChannels = parsed.allVersionsWithChannels;
+  if (allVersionsWithChannels === undefined) {
+    if (parsed.allVersions === undefined)
+      throw new Error(
+        `GlobalOverviewEntry ${id} is missing both 'allVersionsWithChannels' and the deprecated 'allVersions' fallback`,
+      );
+    allVersionsWithChannels = parsed.allVersions.map((v) => ({ version: v, channels: [] }));
+  }
 
   let latestByChannel = parsed.latestByChannel;
   if (!latestByChannel[AnyChannel]) {
+    if (parsed.latest === undefined || parsed.latestManifestSha256 === undefined)
+      throw new Error(
+        `GlobalOverviewEntry ${id} is missing the 'latestByChannel[any]' slot and the deprecated 'latest'/'latestManifestSha256' fallback`,
+      );
     latestByChannel = {
       ...latestByChannel,
       [AnyChannel]: {
-        description: parsed.latest!,
-        manifestSha256: parsed.latestManifestSha256!,
+        description: parsed.latest,
+        manifestSha256: parsed.latestManifestSha256,
       },
     };
   }
