@@ -335,6 +335,7 @@ export async function createProjectWatcher<Dump>(
     timer: NodeJS.Timeout;
   };
   const waiters = new Set<Waiter>();
+  let aborted = abortController.signal.aborted;
 
   const getBlockDump = (blockId: string): BlockDumpUnified => {
     return state.dump?.blocks?.find((b) => b?.blockId === blockId);
@@ -402,6 +403,12 @@ export async function createProjectWatcher<Dump>(
       predicate: BlockDumpPredicate,
       waitOptions?: { timeoutMs?: number },
     ): Promise<BlockDumpPresent> => {
+      if (aborted) {
+        return Promise.reject(
+          new Error(`waitForBlockDump(${blockId}) called after projectWatcher.abort()`),
+        );
+      }
+
       const timeoutMs = waitOptions?.timeoutMs ?? 5000;
 
       // Fast path: condition already satisfied against the current dump
@@ -435,6 +442,7 @@ export async function createProjectWatcher<Dump>(
       });
     },
     abort: async (): Promise<void> => {
+      aborted = true;
       abortController.abort();
       for (const w of waiters) {
         clearTimeout(w.timer);
