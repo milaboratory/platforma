@@ -16,6 +16,34 @@ export const BlockPlatform = z.enum([
 ]);
 export type BlockPlatform = z.infer<typeof BlockPlatform>;
 
+/**
+ * TS generic shape of any BlockPackMeta variant — parameterized by the
+ * representation of long-string and binary content fields. Mirrors the
+ * structure produced by the `BlockPackMeta(...)` Zod factory below; both
+ * stay in sync.
+ */
+export type BlockPackMeta<LongString, Binary> = {
+  title: string;
+  description: string;
+  longDescription?: LongString;
+  changelog?: LongString;
+  logo?: Binary;
+  url?: string;
+  docs?: string;
+  support?: string;
+  tags?: string[];
+  organization: {
+    name: string;
+    url: string;
+    logo?: Binary;
+  } & { [k: string]: unknown };
+  marketplaceRanking?: number;
+  deprecated?: boolean;
+  termsOfServiceUrl?: string;
+  supportedPlatforms?: BlockPlatform[];
+  requiredCapabilities?: string[];
+} & { [k: string]: unknown };
+
 export function BlockPackMeta<
   const LongStringType extends z.ZodTypeAny,
   const BinaryType extends z.ZodTypeAny,

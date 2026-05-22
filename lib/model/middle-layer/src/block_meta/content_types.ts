@@ -1,16 +1,89 @@
 import { z } from "zod";
 
 //
-// Base content types
+// Canonical content union — single source of truth for TS types
 //
+
+export type Content =
+  | { type: "explicit-string"; content: string }
+  | { type: "explicit-base64"; mimeType: string; content: string }
+  | { type: "explicit-bytes"; mimeType: string; content: Uint8Array }
+  | { type: "relative"; path: string }
+  | { type: "absolute-file"; file: string }
+  | { type: "absolute-folder"; folder: string }
+  | { type: "absolute-url"; url: string };
+
+//
+// Leaf types — extracted from canonical Content union
+//
+
+export type ContentExplicitString = Extract<Content, { type: "explicit-string" }>;
+export type ContentExplicitBase64 = Extract<Content, { type: "explicit-base64" }>;
+export type ContentExplicitBytes = Extract<Content, { type: "explicit-bytes" }>;
+export type ContentRelative = Extract<Content, { type: "relative" }>;
+export type ContentAbsoluteFile = Extract<Content, { type: "absolute-file" }>;
+export type ContentAbsoluteFolder = Extract<Content, { type: "absolute-folder" }>;
+export type ContentAbsoluteUrl = Extract<Content, { type: "absolute-url" }>;
+
+//
+// Union types — extracted from canonical Content union
+//
+
+export type ContentAny = Extract<
+  Content,
+  { type: "explicit-string" | "explicit-base64" | "relative" | "absolute-file" | "absolute-url" }
+>;
+export type ContentExplicitOrRelative = Extract<
+  Content,
+  { type: "explicit-string" | "explicit-base64" | "relative" }
+>;
+export type ContentAnyLocal = Extract<
+  Content,
+  { type: "explicit-string" | "explicit-base64" | "relative" | "absolute-file" }
+>;
+export type ContentAnyRemote = Extract<
+  Content,
+  { type: "explicit-string" | "explicit-base64" | "relative" | "absolute-url" }
+>;
+export type ContentAnyBinaryLocal = Extract<
+  Content,
+  { type: "explicit-base64" | "relative" | "absolute-file" }
+>;
+export type ContentAnyTextLocal = Extract<
+  Content,
+  { type: "explicit-string" | "relative" | "absolute-file" }
+>;
+export type ContentAbsoluteBinaryRemote = Extract<
+  Content,
+  { type: "explicit-base64" | "absolute-url" }
+>;
+export type ContentAbsoluteBinaryLocal = Extract<
+  Content,
+  { type: "explicit-base64" | "absolute-file" }
+>;
+export type ContentAbsoluteTextRemote = Extract<
+  Content,
+  { type: "explicit-string" | "absolute-url" }
+>;
+export type ContentAbsoluteTextLocal = Extract<
+  Content,
+  { type: "explicit-string" | "absolute-file" }
+>;
+export type ContentRelativeBinary = Extract<Content, { type: "explicit-base64" | "relative" }>;
+export type ContentRelativeText = Extract<Content, { type: "explicit-string" | "relative" }>;
+
+//
+// Leaf schemas (pegged to TS types via `satisfies`)
+//
+
+const absPathRegex = new RegExp(`^(/|[A-Z]:\\\\)`);
 
 export const ContentExplicitString = z
   .object({
     type: z.literal("explicit-string"),
     content: z.string().describe("Actual string value"),
   })
-  .strict();
-export type ContentExplicitString = z.infer<typeof ContentExplicitString>;
+  .strict() satisfies z.ZodType<ContentExplicitString>;
 
 export const ContentExplicitBase64 = z
   .object({
@@ -21,45 +94,7 @@ export const ContentExplicitBase64 = z
       .describe("MIME type to interpret content"),
     content: z.string().base64().describe("Base64 encoded binary value"),
   })
-  .strict();
-export type ContentExplicitBase64 = z.infer<typeof ContentExplicitBase64>;
-
-export const ContentRelative = z
-  .object({
-    type: z.literal("relative"),
-    path: z
-      .string()
-      .describe(
-        "Address of the file, in most cases relative to the file which this structure is a part of",
-      ),
-  })
-  .strict();
-export type ContentRelative = z.infer<typeof ContentRelative>;
-
-const absPathRegex = new RegExp(`^(/|[A-Z]:\\\\)`);
-
-export const ContentAbsoluteFile = z
-  .object({
-    type: z.literal("absolute-file"),
-    file: z
-      .string()
-      .regex(absPathRegex, "path to file must be absolute")
-      .describe("Absolute address of the file in local file system"),
-  })
-  .strict();
-export type ContentAbsoluteFile = z.infer<typeof ContentAbsoluteFile>;
-
-export const ContentAbsoluteUrl = z
-  .object({
-    type: z.literal("absolute-url"),
-    url: z.string().url().describe("Global URL to reach the requested file"),
-  })
-  .strict();
-export type ContentAbsoluteUrl = z.infer<typeof ContentAbsoluteUrl>;
-
-//
-// Special content types
-//
+  .strict() satisfies z.ZodType<ContentExplicitBase64>;
 
 export const ContentExplicitBytes = z
   .object({
@@ -70,8 +105,28 @@ export const ContentExplicitBytes = z
       .describe("MIME type to interpret content"),
     content: z.instanceof(Uint8Array).describe("Raw content"),
   })
-  .strict();
-export type ContentExplicitBytes = z.infer<typeof ContentExplicitBytes>;
+  .strict() satisfies z.ZodType<ContentExplicitBytes>;
+
+export const ContentRelative = z
+  .object({
+    type: z.literal("relative"),
+    path: z
+      .string()
+      .describe(
+        "Address of the file, in most cases relative to the file which this structure is a part of",
+      ),
+  })
+  .strict() satisfies z.ZodType<ContentRelative>;
+
+export const ContentAbsoluteFile = z
+  .object({
+    type: z.literal("absolute-file"),
+    file: z
+      .string()
+      .regex(absPathRegex, "path to file must be absolute")
+      .describe("Absolute address of the file in local file system"),
+  })
+  .strict() satisfies z.ZodType<ContentAbsoluteFile>;
 
 export const ContentAbsoluteFolder = z
   .object({
@@ -81,154 +136,49 @@ export const ContentAbsoluteFolder = z
       .regex(absPathRegex, "path to folder must be absolute")
       .describe("Absolute address of the folder in local file system"),
   })
-  .strict();
-export type ContentAbsoluteFolder = z.infer<typeof ContentAbsoluteFolder>;
+  .strict() satisfies z.ZodType<ContentAbsoluteFolder>;
+
+export const ContentAbsoluteUrl = z
+  .object({
+    type: z.literal("absolute-url"),
+    url: z.string().url().describe("Global URL to reach the requested file"),
+  })
+  .strict() satisfies z.ZodType<ContentAbsoluteUrl>;
 
 //
-// Unions
+// Union schemas retained as nested validators inside boundary schemas.
+// Other Content* union schemas (ContentAny, ContentAnyLocal, ContentAbsoluteBinaryLocal, etc.)
+// are dropped — only their TS types above survive.
 //
-
-export const ContentAny = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentExplicitBase64,
-  ContentRelative,
-  ContentAbsoluteFile,
-  ContentAbsoluteUrl,
-]);
-export type ContentAny = z.infer<typeof ContentAny>;
-
-export const ContentExplicitOrRelative = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentExplicitBase64,
-  ContentRelative,
-]);
-export type ContentExplicitOrRelative = z.infer<typeof ContentExplicitOrRelative>;
-
-export const ContentAnyLocal = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentExplicitBase64,
-  ContentRelative,
-  ContentAbsoluteFile,
-]);
-export type ContentAnyLocal = z.infer<typeof ContentAnyLocal>;
-
-export const ContentAnyRemote = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentExplicitBase64,
-  ContentRelative,
-  ContentAbsoluteUrl,
-]);
-export type ContentAnyRemote = z.infer<typeof ContentAnyRemote>;
-
-//
-// Narrow types with relative option
-//
-
-// export const ContentAnyBinaryRemote = z.discriminatedUnion('type', [
-//   ContentExplicitBase64,
-//   ContentRelative,
-//   ContentAbsoluteUrl
-// ]);
-// export type ContentAnyBinaryRemote = z.infer<typeof ContentAnyBinaryRemote>;
 
 export const ContentAnyBinaryLocal = z.discriminatedUnion("type", [
   ContentExplicitBase64,
   ContentRelative,
   ContentAbsoluteFile,
-]);
-export type ContentAnyBinaryLocal = z.infer<typeof ContentAnyBinaryLocal>;
-
-// export const ContentAnyTextRemote = z.discriminatedUnion('type', [
-//   ContentExplicitString,
-//   ContentRelative,
-//   ContentAbsoluteUrl
-// ]);
-// export type ContentAnyTextRemote = z.infer<typeof ContentAnyTextRemote>;
+]) satisfies z.ZodType<ContentAnyBinaryLocal>;
 
 export const ContentAnyTextLocal = z.discriminatedUnion("type", [
   ContentExplicitString,
   ContentRelative,
   ContentAbsoluteFile,
-]);
-export type ContentAnyTextLocal = z.infer<typeof ContentAnyTextLocal>;
-
-//
-// Narrow absolute types
-//
-
-export const ContentAbsoluteBinaryRemote = z.discriminatedUnion("type", [
-  ContentExplicitBase64,
-  ContentAbsoluteUrl,
-]);
-export type ContentAbsoluteBinaryRemote = z.infer<typeof ContentAbsoluteBinaryRemote>;
-
-export const ContentAbsoluteBinaryLocal = z.discriminatedUnion("type", [
-  ContentExplicitBase64,
-  ContentAbsoluteFile,
-]);
-export type ContentAbsoluteBinaryLocal = z.infer<typeof ContentAbsoluteBinaryLocal>;
-
-export const ContentAbsoluteTextRemote = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentAbsoluteUrl,
-]);
-export type ContentAbsoluteTextRemote = z.infer<typeof ContentAbsoluteTextRemote>;
-
-export const ContentAbsoluteTextLocal = z.discriminatedUnion("type", [
-  ContentExplicitString,
-  ContentAbsoluteFile,
-]);
-export type ContentAbsoluteTextLocal = z.infer<typeof ContentAbsoluteTextLocal>;
-
-//
-// Narrow relative types
-//
+]) satisfies z.ZodType<ContentAnyTextLocal>;
 
 export const ContentRelativeBinary = z.discriminatedUnion("type", [
   ContentExplicitBase64,
   ContentRelative,
-]);
-export type ContentRelativeBinary = z.infer<typeof ContentRelativeBinary>;
+]) satisfies z.ZodType<ContentRelativeBinary>;
 
 export const ContentRelativeText = z.discriminatedUnion("type", [
   ContentExplicitString,
   ContentRelative,
-]);
-export type ContentRelativeText = z.infer<typeof ContentRelativeText>;
+]) satisfies z.ZodType<ContentRelativeText>;
 
-// export function ConstructContent(
-//   contentType: 'text',
-//   contextType: 'local'
-// ): typeof ContentAnyTextLocal;
-// export function ConstructContent(
-//   contentType: 'text',
-//   contextType: 'remote'
-// ): typeof ContentAnyTextRemote;
-// export function ConstructContent(
-//   contentType: 'binary',
-//   contextType: 'local'
-// ): typeof ContentAnyBinaryLocal;
-// export function ConstructContent(
-//   contentType: 'binary',
-//   contextType: 'remote'
-// ): typeof ContentAnyBinaryRemote;
-// export function ConstructContent(
-//   contentType: ContentType,
-//   contextType: ContextType
-// ):
-//   | typeof ContentAnyTextLocal
-//   | typeof ContentAnyTextRemote
-//   | typeof ContentAnyBinaryLocal
-//   | typeof ContentAnyBinaryRemote;
-// export function ConstructContent(contentType: ContentType, contextType: ContextType) {
-//   return contentType === 'text'
-//     ? contextType === 'local'
-//       ? ContentAnyTextLocal
-//       : ContentAnyTextRemote
-//     : contextType === 'local'
-//       ? ContentAnyBinaryLocal
-//       : ContentAnyBinaryRemote;
-// }
+//
+// Boundary normalizing transforms — used only when parsing untrusted
+// `package.json` content. Authors write either a bare string
+// (`"file:./logo.png"` or just `"hello"`) or a wrapped object;
+// the schema coerces both to the canonical object form.
+//
 
 export const DescriptionContentBinary = z.union([
   z
@@ -236,8 +186,7 @@ export const DescriptionContentBinary = z.union([
     .startsWith("file:")
     .transform<ContentRelativeBinary>((value) => ({ type: "relative", path: value.slice(5) })),
   ContentAnyBinaryLocal,
-]);
-export type DescriptionContentBinary = z.infer<typeof DescriptionContentBinary>;
+]) satisfies z.ZodType<ContentAnyBinaryLocal, z.ZodTypeDef, any>;
 
 export const DescriptionContentText = z.union([
   z.string().transform<ContentRelativeText>((value) => {
@@ -245,5 +194,4 @@ export const DescriptionContentText = z.union([
     else return { type: "explicit-string", content: value };
   }),
   ContentAnyTextLocal,
-]);
-export type DescriptionContentText = z.infer<typeof DescriptionContentText>;
+]) satisfies z.ZodType<ContentAnyTextLocal, z.ZodTypeDef, any>;
