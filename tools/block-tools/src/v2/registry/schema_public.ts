@@ -1,19 +1,12 @@
 import type { BlockPackId } from "@milaboratories/pl-model-middle-layer";
 import {
   AnyChannel,
-  BlockComponentsManifest,
   BlockPackDescriptionManifest,
   BlockPackIdNoVersion,
-  BlockPackMeta,
-  ContentRelativeBinary,
-  ContentRelativeText,
-  CreateBlockPackDescriptionSchema,
   Sha256Schema,
   VersionWithChannels,
 } from "@milaboratories/pl-model-middle-layer";
 import { z } from "zod";
-import type { RelativeContentReader } from "../model";
-import { relativeToExplicitBytes, relativeToExplicitString } from "../model";
 
 export const MainPrefix = "v2/";
 
@@ -35,10 +28,6 @@ export function packageContentPrefix(bp: BlockPackId): string {
 }
 
 export const ManifestSuffix = "/" + ManifestFileName;
-
-// export function payloadFilePath(bp: BlockPackId, file: string): string {
-//   return `${MainPrefix}${bp.organization}/${bp.name}/${bp.version}/${file}`;
-// }
 
 export const PackageOverviewVersionEntry = z
   .object({
@@ -79,106 +68,93 @@ export const PackageManifestPattern =
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
 
-export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
-  descriptionType: Description,
-) {
-  const universalSchema = z
-    .object({
-      id: BlockPackIdNoVersion,
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      allVersions: z.array(z.string()).optional(),
-      allVersionsWithChannels: z.array(VersionWithChannels).optional(),
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      latest: descriptionType,
-      /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
-      latestManifestSha256: Sha256Schema,
-      latestByChannel: z
-        .record(
-          z.string(),
-          z
-            .object({
-              description: descriptionType,
-              manifestSha256: Sha256Schema,
-            })
-            .passthrough(),
-        )
-        .default({}),
-    })
-    .passthrough();
-  return universalSchema
-    .transform((o) => {
-      if (o.allVersionsWithChannels) return o;
-      else
-        return {
-          ...o,
-          allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] })),
-        };
-    })
-    .transform((o) =>
-      o.latestByChannel[AnyChannel]
-        ? o
-        : {
-            ...o,
-            latestByChannel: {
-              ...o.latestByChannel,
-              [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! },
-            },
-          },
-    )
-    .pipe(universalSchema.required({ allVersionsWithChannels: true }));
-}
-export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);
-export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
+/**
+ * Raw shape parsed from the registry's `overview.json` for one package
+ * entry. Older registry files may omit `allVersionsWithChannels` and may
+ * lack an `AnyChannel` slot in `latestByChannel`; `normalizeGlobalOverviewEntry`
+ * fills both in from the deprecated `allVersions` / `latest` fields.
+ */
+const GlobalOverviewEntryRawSchema = z
+  .object({
+    id: BlockPackIdNoVersion,
+    /** @deprecated kept for back-compat with older overview files */
+    allVersions: z.array(z.string()).optional(),
+    allVersionsWithChannels: z.array(VersionWithChannels).optional(),
+    /** @deprecated kept for back-compat with older overview files */
+    latest: BlockPackDescriptionManifest.optional(),
+    /** @deprecated kept for back-compat with older overview files */
+    latestManifestSha256: Sha256Schema.optional(),
+    latestByChannel: z
+      .record(
+        z.string(),
+        z
+          .object({
+            description: BlockPackDescriptionManifest,
+            manifestSha256: Sha256Schema,
+          })
+          .passthrough(),
+      )
+      .default({}),
+  })
+  .passthrough();
 
-export function GlobalOverview<const Description extends z.ZodTypeAny>(
-  descriptionType: Description,
-) {
-  return z
+export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryRawSchema> & {
+  allVersionsWithChannels: z.infer<typeof VersionWithChannels>[];
+};
+
+/**
+ * Fills in defaults for older `overview.json` shapes after Zod parsing:
+ *   - Derives `allVersionsWithChannels` from deprecated `allVersions` when missing.
+ *   - Ensures `latestByChannel[AnyChannel]` is populated from the deprecated
+ *     `latest` / `latestManifestSha256` fields.
+ */
+function normalizeGlobalOverviewEntry(
+  parsed: z.infer<typeof GlobalOverviewEntryRawSchema>,
+): GlobalOverviewEntryReg {
+  const allVersionsWithChannels =
+    parsed.allVersionsWithChannels ??
+    parsed.allVersions!.map((v) => ({ version: v, channels: [] }));
+
+  let latestByChannel = parsed.latestByChannel;
+  if (!latestByChannel[AnyChannel]) {
+    latestByChannel = {
+      ...latestByChannel,
+      [AnyChannel]: {
+        description: parsed.latest!,
+        manifestSha256: parsed.latestManifestSha256!,
+      },
+    };
+  }
+
+  return {
+    ...parsed,
+    allVersionsWithChannels,
+    latestByChannel,
+  };
+}
+
+export type GlobalOverviewReg = {
+  schema: "v2";
+  packages: GlobalOverviewEntryReg[];
+} & { [k: string]: unknown };
+
+/**
+ * Parses and normalizes a `GlobalOverviewReg` document read from registry
+ * storage. Validation runs through Zod; the back-compat normalization runs
+ * after parse as a plain function. The Zod schema is built inside the
+ * function (not as a module-level const) to keep TypeScript from emitting
+ * the schema's deeply-nested inferred type into the package's `.d.ts`.
+ */
+export function parseGlobalOverviewReg(raw: unknown): GlobalOverviewReg {
+  const schema = z
     .object({
       schema: z.literal("v2"),
-      packages: z.array(GlobalOverviewEntry(descriptionType)),
+      packages: z.array(GlobalOverviewEntryRawSchema),
     })
     .passthrough();
+  const parsed = schema.parse(raw);
+  return {
+    ...parsed,
+    packages: parsed.packages.map(normalizeGlobalOverviewEntry),
+  };
 }
-
-export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);
-export type GlobalOverviewReg = z.infer<typeof GlobalOverviewReg>;
-
-export function BlockDescriptionToExplicitBinaryBytes(reader: RelativeContentReader) {
-  return CreateBlockPackDescriptionSchema(
-    BlockComponentsManifest,
-    BlockPackMeta(
-      ContentRelativeText.transform(relativeToExplicitString(reader)),
-      ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-    ),
-  );
-}
-export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReader) {
-  return GlobalOverview(
-    CreateBlockPackDescriptionSchema(
-      BlockComponentsManifest,
-      BlockPackMeta(
-        ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-      ),
-    ),
-  );
-}
-export type GlobalOverviewExplicitBinaryBytes = z.infer<
-  ReturnType<typeof GlobalOverviewToExplicitBinaryBytes>
->;
-
-export function GlobalOverviewToExplicitBinaryBase64(reader: RelativeContentReader) {
-  return GlobalOverview(
-    CreateBlockPackDescriptionSchema(
-      BlockComponentsManifest,
-      BlockPackMeta(
-        ContentRelativeText.transform(relativeToExplicitString(reader)),
-        ContentRelativeBinary.transform(relativeToExplicitBytes(reader)),
-      ),
-    ),
-  );
-}
-export type GlobalOverviewExplicitBinaryBase64 = z.infer<
-  ReturnType<typeof GlobalOverviewToExplicitBinaryBase64>
->;

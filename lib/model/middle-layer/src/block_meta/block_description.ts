@@ -6,6 +6,18 @@ import { BlockPackId } from "./block_id";
 import { toMerged } from "es-toolkit";
 import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 
+/**
+ * Generic shape of a block-pack description: `BlockPackId` plus typed
+ * components and meta, with optional feature flags. Index signature carries
+ * the `.passthrough()` semantics of the underlying schemas at the type level.
+ */
+export type BlockPackDescription<Components, Meta> = {
+  id: BlockPackId;
+  components: Components;
+  meta: Meta;
+  featureFlags?: BlockCodeKnownFeatureFlags;
+} & { [k: string]: unknown };
+
 /** Description, as appears in root block package.json file,
  * `file:` references are parsed into relative content of corresponding type, depending on the context,
  * strings are converted to explicit content type. */
