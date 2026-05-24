@@ -68,6 +68,11 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
+     * Text shown in a chip when an entry in `modelValue` is missing from `options`.
+     * Use to communicate that an upstream source was deleted. Styled italic + error color.
+     */
+    missingValueLabel?: string;
+    /**
      * If `true`, the dropdown component is marked as required.
      */
     required?: boolean;
@@ -95,6 +100,7 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
+    missingValueLabel: "Value not available",
     required: false,
     disabled: false,
     options: undefined,
@@ -127,9 +133,25 @@ const placeholderRef = computed(() => {
 const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
 
 const selectedOptionsRef = computed(() => {
+  // While options are loading (undefined), suppress all chips for unresolved values
+  // so the user doesn't briefly see "missing" chips that resolve once options arrive.
+  const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
-    .map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v)))
-    .filter((v) => v !== undefined);
+    .map((v) => {
+      const opt = normalizedOptionsRef.value.find((o) => deepEqual(o.value, v));
+      if (opt) {
+        return { ...opt, isMissing: false };
+      }
+      if (!optionsLoaded) {
+        return undefined;
+      }
+      return {
+        value: v,
+        label: props.missingValueLabel,
+        isMissing: true,
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== undefined);
 });
 
 const filteredOptionsRef = computed(() => {
@@ -292,6 +314,7 @@ watchPostEffect(() => {
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
+              :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
               small
               @click.stop="data.open = true"
@@ -331,6 +354,7 @@ watchPostEffect(() => {
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
+              :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
               small
               @close="unselectOption(opt.value)"
