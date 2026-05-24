@@ -269,3 +269,10 @@
     }
   }
 }
+
+.pl-dropdown-multi__chip--missing {
+  .pl-chip__text {
+    font-style: italic;
+    color: var(--txt-error);
+  }
+}
