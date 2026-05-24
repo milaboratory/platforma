@@ -108,6 +108,11 @@
       cursor: inherit;
     }
 
+    .input-value--missing {
+      font-style: italic;
+      color: var(--txt-error);
+    }
+
     input {
       min-height: calc(var(--control-height) - 2px);
       line-height: 20px;

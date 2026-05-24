@@ -69,6 +69,12 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
+     * Text shown inside the field when `modelValue` is set but no option matches it
+     * (e.g. the upstream block that produced this value was deleted). Rendered
+     * italic + error color via the `input-value--missing` style.
+     */
+    missingValueLabel?: string;
+    /**
      * Enables a button to clear the selected value (default: false)
      */
     clearable?: boolean;
@@ -113,6 +119,7 @@ const props = withDefaults(
     error: undefined,
     showErrorMessage: true,
     placeholder: "...",
+    missingValueLabel: "Value not available",
     clearable: false,
     required: false,
     disabled: false,
@@ -168,6 +175,15 @@ const selectedIndex = computed(() => {
   return (props.options ?? []).findIndex((o) => deepEqual(o.value, props.modelValue));
 });
 
+const isMissing = computed(() => {
+  return (
+    props.modelValue !== undefined &&
+    props.modelValue !== null &&
+    selectedIndex.value === -1 &&
+    !isLoadingOptions.value
+  );
+});
+
 const computedError = computed(() => {
   if (isLoadingOptions.value) {
     return undefined;
@@ -177,10 +193,8 @@ const computedError = computed(() => {
     return getErrorMessage(props.error);
   }
 
-  if (props.modelValue !== undefined && selectedIndex.value === -1) {
-    return "The selected value is not one of the options";
-  }
-
+  // Missing state is communicated by the field itself (missingValueLabel),
+  // so don't duplicate it as a helper error.
   return undefined;
 });
 
@@ -195,10 +209,8 @@ const optionsRef = computed<LOption<M>[]>(() =>
 
 const textValue = computed(() => {
   const options = unref(optionsRef);
-
   const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
-
-  return item?.label || props.modelValue; // @todo show inner value?
+  return item?.label;
 });
 
 const computedPlaceholder = computed(() => {
@@ -206,7 +218,7 @@ const computedPlaceholder = computed(() => {
     return "";
   }
 
-  return props.modelValue ? String(textValue.value) : props.placeholder;
+  return textValue.value ? String(textValue.value) : props.placeholder;
 });
 
 const hasValue = computed(() => {
@@ -365,7 +377,12 @@ watchPostEffect(() => {
           />
 
           <div v-if="!data.open" class="input-value">
-            <LongText> {{ textValue }} </LongText>
+            <LongText v-if="isMissing" class="input-value--missing">
+              {{ missingValueLabel }}
+            </LongText>
+            <LongText v-else-if="textValue !== undefined">
+              {{ textValue }}
+            </LongText>
           </div>
 
           <div class="pl-dropdown__controls">
