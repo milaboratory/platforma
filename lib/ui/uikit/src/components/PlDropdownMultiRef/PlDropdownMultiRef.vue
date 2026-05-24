@@ -40,6 +40,11 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
+     * Text shown in a chip when a `modelValue` entry references an upstream block
+     * that no longer exists. Defaults to "Upstream value removed".
+     */
+    missingValueLabel?: string;
+    /**
      * If `true`, the dropdown component is marked as required.
      */
     required?: boolean;
@@ -54,6 +59,7 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
+    missingValueLabel: "Upstream value removed",
     required: false,
     disabled: false,
     options: undefined,
