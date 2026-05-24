@@ -258,6 +258,10 @@
       animation: spin 2.5s linear infinite;
       --icon-color: var(--ic-accent);
     }
+
+    .pl-dropdown-multi__chip--missing .pl-chip__text {
+      color: var(--dis-01);
+    }
   }
 
   &__open-chips-container {
