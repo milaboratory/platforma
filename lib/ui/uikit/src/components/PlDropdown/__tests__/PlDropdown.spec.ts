@@ -71,4 +71,12 @@ describe("PlDropdown", () => {
     await flushPromises();
     expect(wrapper.find(".input-value--missing").text()).toBe("Gone, kaput");
   });
+
+  it("does not render missingValueLabel while options are loading (options undefined)", async () => {
+    const wrapper = mount(PlDropdown, {
+      props: { modelValue: 99, options: undefined },
+    });
+    await flushPromises();
+    expect(wrapper.find(".input-value--missing").exists()).toBe(false);
+  });
 });
