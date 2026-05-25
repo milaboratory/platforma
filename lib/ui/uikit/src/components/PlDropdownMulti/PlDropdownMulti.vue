@@ -320,7 +320,7 @@ watchPostEffect(() => {
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label || opt.value }}
+              {{ opt.isMissing ? opt.label : opt.label || opt.value }}
             </PlChip>
           </div>
 
@@ -359,7 +359,7 @@ watchPostEffect(() => {
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label || opt.value }}
+              {{ opt.isMissing ? opt.label : opt.label || opt.value }}
             </PlChip>
           </div>
           <DropdownListItem

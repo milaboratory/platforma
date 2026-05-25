@@ -82,4 +82,34 @@ describe("PlDropdownMulti", () => {
     await flushPromises();
     expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(false);
   });
+
+  it("renders missing chip alongside .disabled root when disabled", async () => {
+    const wrapper = mount(PlDropdownMulti, {
+      props: {
+        modelValue: [999],
+        disabled: true,
+        options: [{ text: "Option 1", value: 1 }],
+      },
+    });
+    await flushPromises();
+    // The SCSS rule `.pl-dropdown-multi.disabled .pl-dropdown-multi__chip--missing .pl-chip__text`
+    // depends on both selectors being applied. jsdom doesn't resolve specificity,
+    // so we only assert both hooks are wired up.
+    expect(wrapper.find(".pl-dropdown-multi.disabled").exists()).toBe(true);
+    expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(true);
+  });
+
+  it("never renders raw object value in a chip even if missingValueLabel is empty string", async () => {
+    const wrapper = mount(PlDropdownMulti, {
+      props: {
+        modelValue: [{ __isRef: true as const, blockId: "deleted", name: "out" }],
+        missingValueLabel: "",
+        options: [],
+      },
+    });
+    await flushPromises();
+    // With empty label the chip must render empty text, not the raw PlRef JSON.
+    expect(wrapper.html()).not.toContain('"blockId"');
+    expect(wrapper.html()).not.toContain('"__isRef"');
+  });
 });
