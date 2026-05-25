@@ -416,21 +416,18 @@ function convertPartitionFiltersToFilterSpec(
 
 function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
   return (
-    state?.sortModel.map((item) => {
-      const { spec: _, ...column } = parseJson(item.colId);
-      return {
-        column,
-        ascending: item.sort === "asc",
-        naAndAbsentAreLeastValues: item.sort === "asc",
-      };
-    }) ?? []
+    state?.sortModel.map((item) => ({
+      column: parseJson<PTableColumnId>(item.colId),
+      ascending: item.sort === "asc",
+      naAndAbsentAreLeastValues: item.sort === "asc",
+    })) ?? []
   );
 }
 
 function getHiddenColIds(
   state: PlDataTableGridStateCore["columnVisibility"],
 ): PTableColumnId[] | null {
-  return state?.hiddenColIds?.map((json) => getPTableColumnId(parseJson(json))) ?? null;
+  return state?.hiddenColIds?.map((json) => parseJson<PTableColumnId>(json)) ?? null;
 }
 
 function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {

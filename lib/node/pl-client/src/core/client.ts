@@ -31,6 +31,7 @@ import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
 import { UserResources } from "./user_resources";
+import type { BackendCapability } from "./capabilities";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -45,19 +46,6 @@ const defaultTxOps = {
 
 function alternativeRootFieldName(alternativeRoot: string): string {
   return `alternative_root_${alternativeRoot}`;
-}
-
-// Parses leading "<major>.<minor>.<patch>" from a version string like
-// "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
-// Returns false for unparseable versions (safer to assume an old backend).
-function isVersionAtLeast(version: string, target: [number, number, number]): boolean {
-  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
-  if (!match) return false;
-  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
-  for (let i = 0; i < 3; i++) {
-    if (parsed[i] !== target[i]) return parsed[i] > target[i];
-  }
-  return true;
 }
 
 /** Client to access core PL API. */
@@ -89,11 +77,6 @@ export class PlClient {
 
   /** Stores client root (this abstraction is intended for future implementation of the security model) */
   private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
-
-  private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
-
-  // method setDefaultColor is safe to use in transactions
-  private _supportsSetDefaultColor: boolean = false;
 
   private _userResources?: UserResources;
 
@@ -241,7 +224,22 @@ export class PlClient {
 
   public get serverInfo(): MaintenanceAPI_Ping_Response {
     this.checkInitialized();
-    return this._serverInfo!;
+    return this._ll!.serverInfo;
+  }
+
+  public hasCapability(capability: BackendCapability): boolean {
+    this.checkInitialized();
+    return this._ll!.hasCapability(capability);
+  }
+
+  /**
+   * True if the backend honors per-file `permissions` on workdir fill rules
+   * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
+   * for the full definition.
+   */
+  public get supportsWritableWorkdirFiles(): boolean {
+    this.checkInitialized();
+    return this._ll!.supportsWritableWorkdirFiles;
   }
 
   /** User resources index for discovering data libraries and other shared resources. */
@@ -269,13 +267,12 @@ export class PlClient {
     this._ll = await this.buildLLPlClient(false);
     const wireProtocol = this._ll.wireProtocol;
 
-    this._serverInfo = await this.ping();
-    if (this._serverInfo.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
+    // LLPlClient.build() guarantees a successful ping; read the cached response instead of pinging again.
+    const info = this._ll.serverInfo;
+    if (info.compression === MaintenanceAPI_Ping_Response_Compression.GZIP) {
       await this._ll.close();
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
-
-    this.detectBackendCompatibility(this._serverInfo);
 
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
 
@@ -297,10 +294,6 @@ export class PlClient {
         return await altRoot.globalId;
       });
     }
-  }
-
-  private detectBackendCompatibility(serverInfo: MaintenanceAPI_Ping_Response): void {
-    this._supportsSetDefaultColor = isVersionAtLeast(serverInfo.coreVersion, [3, 3, 0]);
   }
 
   /** Returns true if field existed */
@@ -348,8 +341,7 @@ export class PlClient {
 
         // Auto-set default color proof from the client root's signature.
         // Skip when backend doesn't implement the `set_default_color` TX request.
-        // See `detectBackendCompatibility`.
-        if (this._supportsSetDefaultColor && !isNullSignedResourceId(clientRoot) && writable) {
+        if (this.ll.supportsSetDefaultColor && !isNullSignedResourceId(clientRoot) && writable) {
           const parsed = parseSignedResourceId(clientRoot);
           if (parsed.signature) {
             tx.setDefaultColor(parsed.signature as ColorProof);

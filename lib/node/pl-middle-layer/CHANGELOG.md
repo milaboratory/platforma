@@ -1,5 +1,139 @@
 # @milaboratories/pl-middle-layer
 
+## 1.61.5
+
+### Patch Changes
+
+- Updated dependencies [8c027a2]
+  - @milaboratories/pl-deployments@3.0.1
+
+## 1.61.4
+
+### Patch Changes
+
+- Updated dependencies [0ce161f]
+  - @platforma-sdk/workflow-tengo@5.26.0
+  - @milaboratories/pl-client@3.9.0
+  - @milaboratories/pl-model-backend@1.3.3
+  - @milaboratories/pl-drivers@1.14.12
+  - @milaboratories/pl-errors@1.4.12
+  - @milaboratories/pl-tree@1.12.2
+  - @platforma-sdk/block-tools@2.8.3
+
+## 1.61.3
+
+### Patch Changes
+
+- Updated dependencies [af6f1c0]
+  - @milaboratories/pl-client@3.8.1
+  - @milaboratories/pl-tree@1.12.1
+  - @milaboratories/pl-model-backend@1.3.2
+  - @milaboratories/pl-drivers@1.14.11
+  - @milaboratories/pl-errors@1.4.11
+  - @platforma-sdk/block-tools@2.8.2
+  - @platforma-sdk/workflow-tengo@5.25.0
+
+## 1.61.2
+
+### Patch Changes
+
+- Updated dependencies [8d93fdf]
+  - @milaboratories/pl-deployments@3.0.0
+
+## 1.61.1
+
+### Patch Changes
+
+- Updated dependencies [c097727]
+- Updated dependencies [c097727]
+  - @milaboratories/pl-deployments@2.18.0
+  - @milaboratories/pl-client@3.8.0
+  - @milaboratories/pl-tree@1.12.0
+  - @milaboratories/pl-model-backend@1.3.1
+  - @milaboratories/pl-drivers@1.14.10
+  - @milaboratories/pl-errors@1.4.10
+  - @platforma-sdk/block-tools@2.8.1
+  - @platforma-sdk/workflow-tengo@5.25.0
+
+## 1.61.0
+
+### Minor Changes
+
+- 030e8c2: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo` ships a new opt-in lib `:pframes-rs` that wraps `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")`. Blocks that import `:pframes-rs` automatically pull the 1.7 MB pframes-rs wasm into their templates' packs; blocks that don't stay lean.
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+
+### Patch Changes
+
+- Updated dependencies [030e8c2]
+  - @milaboratories/pl-client@3.7.0
+  - @milaboratories/pl-model-backend@1.3.0
+  - @milaboratories/pl-model-middle-layer@1.20.0
+  - @platforma-sdk/block-tools@2.8.0
+  - @platforma-sdk/workflow-tengo@5.25.0
+  - @milaboratories/pl-drivers@1.14.9
+  - @milaboratories/pl-errors@1.4.9
+  - @milaboratories/pl-tree@1.11.2
+  - @milaboratories/pf-spec-driver@1.3.17
+  - @milaboratories/pf-driver@1.4.12
+  - @platforma-sdk/model@1.77.4
+
+## 1.60.5
+
+### Patch Changes
+
+- 2d719ea: Tolerate incomplete PColumn data when building PFrames: on parse failure (e.g. resource not ready, partial fields), fall back to empty `JsonDataInfo` for that column instead of failing the whole frame.
+
+## 1.60.4
+
+### Patch Changes
+
+- Updated dependencies [6066082]
+  - @milaboratories/pl-client@3.6.0
+  - @milaboratories/pl-model-backend@1.2.30
+  - @milaboratories/pl-model-common@1.42.0
+  - @milaboratories/pl-model-middle-layer@1.19.4
+  - @milaboratories/pf-spec-driver@1.3.16
+  - @milaboratories/computable@2.9.4
+  - @milaboratories/pf-driver@1.4.11
+  - @milaboratories/pl-deployments@2.17.18
+  - @milaboratories/pl-drivers@1.14.8
+  - @milaboratories/pl-errors@1.4.8
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.11.1
+  - @milaboratories/ts-helpers@1.8.2
+  - @milaboratories/helpers@1.14.2
+  - @platforma-sdk/model@1.77.0
+  - @platforma-sdk/block-tools@2.7.25
+  - @platforma-sdk/workflow-tengo@5.24.0
+
+## 1.60.3
+
+### Patch Changes
+
+- Updated dependencies [40f11d2]
+  - @platforma-sdk/workflow-tengo@5.24.0
+
+## 1.60.2
+
+### Patch Changes
+
+- f302c2f: Fix block VM OOM diagnostics
+
+  - Fix off-by-one bug in `ErrorRepository.getOriginal` that mangled native QuickJS error names into nonsense like `nalError` when `cause.name` did not contain a `/uuid:` suffix; native errors (`InternalError: out of memory`, stack overflow) now surface verbatim.
+  - Log `currentStorageJson` and payload (full JSON content + sizes) on storage-update failure, and log sizes on entry when `MI_LOG_JS_EXEC_STAT` is set, so VM OOMs are diagnosable from logs.
+
+- Updated dependencies [f302c2f]
+- Updated dependencies [f302c2f]
+  - @platforma-sdk/model@1.77.0
+
 ## 1.60.1
 
 ### Patch Changes

@@ -1,5 +1,33 @@
 # @milaboratories/pl-local
 
+## 3.0.1
+
+### Patch Changes
+
+- 8c027a2: Speedup local pl connection by waiting only for GRPC to become ready.
+
+## 3.0.0
+
+### Major Changes
+
+- 8d93fdf: Proper platforma backend readiness checks.
+
+  `LocalPl.isAlive` is split into two polling/throwing methods:
+
+  - `isAlive(opts?)` — waits for the OS process to be alive.
+  - `isReady(opts?)` — waits for `grpc.health.v1.Health/Check` to report SERVING; requires `grpcPort` to be configured and throws if it isn't.
+
+### Patch Changes
+
+- Updated dependencies [8d93fdf]
+  - @milaboratories/pl-healthcheck@1.0.0
+
+## 2.18.0
+
+### Minor Changes
+
+- c097727: Make local platforma startup script to wait for real service start: test TCP port readiness before reporting 'isAlive'
+
 ## 2.17.18
 
 ### Patch Changes

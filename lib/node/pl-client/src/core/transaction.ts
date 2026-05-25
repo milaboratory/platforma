@@ -702,6 +702,7 @@ export class PlTransaction {
           resourceGet: {
             ...this.toSignedResourceId(rId),
             loadFields: loadFields,
+            showSoftDeletes: false,
           },
         },
         (r) => protoToResource(notEmpty(r.resourceGet.resource)),
@@ -1136,6 +1137,7 @@ export class PlTransaction {
         traverseStopRules: opts?.traverseStopRules,
         includeKv: opts?.includeKv ?? false,
         maxDepth: opts?.maxDepth,
+        showSoftDeletes: false,
       },
     });
 

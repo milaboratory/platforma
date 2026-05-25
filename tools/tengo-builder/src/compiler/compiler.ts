@@ -14,12 +14,12 @@ import { ArtifactStore } from "./artifactset";
 import { assertNever } from "./util";
 import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from "./compileroptions";
 import type { CompiledTemplateV3, TemplateDataV3 } from "@milaboratories/pl-model-backend";
-import { CapabilityWasm } from "@milaboratories/pl-model-backend";
+import { BackendCapability } from "@milaboratories/pl-model-backend";
 
 /** Add a capability token to a template's `requiredCapabilities` list,
  * skipping duplicates. Initializes the array lazily so the field stays
  * absent for templates that need nothing. */
-function addRequiredCapability(template: TemplateDataV3, capability: string): void {
+function addRequiredCapability(template: TemplateDataV3, capability: BackendCapability): void {
   template.requiredCapabilities = template.requiredCapabilities ?? [];
   if (!template.requiredCapabilities.includes(capability)) {
     template.requiredCapabilities.push(capability);
@@ -113,7 +113,7 @@ export class TengoTemplateCompiler {
           // Embedding a wasm artifact means this template requires the
           // backend's wasm runtime to run. The token is propagated upward
           // when this template is in turn embedded as a sub-template.
-          addRequiredCapability(data.template, CapabilityWasm);
+          addRequiredCapability(data.template, BackendCapability.WasmV1);
           break;
         }
         case "template": {

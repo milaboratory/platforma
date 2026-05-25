@@ -1,5 +1,52 @@
 # @milaboratories/pl-tree
 
+## 1.12.2
+
+### Patch Changes
+
+- Updated dependencies [0ce161f]
+  - @milaboratories/pl-client@3.9.0
+  - @milaboratories/pl-errors@1.4.12
+
+## 1.12.1
+
+### Patch Changes
+
+- af6f1c0: project with errors could not open
+- Updated dependencies [af6f1c0]
+  - @milaboratories/pl-client@3.8.1
+  - @milaboratories/pl-errors@1.4.11
+
+## 1.12.0
+
+### Minor Changes
+
+- c097727: Support auth:v2 authentication flow
+
+### Patch Changes
+
+- Updated dependencies [c097727]
+  - @milaboratories/pl-client@3.8.0
+  - @milaboratories/pl-errors@1.4.10
+
+## 1.11.2
+
+### Patch Changes
+
+- Updated dependencies [030e8c2]
+  - @milaboratories/pl-client@3.7.0
+  - @milaboratories/pl-errors@1.4.9
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [6066082]
+  - @milaboratories/pl-client@3.6.0
+  - @milaboratories/computable@2.9.4
+  - @milaboratories/pl-errors@1.4.8
+  - @milaboratories/ts-helpers@1.8.2
+
 ## 1.11.0
 
 ### Minor Changes

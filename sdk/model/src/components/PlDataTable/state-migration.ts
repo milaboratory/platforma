@@ -7,7 +7,11 @@ import type {
   PTableRecordFilter,
   PTableSorting,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, parseJsonSafely } from "@milaboratories/pl-model-common";
+import {
+  canonicalizeJson,
+  getPTableColumnId,
+  parseJsonSafely,
+} from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
@@ -16,7 +20,14 @@ import type {
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
+  PlTableColumnIdJson,
   PTableParamsV2,
+} from "./typesV7";
+import type {
+  PlDataTableGridStateV6,
+  PlDataTableStateV2V6,
+  PlDataTableStateV2V6CacheEntry,
+  PlDataTableV6ColIdJson,
 } from "./typesV6";
 import type {
   PlDataTableGridStateV5,
@@ -106,7 +117,7 @@ export type PlDataTableStateV2 =
       version: 4;
       stateCache: {
         sourceId: string;
-        gridState: PlDataTableGridStateCore;
+        gridState: PlDataTableGridStateV6;
         sheetsState: PlDataTableSheetState[];
         filtersState: PlDataTableFilterState[];
       }[];
@@ -130,6 +141,9 @@ export type PlDataTableStateV2 =
       }[];
       pTableParams: PTableParamsV2;
     }
+  // v6 stored colIds as canonicalized full `PTableColumnSpec` (including
+  // annotations + `pl7.app/trace`). v7 strips down to `PTableColumnId`.
+  | PlDataTableStateV2V6
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -172,13 +186,15 @@ export function upgradePlDataTableStateV2(
   if (state.version === 5) {
     state = migrateV5toV6(state);
   }
+  // v6 -> v7: shrink colIds from full PTableColumnSpec to PTableColumnId.
+  if (state.version === 6) {
+    state = migrateV6toV7(state);
+  }
   return state;
 }
 
 /** Migrate v5 to v6: unwrap `{source, labeled}` colIds in gridState. */
-function migrateV5toV6(
-  state: Extract<PlDataTableStateV2, { version: 5 }>,
-): PlDataTableStateV2Normalized {
+function migrateV5toV6(state: Extract<PlDataTableStateV2, { version: 5 }>): PlDataTableStateV2V6 {
   // pTableParams reset: v5 stored DiscoveredPColumnId-based hiddenColIds with
   // empty-array fields (e.g. `{column, path: [], columnQualifications: [], ...}`).
   // v6 distills empty fields, so the same logical column serialises differently
@@ -204,9 +220,8 @@ function unwrapV5ColId(json: string): string {
     : json;
 }
 
-function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridStateCore {
-  const unwrapAs = (json: PlDataTableV5ColIdJson) =>
-    unwrapV5ColId(json) as CanonicalizedJson<PTableColumnSpec>;
+function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridStateV6 {
+  const unwrapAs = (json: PlDataTableV5ColIdJson) => unwrapV5ColId(json) as PlDataTableV6ColIdJson;
   return {
     columnOrder: gridState.columnOrder
       ? { orderedColIds: gridState.columnOrder.orderedColIds.map(unwrapAs) }
@@ -225,14 +240,57 @@ function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridSt
   };
 }
 
+/** Migrate v6 to v7: rewrite each colId from a full PTableColumnSpec to its
+ * compact PTableColumnId (drops annotations/spec body, ~16× smaller per column). */
+function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2Normalized {
+  return {
+    version: 7,
+    stateCache: state.stateCache.map(
+      (entry): PlDataTableStateV2CacheEntry => ({
+        ...entry,
+        gridState: shrinkV6GridState(entry.gridState),
+      }),
+    ),
+    pTableParams: state.pTableParams,
+  };
+}
+
+/** Convert a v6 fat colId (canonicalized PTableColumnSpec) to a v7 compact colId
+ * (canonicalized PTableColumnId). The row-number sentinel is a string literal,
+ * not a spec — pass it through unchanged. */
+function shrinkV6ColId(json: PlDataTableV6ColIdJson): PlTableColumnIdJson {
+  const parsed: unknown = parseJsonSafely(json);
+  if (!isNil(parsed) && typeof parsed === "object" && "type" in parsed && "id" in parsed) {
+    return canonicalizeJson(getPTableColumnId(parsed as PTableColumnSpec));
+  }
+  return json as unknown as PlTableColumnIdJson;
+}
+
+function shrinkV6GridState(gridState: PlDataTableGridStateV6): PlDataTableGridStateCore {
+  return {
+    columnOrder: gridState.columnOrder
+      ? { orderedColIds: gridState.columnOrder.orderedColIds.map(shrinkV6ColId) }
+      : undefined,
+    sort: gridState.sort
+      ? {
+          sortModel: gridState.sort.sortModel.map((s) => ({
+            colId: shrinkV6ColId(s.colId),
+            sort: s.sort,
+          })),
+        }
+      : undefined,
+    columnVisibility: gridState.columnVisibility
+      ? { hiddenColIds: gridState.columnVisibility.hiddenColIds.map(shrinkV6ColId) }
+      : undefined,
+  };
+}
+
 /** Migrate v4 state to v6: convert per-column filters to tree-based format (skips v5). */
-function migrateV4toV6(
-  state: Extract<PlDataTableStateV2, { version: 4 }>,
-): PlDataTableStateV2Normalized {
+function migrateV4toV6(state: Extract<PlDataTableStateV2, { version: 4 }>): PlDataTableStateV2V6 {
   let idCounter = 0;
   const nextId = () => ++idCounter;
 
-  const migratedCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => {
+  const migratedCache: PlDataTableStateV2V6CacheEntry[] = state.stateCache.map((entry) => {
     const leaves: PlDataTableFiltersWithMeta["filters"] = [];
     for (const f of entry.filtersState) {
       if (f.filter !== null && !f.filter.disabled) {
@@ -358,7 +416,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
 
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 6,
+    version: 7,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };

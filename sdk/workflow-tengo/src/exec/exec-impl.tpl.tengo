@@ -75,6 +75,7 @@ self.validateInputs({
 		"fileSetsToSave,?": { any: "string" },
 		"fileSetsContentToSave,?": { any: "string" },
 		"filesToStream,?": ["string"],
+		"writableFiles,?": ["string"],
 
 		"assetDescriptors,?": { any: { asset: desc.assetScheme } },
 		"assetRules,?": { any: { any: ["string"] } },
@@ -104,8 +105,19 @@ self.body(func(inputs) {
 	quota := inputs.quota
 	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
+	// Names whose fill-rule should land 0o600 (writable) instead of the
+	// 0o400 default. Absence = read-only / hardlink fast path.
+	writableSet := {}
+	if !is_undefined(settings.writableFiles) {
+		for _, name in settings.writableFiles {
+			writableSet[name] = true
+		}
+	}
+
 	// add files
-	wdBuilder.addFiles(inputs.filesToAdd)
+	maps.forEach(inputs.filesToAdd, func(fName, fRef) {
+		wdBuilder.addFile(fName, fRef, { writable: writableSet[fName] == true })
+	})
 	wdBuilder.mkDirs(settings.dirsToCreate)
 
 	// add assets
@@ -130,7 +142,9 @@ self.body(func(inputs) {
 
 	// pass values as fields for saving the topology in pl-core
 	// and avoiding deduplication issues:
-	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
+	maps.forEach(self.rawInputs().filesToWrite.getValue().inputs(), func(fName, fRef) {
+		wdBuilder.writeFile(fName, fRef, { writable: writableSet[fName] == true })
+	})
 
 	// working directory with input files added; before run
 	wdBefore := wdBuilder.build()

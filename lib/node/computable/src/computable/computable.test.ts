@@ -54,7 +54,6 @@ test("computable with recover", async () => {
   const c1 = Computable.make(
     (): number => {
       throw new Error();
-      return 12;
     },
     {
       recover: () => undefined,
@@ -68,7 +67,6 @@ test("computable with post-process and recover, error in kernel callback", async
   const c1 = Computable.make(
     () => {
       throw new Error();
-      return 12;
     },
     {
       postprocessValue: (value) => String(value),
@@ -85,9 +83,8 @@ test("computable with post-process and recover, error in postprocess", async () 
       return 12;
     },
     {
-      postprocessValue: (value) => {
+      postprocessValue: () => {
         throw new Error();
-        return String(value);
       },
       recover: () => undefined,
     },
@@ -103,9 +100,8 @@ test("wrap errors not ok", async () => {
         return 12;
       },
       {
-        postprocessValue: (value) => {
+        postprocessValue: () => {
           throw new Error();
-          return String(value);
         },
       },
     ),
@@ -138,7 +134,6 @@ test("nested computable with post-process and recover", async () => {
     () => {
       return Computable.make(() => {
         throw new Error();
-        return 12;
       });
     },
     {
