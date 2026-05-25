@@ -1,0 +1,16 @@
+{
+  "name": "@platforma-tests/wasm-table-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Test fixture: WASI p2 component with a tiny demo:tables/api interface, consumed by workflow-tengo integration tests for plapi.loadWasm.",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "wasm": "./dist/table_component.wasm"
+    }
+  }
+}
