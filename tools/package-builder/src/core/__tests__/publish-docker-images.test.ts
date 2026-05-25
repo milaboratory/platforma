@@ -187,9 +187,7 @@ describe("Core.buildDockerImages + publishDockerImages", () => {
     expect(docker.push).toHaveBeenCalledTimes(1);
 
     const pushed = vi.mocked(docker.push).mock.calls[0][0];
-    expect(pushed).toBe(
-      "test.local/repo:test.python-autogen.main.deadbeef0123",
-    );
+    expect(pushed).toBe("test.local/repo:test.python-autogen.main.deadbeef0123");
   });
 
   it("multi-entrypoint python: one build + one push per entrypoint, no overlap", () => {
