@@ -232,6 +232,16 @@ export class PlClient {
     return this._ll!.hasCapability(capability);
   }
 
+  /**
+   * True if the backend honors per-file `permissions` on workdir fill rules
+   * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
+   * for the full definition.
+   */
+  public get supportsWritableWorkdirFiles(): boolean {
+    this.checkInitialized();
+    return this._ll!.supportsWritableWorkdirFiles;
+  }
+
   /** User resources index for discovering data libraries and other shared resources. */
   public get userResources(): UserResources {
     if (!this._ll) throw new Error("Client not initialized");

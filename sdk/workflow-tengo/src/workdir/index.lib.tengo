@@ -55,11 +55,11 @@ createV2 := func(allocationRef) {
 // entry to mifs.ArchiveEntryPerms (0o400). The hardlink-or-copy decision in
 // task_wd_fill.addFileToWorkdir is an exact mode comparison against that
 // constant — anything other than 0o400 forces the copy branch.
-_getFileFillRule := func(filePath, extension) {
+_getFileFillRule := func(filePath, extension, writable) {
 	return {
 		type: "file",
 		path: filePath,
-		permissions: 0o400,
+		permissions: writable ? 0o600 : 0o400,
 		pathKey: filePath,
 		blobKey: filePath,
 		copyOptional: false,
@@ -93,11 +93,11 @@ _getArchiveFillRule := func(dstDir, whatToExtract, archiveBlobKey) {
  * @param filePath: string - the path of the file.
  * @return rule: map - the value fill rule.
  */
-_getValueFillRule := func(filePath) {
+_getValueFillRule := func(filePath, writable) {
 	return {
 		type: "value",
 		path: filePath,
-		permissions: 0o400,
+		permissions: writable ? 0o600 : 0o400,
 		pathKey: filePath,
 		valueKey: filePath
 	}
@@ -132,6 +132,10 @@ _fill := func() {
 	zipExtractions := {}
 	values := {}
 	dirs := {}
+	// Set of file names (both addFile and writeFile) that should land in the
+	// workdir with permissions 0o600 (writable). Anything not in the set keeps
+	// the 0o400 default — the backend hardlinks from the archive cache.
+	writableFiles := {}
 
 	queue := undefined
 	cpu := undefined
@@ -245,16 +249,27 @@ _fill := func() {
 		/**
 		 * Adds a file to the workdir.
 		 *
+		 * The fill rule defaults to read-only (0o400) so the backend hardlinks
+		 * from the content-addressable archive cache. Pass `{ writable: true }`
+		 * when the tool legitimately needs to mutate the input in place — the
+		 * backend will copy the file to a fresh inode, leaving the archive
+		 * entry untouched.
+		 *
 		 * @param fileName: string - the name of the file.
 		 * @param fileResource: reference - the file to add.
+		 * @param opts: { writable?: bool } - optional flags. `writable: true`
+		 *        marks this file as 0o600 in the workdir.
 		 */
-		addFile: func(fileName, fileResource) {
+		addFile: func(fileName, fileResource, ...opts) {
 			validation.assertType(fileName, "string")
 			validation.assertType(fileResource, validation.reference)
 
 			files[fileName] = fileResource
 			blobs[fileName] = fileResource
 			self._addDirs(fileName)
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
+				sets.add(writableFiles, fileName)
+			}
 
 			return self
 		},
@@ -263,22 +278,32 @@ _fill := func() {
 		 * Adds multiple files to the workdir.
 		 *
 		 * @param fileMap: map[string]reference - a map of files.
+		 * @param opts: { writable?: bool } - applied to every entry.
 		 */
-		addFiles: func(fileMap) {
-			maps.forEach(fileMap, self.addFile)
+		addFiles: func(fileMap, ...opts) {
+			maps.forEach(fileMap, func(fileName, fileResource) {
+				self.addFile(fileName, fileResource, opts...)
+			})
 			return self
 		},
 
 		/**
 		 * Adds a file with a content to the workdir.
 		 *
+		 * The fill rule defaults to read-only (0o400). Pass
+		 * `{ writable: true }` to land the file as 0o600 instead.
+		 *
 		 * @param fileName: string - the name of the file.
 		 * @param contentRef: reference|any - the content as a reference to add or the content itself.
+		 * @param opts: { writable?: bool } - optional flags.
 		 */
-		writeFile: func(fileName, contentRef) {
+		writeFile: func(fileName, contentRef, ...opts) {
 			validation.assertType(fileName, "string")
 			values[fileName] = contentRef
 			self._addDirs(fileName)
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
+				sets.add(writableFiles, fileName)
+			}
 
 			return self
 		},
@@ -287,9 +312,12 @@ _fill := func() {
 		 * Adds multiple files with contents to the workdir.
 		 *
 		 * @param contentMap: map[string]any|reference - a map of references to a content or to a content itself.
+		 * @param opts: { writable?: bool } - applied to every entry.
 		 */
-		writeFiles: func(contentRefMap) {
-			maps.forEach(contentRefMap, self.writeFile)
+		writeFiles: func(contentRefMap, ...opts) {
+			maps.forEach(contentRefMap, func(fileName, contentRef) {
+				self.writeFile(fileName, contentRef, opts...)
+			})
 			return self
 		},
 
@@ -360,10 +388,10 @@ _fill := func() {
 				rules = append(rules, _getDirFillRule(dir))
 			}
 			for fileName, _ in files {
-				rules = append(rules, _getFileFillRule(fileName, path.getExtension(fileName)))
+				rules = append(rules, _getFileFillRule(fileName, path.getExtension(fileName), sets.hasElement(writableFiles, fileName)))
 			}
 			for fileName, _ in values {
-				rules = append(rules, _getValueFillRule(fileName))
+				rules = append(rules, _getValueFillRule(fileName, sets.hasElement(writableFiles, fileName)))
 			}
 
 			for blobKey, directories in zipExtractions {

@@ -61,6 +61,29 @@ function isVersionAtLeast(version: string, target: [number, number, number]): bo
   return true;
 }
 
+// Returns true iff `version` is strictly after the release tag `target`. Dev
+// builds (`git describe`-style, e.g. "3.5.0-224-g0ca182") are considered
+// AFTER the matching release tag — they include commits past the tag and so
+// have any change merged after it. Released versions with the same triplet
+// return false (we want the tag itself to be excluded).
+//
+// Examples for target [3,5,0]:
+//   "3.5.0"              → false (the tagged release)
+//   "3.5.0-224-g0ca182"  → true  (dev build past the tag)
+//   "3.5.1"              → true
+//   "3.4.9"              → false
+// Returns false for unparseable versions.
+function isAfterVersion(version: string, target: [number, number, number]): boolean {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(.*)$/.exec(version);
+  if (!match) return false;
+  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const suffix = match[4];
+  for (let i = 0; i < 3; i++) {
+    if (parsed[i] !== target[i]) return parsed[i] > target[i];
+  }
+  return suffix !== "";
+}
+
 class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
   private client: Client | undefined = undefined;
 
@@ -659,6 +682,19 @@ export class LLPlClient implements WireClientProviderFactory {
   /** True if the backend implements the setDefaultColor TX request. */
   public get supportsSetDefaultColor(): boolean {
     return isVersionAtLeast(this.serverInfo.coreVersion, [3, 3, 0]);
+  }
+
+  /**
+   * True if the backend honors per-file `permissions` on workdir fill rules
+   * (PR #1830 in milaboratory/pl). Backends before this change ignore the
+   * requested mode and always land files at the canonical archive perm,
+   * making `exec.builder().writeFile/addFile({ writable: true })` a no-op.
+   *
+   * Tagged at 3.5.0 cut without the change, so [3, 5, 0] excludes the tagged
+   * release but includes dev builds past the tag (e.g. "3.5.0-224-g0ca182").
+   */
+  public get supportsWritableWorkdirFiles(): boolean {
+    return isAfterVersion(this.serverInfo.coreVersion, [3, 5, 0]);
   }
 
   /**
