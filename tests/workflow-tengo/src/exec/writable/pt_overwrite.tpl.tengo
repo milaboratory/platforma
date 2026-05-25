@@ -1,0 +1,83 @@
+/**
+ * Verifies exec.builder().writeFile / addFile { writable } option by running
+ * ptabler against an in-workdir input file with read_csv + write_csv pointing
+ * at the same path. When the file lands as 0o400 (default) the write_csv step
+ * must fail; when { writable: true } is passed it must succeed and produce
+ * round-tripped TSV content.
+ *
+ * Inputs:
+ *   mode     "write" | "add"  — which builder method to test
+ *   writable bool             — whether to pass { writable: true }
+ *   tsv      string           — input TSV content
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+ptSoftware := assets.importSoftware("@platforma-open/milaboratories.software-ptabler:main")
+
+self.defineOutputs(["result"])
+
+// Workflow that reads data.tsv and writes back to the same path —
+// the overwrite is what exercises the permission bit.
+overwriteSpec := {
+	workflow: [
+		{ type: "read_csv",  file: "data.tsv", name: "df",   delimiter: "\t" },
+		{ type: "write_csv", table: "df",      file: "data.tsv", delimiter: "\t" }
+	]
+}
+
+// Workflow that converts an inline TSV (writeFile) into a file resource we
+// can hand to the second stage via addFile.
+prepSpec := {
+	workflow: [
+		{ type: "read_csv",  file: "source.tsv", name: "df", delimiter: "\t" },
+		{ type: "write_csv", table: "df",        file: "data.tsv", delimiter: "\t" }
+	]
+}
+
+runPt := func(builder, workflowSpec) {
+	return builder.
+		inLightQueue().
+		cpu(1).ram("256Mi").
+		software(ptSoftware).
+		arg("workflow.json").
+		arg("--frame-dir").arg("frames").
+		arg("--spill-dir").arg("spill").
+		writeFile("workflow.json", workflowSpec)
+}
+
+self.body(func(inputs) {
+	mode := inputs.mode
+	writable := inputs.writable
+	tsv := inputs.tsv
+
+	builder := runPt(exec.builder(), overwriteSpec).saveFileContent("data.tsv")
+
+	if mode == "write" {
+		// Inline content path — writeFile.
+		if writable {
+			builder.writeFile("data.tsv", tsv, { writable: true })
+		} else {
+			builder.writeFile("data.tsv", tsv)
+		}
+	} else {
+		// File-resource path — addFile. Stage 1: pt round-trips the inline
+		// content into a file resource. Stage 2 below addFile's that ref.
+		prep := runPt(exec.builder(), prepSpec).
+			writeFile("source.tsv", tsv).
+			saveFile("data.tsv").
+			run()
+		dataFile := prep.getFile("data.tsv")
+		if writable {
+			builder.addFile("data.tsv", dataFile, { writable: true })
+		} else {
+			builder.addFile("data.tsv", dataFile)
+		}
+	}
+
+	return {
+		result: builder.run().getFileContent("data.tsv")
+	}
+})

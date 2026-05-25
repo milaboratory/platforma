@@ -64,6 +64,10 @@ builder := func() {
 	filesToAdd := {}
 	// files to be created in the workdir with the content from resources
 	filesToWrite := {}
+	// names from filesToAdd / filesToWrite that should land in the workdir as
+	// 0o600 (writable). Anything not in the set stays 0o400 (read-only,
+	// hardlinked from the archive cache).
+	writableFiles := {}
 	// directories to create in the workdir
 	dirsToCreate := {}
 
@@ -766,8 +770,15 @@ builder := func() {
 		 * When called with the same fileName multiple times,
 		 * the last call will overwrite the previous ones.
 		 *
+		 * The file defaults to read-only (0o400) in the workdir so the backend
+		 * hardlinks it from the content-addressable archive cache. Pass
+		 * `{ writable: true }` when the tool legitimately needs to mutate the
+		 * input in place — the backend will copy it to a fresh inode.
+		 *
 		 * @param fileName: string - the name of the input file.
 		 * @param file: reference - a resource id of the file or a field that points to it.
+		 * @param opts: { writable?: bool, mnz?: ... } - optional flags.
+		 *        `writable: true` lands the file as 0o600 in the workdir.
 		 */
 		addFile: func(fileName, file, ...opts) {
 			ll.assert(is_string(fileName), "exec.builder().addFile: fileName must be a string")
@@ -775,6 +786,9 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
+				sets.add(writableFiles, fileName)
+			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
 			return self
 		},
@@ -783,6 +797,7 @@ builder := func() {
 		 * Adds multiple files to the working directory.
 		 *
 		 * @param filesMap: map[string]reference - a map of file names to files' references.
+		 * @param opts: { writable?: bool, mnz?: ... } - applied to every entry.
 		 */
 		addFiles: func(filesMap, ...opts) {
 			ll.assert(ll.isMap(filesMap), "exec.builder().addFiles: filesMap must be map of file names to file resources")
@@ -802,10 +817,17 @@ builder := func() {
 		 * dedup CID — are stable across runs. Callers that previously did
 		 * `writeFile(name, json.encode(value))` should pass `value` directly.
 		 *
+		 * The file defaults to read-only (0o400) in the workdir. Pass
+		 * `{ writable: true }` when the tool needs to mutate the file in place
+		 * — the backend will land it as 0o600 and copy from the value cache to
+		 * a fresh inode.
+		 *
 		 * @param fileName: string - the name of the content.
 		 * @param data: string|bytes|map|array|reference - the content to write.
 		 *        Maps and arrays are canonicalized to JSON; strings / bytes /
 		 *        references are passed through unchanged.
+		 * @param opts: { writable?: bool, mnz?: ... } - optional flags.
+		 *        `writable: true` lands the file as 0o600 in the workdir.
 		 */
 		writeFile: func(fileName, data, ...opts) {
 			// Auto-encode value-like inputs (regular / immutable / strict maps
@@ -823,8 +845,29 @@ builder := func() {
 			fileName = path.canonize(fileName)
 
 			filesToWrite[fileName] = data
+			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
+				sets.add(writableFiles, fileName)
+			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
 
+			return self
+		},
+
+		/**
+		 * Writes multiple files with their contents to the working directory.
+		 * Each entry follows the same encoding rules as `writeFile` — maps and
+		 * arrays are canonical-encoded, references and strings/bytes pass
+		 * through unchanged.
+		 *
+		 * @param filesMap: map[string]string|bytes|map|array|reference -
+		 *        a map of file names to contents.
+		 * @param opts: { writable?: bool, mnz?: ... } - applied to every entry.
+		 */
+		writeFiles: func(filesMap, ...opts) {
+			ll.assert(ll.isMap(filesMap), "exec.builder().writeFiles: filesMap must be map of file names to contents")
+			maps.forEach(filesMap, func(fileName, data) {
+				self.writeFile(fileName, data, opts...)
+			})
 			return self
 		},
 
@@ -1049,6 +1092,12 @@ builder := func() {
 				assetDescriptors: assetDescriptors,
 				assetRules: assetRules,
 				assetCache: assetCache
+			}
+
+			// Only forward when non-empty so existing workflows that don't
+			// opt into writable files keep the exact same CID.
+			if len(writableFiles) > 0 {
+				pureExecInputs.writableFiles = slices.fromSet(writableFiles)
 			}
 
 			if (is_int(ramRequest)) {
