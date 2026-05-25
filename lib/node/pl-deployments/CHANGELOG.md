@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 3.0.1
+
+### Patch Changes
+
+- 8c027a2: Speedup local pl connection by waiting only for GRPC to become ready.
+
 ## 3.0.0
 
 ### Major Changes
