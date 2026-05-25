@@ -4,8 +4,6 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-# You can install needed dependencies via `./bootstrap.sh`
-
 script_dir=$(cd "$(dirname "${0}")" && pwd)
 cd "${script_dir}" || exit 1
 
@@ -14,6 +12,7 @@ cd "${script_dir}" || exit 1
 #
 
 : "${TS_PROTO_PLUGIN:="${script_dir}/node_modules/.bin/protoc-gen-ts"}"
+: "${PROTOC:="${script_dir}/../../../scripts/protoc.sh"}"
 
 : "${PROTO_SHARED_SRC:="${script_dir}/proto/shared"}"
 : "${PROTO_SHARED_NAMESPACE:="github.com/milaboratory/pl/controllers/shared/grpc"}"
@@ -81,7 +80,7 @@ function generate() {
         set -x
         mkdir -p "${PROTO_OUT_PATH}"
         cd "${_root}/.proto/"
-        protoc \
+        "${PROTOC}" \
             --plugin="${TS_PROTO_PLUGIN}" \
             "${_include_paths[@]}" \
             "${_generator_opts[@]}" \

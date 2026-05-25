@@ -5,9 +5,8 @@ import type {
   PTableColumnSpec,
   PFrameSpecDriver,
   WritePTableToFsResult,
-  PlTableColumnIdJson,
 } from "@platforma-sdk/model";
-import { getPTableColumnId, parseJson } from "@platforma-sdk/model";
+import { getPTableColumnId } from "@platforma-sdk/model";
 import { isNil } from "es-toolkit";
 import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
@@ -109,7 +108,7 @@ export function collectVisibleColumnIndices(
     if (def.hide === true) return [];
     if (isNil(def.colId)) return [];
     if (def.colId === PlAgDataTableRowNumberColId) return [];
-    return [parseJson(def.colId as PlTableColumnIdJson)];
+    return [def.context as PTableColumnSpec];
   };
 
   return [...new Set(columnDefs.flatMap(specsForDef).map(findIndex))].filter((idx) => idx !== -1);

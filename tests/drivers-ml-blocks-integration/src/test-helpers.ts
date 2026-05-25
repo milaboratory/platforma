@@ -325,6 +325,42 @@ export async function createProjectWatcher<Dump>(
     // console.log(`Dump written: ${filename}`);
   };
 
+  type BlockDumpPresent = NonNullable<BlockDumpUnified>;
+  type BlockDumpPredicate = (dump: BlockDumpUnified) => boolean;
+  type Waiter = {
+    blockId: string;
+    predicate: BlockDumpPredicate;
+    resolve: (dump: BlockDumpPresent) => void;
+    reject: (err: Error) => void;
+    timer: NodeJS.Timeout;
+  };
+  const waiters = new Set<Waiter>();
+  let aborted = abortController.signal.aborted;
+
+  const getBlockDump = (blockId: string): BlockDumpUnified => {
+    return state.dump?.blocks?.find((b) => b?.blockId === blockId);
+  };
+
+  const resolveMatchingWaiters = () => {
+    for (const w of waiters) {
+      const dump = getBlockDump(w.blockId);
+      let matches = false;
+      try {
+        matches = w.predicate(dump);
+      } catch (e) {
+        clearTimeout(w.timer);
+        waiters.delete(w);
+        w.reject(ensureError(e));
+        continue;
+      }
+      if (matches && dump !== undefined) {
+        clearTimeout(w.timer);
+        waiters.delete(w);
+        w.resolve(dump);
+      }
+    }
+  };
+
   const end = awaitComputableChangeAndLog<ProjectDump | undefined>(
     blocksComputable,
     (result) => {
@@ -343,6 +379,7 @@ export async function createProjectWatcher<Dump>(
           }
         }
       }
+      resolveMatchingWaiters();
     },
     abortController.signal,
   );
@@ -352,11 +389,66 @@ export async function createProjectWatcher<Dump>(
     get dump(): ProjectDump | undefined {
       return state.dump;
     },
-    getBlockDump: (blockId: string) => {
-      return state.dump?.blocks?.find((b) => b?.blockId === blockId);
+    getBlockDump,
+    /**
+     * Resolves with the block dump the first time `predicate(getBlockDump(blockId))`
+     * returns true. Hooks the internal blocksComputable change loop, so it reacts
+     * as soon as state.dump updates — no extra polling.
+     *
+     * Use this instead of fixed setTimeout sleeps: the watcher tree is independent
+     * from prj.projectTree and may lag the canonical project state.
+     */
+    waitForBlockDump: (
+      blockId: string,
+      predicate: BlockDumpPredicate,
+      waitOptions?: { timeoutMs?: number },
+    ): Promise<BlockDumpPresent> => {
+      if (aborted) {
+        return Promise.reject(
+          new Error(`waitForBlockDump(${blockId}) called after projectWatcher.abort()`),
+        );
+      }
+
+      const timeoutMs = waitOptions?.timeoutMs ?? 5000;
+
+      // Fast path: condition already satisfied against the current dump
+      const current = getBlockDump(blockId);
+      try {
+        if (current !== undefined && predicate(current)) return Promise.resolve(current);
+      } catch (e) {
+        return Promise.reject(ensureError(e));
+      }
+
+      return new Promise<BlockDumpPresent>((resolve, reject) => {
+        const waiter: Waiter = {
+          blockId,
+          predicate,
+          resolve,
+          reject,
+          timer: setTimeout(() => {
+            waiters.delete(waiter);
+            const last = getBlockDump(blockId);
+            const lastVersion = (last?.blockStorage?.data as Record<string, unknown> | undefined)
+              ?.__dataVersion;
+            reject(
+              new Error(
+                `waitForBlockDump(${blockId}) timed out after ${timeoutMs}ms; ` +
+                  `last __dataVersion=${JSON.stringify(lastVersion)}`,
+              ),
+            );
+          }, timeoutMs),
+        };
+        waiters.add(waiter);
+      });
     },
     abort: async (): Promise<void> => {
+      aborted = true;
       abortController.abort();
+      for (const w of waiters) {
+        clearTimeout(w.timer);
+        w.reject(new Error("createProjectWatcher aborted while waitForBlockDump was pending"));
+      }
+      waiters.clear();
       try {
         await end;
       } catch (e: unknown) {

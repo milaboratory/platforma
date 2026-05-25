@@ -17,6 +17,8 @@ plapi := import("plapi")
 json := import("json")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 
+assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+
 
 // WASM_NAME := "@platforma-tests/wasm-table-fixture:main"
 

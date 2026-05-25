@@ -1,5 +1,44 @@
 # @platforma-sdk/workflow-tengo
 
+## 5.26.0
+
+### Minor Changes
+
+- 0ce161f: `exec.builder().addFile(name, ref, opts)` and `exec.builder().writeFile(name, data, opts)` (and the plural `addFiles` / `writeFiles`) now accept a `{ writable: true }` option that lands the file as `0o600` in the workdir.
+
+  By default the workdir fill rule stays read-only (`0o400`), so the backend hardlinks the entry from the content-addressable archive cache — fast, inode-shared with the archive, immutable. Passing `writable: true` flips the rule to `0o600`, which forces the backend to copy the file to a fresh inode in the workdir, leaving the archive entry untouched. Use it only when the tool legitimately mutates an input in place (rare — usually a sign the tool violates input immutability).
+
+  The option propagates one layer down: `workdir.builder().addFile` / `writeFile` (plus plural forms) gained the same `{ writable }` option.
+
+  Workflows that don't pass `writable` keep the previous behavior and the same exec CID — the new field is only added to the settings resource when at least one file was marked writable.
+
+  The option is only effective against a backend that honors per-file workdir fill perms (pl PR #1830, post-3.5.0). `pl-client` exposes a `supportsWritableWorkdirFiles` getter on both `LLPlClient` and `PlClient` — true iff `serverInfo.coreVersion` is strictly after `3.5.0` (e.g. `3.5.0-224-g0ca182` or `3.5.1`). Older backends silently ignore the `writable` flag and land every file at the canonical archive perm.
+
+## 5.25.0
+
+### Minor Changes
+
+- 030e8c2: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo` ships a new opt-in lib `:pframes-rs` that wraps `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")`. Blocks that import `:pframes-rs` automatically pull the 1.7 MB pframes-rs wasm into their templates' packs; blocks that don't stay lean.
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+
+## 5.24.0
+
+### Minor Changes
+
+- 40f11d2: `exec.builder().writeFile(name, data)` now accepts maps and arrays directly and serializes them via `canonical.encode` (sorted keys at every level). Previously, callers wrote `writeFile(name, json.encode(value))` and relied on Tengo stdlib `json.encode`, which preserves Go's randomized map iteration order — so the file bytes (and the exec step's dedup CID) varied across runs of identical input.
+
+  Strings, bytes, and resource references pass through unchanged.
+
+  Migrated all internal call sites in the SDK (`pframes/util.lib.tengo`, `pframes/xsv-import-file.lib.tengo`, `pt/workflow-run.tpl.tengo`) to pass the map/array directly. External callers that already use `writeFile(name, json.encode(value))` are not broken — but should migrate to `writeFile(name, value)` to get CID stability.
+
 ## 5.23.0
 
 ### Minor Changes

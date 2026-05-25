@@ -13,7 +13,7 @@ export type {
   PlDataTableFilterMeta,
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
-} from "./typesV6";
+} from "./typesV7";
 
 export type { PlDataTableStateV2 } from "./state-migration";
 export {

@@ -29,7 +29,33 @@ export interface paths {
     };
     get?: never;
     put?: never;
+    /**
+     * @description Deprecated: Use Login for session creation and role transitions,
+     *      and RefreshToken for token renewal. Backends implementing this API always return
+     *      codes.Unimplemented. Kept here so clients can still call old backends.
+     */
     post: operations["Platform_GetJWTToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description Login authenticates with the given credentials and returns a new Platforma JWT.
+     *      Every Login call creates a new session. Use RefreshToken to renew an existing one.
+     *      This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_Login"];
     delete?: never;
     options?: never;
     head?: never;
@@ -74,6 +100,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/auth/refresh": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description RefreshToken accepts a valid Platforma JWT and re-issues it with the same
+     *      session ID and role. Only the token expiration may be changed.
+     *      Workflow-scoped tokens cannot be refreshed; call Login instead.
+     *      This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_RefreshToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/revoke-access": {
     parameters: {
       query?: never;
@@ -100,6 +148,27 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations["Platform_GetSessionInfo"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/auth/sso/begin-login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+     *      into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+     *      login flow. This method is public: no Authorization header is required.
+     */
+    post: operations["Platform_BeginSSOLogin"];
     delete?: never;
     options?: never;
     head?: never;
@@ -503,6 +572,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    AuthAPI_BeginSSOLogin_PublicPKCE: {
+      nonce: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    AuthAPI_BeginSSOLogin_Request: Record<string, never>;
+    AuthAPI_BeginSSOLogin_Response: {
+      publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
+    };
     AuthAPI_GetJWTToken_Request: {
       expiration: string;
       /** Format: enum */
@@ -546,15 +624,75 @@ export interface components {
     AuthAPI_Grant_Permissions: {
       writable: boolean;
     };
+    AuthAPI_ListMethods_BasicAuthMethod: Record<string, never>;
     AuthAPI_ListMethods_MethodInfo: {
-      type: string;
-      name: string;
-      info: {
-        [key: string]: string;
-      };
+      /**
+       * @description id is the stable, machine-readable identifier of the login method
+       *      instance. Unique across the entire server.
+       */
+      id: string;
+      /** @description description is the human-readable label in case we'd like to render it in UI. */
+      description: string;
+      basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
+      token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
+      sso: components["schemas"]["AuthAPI_ListMethods_SSOAuthMethod"];
     };
     AuthAPI_ListMethods_Response: {
       methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
+    };
+    /**
+     * @description SSOAuthMethod advertises an external IdP-based login flow. The desktop
+     *      app uses the contents to drive the PKCE exchange locally, then hands the
+     *      resulting IdP token-response back via Login.SSOCredentials.
+     */
+    AuthAPI_ListMethods_SSOAuthMethod: {
+      issuer: string;
+      clientId: string;
+      scopes: string;
+      resource: string;
+      prompt: string;
+      redirectPorts: number[];
+      subjectTokenSource: string;
+      userIdClaim: string;
+      groupsClaim: string;
+      /** Format: enum */
+      flowType: number;
+    };
+    AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
+    AuthAPI_Login_BasicCredentials: {
+      login: string;
+      password: string;
+    };
+    AuthAPI_Login_Request: {
+      basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
+      token: components["schemas"]["AuthAPI_Login_TokenCredentials"];
+      sso: components["schemas"]["AuthAPI_Login_SSOCredentials"];
+      expiration: string;
+      /** Format: enum */
+      requestedRole: number;
+    };
+    AuthAPI_Login_Response: {
+      token: string;
+      /** Format: bytes */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
+    };
+    /**
+     * @description SSOCredentials carries the raw JSON body returned by the IdP's /token
+     *      endpoint after the desktop completes a PKCE exchange.
+     */
+    AuthAPI_Login_SSOCredentials: {
+      /** Format: bytes */
+      tokenResponse: string;
+    };
+    /**
+     * @description TokenCredentials accepts any opaque bearer-style string: a controller
+     *      pre-shared secret, an existing Platforma JWT, or a future OIDC id-token.
+     */
+    AuthAPI_Login_TokenCredentials: {
+      /** Format: bytes */
+      token: string;
     };
     AuthAPI_MintSignature_Request: {
       resourceId: string;
@@ -566,6 +704,17 @@ export interface components {
       resourceId: string;
       /** Format: bytes */
       resourceSignature: string;
+    };
+    AuthAPI_RefreshToken_Request: {
+      token: string;
+      expiration: string;
+    };
+    AuthAPI_RefreshToken_Response: {
+      token: string;
+      /** Format: bytes */
+      sessionId: string;
+      /** Format: enum */
+      role: number;
     };
     AuthAPI_RevokeAccess_Request: {
       resourceId: string;
@@ -808,13 +957,16 @@ export interface components {
       os: string;
       arch: string;
       /**
-       * @description Opt-in capabilities advertised by this server instance.
-       *      Tokens follow the "<feature>:<version>" format
-       *      (e.g. "treeFilter:v1", "wasm:v1"); current set:
-       *      see pl/platform/api/plapiserver/server_capabilities.go.
-       *      Block manifests declare what they need via
-       *      meta.requiredCapabilities; Desktop matches against this list
-       *      at install time.
+       * @description Opt-in capabilities advertised by this server instance, used by
+       *      clients to pick between fast and fallback code paths without waiting
+       *      for a failed RPC.
+       *
+       *      Each entry is an opaque token "<feature>:<version>" (e.g.
+       *      "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
+       *      The field is unset on servers predating this mechanism, which the
+       *      client treats as "no optional capabilities advertised".
+       *
+       *      All list see pl/platform/api/plapiserver/server_capabilities.go
        */
       capabilities: string[];
     };
@@ -1047,6 +1199,39 @@ export interface operations {
       };
     };
   };
+  Platform_Login: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_Login_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_Login_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
   Platform_AuthMethods: {
     parameters: {
       query?: never;
@@ -1096,6 +1281,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AuthAPI_MintSignature_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_RefreshToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_RefreshToken_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_RefreshToken_Response"];
         };
       };
       /** @description Default error response */
@@ -1162,6 +1380,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
+  Platform_BeginSSOLogin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Response"];
         };
       };
       /** @description Default error response */

@@ -21,6 +21,7 @@ import { parsePlJwt } from "../util/pl";
 import { type Dispatcher, interceptors } from "undici";
 import type { Middleware } from "openapi-fetch";
 import { inferAuthRefreshTime } from "./auth";
+import { hasCapability, type BackendCapability } from "./capabilities";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
@@ -45,6 +46,42 @@ import { isAbortedError } from "./errors";
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
+}
+
+// Parses leading "<major>.<minor>.<patch>" from a version string like
+// "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
+// Returns false for unparseable versions (safer to assume an old backend).
+function isVersionAtLeast(version: string, target: [number, number, number]): boolean {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version);
+  if (!match) return false;
+  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  for (let i = 0; i < 3; i++) {
+    if (parsed[i] !== target[i]) return parsed[i] > target[i];
+  }
+  return true;
+}
+
+// Returns true iff `version` is strictly after the release tag `target`. Dev
+// builds (`git describe`-style, e.g. "3.5.0-224-g0ca182") are considered
+// AFTER the matching release tag — they include commits past the tag and so
+// have any change merged after it. Released versions with the same triplet
+// return false (we want the tag itself to be excluded).
+//
+// Examples for target [3,5,0]:
+//   "3.5.0"              → false (the tagged release)
+//   "3.5.0-224-g0ca182"  → true  (dev build past the tag)
+//   "3.5.1"              → true
+//   "3.4.9"              → false
+// Returns false for unparseable versions.
+function isAfterVersion(version: string, target: [number, number, number]): boolean {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)(.*)$/.exec(version);
+  if (!match) return false;
+  const parsed: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const suffix = match[4];
+  for (let i = 0; i < 3; i++) {
+    if (parsed[i] !== target[i]) return parsed[i] > target[i];
+  }
+  return suffix !== "";
 }
 
 class WireClientProviderImpl<Client> implements WireClientProvider<Client> {
@@ -77,6 +114,10 @@ export class LLPlClient implements WireClientProviderFactory {
   private readonly onAuthRefreshProblem?: (error: unknown) => void;
   /** Threshold after which auth info refresh is required */
   private refreshTimestamp?: number;
+
+  /** Cached Ping response. Populated by build() before it returns; refreshed by every later ping(). */
+  private _serverInfo?: grpcTypes.MaintenanceAPI_Ping_Response;
+  private _authMethodsSync?: grpcTypes.AuthAPI_ListMethods_Response;
 
   private _status: PlConnectionStatus = "OK";
   private readonly statusListener?: PlConnectionStatusListener;
@@ -112,6 +153,15 @@ export class LLPlClient implements WireClientProviderFactory {
     if (ops.useAutoDetectWireProtocol) {
       await pl.detectOptimalWireProtocol();
     }
+
+    // Guarantee a ping happened so capability-gated paths (login, refresh) can branch synchronously.
+    // In the autodetect path the loop's last successful ping already populated _serverInfo via the
+    // side-effect in ping(); this fallback covers the path where autodetect is disabled.
+    if (!pl._serverInfo) await pl.ping();
+
+    // Guarantee authMethods happened so client can make weighted decision on which auth method to use.
+    if (!pl._authMethodsSync) await pl.authMethods();
+
     return pl;
   }
 
@@ -320,9 +370,12 @@ export class LLPlClient implements WireClientProviderFactory {
   /** null means anonymous connection */
   public get authUser(): string | null {
     if (!this.authenticated) throw new Error("Client is not authenticated");
-    if (this.authInformation?.jwtToken)
+    if (this.authInformation?.jwtToken) {
+      if (this.hasCapability("auth:v2")) {
+        return parsePlJwt(this.authInformation?.jwtToken).sub;
+      }
       return parsePlJwt(this.authInformation?.jwtToken).user.login;
-    else return null;
+    } else return null;
   }
 
   private updateStatus(newStatus: PlConnectionStatus) {
@@ -354,7 +407,10 @@ export class LLPlClient implements WireClientProviderFactory {
     this.authRefreshInProgress = true;
     void (async () => {
       try {
-        const token = await this.getJwtToken(BigInt(this.conf.authTTLSeconds));
+        const ttl = BigInt(this.conf.authTTLSeconds);
+        const token = this.hasCapability("auth:v2")
+          ? await this.refreshToken({ ttlSeconds: ttl })
+          : await this.getJwtToken(ttl);
         this.authInformation = { jwtToken: token };
         this.refreshTimestamp = inferAuthRefreshTime(
           this.authInformation,
@@ -491,10 +547,108 @@ export class LLPlClient implements WireClientProviderFactory {
     }
   }
 
+  /** Login via username/password. Returns a fresh JWT. Backend creates a new session per call. */
+  public async loginBasic(
+    user: string,
+    password: string,
+    opts: { ttlSeconds?: bigint; role?: AuthAPI_Role } = {},
+  ): Promise<string> {
+    const cl = this.clientProvider.get();
+    const ttl = opts.ttlSeconds ?? BigInt(this.conf.authTTLSeconds);
+    const role = opts.role ?? AuthAPI_Role.UNSPECIFIED;
+
+    if (cl instanceof GrpcPlApiClient) {
+      return (
+        await cl.login({
+          credentials: {
+            oneofKind: "basic",
+            basic: { login: user, password },
+          },
+          expiration: { seconds: ttl, nanos: 0 },
+          requestedRole: role,
+        }).response
+      ).token;
+    } else {
+      const resp = cl.POST("/v1/auth/login", {
+        // openapi-typescript generated all body fields as required, but Login.Request
+        // has a credentials oneof — only one of `basic`/`token` is sent. Cast around it.
+        body: {
+          basic: { login: user, password },
+          expiration: `${ttl}s`,
+          requestedRole: role,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+      });
+      return notEmpty((await resp).data, "REST: empty response for login request").token;
+    }
+  }
+
+  /** Login via opaque bearer token (controller pre-shared secret, OIDC id-token, etc.).
+   * String input is UTF-8 encoded. Returns a fresh Platforma JWT. */
+  public async loginWithToken(
+    token: Uint8Array | string,
+    opts: { ttlSeconds?: bigint; role?: AuthAPI_Role } = {},
+  ): Promise<string> {
+    const cl = this.clientProvider.get();
+    const ttl = opts.ttlSeconds ?? BigInt(this.conf.authTTLSeconds);
+    const role = opts.role ?? AuthAPI_Role.UNSPECIFIED;
+    const bytes = typeof token === "string" ? Buffer.from(token, "utf8") : token;
+
+    if (cl instanceof GrpcPlApiClient) {
+      return (
+        await cl.login({
+          credentials: {
+            oneofKind: "token",
+            token: { token: bytes },
+          },
+          expiration: { seconds: ttl, nanos: 0 },
+          requestedRole: role,
+        }).response
+      ).token;
+    } else {
+      const resp = cl.POST("/v1/auth/login", {
+        // openapi-typescript marks all body fields as required, but Login.Request has a oneof.
+        // REST encodes `bytes` as a base64 string.
+        body: {
+          token: { token: Buffer.from(bytes).toString("base64") },
+          expiration: `${ttl}s`,
+          requestedRole: role,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+      });
+      return notEmpty((await resp).data, "REST: empty response for login request").token;
+    }
+  }
+
+  /** Refresh the current JWT, preserving session id and role. */
+  public async refreshToken(opts: { ttlSeconds?: bigint } = {}): Promise<string> {
+    const cl = this.clientProvider.get();
+    const ttl = opts.ttlSeconds ?? BigInt(this.conf.authTTLSeconds);
+    const currentToken = notEmpty(
+      this.authInformation?.jwtToken,
+      "refreshToken called without a current JWT",
+    );
+
+    if (cl instanceof GrpcPlApiClient) {
+      return (
+        await cl.refreshToken({
+          token: currentToken,
+          expiration: { seconds: ttl, nanos: 0 },
+        }).response
+      ).token;
+    } else {
+      const resp = cl.POST("/v1/auth/refresh", {
+        body: { token: currentToken, expiration: `${ttl}s` },
+      });
+      return notEmpty((await resp).data, "REST: empty response for refresh request").token;
+    }
+  }
+
   public async ping(): Promise<grpcTypes.MaintenanceAPI_Ping_Response> {
     const cl = this.clientProvider.get();
+    let resp: grpcTypes.MaintenanceAPI_Ping_Response;
     if (cl instanceof GrpcPlApiClient) {
-      return (await cl.ping({})).response;
+      resp = (await cl.ping({})).response;
     } else {
       // The REST ping response predates the `capabilities` field (proto field 9).
       // Old servers omit it; treat absence as empty capability list.
@@ -502,12 +656,45 @@ export class LLPlClient implements WireClientProviderFactory {
         (await cl.GET("/v1/ping")).data,
         "REST: empty response for ping request",
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return {
+      resp = {
         ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         capabilities: (pingData as any).capabilities ?? [],
       };
     }
+    this._serverInfo = resp;
+    return resp;
+  }
+
+  /** Cached Ping response. Always populated post-build(); throws if accessed earlier. */
+  public get serverInfo(): grpcTypes.MaintenanceAPI_Ping_Response {
+    if (!this._serverInfo) {
+      throw new Error("LLPlClient.serverInfo accessed before build() completed");
+    }
+    return this._serverInfo;
+  }
+
+  /** Synchronous capability check against the cached Ping response. */
+  public hasCapability(capability: BackendCapability): boolean {
+    return hasCapability(this.serverInfo.capabilities, capability);
+  }
+
+  /** True if the backend implements the setDefaultColor TX request. */
+  public get supportsSetDefaultColor(): boolean {
+    return isVersionAtLeast(this.serverInfo.coreVersion, [3, 3, 0]);
+  }
+
+  /**
+   * True if the backend honors per-file `permissions` on workdir fill rules
+   * (PR #1830 in milaboratory/pl). Backends before this change ignore the
+   * requested mode and always land files at the canonical archive perm,
+   * making `exec.builder().writeFile/addFile({ writable: true })` a no-op.
+   *
+   * Tagged at 3.5.0 cut without the change, so [3, 5, 0] excludes the tagged
+   * release but includes dev builds past the tag (e.g. "3.5.0-224-g0ca182").
+   */
+  public get supportsWritableWorkdirFiles(): boolean {
+    return isAfterVersion(this.serverInfo.coreVersion, [3, 5, 0]);
   }
 
   /**
@@ -592,14 +779,42 @@ export class LLPlClient implements WireClientProviderFactory {
 
   public async authMethods(): Promise<grpcTypes.AuthAPI_ListMethods_Response> {
     const cl = this.clientProvider.get();
+    let resp: grpcTypes.AuthAPI_ListMethods_Response;
     if (cl instanceof GrpcPlApiClient) {
-      return (await cl.authMethods({})).response;
+      resp = (await cl.authMethods({})).response;
     } else {
-      return notEmpty(
+      const wsResponse = notEmpty(
         (await cl.GET("/v1/auth/methods")).data,
         "REST: empty response for auth methods request",
       );
+      // OpenAPI schema flattens the protobuf oneof into `{ basic?, token? }`,
+      // while protobuf-ts models it as a discriminated union. Reshape per item.
+      resp = {
+        methods: (wsResponse.methods ?? []).map((m): grpcTypes.AuthAPI_ListMethods_MethodInfo => {
+          const base = { id: m.id, description: m.description };
+          if (m.basic !== undefined) {
+            return { ...base, method: { oneofKind: "basic", basic: m.basic } };
+          }
+          if (m.token !== undefined) {
+            return { ...base, method: { oneofKind: "token", token: m.token } };
+          }
+          if (m.sso !== undefined) {
+            return { ...base, method: { oneofKind: "sso", sso: m.sso } };
+          }
+          return { ...base, method: { oneofKind: undefined } };
+        }),
+      };
     }
+
+    this._authMethodsSync = resp;
+    return resp;
+  }
+
+  public get authMethodsSync(): grpcTypes.AuthAPI_ListMethods_Response {
+    if (!this._authMethodsSync) {
+      throw new Error("LLPlClient.authMethodsSync accessed before build() completed");
+    }
+    return this._authMethodsSync;
   }
 
   public async getUserRoot(

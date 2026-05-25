@@ -24,6 +24,7 @@ packages:
   - lib/node/pf-driver
   - lib/model/pf-spec-driver
   - lib/node/pl-client
+  - lib/node/pl-healthcheck
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer

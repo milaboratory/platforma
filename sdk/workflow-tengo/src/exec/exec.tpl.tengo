@@ -67,6 +67,7 @@ self.validateInputs({
 	"fileSetsToSave,?": { any: "string" },
 	"fileSetsContentToSave,?": { any: "string" },
 	"filesToStream,?": ["string"],
+	"writableFiles,?": ["string"],
 	"assetDescriptors,?": { any: { asset: desc.assetScheme } },
 	"assetRules,?": { any: { any: ["string"] } },
 	"assetCache,?": { any: "number" },
@@ -129,6 +130,7 @@ self.body(func(inputs) {
 		fileSetsToSave: inputs.fileSetsToSave,
 		fileSetsContentToSave: inputs.fileSetsContentToSave,
 		filesToStream: inputs.filesToStream,
+		writableFiles: inputs.writableFiles,
 		assetDescriptors: inputs.assetDescriptors,
 		assetRules: inputs.assetRules,
 		assetCache: inputs.assetCache
