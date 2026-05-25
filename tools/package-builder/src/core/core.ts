@@ -368,8 +368,20 @@ export class Core {
         continue;
       }
 
-      // Docker images are always built as linux/amd64 (Platforma's K8s target).
-      // On non-x64 hosts the build cross-compiles via qemu; no host-arch gate.
+      // Docker images are always built as linux/amd64 (Platforma's K8s target);
+      // on non-x64 hosts pl-pkg cross-compiles via qemu so dev iteration on
+      // Macs works. In CI, strictPlatformMatching is set on the caller side
+      // and we still want exactly one matrix leg (linux/x64) to do the work —
+      // otherwise every arm/windows runner duplicates the build and Windows
+      // runners outright fail on 'docker build --platform linux/amd64'.
+      if (options?.strictPlatformMatching) {
+        if (util.currentOS() !== "linux" || util.currentArch() !== "x64") {
+          this.logger.debug(
+            `Docker image build skipped for '${artifact.id}': strict-platform mode requires linux/x64 host`,
+          );
+          continue;
+        }
+      }
 
       this.buildDockerImage(artifact.id, artifact, options?.registry);
     }
@@ -724,8 +736,19 @@ export class Core {
         continue;
       }
 
-      // Images are cross-compiled to linux/amd64 (see buildDockerImages); host
-      // arch/OS don't gate the push.
+      // Mirror the gate in buildDockerImages: in strict (CI) mode, only the
+      // linux/x64 leg publishes so we don't race parallel pushes of the same
+      // tag from arm and windows matrix legs. Dev (non-strict) mode pushes
+      // unconditionally — the cross-compile produced a valid linux/amd64
+      // image regardless of host.
+      if (options?.strictPlatformMatching) {
+        if (util.currentOS() !== "linux" || util.currentArch() !== "x64") {
+          this.logger.debug(
+            `Docker image publish skipped for '${pkg.id}': strict-platform mode requires linux/x64 host`,
+          );
+          continue;
+        }
+      }
 
       this.publishDockerImage(pkg, options?.pushTo);
     }
