@@ -143,6 +143,7 @@ packages:
   # Tests
 
   - tests/workflow-tengo
+  - tests/workflow-tengo/wasm-fixture
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration

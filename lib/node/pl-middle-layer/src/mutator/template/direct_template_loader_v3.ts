@@ -6,12 +6,14 @@ import type {
   TemplateDataV3,
   TemplateLibDataV3,
   TemplateSoftwareDataV3,
+  TemplateWasmDataV3,
 } from "@milaboratories/pl-model-backend";
 import {
   PlTemplateLibV1,
   PlTemplateSoftwareV1,
   PlTemplateV1,
   PlTemplateOverrideV1,
+  PlWasmV1,
 } from "@milaboratories/pl-model-backend";
 import { notEmpty } from "@milaboratories/ts-helpers";
 
@@ -90,6 +92,26 @@ const LibRenderer: Renderer<TemplateLibDataV3> = {
   },
 };
 
+const WasmRenderer: Renderer<TemplateWasmDataV3> = {
+  updateCacheKey(resource, hash, sources) {
+    hash
+      .update(PlWasmV1.type.name)
+      .update(PlWasmV1.type.version)
+      .update(resource.name)
+      .update(resource.version)
+      .update(getSourceCode(resource.name, sources, resource.sourceHash));
+  },
+  render(resource, tx, _creator, sources) {
+    return tx.createValue(
+      PlWasmV1.type,
+      JSON.stringify(
+        PlWasmV1.fromV3Data(resource, getSourceCode(resource.name, sources, resource.sourceHash))
+          .data,
+      ),
+    );
+  },
+};
+
 const SoftwareInfoRenderer: Renderer<TemplateSoftwareDataV3> = {
   updateCacheKey(resource, hash, sources) {
     hash
@@ -142,6 +164,10 @@ const TemplateRenderer: Renderer<TemplateDataV3> = {
       hash.update("tpl:" + tplId);
       this.updateCacheKey(tpl, hash, sources);
     }
+    for (const [wasmId, wasm] of srt(Object.entries(resource.wasm ?? {}))) {
+      hash.update("wasm:" + wasmId);
+      WasmRenderer.updateCacheKey(wasm, hash, sources);
+    }
   },
   render(resource, tx, _creator, sources) {
     const tplRef = tx.createStruct(
@@ -177,6 +203,15 @@ const TemplateRenderer: Renderer<TemplateDataV3> = {
       const fld = PlTemplateV1.tplField(tplRef, depTplId);
       tx.createField(fld, "Input");
       tx.setField(fld, _creator(depTpl, TemplateRenderer, sources));
+    }
+
+    // Render wasm dependencies. The field name (alias) feeds straight into
+    // the backend's TengoTemplateV1.wasm map and becomes the lookup key in
+    // RuntimeV1.deps.Wasm consumed by plapi.loadWasm.
+    for (const [wasmId, wasm] of Object.entries(resource.wasm ?? {})) {
+      const fld = PlTemplateV1.wasmField(tplRef, wasmId);
+      tx.createField(fld, "Input");
+      tx.setField(fld, _creator(wasm, WasmRenderer, sources));
     }
 
     tx.lock(tplRef);

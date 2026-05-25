@@ -97,6 +97,9 @@ export namespace PlTemplateV1 {
   export const libPrefix = "lib";
   export const softPrefix = "soft";
   export const tplPrefix = "tpl";
+  // Must match TengoTemplateFieldWasmPrefix in
+  // core/pl/controllers/shared/resources/template_tengo.go.
+  export const wasmPrefix = "wasm";
 
   export function libField(ref: AnyResourceRef, libId: string): AnyFieldRef {
     return field(ref, `${libPrefix}/${libId}`);
@@ -106,6 +109,9 @@ export namespace PlTemplateV1 {
   }
   export function swField(ref: AnyResourceRef, softwareId: string): AnyFieldRef {
     return field(ref, `${softPrefix}/${softwareId}`);
+  }
+  export function wasmField(ref: AnyResourceRef, alias: string): AnyFieldRef {
+    return field(ref, `${wasmPrefix}/${alias}`);
   }
 
   export type Data = {
@@ -133,6 +139,53 @@ export namespace PlTemplateV1 {
         Name: info.name,
         Version: info.version,
         Code: Buffer.from(sourceCode, "utf8").toString("base64"),
+      },
+    };
+  }
+}
+
+export namespace PlWasmV1 {
+  export const type = resourceType("Wasm", "1");
+
+  // Must match controllers/shared/resources/wasm.go : WasmRuntimeWasiP2.
+  export const runtimeWasiP2 = "wasi-p2";
+
+  // Default per-instance memory cap stamped at resource creation time when
+  // the template doesn't carry an explicit value. Mirrors the production
+  // controller default at core/pl/controllers/workflow/internal/tplctl/
+  // handle_template_pack_convert.go : defaultWasmMemoryLimit (32 MiB).
+  export const defaultMemoryLimit = 32 * 1024 * 1024;
+
+  export type ResourceStructure = {
+    data: Data;
+  };
+
+  // Field names match the WasmV1Data struct in
+  // core/pl/controllers/shared/resources/wasm.go. Default Go JSON
+  // capitalisation — keep PascalCase.
+  export type Data = {
+    Name: string;
+    Version: string;
+    Runtime: string;
+    /** Raw wasm component bytes, base64-encoded for JSON transport. */
+    Code: string;
+    DefaultMemoryLimit: number;
+  };
+
+  export function fromV3Data(
+    info: infoV3.TemplateWasmDataV3,
+    base64Source: string,
+  ): ResourceStructure {
+    return {
+      data: {
+        Name: info.name,
+        Version: info.version,
+        Runtime: runtimeWasiP2,
+        // Wasm sources in CompiledTemplateV3.hashToSource are already
+        // base64-encoded by tengo-builder (see addWasmFile in
+        // tools/tengo-builder/src/compiler/main.ts).
+        Code: base64Source,
+        DefaultMemoryLimit: defaultMemoryLimit,
       },
     };
   }
