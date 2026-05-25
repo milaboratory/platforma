@@ -170,6 +170,7 @@ export class LocalPl {
         const status = await plHealthCheck({
           address: `127.0.0.1:${grpcPort}`,
           defaultRequestTimeout: requestTimeoutMs,
+          service: "GRPC",
         });
         if (status === ServingStatus.SERVING) return;
       } catch {
