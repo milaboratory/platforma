@@ -79,4 +79,36 @@ describe("PlDropdown", () => {
     await flushPromises();
     expect(wrapper.find(".input-value--missing").exists()).toBe(false);
   });
+
+  it("renders missingValueLabel alongside .disabled root when disabled with missing value", async () => {
+    const wrapper = mount(PlDropdown, {
+      props: {
+        modelValue: 99,
+        disabled: true,
+        options: [{ text: "Option 1", value: 1 }],
+      },
+    });
+    await flushPromises();
+    // Wired-up CSS hooks: the SCSS disabled override (`color: var(--dis-01)`)
+    // depends on both `.disabled` on the root and `.input-value--missing` on the
+    // label being present simultaneously. jsdom does not resolve CSS specificity,
+    // so we only assert the selector hooks exist, not the computed color.
+    expect(wrapper.find(".pl-dropdown.disabled").exists()).toBe(true);
+    expect(wrapper.find(".input-value--missing").exists()).toBe(true);
+  });
+
+  it("shows placeholder (not blank) when modelValue is null", async () => {
+    const wrapper = mount(PlDropdown, {
+      props: {
+        modelValue: null,
+        placeholder: "Pick one",
+        options: [{ text: "Option 1", value: 1 }],
+      },
+    });
+    await flushPromises();
+    // null is "no value selected" — must render the placeholder, not a blank field.
+    expect(wrapper.find("input").attributes("placeholder")).toBe("Pick one");
+    // And must NOT trigger the missing-value branch.
+    expect(wrapper.find(".input-value--missing").exists()).toBe(false);
+  });
 });

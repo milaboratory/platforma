@@ -175,13 +175,12 @@ const selectedIndex = computed(() => {
   return (props.options ?? []).findIndex((o) => deepEqual(o.value, props.modelValue));
 });
 
+const hasValue = computed(() => {
+  return props.modelValue !== undefined && props.modelValue !== null;
+});
+
 const isMissing = computed(() => {
-  return (
-    props.modelValue !== undefined &&
-    props.modelValue !== null &&
-    selectedIndex.value === -1 &&
-    !isLoadingOptions.value
-  );
+  return hasValue.value && selectedIndex.value === -1 && !isLoadingOptions.value;
 });
 
 const computedError = computed(() => {
@@ -214,15 +213,11 @@ const textValue = computed(() => {
 });
 
 const computedPlaceholder = computed(() => {
-  if (!data.open && props.modelValue !== undefined) {
+  if (!data.open && hasValue.value) {
     return "";
   }
 
   return textValue.value ? String(textValue.value) : props.placeholder;
-});
-
-const hasValue = computed(() => {
-  return props.modelValue !== undefined && props.modelValue !== null;
 });
 
 const filteredRef = computed(() => {
