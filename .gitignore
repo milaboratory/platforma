@@ -21,8 +21,7 @@ test-report.junit.xml
 /.tags
 vite.config.*.timestamp-*
 .turbo
-err.log
-log/platforma.log
+*.log
 tmp/
 **/node_modules/
 **/dist/
