@@ -21,8 +21,9 @@ import {
   globalOverviewSnapshotPath,
   packageOverviewSnapshotPath,
 } from "./schema_internal";
+import type { GlobalOverviewReg } from "./schema_public";
 import {
-  GlobalOverviewReg,
+  parseGlobalOverviewReg,
   GlobalOverviewPath,
   GlobalOverviewGzPath,
   ManifestSuffix,
@@ -37,7 +38,7 @@ import {
   PackageManifestPattern,
 } from "./schema_public";
 import type { RelativeContentReader } from "../model";
-import { BlockPackDescriptionManifestAddRelativePathPrefix } from "../model";
+import { addRelativePathPrefix } from "../model";
 import { randomUUID } from "node:crypto";
 import { calculateSha256 } from "../../util";
 
@@ -184,7 +185,7 @@ export class BlockRegistryV2 {
         ? { schema: "v2", packages: [] }
         : overviewContent === undefined
           ? { schema: "v2", packages: [] }
-          : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
+          : parseGlobalOverviewReg(JSON.parse(overviewContent.toString()));
     let overviewPackages = overview.packages;
     this.logger.info(
       `Global overview ${mode === "force" ? "starting empty (force mode)" : "loaded"}, ${overviewPackages.length} records`,
@@ -244,8 +245,9 @@ export class BlockRegistryV2 {
         });
         // pushing the overview
         newVersions.push({
-          description: BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
+          description: addRelativePathPrefix(
             BlockPackManifest.parse(JSON.parse(manifestContent.toString("utf8"))).description,
+            version,
           ),
           manifestSha256: sha256,
           channels,
@@ -281,9 +283,7 @@ export class BlockRegistryV2 {
           e.id.organization !== packageInfo.package.organization ||
           e.id.name !== packageInfo.package.name,
       );
-      const relativeDescriptionSchema = BlockPackDescriptionManifestAddRelativePathPrefix(
-        `${packageInfo.package.organization}/${packageInfo.package.name}`,
-      );
+      const packagePrefix = `${packageInfo.package.organization}/${packageInfo.package.name}`;
       overviewPackages.push({
         id: {
           organization: packageInfo.package.organization,
@@ -295,7 +295,7 @@ export class BlockRegistryV2 {
           .map((e) => ({ version: e.description.id.version, channels: e.channels }))
           .reverse(),
         // left for backward compatibility
-        latest: relativeDescriptionSchema.parse(newVersions[0].description),
+        latest: addRelativePathPrefix(newVersions[0].description, packagePrefix),
         // left for backward compatibility
         latestManifestSha256: newVersions[0].manifestSha256,
         latestByChannel: Object.fromEntries(
@@ -306,7 +306,7 @@ export class BlockRegistryV2 {
             return [
               c,
               {
-                description: relativeDescriptionSchema.parse(v.description),
+                description: addRelativePathPrefix(v.description, packagePrefix),
                 manifestSha256: v?.manifestSha256,
               },
             ];
@@ -381,7 +381,7 @@ export class BlockRegistryV2 {
   public async getGlobalOverview(): Promise<undefined | GlobalOverviewReg> {
     const content = await this.storage.getFile(GlobalOverviewPath);
     if (content === undefined) return undefined;
-    return GlobalOverviewReg.parse(JSON.parse(content.toString()));
+    return parseGlobalOverviewReg(JSON.parse(content.toString()));
   }
 
   private async marchChanged(id: BlockPackId) {
@@ -456,7 +456,7 @@ export class BlockRegistryV2 {
 
     // Validate the data
     try {
-      GlobalOverviewReg.parse(JSON.parse(overviewData));
+      parseGlobalOverviewReg(JSON.parse(overviewData));
     } catch (error) {
       throw new Error(`Invalid snapshot data in ${backupId}: ${String(error)}`);
     }

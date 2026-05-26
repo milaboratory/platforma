@@ -1,7 +1,7 @@
 import type { Dispatcher } from "undici";
 import { request } from "undici";
 import type { BlockPackDescriptionAbsolute } from "@platforma-sdk/block-tools";
-import { BlockPackMetaEmbedAbsoluteBytes, RegistryV1 } from "@platforma-sdk/block-tools";
+import { embedBlockPackMetaAbsoluteBytes, RegistryV1 } from "@platforma-sdk/block-tools";
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
@@ -208,7 +208,7 @@ export class BlockPackRegistry {
             if (v2Description !== undefined) {
               const mtime = await getDevV2PacketMtime(v2Description);
 
-              const meta = await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta);
+              const meta = await embedBlockPackMetaAbsoluteBytes(v2Description.meta);
 
               // `tryLoadPackDescription` reads `package.json#block.meta` —
               // the dev SOURCE meta the developer wrote.
