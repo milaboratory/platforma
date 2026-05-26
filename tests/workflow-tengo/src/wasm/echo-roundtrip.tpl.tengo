@@ -8,7 +8,7 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 
-self.defineOutputs(["zero", "one", "k64", "m1", "m2"])
+self.defineOutputs(["zero", "one", "k64", "m1", "m2", "m3minus2"])
 
 echo := func(bytes) {
 	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
@@ -20,19 +20,21 @@ echo := func(bytes) {
 }
 
 self.body(func(_inputs) {
-	// Largest case capped at 2 MiB. Two backend limits stack here:
-	//   - resource 'data' field max = 3 MiB (Platforma value resource cap);
-	//   - gRPC default MaxRecvMsgSize = 4 MiB.
-	// JSON-string encoding adds 2 bytes of quotes on top of the payload,
-	// so even a 3 MiB payload trips the resource-data cap. 2 MiB still
-	// exercises the host<->guest copy path under significant load.
-	// Larger limits should be raised on the backend side, not papered
-	// over here.
+	// `m3minus2` sits at the absolute payload ceiling: the backend caps
+	// resource 'data' at 3 MiB (maxResourceDataSize in
+	// platform/core/transaction/assertions.go), and a string output is
+	// JSON-encoded as `"…"`, adding 2 bytes for the quotes. The largest
+	// payload that round-trips is therefore exactly 3 MiB - 2 bytes.
+	// Probing right at the edge means any shrink of the backend cap (or
+	// growth of the JSON envelope) breaks this test before a real block
+	// hits the same wall. The smaller cases stay so we still see graceful
+	// degradation if the edge case breaks for some unrelated reason.
 	return {
-		zero: echo(0),
-		one:  echo(1),
-		k64:  echo(64 * 1024),
-		m1:   echo(1024 * 1024),
-		m2:   echo(2 * 1024 * 1024)
+		zero:     echo(0),
+		one:      echo(1),
+		k64:      echo(64 * 1024),
+		m1:       echo(1024 * 1024),
+		m2:       echo(2 * 1024 * 1024),
+		m3minus2: echo(3 * 1024 * 1024 - 2)
 	}
 })

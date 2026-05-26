@@ -1,0 +1,27 @@
+// Companion to wasm.echo-roundtrip: asks the fixture for an output that's
+// exactly 1 byte too big to fit in a value resource. The wasm guest happily
+// produces the bytes (its own memory cap is much higher), then the runtime
+// tries to write the result and trips the backend's resource-data limit.
+//
+// The expected failure is on the host side — the assertion in
+// `platform/core/transaction/assertions.go` rejects the resource write —
+// so the script never returns. Used by the test to prove the cap is
+// actually enforced, mirroring the green-edge case (m3minus2 in
+// wasm.echo-roundtrip) one byte higher.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["m3"])
+
+self.body(func(_inputs) {
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		return { m3: "import failed: " + string(wasm) }
+	}
+	api := wasm["demo:tables/api"]
+	// JSON-encoding adds 2 bytes of quotes around the string; the payload
+	// itself is exactly 3 MiB, so the on-disk resource value is 3 MiB + 2
+	// bytes — past the 3 MiB cap.
+	return { m3: string(api.table.echoBytes(string(3 * 1024 * 1024))) }
+})
