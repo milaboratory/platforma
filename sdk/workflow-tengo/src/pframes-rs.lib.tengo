@@ -37,10 +37,7 @@ json := import("json")
 // resource name — `frame`, `table`, `axes`). `assets.importWasm` does
 // double duty here: tengo-builder's regex picks the literal up at build
 // time to bundle the wasm bytes, and at runtime the SDK wrapper calls
-// plapi.loadWasm under the hood. The lazy placement inside _load (rather
-// than at module scope) defers the wasm allocation until a method is
-// actually invoked — blocks that import this lib but never call into it
-// don't pay the cost.
+// plapi.loadWasm under the hood.
 //
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
