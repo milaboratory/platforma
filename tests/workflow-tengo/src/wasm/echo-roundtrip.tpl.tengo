@@ -15,7 +15,7 @@ echo := func(bytes) {
 	if is_error(wasm) {
 		return "import failed: " + string(wasm)
 	}
-	api := wasm.exports["demo:tables/api"]
+	api := wasm["demo:tables/api"]
 	return string(api.table.echoBytes(string(bytes)))
 }
 

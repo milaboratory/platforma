@@ -15,6 +15,6 @@ self.body(func(_inputs) {
 	if is_error(wasm) {
 		return { long: "import failed: " + string(wasm) }
 	}
-	api := wasm.exports["demo:tables/api"]
+	api := wasm["demo:tables/api"]
 	return { long: string(api.table.spinMillis("90000")) }
 })

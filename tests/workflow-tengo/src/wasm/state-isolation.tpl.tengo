@@ -36,8 +36,8 @@ self.body(func(_inputs) {
 	wasmA := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
 	wasmB := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
 
-	apiA := wasmA.exports["demo:tables/api"]
-	apiB := wasmB.exports["demo:tables/api"]
+	apiA := wasmA["demo:tables/api"]
+	apiB := wasmB["demo:tables/api"]
 
 	tableA := apiA.table.fromJson(specA)
 	tableB := apiB.table.fromJson(specB)

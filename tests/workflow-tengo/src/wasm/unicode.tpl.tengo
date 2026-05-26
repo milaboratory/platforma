@@ -32,7 +32,7 @@ self.body(func(_inputs) {
 			spaced: msg, mixed:  msg
 		}
 	}
-	api := wasm.exports["demo:tables/api"]
+	api := wasm["demo:tables/api"]
 	table := api.table.fromJson(tableSpec)
 	if is_error(table) {
 		msg := "fromJson failed: " + string(table)
