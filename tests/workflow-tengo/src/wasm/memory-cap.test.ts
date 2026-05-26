@@ -2,11 +2,19 @@ import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Guest memory cap enforcement. Each probe runs in its own sibling
-// instance (so a trap on one doesn't poison the next), and consumes a
-// targeted amount of heap. The backend's FallbackWasmMemoryBytes is 32 MiB
-// — clamped between MinWasmMemoryBytes (16 MiB) and MaxWasmMemoryBytes
-// (64 MiB) — so requests around the boundary should split into success
-// vs trap.
+// instance (so a trap on one doesn't poison the next) and consumes a
+// targeted amount of heap.
+//
+// Per-instance memory contract the backend exposes to block authors:
+//   - default cap when the block doesn't override it:  32 MiB
+//   - lower clamp on an explicit block-level override: 16 MiB
+//   - upper clamp on an explicit block-level override: 64 MiB
+//
+// This template doesn't override DefaultMemoryLimit, so the live cap is
+// the default (32 MiB). Allocations ≤ 32 MiB must succeed; > 32 MiB must
+// trap. If the backend changes any of the three numbers above, this
+// test breaks and we revisit the probe sizes (and the comment) instead
+// of silently drifting.
 tplTest.concurrent(
   "assets.importWasm — guest memory cap traps allocations over the limit",
   async ({ pl, helper, expect, skip }) => {
