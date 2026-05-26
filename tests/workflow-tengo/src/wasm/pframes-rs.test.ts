@@ -1,4 +1,4 @@
-import { Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
+import { BackendCapability, Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Integration smoke test for `@platforma-sdk/workflow-tengo:pframes-rs`.
@@ -9,7 +9,11 @@ import { tplTest } from "@platforma-sdk/test";
 // map through JSON to the WIT call.
 tplTest.concurrent(
   "pframes-rs wrapper — frame.buildQuery round-trips through the wasm bridge",
-  async ({ helper, expect }) => {
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+      skip();
+      return;
+    }
     const req = { version: "v1", column: "abundance" };
     const result = await helper.renderTemplate(true, "wasm.pframes-rs", ["resultJson"], (tx) => ({
       req: tx.createValue(Pl.JsonObject, stringifyJson(req)),
