@@ -1,0 +1,46 @@
+// Integration check that each assets.importWasm() call returns a fresh
+// sandboxed instance. A guest trap in instance #2 poisons only that
+// instance — sibling instances #1 and #3 produced by separate
+// importWasm calls within the same render keep working.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["ok1", "trap2", "ok3"])
+
+self.body(func(_inputs) {
+	findColumnOk := func() {
+		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+		if is_error(wasm) {
+			return "importWasm failed: " + string(wasm)
+		}
+		api := wasm.exports["demo:tables/api"]
+		tableSpec := string(json.encode({
+			columns: [
+				{ name: "sample_id", type: "i32" }
+			]
+		}))
+		frame := api.table.fromJson(tableSpec)
+		if is_error(frame) {
+			return "fromJson failed: " + string(frame)
+		}
+		sel := string(json.encode({ name: "sample_id" }))
+		return string(frame.findColumn(sel))
+	}
+
+	callTrap := func() {
+		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+		if is_error(wasm) {
+			return "importWasm failed: " + string(wasm)
+		}
+		api := wasm.exports["demo:tables/api"]
+		return string(api.table.alwaysPanic("sibling-isolation trap"))
+	}
+
+	return {
+		ok1:   findColumnOk(),
+		trap2: callTrap(),
+		ok3:   findColumnOk()
+	}
+})

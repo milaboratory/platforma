@@ -1,3 +1,4 @@
+import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // End-to-end check of the wasm subsystem: tengo-builder bundles the wasm
@@ -7,7 +8,11 @@ import { tplTest } from "@platforma-sdk/test";
 // exercised in a single render.
 tplTest.concurrent(
   "plapi.loadWasm — happy path, result.Err arm, and guest trap",
-  async ({ helper, expect }) => {
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+      skip();
+      return;
+    }
     const result = await helper.renderTemplate(
       false,
       "wasm.load-and-call",
@@ -39,5 +44,34 @@ tplTest.concurrent(
     expect(trap as string).toMatch(/wasm trap|unreachable|func_call/);
     expect(trap as string).not.toEqual(ok as string);
     expect(trap as string).not.toEqual(err as string);
+  },
+);
+
+// Each assets.importWasm() returns a fresh sandboxed Store + Instance, so a
+// trap that poisons one instance must not affect siblings produced by other
+// importWasm calls in the same render.
+tplTest.concurrent(
+  "assets.importWasm — trap in one sibling instance doesn't poison the others",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+      skip();
+      return;
+    }
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.parallel-instances",
+      ["ok1", "trap2", "ok3"],
+      () => ({}),
+    );
+
+    const ok1 = await result.computeOutput("ok1", (a) => a?.getDataAsJson()).awaitStableValue();
+    const trap2 = await result.computeOutput("trap2", (a) => a?.getDataAsJson()).awaitStableValue();
+    const ok3 = await result.computeOutput("ok3", (a) => a?.getDataAsJson()).awaitStableValue();
+
+    expect(ok1 as string).toContain("sample_id");
+    expect(trap2 as string).toMatch(/wasm trap|unreachable|func_call/);
+    // Sibling isolation: instance #3 sees the same result as instance #1
+    // despite instance #2 having been poisoned by a trap in between.
+    expect(ok3 as string).toEqual(ok1 as string);
   },
 );
