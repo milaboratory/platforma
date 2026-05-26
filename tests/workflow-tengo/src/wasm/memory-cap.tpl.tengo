@@ -1,23 +1,27 @@
-// Memory cap probe. The backend clamps per-Store memory between
-// MinWasmMemoryBytes (16 MiB) and MaxWasmMemoryBytes (64 MiB), with
-// FallbackWasmMemoryBytes = 32 MiB when blocks declare 0. The fixture's
-// consumeMemory(bytes) allocates and writes that many bytes, which forces
-// the wasm linear memory to grow. If the request exceeds the Store's
-// memory cap, the guest traps.
+// Memory cap probe. We don't override DefaultMemoryLimit here, so the
+// live per-instance cap is the backend's default = 32 MiB. The fixture's
+// consumeMemory(bytes) allocates and writes that many bytes (forcing the
+// wasm linear memory to actually grow); requests that exceed the live
+// cap make the guest trap inside the allocator.
 //
-// Test points:
-//   - 8 MiB → comfortably under 32 MiB → succeeds
-//   - 24 MiB → still under → succeeds
-//   - 40 MiB → over 32 MiB → traps
-//   - 64 MiB → well over → traps
+// Probe sizes named by their relation to the live 32 MiB cap, NOT to the
+// upper clamp a block could request (64 MiB). The 64 MiB probe is "well
+// above the live cap" — twice it — and traps; it is NOT a test of the
+// upper clamp itself, since this template doesn't ask for any override.
 //
-// Each call gets its OWN sibling instance so a trap on one doesn't
-// poison the next probe (cf. parallel-instances).
+// Test points (live cap = 32 MiB):
+//   -  8 MiB → wellBelow → succeeds
+//   - 24 MiB → nearBelow → succeeds
+//   - 40 MiB → nearAbove → traps
+//   - 64 MiB → wellAbove → traps
+//
+// Each probe runs in its own sibling instance so a trap on one doesn't
+// poison the next (cf. parallel-instances).
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 
-self.defineOutputs(["small", "medium", "overLimit", "wayOver"])
+self.defineOutputs(["wellBelow", "nearBelow", "nearAbove", "wellAbove"])
 
 probe := func(bytes) {
 	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
@@ -33,9 +37,9 @@ probe := func(bytes) {
 self.body(func(_inputs) {
 	mib := 1024 * 1024
 	return {
-		small:     probe(8 * mib),
-		medium:    probe(24 * mib),
-		overLimit: probe(40 * mib),
-		wayOver:   probe(64 * mib)
+		wellBelow: probe(8 * mib),
+		nearBelow: probe(24 * mib),
+		nearAbove: probe(40 * mib),
+		wellAbove: probe(64 * mib)
 	}
 })
