@@ -1,6 +1,8 @@
 import type {
+  AxisValueType,
   BinaryPartitionedDataInfo,
   Branded,
+  ColumnValueType,
   JsonDataInfo,
   JsonPartitionedDataInfo,
   ParquetChunk,
@@ -70,6 +72,48 @@ export interface PFrameFactoryAPIV4 extends Disposable {
   setColumnData(
     columnId: PObjectId,
     dataInfo: DataInfo<PFrameBlobId>,
+    options?: {
+      signal?: AbortSignal;
+    },
+  ): Promise<void>;
+
+  /** Releases all the data previously added to PFrame using methods above,
+   * any interactions with disposed PFrame will result in exception */
+  dispose(): void;
+}
+
+/**
+ * Structural type information needed by the data side: axis value
+ * types and column value types, in their canonical order. Mirrors
+ * the bridge-side `TypeSpec`.
+ */
+export interface PColumnTypeSpec {
+  readonly axes: AxisValueType[];
+  readonly columns: ColumnValueType[];
+}
+
+/** Single column entry for {@link PFrameFactoryAPIV5.addColumns}. */
+export interface AddColumnEntry {
+  /** Unique column identifier within the PFrame. */
+  readonly id: PObjectId;
+  /** Structural type info (axes / column value types). */
+  readonly typeSpec: PColumnTypeSpec;
+  /** Data info for the column. */
+  readonly data: DataInfo<PFrameBlobId>;
+}
+
+/** API for populating a PFrame with columns and a data source. */
+export interface PFrameFactoryAPIV5 extends Disposable {
+  /** Associates data source with this PFrame. */
+  setDataSource(dataSource: PFrameDataSourceV2): void;
+
+  /**
+   * Registers all PColumns at once: specs are recorded and data info
+   * is attached atomically. For parquet data info, schema resolution
+   * via network is performed during this call.
+   */
+  addColumns(
+    columns: AddColumnEntry[],
     options?: {
       signal?: AbortSignal;
     },

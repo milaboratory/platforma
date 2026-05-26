@@ -1,9 +1,15 @@
-import { PFrameDriverError, type PTableHandle } from "@milaboratories/pl-model-common";
+import {
+  PFrameDriverError,
+  type PFrameHandle,
+  type PObjectId,
+  type PTableDef,
+  type PTableHandle,
+} from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
-import { RefCountPoolBase } from "@milaboratories/helpers";
+import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import type { FullPTableDef } from "./ptable_shared";
-import { stableKeyFromFullPTableDef } from "./ptable_shared";
+import { buildFullPTableDefFromLegacy, stableKeyFromFullPTableDef } from "./ptable_shared";
 
 export class PTableDefHolder implements Disposable {
   private readonly abortController = new AbortController();
@@ -51,5 +57,22 @@ export class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableHandle,
       throw error;
     }
     return resource;
+  }
+
+  /**
+   * Acquire a def from a legacy `PTableDef` + column specs map.
+   * Lowers the input via WASM-spec and stores the resulting
+   * `{ tableSpec, dataQuery }` shape. Returns the lowered def
+   * alongside the pool entry — callers that need `tableSpec`
+   * (e.g. `calculateTableData`) read it from `def.tableSpec`
+   * without re-deriving.
+   */
+  public acquireFromLegacy(opts: {
+    pFrameHandle: PFrameHandle;
+    def: PTableDef<PObjectId>;
+    pFrameSpec: PFrameInternal.PFrameWasmV3;
+  }): { def: FullPTableDef; entry: PoolEntry<PTableHandle> } {
+    const def = buildFullPTableDefFromLegacy(opts);
+    return { def, entry: this.acquire(def) };
   }
 }

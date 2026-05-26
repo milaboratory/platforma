@@ -5,13 +5,17 @@ import {
   ensureError,
   mapPObjectData,
   PFrameDriverError,
+  ValueType,
+  resolveAnnotationParents,
   type JsonSerializable,
   type PColumn,
+  type PColumnSpec,
   type PFrameHandle,
 } from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
+import { createPFrame as createPFrameSpec } from "@milaboratories/pframes-rs-wasm";
 import { mapValues } from "es-toolkit";
 import { logPFrames } from "./logging";
 
@@ -26,7 +30,13 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
 }
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
-  public readonly pFramePromise: Promise<PFrameInternal.PFrameV13>;
+  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV13>;
+  /**
+   * WASM-spec frame built from this PFrame's columns. Source of truth
+   * for spec-side operations: column discovery, selector resolution,
+   * legacy-query lowering.
+   */
+  public readonly pFrameSpec: PFrameInternal.PFrameWasmV3;
   private readonly abortController = new AbortController();
 
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
@@ -40,6 +50,15 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     private readonly spillPath: string,
     columns: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
+    const ValueTypes = new Set(Object.values(ValueType));
+    const specColumnsMap: Record<string, PColumnSpec> = {};
+    for (const c of columns) {
+      if (ValueTypes.has(c.spec.valueType)) {
+        specColumnsMap[c.id] = resolveAnnotationParents(c.spec);
+      }
+    }
+    this.pFrameSpec = createPFrameSpec(specColumnsMap);
+
     const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
       const localBlob = this.localBlobProvider.acquire(blob);
       this.localBlobs.push(localBlob);
@@ -90,23 +109,25 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     }));
 
     try {
-      const pFrame = PFrameFactory.createPFrame({ frameId, spillPath: this.spillPath, logger });
-      pFrame.setDataSource({
+      const pFrameData = PFrameFactory.createPFrame({ frameId, spillPath: this.spillPath, logger });
+      pFrameData.setDataSource({
         ...this.localBlobProvider.makeDataSource(this.disposeSignal),
         parquetServer: this.remoteBlobProvider.httpServerInfo(),
       });
 
       const promises: Promise<void>[] = [];
       for (const column of jsonifiedColumns) {
-        pFrame.addColumnSpec(column.id, column.spec);
-        promises.push(pFrame.setColumnData(column.id, column.data, { signal: this.disposeSignal }));
+        pFrameData.addColumnSpec(column.id, column.spec);
+        promises.push(
+          pFrameData.setColumnData(column.id, column.data, { signal: this.disposeSignal }),
+        );
       }
 
-      this.pFramePromise = Promise.all(promises)
-        .then(() => pFrame)
+      this.pFrameDataPromise = Promise.all(promises)
+        .then(() => pFrameData)
         .catch((err) => {
           this.dispose();
-          pFrame.dispose();
+          pFrameData.dispose();
           const error = new PFrameDriverError("PFrame creation failed asynchronously");
           error.cause = new Error(
             `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
@@ -132,15 +153,16 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     this.abortController.abort();
     this.localBlobs.forEach((entry) => entry.unref());
     this.remoteBlobs.forEach((entry) => entry.unref());
+    this.pFrameSpec[Symbol.dispose]();
+    void this.pFrameDataPromise
+      .then((pFrameData) => pFrameData.dispose())
+      .catch(() => {
+        /* mute error */
+      });
   }
 
   [Symbol.dispose](): void {
     this.dispose();
-    void this.pFramePromise
-      .then((pFrame) => pFrame.dispose())
-      .catch(() => {
-        /* mute error */
-      });
   }
 }
 
