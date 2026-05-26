@@ -17,11 +17,11 @@ self.defineOutputs(["trap", "fresh"])
 
 self.body(func(_inputs) {
 	wasmA := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	apiA := wasmA.exports["demo:tables/api"]
+	apiA := wasmA["demo:tables/api"]
 	trap := string(apiA.table.alwaysPanic("trap-then-fresh"))
 
 	wasmB := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	apiB := wasmB.exports["demo:tables/api"]
+	apiB := wasmB["demo:tables/api"]
 	tableB := apiB.table.fromJson(string(json.encode({
 		columns: [
 			{ name: "sample_id", type: "i32" }

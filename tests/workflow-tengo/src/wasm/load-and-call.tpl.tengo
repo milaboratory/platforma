@@ -23,7 +23,7 @@ self.body(func(_inputs) {
 		return { ok: msg, err: msg, trap: msg }
 	}
 
-	api := wasm.exports["demo:tables/api"]
+	api := wasm["demo:tables/api"]
 
 	// json.encode returns bytes; the wasm boundary expects a string,
 	// so wrap each encode call with string(...).

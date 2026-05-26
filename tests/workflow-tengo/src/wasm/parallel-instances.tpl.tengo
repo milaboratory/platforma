@@ -15,7 +15,7 @@ self.body(func(_inputs) {
 		if is_error(wasm) {
 			return "importWasm failed: " + string(wasm)
 		}
-		api := wasm.exports["demo:tables/api"]
+		api := wasm["demo:tables/api"]
 		tableSpec := string(json.encode({
 			columns: [
 				{ name: "sample_id", type: "i32" }
@@ -34,7 +34,7 @@ self.body(func(_inputs) {
 		if is_error(wasm) {
 			return "importWasm failed: " + string(wasm)
 		}
-		api := wasm.exports["demo:tables/api"]
+		api := wasm["demo:tables/api"]
 		return string(api.table.alwaysPanic("sibling-isolation trap"))
 	}
 

@@ -24,7 +24,7 @@ probe := func(bytes) {
 	if is_error(wasm) {
 		return "import failed: " + string(wasm)
 	}
-	api := wasm.exports["demo:tables/api"]
+	api := wasm["demo:tables/api"]
 	// Argument is a decimal string — see the WIT comment on
 	// `consume-memory` for the host's current arg-lowering limitation.
 	return string(api.table.consumeMemory(string(bytes)))

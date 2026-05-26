@@ -69,12 +69,11 @@ importAsset := func(assetName) {
  *                           including the namespace (NPM package name),
  *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
  *
- * @return wasm: a map with one key `exports` whose value is the WIT
- *               namespace tree —
- *               `wasm.exports[<iface>][<resource>][<friendlyMethodName>]`
+ * @return wasm: a tengo.Map keyed by WIT interface name —
+ *               `wasm[<iface>][<resource>][<friendlyMethodName>]`
  *               where method names are camelCased from the WIT kebab-case
  *               (so WIT `from-json` → `fromJson`). Bare top-level funcs
- *               live at `wasm.exports[<friendlyFuncName>]`. Call results
+ *               live at `wasm[<friendlyFuncName>]`. Call results
  *               that are `result<X, string>` are lifted: Ok arm is
  *               returned, Err arm is surfaced as a Tengo `*Error`.
  *               Guest traps also surface as Tengo `*Error`s — the

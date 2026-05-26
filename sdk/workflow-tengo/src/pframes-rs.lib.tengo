@@ -46,7 +46,7 @@ _load := func(limit) {
 	if is_error(wasm) {
 		return wasm
 	}
-	return wasm.exports["milaboratories:pframes/spec"]
+	return wasm["milaboratories:pframes/spec"]
 }
 
 // _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).

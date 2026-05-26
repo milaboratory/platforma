@@ -34,7 +34,7 @@ self.body(func(_inputs) {
 			lastErr = string(wasm)
 			continue
 		}
-		api := wasm.exports["demo:tables/api"]
+		api := wasm["demo:tables/api"]
 
 		// Force a small alloc inside each sibling instance to stress the
 		// per-Store memory bookkeeping under realistic concurrent use.

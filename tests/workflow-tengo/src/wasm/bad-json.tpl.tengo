@@ -32,7 +32,7 @@ self.body(func(_inputs) {
 	// one case can't bleed into another — keeps diagnosis focused.
 	probe := func(badInput) {
 		w := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-		a := w.exports["demo:tables/api"]
+		a := w["demo:tables/api"]
 		bad := string(a.table.fromJson(badInput))
 		good := string(a.table.fromJson(validSpec))
 		return { bad: bad, good: good }
