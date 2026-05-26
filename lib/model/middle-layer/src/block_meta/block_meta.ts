@@ -17,10 +17,20 @@ export const BlockPlatform = z.enum([
 export type BlockPlatform = z.infer<typeof BlockPlatform>;
 
 /**
- * TS generic shape of any BlockPackMeta variant — parameterized by the
- * representation of long-string and binary content fields. Mirrors the
- * structure produced by the `BlockPackMeta(...)` Zod factory below; both
- * stay in sync.
+ * Static metadata a block author ships: title, descriptions, logos, social
+ * links, and capability requirements. Parameterized by the carriers used for
+ * long-string fields (`LongString`) and binary fields (`Binary`); the same
+ * shape carries `package.json` form (loose strings), manifest form (relative
+ * paths), and embedded form (inlined base64 or bytes).
+ *
+ * Forward-compatibility: the boundary zod schemas (`BlockPackMeta(...)` and
+ * `organization`) use `.passthrough()` so that unknown sibling fields survive
+ * parse/round-trip verbatim. A registry mutator that predates a new meta
+ * field must not silently strip it (otherwise mark-stable / refresh-overview
+ * / restore-overview would quietly undo publishes). Code consuming these
+ * objects sees only the known fields listed below; the schemas guard the
+ * round-trip behavior. Combined with the `require-latest @platforma-sdk/block-tools`
+ * CI gate, this future-proofs every subsequent field addition.
  */
 export type BlockPackMeta<LongString, Binary> = {
   title: string;
@@ -36,13 +46,13 @@ export type BlockPackMeta<LongString, Binary> = {
     name: string;
     url: string;
     logo?: Binary;
-  } & { [k: string]: unknown };
+  };
   marketplaceRanking?: number;
   deprecated?: boolean;
   termsOfServiceUrl?: string;
   supportedPlatforms?: BlockPlatform[];
   requiredCapabilities?: string[];
-} & { [k: string]: unknown };
+};
 
 export function BlockPackMeta<
   const LongStringType extends z.ZodTypeAny,
@@ -99,12 +109,8 @@ export function BlockPackMeta<
       requiredCapabilities: z.array(z.string()).optional(),
     })
     .passthrough();
-  // `.passthrough()` preserves unknown sibling keys through `parse`/round-trip.
-  // Without it, a block-tools version that predates a newly-added meta field
-  // would strip that field on every registry-mutating command (mark-stable,
-  // refresh-registry, restore-overview-from-snapshot) — silently undoing
-  // publishes. Combined with the `require-latest @platforma-sdk/block-tools`
-  // CI gate, this future-proofs the schema for all subsequent field additions.
+  // `.passthrough()` is intentional — see forward-compat note on
+  // `BlockPackMeta` type above.
 }
 
 export const BlockPackMetaDescriptionRaw = BlockPackMeta(

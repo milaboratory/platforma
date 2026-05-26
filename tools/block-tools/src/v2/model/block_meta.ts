@@ -35,11 +35,11 @@ export type BlockPackMetaDescription = BlockPackMeta<
  * transformed fields. Reading bottom-up: the per-field spreads win over
  * the bulk spread.
  */
-async function transformBlockPackMeta<L1, B1, L2, B2>(
-  meta: BlockPackMeta<L1, B1>,
-  mapText: (value: L1) => Promise<L2>,
-  mapBinary: (value: B1) => Promise<B2>,
-): Promise<BlockPackMeta<L2, B2>> {
+async function transformBlockPackMeta<LongStringIn, BinaryIn, LongStringOut, BinaryOut>(
+  meta: BlockPackMeta<LongStringIn, BinaryIn>,
+  mapText: (value: LongStringIn) => Promise<LongStringOut>,
+  mapBinary: (value: BinaryIn) => Promise<BinaryOut>,
+): Promise<BlockPackMeta<LongStringOut, BinaryOut>> {
   const { organization } = meta;
   const { logo: orgLogo, ...orgRest } = organization;
   const out = {
@@ -54,7 +54,7 @@ async function transformBlockPackMeta<L1, B1, L2, B2>(
     ...(meta.changelog !== undefined ? { changelog: await mapText(meta.changelog) } : {}),
     ...(meta.logo !== undefined ? { logo: await mapBinary(meta.logo) } : {}),
   };
-  return out as BlockPackMeta<L2, B2>;
+  return out as BlockPackMeta<LongStringOut, BinaryOut>;
 }
 
 /**

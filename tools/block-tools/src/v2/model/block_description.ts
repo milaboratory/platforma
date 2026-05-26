@@ -65,6 +65,25 @@ export async function consolidateBlockPackDescription(
 }
 
 /**
+ * Maps `components` and `meta` of a `BlockPackDescription` independently,
+ * preserving every other top-level field (including the `BlockPackId` and
+ * any passthrough siblings). Sync counterpart to the schema-driven async
+ * pipelines in `block_meta.ts`/`block_components.ts`; used by callers that
+ * need a synchronous transform (e.g. relative-path rewriting).
+ */
+function transformBlockPackDescription<Cin, Min, Cout, Mout>(
+  description: BlockPackDescription<Cin, Min>,
+  mapComponents: (components: Cin) => Cout,
+  mapMeta: (meta: Min) => Mout,
+): BlockPackDescription<Cout, Mout> {
+  return {
+    ...description,
+    components: mapComponents(description.components),
+    meta: mapMeta(description.meta),
+  };
+}
+
+/**
  * Prefixes every relative-path field in a manifest description with the
  * given path prefix (components workflow/model/ui plus meta text/binary
  * fields).
@@ -74,29 +93,30 @@ export function addRelativePathPrefix(
   prefix: string,
 ): BlockPackDescriptionManifest {
   const transformer = addPrefixToRelative(prefix);
-  const meta = manifest.meta;
-  const { logo: orgLogo, ...orgRest } = meta.organization;
-  return {
-    ...manifest,
-    components: {
+  return transformBlockPackDescription(
+    manifest,
+    (components) => ({
       workflow: {
         type: "workflow-v1",
-        main: transformer(manifest.components.workflow.main),
+        main: transformer(components.workflow.main),
       },
-      model: transformer(manifest.components.model),
-      ui: transformer(manifest.components.ui),
+      model: transformer(components.model),
+      ui: transformer(components.ui),
+    }),
+    (meta) => {
+      const { logo: orgLogo, ...orgRest } = meta.organization;
+      return {
+        ...meta,
+        organization: {
+          ...orgRest,
+          ...(orgLogo !== undefined ? { logo: transformer(orgLogo) } : {}),
+        },
+        ...(meta.longDescription !== undefined
+          ? { longDescription: transformer(meta.longDescription) }
+          : {}),
+        ...(meta.changelog !== undefined ? { changelog: transformer(meta.changelog) } : {}),
+        ...(meta.logo !== undefined ? { logo: transformer(meta.logo) } : {}),
+      };
     },
-    meta: {
-      ...meta,
-      organization: {
-        ...orgRest,
-        ...(orgLogo !== undefined ? { logo: transformer(orgLogo) } : {}),
-      },
-      ...(meta.longDescription !== undefined
-        ? { longDescription: transformer(meta.longDescription) }
-        : {}),
-      ...(meta.changelog !== undefined ? { changelog: transformer(meta.changelog) } : {}),
-      ...(meta.logo !== undefined ? { logo: transformer(meta.logo) } : {}),
-    },
-  };
+  );
 }
