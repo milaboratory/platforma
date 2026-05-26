@@ -4,13 +4,13 @@
   "private": true,
   "description": "Test fixture: WASI p2 component with a tiny demo:tables/api interface, consumed by workflow-tengo integration tests for plapi.loadWasm.",
   "files": [
-    "dist",
+    "table_component.wasm",
     "README.md"
   ],
   "type": "module",
   "exports": {
     ".": {
-      "wasm": "./dist/table_component.wasm"
+      "wasm": "./table_component.wasm"
     }
   }
 }
