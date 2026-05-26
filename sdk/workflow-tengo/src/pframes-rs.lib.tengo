@@ -34,13 +34,12 @@ assets := import(":assets")
 plapi := import("plapi")
 json := import("json")
 
-WASM_NAME := "@milaboratories/pframes-rs-wasip2:main"
 WIT_INTERFACE := "milaboratories:pframes/spec"
 
 // tengo-builder discovers wasm deps by regex-scanning the source for
 // `assets.importWasm("name")`. The call is a runtime no-op (returns
-// undefined); the actual load is `plapi.loadWasm(WASM_NAME)` in `_load`
-// below. The string literal here must match WASM_NAME above.
+// undefined); the actual load is `plapi.loadWasm("@milaboratories/pframes-rs-wasip2:main")` in `_load`
+// below.
 assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
 
 // _load resolves the wasm component handle to the milaboratories:pframes/spec
@@ -52,7 +51,7 @@ assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
 _load := func(limit) {
-	c := plapi.loadWasm(WASM_NAME)
+	c := plapi.loadWasm("@milaboratories/pframes-rs-wasip2:main")
 	if is_error(c) {
 		return c
 	}
