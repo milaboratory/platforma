@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 
@@ -13,7 +12,7 @@ vi.setConfig({ testTimeout: 60_000 });
 tplTest.concurrent(
   "assets.importWasm — 63 sibling instances in one render all succeed",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

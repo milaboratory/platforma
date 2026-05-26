@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Sweep every method exposed by the @platforma-sdk/workflow-tengo:pframes-rs
@@ -14,7 +13,7 @@ const TRAP_OR_MISSING = /wasm trap|unreachable|func_call|method missing|export m
 tplTest.concurrent(
   "pframes-rs wrapper — every method dispatches without trap or missing-method",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

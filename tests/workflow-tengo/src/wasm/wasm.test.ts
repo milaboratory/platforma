@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // End-to-end check of the wasm subsystem: tengo-builder bundles the wasm
@@ -9,7 +8,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "plapi.loadWasm — happy path, result.Err arm, and guest trap",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
@@ -53,7 +52,7 @@ tplTest.concurrent(
 tplTest.concurrent(
   "assets.importWasm — trap in one sibling instance doesn't poison the others",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

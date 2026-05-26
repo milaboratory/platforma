@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Malformed-input probe. The fixture's guest serde_json must reject
@@ -11,7 +10,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "assets.importWasm — bad JSON input surfaces clean errors, doesn't poison instance",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

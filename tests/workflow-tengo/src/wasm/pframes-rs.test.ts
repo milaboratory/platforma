@@ -1,4 +1,4 @@
-import { BackendCapability, Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
+import { Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Integration smoke test for `@platforma-sdk/workflow-tengo:pframes-rs`.
@@ -10,7 +10,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "pframes-rs wrapper — frame.buildQuery round-trips through the wasm bridge",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

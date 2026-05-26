@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 
@@ -24,7 +23,7 @@ vi.setConfig({ testTimeout: 180_000 });
 tplTest.concurrent(
   "assets.importWasm — short spinMillis call completes",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
@@ -37,7 +36,7 @@ tplTest.concurrent(
 (RUN_SLOW ? tplTest.concurrent : tplTest.concurrent.skip)(
   "assets.importWasm — runaway guest is rejected by deadline",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

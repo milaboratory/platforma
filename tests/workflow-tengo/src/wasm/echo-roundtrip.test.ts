@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 
@@ -32,7 +31,7 @@ function checkPattern(
 tplTest.concurrent(
   "assets.importWasm — echoBytes preserves length and content across sizes",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
@@ -75,7 +74,7 @@ tplTest.concurrent(
 tplTest.concurrent(
   "assets.importWasm — echoBytes payload over the resource-data cap fails the render",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

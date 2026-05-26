@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Guest memory cap enforcement. Each probe runs in its own sibling
@@ -18,7 +17,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "assets.importWasm — guest memory cap traps allocations over the limit",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
