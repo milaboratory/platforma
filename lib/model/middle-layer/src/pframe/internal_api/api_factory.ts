@@ -87,7 +87,7 @@ export interface PFrameFactoryAPIV4 extends Disposable {
  * types and column value types, in their canonical order. Mirrors
  * the bridge-side `TypeSpec`.
  */
-export interface PColumnTypeSpec {
+export interface PColumnValueTypeSpec {
   readonly axes: AxisValueType[];
   readonly columns: ColumnValueType[];
 }
@@ -97,7 +97,7 @@ export interface AddColumnEntry {
   /** Unique column identifier within the PFrame. */
   readonly id: PObjectId;
   /** Structural type info (axes / column value types). */
-  readonly typeSpec: PColumnTypeSpec;
+  readonly typeSpec: PColumnValueTypeSpec;
   /** Data info for the column. */
   readonly data: DataInfo<PFrameBlobId>;
 }

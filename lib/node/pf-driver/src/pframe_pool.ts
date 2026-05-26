@@ -59,88 +59,105 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     }
     this.pFrameSpec = createPFrameSpec(specColumnsMap);
 
-    const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
-      const localBlob = this.localBlobProvider.acquire(blob);
-      this.localBlobs.push(localBlob);
-      return localBlob.key;
-    };
-
-    const makeRemoteBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
-      const remoteBlob = this.remoteBlobProvider.acquire(blob);
-      this.remoteBlobs.push(remoteBlob);
-      return `${remoteBlob.key}${PFrameInternal.ParquetExtension}` as PFrameInternal.PFrameBlobId;
-    };
-
-    const mapColumnData = (
-      data: PFrameInternal.DataInfo<TreeEntry>,
-    ): PFrameInternal.DataInfo<PFrameInternal.PFrameBlobId> => {
-      switch (data.type) {
-        case "Json":
-          return { ...data };
-        case "JsonPartitioned":
-          return {
-            ...data,
-            parts: mapValues(data.parts, makeLocalBlobId),
-          };
-        case "BinaryPartitioned":
-          return {
-            ...data,
-            parts: mapValues(data.parts, (v) => ({
-              index: makeLocalBlobId(v.index),
-              values: makeLocalBlobId(v.values),
-            })),
-          };
-        case "ParquetPartitioned":
-          return {
-            ...data,
-            parts: mapValues(data.parts, (v) => ({
-              ...v,
-              data: makeRemoteBlobId(v.data),
-            })),
-          };
-        default:
-          assertNever(data);
-      }
-    };
-
-    const jsonifiedColumns = columns.map((column) => ({
-      ...column,
-      data: mapColumnData(column.data),
-    }));
-
     try {
+      const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
+        const localBlob = this.localBlobProvider.acquire(blob);
+        this.localBlobs.push(localBlob);
+        return localBlob.key;
+      };
+
+      const makeRemoteBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
+        const remoteBlob = this.remoteBlobProvider.acquire(blob);
+        this.remoteBlobs.push(remoteBlob);
+        return `${remoteBlob.key}${PFrameInternal.ParquetExtension}` as PFrameInternal.PFrameBlobId;
+      };
+
+      const mapColumnData = (
+        data: PFrameInternal.DataInfo<TreeEntry>,
+      ): PFrameInternal.DataInfo<PFrameInternal.PFrameBlobId> => {
+        switch (data.type) {
+          case "Json":
+            return { ...data };
+          case "JsonPartitioned":
+            return {
+              ...data,
+              parts: mapValues(data.parts, makeLocalBlobId),
+            };
+          case "BinaryPartitioned":
+            return {
+              ...data,
+              parts: mapValues(data.parts, (v) => ({
+                index: makeLocalBlobId(v.index),
+                values: makeLocalBlobId(v.values),
+              })),
+            };
+          case "ParquetPartitioned":
+            return {
+              ...data,
+              parts: mapValues(data.parts, (v) => ({
+                ...v,
+                data: makeRemoteBlobId(v.data),
+              })),
+            };
+          default:
+            assertNever(data);
+        }
+      };
+
+      const jsonifiedColumns = columns.map((column) => ({
+        ...column,
+        data: mapColumnData(column.data),
+      }));
+
       const pFrameData = PFrameFactory.createPFrame({ frameId, spillPath: this.spillPath, logger });
-      pFrameData.setDataSource({
-        ...this.localBlobProvider.makeDataSource(this.disposeSignal),
-        parquetServer: this.remoteBlobProvider.httpServerInfo(),
-      });
-
       const promises: Promise<void>[] = [];
-      for (const column of jsonifiedColumns) {
-        pFrameData.addColumnSpec(column.id, column.spec);
-        promises.push(
-          pFrameData.setColumnData(column.id, column.data, { signal: this.disposeSignal }),
-        );
-      }
-
-      this.pFrameDataPromise = Promise.all(promises)
-        .then(() => pFrameData)
-        .catch((err) => {
-          this.dispose();
-          pFrameData.dispose();
-          const error = new PFrameDriverError("PFrame creation failed asynchronously");
-          error.cause = new Error(
-            `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
-            { cause: ensureError(err) },
-          );
-          throw error;
+      try {
+        pFrameData.setDataSource({
+          ...this.localBlobProvider.makeDataSource(this.disposeSignal),
+          parquetServer: this.remoteBlobProvider.httpServerInfo(),
         });
+
+        for (const column of jsonifiedColumns) {
+          pFrameData.addColumnSpec(column.id, column.spec);
+          promises.push(
+            pFrameData.setColumnData(column.id, column.data, { signal: this.disposeSignal }),
+          );
+        }
+
+        this.pFrameDataPromise = Promise.all(promises)
+          .then(() => pFrameData)
+          .catch((err) => {
+            this.dispose();
+            pFrameData.dispose();
+            const error = new PFrameDriverError("PFrame creation failed asynchronously");
+            error.cause = new Error(
+              `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
+              { cause: ensureError(err) },
+            );
+            throw error;
+          });
+      } catch (err: unknown) {
+        // setDataSource / addColumnSpec / setColumnData threw synchronously
+        // before pFrameDataPromise was assigned — dispose the addon's
+        // pFrameData explicitly (the dispose() path can't reach it yet).
+        // `allSettled` attaches handlers to any in-flight setColumnData
+        // promises so they don't trigger unhandled-rejection warnings
+        // when the dispose below rejects them.
+        void Promise.allSettled(promises);
+        pFrameData.dispose();
+        throw err;
+      }
     } catch (err: unknown) {
+      // Release everything allocated so far in this constructor:
+      // acquired blobs, the WASM spec frame, and the abort signal.
+      this.abortController.abort();
+      this.localBlobs.forEach((entry) => entry.unref());
+      this.remoteBlobs.forEach((entry) => entry.unref());
+      this.pFrameSpec[Symbol.dispose]();
       const error = new PFrameDriverError("PFrame creation failed synchronously");
-      error.cause = new Error(
-        `PFrame cannot be created from columns: ${JSON.stringify(jsonifiedColumns)}`,
-        { cause: ensureError(err) },
-      );
+      error.cause = new Error(`PFrame cannot be created from columns: ${JSON.stringify(columns)}`, {
+        cause: ensureError(err),
+      });
       throw error;
     }
   }
