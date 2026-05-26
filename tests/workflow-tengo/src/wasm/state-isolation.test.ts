@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Each assets.importWasm() call must produce an independent Store +
@@ -12,7 +11,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "assets.importWasm — sibling instances hold independent state",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

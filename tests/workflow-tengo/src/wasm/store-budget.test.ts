@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Verifies the backend's MaxWasmStoresPerRender = 64 limit surfaces
@@ -10,7 +9,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "assets.importWasm — per-render Store budget caps at 64",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }

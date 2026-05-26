@@ -1,4 +1,3 @@
-import { BackendCapability } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Unicode round-trip. Column names spanning emoji, RTL Arabic, CJK,
@@ -9,7 +8,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "assets.importWasm — Unicode column names round-trip cleanly",
   async ({ pl, helper, expect, skip }) => {
-    if (!pl.hasCapability(BackendCapability.WasmV1)) {
+    if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
