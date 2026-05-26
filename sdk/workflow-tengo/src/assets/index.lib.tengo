@@ -46,6 +46,32 @@ importAsset := func(assetName) {
 }
 
 /**
+ * Declares a WebAssembly component dependency that will be bundled into the
+ * template pack at build time.
+ *
+ * tengo-builder discovers wasm deps by regex-scanning the source for calls
+ * of the form `assets.importWasm("name")` (see
+ * tools/tengo-builder/src/compiler/source.ts). This function is the
+ * runtime no-op the regex looks for — at runtime it does nothing and
+ * returns `undefined`. To actually use the component, call
+ * `plapi.loadWasm("name")`, which the backend resolves to a sandboxed
+ * component handle.
+ *
+ * Important: pass a string literal here, not a variable. The build-time
+ * regex needs the exact text of the wasm package id to know which bytes
+ * to bundle.
+ *
+ * @param wasmName: string - full name of the wasm component entrypoint,
+ *                           including the namespace (NPM package name),
+ *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
+ *
+ * @return undefined
+ */
+importWasm := func(wasmName) {
+	return undefined
+}
+
+/**
  * Checks if given item is an asset info
  *
  * @param toCheck: any - item to check
@@ -69,5 +95,6 @@ export ll.toStrict({
 	importSoftware      : swinfo.importSoftware,
 	isSoftwareInfo      : swinfo.isSoftwareInfo,
 	importAsset         : importAsset,
-	isAssetInfo         : isAssetInfo
+	isAssetInfo         : isAssetInfo,
+	importWasm          : importWasm
 })

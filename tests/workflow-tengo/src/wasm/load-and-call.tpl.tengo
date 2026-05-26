@@ -4,8 +4,8 @@
 //   1. tengo-builder sees `assets.importWasm(...)` and bundles the
 //      `@platforma-tests/wasm-table-fixture` component into this template's
 //      pack.
-//   2. At runtime, `plapi.loadWasm("@platforma-tests/wasm-table-fixture:main")`
-//      returns a sandboxed component handle.
+//   2. At runtime, `plapi.loadWasm("@platforma-tests/wasm-table-fixture:main")` returns a sandboxed
+//      component handle.
 //   3. We exercise the WIT methods on the `demo:tables/api` interface:
 //      `from-json` (returns a resource), `find-column` (string -> result<string,string>).
 //   4. Both happy path and the result.Err arm get exercised — outputs are
@@ -15,22 +15,8 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 plapi := import("plapi")
 json := import("json")
-ll := import("@platforma-sdk/workflow-tengo:ll")
 
 assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-
-
-// WASM_NAME := "@platforma-tests/wasm-table-fixture:main"
-
-// Bundle marker: tengo-builder's importWasm regex matches the literal
-// below; runtime never enters the dead branch because the runtime load
-// goes through plapi.loadWasm directly.
-// _bundleTag := func() {
-// 	if false {
-// 		return assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-// 	}
-// 	return undefined
-// }
 
 self.defineOutputs(["ok", "err", "trap"])
 
@@ -52,9 +38,7 @@ self.body(func(_inputs) {
 		]
 	}))
 
-	ll.print(tableSpec)
-
-	frame := api.table.from_json(tableSpec)
+	frame := api.table.fromJson(tableSpec)
 	if is_error(frame) {
 		msg := "from-json failed: " + string(frame)
 		return { ok: msg, err: msg, trap: msg }
@@ -62,17 +46,17 @@ self.body(func(_inputs) {
 
 	// Happy path: existing column.
 	okSel := string(json.encode({ name: "sample_id" }))
-	okResp := frame.find_column(okSel)
+	okResp := frame.findColumn(okSel)
 
 	// Err arm: missing column → result.Err arm → Tengo error.
 	errSel := string(json.encode({ name: "no_such_col" }))
-	errResp := frame.find_column(errSel)
+	errResp := frame.findColumn(errSel)
 
 	// Trap arm: the fixture's always_panic traps the guest. The bridge
 	// surfaces the trap as a Tengo error; the instance is poisoned after
 	// (we don't reuse it here, but the production runtime does that
 	// check elsewhere).
-	trapResp := api.table.always_panic("integration-test trap")
+	trapResp := api.table.alwaysPanic("integration-test trap")
 
 	return {
 		ok:   string(okResp),
