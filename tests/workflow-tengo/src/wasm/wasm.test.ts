@@ -22,6 +22,7 @@ tplTest.concurrent(
     // Happy path: the existing column's JSON describes sample_id.
     expect(typeof ok).toBe("string");
     expect(ok as string).toContain("sample_id");
+    console.log("#####" + ok);
 
     // result.Err arm gets lifted to a Tengo error value; the script
     // stringifies it. Exact wording comes from the guest, so we just

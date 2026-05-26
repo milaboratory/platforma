@@ -25,47 +25,38 @@
  *         list := frame.listColumns()
  *     }
  *
- * Runtime status. The wasm-call host builtin (`plapi.loadWasm`) and its
- * thin SDK wrapper `@platforma-sdk/workflow-tengo:wasm` are planned (see
- * branch plan/tengo-wasm-call in core/pl), not yet wired. Until they land,
- * every wrapper call returns a Tengo error with a clear message — blocks
- * that already use this surface will start working unmodified once the
- * runtime ships.
- *
  * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
- * the bundling story.
+ * the bundling story and the runtime details.
  */
 
 ll := import(":ll")
 assets := import(":assets")
+plapi := import("plapi")
 json := import("json")
 
 WASM_NAME := "@milaboratories/pframes-rs-wasip2:main"
+WIT_INTERFACE := "milaboratories:pframes/spec"
 
-// Build-time bundle tag.
+// tengo-builder discovers wasm deps by regex-scanning the source for
+// `assets.importWasm("name")`. The call is a runtime no-op (returns
+// undefined); the actual load is `plapi.loadWasm(WASM_NAME)` in `_load`
+// below. The string literal here must match WASM_NAME above.
+assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+
+// _load resolves the wasm component handle to the milaboratories:pframes/spec
+// interface map, where each top-level key is a WIT resource name (`frame`,
+// `table`, `axes`) and each leaf method is a callable. Returns the loadWasm
+// Tengo error verbatim on failure so wrapper methods surface a real message
+// rather than the generic "runtime not wired" placeholder we had before.
 //
-// Build time: tengo-builder's regex matches the literal
-// `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")` below and
-// embeds the wasm bytes into every template that imports this lib.
-// Runtime: the dead branch is unreachable, so the missing
-// `assets.importWasm` host call is never made.
-_bundleTag := func() {
-	if false {
-		return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
-	}
-	return undefined
-}
-
-_runtimeUnavailable := func() {
-	return error("pframes-rs wasm runtime not yet wired (see plan/tengo-wasm-call); the wasm bytes are bundled but cannot be invoked from Tengo today")
-}
-
-// _load returns the wasm component handle, or undefined if the runtime
-// is not yet wired. Once the planned SDK module ships, replace the body
-// with an import of the wasm SDK lib and a call to its load(WASM_NAME,
-// limit) entry point.
+// `limit` is reserved for a future per-instance memory cap override; today
+// the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
 _load := func(limit) {
-	return undefined
+	c := plapi.loadWasm(WASM_NAME)
+	if is_error(c) {
+		return c
+	}
+	return c.exports[WIT_INTERFACE]
 }
 
 // _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).
@@ -87,8 +78,8 @@ _resolve := func(handle, path) {
 _staticCall := func(path) {
 	return func(request) {
 		h := _load(undefined)
-		if is_undefined(h) {
-			return _runtimeUnavailable()
+		if is_error(h) {
+			return h
 		}
 		fn := _resolve(h, path)
 		if is_undefined(fn) {
@@ -96,7 +87,7 @@ _staticCall := func(path) {
 		}
 		requestJson := ""
 		if !is_undefined(request) {
-			requestJson = json.encode(request)
+			requestJson = string(json.encode(request))
 		}
 		responseJson := fn(requestJson)
 		if is_error(responseJson) {
@@ -120,7 +111,7 @@ _instanceMethod := func(hostHandle, methodName, takesArgs) {
 		if takesArgs {
 			requestJson := ""
 			if !is_undefined(args) {
-				requestJson = json.encode(args)
+				requestJson = string(json.encode(args))
 			}
 			responseJson = method(requestJson)
 		} else {
@@ -150,10 +141,10 @@ _wrapFrame := func(hostFrame) {
 
 frameFromJson := func(spec) {
 	h := _load(undefined)
-	if is_undefined(h) {
-		return _runtimeUnavailable()
+	if is_error(h) {
+		return h
 	}
-	specJson := json.encode(spec)
+	specJson := string(json.encode(spec))
 	hostFrame := h.frame.fromJson(specJson)
 	return _wrapFrame(hostFrame)
 }
@@ -177,10 +168,10 @@ _wrapTable := func(hostTable) {
 
 tableFromJson := func(spec) {
 	h := _load(undefined)
-	if is_undefined(h) {
-		return _runtimeUnavailable()
+	if is_error(h) {
+		return h
 	}
-	specJson := json.encode(spec)
+	specJson := string(json.encode(spec))
 	hostTable := h.table.fromJson(specJson)
 	return _wrapTable(hostTable)
 }
@@ -203,10 +194,10 @@ _wrapAxes := func(hostAxes) {
 
 axesFromJson := func(spec) {
 	h := _load(undefined)
-	if is_undefined(h) {
-		return _runtimeUnavailable()
+	if is_error(h) {
+		return h
 	}
-	specJson := json.encode(spec)
+	specJson := string(json.encode(spec))
 	hostAxes := h.axes.fromJson(specJson)
 	return _wrapAxes(hostAxes)
 }
