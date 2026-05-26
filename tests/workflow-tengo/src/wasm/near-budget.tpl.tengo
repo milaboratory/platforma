@@ -1,0 +1,72 @@
+// Near-the-budget sibling-instance load test. Spawns 63 sibling
+// instances in one render (just under MaxWasmStoresPerRender = 64) and
+// makes every instance do a small allocation plus a findColumn call.
+// Stresses the controller's per-render Store accounting and the cache's
+// concurrent-instantiation behaviour without crossing the cap.
+//
+// Each instance allocates 256 KiB which the store's 32 MiB cap can
+// trivially serve — combined across all 63 instances we still only ask
+// for ~16 MiB total, well below any aggregate cap. If the host instead
+// kept a single shared Store and we leaked the allocations, we'd see
+// either OOM or a trap by instance ~120.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["okCount", "lookupSamples", "lastErr"])
+
+self.body(func(_inputs) {
+	tableSpec := string(json.encode({
+		columns: [
+			{ name: "sample_id", type: "i32" }
+		]
+	}))
+	sel := string(json.encode({ name: "sample_id" }))
+
+	okCount := 0
+	lastErr := ""
+	samples := []
+
+	for i := 0; i < 63; i++ {
+		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+		if is_error(wasm) {
+			lastErr = string(wasm)
+			continue
+		}
+		api := wasm.exports["demo:tables/api"]
+
+		// Force a small alloc inside each sibling instance to stress the
+		// per-Store memory bookkeeping under realistic concurrent use.
+		ack := api.table.consumeMemory("262144") // 256 KiB
+		if is_error(ack) {
+			lastErr = string(ack)
+			continue
+		}
+
+		table := api.table.fromJson(tableSpec)
+		if is_error(table) {
+			lastErr = string(table)
+			continue
+		}
+		resp := table.findColumn(sel)
+		if is_error(resp) {
+			lastErr = string(resp)
+			continue
+		}
+		okCount += 1
+
+		// Sample the first, middle, and last lookup responses so the test
+		// can confirm we're getting real data back rather than counting
+		// silently-empty results.
+		if i == 0 || i == 31 || i == 62 {
+			samples = append(samples, string(resp))
+		}
+	}
+
+	return {
+		okCount:       string(okCount),
+		lookupSamples: string(json.encode(samples)),
+		lastErr:       lastErr
+	}
+})

@@ -1,0 +1,17 @@
+// Short-spin variant of the epoch-deadline probe. Runs comfortably under
+// the 1-minute per-call deadline so the call completes and we can assert
+// the bridge correctly returned the guest's ack string.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["short"])
+
+self.body(func(_inputs) {
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		return { short: "import failed: " + string(wasm) }
+	}
+	api := wasm.exports["demo:tables/api"]
+	return { short: string(api.table.spinMillis("500")) }
+})

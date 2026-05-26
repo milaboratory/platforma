@@ -1,0 +1,37 @@
+// Per-render Store-budget probe. The backend caps a single render at
+// MaxWasmStoresPerRender = 64 sandboxed instances
+// (core/pl/controllers/workflow/pkg/lang/api_v1_loadwasm.go:17). The 65th
+// importWasm() call inside one render must return a Tengo error; the
+// previous 64 must succeed.
+//
+// We loop 65 times so the 65th attempt is the failing one (zero-indexed
+// firstErrAt === 64). The total error count is reported so a regression
+// that lifts the cap surfaces as totalErrs === 0.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["firstErrAt", "totalErrs", "lastErrMsg"])
+
+self.body(func(_inputs) {
+	firstErrAt := -1
+	totalErrs := 0
+	lastErrMsg := ""
+
+	for i := 0; i < 65; i++ {
+		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+		if is_error(wasm) {
+			if firstErrAt < 0 {
+				firstErrAt = i
+			}
+			totalErrs += 1
+			lastErrMsg = string(wasm)
+		}
+	}
+
+	return {
+		firstErrAt: firstErrAt,
+		totalErrs:  totalErrs,
+		lastErrMsg: lastErrMsg
+	}
+})

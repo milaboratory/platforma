@@ -1,0 +1,41 @@
+// Memory cap probe. The backend clamps per-Store memory between
+// MinWasmMemoryBytes (16 MiB) and MaxWasmMemoryBytes (64 MiB), with
+// FallbackWasmMemoryBytes = 32 MiB when blocks declare 0. The fixture's
+// consumeMemory(bytes) allocates and writes that many bytes, which forces
+// the wasm linear memory to grow. If the request exceeds the Store's
+// memory cap, the guest traps.
+//
+// Test points:
+//   - 8 MiB → comfortably under 32 MiB → succeeds
+//   - 24 MiB → still under → succeeds
+//   - 40 MiB → over 32 MiB → traps
+//   - 64 MiB → well over → traps
+//
+// Each call gets its OWN sibling instance so a trap on one doesn't
+// poison the next probe (cf. parallel-instances).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["small", "medium", "overLimit", "wayOver"])
+
+probe := func(bytes) {
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		return "import failed: " + string(wasm)
+	}
+	api := wasm.exports["demo:tables/api"]
+	// Argument is a decimal string — see the WIT comment on
+	// `consume-memory` for the host's current arg-lowering limitation.
+	return string(api.table.consumeMemory(string(bytes)))
+}
+
+self.body(func(_inputs) {
+	mib := 1024 * 1024
+	return {
+		small:     probe(8 * mib),
+		medium:    probe(24 * mib),
+		overLimit: probe(40 * mib),
+		wayOver:   probe(64 * mib)
+	}
+})

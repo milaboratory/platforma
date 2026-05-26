@@ -1,0 +1,135 @@
+// Comprehensive sweep of the @platforma-sdk/workflow-tengo:pframes-rs
+// wrapper. The existing pframes-rs.test.ts exercises one method
+// (frame.buildQuery) end-to-end. This template adds a coverage sweep of
+// EVERY WIT method exposed by the wrapper so a regression in the lazy
+// _load / JSON encode-decode / instance dispatch plumbing of any single
+// method gets caught.
+//
+// Strategy: for one known-good schema (buildQuery's `{version:"v1",
+// column:"abundance"}`) we assert a successful response. For every other
+// method we send deliberately-bad input and assert the wrapper surfaces
+// a clean Tengo error string — proving the method was found,
+// dispatched, and its Err arm propagated. A trap or "method missing"
+// here would mean the wrapper plumbing broke.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pframesRs := import("@platforma-sdk/workflow-tengo:pframes-rs")
+json := import("json")
+
+self.defineOutputs([
+	// Known-good schemas.
+	"buildQueryOk",
+
+	// Static methods called with bad input.
+	"frameDeleteColumnsBad",
+	"axesCollapseBad",
+
+	// Instance methods on `frame` — first see if from-json accepts an
+	// empty spec, then call each method. If from-json itself errors, we
+	// capture that as `frameFromJsonErr` and skip the method probes.
+	"frameFromJsonErr",
+	"frameListColumns",
+	"frameDiscoverColumnsBad",
+	"frameFindColumnsBad",
+	"frameEvaluateQueryBad",
+	"frameRewriteLegacyQueryBad",
+
+	// Instance methods on `axes`.
+	"axesFromJsonErr",
+	"axesExpand",
+	"axesFindBad",
+
+	// Instance methods on `table`.
+	"tableFromJsonErr",
+	"tableFindColumnBad"
+])
+
+self.body(func(_inputs) {
+	stringify := func(x) { return string(x) }
+
+	// Bag of bad inputs — none of these match the real schemas so each
+	// call must surface an error arm. We deliberately do not assume any
+	// particular wrong-shape wording from pframes-rs.
+	badRequest := { not_a_real_field: true, junk: "value" }
+
+	// === frame.buildQuery — known-good ============================
+	bq := pframesRs.frame.buildQuery({ version: "v1", column: "abundance" })
+	buildQueryOk := stringify(bq)
+	if !is_error(bq) {
+		buildQueryOk = string(json.encode(bq))
+	}
+
+	// === frame.deleteColumns — bad input ==========================
+	dc := pframesRs.frame.deleteColumns(badRequest)
+	frameDeleteColumnsBad := stringify(dc)
+
+	// === axes.collapse — bad input ================================
+	ac := pframesRs.axes.collapse(badRequest)
+	axesCollapseBad := stringify(ac)
+
+	// === frame.fromJson + instance methods =========================
+	// Try a minimal spec first; HashMap<String, _> may accept it, but
+	// downstream construction may still reject. Either way we capture
+	// the outcome.
+	frame := pframesRs.frame.fromJson({})
+	frameFromJsonErr := ""
+	frameListColumns := "<skipped: from-json failed>"
+	frameDiscoverColumnsBad := "<skipped>"
+	frameFindColumnsBad := "<skipped>"
+	frameEvaluateQueryBad := "<skipped>"
+	frameRewriteLegacyQueryBad := "<skipped>"
+	if is_error(frame) {
+		frameFromJsonErr = stringify(frame)
+	} else {
+		frameListColumns = stringify(frame.listColumns(undefined))
+		if !is_error(frame.listColumns(undefined)) {
+			frameListColumns = string(json.encode(frame.listColumns(undefined)))
+		}
+		frameDiscoverColumnsBad = stringify(frame.discoverColumns(badRequest))
+		frameFindColumnsBad = stringify(frame.findColumns(badRequest))
+		frameEvaluateQueryBad = stringify(frame.evaluateQuery(badRequest))
+		frameRewriteLegacyQueryBad = stringify(frame.rewriteLegacyQuery(badRequest))
+	}
+
+	// === axes.fromJson + instance methods ==========================
+	axes := pframesRs.axes.fromJson({})
+	axesFromJsonErr := ""
+	axesExpand := "<skipped>"
+	axesFindBad := "<skipped>"
+	if is_error(axes) {
+		axesFromJsonErr = stringify(axes)
+	} else {
+		axesExpand = stringify(axes.expand(undefined))
+		if !is_error(axes.expand(undefined)) {
+			axesExpand = string(json.encode(axes.expand(undefined)))
+		}
+		axesFindBad = stringify(axes.find(badRequest))
+	}
+
+	// === table.fromJson + instance methods =========================
+	tbl := pframesRs.table.fromJson({})
+	tableFromJsonErr := ""
+	tableFindColumnBad := "<skipped>"
+	if is_error(tbl) {
+		tableFromJsonErr = stringify(tbl)
+	} else {
+		tableFindColumnBad = stringify(tbl.findColumn(badRequest))
+	}
+
+	return {
+		buildQueryOk:                buildQueryOk,
+		frameDeleteColumnsBad:       frameDeleteColumnsBad,
+		axesCollapseBad:             axesCollapseBad,
+		frameFromJsonErr:            frameFromJsonErr,
+		frameListColumns:            frameListColumns,
+		frameDiscoverColumnsBad:     frameDiscoverColumnsBad,
+		frameFindColumnsBad:         frameFindColumnsBad,
+		frameEvaluateQueryBad:       frameEvaluateQueryBad,
+		frameRewriteLegacyQueryBad:  frameRewriteLegacyQueryBad,
+		axesFromJsonErr:             axesFromJsonErr,
+		axesExpand:                  axesExpand,
+		axesFindBad:                 axesFindBad,
+		tableFromJsonErr:            tableFromJsonErr,
+		tableFindColumnBad:          tableFindColumnBad
+	}
+})

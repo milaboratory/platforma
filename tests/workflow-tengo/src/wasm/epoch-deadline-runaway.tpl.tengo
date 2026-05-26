@@ -1,0 +1,20 @@
+// Runaway-guest variant of the epoch-deadline probe. Calls spinMillis with
+// a duration guaranteed to exceed the backend's per-call wasm budget AND
+// the interpreter's MaxExecutionTime (both default to 1 minute). The
+// render must surface SOME deadline/timeout/trap indicator — exactly which
+// layer fires first is a backend-internal race we don't need to nail down,
+// but a healthy system must reject the call, not return success.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["long"])
+
+self.body(func(_inputs) {
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		return { long: "import failed: " + string(wasm) }
+	}
+	api := wasm.exports["demo:tables/api"]
+	return { long: string(api.table.spinMillis("90000")) }
+})
