@@ -150,26 +150,30 @@ function normalizeGlobalOverviewEntry(
   };
 }
 
+/**
+ * Parsed-and-normalized registry overview document. Forward-compat: the
+ * underlying zod schema uses `.passthrough()` so future top-level fields
+ * survive parse/round-trip; the TS type lists only known fields.
+ */
 export type GlobalOverviewReg = {
   schema: "v2";
   packages: GlobalOverviewEntryReg[];
-} & { [k: string]: unknown };
+};
+
+const GlobalOverviewRegRawSchema = z
+  .object({
+    schema: z.literal("v2"),
+    packages: z.array(GlobalOverviewEntryRawSchema),
+  })
+  .passthrough();
 
 /**
  * Parses and normalizes a `GlobalOverviewReg` document read from registry
- * storage. Validation runs through Zod; the back-compat normalization runs
- * after parse as a plain function. The Zod schema is built inside the
- * function (not as a module-level const) to keep TypeScript from emitting
- * the schema's deeply-nested inferred type into the package's `.d.ts`.
+ * storage. Validation runs through zod; the back-compat normalization runs
+ * after parse as a plain function (see `normalizeGlobalOverviewEntry`).
  */
 export function parseGlobalOverviewReg(raw: unknown): GlobalOverviewReg {
-  const schema = z
-    .object({
-      schema: z.literal("v2"),
-      packages: z.array(GlobalOverviewEntryRawSchema),
-    })
-    .passthrough();
-  const parsed = schema.parse(raw);
+  const parsed = GlobalOverviewRegRawSchema.parse(raw);
   return {
     ...parsed,
     packages: parsed.packages.map(normalizeGlobalOverviewEntry),

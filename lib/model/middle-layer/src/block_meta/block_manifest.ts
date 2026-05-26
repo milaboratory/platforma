@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { BlockComponents } from "./block_components";
+import { WorkflowSchemaV1 } from "./block_components";
 import { ContentRelative, ContentRelativeBinary, ContentRelativeText } from "./content_types";
 import { CreateBlockPackDescriptionSchema } from "./block_description";
 import { BlockPackMeta } from "./block_meta";
@@ -9,19 +10,12 @@ import type { BlockPackId } from "./block_id";
 export type BlockComponentsManifest = BlockComponents<ContentRelative, ContentRelative>;
 
 /**
- * Block-components shape stored in a manifest. The consolidator always
- * writes the wrapped `{type: "workflow-v1", main: ...}` form, so the
- * manifest schema accepts the wrapped form only.
+ * Block-components shape stored in a manifest. The consolidator always writes
+ * the wrapped `{type: "workflow-v1", main: ...}` form, so the manifest schema
+ * accepts the wrapped form only.
  */
 export const BlockComponentsManifest = z.object({
-  workflow: z.discriminatedUnion("type", [
-    z
-      .object({
-        type: z.literal("workflow-v1"),
-        main: ContentRelative,
-      })
-      .strict(),
-  ]),
+  workflow: WorkflowSchemaV1(ContentRelative),
   model: ContentRelative,
   ui: ContentRelative,
 }) satisfies z.ZodType<BlockComponentsManifest>;
