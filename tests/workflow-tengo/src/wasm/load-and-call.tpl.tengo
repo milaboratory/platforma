@@ -1,11 +1,10 @@
 // Integration-test template for the wasm subsystem.
 //
 // Flow:
-//   1. tengo-builder sees `assets.importWasm(...)` and bundles the
-//      `@platforma-tests/wasm-table-fixture` component into this template's
-//      pack.
-//   2. At runtime, `plapi.loadWasm("@platforma-tests/wasm-table-fixture:main")` returns a sandboxed
-//      component handle.
+//   1. tengo-builder sees `assets.importWasm("@platforma-tests/...")` and
+//      bundles the fixture component into this template's pack.
+//   2. At runtime, the same `assets.importWasm(...)` call (a thin SDK
+//      wrapper over plapi.loadWasm) returns a sandboxed component handle.
 //   3. We exercise the WIT methods on the `demo:tables/api` interface:
 //      `from-json` (returns a resource), `find-column` (string -> result<string,string>).
 //   4. Both happy path and the result.Err arm get exercised — outputs are
@@ -13,21 +12,18 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
-plapi := import("plapi")
 json := import("json")
-
-assets.importWasm("@platforma-tests/wasm-table-fixture:main")
 
 self.defineOutputs(["ok", "err", "trap"])
 
 self.body(func(_inputs) {
-	c := plapi.loadWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(c) {
-		msg := "loadWasm failed: " + string(c)
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		msg := "importWasm failed: " + string(wasm)
 		return { ok: msg, err: msg, trap: msg }
 	}
 
-	api := c.exports["demo:tables/api"]
+	api := wasm.exports["demo:tables/api"]
 
 	// json.encode returns bytes; the wasm boundary expects a string,
 	// so wrap each encode call with string(...).

@@ -46,29 +46,46 @@ importAsset := func(assetName) {
 }
 
 /**
- * Declares a WebAssembly component dependency that will be bundled into the
- * template pack at build time.
+ * Imports a WebAssembly component. Bundles its bytes into the template pack
+ * at build time and returns a sandboxed component handle at runtime.
  *
- * tengo-builder discovers wasm deps by regex-scanning the source for calls
- * of the form `assets.importWasm("name")` (see
- * tools/tengo-builder/src/compiler/source.ts). This function is the
- * runtime no-op the regex looks for — at runtime it does nothing and
- * returns `undefined`. To actually use the component, call
- * `plapi.loadWasm("name")`, which the backend resolves to a sandboxed
- * component handle.
+ * Mirrors the shape of `assets.importSoftware`: one call site that both
+ * declares the dependency (tengo-builder discovers it by regex-scanning the
+ * source for calls of the form `assets.importWasm("name")` — see
+ * tools/tengo-builder/src/compiler/source.ts) and returns the runtime
+ * handle (via plapi.loadWasm).
  *
  * Important: pass a string literal here, not a variable. The build-time
  * regex needs the exact text of the wasm package id to know which bytes
  * to bundle.
  *
+ * Each call allocates a fresh sandboxed Store + Instance. Repeated calls
+ * inside one render with the same name return independent sandboxes;
+ * scripts that want a shared handle should cache the return value
+ * themselves. Per-render Store budget is capped (see backend's
+ * MaxWasmStoresPerRender).
+ *
  * @param wasmName: string - full name of the wasm component entrypoint,
  *                           including the namespace (NPM package name),
  *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
  *
- * @return undefined
+ * @return wasm: a map with one key `exports` whose value is the WIT
+ *               namespace tree —
+ *               `wasm.exports[<iface>][<resource>][<friendlyMethodName>]`
+ *               where method names are camelCased from the WIT kebab-case
+ *               (so WIT `from-json` → `fromJson`). Bare top-level funcs
+ *               live at `wasm.exports[<friendlyFuncName>]`. Call results
+ *               that are `result<X, string>` are lifted: Ok arm is
+ *               returned, Err arm is surfaced as a Tengo `*Error`.
+ *               Guest traps also surface as Tengo `*Error`s — the
+ *               instance is poisoned after a trap and refuses further
+ *               calls.
+ *               If `plapi.loadWasm` fails (component not in cache, wasm
+ *               runtime disabled, etc.), the Tengo error is returned
+ *               verbatim — check with `is_error(...)` before use.
  */
 importWasm := func(wasmName) {
-	return undefined
+	return plapi.loadWasm(wasmName)
 }
 
 /**

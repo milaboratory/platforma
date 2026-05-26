@@ -31,31 +31,25 @@
 
 ll := import(":ll")
 assets := import(":assets")
-plapi := import("plapi")
 json := import("json")
 
-WIT_INTERFACE := "milaboratories:pframes/spec"
-
-// tengo-builder discovers wasm deps by regex-scanning the source for
-// `assets.importWasm("name")`. The call is a runtime no-op (returns
-// undefined); the actual load is `plapi.loadWasm("@milaboratories/pframes-rs-wasip2:main")` in `_load`
-// below.
-assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
-
-// _load resolves the wasm component handle to the milaboratories:pframes/spec
-// interface map, where each top-level key is a WIT resource name (`frame`,
-// `table`, `axes`) and each leaf method is a callable. Returns the loadWasm
-// Tengo error verbatim on failure so wrapper methods surface a real message
-// rather than the generic "runtime not wired" placeholder we had before.
+// _load returns the milaboratories:pframes/spec interface map (keyed by WIT
+// resource name — `frame`, `table`, `axes`). `assets.importWasm` does
+// double duty here: tengo-builder's regex picks the literal up at build
+// time to bundle the wasm bytes, and at runtime the SDK wrapper calls
+// plapi.loadWasm under the hood. The lazy placement inside _load (rather
+// than at module scope) defers the wasm allocation until a method is
+// actually invoked — blocks that import this lib but never call into it
+// don't pay the cost.
 //
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
 _load := func(limit) {
-	c := plapi.loadWasm("@milaboratories/pframes-rs-wasip2:main")
-	if is_error(c) {
-		return c
+	wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
+	if is_error(wasm) {
+		return wasm
 	}
-	return c.exports[WIT_INTERFACE]
+	return wasm.exports["milaboratories:pframes/spec"]
 }
 
 // _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).
