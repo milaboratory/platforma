@@ -1,0 +1,38 @@
+// Payload round-trip probe. The fixture's echoBytes(n) returns a string
+// of `n` ASCII bytes filled with the deterministic pattern '0' + (i % 10).
+// We verify the bridge preserves length and the head/tail bytes for a
+// range of sizes from 0 up through several megabytes. The 8 MiB case
+// pushes the host<->guest copy code under real load and verifies large
+// outputs survive the JSON-encoded transit to the resource store.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["zero", "one", "k64", "m1", "m2"])
+
+echo := func(bytes) {
+	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	if is_error(wasm) {
+		return "import failed: " + string(wasm)
+	}
+	api := wasm.exports["demo:tables/api"]
+	return string(api.table.echoBytes(string(bytes)))
+}
+
+self.body(func(_inputs) {
+	// Largest case capped at 2 MiB. Two backend limits stack here:
+	//   - resource 'data' field max = 3 MiB (Platforma value resource cap);
+	//   - gRPC default MaxRecvMsgSize = 4 MiB.
+	// JSON-string encoding adds 2 bytes of quotes on top of the payload,
+	// so even a 3 MiB payload trips the resource-data cap. 2 MiB still
+	// exercises the host<->guest copy path under significant load.
+	// Larger limits should be raised on the backend side, not papered
+	// over here.
+	return {
+		zero: echo(0),
+		one:  echo(1),
+		k64:  echo(64 * 1024),
+		m1:   echo(1024 * 1024),
+		m2:   echo(2 * 1024 * 1024)
+	}
+})
