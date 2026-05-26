@@ -62,8 +62,29 @@ importAsset := func(assetName) {
  * Each call allocates a fresh sandboxed Store + Instance. Repeated calls
  * inside one render with the same name return independent sandboxes;
  * scripts that want a shared handle should cache the return value
- * themselves. Per-render Store budget is capped (see backend's
- * MaxWasmStoresPerRender).
+ * themselves.
+ *
+ * Operational limits (mirror of the backend contract — update both sides
+ * together when changing):
+ *
+ *   - Per-render sandbox count: 64. The 65th `assets.importWasm(...)` in
+ *     one render returns a Tengo `*Error`.
+ *
+ *   - Per-instance memory cap: 32 MiB by default. A block can request an
+ *     override on its WasmV1 dependency, clamped to the range
+ *     [16 MiB, 64 MiB]. Allocations past the live cap trap inside the
+ *     guest; the trap surfaces as a Tengo `*Error` and the instance is
+ *     poisoned thereafter.
+ *
+ *   - Per-call wall-clock budget: 1 minute. A guest call that runs
+ *     longer trips the engine's epoch deadline; same trap → `*Error`
+ *     → poisoned-instance flow as above.
+ *
+ *   - Output payload cap: anything a Tengo template returns becomes a
+ *     value resource on the platform, capped at 3 MiB total. For a
+ *     string output the JSON envelope adds 2 bytes (`"…"`), so the
+ *     largest string payload that round-trips is 3 MiB - 2 bytes.
+ *     Over-cap outputs fail the render, not the wasm call itself.
  *
  * @param wasmName: string - full name of the wasm component entrypoint,
  *                           including the namespace (NPM package name),
@@ -79,7 +100,7 @@ importAsset := func(assetName) {
  *               Guest traps also surface as Tengo `*Error`s — the
  *               instance is poisoned after a trap and refuses further
  *               calls.
- *               If `plapi.loadWasm` fails (component not in cache, wasm
+ *               If `plapi.loadWasm` fails (per-render cap reached, wasm
  *               runtime disabled, etc.), the Tengo error is returned
  *               verbatim — check with `is_error(...)` before use.
  */
