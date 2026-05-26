@@ -1,0 +1,41 @@
+// Integration-test template for `@platforma-sdk/workflow-tengo:pframes-rs`.
+//
+// The SDK lib wraps the `@milaboratories/pframes-rs-wasip2` WIT interface
+// (`milaboratories:pframes/spec` — frame / table / axes resources with
+// JSON-in / JSON-out methods). Importing the lib transitively bundles
+// the wasm component into this template's pack; the wrapper resolves the
+// host handle and proxies camelCase Tengo calls onto the WIT exports.
+//
+// Goal of this template: confirm the round-trip `Tengo map -> JSON ->
+// WIT call -> JSON -> Tengo map` works end-to-end via the SDK wrapper.
+// We call `frame.buildQuery` (a static method that returns a JSON
+// payload) because it's the simplest "real call" on the interface that
+// doesn't require setting up a frame instance first.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pframesRs := import("@platforma-sdk/workflow-tengo:pframes-rs")
+json := import("json")
+
+self.defineOutputs(["resultJson"])
+
+self.body(func(_inputs) {
+	// buildQuery accepts a JSON object and returns a result<string,string>.
+	// We don't assume a specific schema here — the wrapper just round-trips
+	// our map through JSON to the WIT call. Even if pframes-rs treats this
+	// input as invalid, the wrapper returns a Tengo *Error containing the
+	// guest's error message (still a useful end-to-end signal).
+	req := { version: "v1", column: "abundance" }
+	resp := pframesRs.frame.buildQuery(req)
+
+	// Capture whatever came back — either the parsed JSON response or the
+	// string form of the Tengo error — so the test can assert the bridge
+	// surfaced something meaningful instead of "runtime not wired".
+	out := ""
+	if is_error(resp) {
+		out = "error: " + string(resp)
+	} else {
+		out = string(json.encode(resp))
+	}
+
+	return { resultJson: out }
+})
