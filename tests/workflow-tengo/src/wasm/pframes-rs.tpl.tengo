@@ -17,15 +17,16 @@ pframesRs := import("@platforma-sdk/workflow-tengo:pframes-rs")
 json := import("json")
 
 self.defineOutputs(["resultJson"])
+self.awaitState("InputsLocked")
+self.awaitState("req", "ResourceReady")
 
-self.body(func(_inputs) {
+self.body(func(inputs) {
 	// buildQuery accepts a JSON object and returns a result<string,string>.
 	// We don't assume a specific schema here — the wrapper just round-trips
 	// our map through JSON to the WIT call. Even if pframes-rs treats this
 	// input as invalid, the wrapper returns a Tengo *Error containing the
 	// guest's error message (still a useful end-to-end signal).
-	req := { version: "v1", column: "abundance" }
-	resp := pframesRs.frame.buildQuery(req)
+	resp := pframesRs.frame.buildQuery(inputs.req)
 
 	// Capture whatever came back — either the parsed JSON response or the
 	// string form of the Tengo error — so the test can assert the bridge
