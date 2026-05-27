@@ -17,6 +17,7 @@ import { plAddressToConfig, type wireProtocol, SUPPORTED_WIRE_PROTOCOLS } from "
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
 import { LLPlTransaction } from "./ll_transaction";
+import { setResourceSignaturesRequired } from "./types";
 import { parsePlJwt } from "../util/pl";
 import { type Dispatcher, interceptors } from "undici";
 import type { Middleware } from "openapi-fetch";
@@ -158,6 +159,9 @@ export class LLPlClient implements WireClientProviderFactory {
     // In the autodetect path the loop's last successful ping already populated _serverInfo via the
     // side-effect in ping(); this fallback covers the path where autodetect is disabled.
     if (!pl._serverInfo) await pl.ping();
+
+    // Install the process-global signature-strictness flag based on backend version.
+    setResourceSignaturesRequired(pl.supportsResourceSignatures);
 
     // Guarantee authMethods happened so client can make weighted decision on which auth method to use.
     if (!pl._authMethodsSync) await pl.authMethods();
@@ -679,8 +683,10 @@ export class LLPlClient implements WireClientProviderFactory {
     return hasCapability(this.serverInfo.capabilities, capability);
   }
 
-  /** True if the backend implements the setDefaultColor TX request. */
-  public get supportsSetDefaultColor(): boolean {
+  /** True if the backend produces signed resource ids (and accepts the
+   * setDefaultColor TX request). Tagged at 3.3.0 — backends older than this
+   * return resources without signatures and reject color-proof requests. */
+  public get supportsResourceSignatures(): boolean {
     return isVersionAtLeast(this.serverInfo.coreVersion, [3, 3, 0]);
   }
 

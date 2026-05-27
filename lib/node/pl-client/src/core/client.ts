@@ -341,7 +341,7 @@ export class PlClient {
 
         // Auto-set default color proof from the client root's signature.
         // Skip when backend doesn't implement the `set_default_color` TX request.
-        if (this.ll.supportsSetDefaultColor && !isNullSignedResourceId(clientRoot) && writable) {
+        if (this.ll.supportsResourceSignatures && !isNullSignedResourceId(clientRoot) && writable) {
           const parsed = parseSignedResourceId(clientRoot);
           if (parsed.signature) {
             tx.setDefaultColor(parsed.signature as ColorProof);
