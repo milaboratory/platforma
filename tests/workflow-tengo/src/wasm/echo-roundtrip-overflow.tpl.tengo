@@ -1,5 +1,5 @@
 // Companion to wasm.echo-roundtrip: asks the fixture for an output that's
-// exactly 1 byte too big to fit in a value resource. The wasm guest happily
+// exactly 2 bytes too big to fit in a value resource. The wasm guest happily
 // produces the bytes (its own memory cap is much higher), then the runtime
 // tries to write the result and trips the backend's resource-data limit.
 //

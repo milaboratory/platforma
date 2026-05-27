@@ -1,4 +1,4 @@
-// Happy-path companion to wasm.load-and-call-trap. After a separate
+// Happy-path companion to wasm.wasm-trap. After a separate
 // render aborts inside the same fixture, this render uses the same
 // wasm package from a fresh importWasm() call and exercises a normal
 // findColumn. Together they prove the engine / pinned-Component stays

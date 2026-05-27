@@ -12,9 +12,6 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 
-self.awaitState("InputsLocked")
-self.awaitState("badInput", "ResourceReady")
-
 self.defineOutputs(["unreachable"])
 
 self.body(func(inputs) {

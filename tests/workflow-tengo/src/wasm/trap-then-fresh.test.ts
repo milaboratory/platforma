@@ -2,7 +2,7 @@ import { tplTest } from "@platforma-sdk/test";
 
 // A guest trap in one render must not break the engine for a follow-up
 // render that re-imports the same wasm package. Two-step:
-//   1. Render wasm.load-and-call-trap: expected to abort (always_panic).
+//   1. Render wasm.wasm-trap: expected to abort (always_panic).
 //   2. Render wasm.trap-then-fresh: re-imports the same fixture and runs
 //      findColumn — must succeed.
 // If the engine / pinned-Component machinery were corrupted by the trap,
@@ -18,7 +18,7 @@ tplTest.concurrent(
     // Step 1: trap-render aborts → output computable rejects.
     const trapped = await helper.renderTemplate(
       false,
-      "wasm.load-and-call-trap",
+      "wasm.wasm-trap",
       ["unreachable"],
       () => ({}),
     );
