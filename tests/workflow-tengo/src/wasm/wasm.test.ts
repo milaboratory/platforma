@@ -1,10 +1,6 @@
 import { tplTest } from "@platforma-sdk/test";
 
-// End-to-end check of the wasm subsystem's happy path: tengo-builder
-// bundles the wasm fixture into the template pack, the workflow
-// controller precompiles + pins it, and `plapi.loadWasm` dispatches a
-// call into it. The `find-column` result for an existing column is
-// expected to come back as a column-descriptor string.
+// Simple end-to-end check of the wasm subsystem's
 tplTest.concurrent(
   "plapi.loadWasm — happy path round-trip",
   async ({ pl, helper, expect, skip }) => {
@@ -12,7 +8,7 @@ tplTest.concurrent(
       skip();
       return;
     }
-    const result = await helper.renderTemplate(false, "wasm.load-and-call", ["ok"], () => ({}));
+    const result = await helper.renderTemplate(false, "wasm.wasm", ["ok"], () => ({}));
 
     const ok = await result.computeOutput("ok", (a) => a?.getDataAsJson()).awaitStableValue();
     expect(typeof ok).toBe("string");
@@ -31,12 +27,7 @@ tplTest.concurrent(
       skip();
       return;
     }
-    const result = await helper.renderTemplate(
-      false,
-      "wasm.load-and-call-err",
-      ["unreachable"],
-      () => ({}),
-    );
+    const result = await helper.renderTemplate(false, "wasm.wasm-err", ["unreachable"], () => ({}));
     await expect(
       result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
     ).rejects.toThrow(/no_such_col|find-column|missing/);
@@ -55,7 +46,7 @@ tplTest.concurrent(
     }
     const result = await helper.renderTemplate(
       false,
-      "wasm.load-and-call-trap",
+      "wasm.wasm-trap",
       ["unreachable"],
       () => ({}),
     );

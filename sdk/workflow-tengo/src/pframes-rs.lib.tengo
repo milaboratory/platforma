@@ -20,10 +20,8 @@
  *     frame := pframesRs.frame.fromJson(spec)
  *     list := frame.listColumns()
  *
- * Errors: any wasm-side failure (result.Err arm, guest trap, missing
- * export, instance poisoning) aborts the script. No defensive
- * `is_error(...)` checks needed; see `assets.importWasm` doc for the
- * full error model.
+ * Errors: any wasm-side failure (exception in component, panic in component,
+ * result.Err arm, guest trap, missing export, instance poisoning) aborts the script.
  *
  * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
  * the bundling story and the runtime details.

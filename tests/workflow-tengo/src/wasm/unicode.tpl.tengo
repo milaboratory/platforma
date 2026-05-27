@@ -26,13 +26,6 @@ self.body(func(_inputs) {
 
 	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	table := api.table.fromJson(tableSpec)
-	if is_error(table) {
-		msg := "fromJson failed: " + string(table)
-		return {
-			emoji:  msg, arabic: msg, cjk:    msg,
-			spaced: msg, mixed:  msg
-		}
-	}
 
 	lookup := func(name) {
 		sel := string(json.encode({ name: name }))

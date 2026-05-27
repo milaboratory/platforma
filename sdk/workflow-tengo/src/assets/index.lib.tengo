@@ -5,6 +5,7 @@ json := import("json")
 ll := import(":ll")
 smart := import(":smart")
 swinfo := import(":assets.swinfo")
+wasm := import(":assets.wasm")
 maps := import(":maps")
 
 /**
@@ -46,71 +47,6 @@ importAsset := func(assetName) {
 }
 
 /**
- * Imports a WebAssembly component. Bundles its bytes into the template pack
- * at build time and returns a sandboxed component handle at runtime.
- *
- * Mirrors the shape of `assets.importSoftware`: one call site that both
- * declares the dependency (tengo-builder discovers it by regex-scanning the
- * source for calls of the form `assets.importWasm("name")` — see
- * tools/tengo-builder/src/compiler/source.ts) and returns the runtime
- * handle (via plapi.loadWasm).
- *
- * Important: pass a string literal here, not a variable. The build-time
- * regex needs the exact text of the wasm package id to know which bytes
- * to bundle.
- *
- * Each call allocates a fresh sandboxed Store + Instance. Repeated calls
- * inside one render with the same name return independent sandboxes;
- * scripts that want a shared handle should cache the return value
- * themselves.
- *
- * Operational limits (mirror of the backend contract — update both sides
- * together when changing):
- *
- *   - Per-render sandbox count: 64. The 65th `assets.importWasm(...)` in
- *     one render aborts the script.
- *
- *   - Per-instance memory cap: 32 MiB by default. A block can request an
- *     override on its WasmV1 dependency, clamped to the range
- *     [16 MiB, 64 MiB]. Allocations past the live cap trap inside the
- *     guest, which aborts the script.
- *
- *   - Per-call wall-clock budget: 1 minute. A guest call that runs
- *     longer trips the engine's epoch deadline and traps, aborting the
- *     script.
- *
- *   - Output payload cap: anything a Tengo template returns becomes a
- *     value resource on the platform, capped at 3 MiB total. For a
- *     string output the JSON envelope adds 2 bytes (`"…"`), so the
- *     largest string payload that round-trips is 3 MiB - 2 bytes.
- *     Over-cap outputs fail the render at output-write time, not
- *     inside the wasm call.
- *
- * Error model: every wasm-side failure aborts the script. Load failures
- * (unknown alias, per-render cap) and method-call failures
- * (`result<X, string>::Err` arms, guest traps, instance poisoning,
- * missing exports) all return as script-level errors with the underlying
- * message. Block authors do NOT need `is_error(...)` checks around
- * wasm calls — bugs surface as render errors with the guest's text.
- * Rationale: every "recoverable" wasm error in practice has no useful
- * recovery path from a block-author's POV; forcing a defensive check
- * at every call site is friction that always re-raises anyway.
- *
- * @param wasmName: string - full name of the wasm component entrypoint,
- *                           including the namespace (NPM package name),
- *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
- *
- * @return wasm: a tengo.Map keyed by WIT interface name —
- *               `wasm[<iface>][<resource>][<friendlyMethodName>]`
- *               where method names are camelCased from the WIT kebab-case
- *               (so WIT `from-json` → `fromJson`). Bare top-level funcs
- *               live at `wasm[<friendlyFuncName>]`.
- */
-importWasm := func(wasmName) {
-	return plapi.loadWasm(wasmName)
-}
-
-/**
  * Checks if given item is an asset info
  *
  * @param toCheck: any - item to check
@@ -135,5 +71,5 @@ export ll.toStrict({
 	isSoftwareInfo      : swinfo.isSoftwareInfo,
 	importAsset         : importAsset,
 	isAssetInfo         : isAssetInfo,
-	importWasm          : importWasm
+	importWasm          : wasm.importWasm
 })

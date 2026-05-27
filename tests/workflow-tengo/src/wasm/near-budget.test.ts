@@ -20,18 +20,16 @@ tplTest.concurrent(
     const result = await helper.renderTemplate(
       false,
       "wasm.near-budget",
-      ["okCount", "lookupSamples", "lastErr"],
+      ["okCount", "lookupSamples"],
       () => ({}),
     );
 
-    const [okCount, samplesJson, lastErr] = await Promise.all([
+    const [okCount, samplesJson] = await Promise.all([
       result.computeOutput("okCount", (a) => a?.getDataAsJson()).awaitStableValue(),
       result.computeOutput("lookupSamples", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("lastErr", (a) => a?.getDataAsJson()).awaitStableValue(),
     ]);
 
     expect(okCount).toBe("63");
-    expect(lastErr).toBe("");
 
     const samples = JSON.parse(samplesJson as string) as string[];
     expect(samples).toHaveLength(3);

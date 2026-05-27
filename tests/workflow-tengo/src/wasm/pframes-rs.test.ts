@@ -1,4 +1,3 @@
-import { Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 // Integration smoke test for `@platforma-sdk/workflow-tengo:pframes-rs`.
@@ -14,10 +13,12 @@ tplTest.concurrent(
       skip();
       return;
     }
-    const req = { version: "v1", column: "abundance" };
-    const result = await helper.renderTemplate(true, "wasm.pframes-rs", ["resultJson"], (tx) => ({
-      req: tx.createValue(Pl.JsonObject, stringifyJson(req)),
-    }));
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.pframes-rs",
+      ["resultJson"],
+      () => ({}),
+    );
 
     const out = await result
       .computeOutput("resultJson", (a) => a?.getDataAsJson())
