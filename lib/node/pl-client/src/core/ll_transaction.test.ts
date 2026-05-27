@@ -115,7 +115,7 @@ test("check timeout error type (active)", async () => {
 
     // Set default color so resource creation succeeds in strict mode.
     // Skip on older backends that don't implement the setDefaultColor TX request.
-    if (client.supportsSetDefaultColor) {
+    if (client.supportsResourceSignatures) {
       await tx.send(
         { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
         false,
@@ -189,7 +189,7 @@ test("check is abort error (active)", async () => {
 
     // Set default color so resource creation succeeds in strict mode
     // Skip on older backends that don't implement the setDefaultColor TX request.
-    if (client.supportsSetDefaultColor) {
+    if (client.supportsResourceSignatures) {
       await tx.send(
         { oneofKind: "setDefaultColor", setDefaultColor: { colorProof: rootSig } },
         false,
