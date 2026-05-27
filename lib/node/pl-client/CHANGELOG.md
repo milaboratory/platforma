@@ -1,5 +1,33 @@
 # @milaboratories/pl-client
 
+## 3.9.2
+
+### Patch Changes
+
+- 0c317f5: Support backends before security layer implementation.
+
+  Before the update, pl client required resource signatures to be not empty in any conversion
+  from string to SignedResourceId.
+
+  This is impossible to meet when connected to older backend (i.e. 1.45.3) that have no code
+  of our modern security layer.
+
+## 3.9.1
+
+### Patch Changes
+
+- a0a909c: Fix stale-JWT flake in test helper. `TestHelpers.getTestClient` cached the
+  backend's JWT for 24h keyed on address/user/password, but ignored
+  `MaintenanceAPI.Ping.Response.instanceId`. A backend restart that rotated
+  `instanceId` invalidated every previously-issued JWT (the validator
+  rejects tokens whose `iss` claim doesn't match the live instance) while
+  leaving the cache file's other validity checks satisfied. Concurrent test
+  files loaded the dead JWT and failed the first authenticated call with
+  `failed to authenticate request using any of available methods` before
+  `onAuthError` cleared the cache for the next attempt. The cache now
+  captures `instanceId` at issue time and compares it against the live
+  ping response on load.
+
 ## 3.9.0
 
 ### Minor Changes

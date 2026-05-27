@@ -6,9 +6,24 @@ import { BlockPackId } from "./block_id";
 import { toMerged } from "es-toolkit";
 import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
 
-/** Description, as appears in root block package.json file,
- * `file:` references are parsed into relative content of corresponding type, depending on the context,
- * strings are converted to explicit content type. */
+/**
+ * Block-pack description: a `BlockPackId`, the typed `components` and `meta`
+ * payloads, and optional `featureFlags`. The two type parameters let the same
+ * shape carry every form a description travels in — `package.json` source,
+ * relative-path manifest, absolute-path resolved.
+ */
+export type BlockPackDescription<Components, Meta> = {
+  id: BlockPackId;
+  components: Components;
+  meta: Meta;
+  featureFlags?: BlockCodeKnownFeatureFlags;
+};
+
+/**
+ * Description as it appears in the root block `package.json`. `file:`-prefixed
+ * strings become `ContentRelative`; bare text strings become
+ * `ContentExplicitString`. See `DescriptionContentText`/`DescriptionContentBinary`.
+ */
 export const BlockPackDescriptionFromPackageJsonRaw = z.object({
   components: BlockComponentsDescriptionRaw,
   meta: BlockPackMetaDescriptionRaw,

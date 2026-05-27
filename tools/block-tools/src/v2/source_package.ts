@@ -1,7 +1,7 @@
 import path from "node:path";
 import { tryLoadFile } from "../util";
 import type { BlockPackDescriptionAbsolute } from "./model";
-import { ResolvedBlockPackDescriptionFromPackageJson } from "./model";
+import { resolveBlockPackDescription } from "./model";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import fsp from "node:fs/promises";
@@ -51,11 +51,7 @@ export async function tryLoadPackDescription(
         version: SemVer.parse(packageJson["version"]),
       },
     };
-    const descriptionParsingResult =
-      await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).safeParseAsync(descriptionRaw);
-    if (descriptionParsingResult.success) return descriptionParsingResult.data;
-    logger?.warn(descriptionParsingResult.error);
-    return undefined;
+    return await resolveBlockPackDescription(descriptionRaw, moduleRoot);
   } catch (e: unknown) {
     logger?.warn(e);
     return undefined;
@@ -91,5 +87,5 @@ export async function loadPackDescription(
   moduleRoot: string,
 ): Promise<BlockPackDescriptionAbsolute> {
   const descriptionRaw = await loadPackDescriptionRaw(moduleRoot);
-  return await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).parseAsync(descriptionRaw);
+  return await resolveBlockPackDescription(descriptionRaw, moduleRoot);
 }
