@@ -8,10 +8,6 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self.defineOutputs(["short"])
 
 self.body(func(_inputs) {
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		return { short: "import failed: " + string(wasm) }
-	}
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	return { short: string(api.table.spinMillis("500")) }
 })

@@ -17,13 +17,7 @@ json := import("json")
 self.defineOutputs(["ok", "err", "trap"])
 
 self.body(func(_inputs) {
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		msg := "importWasm failed: " + string(wasm)
-		return { ok: msg, err: msg, trap: msg }
-	}
-
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 
 	// json.encode returns bytes; the wasm boundary expects a string,
 	// so wrap each encode call with string(...).

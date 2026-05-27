@@ -15,11 +15,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self.defineOutputs(["m3"])
 
 self.body(func(_inputs) {
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		return { m3: "import failed: " + string(wasm) }
-	}
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	// JSON-encoding adds 2 bytes of quotes around the string; the payload
 	// itself is exactly 3 MiB, so the on-disk resource value is 3 MiB + 2
 	// bytes — past the 3 MiB cap.

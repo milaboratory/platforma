@@ -11,11 +11,7 @@ self.defineOutputs(["ok1", "trap2", "ok3"])
 
 self.body(func(_inputs) {
 	findColumnOk := func() {
-		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-		if is_error(wasm) {
-			return "importWasm failed: " + string(wasm)
-		}
-		api := wasm["demo:tables/api"]
+		api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 		tableSpec := string(json.encode({
 			columns: [
 				{ name: "sample_id", type: "i32" }
@@ -30,11 +26,7 @@ self.body(func(_inputs) {
 	}
 
 	callTrap := func() {
-		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-		if is_error(wasm) {
-			return "importWasm failed: " + string(wasm)
-		}
-		api := wasm["demo:tables/api"]
+		api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 		return string(api.table.alwaysPanic("sibling-isolation trap"))
 	}
 

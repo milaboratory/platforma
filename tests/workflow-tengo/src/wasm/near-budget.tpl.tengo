@@ -29,12 +29,7 @@ self.body(func(_inputs) {
 	samples := []
 
 	for i := 0; i < 63; i++ {
-		wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-		if is_error(wasm) {
-			lastErr = string(wasm)
-			continue
-		}
-		api := wasm["demo:tables/api"]
+		api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 
 		// Force a small alloc inside each sibling instance to stress the
 		// per-Store memory bookkeeping under realistic concurrent use.
