@@ -65,11 +65,20 @@ export function plAddressToTestConfig(address: string): PlClientConfig {
 interface AuthCache {
   /** To check if config changed */
   conf: TestConfig;
+  /** Backend's instance ID at the moment the JWT was issued. Restarts that
+   * reset state rotate this; the JWT's `iss` claim is bound to it and the
+   * backend rejects tokens minted by a different instance. Without this
+   * check, a cached JWT from a previous backend run would silently fail
+   * the first authenticated call after restart. */
+  instanceId: string;
   expiration: number;
   authInformation: AuthInformation;
 }
 
-function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformation) => void {
+function saveAuthInfoCallback(
+  tConf: TestConfig,
+  instanceId: string,
+): (authInformation: AuthInformation) => void {
   return (authInformation) => {
     const dst = getFullAuthDataFilePath();
     const tmpDst = getFullAuthDataFilePath() + randomUUID();
@@ -78,6 +87,7 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
       Buffer.from(
         JSON.stringify({
           conf: tConf,
+          instanceId,
           authInformation,
           expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60),
         } as AuthCache),
@@ -99,9 +109,19 @@ const cleanAuthInfoCallback = () => {
 export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
   const tConf = getTestConfig();
 
+  const plConf = plAddressToTestConfig(tConf.address);
+  const uClient = await UnauthenticatedPlClient.build(plConf);
+  // ll.serverInfo is populated by build()'s ping; instanceId rotates on a
+  // backend restart that drops the persisted state.
+  const instanceId = uClient.ll.serverInfo.instanceId;
+
   let authInformation: AuthInformation | undefined = undefined;
 
-  // try recover from cache
+  // Try recover from cache. The cache is keyed by config AND backend
+  // instanceId — a backend restart that rotates instanceId invalidates the
+  // cached JWT (the token's `iss` claim no longer matches the live
+  // instance), so we re-login instead of carrying the dead token through
+  // to the first authenticated call.
   if (fs.existsSync(getFullAuthDataFilePath())) {
     try {
       const cache: AuthCache = JSON.parse(
@@ -111,7 +131,8 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
         cache.conf.address === tConf.address &&
         cache.conf.test_user === tConf.test_user &&
         cache.conf.test_password === tConf.test_password &&
-        cache.expiration > Date.now()
+        cache.expiration > Date.now() &&
+        cache.instanceId === instanceId
       )
         authInformation = cache.authInformation;
     } catch {
@@ -119,9 +140,6 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
       fs.rmSync(getFullAuthDataFilePath());
     }
   }
-
-  const plConf = plAddressToTestConfig(tConf.address);
-  const uClient = await UnauthenticatedPlClient.build(plConf);
 
   const requireAuth = await uClient.requireAuth();
 
@@ -141,14 +159,14 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
     else authInformation = {};
 
     // saving cache
-    saveAuthInfoCallback(tConf)(authInformation);
+    saveAuthInfoCallback(tConf, instanceId)(authInformation);
   }
 
   return {
     conf: plConf,
     auth: {
       authInformation,
-      onUpdate: saveAuthInfoCallback(tConf),
+      onUpdate: saveAuthInfoCallback(tConf, instanceId),
       onAuthError: cleanAuthInfoCallback,
       onUpdateError: cleanAuthInfoCallback,
     },
