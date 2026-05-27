@@ -1,34 +1,34 @@
 import { tplTest } from "@platforma-sdk/test";
 
-// Trap-then-fresh: instance A traps inside the SAME render that later
-// builds instance B from a fresh importWasm() call. Reaffirms the Go-side
-// invariant (TestRender_LoadWasm_TrapDoesNotPoisonCachedComponent) through
-// the full integration path — if the cache record were corrupted by the
-// trap, instance B would fail to instantiate or its first method call
-// would surface a stale-component error.
+// A guest trap in one render must not break the engine for a follow-up
+// render that re-imports the same wasm package. Two-step:
+//   1. Render wasm.load-and-call-trap: expected to abort (always_panic).
+//   2. Render wasm.trap-then-fresh: re-imports the same fixture and runs
+//      findColumn — must succeed.
+// If the engine / pinned-Component machinery were corrupted by the trap,
+// step 2 would fail at instantiation or its first method call.
 tplTest.concurrent(
-  "assets.importWasm — guest trap doesn't poison the cached component",
+  "assets.importWasm — guest trap in one render doesn't break the next",
   async ({ pl, helper, expect, skip }) => {
     if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
 
-    const result = await helper.renderTemplate(
+    // Step 1: trap-render aborts → output computable rejects.
+    const trapped = await helper.renderTemplate(
       false,
-      "wasm.trap-then-fresh",
-      ["trap", "fresh"],
+      "wasm.load-and-call-trap",
+      ["unreachable"],
       () => ({}),
     );
+    await expect(
+      trapped.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
+    ).rejects.toThrow(/wasm trap|unreachable|always-panic/);
 
-    const trap = await result.computeOutput("trap", (a) => a?.getDataAsJson()).awaitStableValue();
-    const fresh = await result.computeOutput("fresh", (a) => a?.getDataAsJson()).awaitStableValue();
-
-    // Trap path surfaces as a Tengo error string (same shape as the
-    // existing happy/err/trap test asserts).
-    expect(trap as string).toMatch(/wasm trap|unreachable|func_call/);
-    // Fresh instance returns the column metadata, proving the cache
-    // entry survived the trap intact.
+    // Step 2: fresh-import render against the same fixture must succeed.
+    const ok = await helper.renderTemplate(false, "wasm.trap-then-fresh", ["fresh"], () => ({}));
+    const fresh = await ok.computeOutput("fresh", (a) => a?.getDataAsJson()).awaitStableValue();
     expect(fresh as string).toContain('"sample_id"');
     expect(fresh as string).toContain('"index"');
   },

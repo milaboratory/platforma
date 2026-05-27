@@ -1,27 +1,17 @@
-// Memory cap probe. We don't override DefaultMemoryLimit here, so the
-// live per-instance cap is the backend's default = 32 MiB. The fixture's
-// consumeMemory(bytes) allocates and writes that many bytes (forcing the
-// wasm linear memory to actually grow); requests that exceed the live
-// cap make the guest trap inside the allocator.
+// Below-cap probes. The live per-instance cap on this template is the
+// backend's default = 32 MiB (we don't override DefaultMemoryLimit on
+// the WasmV1 dep). Both 8 MiB and 24 MiB are comfortably below the cap;
+// consumeMemory returns its "consumed N bytes" ack on success.
 //
-// Probe sizes named by their relation to the live 32 MiB cap, NOT to the
-// upper clamp a block could request (64 MiB). The 64 MiB probe is "well
-// above the live cap" — twice it — and traps; it is NOT a test of the
-// upper clamp itself, since this template doesn't ask for any override.
-//
-// Test points (live cap = 32 MiB):
-//   -  8 MiB → wellBelow → succeeds
-//   - 24 MiB → nearBelow → succeeds
-//   - 40 MiB → nearAbove → traps
-//   - 64 MiB → wellAbove → traps
-//
-// Each probe runs in its own sibling instance so a trap on one doesn't
-// poison the next (cf. parallel-instances).
+// Over-cap probes have their own templates (memory-cap-overflow-near,
+// memory-cap-overflow-far) because any allocation that exceeds the cap
+// traps inside the guest and aborts the script — they can't share a
+// render with the below-cap assertions.
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 
-self.defineOutputs(["wellBelow", "nearBelow", "nearAbove", "wellAbove"])
+self.defineOutputs(["wellBelow", "nearBelow"])
 
 probe := func(bytes) {
 	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
@@ -34,8 +24,6 @@ self.body(func(_inputs) {
 	mib := 1024 * 1024
 	return {
 		wellBelow: probe(8 * mib),
-		nearBelow: probe(24 * mib),
-		nearAbove: probe(40 * mib),
-		wellAbove: probe(64 * mib)
+		nearBelow: probe(24 * mib)
 	}
 })

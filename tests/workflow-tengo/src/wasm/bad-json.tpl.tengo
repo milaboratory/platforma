@@ -1,56 +1,24 @@
 // Malformed-input probe. The fixture's fromJson parses its string arg
 // as JSON inside the guest. When the host passes garbage, the guest's
-// serde_json must surface a clean Err — which the host's result-lift
-// turns into a Tengo error, which we string()ify.
+// serde_json returns the result.Err arm; the bridge aborts the script.
 //
-// Critically: an Err inside a guest method must NOT poison the
-// instance. Each case probes a bad input then a valid recovery call on
-// the SAME instance handle. If the instance were poisoned, the
-// recovery call would return a wasm-trap error instead of a fresh
-// table handle.
+// Single template parametrised by inputs.badInput (passed in as a
+// JsonObject value resource by the test). Each .test.ts case sends a
+// different bad input and asserts the render aborts with a guest error
+// message — split so a regression in one case (e.g. one of the bad
+// inputs accidentally trapping instead of returning Err) doesn't
+// shadow the other cases.
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
-json := import("json")
 
-self.defineOutputs([
-	"badEmpty",   "recoverEmpty",
-	"badTrunc",   "recoverTrunc",
-	"badGarbage", "recoverGarbage",
-	"badSchema",  "recoverSchema"
-])
+self.awaitState("InputsLocked")
+self.awaitState("badInput", "ResourceReady")
 
-self.body(func(_inputs) {
-	validSpec := string(json.encode({
-		columns: [
-			{ name: "sample_id", type: "i32" }
-		]
-	}))
+self.defineOutputs(["unreachable"])
 
-	// Each case probes a bad input then a recovery call on its OWN
-	// sibling instance. Sibling sandboxes mean an unexpected trap on
-	// one case can't bleed into another — keeps diagnosis focused.
-	probe := func(badInput) {
-		w := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-		a := w["demo:tables/api"]
-		bad := string(a.table.fromJson(badInput))
-		good := string(a.table.fromJson(validSpec))
-		return { bad: bad, good: good }
-	}
-
-	emptyCase := probe("")
-	truncCase := probe("{\"columns\": [")
-	garbageCase := probe("hello, not json")
-	schemaCase := probe("{\"not_columns\": 42}")
-
-	return {
-		badEmpty:       emptyCase.bad,
-		recoverEmpty:   emptyCase.good,
-		badTrunc:       truncCase.bad,
-		recoverTrunc:   truncCase.good,
-		badGarbage:     garbageCase.bad,
-		recoverGarbage: garbageCase.good,
-		badSchema:      schemaCase.bad,
-		recoverSchema:  schemaCase.good
-	}
+self.body(func(inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	api.table.fromJson(inputs.badInput)
+	return { unreachable: "reached end of body v2" }
 })

@@ -1,33 +1,23 @@
-// Verifies the precompiled-component cache survives a guest trap. After
-// instance A traps, the cache entry must still be reusable so instance B
-// (created by a fresh assets.importWasm() call in the SAME render) gets
-// a clean Store + Instance and runs normally.
-//
-// Pairs with the existing parallel-instances test by attacking the order:
-// here trap-FIRST, then fresh-call — proving the cache record is not
-// poisoned by the trap. parallel-instances proved trap doesn't poison
-// SIBLING instances; this template proves trap doesn't poison the
-// CACHED COMPONENT used to spawn future instances.
+// Happy-path companion to wasm.load-and-call-trap. After a separate
+// render aborts inside the same fixture, this render uses the same
+// wasm package from a fresh importWasm() call and exercises a normal
+// findColumn. Together they prove the engine / pinned-Component stays
+// healthy across a trapping render.
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 json := import("json")
 
-self.defineOutputs(["trap", "fresh"])
+self.defineOutputs(["fresh"])
 
 self.body(func(_inputs) {
-	wasmA := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	apiA := wasmA["demo:tables/api"]
-	trap := string(apiA.table.alwaysPanic("trap-then-fresh"))
-
-	wasmB := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	apiB := wasmB["demo:tables/api"]
-	tableB := apiB.table.fromJson(string(json.encode({
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	table := api.table.fromJson(string(json.encode({
 		columns: [
 			{ name: "sample_id", type: "i32" }
 		]
 	})))
-	fresh := string(tableB.findColumn(string(json.encode({ name: "sample_id" }))))
-
-	return { trap: trap, fresh: fresh }
+	return {
+		fresh: string(table.findColumn(string(json.encode({ name: "sample_id" }))))
+	}
 })

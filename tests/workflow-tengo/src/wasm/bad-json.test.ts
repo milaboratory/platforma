@@ -1,78 +1,63 @@
+import { Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
-// Malformed-input probe. The fixture's guest serde_json must reject
-// garbage cleanly so the result.Err arm lifts to a Tengo error, NOT a
-// wasm trap. We assert two properties per case:
-//   1) The bad call surfaces an error string (not a successful table
-//      handle and not a wasm-trap string).
-//   2) The instance is NOT poisoned: a valid fromJson() on the same
-//      handle returns a usable table again.
+// Malformed-input probe. Each bad input must reach the guest's
+// serde_json parser and come back as the result<X, string>::Err arm,
+// which the bridge surfaces as a script abort. The output computable
+// rejects with the guest-side parse error in its message. The
+// trap-vs-Err distinction (serde parse error vs wasmtime trap) is
+// asserted in the Go-side wasm unit tests where the error message is
+// directly inspectable.
+
+async function runBadInput(helper: any, expect: any, badInput: string): Promise<void> {
+  const result = await helper.renderTemplate(true, "wasm.bad-json", ["unreachable"], (tx: any) => ({
+    badInput: tx.createValue(Pl.JsonObject, stringifyJson(badInput)),
+  }));
+  await expect(
+    result.computeOutput("unreachable", (a: any) => a?.getDataAsJson()).awaitStableValue(),
+  ).rejects.toThrow(/from-json|expected value|missing field|EOF/);
+}
+
 tplTest.concurrent(
-  "assets.importWasm — bad JSON input surfaces clean errors, doesn't poison instance",
+  "assets.importWasm — empty string input aborts the render",
   async ({ pl, helper, expect, skip }) => {
     if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
+    await runBadInput(helper, expect, "");
+  },
+);
 
-    const result = await helper.renderTemplate(
-      false,
-      "wasm.bad-json",
-      [
-        "badEmpty",
-        "recoverEmpty",
-        "badTrunc",
-        "recoverTrunc",
-        "badGarbage",
-        "recoverGarbage",
-        "badSchema",
-        "recoverSchema",
-      ],
-      () => ({}),
-    );
-
-    const [
-      badEmpty,
-      recoverEmpty,
-      badTrunc,
-      recoverTrunc,
-      badGarbage,
-      recoverGarbage,
-      badSchema,
-      recoverSchema,
-    ] = await Promise.all([
-      result.computeOutput("badEmpty", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("recoverEmpty", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("badTrunc", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("recoverTrunc", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("badGarbage", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("recoverGarbage", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("badSchema", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("recoverSchema", (a) => a?.getDataAsJson()).awaitStableValue(),
-    ]);
-
-    // Bad calls must surface an error indicator (the Err arm gets lifted
-    // to a Tengo error, which string()ifies into something containing
-    // "error" or the parse-error wording from serde_json). Crucially,
-    // they MUST NOT carry the wasm-trap signature.
-    const trapPattern = /wasm trap|unreachable|func_call/;
-    for (const bad of [badEmpty, badTrunc, badGarbage, badSchema] as string[]) {
-      expect(bad).not.toMatch(trapPattern);
-      expect(bad).toMatch(/error|expected|missing|EOF|invalid|fromJson|column/i);
+tplTest.concurrent(
+  "assets.importWasm — truncated JSON input aborts the render",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
     }
+    await runBadInput(helper, expect, '{"columns": [');
+  },
+);
 
-    // Recovery calls returned a usable resource — the resource's
-    // stringification has its own characteristic shape (the Tengo
-    // wrapper's _Resource_, or no error markers). We assert at minimum
-    // they don't look like errors and don't match the trap pattern.
-    for (const recovered of [
-      recoverEmpty,
-      recoverTrunc,
-      recoverGarbage,
-      recoverSchema,
-    ] as string[]) {
-      expect(recovered).not.toMatch(trapPattern);
-      expect(recovered).not.toMatch(/^error/i);
+tplTest.concurrent(
+  "assets.importWasm — non-JSON garbage input aborts the render",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
     }
+    await runBadInput(helper, expect, "hello, not json");
+  },
+);
+
+tplTest.concurrent(
+  "assets.importWasm — schema-mismatched JSON input aborts the render",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
+    }
+    await runBadInput(helper, expect, '{"not_columns": 42}');
   },
 );

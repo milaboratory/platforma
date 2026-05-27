@@ -14,16 +14,16 @@
  *
  *     // static methods on the WIT `frame` resource
  *     resp := pframesRs.frame.buildQuery({ version: "v1", column: "abundance" })
- *     if is_error(resp) {
- *         ll.panic("buildQuery failed: " + string(resp))
- *     }
  *
  *     // *.fromJson returns a stateful handle whose methods proxy to the
  *     // host-side WIT instance methods
  *     frame := pframesRs.frame.fromJson(spec)
- *     if !is_error(frame) {
- *         list := frame.listColumns()
- *     }
+ *     list := frame.listColumns()
+ *
+ * Errors: any wasm-side failure (result.Err arm, guest trap, missing
+ * export, instance poisoning) aborts the script. No defensive
+ * `is_error(...)` checks needed; see `assets.importWasm` doc for the
+ * full error model.
  *
  * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
  * the bundling story and the runtime details.
@@ -37,9 +37,7 @@ json := import("json")
 // resource name — `frame`, `table`, `axes`). `assets.importWasm` does
 // double duty here: tengo-builder's regex picks the literal up at build
 // time to bundle the wasm bytes, and at runtime the SDK wrapper calls
-// plapi.loadWasm under the hood. Load-side failures (per-render cap
-// reached, runtime disabled, etc.) abort the script — see
-// assets.importWasm doc.
+// plapi.loadWasm under the hood. Load failures abort the script.
 //
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
@@ -62,61 +60,47 @@ _resolve := func(handle, path) {
 
 // _staticCall returns a Tengo function bound to a WIT static-method path.
 // Each call: loads the wasm, resolves the path, JSON-encodes the request,
-// invokes the host method, JSON-decodes the response. Method-call errors
-// (Err arm, guest trap) propagate as Tengo *Error; load failures abort
-// the script (see assets.importWasm).
+// invokes the host method, JSON-decodes the response. Any wasm-side
+// failure (result.Err arm, trap) aborts the script — see assets.importWasm.
 _staticCall := func(path) {
 	return func(request) {
 		h := _load(undefined)
 		fn := _resolve(h, path)
 		if is_undefined(fn) {
-			return error("pframes-rs wasm export missing: " + string(path))
+			ll.panic("pframes-rs wasm export missing: %s", string(path))
 		}
 		requestJson := ""
 		if !is_undefined(request) {
 			requestJson = string(json.encode(request))
 		}
-		responseJson := fn(requestJson)
-		if is_error(responseJson) {
-			return responseJson
-		}
-		return json.decode(responseJson)
+		return json.decode(fn(requestJson))
 	}
 }
 
 // _instanceMethod returns a closure bound to (hostHandle, methodName).
 // `takesArgs` selects between JSON-arg vs no-arg invocation. Each call:
 // resolves the method, invokes with JSON-encoded args (if any),
-// JSON-decodes the response. Errors propagate.
+// JSON-decodes the response. Any wasm-side failure aborts the script.
 _instanceMethod := func(hostHandle, methodName, takesArgs) {
 	return func(args) {
 		method := hostHandle[methodName]
 		if is_undefined(method) {
-			return error("pframes-rs handle method missing: " + methodName)
+			ll.panic("pframes-rs handle method missing: %s", methodName)
 		}
-		responseJson := undefined
 		if takesArgs {
 			requestJson := ""
 			if !is_undefined(args) {
 				requestJson = string(json.encode(args))
 			}
-			responseJson = method(requestJson)
-		} else {
-			responseJson = method()
+			return json.decode(method(requestJson))
 		}
-		if is_error(responseJson) {
-			return responseJson
-		}
-		return json.decode(responseJson)
+		return json.decode(method())
 	}
 }
 
 // === frame namespace ==========================================================
 
 _wrapFrame := func(hostFrame) {
-	if is_error(hostFrame) {
-		return hostFrame
-	}
 	return ll.toStrict({
 		listColumns:        _instanceMethod(hostFrame, "listColumns", false),
 		discoverColumns:    _instanceMethod(hostFrame, "discoverColumns", true),
@@ -128,9 +112,7 @@ _wrapFrame := func(hostFrame) {
 
 frameFromJson := func(spec) {
 	h := _load(undefined)
-	specJson := string(json.encode(spec))
-	hostFrame := h.frame.fromJson(specJson)
-	return _wrapFrame(hostFrame)
+	return _wrapFrame(h.frame.fromJson(string(json.encode(spec))))
 }
 
 frameNS := ll.toStrict({
@@ -142,9 +124,6 @@ frameNS := ll.toStrict({
 // === table namespace ==========================================================
 
 _wrapTable := func(hostTable) {
-	if is_error(hostTable) {
-		return hostTable
-	}
 	return ll.toStrict({
 		findColumn: _instanceMethod(hostTable, "findColumn", true)
 	})
@@ -152,9 +131,7 @@ _wrapTable := func(hostTable) {
 
 tableFromJson := func(spec) {
 	h := _load(undefined)
-	specJson := string(json.encode(spec))
-	hostTable := h.table.fromJson(specJson)
-	return _wrapTable(hostTable)
+	return _wrapTable(h.table.fromJson(string(json.encode(spec))))
 }
 
 tableNS := ll.toStrict({
@@ -164,9 +141,6 @@ tableNS := ll.toStrict({
 // === axes namespace ===========================================================
 
 _wrapAxes := func(hostAxes) {
-	if is_error(hostAxes) {
-		return hostAxes
-	}
 	return ll.toStrict({
 		expand: _instanceMethod(hostAxes, "expand", false),
 		find:   _instanceMethod(hostAxes, "find", true)
@@ -175,9 +149,7 @@ _wrapAxes := func(hostAxes) {
 
 axesFromJson := func(spec) {
 	h := _load(undefined)
-	specJson := string(json.encode(spec))
-	hostAxes := h.axes.fromJson(specJson)
-	return _wrapAxes(hostAxes)
+	return _wrapAxes(h.axes.fromJson(string(json.encode(spec))))
 }
 
 axesNS := ll.toStrict({
