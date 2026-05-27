@@ -37,16 +37,14 @@ json := import("json")
 // resource name — `frame`, `table`, `axes`). `assets.importWasm` does
 // double duty here: tengo-builder's regex picks the literal up at build
 // time to bundle the wasm bytes, and at runtime the SDK wrapper calls
-// plapi.loadWasm under the hood.
+// plapi.loadWasm under the hood. Load-side failures (per-render cap
+// reached, runtime disabled, etc.) abort the script — see
+// assets.importWasm doc.
 //
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
 _load := func(limit) {
-	wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")
-	if is_error(wasm) {
-		return wasm
-	}
-	return wasm["milaboratories:pframes/spec"]
+	return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
 }
 
 // _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).
@@ -64,13 +62,12 @@ _resolve := func(handle, path) {
 
 // _staticCall returns a Tengo function bound to a WIT static-method path.
 // Each call: loads the wasm, resolves the path, JSON-encodes the request,
-// invokes the host method, JSON-decodes the response. Errors propagate.
+// invokes the host method, JSON-decodes the response. Method-call errors
+// (Err arm, guest trap) propagate as Tengo *Error; load failures abort
+// the script (see assets.importWasm).
 _staticCall := func(path) {
 	return func(request) {
 		h := _load(undefined)
-		if is_error(h) {
-			return h
-		}
 		fn := _resolve(h, path)
 		if is_undefined(fn) {
 			return error("pframes-rs wasm export missing: " + string(path))
@@ -131,9 +128,6 @@ _wrapFrame := func(hostFrame) {
 
 frameFromJson := func(spec) {
 	h := _load(undefined)
-	if is_error(h) {
-		return h
-	}
 	specJson := string(json.encode(spec))
 	hostFrame := h.frame.fromJson(specJson)
 	return _wrapFrame(hostFrame)
@@ -158,9 +152,6 @@ _wrapTable := func(hostTable) {
 
 tableFromJson := func(spec) {
 	h := _load(undefined)
-	if is_error(h) {
-		return h
-	}
 	specJson := string(json.encode(spec))
 	hostTable := h.table.fromJson(specJson)
 	return _wrapTable(hostTable)
@@ -184,9 +175,6 @@ _wrapAxes := func(hostAxes) {
 
 axesFromJson := func(spec) {
 	h := _load(undefined)
-	if is_error(h) {
-		return h
-	}
 	specJson := string(json.encode(spec))
 	hostAxes := h.axes.fromJson(specJson)
 	return _wrapAxes(hostAxes)

@@ -11,11 +11,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self.defineOutputs(["zero", "one", "k64", "m1", "m2", "m3minus2"])
 
 echo := func(bytes) {
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		return "import failed: " + string(wasm)
-	}
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	return string(api.table.echoBytes(string(bytes)))
 }
 

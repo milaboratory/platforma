@@ -24,15 +24,7 @@ self.body(func(_inputs) {
 		]
 	}))
 
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		msg := "import failed: " + string(wasm)
-		return {
-			emoji:  msg, arabic: msg, cjk:    msg,
-			spaced: msg, mixed:  msg
-		}
-	}
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	table := api.table.fromJson(tableSpec)
 	if is_error(table) {
 		msg := "fromJson failed: " + string(table)

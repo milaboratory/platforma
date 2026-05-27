@@ -24,11 +24,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self.defineOutputs(["wellBelow", "nearBelow", "nearAbove", "wellAbove"])
 
 probe := func(bytes) {
-	wasm := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
-	if is_error(wasm) {
-		return "import failed: " + string(wasm)
-	}
-	api := wasm["demo:tables/api"]
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
 	// Argument is a decimal string — see the WIT comment on
 	// `consume-memory` for the host's current arg-lowering limitation.
 	return string(api.table.consumeMemory(string(bytes)))
