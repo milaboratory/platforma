@@ -10,10 +10,12 @@ the previous Python-only implementation.
 The Python side here owns:
   * spec validation (`frame_name` shape, axis/column counts, dup names,
     `partition_key_length < len(axes)`),
-  * the lazy pipeline that produces the sorted intermediate parquet (cast,
-    optional null-axis filter for non-strict mode, sort by axes),
+  * the lazy pipeline that produces the intermediate parquet (cast, optional
+    null-axis filter for non-strict mode); the sort by axes is done
+    out-of-core by DuckDB afterwards, not by Polars (Polars' in-memory sort
+    OOMs on wide million-row frames),
   * registering the sink with `StepContext` so the executor flushes it,
-  * scheduling the `polars_pf.convert` call after the sink completes.
+  * scheduling the DuckDB sort + `polars_pf.convert` call after the sink completes.
 
 The `DataInfo*` / `Stats` / `NumberOfBytes` Structs below are kept as public
 types so legacy ptabler consumers that import them keep working, but
@@ -23,6 +25,7 @@ the canonical JSON envelope directly to `<column>.datainfo`.
 from typing import Dict, List, Optional
 import os
 
+import duckdb
 import polars as pl
 from msgspec import Struct
 from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
@@ -31,8 +34,6 @@ from polars_pf.json.spec import AxisType, ColumnType
 from .base import PStep, StepContext
 from ..common import toPolarsType
 
-# Re-exports so existing callers that imported `AxisMapping`/`ColumnMapping`/
-# `AxisType`/`ColumnType` from this module keep working.
 __all__ = [
     "AxisMapping",
     "AxisType",
@@ -48,11 +49,6 @@ __all__ = [
     "WriteFrame",
 ]
 
-
-# --- `.datainfo` reader types ------------------------------------------------
-# write_frame no longer builds these in Python — `polars_pf.convert` emits the
-# canonical JSON directly — but downstream code may still import them to
-# *read* `.datainfo` files. The shapes match what pframes-rs writes.
 
 class DataInfoAxis(Struct, rename="camel"):
     id: str
@@ -87,6 +83,15 @@ class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
     parts: Dict[str, DataInfoPart]
 
 
+# Row-group size shared by the DuckDB sort output and convert's read batch size
+ROW_GROUP_SIZE = 122_880
+
+
+def _escape(name: str) -> str:
+    """Quote a SQL identifier, doubling any embedded double-quotes."""
+    return '"' + name.replace('"', '""') + '"'
+
+
 class WriteFrame(PStep, tag="write_frame"):
     """PStep that materializes a polars LazyFrame into a partitioned PFrame
     directory. Corresponds to the `WriteFrameStep` TypeScript type.
@@ -106,9 +111,6 @@ class WriteFrame(PStep, tag="write_frame"):
         frame_dir = os.path.join(ctx.settings.root_folder, self.frame_name)
         os.makedirs(frame_dir)
 
-        # Cast → (optional) null-row drop → sort → sink. Polars' streaming
-        # engine handles the sort out-of-core; the convert step then walks the
-        # intermediate one row group at a time with bounded memory.
         cast_exprs = [
             pl.col(a.column).cast(toPolarsType(a.type)) for a in self.axes
         ] + [
@@ -120,12 +122,18 @@ class WriteFrame(PStep, tag="write_frame"):
             lf = lf.filter(
                 pl.all_horizontal([pl.col(a.column).is_not_null() for a in self.axes])
             )
-        lf = lf.sort([a.column for a in self.axes], nulls_last=False)
 
-        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
-        lf = lf.sink_parquet(path=intermediate_parquet, lazy=True)
+        unsorted_parquet = os.path.join(frame_dir, "unsorted.parquet")
+        lf = lf.sink_parquet(path=unsorted_parquet, lazy=True)
         ctx.add_sink(lf)
-        ctx.chain_task(lambda: self._convert(intermediate_parquet, frame_dir))
+        
+        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
+        spill_dir = str(ctx.settings.spill_folder or frame_dir)
+        ctx.chain_task(
+            lambda: self._sort_and_convert(
+                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir
+            )
+        )
 
     def _validate(self) -> None:
         if not self.frame_name or not self.frame_name.strip():
@@ -153,12 +161,38 @@ class WriteFrame(PStep, tag="write_frame"):
                 f"strictly less than the number of axes ({len(self.axes)})."
             )
 
+    def _sort_and_convert(
+        self,
+        unsorted_parquet: str,
+        intermediate_parquet: str,
+        frame_dir: str,
+        spill_dir: str,
+    ) -> None:
+        order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in self.axes)
+        conn = duckdb.connect(database=":memory:")
+        try:
+            conn.execute("SET temp_directory TO ?;", [spill_dir])
+            conn.execute(
+                f"""
+                COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
+                TO '{intermediate_parquet}'
+                (
+                    PRESERVE_ORDER TRUE,
+                    FORMAT PARQUET,
+                    ROW_GROUP_SIZE {ROW_GROUP_SIZE},
+                    COMPRESSION 'UNCOMPRESSED'
+                )
+                """,
+                [unsorted_parquet],
+            )
+        finally:
+            conn.close()
+            if os.path.exists(unsorted_parquet):
+                os.remove(unsorted_parquet)
+
+        self._convert(intermediate_parquet, frame_dir)
+
     def _convert(self, intermediate_parquet: str, frame_dir: str) -> None:
-        # All ConversionParams fields are pinned to literal values rather than
-        # imported from polars_pf or shared constants — the bytes ptabler
-        # writes must not drift if the bridge crate's defaults change.
-        # `digest_prefix` is bumped to "v02-" to invalidate caches keyed on
-        # the previous polars-hash digest scheme.
         params = ConversionParams(
             frame_dir=frame_dir,
             axes=self.axes,
@@ -166,7 +200,7 @@ class WriteFrame(PStep, tag="write_frame"):
             partition_key_length=self.partition_key_length,
             strict=self.strict,
             zstd_level=3,
-            row_group_size=122_880,
+            row_group_size=ROW_GROUP_SIZE,
             bloom_filter_fpp=0.05,
             data_page_size=256 * 1024,
             dict_page_size_limit=256 * 1024,
