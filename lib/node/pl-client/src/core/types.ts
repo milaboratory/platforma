@@ -298,13 +298,26 @@ export function isSignedResourceId(resourceId: bigint | string): resourceId is S
   return typeof resourceId === "string" && resourceId.includes("|");
 }
 
+// Process-global switch. Set to false by LLPlClient.build() when the connected
+// backend predates resource signatures (~< 3.3.0). When false, asSignedResourceId
+// accepts ids minted with an empty signature. Single-backend-per-process only:
+// a Node process talking to mixed signed/unsigned backends will share last-wins
+// state. Desktop App is single-backend-per-process, so this is acceptable.
+let resourceSignaturesRequired = true;
+
+export function setResourceSignaturesRequired(required: boolean): void {
+  resourceSignaturesRequired = required;
+}
+
 /** Validate a string as a SignedResourceId and return it with the branded type.
- *  Requires the format "<globalId>|<signatureHex>" with a non-empty signature. */
+ *  Requires the format "<globalId>|<signatureHex>". A non-empty signature is
+ *  required only when {@link areResourceSignaturesRequired} is true. */
 export function asSignedResourceId(str: string): SignedResourceId {
   const pipeIdx = str.indexOf("|");
   if (pipeIdx < 0) throw new Error(`Not a signed resource id (no '|' separator): ${str}`);
   if (pipeIdx === 0) throw new Error(`Signed resource id has empty globalId: ${str}`);
-  if (pipeIdx === str.length - 1) throw new Error(`Signed resource id has empty signature: ${str}`);
+  if (resourceSignaturesRequired && pipeIdx === str.length - 1)
+    throw new Error(`Signed resource id has empty signature: ${str}`);
   return str as SignedResourceId;
 }
 
