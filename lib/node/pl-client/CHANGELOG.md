@@ -1,5 +1,17 @@
 # @milaboratories/pl-client
 
+## 3.9.2
+
+### Patch Changes
+
+- 0c317f5: Support backends before security layer implementation.
+
+  Before the update, pl client required resource signatures to be not empty in any conversion
+  from string to SignedResourceId.
+
+  This is impossible to meet when connected to older backend (i.e. 1.45.3) that have no code
+  of our modern security layer.
+
 ## 3.9.1
 
 ### Patch Changes
