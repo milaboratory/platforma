@@ -1,5 +1,63 @@
 # @platforma-sdk/block-tools
 
+## 2.9.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.5
+
+## 2.9.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.4
+
+## 2.9.0
+
+### Minor Changes
+
+- d9ede09: Decouple Zod from TypeScript types in the block-meta / block-tools-v2 layer:
+
+  - Domain types in `pl-model-middle-layer/block_meta` are now canonical TS
+    declarations (with a single `Content` discriminated-union as the source of
+    truth for content shapes). Schemas that survive are pegged to TS types via
+    `satisfies z.ZodType<T>`; transform-bearing boundary schemas use
+    `satisfies z.ZodType<T, z.ZodTypeDef, any>`.
+  - The `Workflow<>` and `BlockComponents<>` Zod factories in
+    `pl-model-middle-layer` are replaced by plain TS generics (`Workflow<T>`,
+    `BlockComponents<W, U>`) plus a concrete `BlockComponentsDescriptionRaw`
+    boundary schema with a normalizing `string → {type:"workflow-v1", main:...}`
+    coercion for `package.json` authoring.
+  - In `@platforma-sdk/block-tools/v2`, every `.transform(...)`/`.pipe(...)`
+    pipeline becomes a named async function: `resolveBlockPackDescription`,
+    `consolidateBlockPackDescription`, `embedBlockPackMetaAbsoluteBase64`,
+    `embedBlockPackMetaAbsoluteBytes`, `embedBlockPackMetaBytes`,
+    `blockComponentsManifestToAbsoluteUrl`, `addRelativePathPrefix`,
+    `parseGlobalOverviewReg`. The unused `BlockDescriptionToExplicitBinaryBytes`,
+    `GlobalOverviewToExplicitBinaryBytes`, `GlobalOverviewToExplicitBinaryBase64`
+    Zod factories are deleted.
+  - The `BlockComponentsAbsoluteUrl` Zod factory that lived in
+    `pl-model-middle-layer/block_components.ts` (input: `ContentRelativeBinary`)
+    is removed — it was unreachable from any caller. The block-tools variant
+    is replaced by `blockComponentsManifestToAbsoluteUrl(manifest, prefix)`.
+
+  All exported TS type names and shapes are preserved; downstream consumers
+  (`@milaboratories/pl-middle-layer`, blocks) keep compiling without source
+  changes beyond the `@platforma-sdk/block-tools` import-name updates already
+  applied in this PR.
+
+### Patch Changes
+
+- Updated dependencies [d9ede09]
+  - @milaboratories/pl-model-middle-layer@1.22.0
+
+## 2.8.4
+
+### Patch Changes
+
+- Updated dependencies [62e11be]
+  - @milaboratories/pl-model-middle-layer@1.21.0
+
 ## 2.8.3
 
 ### Patch Changes

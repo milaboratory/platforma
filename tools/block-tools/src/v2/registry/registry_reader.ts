@@ -16,13 +16,14 @@ import type { FolderReader } from "../../io";
 import canonicalize from "canonicalize";
 import {
   GlobalOverviewFileName,
-  GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
   ManifestSuffix,
   packageContentPrefixInsideV2,
+  parseGlobalOverviewReg,
 } from "./schema_public";
-import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from "../model";
+import type { BlockComponentsAbsoluteUrl } from "../model";
+import { blockComponentsManifestToAbsoluteUrl, embedBlockPackMetaBytes } from "../model";
 import { LRUCache } from "lru-cache";
 import * as semver from "semver";
 import { calculateSha256 } from "../../util";
@@ -93,7 +94,7 @@ export class RegistryV2Reader {
                 .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
                 .getContentReader()
             : this.v2RootFolderReader.getContentReader();
-        return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
+        return await embedBlockPackMetaBytes(options.context.meta, contentReader);
       }, Retry2TimesWithDelay),
   });
 
@@ -123,7 +124,7 @@ export class RegistryV2Reader {
     try {
       return await retry(async () => {
         // const rootContentReader = this.v2RootFolderReader.getContentReader();
-        const globalOverview = GlobalOverviewReg.parse(
+        const globalOverview = parseGlobalOverviewReg(
           JSON.parse(
             Buffer.from(
               await this.v2RootFolderReader.readFile(GlobalOverviewFileName, {
@@ -248,8 +249,9 @@ export class RegistryV2Reader {
         const manifest = BlockPackManifest.parse(
           JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString()),
         );
-        return BlockComponentsAbsoluteUrl(packageFolderReader.rootUrl.toString()).parse(
+        return blockComponentsManifestToAbsoluteUrl(
           manifest.description.components,
+          packageFolderReader.rootUrl.toString(),
         );
       }, Retry2TimesWithDelay),
   });

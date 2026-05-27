@@ -1,5 +1,53 @@
 # @milaboratories/pl-middle-layer
 
+## 1.61.9
+
+### Patch Changes
+
+- Updated dependencies [0c317f5]
+  - @milaboratories/pl-client@3.9.2
+  - @milaboratories/pl-model-backend@1.3.5
+  - @milaboratories/pl-drivers@1.14.14
+  - @milaboratories/pl-errors@1.4.14
+  - @milaboratories/pl-tree@1.12.4
+  - @platforma-sdk/block-tools@2.9.2
+  - @platforma-sdk/workflow-tengo@5.26.0
+
+## 1.61.8
+
+### Patch Changes
+
+- Updated dependencies [a0a909c]
+  - @milaboratories/pl-client@3.9.1
+  - @milaboratories/pl-model-backend@1.3.4
+  - @milaboratories/pl-drivers@1.14.13
+  - @milaboratories/pl-errors@1.4.13
+  - @milaboratories/pl-tree@1.12.3
+  - @platforma-sdk/block-tools@2.9.1
+  - @platforma-sdk/workflow-tengo@5.26.0
+
+## 1.61.7
+
+### Patch Changes
+
+- Updated dependencies [d9ede09]
+  - @milaboratories/pl-model-middle-layer@1.22.0
+  - @platforma-sdk/block-tools@2.9.0
+  - @milaboratories/pf-spec-driver@1.3.19
+  - @milaboratories/pf-driver@1.4.14
+  - @platforma-sdk/model@1.77.11
+
+## 1.61.6
+
+### Patch Changes
+
+- Updated dependencies [62e11be]
+  - @milaboratories/pl-model-middle-layer@1.21.0
+  - @milaboratories/pf-driver@1.4.13
+  - @milaboratories/pf-spec-driver@1.3.18
+  - @platforma-sdk/model@1.77.10
+  - @platforma-sdk/block-tools@2.8.4
+
 ## 1.61.5
 
 ### Patch Changes
