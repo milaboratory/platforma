@@ -4,10 +4,17 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
+times := import("times")
 
-self.defineOutputs(["short"])
+self.defineOutputs(["short", "duration"])
 
 self.body(func(_inputs) {
 	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
-	return { short: string(api.table.spinMillis("500")) }
+    start := times.now()
+    work := string(api.table.spinMillis("500"))
+    dur := (times.now() - start) / 10000000
+    return {
+        short: work,
+        duration: dur
+    }
 })

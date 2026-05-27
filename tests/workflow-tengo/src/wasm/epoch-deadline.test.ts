@@ -27,9 +27,22 @@ tplTest.concurrent(
       skip();
       return;
     }
-    const result = await helper.renderTemplate(false, "wasm.epoch-deadline", ["short"], () => ({}));
+
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.epoch-deadline",
+      ["short", "duration"],
+      () => ({}),
+    );
     const short = await result.computeOutput("short", (a) => a?.getDataAsJson()).awaitStableValue();
     expect(short as string).toMatch(/spun/);
+
+    const duration = await result
+      .computeOutput("duration", (a) => a?.getDataAsJson())
+      .awaitStableValue();
+    // kept the log intentionally, vitest counts wrong test time,
+    // shows same for both short and deadline rejected
+    console.info("duration of short test =", duration, "ms");
   },
 );
 
