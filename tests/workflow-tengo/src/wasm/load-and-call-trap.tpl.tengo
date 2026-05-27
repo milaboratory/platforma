@@ -1,0 +1,15 @@
+// Guest trap (Rust panic → wasmtime `unreachable`). The fixture's
+// `always-panic` traps unconditionally; the bridge surfaces that as a
+// script-level abort. The test asserts the render fails with a trap
+// indicator.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["unreachable"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	api.table.alwaysPanic("integration-test trap")
+	return { unreachable: "reached end of body v3" }
+})

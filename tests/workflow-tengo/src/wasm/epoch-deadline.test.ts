@@ -40,18 +40,17 @@ tplTest.concurrent(
       skip();
       return;
     }
+    // Either layer can win the race — wasm per-call epoch deadline
+    // (defaultWasmCallTimeout) or the interpreter's MaxExecutionTime.
+    // Either way the script aborts and the output computable rejects.
     const result = await helper.renderTemplate(
       false,
       "wasm.epoch-deadline-runaway",
-      ["long"],
+      ["unreachable"],
       () => ({}),
     );
-    // The output computation must reject. We accept either a wasm trap
-    // surfaced as a Tengo error string or the interpreter's deadline
-    // tripping with `context deadline exceeded`. Both prove the runaway
-    // call was rejected.
     await expect(
-      result.computeOutput("long", (a) => a?.getDataAsJson()).awaitStableValue(),
-    ).rejects.toThrow(/deadline|timeout|trap|wasm|interrupt|unreachable|exceeded/i);
+      result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
+    ).rejects.toThrow(/wasm trap|deadline|timeout|exceeded|interrupt/i);
   },
 );

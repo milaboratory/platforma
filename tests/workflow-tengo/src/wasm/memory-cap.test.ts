@@ -1,53 +1,77 @@
 import { tplTest } from "@platforma-sdk/test";
 
-// Guest memory cap enforcement. Each probe runs in its own sibling
-// instance (so a trap on one doesn't poison the next) and consumes a
-// targeted amount of heap.
-//
-// Per-instance memory contract the backend exposes to block authors:
+// Guest memory cap contract the backend exposes to block authors:
 //   - default cap when the block doesn't override it:  32 MiB
 //   - lower clamp on an explicit block-level override: 16 MiB
 //   - upper clamp on an explicit block-level override: 64 MiB
 //
-// This template doesn't override DefaultMemoryLimit, so the live cap is
-// the default (32 MiB). Allocations ≤ 32 MiB must succeed; > 32 MiB must
-// trap. If the backend changes any of the three numbers above, this
-// test breaks and we revisit the probe sizes (and the comment) instead
-// of silently drifting.
+// These templates don't override DefaultMemoryLimit, so the live cap is
+// the default (32 MiB). Allocations ≤ 32 MiB succeed; > 32 MiB trap and
+// abort the script. If the backend changes any of these numbers, these
+// tests break and we revisit probe sizes (and the comment) instead of
+// silently drifting.
+
 tplTest.concurrent(
-  "assets.importWasm — guest memory cap traps allocations over the limit",
+  "assets.importWasm — sub-cap allocations succeed",
   async ({ pl, helper, expect, skip }) => {
     if (!pl.hasCapability("wasm:v1")) {
       skip();
       return;
     }
-
     const result = await helper.renderTemplate(
       false,
       "wasm.memory-cap",
-      ["wellBelow", "nearBelow", "nearAbove", "wellAbove"],
+      ["wellBelow", "nearBelow"],
       () => ({}),
     );
-
-    const [wellBelow, nearBelow, nearAbove, wellAbove] = await Promise.all([
+    const [wellBelow, nearBelow] = await Promise.all([
       result.computeOutput("wellBelow", (a) => a?.getDataAsJson()).awaitStableValue(),
       result.computeOutput("nearBelow", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("nearAbove", (a) => a?.getDataAsJson()).awaitStableValue(),
-      result.computeOutput("wellAbove", (a) => a?.getDataAsJson()).awaitStableValue(),
     ]);
-
-    // Below the live cap: the fixture's consumeMemory returns an ack
-    // string with a "consumed" prefix once the allocation lands.
     expect(wellBelow as string).toMatch(/consumed/);
     expect(nearBelow as string).toMatch(/consumed/);
+  },
+);
 
-    // Above the live cap: trap surfaces as a wasm error string from the
-    // bridge. Common substrings include "trap", "unreachable", "out of
-    // bounds", "memory", "wasm:" — any of those is acceptable. The
-    // crucial check is that the call did NOT return a "consumed" ack.
-    expect(nearAbove as string).not.toMatch(/consumed/);
-    expect(nearAbove as string).toMatch(/trap|unreachable|out of bounds|memory|wasm|alloc|error/i);
-    expect(wellAbove as string).not.toMatch(/consumed/);
-    expect(wellAbove as string).toMatch(/trap|unreachable|out of bounds|memory|wasm|alloc|error/i);
+// Over-cap probes: each one's allocation traps inside the guest and the
+// render aborts. We test two distances above the cap (near = +8 MiB;
+// far = 2× cap, also at the upper-clamp ceiling) to make sure the trap
+// fires across the whole over-cap range, not just on a specific size.
+// The output computable rejects with a wasm trap message.
+tplTest.concurrent(
+  "assets.importWasm — alloc just above the live cap traps and aborts",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
+    }
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.memory-cap-overflow-near",
+      ["unreachable"],
+      () => ({}),
+    );
+    await expect(
+      result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
+    ).rejects.toThrow(/wasm trap|memory|allocation|consume-memory/);
+  },
+);
+
+tplTest.concurrent(
+  "assets.importWasm — alloc well above the live cap traps and aborts",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
+    }
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.memory-cap-overflow-far",
+      ["unreachable"],
+      () => ({}),
+    );
+    await expect(
+      result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
+    ).rejects.toThrow(/wasm trap|memory|allocation|consume-memory/);
   },
 );

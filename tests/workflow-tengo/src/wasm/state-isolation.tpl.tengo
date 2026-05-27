@@ -4,8 +4,14 @@
 // reflect A's columns or vice versa.
 //
 // Instance A has 5 distinct columns; instance B has 1 column with a name
-// that doesn't appear in A. Both columnCount and findColumn responses are
-// captured so we assert by data, not just by count.
+// that doesn't appear in A. We assert state via column counts plus a
+// same-instance findColumn probe on each side (proves each handle sees
+// its own columns). Under the abort-on-err contract, a cross-instance
+// miss would kill the render, so we don't probe that here — the
+// counts-plus-own-find combo already distinguishes shared from isolated
+// stores: a shared store would surface A's columns through both handles
+// and the counts would be equal (or both findColumn calls would find
+// the "alpha" column).
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
@@ -13,8 +19,7 @@ json := import("json")
 
 self.defineOutputs([
 	"countA", "countB",
-	"aFindFromA", "aFindFromB",
-	"bFindFromA", "bFindFromB"
+	"aFindFromA", "bFindFromB"
 ])
 
 self.body(func(_inputs) {
@@ -42,26 +47,19 @@ self.body(func(_inputs) {
 	tableA := apiA.table.fromJson(specA)
 	tableB := apiB.table.fromJson(specB)
 
-	// columnCount must reflect each instance's own state. Wrap in string()
-	// so every output is a JSON-string resource — uniform shape across outputs.
 	countA := string(tableA.columnCount())
 	countB := string(tableB.columnCount())
 
 	selA := string(json.encode({ name: "alpha" }))
 	selB := string(json.encode({ name: "only-in-b" }))
 
-	// Cross-probe: searching for A's column in B must miss, and vice versa.
 	aFindFromA := string(tableA.findColumn(selA))
-	aFindFromB := string(tableB.findColumn(selA))
-	bFindFromA := string(tableA.findColumn(selB))
 	bFindFromB := string(tableB.findColumn(selB))
 
 	return {
 		countA:     countA,
 		countB:     countB,
 		aFindFromA: aFindFromA,
-		aFindFromB: aFindFromB,
-		bFindFromA: bFindFromA,
 		bFindFromB: bFindFromB
 	}
 })
