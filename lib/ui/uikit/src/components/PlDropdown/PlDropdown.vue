@@ -69,9 +69,8 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
-     * Text shown inside the field when `modelValue` is set but no option matches it
-     * (e.g. the upstream block that produced this value was deleted). Rendered
-     * italic + error color via the `input-value--missing` style.
+     * Text shown in the field when `modelValue` has no matching option — e.g. its
+     * upstream block was deleted. Rendered italic in error color.
      */
     missingValueLabel?: string;
     /**
@@ -192,8 +191,8 @@ const computedError = computed(() => {
     return getErrorMessage(props.error);
   }
 
-  // Missing state is communicated by the field itself (missingValueLabel),
-  // so don't duplicate it as a helper error.
+  // The field renders the missing state via `missingValueLabel`; no need to
+  // duplicate it as a helper error.
   return undefined;
 });
 
