@@ -3,10 +3,10 @@ import {
   PObjectId,
   readAnnotation,
   type AxisQualification,
+  type MatchQualifications,
   type PColumnSpec,
 } from "@milaboratories/pl-model-common";
 import { isNil } from "es-toolkit";
-import type { MatchQualifications, MatchVariant } from "../columns";
 
 export type TooltipEntry = {
   /** Main column spec — used for column-name fallback when no label. */
@@ -14,7 +14,7 @@ export type TooltipEntry = {
   /** Qualifications carried by this variant. */
   qualifications?: MatchQualifications;
   /** Linker steps traversed to reach the hit column. */
-  linkerPath?: MatchVariant["path"];
+  linkerPath?: ReadonlyArray<{ readonly linker: { readonly spec: PColumnSpec } }>;
   /** Position of this variant within the same physical column (1-based). */
   variantIndex?: number;
   /** Total variants for the same physical column. */

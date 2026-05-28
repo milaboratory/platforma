@@ -1,35 +1,39 @@
-import { Branded, throwError } from "@milaboratories/helpers";
+import { type Branded, throwError } from "@milaboratories/helpers";
+import { type CanonicalizedJson, canonicalizeJson, parseJsonSafely } from "../../../json";
 import { PObjectId } from "../../../pool";
 import { AxisQualification } from "./selectors";
-import { canonicalizeJson } from "../../../json";
+import { ColumnUniversalId } from "./ids";
 
-export type DiscoveredPColumn = {
-  column: PObjectId;
+export interface ColumnDiscoveredKey {
+  __isDiscovered: true;
+  column: ColumnUniversalId;
   path?: PathItem[];
   columnQualifications?: AxisQualification[];
   queriesQualifications?: Record<PObjectId, AxisQualification[]>;
-};
+}
 
-export type DiscoveredPColumnId = Branded<PObjectId, "DiscoveredPColumnId">; // CanonicalizedJson<DiscoveredPColumn>;
+export type ColumnDiscoveredId = Branded<
+  CanonicalizedJson<ColumnDiscoveredKey>,
+  "ColumnDiscoveredId"
+>;
 
 type PathItem = {
   type: "linker";
-  column: PObjectId;
+  column: ColumnUniversalId;
 };
 
-export function isDiscoveredPColumn(obj: unknown): obj is DiscoveredPColumn {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "path" in obj &&
-    "column" in obj &&
-    "columnQualifications" in obj &&
-    "queriesQualifications" in obj
-  );
+export function isColumnDiscoveredKey(obj: unknown): obj is ColumnDiscoveredKey {
+  return typeof obj === "object" && obj !== null && "__isDiscovered" in obj;
 }
 
-export function distillDiscoveredPColumn(props: DiscoveredPColumn): DiscoveredPColumn {
+export function isColumnDiscoveredId(str: unknown): str is ColumnDiscoveredId {
+  if (typeof str !== "string") return false;
+  return isColumnDiscoveredKey(parseJsonSafely(str));
+}
+
+export function distillColumnDiscoveredKey(props: ColumnDiscoveredKey): ColumnDiscoveredKey {
   return {
+    __isDiscovered: true,
     column: props.column,
     path: Array.isArray(props.path) && props.path.length > 0 ? props.path : undefined,
     columnQualifications:
@@ -43,30 +47,41 @@ export function distillDiscoveredPColumn(props: DiscoveredPColumn): DiscoveredPC
   };
 }
 
-export function createDiscoveredPColumnId(props: {
-  column: PObjectId;
+export function createColumnDiscoveredId(props: {
+  column: ColumnUniversalId;
   path?: PathItem[];
   columnQualifications?: AxisQualification[];
   queriesQualifications?: Record<PObjectId, AxisQualification[]>;
-}): DiscoveredPColumnId {
-  return stringifyDiscoveredPColumnId(props);
+}): ColumnDiscoveredId {
+  return stringifyColumnDiscoveredId(props);
 }
 
-export function parseDiscoveredPColumnId(id: DiscoveredPColumnId): DiscoveredPColumn {
+export function createColumnDiscoveredKey(props: {
+  column: ColumnUniversalId;
+  path?: PathItem[];
+  columnQualifications?: AxisQualification[];
+  queriesQualifications?: Record<PObjectId, AxisQualification[]>;
+}): ColumnDiscoveredKey {
+  return distillColumnDiscoveredKey({ __isDiscovered: true, ...props });
+}
+
+export function parseColumnDiscoveredId(id: ColumnDiscoveredId): ColumnDiscoveredKey {
   try {
     const parsed = JSON.parse(id);
-    return isDiscoveredPColumn(parsed)
+    return isColumnDiscoveredKey(parsed)
       ? parsed
       : throwError("Parsed object is not a valid DiscoveredPColumn");
   } catch {
     throw new Error(
-      "Invalid DiscoveredPColumnId: not a valid JSON or does not conform to DiscoveredPColumn structure",
+      "Invalid ColumnDiscoveredId: not a valid JSON or does not conform to DiscoveredPColumn structure",
     );
   }
 }
 
-export function stringifyDiscoveredPColumnId(id: DiscoveredPColumn) {
-  return canonicalizeJson<DiscoveredPColumn>(
-    distillDiscoveredPColumn(id),
-  ) as string as DiscoveredPColumnId;
+export function stringifyColumnDiscoveredId(
+  id: Omit<ColumnDiscoveredKey, "__isDiscovered">,
+): ColumnDiscoveredId {
+  return canonicalizeJson<ColumnDiscoveredKey>(
+    distillColumnDiscoveredKey({ __isDiscovered: true, ...id }),
+  ) as ColumnDiscoveredId;
 }

@@ -46,8 +46,6 @@ export const ACCESS_COUNT_KEY = "_accessCount";
 /** @internal exported for testing */
 export const ACCESS_KEY_PREFIX = "access_";
 
-// ─── Stats ───────────────────────────────────────────────────────────────────
-
 export type TemplateCacheStat = {
   totalMs: number;
   flattenMs: number;
@@ -80,8 +78,6 @@ function initialStat(): TemplateCacheStat {
   };
 }
 
-// ─── Tree node abstraction ───────────────────────────────────────────────────
-
 interface CacheableNode {
   /** SHA-256 content hash (includes all descendant content) */
   hash: string;
@@ -91,8 +87,6 @@ interface CacheableNode {
   /** Hashes of direct child nodes this node depends on */
   childHashes: string[];
 }
-
-// ─── Hash computation helpers ────────────────────────────────────────────────
 
 function getSourceCode(name: string, sources: Record<string, string>, sourceHash: string): string {
   return notEmpty(
@@ -149,8 +143,6 @@ function hashSoftwareV3(sw: TemplateSoftwareDataV3): string {
     .update(sw.sourceHash)
     .digest("hex");
 }
-
-// ─── Tree flattening ─────────────────────────────────────────────────────────
 
 function flattenV2Tree(data: TemplateData): CacheableNode[] {
   const nodes: CacheableNode[] = [];
@@ -404,8 +396,6 @@ export function flattenTemplateTree(data: TemplateData | CompiledTemplateV3): Ca
   }
 }
 
-// ─── Cache operations ────────────────────────────────────────────────────────
-
 /** In-memory cache for the TemplateCache SignedResourceId per PlClient instance. */
 const cacheRidMap = new WeakMap<PlClient, SignedResourceId>();
 
@@ -458,8 +448,6 @@ export async function dropTemplateCache(pl: PlClient): Promise<void> {
   invalidateTemplateCacheId(pl);
 }
 
-// ─── GC ──────────────────────────────────────────────────────────────────────
-
 /**
  * Run count-based garbage collection on the template cache.
  * Evicts least-recently-used entries when the cache exceeds maxEntries.
@@ -504,8 +492,6 @@ export async function runGc(
     return true;
   });
 }
-
-// ─── Batched materialization ─────────────────────────────────────────────────
 
 /** Create a batch of cache nodes in the current transaction. */
 function createBatchNodes(
@@ -743,8 +729,6 @@ export async function loadTemplateCached(
     }
   }
 }
-
-// ─── Caller helper ───────────────────────────────────────────────────────────
 
 /**
  * Pre-materialize a block pack's template via cache.

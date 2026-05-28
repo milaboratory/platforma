@@ -1,4 +1,4 @@
-import type { PColumn, PColumnSpec, PColumnLazy, PFrameDef } from "@milaboratories/pl-model-common";
+import type { PColumn, PColumnSpec, PFrameDef } from "@milaboratories/pl-model-common";
 import {
   getNormalizedAxesList,
   getAxisId,
@@ -15,7 +15,7 @@ import { PColumnCollection } from "../render";
 export function getAllRelatedColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   predicate: (spec: PColumnSpec) => boolean,
-): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
+): PFrameDef<PColumn<undefined | PColumnDataUniversal>> {
   // if current block doesn't produce own columns then use all columns from result pool
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
@@ -46,10 +46,10 @@ export function getRelatedColumns<A, U>(
     columns: rootColumns,
     predicate,
   }: {
-    columns: PColumn<PColumnDataUniversal>[];
+    columns: PColumn<undefined | PColumnDataUniversal>[];
     predicate: (spec: PColumnSpec) => boolean;
   },
-): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
+): PFrameDef<PColumn<undefined | PColumnDataUniversal>> {
   // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);

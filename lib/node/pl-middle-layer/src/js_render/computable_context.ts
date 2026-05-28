@@ -7,14 +7,12 @@ import type {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
   FieldTraversalStep as FieldTraversalStepFromSDK,
-  Option,
   PColumn,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -42,6 +40,7 @@ import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
 import type { Block } from "../model/project_model";
 import { parseFinalPObjectCollection } from "../pool/p_object_collection";
 import type { ResultPool } from "../pool/result_pool";
+import { collectUpstreamBlockCtx, type UpstreamBlockCtx } from "../pool/upstream_block_ctx";
 import type { JsExecutionContext } from "./context";
 import type { VmFunctionImplementation } from "quickjs-emscripten";
 import { Scope, type QuickJSHandle } from "quickjs-emscripten";
@@ -54,10 +53,10 @@ import {
   ServiceMethodNotFoundError,
 } from "@milaboratories/pl-model-common";
 import { getServiceInjectors } from "./service_injectors";
-
-function bytesToBase64(data: Uint8Array | undefined): string | undefined {
-  return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
-}
+import { MainAccessorName, StagingAccessorName } from "@platforma-sdk/model";
+import { buildColumnRegistry, resolvePColumnById } from "./column_registry";
+import type { ColumnRegistry, PObjectId } from "@milaboratories/pl-model-common";
+import { collapseSpecOverrideNode } from "./spec_override_collapse";
 
 export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRenderCtxMethods<
   string,
@@ -92,6 +91,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   public resetComputableCtx() {
     this.computableCtx = undefined;
     this.accessors.clear();
+    this._resultPool = undefined;
+    this._upstreamBlockCtx = undefined;
+    this._rawUpstreamBlockCtx = undefined;
+    this._columnRegistry = undefined;
   }
 
   private get requireComputableCtx(): ComputableCtx {
@@ -151,6 +154,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   getIsReadyOrError(handle: string): boolean {
     return this.getAccessor(handle).getIsReadyOrError();
+  }
+
+  hasData(handle: string): boolean {
+    return this.getAccessor(handle).hasData();
   }
 
   getIsFinal(handle: string): boolean {
@@ -350,10 +357,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this._resultPool;
   }
 
-  public calculateOptions(predicate: PSpecPredicate): Option[] {
-    return this.resultPool.calculateOptions(predicate);
-  }
-
   public getDataFromResultPool(): ResultCollection<PObject<string>> {
     const collection = this.resultPool.getData();
     if (collection.instabilityMarker !== undefined)
@@ -409,28 +412,79 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     );
   }
 
+  /**
+   * Single source-of-truth cache of upstream-block ctx pairs as raw
+   * `PlTreeNodeAccessor`s. Both the sandbox-facing `getUpstreamBlockCtx()`
+   * (string-handle view) and the host column registry are derived from this.
+   */
+  private _rawUpstreamBlockCtx: UpstreamBlockCtx<PlTreeNodeAccessor>[] | undefined = undefined;
+  /**
+   * Raw upstream-block ctx accessors for the current render. Public so the
+   * `ColumnsCollection` service injector (`service_injectors.ts`) can build
+   * `ColumnsCollectionDriverHost.getUpstreamBlockCtxes` bindings without
+   * round-tripping through the handle-shape view.
+   */
+  public getRawUpstreamBlockCtx(): UpstreamBlockCtx<PlTreeNodeAccessor>[] {
+    if (this._rawUpstreamBlockCtx === undefined) {
+      const prjEntry = notEmpty(this.blockCtx.projectEntry, "projectEntry");
+      this._rawUpstreamBlockCtx = collectUpstreamBlockCtx(
+        this.requireComputableCtx,
+        prjEntry,
+        this.blockCtx.blockId,
+      );
+    }
+    return this._rawUpstreamBlockCtx;
+  }
+
+  private _upstreamBlockCtx: UpstreamBlockCtx<string>[] | undefined = undefined;
+  public getUpstreamBlockCtx(): UpstreamBlockCtx<string>[] {
+    if (this._upstreamBlockCtx === undefined) {
+      this._upstreamBlockCtx = this.getRawUpstreamBlockCtx().map((b) => ({
+        blockId: b.blockId,
+        prodCtx: this.wrapAccessor(b.prodCtx),
+        stagingCtx: this.wrapAccessor(b.stagingCtx),
+        prodIncomplete: b.prodIncomplete,
+        stagingIncomplete: b.stagingIncomplete,
+      }));
+    }
+    return this._upstreamBlockCtx;
+  }
+
+  //
+  // Host-side column registry — id → LeafEntry index over outputs/prerun/raw pool.
+  // Mirrors the sandbox `ColumnRegistry` so `createPFrame` / `createPTable` can
+  // accept `PObjectId` in addition to materialised `PColumn`s.
+  //
+  private _columnRegistry: ColumnRegistry<PlTreeNodeAccessor> | undefined = undefined;
+  public getColumnRegistry(): ColumnRegistry<PlTreeNodeAccessor> {
+    if (this._columnRegistry !== undefined) return this._columnRegistry;
+    return (this._columnRegistry = buildColumnRegistry({
+      outputs: this.accessors.get(MainAccessorName) ?? undefined,
+      prerun: this.accessors.get(StagingAccessorName) ?? undefined,
+      upstreamBlockCtxes: this.getRawUpstreamBlockCtx(),
+    }));
+  }
+
   //
   // PFrames / PTables
   //
 
   public createPFrame(
-    def: PFrameDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+    def: PFrameDef<PObjectId | PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PFrameHandle {
     using guard = new PoolEntryGuard(
-      this.env.driverKit.pFrameDriver.createPFrame(
-        def.map((c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
-      ),
+      this.env.driverKit.pFrameDriver.createPFrame(def.map((c) => this.resolvePColumn(c))),
     );
     this.requireComputableCtx.addOnDestroy(guard.entry.unref);
     return guard.keep().key;
   }
 
   public createPTable(
-    def: PTableDef<PColumn<string | PColumnValues | DataInfo<string>>>,
+    def: PTableDef<PObjectId | PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
     using guard = new PoolEntryGuard(
       this.env.driverKit.pFrameDriver.createPTable(
-        mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+        mapPTableDef(def, (c) => this.resolvePColumn(c)),
       ),
     );
     this.requireComputableCtx.addOnDestroy(guard.entry.unref);
@@ -438,15 +492,33 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   }
 
   public createPTableV2(
-    def: PTableDefV2<PColumn<string | PColumnValues | DataInfo<string>>>,
+    def: PTableDefV2<PObjectId | PColumn<string | PColumnValues | DataInfo<string>>>,
   ): PTableHandle {
     using guard = new PoolEntryGuard(
       this.env.driverKit.pFrameDriver.createPTableV2(
-        mapPTableDefV2(def, (c) => mapPObjectData(c, (d) => this.transformInputPData(d))),
+        mapPTableDefV2(def, {
+          column: (c) => this.resolvePColumn(c),
+          node: collapseSpecOverrideNode,
+        }),
       ),
     );
     this.requireComputableCtx.addOnDestroy(guard.entry.unref);
     return guard.keep().key;
+  }
+
+  /**
+   * Normalise a def element: pass-through for materialised columns (after
+   * mapping their `data` payload via {@link transformInputPData}), or resolve
+   * a bare id through the host column registry. `resolvePColumnById` extracts
+   * the underlying {@link PObjectId} from any id encoding
+   * ({@link ColumnOverridedId}, etc.).
+   */
+  private resolvePColumn(
+    item: PObjectId | PColumn<string | PColumnValues | DataInfo<string>>,
+  ): PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>> {
+    return typeof item === "string"
+      ? resolvePColumnById(this.getColumnRegistry(), item)
+      : mapPObjectData(item, (d) => this.transformInputPData(d));
   }
 
   /**
@@ -495,7 +567,13 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   // Helpers
   //
 
-  private getAccessor(handle: string): PlTreeNodeAccessor {
+  /**
+   * Resolve a sandbox-side `AccessorHandle` string back to its concrete
+   * host accessor. Used internally by every `traverse`/`getX(handle)`
+   * method and externally by the `ColumnsCollection` service injector
+   * for `SerializedColumnsSource` of kind `"accessor"`.
+   */
+  public getAccessor(handle: string): PlTreeNodeAccessor {
     const accessor = this.accessors.get(handle);
     if (accessor === undefined) throw new Error("No such accessor");
     return accessor;
@@ -647,6 +725,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("getIsFinal", (handle) => {
         return parent.exportSingleValue(this.getIsFinal(vm.getString(handle)), undefined);
+      });
+
+      exportCtxFunction("hasData", (handle) => {
+        return parent.exportSingleValue(this.hasData(vm.getString(handle)), undefined);
       });
 
       exportCtxFunction("getError", (handle) => {
@@ -816,13 +898,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         return parent.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
       });
 
-      exportCtxFunction("calculateOptions", (predicate) => {
-        return parent.exportObjectUniversal(
-          this.calculateOptions(parent.importObjectViaJson(predicate) as PSpecPredicate),
-          undefined,
-        );
-      });
-
       exportCtxFunction("getSpecFromResultPoolByRef", (blockId, exportName) => {
         return parent.exportObjectUniversal(
           this.getSpecFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
@@ -835,6 +910,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
           this.getDataFromResultPoolByRef(vm.getString(blockId), vm.getString(exportName)),
           undefined,
         );
+      });
+
+      exportCtxFunction("getUpstreamBlockCtx", () => {
+        return parent.exportObjectUniversal(this.getUpstreamBlockCtx(), undefined);
       });
 
       exportCtxFunction("createPFrame", (def) => {
@@ -937,4 +1016,8 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
     });
   }
+}
+
+function bytesToBase64(data: Uint8Array | undefined): string | undefined {
+  return data !== undefined ? Buffer.from(data).toString("base64") : undefined;
 }

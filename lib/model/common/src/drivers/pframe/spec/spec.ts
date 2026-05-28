@@ -174,7 +174,13 @@ export const Annotation = {
   },
 } as const;
 
-export type AnnotationDataStatus = "computing" | "ready" | "error" | "absent";
+export type AnnotationDataStatus =
+  | "missing"
+  | "resolving"
+  | "absent"
+  | "computing"
+  | "ready"
+  | "error";
 
 export type Annotation = Metadata &
   Partial<{
@@ -709,8 +715,6 @@ export interface PColumn<Data> extends PObject<Data> {
   /** PColumn spec, allowing it to be found among other PObjects */
   readonly spec: PColumnSpec;
 }
-
-export type PColumnLazy<T> = PColumn<() => T>;
 
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */

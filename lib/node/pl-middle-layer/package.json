@@ -30,6 +30,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
+    "@milaboratories/columns-collection-driver": "workspace:*",
     "@milaboratories/computable": "workspace:*",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pf-driver": "workspace:*",

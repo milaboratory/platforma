@@ -6,16 +6,15 @@ import type {
   ModelServices,
   Option,
   PColumn,
-  PColumnLazy,
   PColumnSelector,
   PColumnSpec,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
+  ColumnUniversalId,
   PObject,
   PObjectId,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -45,6 +44,7 @@ import {
   withEnrichments,
   legacyColumnSelectorsToPredicate,
   extractAllColumns,
+  visitDataInfo,
 } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import type { Optional } from "utility-types";
@@ -72,6 +72,8 @@ import { patchInSetFilters } from "./util/pframe_upgraders";
 import type { PColumnDataUniversal } from "./internal";
 import { getService } from "../services";
 import { allPColumnsReady } from "./util";
+import { throwError } from "@milaboratories/helpers";
+import { isString } from "es-toolkit";
 
 /**
  * Helper function to match domain objects
@@ -92,19 +94,25 @@ export type UniversalColumnOption = { label: string; value: SUniversalPColumnId 
 
 /**
  * Transforms PColumn data into the internal representation expected by the platform
- * @param data Data from a PColumn to transform
+ * @param column Data from a PColumn to transform
  * @returns Transformed data compatible with platform API
  */
-function transformPColumnData(
-  data: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
+export function finalizePColumnData(
+  column: PColumn<PColumnDataUniversal<undefined | TreeNodeAccessor>>,
 ): PColumn<PColumnValues | AccessorHandle | DataInfo<AccessorHandle>> {
-  return mapPObjectData(data, (d) => {
-    if (d instanceof TreeNodeAccessor) {
-      return d.handle;
-    } else if (isDataInfo(d)) {
-      return mapDataInfo(d, (accessor) => accessor.handle);
+  return mapPObjectData(column, (data) => {
+    if (data instanceof TreeNodeAccessor) {
+      return data.handle;
+    } else if (isDataInfo(data)) {
+      let ready = true;
+      visitDataInfo(data, (accessor) => (ready &&= accessor?.getIsReadyOrError() ?? false));
+      if (!ready) return [];
+      return mapDataInfo(
+        data,
+        (accessor) => accessor?.handle ?? throwError("Accessor handle is undefined"),
+      );
     } else {
-      return d ?? [];
+      return data ?? [];
     }
   });
 }
@@ -130,15 +138,21 @@ type GetOptionsOpts = {
   label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps;
 };
 
+/**
+ * @deprecated use the direct `ctx.*` methods on `RenderCtxBase` instead.
+ *
+ * Migration map:
+ * - `getSpecs` → `ctx.getSpecs`
+ * - `getSpecByRef` / `getPColumnSpecByRef` → `ctx.getSpecByRef` / `ctx.getPColumnSpecByRef`
+ * - `getDataByRef` / `getPColumnByRef` → `ctx.getDataByRef` / `ctx.getPColumnByRef`
+ * - `getOptions` → `ctx.getOptions`
+ *
+ * Eager methods `selectColumns` / `getData` / `getDataWithErrors` should be
+ * replaced by `ctx.getSpecs` + on-demand `ctx.getStatusByRef` /
+ * `ctx.getPColumnByRef` so that the data resource is not subscribed up-front.
+ */
 export class ResultPool implements ColumnProvider, AxisLabelProvider {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
-
-  /**
-   * @deprecated use getOptions()
-   */
-  public calculateOptions(predicate: PSpecPredicate): Option[] {
-    return this.ctx.calculateOptions(predicate);
-  }
 
   public getOptions(
     predicateOrSelector: ((spec: PObjectSpec) => boolean) | PColumnSelector | PColumnSelector[],
@@ -221,7 +235,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
       | APColumnSelectorWithSplit
       | APColumnSelectorWithSplit[],
     opts?: UniversalPColumnOpts,
-  ): PColumn<PColumnDataUniversal>[] | undefined {
+  ): undefined | PColumn<undefined | PColumnDataUniversal>[] {
     const anchorCtx = this.resolveAnchorCtx(anchorsOrCtx);
     if (!anchorCtx) return undefined;
     return new PColumnCollection()
@@ -351,11 +365,6 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
-    // @TODO remove after 1 Jan 2025; forward compatibility
-    if (typeof this.ctx.getDataFromResultPoolByRef === "undefined")
-      return this.getData().entries.find(
-        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name,
-      )?.obj;
     const data = this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name); // Keep original call
     // Need to handle undefined case before mapping
     if (!data) return undefined;
@@ -491,6 +500,9 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
    *
    * @param selectors - A predicate function, a single selector, or an array of selectors.
    * @returns An array of PColumn objects matching the selectors. Data is loaded on first access.
+   * @deprecated use `RenderCtxBase.rawResultPool` + `ResultPoolColumnsProvider` +
+   * `discoverColumns` instead. This eager path materializes column data
+   * unnecessarily for callers that only filter by spec.
    */
   public selectColumns(
     selectors: ((spec: PColumnSpec) => boolean) | PColumnSelector | PColumnSelector[],
@@ -552,7 +564,7 @@ export class ResultPool implements ColumnProvider, AxisLabelProvider {
 
 /** Main entry point to the API available within model lambdas (like outputs, sections, etc..) */
 export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
-  protected readonly ctx: GlobalCfgRenderCtx;
+  public readonly ctx: GlobalCfgRenderCtx;
 
   constructor() {
     this.ctx = getCfgRenderCtx();
@@ -611,29 +623,8 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.getNamedAccessor(MainAccessorName);
   }
 
+  /** @deprecated use `rawResultPool` + `ResultPoolColumnsProvider` instead. */
   public readonly resultPool = new ResultPool();
-
-  /**
-   * Find labels data for a given axis id. It will search for a label column and return its data as a map.
-   * @returns a map of axis value => label
-   * @deprecated Use resultPool.findLabels instead
-   */
-  public findLabels(axis: AxisId): Record<string | number, string> | undefined {
-    return this.resultPool.findLabels(axis);
-  }
-
-  private verifyInlineAndExplicitColumnsSupport(
-    columns: (PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>)[],
-  ) {
-    const hasInlineColumns = columns.some(
-      (c) => !(c.data instanceof TreeNodeAccessor) || isDataInfo(c.data),
-    ); // Updated check for DataInfo
-    const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
-    if (hasInlineColumns && !inlineColumnsSupport)
-      throw Error(`Inline or explicit columns not supported`); // Combined check
-
-    // Removed redundant explicitColumns check
-  }
 
   private patchPTableDef(
     def: PTableDef<PColumn<PColumnDataUniversal>>,
@@ -656,13 +647,10 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return def;
   }
 
-  // TODO remove all non-PColumn fields
   public createPFrame(
-    def: PFrameDef<
-      PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>
-    >,
+    def: PFrameDef<PObjectId | SUniversalPColumnId | PColumn<undefined | PColumnDataUniversal>>,
   ): PFrameHandle | undefined {
-    return this.ctx.createPFrame(def.map((c) => transformPColumnData(c)));
+    return this.ctx.createPFrame(def.map((v) => (isString(v) ? v : finalizePColumnData(v))));
   }
 
   // TODO remove all non-PColumn fields
@@ -698,20 +686,16 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
       rawDef = this.patchPTableDef(def);
     }
     const columns = extractAllColumns(rawDef.src);
-    this.verifyInlineAndExplicitColumnsSupport(columns);
     if (!allPColumnsReady(columns)) return undefined;
-    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => transformPColumnData(po)));
+    return this.ctx.createPTable(mapPTableDef(rawDef, finalizePColumnData));
   }
 
   public createPTableV2(
-    def: PTableDefV2<PColumn<undefined | PColumnDataUniversal>>,
+    def: PTableDefV2<ColumnUniversalId | PColumn<undefined | PColumnDataUniversal>>,
   ): PTableHandle | undefined {
-    return this.ctx.createPTableV2(mapPTableDefV2(def, (po) => transformPColumnData(po)));
-  }
-
-  /** @deprecated scheduled for removal from SDK */
-  public getBlockLabel(blockId: string): string {
-    return this.ctx.getBlockLabel(blockId);
+    return this.ctx.createPTableV2(
+      mapPTableDefV2(def, { column: (v) => (isString(v) ? v : finalizePColumnData(v)) }),
+    );
   }
 
   public getCurrentUnstableMarker(): string | undefined {

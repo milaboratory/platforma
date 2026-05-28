@@ -1,6 +1,6 @@
 import type { AxisSpec } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../render";
-import type { PlDataTableSheet } from "./typesV7";
+import type { PlDataTableSheet } from "./typesV8";
 
 /** Create sheet entries for PlDataTable */
 export function createPlDataTableSheet<A, U>(

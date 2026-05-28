@@ -168,7 +168,11 @@ test("createTableV2 support", async ({ expect }) => {
     { key: ["d"], val: 5 },
   ];
 
-  const column = { id: columnId, spec: columnSpec, data: inlineData };
+  const column = {
+    id: columnId,
+    spec: columnSpec,
+    data: inlineData,
+  };
 
   const columnRef: SpecQueryExpression = { type: "columnRef", value: columnId };
 
@@ -339,7 +343,11 @@ test("createTableV2 sorting by axis with 2 axes", async ({ expect }) => {
     { key: ["b", "y"], val: 6 },
   ];
 
-  const column = { id: columnId, spec: columnSpec, data: inlineData };
+  const column = {
+    id: columnId,
+    spec: columnSpec,
+    data: inlineData,
+  };
 
   const axis1Ref: SpecQueryExpression = {
     type: "axisRef",

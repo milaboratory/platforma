@@ -1,11 +1,11 @@
 import {
+  type AnnotationDataStatus,
+  type ColumnUniversalId,
   type PColumn,
   type PColumnSpec,
-  type PFrameSpecDriver,
   type PObjectId,
   Annotation,
-  canonicalizeAxisId,
-  DiscoveredPColumnId,
+  extractPObjectId,
   readAnnotation,
 } from "@milaboratories/pl-model-common";
 import {
@@ -16,12 +16,17 @@ import {
   deriveDistinctTooltips,
   type TooltipEntry,
 } from "../../../labels/derive_distinct_tooltips";
-import type { ColumnDataStatus, MatchQualifications, MatchVariant } from "../../../columns";
-import type { ColumnMatcher, ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
-import type { ColumnSelector } from "../../../columns";
-import { ArrayColumnProvider, ColumnCollectionBuilder } from "../../../columns";
-import { isNil } from "es-toolkit";
+import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
+import type { ColumnSelector, MatchQualifications } from "@milaboratories/pl-model-common";
+import { ColumnsCollection, hasColumnData, type ColumnRecipe } from "../../../columns";
+import type { GlobalCfgRenderCtx } from "../../../render/internal";
+import { isNil, uniqBy } from "es-toolkit";
 import { getField } from "@milaboratories/helpers";
+
+/** Adapt a {@link ColumnRecipe} to the plain {@link RuleColumn} shape. */
+export function toRuleColumn(col: ColumnRecipe): RuleColumn {
+  return { id: extractPObjectId(col.id), spec: col.getSpec() };
+}
 
 /** Check if column should be omitted from the table */
 export function isColumnHidden(spec: { annotations?: Annotation }): boolean {
@@ -64,47 +69,36 @@ export function getOrderPriority(
  * (first-match-wins, preserving original rule order).
  *
  * Predicate-based rules (`ColumnMatcher`) are evaluated directly on the spec.
- * Selector-based rules (`ColumnSelector`) are matched via `PFrameSpecDriver.discoverColumns`
- * using the same engine as `ColumnCollection.findColumns` — no client-side matcher.
+ * Selector-based rules (`ColumnSelector`) are matched via the
+ * `columnsCollection` service — the inline column ids must be resolvable in
+ * the active render ctx for the host to read their specs.
  */
-export function evaluateRules<R extends { match: ColumnMatcher | ColumnSelector }>(
+export function evaluateRules<R extends { match: ColumnSelector }>(
   rules: R[],
-  columns: RuleColumn[],
-  pframeSpec: PFrameSpecDriver,
+  columns: ColumnRecipe[],
 ): Map<PObjectId, R> {
   const result = new Map<PObjectId, R>();
   if (rules.length === 0 || columns.length === 0) return result;
 
-  const hasSelectorRules = rules.some((rule) => typeof rule.match !== "function");
+  const selectorRules = rules.filter((rule) => typeof rule.match !== "function");
   const selectorHitsByRule = new Map<R, Set<PObjectId>>();
 
-  if (hasSelectorRules) {
-    const dedupedColumns = dedupeById(columns);
-    const pColumns = dedupedColumns.map((c) => ({ id: c.id, spec: c.spec, data: undefined }));
-    const collection = new ColumnCollectionBuilder(pframeSpec)
-      .addSource(new ArrayColumnProvider(pColumns))
-      .build();
-    if (collection === undefined) return result;
-
-    try {
-      for (const rule of rules) {
-        if (typeof rule.match === "function") continue;
-        const hits = collection.findColumns({ include: rule.match });
-        selectorHitsByRule.set(rule, new Set(hits.map((h) => h.id)));
-      }
-    } finally {
-      collection.dispose();
+  if (selectorRules.length > 0) {
+    const baseColumns = uniqBy(columns, (col) => col.id);
+    const baseCollection = ColumnsCollection([{ columns: baseColumns, isFinal: true }]);
+    for (const rule of selectorRules) {
+      const hitIds = baseCollection.filter({ include: rule.match }).getColumnIds();
+      if (hitIds.length === 0) return result;
+      selectorHitsByRule.set(rule, new Set(hitIds.map((id) => extractPObjectId(id))));
     }
   }
 
   for (const col of columns) {
+    const colKey = extractPObjectId(col.id);
     for (const rule of rules) {
-      const matches =
-        typeof rule.match === "function"
-          ? rule.match(col.spec)
-          : (selectorHitsByRule.get(rule)?.has(col.id) ?? false);
+      const matches = selectorHitsByRule.get(rule)?.has(colKey) ?? false;
       if (matches) {
-        result.set(col.id, rule);
+        result.set(colKey, rule);
         break;
       }
     }
@@ -112,146 +106,46 @@ export function evaluateRules<R extends { match: ColumnMatcher | ColumnSelector 
   return result;
 }
 
-function dedupeById(columns: RuleColumn[]): RuleColumn[] {
-  const seen = new Set<PObjectId>();
-  const result: RuleColumn[] = [];
-  for (const col of columns) {
-    if (seen.has(col.id)) continue;
-    seen.add(col.id);
-    result.push(col);
-  }
-  return result;
-}
-
 /**
- * Writes derived labels into column and axis annotations.
- * Returns new column objects with modified specs — original columns are not mutated.
+ * Build a sidecar map `columnId → AnnotationDataStatus` derived from each
+ * recipe's own status. This is *rendering* metadata — kept out of the spec
+ * so it cannot perturb column identity (id-bearing spec overrides would
+ * diverge the visible PTable's column ids from the full table / pframe).
  *
- * For each column: writes derived label into Annotation.Label (if present in derivedLabels).
- * For each axis in column specs: writes derived axis label into AxisSpec annotations.
+ * Mapping `ColumnFieldStatus` × actual byte-presence → `AnnotationDataStatus`:
+ *   - `absent`                       → `"absent"`
+ *   - `resolving`                    → `"computing"`
+ *   - `present` + `hasColumnData()`  → `"ready"`
+ *   - `present` + no bytes yet       → `"computing"`
+ *
+ * Intentionally scoped to visible columns — the probe is meaningful only for
+ * what the user will actually see.
  */
-export function withLabelAnnotations<
-  T extends {
-    readonly id: PObjectId;
-    readonly spec: PColumnSpec;
-  },
->(derivedLabels: undefined | Record<string, string>, columns: T[]): T[] {
-  if (derivedLabels === undefined) return columns;
-  return columns.map((col) => {
-    const colLabel = derivedLabels[col.id];
-    return {
-      ...col,
-      spec: {
-        ...col.spec,
-        ...(isNil(colLabel)
-          ? {}
-          : { annotations: { ...col.spec.annotations, [Annotation.Label]: colLabel } }),
-        axesSpec: col.spec.axesSpec.map((axis) => {
-          const label = derivedLabels[canonicalizeAxisId(axis)];
-          return isNil(label)
-            ? axis
-            : { ...axis, annotations: { ...axis.annotations, [Annotation.Label]: label } };
-        }),
-      },
-    } as T;
-  });
-}
-
-export function withDataStatusAnnotations<
-  T extends {
-    readonly spec: PColumnSpec;
-    readonly dataStatus: ColumnDataStatus;
-  },
->(columns: T[]): T[] {
-  return columns.map((col) => {
-    return {
-      ...col,
-      spec: {
-        ...col.spec,
-        annotations: {
-          ...col.spec.annotations,
-          [Annotation.DataStatus]: col.dataStatus,
-        },
-      },
-    } as T;
-  });
-}
-
-/**
- * Writes effective display properties (OrderPriority, Visibility) from precomputed rule maps
- * into column annotations. Returns new column objects — originals are not mutated.
- */
-export function withTableVisualAnnotations<
-  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
->(
-  visibilityByColId: undefined | Map<PObjectId, ColumnVisibilityRule>,
-  orderByColId: undefined | Map<PObjectId, ColumnOrderRule>,
-  columns: T[],
-): T[] {
-  if (visibilityByColId === undefined && orderByColId === undefined) return columns;
-  return columns.map((col) => {
-    const annotations = { ...col.spec.annotations };
-
-    const visibility = getEffectiveVisibility(col, visibilityByColId);
-    if (!isNil(visibility)) annotations[Annotation.Table.Visibility] = visibility;
-
-    const orderPriority = getOrderPriority(col, orderByColId);
-    if (!isNil(orderPriority)) annotations[Annotation.Table.OrderPriority] = String(orderPriority);
-
-    return {
-      ...col,
-      spec: {
-        ...col.spec,
-        annotations: annotations,
-      },
-    } as T;
-  });
-}
-
-/**
- * Writes derived info annotations into column annotations.
- * Columns without an info entry are passed through unchanged.
- */
-export function withInfoAnnotations<
-  T extends { readonly id: PObjectId; readonly spec: PColumnSpec },
->(infoById: undefined | Record<string, string>, columns: T[]): T[] {
-  if (isNil(infoById)) return columns;
-  return columns.map((col) => {
-    const info = infoById[col.id];
-    if (isNil(info)) return col;
-    return {
-      ...col,
-      spec: {
-        ...col.spec,
-        annotations: { ...col.spec.annotations, [Annotation.Table.Info]: info },
-      },
-    } as T;
-  });
-}
-
-export function withHidenAxesAnnotations<T extends { readonly spec: PColumnSpec }>(
-  columns: T[],
-): T[] {
-  return columns.map(
-    (col) =>
-      ({
-        ...col,
-        spec: {
-          ...col.spec,
-          axesSpec: col.spec.axesSpec.map((axis) => ({
-            ...axis,
-            annotations: { ...axis.annotations, [Annotation.Table.Visibility]: "hidden" },
-          })),
-        },
-      }) as T,
+export function buildDataStatusMap(
+  columns: ColumnRecipe[],
+  opts: { ctx?: GlobalCfgRenderCtx } = {},
+): Record<ColumnUniversalId, AnnotationDataStatus> {
+  return columns.reduce(
+    (acc, c) => ((acc[c.id] = deriveDataStatus(c, opts)), acc),
+    {} as Record<ColumnUniversalId, AnnotationDataStatus>,
   );
+}
+
+function deriveDataStatus(
+  column: ColumnRecipe,
+  opts: { ctx?: GlobalCfgRenderCtx },
+): AnnotationDataStatus {
+  const field = column.getDataStatus();
+  if (field === "absent") return "absent";
+  if (field === "resolving") return "computing";
+  return hasColumnData(column, opts) ? "ready" : "computing";
 }
 
 /** Column shape required by label derivation. */
 export type LabelableColumn = {
-  readonly id: PObjectId;
+  readonly id: ColumnUniversalId;
   readonly spec: PColumnSpec;
-  readonly linkerPath?: MatchVariant["path"];
+  readonly linkerPath?: ReadonlyArray<{ readonly linker: { readonly spec: PColumnSpec } }>;
   readonly qualifications?: MatchQualifications;
 };
 
@@ -263,9 +157,7 @@ export function deriveAllLabels(options: {
   const { columns, deriveLabelsOptions } = options;
   const entries = columns.map((c) => ({
     spec: c.spec,
-    linkerPath: c.linkerPath?.map((step) => ({
-      spec: step.linker.spec,
-    })),
+    linkerPath: c.linkerPath?.map((step) => ({ spec: step.linker.spec })),
     qualifications: c.qualifications,
   }));
   const columnLabels = deriveDistinctLabels(entries, deriveLabelsOptions).reduce(
@@ -277,20 +169,20 @@ export function deriveAllLabels(options: {
 
 /** Column shape required by tooltip derivation. */
 export type TooltipableColumn = {
-  readonly id: PObjectId | DiscoveredPColumnId;
+  readonly id: ColumnUniversalId;
   readonly spec: PColumnSpec;
   readonly originalId?: PObjectId;
-  readonly linkerPath?: MatchVariant["path"];
+  readonly linkerPath?: ReadonlyArray<{ readonly linker: { readonly spec: PColumnSpec } }>;
   readonly qualifications?: MatchQualifications;
 };
 
 /** Derive origin tooltips for columns whose qualifications or linker path carry info. */
 export function deriveAllTooltips(options: {
   columns: TooltipableColumn[];
-}): Record<DiscoveredPColumnId, string> {
+}): Record<ColumnUniversalId, string> {
   const { columns } = options;
 
-  const variantCountByOriginal = columns.reduce<Map<PObjectId, number>>((acc, c) => {
+  const variantCountByOriginal = columns.reduce<Map<ColumnUniversalId, number>>((acc, c) => {
     return acc.set(getField(c, "originalId") ?? c.id, (acc.get(c.originalId ?? c.id) ?? 0) + 1);
   }, new Map());
 
@@ -311,7 +203,7 @@ export function deriveAllTooltips(options: {
 
       return { entries, variantSeen };
     },
-    { entries: [] as TooltipEntry[], variantSeen: new Map<PObjectId, number>() },
+    { entries: [] as TooltipEntry[], variantSeen: new Map<ColumnUniversalId, number>() },
   );
 
   const tooltips = deriveDistinctTooltips(entries);
