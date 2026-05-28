@@ -25,9 +25,12 @@ export type BlockVars = {
   orgScope: string;
   /** e.g. `mixcr-clonotyping` */
   shortName: string;
-  /** Platforms picked at init for the software sub-package. Only
-   *  populated by `init`; absent on `check` / `refresh`. */
-  softwarePlatforms?: string[];
+  /** Platform picked at init for the (single) software sub-package.
+   *  Only populated by `init`; absent on `check` / `refresh`. Blocks
+   *  that legitimately have multiple software modules (encountered via
+   *  DISCOVERY on refresh) are not affected — this field only governs
+   *  what `init` scaffolds. */
+  softwarePlatform?: string;
 };
 
 /** Discovered workspace module. */

@@ -11,7 +11,7 @@ import { uiRules } from "./rules/ui";
 import { workflowRules } from "./rules/workflow";
 import { testRules } from "./rules/test";
 import { softwareRules } from "./rules/software";
-import { migrations } from "./rules/migrations";
+import { testFrameworkMigration, legacyCleanup } from "./rules/migrations";
 
 export const STRUCTURE = defineStructure(() => {
   rootRules();
@@ -21,5 +21,6 @@ export const STRUCTURE = defineStructure(() => {
   workflowRules();
   testRules();
   softwareRules();
-  migrations();
+  testFrameworkMigration();
+  legacyCleanup();
 });

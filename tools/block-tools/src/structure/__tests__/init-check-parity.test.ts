@@ -32,26 +32,14 @@ async function checkZeroDiff(vars: BlockVars): Promise<void> {
 }
 
 describe("Layer-2: init → check zero diff", () => {
-  test("with software × Python", async () => {
+  test("with software (single platform)", async () => {
     const vars: BlockVars = {
       facadeName: "@platforma-open/test-org.demo",
       baseName: "test-org.demo",
       npmOrg: "@platforma-open",
       orgScope: "test-org",
       shortName: "demo",
-      softwarePlatforms: ["python"],
-    };
-    await checkZeroDiff(vars);
-  });
-
-  test("with software × Tengo", async () => {
-    const vars: BlockVars = {
-      facadeName: "@platforma-open/test-org.demo",
-      baseName: "test-org.demo",
-      npmOrg: "@platforma-open",
-      orgScope: "test-org",
-      shortName: "demo",
-      softwarePlatforms: ["tengo"],
+      softwarePlatform: "python",
     };
     await checkZeroDiff(vars);
   });

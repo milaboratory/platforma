@@ -77,9 +77,67 @@ export function defineStructure(fn: () => void): Structure {
         `defineStructure: builder body left ${state.stack.length - 1} unclosed group frame(s)`,
       );
     }
-    return { children: root };
+    const structure: Structure = { children: root };
+    // Spec § "Engine Lifecycle" phase 2 validation: a path may not
+    // appear as both `seed` and any engine-managed primitive
+    // (`fixed` / `managed` / `scaffold`) within the same scope. The
+    // two contracts (write-once-and-ignore vs rewrite-on-every-refresh)
+    // are mutually exclusive. Detect at tree-build time.
+    validateSeedDisjointness(structure);
+    return structure;
   } finally {
     activeTree = undefined;
+  }
+}
+
+function validateSeedDisjointness(structure: Structure): void {
+  // (scope) → (path) → set of leaf kinds present at that path.
+  const perScope = new Map<string, Map<string, Set<string>>>();
+
+  function visit(node: TreeNode, scopeName: string): void {
+    if (node.kind === "scope") {
+      for (const c of node.children) visit(c, node.scope);
+      return;
+    }
+    if (node.kind === "when" || node.kind === "onUpdateDeps") {
+      for (const c of node.children) visit(c, scopeName);
+      return;
+    }
+    if (node.kind === "rename") return; // rename works on paths; not a content leaf
+    let scopeMap = perScope.get(scopeName);
+    if (!scopeMap) {
+      scopeMap = new Map();
+      perScope.set(scopeName, scopeMap);
+    }
+    let kinds = scopeMap.get(node.path);
+    if (!kinds) {
+      kinds = new Set();
+      scopeMap.set(node.path, kinds);
+    }
+    kinds.add(node.kind);
+  }
+
+  for (const n of structure.children) visit(n, "(top-level)");
+
+  for (const [scopeName, paths] of perScope) {
+    for (const [path, kinds] of paths) {
+      if (
+        kinds.has("seed") &&
+        (kinds.has("managed") || kinds.has("fixed") || kinds.has("scaffold"))
+      ) {
+        const others = [...kinds]
+          .filter((k) => k !== "seed")
+          .sort()
+          .join(", ");
+        throw new Error(
+          `defineStructure validation: path '${path}' under scope '${scopeName}' ` +
+            `is declared as both seed and ${others}. Seeds are block-author territory ` +
+            `(written once at init, untouched thereafter); engine-managed primitives ` +
+            `(fixed/managed/scaffold) rewrite on every refresh. The two contracts cannot ` +
+            `coexist on the same path. See dsl-example.md § "File Kinds Recap".`,
+        );
+      }
+    }
   }
 }
 

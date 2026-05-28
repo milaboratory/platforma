@@ -55,8 +55,8 @@ export function defaultModulesFor(vars: BlockVars): Module[] {
     { scope: "workflow", name: `${facade}.workflow`, path: "workflow" },
     { scope: "test", name: `${facade}.test`, path: "test" },
   ];
-  for (const platform of vars.softwarePlatforms ?? []) {
-    const slug = platform.toLowerCase();
+  if (vars.softwarePlatform) {
+    const slug = vars.softwarePlatform.toLowerCase();
     mods.push({
       scope: "software",
       name: `${facade}.software-${slug}`,
