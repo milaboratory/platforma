@@ -6,7 +6,7 @@ import type { BlockVars, Module, RunContext } from "./api";
 
 export type CreateRunContextInput = {
   isSdkInternal?: boolean;
-  updateDeps?: boolean;
+  updateDepsOnly?: boolean;
   modules: Module[];
   blockVars: BlockVars;
   version?: number;
@@ -16,7 +16,7 @@ export type CreateRunContextInput = {
 export function createRunContext(input: CreateRunContextInput): RunContext {
   return {
     isSdkInternal: input.isSdkInternal ?? false,
-    updateDeps: input.updateDeps ?? false,
+    updateDepsOnly: input.updateDepsOnly ?? false,
     modules: input.modules,
     blockVars: input.blockVars,
     version: input.version ?? 0,

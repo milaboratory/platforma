@@ -1,22 +1,49 @@
-// `defineStructure` factory + builder-bag (decision A2 in plan.md).
+// `defineStructure` + the module-global builder set.
 //
-// Each call constructs a fresh tree state and a bag of builder
-// functions that close over it. The lambda receives the bag and
-// appends to the tree by calling the builders. No module-level
-// "active context" — the bag is the context. Calling a builder
-// outside the lambda is impossible (you have no reference to it).
+// Active context is a module-level mutable: `defineStructure` pushes a
+// fresh tree state, invokes the zero-arg lambda, pops, returns. Each
+// builder reads the active state and appends to the current children
+// list. Calling a builder outside `defineStructure` throws with a
+// clear message. Re-entering `defineStructure` from inside another
+// `defineStructure` lambda is rejected.
 
-import type { Scope, StructureBuilders, RunContext, ContentForm, BlockVars } from "./api";
-import type { ManagedBody, Structure, TriggerFn, TreeNode, ScopeFrame, WhenFrame } from "./ir";
+import type { Scope, RunContext, BlockVars, ContentForm } from "./api";
+import type {
+  ManagedBody,
+  Structure,
+  TriggerFn,
+  TreeNode,
+  ScopeFrame,
+  WhenFrame,
+  OnUpdateDepsFrame,
+} from "./ir";
 
-/** Live run context — set during engine.run, read by `blockVars()` and
- *  any other context-aware builder. The structurer engine pushes a
- *  ctx on the stack before invoking generators / managed bodies. */
+type TreeState = {
+  root: TreeNode[];
+  /** Stack of children-lists; top is where new nodes append. */
+  stack: TreeNode[][];
+  inScope: boolean;
+};
+
+let activeTree: TreeState | undefined;
 let activeRunContext: RunContext | undefined;
 
-/** Engine-internal — push/pop the active run context. Exposed so the
- *  runner can scope `blockVars()` calls inside generators and managed
- *  bodies. */
+function requireActiveTree(builder: string): TreeState {
+  if (!activeTree) {
+    throw new Error(
+      `${builder}() called outside defineStructure(). ` +
+        `Builders must run inside the lambda passed to defineStructure(...).`,
+    );
+  }
+  return activeTree;
+}
+
+function appendNode(builder: string, node: TreeNode): void {
+  const t = requireActiveTree(builder);
+  t.stack[t.stack.length - 1]!.push(node);
+}
+
+/** Engine-internal: scope `blockVars()` lookups during a run. */
 export function withRunContext<T>(ctx: RunContext, fn: () => T): T {
   const prev = activeRunContext;
   activeRunContext = ctx;
@@ -27,111 +54,113 @@ export function withRunContext<T>(ctx: RunContext, fn: () => T): T {
   }
 }
 
-export function defineStructure(fn: (b: StructureBuilders) => void): Structure {
+export function defineStructure(fn: () => void): Structure {
+  if (activeTree) {
+    throw new Error("defineStructure() cannot be called from inside another defineStructure().");
+  }
   const root: TreeNode[] = [];
-  // Stack of "current children list" — top is where new nodes are
-  // appended. Pushed on entering `scope` / `when`, popped on exit.
-  const stack: TreeNode[][] = [root];
-
-  function currentChildren(): TreeNode[] {
-    return stack[stack.length - 1]!;
+  const state: TreeState = { root, stack: [root], inScope: false };
+  activeTree = state;
+  try {
+    fn();
+    if (state.stack.length !== 1) {
+      throw new Error(
+        `defineStructure: builder body left ${state.stack.length - 1} unclosed group frame(s)`,
+      );
+    }
+    return { children: root };
+  } finally {
+    activeTree = undefined;
   }
+}
 
-  function append(node: TreeNode): void {
-    currentChildren().push(node);
+export function scope(name: Scope, body: () => void): void {
+  const t = requireActiveTree("scope");
+  if (t.inScope) {
+    throw new Error("scope() cannot nest. Already inside a scope.");
   }
+  const frame: ScopeFrame = { kind: "scope", scope: name, children: [] };
+  t.stack[t.stack.length - 1]!.push(frame);
+  t.stack.push(frame.children);
+  t.inScope = true;
+  try {
+    body();
+  } finally {
+    t.stack.pop();
+    t.inScope = false;
+  }
+}
 
-  let inScope = false;
+export function when(trigger: TriggerFn, body: () => void): void {
+  const t = requireActiveTree("when");
+  const frame: WhenFrame = { kind: "when", trigger, children: [] };
+  t.stack[t.stack.length - 1]!.push(frame);
+  t.stack.push(frame.children);
+  try {
+    body();
+  } finally {
+    t.stack.pop();
+  }
+}
 
-  const builders: StructureBuilders = {
-    scope(name: Scope, body: () => void): void {
-      if (inScope) {
-        throw new Error(`scope() cannot nest. Already inside a scope.`);
-      }
-      const frame: ScopeFrame = { kind: "scope", scope: name, children: [] };
-      append(frame);
-      stack.push(frame.children);
-      inScope = true;
-      try {
-        body();
-      } finally {
-        stack.pop();
-        inScope = false;
-      }
-    },
+export function onUpdateDeps(body: () => void): void {
+  const t = requireActiveTree("onUpdateDeps");
+  const frame: OnUpdateDepsFrame = { kind: "onUpdateDeps", children: [] };
+  t.stack[t.stack.length - 1]!.push(frame);
+  t.stack.push(frame.children);
+  try {
+    body();
+  } finally {
+    t.stack.pop();
+  }
+}
 
-    when(trigger: TriggerFn, body: () => void): void {
-      const frame: WhenFrame = {
-        kind: "when",
-        trigger,
-        children: [],
-      };
-      append(frame);
-      stack.push(frame.children);
-      try {
-        body();
-      } finally {
-        stack.pop();
-      }
-    },
+export function fixed(path: string, content: ContentForm): void {
+  appendNode("fixed", { kind: "fixed", path, content });
+}
 
-    fixed(path: string, content: ContentForm): void {
-      append({ kind: "fixed", path, content });
-    },
+export function managed(path: string, initial: ContentForm, body: ManagedBody): void {
+  appendNode("managed", { kind: "managed", path, initial, body });
+}
 
-    managed(path: string, initial: ContentForm, body: ManagedBody): void {
-      append({ kind: "managed", path, initial, body });
-    },
+export function scaffold(path: string, initial: ContentForm): void {
+  appendNode("scaffold", { kind: "scaffold", path, initial });
+}
 
-    scaffold(path: string, initial: ContentForm): void {
-      append({ kind: "scaffold", path, initial });
-    },
+export function seed(path: string, initial: ContentForm): void {
+  appendNode("seed", { kind: "seed", path, initial });
+}
 
-    seed(path: string, initial: ContentForm): void {
-      append({ kind: "seed", path, initial });
-    },
+export function remove(path: string): void {
+  appendNode("remove", { kind: "remove", path });
+}
 
-    remove(path: string): void {
-      append({ kind: "remove", path });
-    },
+export function rename(from: string, to: string): void {
+  appendNode("rename", { kind: "rename", from, to });
+}
 
-    rename(from: string, to: string): void {
-      append({ kind: "rename", from, to });
-    },
+export function file(path: string): ContentForm {
+  return { kind: "file", path };
+}
 
-    file(path: string): ContentForm {
-      return { kind: "file", path };
-    },
+export function text(value: string): ContentForm {
+  return { kind: "text", value };
+}
 
-    text(value: string): ContentForm {
-      return { kind: "text", value };
-    },
+export function tpl(path: string, vars: Record<string, string>): ContentForm {
+  return { kind: "tpl", path, vars };
+}
 
-    tpl(path: string, vars: Record<string, string>): ContentForm {
-      return { kind: "tpl", path, vars };
-    },
+export function generate(fn: () => unknown): ContentForm {
+  return { kind: "generate", fn };
+}
 
-    generate(fn: () => unknown): ContentForm {
-      return { kind: "generate", fn };
-    },
-
-    blockVars(): BlockVars {
-      if (!activeRunContext) {
-        throw new Error(
-          "blockVars() called outside engine.run(). " +
-            "Generators and managed bodies only see BlockVars during a run.",
-        );
-      }
-      return activeRunContext.blockVars;
-    },
-  };
-
-  fn(builders);
-
-  if (stack.length !== 1) {
+export function blockVars(): BlockVars {
+  if (!activeRunContext) {
     throw new Error(
-      `defineStructure: builder body left ${stack.length - 1} unclosed group frame(s)`,
+      "blockVars() called outside engine.run(). " +
+        "Generators and managed bodies only see BlockVars during a run.",
     );
   }
-  return { children: root };
+  return activeRunContext.blockVars;
 }

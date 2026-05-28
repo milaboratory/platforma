@@ -1,19 +1,30 @@
 // Synthetic-fixture round trip through the IR.
 //
-// Two scopes (root + model), one managed file, one rename. Asserts
-// that defineStructure returns the expected tree shape, that flatten
-// produces the expected ordered FlatItem list, and that running the
-// builder twice yields a deep-equal result (pure data — no hidden
-// state).
+// Exercises module-global builders (D2): `defineStructure(() => { ... })`
+// with builders imported by name. Covers a scope frame, a when frame,
+// an onUpdateDeps frame (D1), a rename. Asserts IR shape, the
+// post-flatten ordered list (including the updateDepsOnly flag), and
+// that two independent build invocations produce structurally-equal
+// trees (the active-context machinery resets cleanly between runs).
 
 import { describe, test, expect } from "vitest";
-import { defineStructure } from "../api";
+import {
+  defineStructure,
+  scope,
+  when,
+  onUpdateDeps,
+  fixed,
+  managed,
+  remove,
+  rename,
+  file,
+} from "../api";
 import type { Structure } from "../ir";
 import { flatten } from "../flatten";
 import { createRunContext } from "../ctx";
 
 function buildStructure(): Structure {
-  return defineStructure(({ scope, when, fixed, managed, remove, rename, file }) => {
+  return defineStructure(() => {
     scope("root", () => {
       fixed("turbo.json", file("root/turbo.json"));
       remove(".prettierrc");
@@ -30,13 +41,20 @@ function buildStructure(): Structure {
     scope("model", () => {
       fixed("tsconfig.json", file("model/tsconfig.json"));
     });
+    onUpdateDeps(() => {
+      scope("root", () => {
+        managed("pnpm-workspace.yaml", file("root/pnpm-workspace.yaml"), () => {
+          /* catalog bumps live here (step 3) */
+        });
+      });
+    });
   });
 }
 
 describe("synthetic fixture", () => {
   test("IR shape matches expectation", () => {
     const s = buildStructure();
-    expect(s.children.length).toBe(2);
+    expect(s.children.length).toBe(3);
     const rootFrame = s.children[0]!;
     expect(rootFrame.kind).toBe("scope");
     if (rootFrame.kind !== "scope") throw new Error("unreachable");
@@ -46,9 +64,10 @@ describe("synthetic fixture", () => {
     expect(rootFrame.children[1]!.kind).toBe("remove");
     expect(rootFrame.children[2]!.kind).toBe("managed");
     expect(rootFrame.children[3]!.kind).toBe("when");
+    expect(s.children[2]!.kind).toBe("onUpdateDeps");
   });
 
-  test("flatten produces expected flat-item list", () => {
+  test("flatten produces expected flat-item list (updateDepsOnly tagged)", () => {
     const s = buildStructure();
     const ctx = createRunContext({
       blockVars: {
@@ -64,16 +83,18 @@ describe("synthetic fixture", () => {
       ],
     });
     const flat = flatten(s, ctx);
-    // 3 leaves in root scope + 1 rename in when + 1 leaf in model.
-    expect(flat.length).toBe(5);
-    expect(flat[0]!.scope).toBe("root");
+    // 4 leaves in root scope + 1 in model + 1 in onUpdateDeps→root.
+    expect(flat.length).toBe(6);
     expect(flat[0]!.resolvedPath).toBe("turbo.json");
-    expect(flat[3]!.leaf.kind).toBe("rename");
-    expect(flat[3]!.resolvedPath).toBe("test/");
-    expect(flat[3]!.resolvedTo).toBe("test-legacy/");
-    expect(flat[3]!.triggers.length).toBe(1);
-    expect(flat[4]!.scope).toBe("model");
-    expect(flat[4]!.resolvedPath).toBe("model/tsconfig.json");
+    expect(flat[0]!.updateDepsOnly).toBe(false);
+    const renameItem = flat.find((f) => f.leaf.kind === "rename");
+    expect(renameItem).toBeDefined();
+    expect(renameItem!.resolvedPath).toBe("test/");
+    expect(renameItem!.resolvedTo).toBe("test-legacy/");
+    expect(renameItem!.triggers.length).toBe(1);
+    const updItems = flat.filter((f) => f.updateDepsOnly);
+    expect(updItems.length).toBe(1);
+    expect(updItems[0]!.resolvedPath).toBe("pnpm-workspace.yaml");
   });
 
   test("two builds produce structurally-equal trees", () => {
@@ -95,5 +116,9 @@ describe("synthetic fixture", () => {
       return val;
     };
     expect(strip(a)).toEqual(strip(b));
+  });
+
+  test("builder called outside defineStructure throws", () => {
+    expect(() => fixed("oops.json", file("nope"))).toThrow(/defineStructure/);
   });
 });

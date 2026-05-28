@@ -1,5 +1,5 @@
-// .structure-version handling: read default, read parsed value, write,
-// floor enforcement.
+// `.structure` metadata file handling: read default, read parsed
+// value, write, floor enforcement.
 
 import { describe, test, expect } from "vitest";
 import { MemoryFileSystem } from "../fs/memory";
@@ -11,7 +11,7 @@ import {
   StructureVersionFloorError,
 } from "../version";
 
-describe(".structure-version", () => {
+describe(".structure metadata file", () => {
   test("missing file reads as 0", async () => {
     const fs = new MemoryFileSystem();
     expect(await readStructureVersion(fs)).toBe(0);
@@ -21,7 +21,7 @@ describe(".structure-version", () => {
     const fs = new MemoryFileSystem();
     await writeStructureVersion(fs, 3);
     expect(await readStructureVersion(fs)).toBe(3);
-    const written = await fs.read(".structure-version");
+    const written = await fs.read(".structure");
     expect(JSON.parse(written)).toEqual({ version: 3 });
   });
 
@@ -38,7 +38,7 @@ describe(".structure-version", () => {
   });
 
   test("invalid JSON reads as 0", async () => {
-    const fs = new MemoryFileSystem({ ".structure-version": "not-json" });
+    const fs = new MemoryFileSystem({ ".structure": "not-json" });
     expect(await readStructureVersion(fs)).toBe(0);
   });
 });

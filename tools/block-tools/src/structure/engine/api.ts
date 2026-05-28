@@ -1,13 +1,14 @@
 // Public API of the structurer engine.
 //
-// Rule authors import builder types and content forms from here.
-// `defineStructure(fn)` is the single entry point — it constructs a
-// builder bag, invokes `fn` with it, and returns a plain `Structure`
-// object. Builders only exist on the bag; calling one outside the
-// lambda is a compile-time error (no runtime guard needed under A2).
+// `defineStructure(() => { ... })` is the single entry point. Inside
+// the lambda, rule authors call builders imported by name from this
+// module — `scope`, `when`, `fixed`, `managed`, `scaffold`, `seed`,
+// `remove`, `rename`, `onUpdateDeps`, plus the content-form helpers
+// `file` / `text` / `tpl` / `generate`. Builders read a module-global
+// active context (set up by `defineStructure`) and append to its tree.
+// Calling a builder outside `defineStructure` throws at runtime.
 
 import type { ContentForm, ManagedBody, Structure, TriggerFn } from "./ir";
-import { defineStructure as _defineStructure } from "./builders";
 
 export type Scope = "root" | "block" | "model" | "ui" | "workflow" | "test" | "software";
 
@@ -29,8 +30,7 @@ export type BlockVars = {
   softwarePlatforms?: string[];
 };
 
-/** Discovered workspace module — every workspace package classified by
- *  DISCOVERY (or supplied by `init`). */
+/** Discovered workspace module. */
 export type Module = {
   scope: Scope;
   /** Package name from the module's package.json. */
@@ -44,39 +44,39 @@ export type Module = {
 export type RunContext = {
   /** `--sdk-internal` flag. */
   isSdkInternal: boolean;
-  /** `--update-deps` flag. */
-  updateDeps: boolean;
+  /** `--update-deps-only` flag. When true, only `onUpdateDeps` leaves
+   *  fire; all normal-mode leaves are skipped. The caller is then
+   *  expected to run `pnpm install` and re-invoke `refresh` without
+   *  the flag for the normal-mode rules to apply against the updated
+   *  dep set. */
+  updateDepsOnly: boolean;
   /** Discovered modules (every scope). */
   modules: Module[];
   /** Block vars; on `init` populated from flags/prompts, on
    *  `check`/`refresh` parsed from block/package.json. */
   blockVars: BlockVars;
-  /** Layout version read from `.structure-version`. */
+  /** Layout version read from `.structure`. */
   version: number;
-  /** True for `check` mode and post-run recheck. */
+  /** True for `check` mode and the post-run recheck. */
   dryRun: boolean;
 };
 
-export { _defineStructure as defineStructure };
 export type { ContentForm, ManagedBody, Structure, TriggerFn };
 
-// --- Builder bag types ---
-
-/** The bag exposed inside `defineStructure(fn)`. */
-export type StructureBuilders = {
-  scope(name: Scope, body: () => void): void;
-  when(trigger: TriggerFn, body: () => void): void;
-  fixed(path: string, content: ContentForm): void;
-  managed(path: string, initial: ContentForm, body: ManagedBody): void;
-  scaffold(path: string, initial: ContentForm): void;
-  seed(path: string, initial: ContentForm): void;
-  remove(path: string): void;
-  rename(from: string, to: string): void;
-  // content-form helpers
-  file(path: string): ContentForm;
-  text(value: string): ContentForm;
-  tpl(path: string, vars: Record<string, string>): ContentForm;
-  generate(fn: () => unknown): ContentForm;
-  /** Access the live `BlockVars` from `ctx`. Throws if no active run. */
-  blockVars(): BlockVars;
-};
+export {
+  defineStructure,
+  scope,
+  when,
+  onUpdateDeps,
+  fixed,
+  managed,
+  scaffold,
+  seed,
+  remove,
+  rename,
+  file,
+  text,
+  tpl,
+  generate,
+  blockVars,
+} from "./builders";

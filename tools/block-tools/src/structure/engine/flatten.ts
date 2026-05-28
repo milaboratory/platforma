@@ -1,8 +1,9 @@
 // Flatten: DFS over the tree IR; fan out each scope frame once per
 // matching module in `ctx.modules`. Compose enclosing `when` triggers
-// (AND of all on the path from root). Resolve every leaf's
-// block-relative path against the bound module path. No execution
-// here — execution lives in `runner.ts` (step 2).
+// (AND of all on the path from root). Track whether the leaf was
+// inside an `onUpdateDeps` frame and emit that as `updateDepsOnly` on
+// the FlatItem. No execution here — execution lives in `runner.ts`
+// (step 2).
 
 import type { Module, RunContext, Scope } from "./api";
 import type { FlatItem, LeafItem, Structure, TreeNode, TriggerFn } from "./ir";
@@ -35,12 +36,13 @@ export function flatten(structure: Structure, ctx: RunContext): FlatItem[] {
     boundScope: Scope | undefined,
     boundModulePath: string | undefined,
     triggers: TriggerFn[],
+    inUpdateDeps: boolean,
   ): void {
     if (node.kind === "scope") {
       const matches = modulesByScope(ctx.modules, node.scope);
       for (const m of matches) {
         for (const child of node.children) {
-          visit(child, node.scope, m.path, triggers);
+          visit(child, node.scope, m.path, triggers, inUpdateDeps);
         }
       }
       return;
@@ -48,7 +50,13 @@ export function flatten(structure: Structure, ctx: RunContext): FlatItem[] {
     if (node.kind === "when") {
       const nextTriggers = triggers.concat(node.trigger);
       for (const child of node.children) {
-        visit(child, boundScope, boundModulePath, nextTriggers);
+        visit(child, boundScope, boundModulePath, nextTriggers, inUpdateDeps);
+      }
+      return;
+    }
+    if (node.kind === "onUpdateDeps") {
+      for (const child of node.children) {
+        visit(child, boundScope, boundModulePath, triggers, true);
       }
       return;
     }
@@ -64,6 +72,7 @@ export function flatten(structure: Structure, ctx: RunContext): FlatItem[] {
         resolvedPath: resolveRelative(boundModulePath, node.from),
         resolvedTo: resolveRelative(boundModulePath, node.to),
         triggers,
+        updateDepsOnly: inUpdateDeps,
       });
       return;
     }
@@ -73,11 +82,12 @@ export function flatten(structure: Structure, ctx: RunContext): FlatItem[] {
       modulePath: boundModulePath,
       resolvedPath: resolveRelative(boundModulePath, leafPath(node)),
       triggers,
+      updateDepsOnly: inUpdateDeps,
     });
   }
 
   for (const node of structure.children) {
-    visit(node, undefined, undefined, []);
+    visit(node, undefined, undefined, [], false);
   }
 
   return out;

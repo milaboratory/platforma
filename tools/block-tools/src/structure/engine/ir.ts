@@ -1,10 +1,12 @@
 // Tree IR for the structurer engine.
 //
-// `defineStructure(fn)` invokes builders that append to a tree of group
-// frames (`scope` / `when`) and leaf primitives (file / folder actions).
-// Flatten walks this tree to a flat ordered list of `FlatItem`s — each
-// with concrete scope, bound module path, composed trigger, and a
-// resolved filesystem path.
+// `defineStructure(fn)` invokes module-global builders that append to a
+// tree of group frames (`scope` / `when` / `onUpdateDeps`) and leaf
+// primitives (file / folder actions). `flatten` walks this tree to a
+// flat ordered list of `FlatItem`s — each with concrete scope, bound
+// module path, composed trigger, resolved filesystem path, and the
+// `updateDepsOnly` flag (true iff the leaf was inside an
+// `onUpdateDeps` frame).
 
 import type { Scope, RunContext } from "./api";
 
@@ -82,11 +84,20 @@ export type WhenFrame = {
   children: TreeNode[];
 };
 
-export type TreeNode = LeafItem | ScopeFrame | WhenFrame;
+/** Top-level mode frame: contained leaves fire only when
+ *  `ctx.updateDepsOnly` is true; all other leaves are skipped in that
+ *  mode. Mutually exclusive with normal-mode leaves at runtime. */
+export type OnUpdateDepsFrame = {
+  kind: "onUpdateDeps";
+  children: TreeNode[];
+};
+
+export type TreeNode = LeafItem | ScopeFrame | WhenFrame | OnUpdateDepsFrame;
 
 /** Structure object returned by `defineStructure`. */
 export type Structure = {
-  /** Top-level children — may contain leaves, scope frames, when frames. */
+  /** Top-level children — may contain leaves, scope frames, when
+   *  frames, and onUpdateDeps frames. */
   children: TreeNode[];
 };
 
@@ -96,7 +107,8 @@ export type Structure = {
  * After fan-out: one entry per (leaf × matching module). `scope` is
  * always set; `modulePath` is the workspace path the leaf is bound to
  * (empty string for the workspace root). `triggers` is the AND of all
- * enclosing `when` predicates.
+ * enclosing `when` predicates. `updateDepsOnly` is true iff the leaf
+ * was inside an `onUpdateDeps` frame.
  */
 export type FlatItem = {
   leaf: LeafItem;
@@ -107,4 +119,5 @@ export type FlatItem = {
   /** For rename, the resolved destination. */
   resolvedTo?: string;
   triggers: TriggerFn[];
+  updateDepsOnly: boolean;
 };
