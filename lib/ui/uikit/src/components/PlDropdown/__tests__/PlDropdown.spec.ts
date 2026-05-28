@@ -111,4 +111,42 @@ describe("PlDropdown", () => {
     // And must NOT trigger the missing-value branch.
     expect(wrapper.find(".input-value--missing").exists()).toBe(false);
   });
+
+  it("clears the missing-state label when options later contain the value", async () => {
+    const wrapper = mount(PlDropdown, {
+      props: {
+        modelValue: 1,
+        options: [{ text: "Option 2", value: 2 }],
+      },
+    });
+    await flushPromises();
+    expect(wrapper.find(".input-value--missing").exists()).toBe(true);
+
+    // Simulates the upstream block coming back: options now contain the value.
+    await wrapper.setProps({
+      options: [
+        { text: "Option 1", value: 1 },
+        { text: "Option 2", value: 2 },
+      ],
+    });
+    await flushPromises();
+    expect(wrapper.find(".input-value--missing").exists()).toBe(false);
+  });
+
+  it("renders the clear button when clearable + missing, and clears the model on click", async () => {
+    const wrapper = mount(PlDropdown, {
+      props: {
+        modelValue: 99,
+        clearable: true,
+        "onUpdate:modelValue": (e) => wrapper.setProps({ modelValue: e }),
+        options: [{ text: "Option 1", value: 1 }],
+      },
+    });
+    await flushPromises();
+    const clearBtn = wrapper.find(".clear");
+    expect(clearBtn.exists()).toBe(true);
+    await clearBtn.trigger("click");
+    await flushPromises();
+    expect(wrapper.props("modelValue")).toBeUndefined();
+  });
 });

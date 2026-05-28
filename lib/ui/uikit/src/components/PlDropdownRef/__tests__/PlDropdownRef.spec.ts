@@ -79,4 +79,29 @@ describe("PlDropdownRef", () => {
     expect(missing.exists()).toBe(true);
     expect(missing.text()).toBe("Upstream value removed");
   });
+
+  it("forwards a caller-supplied missingValueLabel that overrides the Ref default", async () => {
+    const wrapper = mount(PlDropdownRef, {
+      props: {
+        modelValue: {
+          __isRef: true as const,
+          blockId: "deleted-block",
+          name: "Ref to deleted block",
+        },
+        missingValueLabel: "Caller override",
+        options: [
+          {
+            label: "Ref 1",
+            ref: {
+              __isRef: true as const,
+              blockId: "1",
+              name: "Ref to block 1",
+            },
+          },
+        ],
+      },
+    });
+    await flushPromises();
+    expect(wrapper.find(".input-value--missing").text()).toBe("Caller override");
+  });
 });
