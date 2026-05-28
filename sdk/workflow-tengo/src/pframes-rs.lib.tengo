@@ -23,19 +23,26 @@
  * Errors: any wasm-side failure (exception in component, panic in component,
  * result.Err arm, guest trap, missing export, instance poisoning) aborts the script.
  *
+ * The JSON-string ABI plumbing (load + path resolution + JSON marshalling
+ * for static and instance methods) lives in `:wasm.json-abi`; this file
+ * holds only the pframes-rs-specific bits — the wasm entrypoint name +
+ * interface key (in `_load`) and the per-resource Tengo wrappers.
+ *
  * See docs/text/work/projects/webassembly-libraries-tengo/README.md for
  * the bundling story and the runtime details.
  */
 
-ll := import(":ll")
-assets := import(":assets")
-json := import("json")
+ll      := import(":ll")
+assets  := import(":assets")
+wabi    := import(":wasm.json-abi")
+json    := import("json")
 
 // _load returns the milaboratories:pframes/spec interface map (keyed by WIT
-// resource name — `frame`, `table`, `axes`). `assets.importWasm` does
-// double duty here: tengo-builder's regex picks the literal up at build
-// time to bundle the wasm bytes, and at runtime the SDK wrapper calls
-// plapi.loadWasm under the hood. Load failures abort the script.
+// resource name — `frame`, `table`, `axes`). The literal in
+// `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")` must stay
+// textually in this file: tengo-builder's regex scans the consumer source
+// to discover and bundle the wasm dependency, and moving the call into
+// the wasm.json-abi helper would hide it from that scan.
 //
 // `limit` is reserved for a future per-instance memory cap override; today
 // the host applies WasmV1Data.DefaultMemoryLimit stamped at install time.
@@ -43,68 +50,15 @@ _load := func(limit) {
 	return assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
 }
 
-// _resolve traverses the host handle along `path` (e.g. ["frame", "buildQuery"]).
-// Returns the resolved value, undefined if any intermediate is missing.
-_resolve := func(handle, path) {
-	node := handle
-	for name in path {
-		if is_undefined(node) {
-			return undefined
-		}
-		node = node[name]
-	}
-	return node
-}
-
-// _staticCall returns a Tengo function bound to a WIT static-method path.
-// Each call: loads the wasm, resolves the path, JSON-encodes the request,
-// invokes the host method, JSON-decodes the response. Any wasm-side
-// failure (result.Err arm, trap) aborts the script — see assets.importWasm.
-_staticCall := func(path) {
-	return func(request) {
-		h := _load(undefined)
-		fn := _resolve(h, path)
-		if is_undefined(fn) {
-			ll.panic("pframes-rs wasm export missing: %s", string(path))
-		}
-		requestJson := ""
-		if !is_undefined(request) {
-			requestJson = string(json.encode(request))
-		}
-		return json.decode(fn(requestJson))
-	}
-}
-
-// _instanceMethod returns a closure bound to (hostHandle, methodName).
-// `takesArgs` selects between JSON-arg vs no-arg invocation. Each call:
-// resolves the method, invokes with JSON-encoded args (if any),
-// JSON-decodes the response. Any wasm-side failure aborts the script.
-_instanceMethod := func(hostHandle, methodName, takesArgs) {
-	return func(args) {
-		method := hostHandle[methodName]
-		if is_undefined(method) {
-			ll.panic("pframes-rs handle method missing: %s", methodName)
-		}
-		if takesArgs {
-			requestJson := ""
-			if !is_undefined(args) {
-				requestJson = string(json.encode(args))
-			}
-			return json.decode(method(requestJson))
-		}
-		return json.decode(method())
-	}
-}
-
 // === frame namespace ==========================================================
 
 _wrapFrame := func(hostFrame) {
 	return ll.toStrict({
-		listColumns:        _instanceMethod(hostFrame, "listColumns", false),
-		discoverColumns:    _instanceMethod(hostFrame, "discoverColumns", true),
-		findColumns:        _instanceMethod(hostFrame, "findColumns", true),
-		evaluateQuery:      _instanceMethod(hostFrame, "evaluateQuery", true),
-		rewriteLegacyQuery: _instanceMethod(hostFrame, "rewriteLegacyQuery", true)
+		listColumns:        wabi.instanceMethod(hostFrame, "listColumns",        false),
+		discoverColumns:    wabi.instanceMethod(hostFrame, "discoverColumns",    true),
+		findColumns:        wabi.instanceMethod(hostFrame, "findColumns",        true),
+		evaluateQuery:      wabi.instanceMethod(hostFrame, "evaluateQuery",      true),
+		rewriteLegacyQuery: wabi.instanceMethod(hostFrame, "rewriteLegacyQuery", true)
 	})
 }
 
@@ -115,15 +69,15 @@ frameFromJson := func(spec) {
 
 frameNS := ll.toStrict({
 	fromJson:      frameFromJson,
-	deleteColumns: _staticCall(["frame", "deleteColumns"]),
-	buildQuery:    _staticCall(["frame", "buildQuery"])
+	deleteColumns: wabi.staticCall(_load, ["frame", "deleteColumns"]),
+	buildQuery:    wabi.staticCall(_load, ["frame", "buildQuery"])
 })
 
 // === table namespace ==========================================================
 
 _wrapTable := func(hostTable) {
 	return ll.toStrict({
-		findColumn: _instanceMethod(hostTable, "findColumn", true)
+		findColumn: wabi.instanceMethod(hostTable, "findColumn", true)
 	})
 }
 
@@ -140,8 +94,8 @@ tableNS := ll.toStrict({
 
 _wrapAxes := func(hostAxes) {
 	return ll.toStrict({
-		expand: _instanceMethod(hostAxes, "expand", false),
-		find:   _instanceMethod(hostAxes, "find", true)
+		expand: wabi.instanceMethod(hostAxes, "expand", false),
+		find:   wabi.instanceMethod(hostAxes, "find",   true)
 	})
 }
 
@@ -152,7 +106,7 @@ axesFromJson := func(spec) {
 
 axesNS := ll.toStrict({
 	fromJson: axesFromJson,
-	collapse: _staticCall(["axes", "collapse"])
+	collapse: wabi.staticCall(_load, ["axes", "collapse"])
 })
 
 export ll.toStrict({
