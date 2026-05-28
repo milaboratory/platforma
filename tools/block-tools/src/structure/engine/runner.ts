@@ -205,6 +205,7 @@ async function applyManaged(
   item: FlatItem,
   fs: FileSystem,
   dryRun: boolean,
+  tctx: TriggerContext,
 ): Promise<Change | undefined> {
   if (item.leaf.kind !== "managed") return undefined;
   const leaf = item.leaf;
@@ -232,7 +233,7 @@ async function applyManaged(
     throw new Error(`managed: parsed value at '${path}' is not a JSON object`);
   }
 
-  withManagedBody(parsed, leaf.body);
+  withManagedBody(parsed, leaf.body, { triggerContext: tctx });
   const after = stringifyJson(parsed);
 
   if (created) {
@@ -282,7 +283,7 @@ async function executePass(
   for (const item of items) {
     if (item.leaf.kind !== "managed") continue;
     if (!passesTriggers(item, tctx2)) continue;
-    const change = await applyManaged(item, fs, dryRun);
+    const change = await applyManaged(item, fs, dryRun, tctx2);
     if (change) changes.push(change);
   }
 

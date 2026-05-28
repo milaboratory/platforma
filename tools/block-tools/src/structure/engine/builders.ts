@@ -98,16 +98,45 @@ export function scope(name: Scope, body: () => void): void {
   }
 }
 
+/** Inner-mode `when` handler. Registered by `content-rules.ts` at
+ *  load time. Returns true if the call was dispatched (an inner active
+ *  state was present); false otherwise. Avoids a circular import. */
+type InnerWhenHandler = (trigger: TriggerFn, body: () => void) => boolean;
+let innerWhenHandler: InnerWhenHandler | undefined;
+
+export function registerInnerWhenHandler(h: InnerWhenHandler): void {
+  innerWhenHandler = h;
+}
+
+/**
+ * Conditionally run `body`. Two dispatch modes by active state:
+ *  - inside `defineStructure(...)` → push a `WhenFrame` into the tree;
+ *    trigger fires later at runner time per `FlatItem`.
+ *  - inside a `managed(...)` body → evaluate `trigger` immediately
+ *    against the runner-supplied `TriggerContext`; run/skip `body`
+ *    synchronously.
+ *
+ * One `when` symbol for both layers — same user contract, dispatch
+ * picks the matching execution timing.
+ */
 export function when(trigger: TriggerFn, body: () => void): void {
-  const t = requireActiveTree("when");
-  const frame: WhenFrame = { kind: "when", trigger, children: [] };
-  t.stack[t.stack.length - 1]!.push(frame);
-  t.stack.push(frame.children);
-  try {
-    body();
-  } finally {
-    t.stack.pop();
+  if (activeTree) {
+    const t = activeTree;
+    const frame: WhenFrame = { kind: "when", trigger, children: [] };
+    t.stack[t.stack.length - 1]!.push(frame);
+    t.stack.push(frame.children);
+    try {
+      body();
+    } finally {
+      t.stack.pop();
+    }
+    return;
   }
+  if (innerWhenHandler && innerWhenHandler(trigger, body)) return;
+  throw new Error(
+    "when() called outside defineStructure() and outside any managed(...) body. " +
+      "Place this call inside one of the two.",
+  );
 }
 
 export function onUpdateDeps(body: () => void): void {

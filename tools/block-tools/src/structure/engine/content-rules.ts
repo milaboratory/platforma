@@ -11,8 +11,9 @@
 // JSON ensure*/remove*/require*/prune/enforce*/transform; YAML catalog
 // management + workspace module paths; gitignore line management.
 
-import { tryGetActiveRunContext } from "./builders";
+import { registerInnerWhenHandler, tryGetActiveRunContext } from "./builders";
 import type { RunContext, Scope } from "./api";
+import type { TriggerContext, TriggerFn } from "./ir";
 import {
   deleteAtPath,
   getAtPath,
@@ -33,12 +34,14 @@ type JsonState = {
   kind: "json";
   obj: JsonObject;
   ctx?: RunContext;
+  triggerContext?: TriggerContext;
 };
 
 type YamlState = {
   kind: "yaml";
   doc: YamlDocument;
   ctx?: RunContext;
+  triggerContext?: TriggerContext;
   /** Synchronous accessor for prefetched npm latest versions. */
   getLatestVersion?: (packageName: string) => string | undefined;
 };
@@ -47,6 +50,7 @@ type LinesState = {
   kind: "lines";
   lines: string[];
   ctx?: RunContext;
+  triggerContext?: TriggerContext;
 };
 
 type ActiveState = JsonState | YamlState | LinesState;
@@ -106,6 +110,10 @@ function isObject(v: unknown): v is JsonObject {
 
 export type WithManagedOpts = {
   ctx?: RunContext;
+  /** Trigger context for `when(...)` calls inside the body. The runner
+   *  builds this from the post-structural-pass FS snapshot + run ctx.
+   *  Without it, `when(...)` inside the body throws. */
+  triggerContext?: TriggerContext;
 };
 
 export function withManagedBody(
@@ -114,7 +122,7 @@ export function withManagedBody(
   opts: WithManagedOpts = {},
 ): JsonObject {
   if (active) throw new Error("Nested managed(...) body — engine bug.");
-  active = { kind: "json", obj, ctx: opts.ctx };
+  active = { kind: "json", obj, ctx: opts.ctx, triggerContext: opts.triggerContext };
   try {
     body();
     return obj;
@@ -139,6 +147,7 @@ export function withManagedYaml(
     kind: "yaml",
     doc,
     ctx: opts.ctx,
+    triggerContext: opts.triggerContext,
     getLatestVersion: opts.getLatestVersion,
   };
   try {
@@ -155,7 +164,12 @@ export function withManagedLines(
   opts: WithManagedOpts = {},
 ): string[] {
   if (active) throw new Error("Nested managed(...) body — engine bug.");
-  active = { kind: "lines", lines, ctx: opts.ctx };
+  active = {
+    kind: "lines",
+    lines,
+    ctx: opts.ctx,
+    triggerContext: opts.triggerContext,
+  };
   try {
     body();
     return lines;
@@ -163,6 +177,29 @@ export function withManagedLines(
     active = undefined;
   }
 }
+
+// --- Inner-when handler registration ---
+//
+// `when(...)` is exported from `builders.ts`. When the active tree is
+// absent (we are inside a managed body, not inside `defineStructure`),
+// it delegates here. The handler returns true iff there is an inner
+// active state to dispatch against; the caller in `builders.ts` then
+// treats the call as handled. Outer/inner dispatch lives in one
+// exported `when` symbol — no separate inner-when builder.
+
+registerInnerWhenHandler((trigger: TriggerFn, body: () => void): boolean => {
+  if (!active) return false;
+  const tctx = active.triggerContext;
+  if (!tctx) {
+    throw new Error(
+      "when() inside a managed(...) body requires a triggerContext. " +
+        "The runner supplies it via the `triggerContext` opt to with-managed-*; " +
+        "ensure your test/test helper passes one.",
+    );
+  }
+  if (trigger(tctx)) body();
+  return true;
+});
 
 // ============================================================
 // JSON builders — `package.json` (and other JSON managed files)
