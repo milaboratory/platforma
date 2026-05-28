@@ -14,8 +14,19 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self.defineOutputs(["unreachable"])
 
 self.body(func(_inputs) {
+	// Bind the return value to a local — a bare `assets.importWasm(...)`
+	// expression-statement is eligible for dead-code elimination by the
+	// Tengo VM (its return is discarded, the SDK wrapper's body has no
+	// other visible effect), in which case the bridge would never be
+	// invoked and the cap would never fire. Tengo has no `_` blank
+	// identifier, so we use a regular local that the compiler keeps live.
+	w := undefined
 	for i := 0; i < 65; i++ {
-		assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+		w = assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	}
+	// Touch `w` after the loop so the compiler can't prove it's dead.
+	if is_undefined(w) {
+		return { unreachable: "fixture did not load" }
 	}
 	// The 65th call above must abort the script; this return is
 	// unreachable. If the cap is silently raised and we reach here, the

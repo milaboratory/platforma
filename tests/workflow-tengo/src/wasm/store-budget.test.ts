@@ -14,14 +14,14 @@ tplTest.concurrent(
       return;
     }
 
-    await expect(async () => {
-      const result = await helper.renderTemplate(
-        false,
-        "wasm.store-budget",
-        ["unreachable"],
-        () => ({}),
-      );
-      await result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue();
-    }).rejects.toThrow(/per-render cap/);
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.store-budget",
+      ["unreachable"],
+      () => ({}),
+    );
+    await expect(
+      result.computeOutput("unreachable", (a) => a?.getDataAsJson()).awaitStableValue(),
+    ).rejects.toThrow(/per-render cap/);
   },
 );
