@@ -9,11 +9,14 @@ export type {
   PTableParamsV2,
   PlDataTableStateV2Normalized,
   PlDataTableModel,
+  PlDataTableColumnMeta,
+  PlDataTableAxisMeta,
+  PlDataTableColumnsMeta,
   PlDataTableFilterSpecLeaf,
   PlDataTableFilterMeta,
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
-} from "./typesV7";
+} from "./typesV8";
 
 export type { PlDataTableStateV2 } from "./state-migration";
 export {
@@ -37,7 +40,6 @@ export type {
   ColumnsDisplayOptions,
   ColumnOrderRule,
   ColumnVisibilityRule,
-  ColumnMatcher,
   ColumnsSelectorConfig,
   createPlDataTableOptionsV3,
 } from "./createPlDataTable/createPlDataTableV3";

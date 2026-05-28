@@ -22,9 +22,13 @@ export type BlockContextFull = BlockContextArgsOnly & {
   readonly prod: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
   readonly staging: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
   readonly getResultsPool: (cCtx: ComputableCtx) => ResultPool;
+  readonly projectEntry: PlTreeEntry;
 };
 
-export type BlockContextAny = Optional<BlockContextFull, "prod" | "staging" | "getResultsPool">;
+export type BlockContextAny = Optional<
+  BlockContextFull,
+  "prod" | "staging" | "getResultsPool" | "projectEntry"
+>;
 
 export function constructBlockContextArgsOnly(
   projectEntry: PlTreeEntry,
@@ -159,5 +163,6 @@ export function constructBlockContext(
       return result;
     },
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId),
+    projectEntry,
   };
 }

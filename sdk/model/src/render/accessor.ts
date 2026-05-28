@@ -1,16 +1,17 @@
-import type {
-  AnyLogHandle,
-  ImportProgress,
-  LocalBlobHandleAndSize,
+import {
+  type AnyLogHandle,
+  type ImportProgress,
+  type LocalBlobHandleAndSize,
+  type RemoteBlobHandleAndSize,
+  type FolderURL,
+  type ArchiveFormat,
+  type ProgressLogWithInfo,
+  type RangeBytes,
+  isPColumn,
+  mapPObjectData,
   PColumn,
   PObject,
-  RemoteBlobHandleAndSize,
-  FolderURL,
-  ArchiveFormat,
-  ProgressLogWithInfo,
-  RangeBytes,
 } from "@milaboratories/pl-model-common";
-import { isPColumn, mapPObjectData } from "@milaboratories/pl-model-common";
 import { getCfgRenderCtx } from "../internal";
 import { FutureRef } from "./future";
 import type { AccessorHandle } from "./internal";
@@ -124,15 +125,11 @@ export class TreeNodeAccessor {
     return this.resolveWithCommon({}, ...transformedSteps);
   }
 
-  public resolveAny(
-    ...steps: [
-      Omit<FieldTraversalStep, "errorIfFieldNotSet"> & {
-        errorIfFieldNotAssigned: true;
-      },
-    ]
+  public traverse(
+    ...steps: [Omit<FieldTraversalStep, "errorIfFieldNotSet"> & { errorIfFieldNotAssigned: true }]
   ): TreeNodeAccessor;
-  public resolveAny(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
-  public resolveAny(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
+  public traverse(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
+  public traverse(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
     return this.resolveWithCommon({}, ...steps);
   }
 
@@ -204,6 +201,10 @@ export class TreeNodeAccessor {
     return JSON.parse(content);
   }
 
+  public hasData(): boolean {
+    return getCfgRenderCtx().hasData(this.handle);
+  }
+
   public getDataBase64(): string | undefined {
     return getCfgRenderCtx().getDataBase64(this.handle);
   }
@@ -250,9 +251,21 @@ export class TreeNodeAccessor {
     return this.getDataAsJson<T>();
   }
 
-  /**
-   *
-   */
+  public getFileContentAsBase64(range?: RangeBytes): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle, range));
+  }
+
+  public getFileContentAsString(range?: RangeBytes): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle, range));
+  }
+
+  public getFileContentAsJson<T>(range?: RangeBytes): FutureRef<T | undefined> {
+    return new FutureRef<string | undefined>(
+      getCfgRenderCtx().getBlobContentAsString(this.handle, range),
+    ).mapDefined((v) => JSON.parse(v) as T);
+  }
+
+  /** @deprecated */
   public getPColumns(
     errorOnUnknownField: boolean = false,
     prefix: string = "",
@@ -268,9 +281,7 @@ export class TreeNodeAccessor {
     return pf;
   }
 
-  /**
-   *
-   */
+  /** @deprecated */
   public parsePObjectCollection(
     errorOnUnknownField: boolean = false,
     prefix: string = "",
@@ -288,20 +299,6 @@ export class TreeNodeAccessor {
       result[key] = mapPObjectData(value, (c) => new TreeNodeAccessor(c, resolvePath));
     }
     return result;
-  }
-
-  public getFileContentAsBase64(range?: RangeBytes): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle, range));
-  }
-
-  public getFileContentAsString(range?: RangeBytes): FutureRef<string | undefined> {
-    return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle, range));
-  }
-
-  public getFileContentAsJson<T>(range?: RangeBytes): FutureRef<T | undefined> {
-    return new FutureRef<string | undefined>(
-      getCfgRenderCtx().getBlobContentAsString(this.handle, range),
-    ).mapDefined((v) => JSON.parse(v) as T);
   }
 
   /**

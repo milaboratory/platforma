@@ -9,6 +9,7 @@
 
 import { Services, UiServiceRegistry } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
+import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import type { ServiceProxy } from "@platforma-sdk/model";
 
 export type UiServiceOptions = {
@@ -20,5 +21,6 @@ export function createUiServiceRegistry(options: UiServiceOptions) {
     PFrameSpec: () => new SpecDriver(),
     PFrame: () => options.proxy(Services.PFrame),
     Dialog: () => options.proxy(Services.Dialog),
+    ColumnsCollection: () => new ColumnsCollectionDriverImpl(),
   });
 }

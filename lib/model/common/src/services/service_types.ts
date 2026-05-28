@@ -7,18 +7,44 @@ export type ServiceTypesLike<
   Model = unknown,
   Ui = unknown,
   Kind extends ServiceType = ServiceType,
+  ModelHost = Model,
+  UiHost = Ui,
 > = {
-  readonly __types?: { model: Model; ui: Ui; kind: Kind };
+  readonly __types?: {
+    model: Model;
+    ui: Ui;
+    kind: Kind;
+    modelHost: ModelHost;
+    uiHost: UiHost;
+  };
 };
 
 export type InferServiceModel<S extends ServiceTypesLike> =
-  S extends ServiceTypesLike<infer M, unknown, ServiceType> ? M : unknown;
+  S extends ServiceTypesLike<infer M, unknown, ServiceType, unknown, unknown> ? M : unknown;
 
 export type InferServiceUi<S extends ServiceTypesLike> =
-  S extends ServiceTypesLike<unknown, infer U, ServiceType> ? U : unknown;
+  S extends ServiceTypesLike<unknown, infer U, ServiceType, unknown, unknown> ? U : unknown;
 
 export type InferServiceKind<S extends ServiceTypesLike> =
-  S extends ServiceTypesLike<unknown, unknown, infer K> ? K : ServiceType;
+  S extends ServiceTypesLike<unknown, unknown, infer K, unknown, unknown> ? K : ServiceType;
+
+/**
+ * Host-side shape stored in the model service registry. Differs from
+ * {@link InferServiceModel} only when the registered impl carries extra
+ * parameters (e.g. per-call `host` bindings) that the sandbox-view does
+ * not expose. Defaults to {@link InferServiceModel}.
+ */
+export type InferServiceModelHost<S extends ServiceTypesLike> =
+  S extends ServiceTypesLike<unknown, unknown, ServiceType, infer MH, unknown> ? MH : unknown;
+
+/**
+ * Host-side shape stored in the UI service registry. Differs from
+ * {@link InferServiceUi} only when the registered impl carries extra
+ * parameters that the UI-proxy view does not expose. Defaults to
+ * {@link InferServiceUi}.
+ */
+export type InferServiceUiHost<S extends ServiceTypesLike> =
+  S extends ServiceTypesLike<unknown, unknown, ServiceType, unknown, infer UH> ? UH : unknown;
 
 export type ServiceName<S extends ServiceTypesLike = ServiceTypesLike> = Branded<string, S>;
 
@@ -39,7 +65,7 @@ export const {
   const modelMethodsMap = new Map<string, readonly string[]>();
   const uiMethodsMap = new Map<string, readonly string[]>();
   return {
-    service<Model, Ui>() {
+    service<Model, Ui, ModelHost = Model, UiHost = Ui>() {
       return <
         K extends ServiceType,
         N extends string,
@@ -50,7 +76,7 @@ export const {
         readonly name: N;
         readonly modelMethods: MM;
         readonly uiMethods: UM;
-      }): Branded<N, ServiceTypesLike<Model, Ui, K>> => {
+      }): Branded<N, ServiceTypesLike<Model, Ui, K, ModelHost, UiHost>> => {
         const { name, type, modelMethods, uiMethods } = options;
         if (!SERVICE_ID_PATTERN.test(name)) {
           throw new ServiceInvalidIdError(
@@ -63,7 +89,7 @@ export const {
         typeMap.set(name, type);
         modelMethodsMap.set(name, modelMethods);
         uiMethodsMap.set(name, uiMethods);
-        return name as Branded<N, ServiceTypesLike<Model, Ui, K>>;
+        return name as Branded<N, ServiceTypesLike<Model, Ui, K, ModelHost, UiHost>>;
       };
     },
     isNodeService(id: ServiceName): boolean {
@@ -95,11 +121,11 @@ export type ServiceBrand<T> =
   T extends Branded<string, infer S extends ServiceTypesLike> ? S : never;
 
 export type ModelServiceFactoryMap<SMap extends Record<string, ServiceName>> = {
-  [K in keyof SMap]: (() => InferServiceModel<ServiceBrand<SMap[K]>>) | null;
+  [K in keyof SMap]: (() => InferServiceModelHost<ServiceBrand<SMap[K]>>) | null;
 };
 
 export type UiServiceFactoryMap<SMap extends Record<string, ServiceName>> = {
-  [K in keyof SMap]: (() => InferServiceUi<ServiceBrand<SMap[K]>>) | null;
+  [K in keyof SMap]: (() => InferServiceUiHost<ServiceBrand<SMap[K]>>) | null;
 };
 
 /** Contract between any service provider and any service consumer. */

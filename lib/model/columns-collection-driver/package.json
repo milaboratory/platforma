@@ -1,0 +1,45 @@
+{
+  "name": "@milaboratories/columns-collection-driver",
+  "version": "0.1.0",
+  "description": "Host-side ColumnsCollectionDriver implementation: column-collection state ownership, refcounted handles, source serialisation",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

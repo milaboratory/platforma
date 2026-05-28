@@ -1,27 +1,44 @@
-import { Annotation } from "@milaboratories/pl-model-common";
-import type { Option, PlRef, PObjectId, PObjectSpec } from "@milaboratories/pl-model-common";
-import canonicalize from "canonicalize";
+import { Annotation, extractPObjectId } from "@milaboratories/pl-model-common";
 import type {
-  AnchoredColumnCollection,
-  ColumnMatch,
-} from "../../columns/column_collection_builder";
+  ColumnsCollectionDriverModel,
+  Option,
+  PColumnSpec,
+  PlRef,
+  PObjectId,
+  PObjectSpec,
+} from "@milaboratories/pl-model-common";
+import canonicalize from "canonicalize";
+import type { ColumnRecipe, ColumnsSource } from "../../columns";
+import { ColumnsCollection, collectLinkerColumns } from "../../columns";
 import {
   deriveDistinctLabels,
   type DeriveLabelsOptions,
   type Entry,
 } from "../../labels/derive_distinct_labels";
 
+export interface FindFilterColumnsOptions {
+  sources: ReadonlyArray<ColumnsSource>;
+  anchorSpec: PColumnSpec;
+  /** Override the resolved `columnsCollection` service (primarily for tests). */
+  driver?: ColumnsCollectionDriverModel;
+}
+
 /**
- * Columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes.
- * The axes-subset constraint comes from `mode: "enrichment"`.
+ * Matches columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes.
+ *
+ * The axes-subset constraint is enforced by `mode: "enrichment"`, which sets
+ * `allowFloatingHitAxes: false` — every axis of the matched column must be
+ * present in the anchor's axes. See `matchingModeToConstraints()` in
+ * `discover_columns.ts`.
  */
-export function findFilterColumns(collection: AnchoredColumnCollection): ColumnMatch[] {
-  return collection.findColumns({
-    mode: "enrichment",
-    include: {
-      annotations: { [Annotation.IsSubset]: "true" },
-    },
-  });
+export function findFilterColumns(options: FindFilterColumnsOptions): ColumnRecipe[] {
+  return ColumnsCollection([...options.sources], { driver: options.driver })
+    .discover({
+      anchors: { main: options.anchorSpec },
+      mode: "enrichment",
+      include: { annotations: { [Annotation.IsSubset]: "true" } },
+    })
+    .getColumns();
 }
 
 export type FilterMatchOptions = {
@@ -39,30 +56,32 @@ export type FilterMatchOptions = {
 };
 
 /**
- * Derive labels for filter column matches (for `DatasetOption.filters`).
- * Matches whose column id is missing from `refsByObjectId` are silently
- * dropped — they cannot be exposed as selectable options.
+ * Derive labeled options from filter column variants, for use in DatasetOption.filters.
+ *
+ * Entries whose column id has no PlRef in `refsByObjectId` are silently
+ * skipped — they cannot be exposed as user-selectable options.
  */
 export function filterMatchesToOptions(
-  matches: ColumnMatch[],
+  variants: ColumnRecipe[],
   options: FilterMatchOptions,
 ): Option[] {
-  if (matches.length === 0) return [];
+  if (variants.length === 0) return [];
 
   const { refsByObjectId, datasetSpec, labelOptions } = options;
 
-  // One entry per match-variant (different paths to the same column are
-  // exposed as separate Options). The `ref` field rides along on the
-  // Entry-shaped objects via structural typing; `deriveDistinctLabels`
-  // ignores extra fields.
-  const entries = matches.flatMap((match): (Entry & { ref: PlRef })[] => {
-    const ref = refsByObjectId.get(match.column.id);
+  // One Option per variant — `deriveDistinctLabels` disambiguates labels by
+  // path. All variants of the same column share a terminal PObjectId, so the
+  // ref lookup happens once per variant.
+  const entries: (Entry & { ref: PlRef })[] = variants.flatMap((variant) => {
+    const ref = refsByObjectId.get(extractPObjectId(variant.id));
     if (ref === undefined) return [];
-    return match.variants.map((variant) => ({
-      ref,
-      spec: match.column.spec,
-      linkerPath: variant.path.map((p) => ({ spec: p.linker.spec })),
-    }));
+    return [
+      {
+        ref,
+        spec: variant.getSpec(),
+        linkerPath: collectLinkerColumns(variant).map((linker) => ({ spec: linker.getSpec() })),
+      },
+    ];
   });
 
   // Appending the dataset forces a discriminating trace step into every

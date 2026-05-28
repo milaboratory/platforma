@@ -1,13 +1,20 @@
-import type {
-  AxisSpec,
-  JsonPartitionedDataInfoEntries,
-  PColumnSpec,
-  PObjectId,
+import {
+  Annotation,
+  canonicalizeAxisId,
+  getAxisId,
+  isColumnFilteredKey,
+  isColumnOverridedKey,
+  parseColumnIdSafety,
+  parseColumnOverridedId,
+  type AxisSpec,
+  type JsonPartitionedDataInfoEntries,
+  type PColumnSpec,
+  type PObjectId,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeAxisId, getAxisId } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../render/internal";
-import type { ColumnSnapshot } from "./column_snapshot";
+import type { ColumnLazy } from "./column_lazy";
+import { ColumnLazyImpl } from "./column_lazy";
 import { expandByPartition } from "./expand_by_partition";
 
 // --- Helpers ---
@@ -26,74 +33,62 @@ function createSpec(name: string, axes: AxisSpec[]): PColumnSpec {
   } as PColumnSpec;
 }
 
-/** Create a ready snapshot whose data.get() returns a JsonPartitioned DataInfoEntries. */
-function createReadySnapshot(
+/** Build a synthetic ColumnLazy whose data is a JsonPartitioned DataInfoEntries. */
+function createReadyLazy(
   id: string,
-  columnSpec: PColumnSpec,
+  spec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): ColumnSnapshot<PObjectId> {
+): ColumnLazy {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
     parts,
   };
-  return {
+  // `data` is typed `PColumnDataUniversal` but `getUniquePartitionKeys`
+  // duck-types DataInfoEntries via `isDataInfoEntries`, so the JsonPartitioned
+  // payload works at runtime.
+  return ColumnLazyImpl.fromColumn({
     id: id as PObjectId,
-    spec: columnSpec,
-    dataStatus: "ready",
-    // convertOrParsePColumnData checks isDataInfoEntries first (duck-type),
-    // so this works at runtime despite the PColumnDataUniversal type
-    data: { get: () => dataEntries as unknown as PColumnDataUniversal },
-  };
+    spec,
+    data: dataEntries as unknown as PColumnDataUniversal,
+  });
 }
 
-function createComputingSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
-  return {
+function createComputingLazy(id: string, spec: PColumnSpec): ColumnLazy {
+  return ColumnLazyImpl.fromColumn({
     id: id as PObjectId,
-    spec: columnSpec,
-    dataStatus: "computing",
-    data: {
-      get: () => undefined,
-    },
-  };
-}
-
-function createAbsentSnapshot(id: string, columnSpec: PColumnSpec): ColumnSnapshot<PObjectId> {
-  return {
-    id: id as PObjectId,
-    spec: columnSpec,
-    dataStatus: "absent",
+    spec,
     data: undefined,
-  };
+  });
 }
 
 interface Trace {
   type: string;
   label: string;
-  importance: number;
+  importance?: number;
 }
 
-function extractTrace(snapshot: ColumnSnapshot<PObjectId>): Trace[] {
-  const raw = snapshot.spec.annotations?.["pl7.app/trace"];
+function extractTrace(recipe: { getSpec(): PColumnSpec }): Trace[] {
+  const raw = recipe.getSpec().annotations?.[Annotation.Trace];
   return raw ? (JSON.parse(raw) as Trace[]) : [];
 }
 
 // --- Tests ---
 
 describe("expandByPartition", () => {
-  test("no split axes returns snapshots as-is", () => {
-    const s = createReadySnapshot("col1", createSpec("c", [createAxis("a")]), 1, [
+  test("no split axes returns inputs unchanged", () => {
+    const s = createReadyLazy("col1", createSpec("c", [createAxis("a")]), 1, [
       { key: ["x"], value: {} },
     ]);
     const result = expandByPartition([s], []);
-    expect(result.complete).toBe(true);
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0]).toBe(s); // same reference
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(1);
+    expect(result![0]).toBe(s); // same reference
   });
 
-  test("single axis split produces K snapshots", () => {
-    const s = createReadySnapshot(
+  test("single axis split produces K recipes", () => {
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       2,
@@ -105,20 +100,20 @@ describe("expandByPartition", () => {
     );
 
     const result = expandByPartition([s], [{ idx: 0 }]);
+    expect(result).toBeDefined();
+    // unique values on axis 0: s1, s2 → 2 recipes
+    expect(result).toHaveLength(2);
 
-    expect(result.complete).toBe(true);
-    // unique values on axis 0: s1, s2 → 2 snapshots
-    expect(result.items).toHaveLength(2);
-
-    // split axis removed from axesSpec
-    for (const snap of result.items) {
-      expect(snap.spec.axesSpec).toHaveLength(1);
-      expect(snap.spec.axesSpec[0].name).toBe("gene");
+    // split axis removed from axesSpec on each recipe
+    for (const recipe of result!) {
+      const spec = recipe.getSpec();
+      expect(spec.axesSpec).toHaveLength(1);
+      expect(spec.axesSpec[0].name).toBe("gene");
     }
   });
 
-  test("multi-axis split produces K1 x K2 snapshots", () => {
-    const s = createReadySnapshot(
+  test("multi-axis split produces K1 x K2 recipes", () => {
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b"), createAxis("value")]),
       2,
@@ -130,20 +125,20 @@ describe("expandByPartition", () => {
     );
 
     const result = expandByPartition([s], [{ idx: 0 }, { idx: 1 }]);
-
-    expect(result.complete).toBe(true);
+    expect(result).toBeDefined();
     // a: a1, a2 (2) × b: b1, b2 (2) = 4
-    expect(result.items).toHaveLength(4);
+    expect(result).toHaveLength(4);
 
     // both split axes removed, only "value" remains
-    for (const snap of result.items) {
-      expect(snap.spec.axesSpec).toHaveLength(1);
-      expect(snap.spec.axesSpec[0].name).toBe("value");
+    for (const recipe of result!) {
+      const spec = recipe.getSpec();
+      expect(spec.axesSpec).toHaveLength(1);
+      expect(spec.axesSpec[0].name).toBe("value");
     }
   });
 
-  test("trace annotations include split info", () => {
-    const s = createReadySnapshot(
+  test("trace annotations include split info appended to base trace", () => {
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -154,31 +149,53 @@ describe("expandByPartition", () => {
     );
 
     const result = expandByPartition([s], [{ idx: 0 }]);
-    expect(result.complete).toBe(true);
-    expect(result.items).toHaveLength(2);
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(2);
 
-    const trace0 = extractTrace(result.items[0]);
+    const expectedType = `split:${canonicalizeAxisId(getAxisId(createAxis("sample")))}`;
+
+    const trace0 = extractTrace(result![0]);
     expect(trace0).toEqual([
       {
-        type: `split:${canonicalizeAxisId(getAxisId(createAxis("sample")))}`,
+        type: expectedType,
         label: "s1",
         importance: 1_000_000,
       },
     ]);
 
-    const trace1 = extractTrace(result.items[1]);
+    const trace1 = extractTrace(result![1]);
     expect(trace1).toEqual([
       {
-        type: `split:${canonicalizeAxisId(getAxisId(createAxis("sample")))}`,
+        type: expectedType,
         label: "s2",
         importance: 1_000_000,
       },
     ]);
   });
 
-  test("axisLabels option resolves labels", () => {
+  test("existing trace is preserved and split entry is appended", () => {
+    const baseTrace = [{ type: "ingest", label: "Input" }];
+    const spec: PColumnSpec = {
+      ...createSpec("c", [createAxis("sample"), createAxis("gene")]),
+      annotations: {
+        [Annotation.Trace]: JSON.stringify(baseTrace),
+      },
+    };
+    const s = createReadyLazy("col1", spec, 1, [{ key: ["s1"], value: {} }]);
+
+    const result = expandByPartition([s], [{ idx: 0 }]);
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(1);
+
+    const trace0 = extractTrace(result![0]);
+    expect(trace0[0]).toEqual({ type: "ingest", label: "Input" });
+    expect(trace0[1].type).toBe(`split:${canonicalizeAxisId(getAxisId(createAxis("sample")))}`);
+    expect(trace0[1].label).toBe("s1");
+  });
+
+  test("axisValuesLabels option resolves labels in trace entries", () => {
     const sampleAxis = createAxis("sample");
-    const s = createReadySnapshot("col1", createSpec("c", [sampleAxis, createAxis("gene")]), 1, [
+    const s = createReadyLazy("col1", createSpec("c", [sampleAxis, createAxis("gene")]), 1, [
       { key: ["s1"], value: {} },
       { key: ["s2"], value: {} },
     ]);
@@ -189,32 +206,22 @@ describe("expandByPartition", () => {
     };
 
     const result = expandByPartition([s], [{ idx: 0 }], {
-      axisLabels: () => labels,
+      axisValuesLabels: () => labels,
     });
 
-    expect(result.complete).toBe(true);
-    const trace0 = extractTrace(result.items[0]);
-    expect(trace0[0].label).toBe("Sample One");
-    const trace1 = extractTrace(result.items[1]);
-    expect(trace1[0].label).toBe("Sample Two");
+    expect(result).toBeDefined();
+    expect(extractTrace(result![0])[0].label).toBe("Sample One");
+    expect(extractTrace(result![1])[0].label).toBe("Sample Two");
   });
 
-  test("computing snapshot returns incomplete", () => {
-    const s = createComputingSnapshot("col1", createSpec("c", [createAxis("a")]));
+  test("computing input (data undefined) returns undefined", () => {
+    const s = createComputingLazy("col1", createSpec("c", [createAxis("a")]));
     const result = expandByPartition([s], [{ idx: 0 }]);
-    expect(result.complete).toBe(false);
-    expect(result.items).toHaveLength(0);
+    expect(result).toBeUndefined();
   });
 
-  test("absent snapshot returns incomplete", () => {
-    const s = createAbsentSnapshot("col1", createSpec("c", [createAxis("a")]));
-    const result = expandByPartition([s], [{ idx: 0 }]);
-    expect(result.complete).toBe(false);
-    expect(result.items).toHaveLength(0);
-  });
-
-  test("empty unique keys for an axis produces no snapshots for that column", () => {
-    const s = createReadySnapshot(
+  test("empty unique keys for an axis produces no recipes for that column", () => {
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b")]),
       2,
@@ -222,35 +229,64 @@ describe("expandByPartition", () => {
     );
 
     const result = expandByPartition([s], [{ idx: 0 }]);
-    expect(result.complete).toBe(true);
-    expect(result.items).toHaveLength(0);
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(0);
   });
 
-  test("filtered data is accessible on expanded snapshots", () => {
-    const s = createReadySnapshot(
+  test("recipe ids are canonical Overrided<Filtered<inner>>", () => {
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
       1,
       [
-        { key: ["s1"], value: { payload: "data-s1" } },
-        { key: ["s2"], value: { payload: "data-s2" } },
+        { key: ["s1"], value: {} },
+        { key: ["s2"], value: {} },
       ],
     );
 
     const result = expandByPartition([s], [{ idx: 0 }]);
-    expect(result.complete).toBe(true);
-    expect(result.items).toHaveLength(2);
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(2);
 
-    // Each expanded snapshot should have accessible data
-    for (const snap of result.items) {
-      expect(snap.data).toBeDefined();
-      const data = snap.data!.get();
-      expect(data).toBeDefined();
+    for (const recipe of result!) {
+      // Outer wrap is Overrided
+      const overridedKey = parseColumnOverridedId(recipe.id);
+      expect(isColumnOverridedKey(overridedKey)).toBe(true);
+      // Inner is a stringified Filtered id
+      expect(typeof overridedKey.source).toBe("string");
+      const innerParsed = parseColumnIdSafety(overridedKey.source);
+      expect(isColumnFilteredKey(innerParsed)).toBe(true);
     }
+
+    // Each recipe's id is distinct
+    const ids = new Set(result!.map((r) => r.id));
+    expect(ids.size).toBe(2);
   });
 
-  test("multiple input snapshots are all expanded", () => {
-    const s1 = createReadySnapshot(
+  test("domain override carries axis name → value", () => {
+    const s = createReadyLazy(
+      "col1",
+      createSpec("c", [createAxis("sample"), createAxis("gene")]),
+      1,
+      [
+        { key: ["s1"], value: {} },
+        { key: ["s2"], value: {} },
+      ],
+    );
+
+    const result = expandByPartition([s], [{ idx: 0 }]);
+    expect(result).toBeDefined();
+    expect(result).toHaveLength(2);
+
+    const overrided0 = parseColumnOverridedId(result![0].id);
+    expect(overrided0.specOverrides.domain).toEqual({ sample: "s1" });
+
+    const overrided1 = parseColumnOverridedId(result![1].id);
+    expect(overrided1.specOverrides.domain).toEqual({ sample: "s2" });
+  });
+
+  test("multiple input columns are all expanded", () => {
+    const s1 = createReadyLazy(
       "col1",
       createSpec("c1", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -259,7 +295,7 @@ describe("expandByPartition", () => {
         { key: ["s2"], value: {} },
       ],
     );
-    const s2 = createReadySnapshot(
+    const s2 = createReadyLazy(
       "col2",
       createSpec("c2", [createAxis("sample"), createAxis("gene")]),
       1,
@@ -271,13 +307,13 @@ describe("expandByPartition", () => {
     );
 
     const result = expandByPartition([s1, s2], [{ idx: 0 }]);
-    expect(result.complete).toBe(true);
+    expect(result).toBeDefined();
     // s1: 2 unique + s2: 3 unique = 5 total
-    expect(result.items).toHaveLength(5);
+    expect(result).toHaveLength(5);
   });
 
   test("throws when split axis exceeds partition key length", () => {
-    const s = createReadySnapshot(
+    const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("a"), createAxis("b"), createAxis("c")]),
       1, // only 1 partition key

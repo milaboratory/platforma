@@ -3,6 +3,7 @@ import {
   parseJson,
   readAnnotation,
   type AxisQualification,
+  type MatchQualifications,
   type PObjectId,
   type PObjectSpec,
   type StringifiedJson,
@@ -10,7 +11,6 @@ import {
 } from "@milaboratories/pl-model-common";
 import { throwError } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
-import type { MatchQualifications } from "../columns/column_collection_builder";
 
 export type { Trace, TraceEntry } from "@milaboratories/pl-model-common";
 

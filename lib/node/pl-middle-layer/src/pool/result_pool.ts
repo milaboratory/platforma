@@ -4,13 +4,12 @@ import type {
   Option,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PlRef,
   ResultCollection,
   ResultPoolEntry,
   ValueOrError,
 } from "@platforma-sdk/model";
-import { executePSpecPredicate, mapValueInVOE } from "@platforma-sdk/model";
+import { mapValueInVOE } from "@platforma-sdk/model";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import { outputRef } from "../model/args";
 import type { Block, ProjectStructure } from "../model/project_model";
@@ -237,28 +236,6 @@ export class ResultPool {
     }
 
     return { entries, isComplete, instabilityMarker };
-  }
-
-  public calculateOptions(predicate: PSpecPredicate): ExtendedOption[] {
-    const found: ExtendedOption[] = [];
-    for (const block of this.blocks.values()) {
-      const exportsChecked = new Set<string>();
-      const addToFound = (ctx: RawPObjectCollection) => {
-        for (const [exportName, result] of ctx.results) {
-          if (exportsChecked.has(exportName) || result.spec === undefined) continue;
-          exportsChecked.add(exportName);
-          if (executePSpecPredicate(predicate, result.spec))
-            found.push({
-              label: block.info.label + " / " + exportName,
-              ref: outputRef(block.info.id, exportName),
-              spec: result.spec,
-            });
-        }
-      };
-      if (block.staging !== undefined) addToFound(block.staging);
-      if (block.prod !== undefined) addToFound(block.prod);
-    }
-    return found;
   }
 
   public static create(ctx: ComputableCtx, prjEntry: PlTreeEntry, rootBlockId: string): ResultPool {

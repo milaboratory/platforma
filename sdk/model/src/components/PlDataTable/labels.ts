@@ -1,41 +1,12 @@
 import type { AxisId, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
-import {
-  getAxisId,
-  isLabelColumn,
-  matchAxisId,
-  PColumnName,
-} from "@milaboratories/pl-model-common";
-import type { PColumnDataUniversal, RenderCtxBase } from "../../render";
-import { ColumnCollectionBuilder, collectCtxColumnSnapshotProviders } from "../../columns";
-
-/**
- * Get all label columns visible in the current render context
- * (result pool + block outputs + prerun).
- */
-export function getAllLabelColumns<A, U>(
-  ctx: RenderCtxBase<A, U>,
-): PColumn<PColumnDataUniversal>[] {
-  const pframeSpec = ctx.getService("pframeSpec");
-  const collection = new ColumnCollectionBuilder(pframeSpec)
-    .addSources(collectCtxColumnSnapshotProviders(ctx))
-    .build({ allowPartialColumnList: true });
-  try {
-    return collection
-      .findColumns({ include: { name: PColumnName.Label, axes: [] } })
-      .reduce<PColumn<PColumnDataUniversal>[]>((acc, hit) => {
-        const data = hit.data?.get();
-        return data === undefined ? acc : [...acc, { id: hit.id, spec: hit.spec, data }];
-      }, []);
-  } finally {
-    collection.dispose();
-  }
-}
+import { getAxisId, isLabelColumn, matchAxisId } from "@milaboratories/pl-model-common";
+import type { PColumnDataUniversal } from "../../render";
 
 /** Get label columns matching the provided columns from the result pool */
 export function getMatchingLabelColumns(
   columns: { spec: PColumnSpec }[],
-  allLabelColumns: PColumn<PColumnDataUniversal>[],
-): PColumn<PColumnDataUniversal>[] {
+  allLabelColumns: PColumn<undefined | PColumnDataUniversal>[],
+): PColumn<undefined | PColumnDataUniversal>[] {
   // split input columns into label and value columns
   const inputLabelColumns: typeof columns = [];
   const inputValueColumns: typeof columns = [];

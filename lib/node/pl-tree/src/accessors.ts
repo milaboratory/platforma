@@ -5,17 +5,13 @@ import type {
   ComputableHooks,
   UsageGuard,
 } from "@milaboratories/computable";
-import type {
-  SignedResourceId,
-  ResourceType,
-  OptionalSignedResourceId,
-} from "@milaboratories/pl-client";
 import {
   resourceIdToString,
   resourceTypesEqual,
   resourceTypeToString,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  NullSignedResourceId,
+  ResourceType,
+  OptionalSignedResourceId,
+  SignedResourceId,
 } from "@milaboratories/pl-client";
 import type { ValueAndError } from "./value_and_error";
 import { mapValueAndError } from "./value_and_error";
@@ -129,7 +125,6 @@ function getResourceFromTree(
       : !resourceTypesEqual(ops.assertResourceType, acc.resourceType))
   )
     throw new Error(
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       `wrong resource type ${resourceTypeToString(acc.resourceType)} but expected ${ops.assertResourceType}`,
     );
 
@@ -365,6 +360,11 @@ export class PlTreeNodeAccessor {
       // absence of error always considered as stable
       return undefined;
     return this.getResourceFromTree(rid, {});
+  }
+
+  public hasData(): boolean {
+    this.instanceData.guard();
+    return this.resource.data !== undefined;
   }
 
   public getData(): Uint8Array | undefined {

@@ -1169,3 +1169,27 @@ export interface QueryTransformColumns<Q, E, SO> {
   /** Derived columns to compute (at least one). */
   columns: [TransformColumnEntry<E, SO>, ...TransformColumnEntry<E, SO>[]];
 }
+
+/**
+ * Spec-override query operation — client-side-only structural node.
+ *
+ * Overlays a {@link SpecOverrides} patch on top of the inner query's spec.
+ * Carries no topological change — it is collapsed at the host boundary
+ * (`resolvePColumn`) before the query reaches pframe-engine. The engine
+ * never sees this node.
+ *
+ * Emitted by `ColumnOverridedRecipe.getQuery()`; the only currently
+ * supported shape is `specOverride{ input: <plain column ref>, override }`
+ * (i.e. `Overrided<Lazy>`). More complex projections under Overrided are
+ * a future engine work item.
+ *
+ * @template Q - Input query type
+ * @template SO - Spec override type
+ */
+export interface QuerySpecOverride<Q, SO> {
+  type: "specOverride";
+  /** Input query whose spec is to be overridden. */
+  input: Q;
+  /** Spec override patch to overlay on the inner spec. */
+  override: SO;
+}

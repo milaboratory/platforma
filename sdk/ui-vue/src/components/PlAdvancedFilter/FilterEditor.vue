@@ -13,6 +13,7 @@ import type {
   AnchoredPColumnId,
   AxisFilterByIdx,
   AxisFilterValue,
+  PTableColumnId,
   SUniversalPColumnId,
 } from "@platforma-sdk/model";
 import {
@@ -102,7 +103,9 @@ function changeSourceId(newSourceId?: PlAdvancedFilterColumnId) {
   if (!newSourceId) {
     return;
   }
-  const newSourceInfo = props.columnOptions.find((v) => v.id === getSourceId(newSourceId));
+  const newSourceInfo = props.columnOptions.find((v) =>
+    columnIdEquals(v.id, getSourceId(newSourceId)),
+  );
   if (!newSourceInfo) {
     return;
   }
@@ -119,8 +122,8 @@ function changeSourceId(newSourceId?: PlAdvancedFilterColumnId) {
 }
 
 const inconsistentSourceSelected = computed(() => {
-  const selectedOption = props.columnOptions.find(
-    (op) => op.id === getSourceId(props.filter.column),
+  const selectedOption = props.columnOptions.find((op) =>
+    columnIdEquals(op.id, getSourceId(props.filter.column)),
   );
   return selectedOption === undefined;
 });
@@ -132,7 +135,13 @@ const sourceOptions = computed(() => {
   return options;
 });
 
+function isPTableColumnIdObject(c: PlAdvancedFilterColumnId): c is PTableColumnId {
+  return typeof c === "object" && c !== null;
+}
+
 function getSourceId(column: PlAdvancedFilterColumnId): PlAdvancedFilterColumnId {
+  // PTableColumnId object form: no axisFilters embedded, return as-is.
+  if (isPTableColumnIdObject(column)) return column;
   try {
     const parsedColumnId = parseColumnId(column as SUniversalPColumnId);
     if (isFilteredPColumn(parsedColumnId)) {
@@ -154,7 +163,7 @@ function getColumnAsSourceAndFixedAxes(
   column: PlAdvancedFilterColumnId,
 ): ColumnAsSourceAndFixedAxes {
   const sourceId = getSourceId(column);
-  const option = props.columnOptions.find((op) => op.id === sourceId);
+  const option = props.columnOptions.find((op) => columnIdEquals(op.id, sourceId));
   const axesToBeFixed = (option?.axesToBeFixed ?? []).reduce(
     (res, item) => {
       res[item.idx] = undefined;
@@ -162,15 +171,22 @@ function getColumnAsSourceAndFixedAxes(
     },
     {} as Record<number, AxisFilterValue | undefined>,
   );
+  // PTableColumnId object form has no axis filters baked in.
+  if (isPTableColumnIdObject(column)) {
+    return { source: column, axisFiltersByIndex: axesToBeFixed };
+  }
   try {
     const parsedColumnId = parseColumnId(column as SUniversalPColumnId);
     if (isFilteredPColumn(parsedColumnId)) {
       return {
         source: sourceId,
-        axisFiltersByIndex: parsedColumnId.axisFilters.reduce((res, item) => {
-          res[item[0]] = item[1];
-          return res;
-        }, axesToBeFixed),
+        axisFiltersByIndex: (parsedColumnId.axisFilters as AxisFilterByIdx[]).reduce(
+          (res, item) => {
+            res[item[0]] = item[1];
+            return res;
+          },
+          axesToBeFixed,
+        ),
       };
     }
   } catch {
@@ -179,12 +195,24 @@ function getColumnAsSourceAndFixedAxes(
   return { source: column, axisFiltersByIndex: axesToBeFixed };
 }
 
+/** Identity comparison for PlAdvancedFilterColumnId values — handles both string
+ *  and object (PTableColumnId) variants. */
+function columnIdEquals(a: PlAdvancedFilterColumnId, b: PlAdvancedFilterColumnId): boolean {
+  if (a === b) return true;
+  if (typeof a === "object" && typeof b === "object" && a !== null && b !== null) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  return false;
+}
+
 function stringifyColumn(value: ColumnAsSourceAndFixedAxes): PlAdvancedFilterColumnId {
   if (Object.keys(value.axisFiltersByIndex).length === 0) {
     return value.source;
   }
+  // PTableColumnId object form can't carry axisFilters — return as-is.
+  if (isPTableColumnIdObject(value.source)) return value.source;
   return stringifyColumnId({
-    source: parseColumnId(value.source as SUniversalPColumnId) as AnchoredPColumnId,
+    source: parseColumnId(value.source as SUniversalPColumnId) as unknown as AnchoredPColumnId,
     axisFilters: Object.entries(value.axisFiltersByIndex).map(
       ([idx, value]) => [Number(idx), value] as AxisFilterByIdx,
     ),
@@ -207,7 +235,7 @@ function updateAxisFilterValue(idx: number, value: AxisFilterValue | undefined) 
 }
 
 const currentOption = computed(() =>
-  props.columnOptions.find((op) => op.id === columnAsSourceAndFixedAxes.value.source),
+  props.columnOptions.find((op) => columnIdEquals(op.id, columnAsSourceAndFixedAxes.value.source)),
 );
 const currentSpec = computed(() =>
   currentOption.value?.spec ? getNormalizedSpec(currentOption.value.spec) : null,

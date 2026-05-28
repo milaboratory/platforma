@@ -1,17 +1,22 @@
 import type { Optional } from "utility-types";
-import type { Branded, StringifiedJson } from "@milaboratories/pl-model-common";
+import type {
+  AccessorHandle,
+  Branded,
+  PObjectId,
+  StringifiedJson,
+  SUniversalPColumnId,
+} from "@milaboratories/pl-model-common";
+export type { AccessorHandle };
 import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
 import type {
   ArchiveFormat,
   AnyFunction,
-  Option,
   PColumn,
   PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
   PObjectSpec,
-  PSpecPredicate,
   PTableDef,
   PTableDefV2,
   PTableHandle,
@@ -23,16 +28,19 @@ import type {
 import type { TreeNodeAccessor } from "./accessor";
 import type { ServiceDispatch } from "@milaboratories/pl-model-common";
 
-export const StagingAccessorName = "staging";
 export const MainAccessorName = "main";
+export const StagingAccessorName = "staging";
 
-export type AccessorHandle = Branded<string, "AccessorHandle">;
 export type FutureHandle = Branded<string, "FutureHandle">;
 
 export type PColumnDataUniversal<TreeEntry = TreeNodeAccessor> =
   | TreeEntry
   | DataInfo<TreeEntry>
   | PColumnValues;
+
+// Raw upstream-block ctx shape lives in `@milaboratories/pl-model-common`
+// (`UpstreamBlockCtx`). Import directly from there at use sites.
+import type { UpstreamBlockCtx } from "@milaboratories/pl-model-common";
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
   //
@@ -73,11 +81,13 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getKeyValueAsString(handle: AHandle, key: string): string | undefined;
 
+  hasData(handle: AHandle): boolean;
+
   getDataBase64(handle: AHandle): string | undefined;
 
   getDataAsString(handle: AHandle): string | undefined;
 
-  /** If not final returns undefined */
+  /** @deprecated */
   parsePObjectCollection(
     handle: AHandle,
     errorOnUnknownField: boolean,
@@ -144,18 +154,40 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
 
-  calculateOptions(predicate: PSpecPredicate): Option[];
+  //
+  // Raw result pool — list of upstream block ctx accessor handles.
+  // SDK-side providers compose enumerate/status/data themselves on top of these.
+  //
+
+  /**
+   * For each upstream block in the staging graph, returns its prod/staging ctx
+   * accessor handles (when present). Sandbox uses these handles with
+   * `getPObjectEntryDataHandle` to build
+   * column snapshots; spec/status/data merge with prod-vs-staging precedence
+   * lives sandbox-side.
+   */
+  getUpstreamBlockCtx(): ReadonlyArray<UpstreamBlockCtx<AHandle>>;
 
   //
   // PFrame / PTable
   //
 
-  createPFrame(def: PFrameDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PFrameHandle;
+  createPFrame(
+    def: PFrameDef<
+      PObjectId | SUniversalPColumnId | PColumn<AHandle | PColumnValues | DataInfo<AHandle>>
+    >,
+  ): PFrameHandle;
 
-  createPTable(def: PTableDef<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>): PTableHandle;
+  createPTable(
+    def: PTableDef<
+      PObjectId | SUniversalPColumnId | PColumn<AHandle | PColumnValues | DataInfo<AHandle>>
+    >,
+  ): PTableHandle;
 
   createPTableV2(
-    def: PTableDefV2<PColumn<AHandle | PColumnValues | DataInfo<AHandle>>>,
+    def: PTableDefV2<
+      PObjectId | SUniversalPColumnId | PColumn<AHandle | PColumnValues | DataInfo<AHandle>>
+    >,
   ): PTableHandle;
 
   //
@@ -181,6 +213,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   activeArgs: true as const,
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
+  lazyColumnStatusSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {

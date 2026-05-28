@@ -7,7 +7,6 @@ import type {
   NativePObjectId,
   PartitionedDataInfoEntries,
   PColumn,
-  PColumnLazy,
   PColumnSelector,
   PColumnSpec,
   PColumnValues,
@@ -60,7 +59,7 @@ export interface AxisLabelProvider {
 /**
  * A simple implementation of {@link ColumnProvider} backed by a pre-defined array of columns.
  */
-class ArrayColumnProvider implements ColumnProvider {
+class ArrayColumnsProvider implements ColumnProvider {
   constructor(private readonly columns: PColumn<PColumnDataUniversal | undefined>[]) {}
 
   selectColumns(
@@ -76,21 +75,21 @@ class ArrayColumnProvider implements ColumnProvider {
 }
 
 /** Lazy calculates the data, returns undefined if data is not ready. */
-export type PColumnLazyWithLabel<T> = PColumnLazy<T> & {
+export type PColumnWithLabel<T> = PColumn<T> & {
   label: string;
 };
 
 /** Universal column is a column that uses a universal column id, and always have label. */
-export type PColumnLazyUniversal<T> = PColumnLazyWithLabel<T> & {
+export type PColumnUniversal<T> = PColumnWithLabel<T> & {
   id: SUniversalPColumnId;
 };
 
-/** @deprecated Use PColumnLazyWithLabel instead. */
-export type PColumnEntryWithLabel = PColumnLazy<undefined | PColumnDataUniversal> & {
+/** @deprecated Use PColumnWithLabel instead. */
+export type PColumnEntryWithLabel = PColumn<undefined | PColumnDataUniversal> & {
   label: string;
 };
 
-/** @deprecated Use PColumnLazyUniversal instead. */
+/** @deprecated Use PColumnUniversal instead. */
 export type PColumnEntryUniversal = PColumnEntryWithLabel & {
   id: SUniversalPColumnId;
 };
@@ -220,7 +219,7 @@ type UniversalPColumnOpts = UniversalPColumnOptsNoDeriver & {
 export class PColumnCollection {
   private readonly defaultProviderStore: PColumn<PColumnDataUniversal | undefined>[] = [];
   private readonly providers: ColumnProvider[] = [
-    new ArrayColumnProvider(this.defaultProviderStore),
+    new ArrayColumnsProvider(this.defaultProviderStore),
   ];
   private readonly axisLabelProviders: AxisLabelProvider[] = [];
 
@@ -498,12 +497,13 @@ export class PColumnCollection {
       }
 
       result.push({
-        id: finalId,
+        id: finalId as PObjectId,
         spec: finalSpec,
-        data: () =>
-          entry.type === "split"
+        get data() {
+          return entry.type === "split"
             ? entriesToDataInfo(filterDataInfoEntries(entry.dataEntries, axisFiltersTuple!))
-            : entry.originalColumn.data,
+            : entry.originalColumn.data;
+        },
         label: label,
       });
     }
@@ -555,30 +555,30 @@ export class PColumnCollection {
       | APColumnSelectorWithSplit
       | APColumnSelectorWithSplit[],
     opts: UniversalPColumnOpts,
-  ): PColumn<PColumnDataUniversal>[] | undefined;
+  ): PColumn<undefined | PColumnDataUniversal>[] | undefined;
   public getColumns(
     predicateOrSelectors:
       | ((spec: PColumnSpec) => boolean)
       | PColumnSelectorWithSplit
       | PColumnSelectorWithSplit[],
     opts?: UniversalPColumnOptsNoDeriver,
-  ): PColumn<PColumnDataUniversal>[] | undefined;
+  ): PColumn<undefined | PColumnDataUniversal>[] | undefined;
   public getColumns(
     predicateOrSelectors:
       | ((spec: PColumnSpec) => boolean)
       | APColumnSelectorWithSplit
       | APColumnSelectorWithSplit[],
     opts?: Optional<UniversalPColumnOpts, "anchorCtx">,
-  ): PColumn<PColumnDataUniversal>[] | undefined {
+  ): PColumn<undefined | PColumnDataUniversal>[] | undefined {
     const entries = this.getUniversalEntries(predicateOrSelectors, {
       overrideLabelAnnotation: true, // default for getColumns
       ...opts,
     } as UniversalPColumnOpts);
     if (!entries) return undefined;
 
-    const columns: PColumn<PColumnDataUniversal>[] = [];
+    const columns: PColumn<undefined | PColumnDataUniversal>[] = [];
     for (const entry of entries) {
-      const data = entry.data();
+      const data = entry.data;
       if (!data) {
         if (opts?.dontWaitAllData) continue;
         return undefined;
