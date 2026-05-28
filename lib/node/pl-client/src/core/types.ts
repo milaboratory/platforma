@@ -349,7 +349,7 @@ export function createSignedResourceId(
   if (isNullResourceId(globalId)) throw new Error(`Null resource id.`);
 
   const sigHex = signature ? Buffer.from(signature).toString("hex") : "";
-  return asSignedResourceId(`${String(globalId)}|${sigHex}`);
+  return `${String(globalId)}|${sigHex}` as SignedResourceId;
 }
 
 export function parseSignedResourceId(resourceId: SignedResourceId): {
