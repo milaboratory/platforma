@@ -275,7 +275,12 @@ makeTrace := func(...steps) {
 		validation.assertType(steps, _TRACE_SCHEMA)
 		currentTrace = append(currentTrace, steps...)
 	}
-	currentTraceStr := string(json.encode(currentTrace))
+	// MILAB-6319: canonical (sorted-key) encoding. The trace string is later
+	// embedded as the value of the `pl7.app/trace` annotation in a parent
+	// JSON spec resource. pl canonicalizes resource bytes at the outer level
+	// before hashing for CID, but cannot reach inside string values — so
+	// non-canonical inner key order would survive and break dedup.
+	currentTraceStr := string(canonical.encode(currentTrace))
 
 	return ll.toStrict({
 		value: currentTrace,
