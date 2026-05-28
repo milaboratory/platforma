@@ -92,9 +92,9 @@ describe("PlDropdownMulti", () => {
       },
     });
     await flushPromises();
-    // The SCSS rule `.pl-dropdown-multi.disabled .pl-dropdown-multi__chip--missing .pl-chip__text`
-    // depends on both selectors being applied. jsdom doesn't resolve specificity,
-    // so we only assert both hooks are wired up.
+    // The SCSS rule `.pl-dropdown-multi.disabled .pl-dropdown-multi__chip--missing
+    // .pl-chip__text` needs both selectors. jsdom doesn't resolve specificity, so
+    // we only assert the hooks exist.
     expect(wrapper.find(".pl-dropdown-multi.disabled").exists()).toBe(true);
     expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(true);
   });
@@ -121,10 +121,10 @@ describe("PlDropdownMulti", () => {
       },
     });
     await flushPromises();
-    // An option with empty `label` must not let `toDisplayString` JSON-stringify its value.
+    // An empty `label` must not produce JSON output via `toDisplayString`.
     expect(wrapper.html()).not.toContain('"blockId"');
     expect(wrapper.html()).not.toContain('"__isRef"');
-    // The chip is still rendered (not the missing branch — option is found).
+    // The chip still renders (not the missing branch — option is found).
     expect(wrapper.find(".pl-chip").exists()).toBe(true);
     expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(false);
   });

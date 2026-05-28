@@ -68,8 +68,8 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
-     * Text shown in a chip when an entry in `modelValue` is missing from `options`.
-     * Use to communicate that an upstream source was deleted. Styled italic + error color.
+     * Text shown in a chip when a `modelValue` entry is missing from `options` —
+     * e.g. its upstream source was deleted. Rendered italic in error color.
      */
     missingValueLabel?: string;
     /**
@@ -133,8 +133,8 @@ const placeholderRef = computed(() => {
 const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
 
 const selectedOptionsRef = computed(() => {
-  // While options are loading (undefined), suppress all chips for unresolved values
-  // so the user doesn't briefly see "missing" chips that resolve once options arrive.
+  // While options load (`options === undefined`), hide chips for unresolved values
+  // to avoid a "missing" flash that resolves once options arrive.
   const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
     .map((v) => {
@@ -147,7 +147,7 @@ const selectedOptionsRef = computed(() => {
       if (!optionsLoaded) {
         return undefined;
       }
-      // Empty `missingValueLabel` is honored verbatim — caller's explicit "render nothing".
+      // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
       return {
         value: v,
         label: props.missingValueLabel,

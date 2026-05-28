@@ -53,8 +53,8 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
-     * Text shown inside the field when `modelValue` is set but the referenced upstream
-     * block / output no longer exists. Defaults to "Upstream value removed".
+     * Text shown in the field when the referenced upstream block / output no longer
+     * exists. Defaults to "Upstream value removed".
      */
     missingValueLabel?: string;
     /**

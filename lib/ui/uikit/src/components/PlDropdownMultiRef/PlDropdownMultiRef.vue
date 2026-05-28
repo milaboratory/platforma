@@ -40,8 +40,8 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
-     * Text shown in a chip when a `modelValue` entry references an upstream block
-     * that no longer exists. Defaults to "Upstream value removed".
+     * Text shown in a chip when a `modelValue` entry's upstream block no longer
+     * exists. Defaults to "Upstream value removed".
      */
     missingValueLabel?: string;
     /**

@@ -52,7 +52,7 @@ describe("PlDropdown", () => {
     expect(wrapper.html()).not.toContain('"blockId"');
     expect(wrapper.html()).not.toContain('"__isRef"');
 
-    // Redundant generic error helper is suppressed.
+    // The redundant generic error helper no longer appears.
     const error = wrapper.find(".pl-dropdown__error");
     expect(error.exists() ? error.text() : "").not.toContain(
       "The selected value is not one of the options",
@@ -89,10 +89,9 @@ describe("PlDropdown", () => {
       },
     });
     await flushPromises();
-    // Wired-up CSS hooks: the SCSS disabled override (`color: var(--dis-01)`)
-    // depends on both `.disabled` on the root and `.input-value--missing` on the
-    // label being present simultaneously. jsdom does not resolve CSS specificity,
-    // so we only assert the selector hooks exist, not the computed color.
+    // The SCSS disabled override (`color: var(--dis-01)`) needs both `.disabled`
+    // on the root and `.input-value--missing` on the label. jsdom doesn't resolve
+    // CSS specificity, so we only assert the hooks exist — not the computed color.
     expect(wrapper.find(".pl-dropdown.disabled").exists()).toBe(true);
     expect(wrapper.find(".input-value--missing").exists()).toBe(true);
   });
@@ -106,9 +105,9 @@ describe("PlDropdown", () => {
       },
     });
     await flushPromises();
-    // null is "no value selected" — must render the placeholder, not a blank field.
+    // null means "no value selected" — must render the placeholder, not blank.
     expect(wrapper.find("input").attributes("placeholder")).toBe("Pick one");
-    // And must NOT trigger the missing-value branch.
+    // Must not trigger the missing-value branch.
     expect(wrapper.find(".input-value--missing").exists()).toBe(false);
   });
 
