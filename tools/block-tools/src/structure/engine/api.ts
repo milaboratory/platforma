@@ -80,3 +80,46 @@ export {
   generate,
   blockVars,
 } from "./builders";
+
+export {
+  // JSON managed builders
+  ensureField,
+  removeField,
+  requireField,
+  ensureFieldEntries,
+  ensureScript,
+  removeScript,
+  ensureDep,
+  ensureDevDep,
+  ensurePeerDep,
+  ensureOptionalDep,
+  removeDep,
+  ensureDeps,
+  ensureDevDeps,
+  ensurePeerDeps,
+  ensureOptionalDeps,
+  ensureWorkspaceScopeDeps,
+  ensureWorkspaceScopeDevDeps,
+  ensureWorkspaceScopePeerDeps,
+  pruneKeysMatching,
+  pruneKeysMatchingAt,
+  enforceFieldOrder,
+  enforceFieldOrderAt,
+  enforceAlphabeticalOrder,
+  transformAt,
+  // YAML managed builders
+  ensureWorkspaceModulePaths,
+  ensureCatalogPin,
+  ensureCatalogVersion,
+  pinCatalogTo,
+  bumpCatalogToLatest,
+  // Lines managed builders
+  ensureGitignoreEntries,
+  removeGitignoreEntries,
+  // Active-state wrappers (engine-internal but exported for tests).
+  withManagedBody,
+  withManagedYaml,
+  withManagedLines,
+} from "./content-rules";
+
+export type { DepVersion } from "./content-rules";

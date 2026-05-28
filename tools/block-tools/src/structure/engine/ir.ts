@@ -20,11 +20,14 @@ export type TriggerContext = {
 
 export type TriggerFn = (tctx: TriggerContext) => boolean;
 
-/** Content forms — what to write into a file when creating it. */
+/** Content forms — what to write into a file when creating it.
+ *  `tpl.vars` may be a record or a thunk returning a record; the latter
+ *  lets rule authors call `blockVars()` lazily at resolve time. */
+export type TplVarsLike = Record<string, string> | (() => Record<string, string>);
 export type ContentForm =
   | { kind: "file"; path: string }
   | { kind: "text"; value: string }
-  | { kind: "tpl"; path: string; vars: Record<string, string> }
+  | { kind: "tpl"; path: string; vars: TplVarsLike }
   | { kind: "generate"; fn: () => unknown };
 
 /** Builder-body for a `managed` file (the content-rules lambda). */

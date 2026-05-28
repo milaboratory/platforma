@@ -43,12 +43,14 @@ function appendNode(builder: string, node: TreeNode): void {
   t.stack[t.stack.length - 1]!.push(node);
 }
 
-/** Engine-internal: scope `blockVars()` lookups during a run. */
-export function withRunContext<T>(ctx: RunContext, fn: () => T): T {
+/** Engine-internal: scope `blockVars()` lookups during a run. Accepts
+ *  sync or async bodies; awaits Promise-returning ones so the active
+ *  context survives across `await` points inside the runner. */
+export async function withRunContext<T>(ctx: RunContext, fn: () => T | Promise<T>): Promise<T> {
   const prev = activeRunContext;
   activeRunContext = ctx;
   try {
-    return fn();
+    return await fn();
   } finally {
     activeRunContext = prev;
   }
@@ -183,7 +185,10 @@ export function text(value: string): ContentForm {
   return { kind: "text", value };
 }
 
-export function tpl(path: string, vars: Record<string, string>): ContentForm {
+export function tpl(
+  path: string,
+  vars: Record<string, string> | (() => Record<string, string>),
+): ContentForm {
   return { kind: "tpl", path, vars };
 }
 

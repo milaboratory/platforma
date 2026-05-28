@@ -2,8 +2,8 @@
 //
 // `run(structure, fs, ctx, opts)` drives one block through phases 3-7 of
 // the spec lifecycle (DISCOVERY happens in the caller, which constructs
-// `ctx.modules`). The function is shared by `check`, `refresh`, and
-// `refresh --update-deps-only`:
+// `ctx.modules`). The function is shared by `check`, `refresh`,
+// `refresh --update-deps-only`, and `init`:
 //   - dryRun=true                            → check (no writes)
 //   - dryRun=false, updateDepsOnly=false     → refresh default
 //                                              (writes + .structure
@@ -12,6 +12,10 @@
 //                                              (only onUpdateDeps leaves
 //                                              fire; no version bump;
 //                                              no recheck)
+//   - dryRun=false, opts.initMode=true       → init (seeds also written;
+//                                              no recheck — Layer-2 test
+//                                              runs an explicit dry-run
+//                                              afterwards instead)
 //
 // Idempotency invariant is enforced by phase 7: after a successful
 // refresh, the runner reruns the lifecycle in dry-run mode (fresh
@@ -20,14 +24,18 @@
 // (scope, path, primitive, action) tuple for diagnostics.
 
 import { stringify as yamlStringify } from "yaml";
-import type { ContentForm, FlatItem, Structure, TriggerContext } from "./ir";
+import type { ContentForm, FlatItem, Structure, TriggerContext, ManagedBody } from "./ir";
 import type { RunContext, Scope } from "./api";
 import type { FileSystem } from "./fs/api";
+import type { TemplateProvider } from "./templates";
+import { substituteVars } from "./templates";
 import { flatten } from "./flatten";
 import { withRunContext } from "./builders";
-import { withManagedBody } from "./content-rules";
+import { withManagedBody, withManagedYaml, withManagedLines } from "./content-rules";
 import { parseJson, stringifyJson } from "./parsers/json";
 import type { JsonObject } from "./parsers/json";
+import { parseYaml, stringifyYaml } from "./parsers/yaml";
+import { parseLines, serializeLines } from "./parsers/lines";
 import { writeStructureVersion, STRUCTURE_META_FILE } from "./version";
 
 export type ChangeAction = "create" | "update" | "delete" | "rename" | "noop";
@@ -50,6 +58,13 @@ export type RunOptions = {
    *  reflecting the just-written FS state (re-reads `pnpm-workspace.yaml`).
    *  If absent, recheck reuses the original ctx with `dryRun: true`. */
   rediscover?: (fs: FileSystem) => Promise<RunContext>;
+  /** Template provider used by `file(...)` and `tpl(...)` content forms.
+   *  Required whenever the structure references such forms. */
+  templates?: TemplateProvider;
+  /** Init mode: write seed leaves (only-if-missing semantics) and skip
+   *  the post-run recheck. The caller is expected to follow with an
+   *  explicit dry-run check (Layer-2 invariant). */
+  initMode?: boolean;
 };
 
 export class RecheckError extends Error {
@@ -64,12 +79,37 @@ export class RecheckError extends Error {
 }
 
 /** Resolve a `ContentForm` to its on-disk string for the given file
- *  path. `file` / `tpl` resolution is deferred to step 4 (template tree
- *  not wired yet); `text` and `generate` are end-to-end here. */
-function resolveContent(form: ContentForm, filePath: string): string {
+ *  path. `file` / `tpl` resolution goes through the configured
+ *  `TemplateProvider`; `generate` returns parsed structure → JSON/YAML
+ *  or a string. */
+function resolveContent(
+  form: ContentForm,
+  filePath: string,
+  templates: TemplateProvider | undefined,
+): string {
   switch (form.kind) {
     case "text":
       return form.value;
+    case "file": {
+      if (!templates) {
+        throw new Error(
+          `file('${form.path}'): no TemplateProvider configured. ` +
+            `Pass opts.templates to engine.run(...).`,
+        );
+      }
+      return templates.staticRead(form.path);
+    }
+    case "tpl": {
+      if (!templates) {
+        throw new Error(
+          `tpl('${form.path}'): no TemplateProvider configured. ` +
+            `Pass opts.templates to engine.run(...).`,
+        );
+      }
+      const raw = templates.textRead(form.path);
+      const vars = typeof form.vars === "function" ? form.vars() : form.vars;
+      return substituteVars(raw, vars);
+    }
     case "generate": {
       const value = form.fn();
       if (filePath.endsWith(".json")) {
@@ -85,11 +125,41 @@ function resolveContent(form: ContentForm, filePath: string): string {
       }
       return value;
     }
-    case "file":
-      throw new Error(`file('${form.path}') content form: template tree not wired in step 2`);
-    case "tpl":
-      throw new Error(`tpl('${form.path}') content form: template tree not wired in step 2`);
   }
+}
+
+/** Dispatch managed-body parse → mutate → serialize by file extension /
+ *  basename. JSON, YAML, and lines all share the same `(initial, body,
+ *  triggerContext) → newRaw` shape via the active-state wrappers in
+ *  `content-rules.ts`. */
+function runManagedBody(
+  path: string,
+  raw: string,
+  body: ManagedBody,
+  tctx: TriggerContext,
+): string {
+  const base = path.split("/").pop() ?? path;
+  if (path.endsWith(".json")) {
+    const parsed = parseJson(raw) as JsonObject;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error(`managed: parsed value at '${path}' is not a JSON object`);
+    }
+    withManagedBody(parsed, body, { triggerContext: tctx });
+    return stringifyJson(parsed);
+  }
+  if (path.endsWith(".yaml") || path.endsWith(".yml")) {
+    const doc = parseYaml(raw);
+    withManagedYaml(doc, body, { triggerContext: tctx });
+    return stringifyYaml(doc);
+  }
+  if (base === ".gitignore" || base.endsWith(".gitignore")) {
+    const lines = parseLines(raw);
+    withManagedLines(lines, body, { triggerContext: tctx });
+    return serializeLines(lines);
+  }
+  throw new Error(
+    `managed('${path}'): unsupported file kind. Only .json, .yaml, .yml, .gitignore are dispatched.`,
+  );
 }
 
 async function buildSnapshot(fs: FileSystem): Promise<Set<string>> {
@@ -134,10 +204,12 @@ async function applyStructural(
   item: FlatItem,
   fs: FileSystem,
   dryRun: boolean,
+  templates: TemplateProvider | undefined,
+  initMode: boolean,
 ): Promise<Change | undefined> {
   const leaf = item.leaf;
   if (leaf.kind === "fixed") {
-    const desired = resolveContent(leaf.content, item.resolvedPath);
+    const desired = resolveContent(leaf.content, item.resolvedPath, templates);
     const exists = await fs.exists(item.resolvedPath);
     if (!exists) {
       if (!dryRun) await fs.write(item.resolvedPath, desired);
@@ -160,7 +232,7 @@ async function applyStructural(
   }
   if (leaf.kind === "scaffold") {
     if (await fs.exists(item.resolvedPath)) return undefined;
-    const initial = resolveContent(leaf.initial, item.resolvedPath);
+    const initial = resolveContent(leaf.initial, item.resolvedPath, templates);
     if (!dryRun) await fs.write(item.resolvedPath, initial);
     return {
       scope: item.scope,
@@ -170,8 +242,21 @@ async function applyStructural(
     };
   }
   if (leaf.kind === "seed") {
-    // Seeds are written by `init` only — structure runs never touch them.
-    return undefined;
+    // Init mode: write seeds once if missing (same shape as scaffold).
+    // Refresh / check: seeds are off-limits to the engine — they belong
+    // to the block author. Layer-2 init→check parity relies on the
+    // init action depositing canonical seed content, then the check
+    // pass simply skipping seeds (vacuously fine).
+    if (!initMode) return undefined;
+    if (await fs.exists(item.resolvedPath)) return undefined;
+    const initial = resolveContent(leaf.initial, item.resolvedPath, templates);
+    if (!dryRun) await fs.write(item.resolvedPath, initial);
+    return {
+      scope: item.scope,
+      path: item.resolvedPath,
+      primitive: "seed",
+      action: "create",
+    };
   }
   if (leaf.kind === "remove") {
     if (!(await fs.exists(item.resolvedPath))) return undefined;
@@ -206,35 +291,24 @@ async function applyManaged(
   fs: FileSystem,
   dryRun: boolean,
   tctx: TriggerContext,
+  templates: TemplateProvider | undefined,
 ): Promise<Change | undefined> {
   if (item.leaf.kind !== "managed") return undefined;
   const leaf = item.leaf;
   const path = item.resolvedPath;
   const exists = await fs.exists(path);
 
-  let parsed: JsonObject;
   let beforeRaw: string;
   let created = false;
 
   if (!exists) {
-    beforeRaw = resolveContent(leaf.initial, path);
+    beforeRaw = resolveContent(leaf.initial, path, templates);
     created = true;
   } else {
     beforeRaw = await fs.read(path);
   }
 
-  // Parse, run body, serialise.
-  try {
-    parsed = parseJson(beforeRaw) as JsonObject;
-  } catch (err) {
-    throw new Error(`managed: failed to parse JSON at '${path}': ${(err as Error).message}`);
-  }
-  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`managed: parsed value at '${path}' is not a JSON object`);
-  }
-
-  withManagedBody(parsed, leaf.body, { triggerContext: tctx });
-  const after = stringifyJson(parsed);
+  const after = runManagedBody(path, beforeRaw, leaf.body, tctx);
 
   if (created) {
     if (!dryRun) await fs.write(path, after);
@@ -262,6 +336,8 @@ async function executePass(
   fs: FileSystem,
   ctx: RunContext,
   dryRun: boolean,
+  templates: TemplateProvider | undefined,
+  initMode: boolean,
 ): Promise<Change[]> {
   const items = filterByMode(flat, ctx.updateDepsOnly);
   const changes: Change[] = [];
@@ -272,7 +348,7 @@ async function executePass(
   for (const item of items) {
     if (item.leaf.kind === "managed") continue;
     if (!passesTriggers(item, tctx1)) continue;
-    const change = await applyStructural(item, fs, dryRun);
+    const change = await applyStructural(item, fs, dryRun, templates, initMode);
     if (change) changes.push(change);
   }
 
@@ -283,7 +359,7 @@ async function executePass(
   for (const item of items) {
     if (item.leaf.kind !== "managed") continue;
     if (!passesTriggers(item, tctx2)) continue;
-    const change = await applyManaged(item, fs, dryRun, tctx2);
+    const change = await applyManaged(item, fs, dryRun, tctx2, templates);
     if (change) changes.push(change);
   }
 
@@ -303,9 +379,10 @@ export async function run(
 ): Promise<RunResult> {
   return withRunContext(ctx, async () => {
     const flat = flatten(structure, ctx);
-    const changes = await executePass(flat, fs, ctx, ctx.dryRun);
+    const initMode = !!opts.initMode;
+    const changes = await executePass(flat, fs, ctx, ctx.dryRun, opts.templates, initMode);
 
-    const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly;
+    const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
 
     if (isRefreshDefault) {
       // Phase 6: version bump.
@@ -316,13 +393,26 @@ export async function run(
       const recheckCtxBase = opts.rediscover ? await opts.rediscover(fs) : ctx;
       const recheckCtx: RunContext = { ...recheckCtxBase, dryRun: true };
       const recheckFlat = flatten(structure, recheckCtx);
-      const recheckChanges = await executePass(recheckFlat, fs, recheckCtx, true);
-      // Ignore .structure-meta self-write (already up to date after
+      const recheckChanges = await executePass(
+        recheckFlat,
+        fs,
+        recheckCtx,
+        true,
+        opts.templates,
+        false,
+      );
+      // Ignore .structure self-write (already up to date after
       // writeStructureVersion above).
       const filtered = recheckChanges.filter((c) => c.path !== STRUCTURE_META_FILE);
       if (filtered.length > 0) {
         throw new RecheckError(filtered[0]!);
       }
+    }
+
+    // Init mode: write .structure so the resulting tree carries the
+    // current version (matches what `init` ships to disk).
+    if (initMode && !ctx.dryRun) {
+      await writeStructureVersion(fs);
     }
 
     return { changes };

@@ -425,11 +425,18 @@ export function transformAt<T = unknown>(jsonPath: string, transform: (current: 
 // ============================================================
 
 /** Set the workspace `packages:` list to all discovered module paths
- *  (sorted lex). Root module ("") emits ".". */
+ *  (sorted lex). Root module ("") emits ".". Equality-guarded — skips
+ *  the rewrite when the existing list already matches, so a YAML
+ *  round-trip on an already-canonical file produces zero churn. */
 export function ensureWorkspaceModulePaths(): void {
   const state = requireYaml("ensureWorkspaceModulePaths");
   const ctx = ctxOrThrow(state, "ensureWorkspaceModulePaths");
   const paths = ctx.modules.map((m) => (m.path === "" ? "." : m.path)).sort();
+  const json = state.doc.toJSON() as { packages?: unknown } | null;
+  const cur = json?.packages;
+  if (Array.isArray(cur) && cur.length === paths.length && cur.every((v, i) => v === paths[i])) {
+    return;
+  }
   state.doc.setIn(["packages"], paths);
 }
 
