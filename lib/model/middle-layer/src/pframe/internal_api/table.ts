@@ -70,7 +70,7 @@ export interface PTableV8 extends Disposable {
 }
 
 /**
- * Table view returned by `createTableV2`, `filter`, and `sort`.
+ * Table view returned by `createTableV2`.
  *
  * PTable can be thought as having a composite primary key, consisting
  * of axes, and a set of data columns derived from PColumn values.
@@ -112,12 +112,6 @@ export interface PTableV9 extends Disposable {
       signal?: AbortSignal;
     },
   ): Promise<PTableVector[]>;
-
-  /** Filters the table and returns new PTable instance */
-  filter(tableId: PTableId, request: PTableRecordFilter[]): PTableV9;
-
-  /** Sorts the table and returns new PTable instance. */
-  sort(tableId: PTableId, request: PTableSorting[]): PTableV9;
 
   /** Deallocates all underlying resources */
   dispose(): void;
