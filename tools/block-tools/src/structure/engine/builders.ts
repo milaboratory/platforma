@@ -54,6 +54,13 @@ export function withRunContext<T>(ctx: RunContext, fn: () => T): T {
   }
 }
 
+/** Engine-internal: content-rule builders that need `ctx.modules` look
+ *  up the active context through this accessor. Returns `undefined`
+ *  outside a run. */
+export function tryGetActiveRunContext(): RunContext | undefined {
+  return activeRunContext;
+}
+
 export function defineStructure(fn: () => void): Structure {
   if (activeTree) {
     throw new Error("defineStructure() cannot be called from inside another defineStructure().");

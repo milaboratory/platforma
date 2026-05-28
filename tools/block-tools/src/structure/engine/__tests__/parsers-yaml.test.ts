@@ -61,4 +61,30 @@ describe("YAML parser — comment-preserving round trip", () => {
     const doc = parseYaml("a: 1\nb: 2\n");
     expect(stringifyYaml(doc)).toBe("a: 1\nb: 2\n");
   });
+
+  test("yamlGet with empty jsonPath returns the whole document as JS", () => {
+    const doc = parseYaml("a: 1\n");
+    expect(yamlGet(doc, "")).toEqual({ a: 1 });
+  });
+
+  test("yamlHas with empty jsonPath returns true", () => {
+    const doc = parseYaml("a: 1\n");
+    expect(yamlHas(doc, "")).toBe(true);
+  });
+
+  test("yamlSet with empty jsonPath throws", () => {
+    const doc = parseYaml("a: 1\n");
+    expect(() => yamlSet(doc, "", "x")).toThrow(/jsonPath must be non-empty/);
+  });
+
+  test("yamlDelete with empty jsonPath throws", () => {
+    const doc = parseYaml("a: 1\n");
+    expect(() => yamlDelete(doc, "")).toThrow(/jsonPath must be non-empty/);
+  });
+
+  test("yamlSet auto-creates intermediate maps", () => {
+    const doc = parseYaml("a: 1\n");
+    yamlSet(doc, "nested.key", "v");
+    expect(yamlGet(doc, "nested.key")).toBe("v");
+  });
 });
