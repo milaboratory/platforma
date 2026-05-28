@@ -1,4 +1,4 @@
-/**/
+/* eslint-disable eslint-js/no-restricted-syntax -- this file is the canonical place to construct SignedResourceId values; outside callers must use asSignedResourceId(). */
 
 import type { Branded } from "@milaboratories/pl-model-common";
 import { cachedDeserialize, notEmpty } from "@milaboratories/ts-helpers";
@@ -318,7 +318,7 @@ export function asSignedResourceId(str: string): SignedResourceId {
   if (pipeIdx === 0) throw new Error(`Signed resource id has empty globalId: ${str}`);
   if (resourceSignaturesRequired && pipeIdx === str.length - 1)
     throw new Error(`Signed resource id has empty signature: ${str}`);
-  return asSignedResourceId(str);
+  return str as SignedResourceId;
 }
 
 /** Encode resource signature to base64url for embedding in URL-based handles. */
