@@ -16,8 +16,8 @@ import { MemoryFileSystem } from "./fs/memory";
 import { createRunContext } from "./ctx";
 
 /** Step-1 stub: returns input unchanged. Body is invoked for shape
- *  testing only. Step 2 replaces the body context with the real
- *  content-builder bag. */
+ *  testing only. Step 2 installs the active managed-body context so
+ *  the module-global content-rule builders mutate the supplied input. */
 export function runRulesAgainst(input: JsonObject, body: () => void): JsonObject {
   body();
   return input;
