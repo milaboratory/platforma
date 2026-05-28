@@ -11,6 +11,7 @@ maps := import(":maps")
 json := import("json")
 times := import("times")
 constants := import(":constants")
+canonical := import(":canonical")
 ffDefault := import(":ll.get-future-field-default")
 
 //////////////// definitions ////////////////
@@ -1504,7 +1505,13 @@ createJsonResource = func(value) {
 	ll.assert(!ll.isStrict(value), "can't encode strict map: ", value)
 	// value = ll.ensureNonStrict(value)
 
-	encoded := json.encode(value)
+	// Encoding MUST be canonical (key-sorted): json.encode follows Go's randomized
+	// map iteration order, so the same logical value yields different bytes — and a
+	// different RTYPE_JSON CID — on each render. That non-determinism propagates to
+	// structural consumers (e.g. json/getField inside pframes.processColumn and
+	// xsv.importFile) and triggers CIDConflictError. canonical.encode sorts keys so
+	// the CID is stable across renders. See MILAB-6319.
+	encoded := canonical.encode(value)
 
 	return createValueResource(constants.RTYPE_JSON, encoded)
 }
