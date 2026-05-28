@@ -63,7 +63,19 @@ ll := import(":ll")
  *               live at `wasm[<friendlyFuncName>]`.
  */
 importWasm := func(wasmName) {
-	return plapi.loadWasm(wasmName)
+	// plapi.loadWasm returns a Tengo *Error value for unrecoverable load
+	// failures (unknown alias, wasm runtime disabled, per-render sandbox
+	// cap reached). Per the abort-on-err contract documented above, these
+	// must NOT be returned to the consumer as a plain value: a caller
+	// that discards the return (e.g. a tight `for` loop that just wants
+	// to repeatedly create sandboxes) would silently sail past the cap
+	// without ever surfacing the error. Convert to a script-level abort
+	// here so every load failure consistently kills the render.
+	w := plapi.loadWasm(wasmName)
+	if is_error(w) {
+		ll.panic("assets.importWasm(%q): %s", wasmName, string(w))
+	}
+	return w
 }
 
 export ll.toStrict({
