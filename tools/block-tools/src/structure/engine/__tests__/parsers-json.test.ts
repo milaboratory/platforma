@@ -20,6 +20,17 @@ describe("JSON parser — round trip + jsonPath helpers", () => {
     expect(stringifyJson(parsed)).toBe(raw);
   });
 
+  test("stringify preserves source key order even when not alphabetical", () => {
+    // V8 / spec: JSON.parse + JSON.stringify preserve insertion order for
+    // string keys. The structurer's "no implicit ordering" guarantee
+    // depends on this — verify it here so a future runtime change is
+    // caught.
+    const raw = '{\n  "z": 1,\n  "a": 2,\n  "m": 3\n}\n';
+    const parsed = parseJson(raw);
+    expect(Object.keys(parsed as object)).toEqual(["z", "a", "m"]);
+    expect(stringifyJson(parsed)).toBe(raw);
+  });
+
   test("getAtPath / hasAtPath", () => {
     const obj: JsonObject = { a: { b: { c: 42 } } };
     expect(getAtPath(obj, "a.b.c")).toBe(42);
@@ -106,5 +117,37 @@ describe("reorderTopLevel — known keys ordered, unknowns ride preceding known"
     const once = reorderTopLevel(input, ORDER);
     const twice = reorderTopLevel(once, ORDER);
     expect(twice).toEqual(once);
+  });
+
+  test("reorder survives stringify → parse → stringify round-trip", () => {
+    // The structurer writes a managed file via stringifyJson(parsed)
+    // after reordering. A subsequent run parses that file again and
+    // must observe the same key order — otherwise the engine would
+    // report a diff and the post-run recheck would fail. Lock the
+    // contract here.
+    const input: JsonObject = {
+      scripts: { build: "x" },
+      private: true,
+      myCustomA: 1,
+      name: "demo",
+      myCustomB: 2,
+      dependencies: { foo: "1.0.0" },
+    };
+    const reordered = reorderTopLevel(input, ORDER);
+    const serialised = stringifyJson(reordered);
+    const reparsed = parseJson(serialised) as JsonObject;
+    // Source: scripts, private, myCustomA, name, myCustomB, dependencies.
+    //   myCustomA followed `private` → rides private.
+    //   myCustomB followed `name`    → rides name.
+    expect(Object.keys(reparsed)).toEqual([
+      "name",
+      "myCustomB",
+      "private",
+      "myCustomA",
+      "scripts",
+      "dependencies",
+    ]);
+    // Second reorder + serialise must be byte-identical to the first.
+    expect(stringifyJson(reorderTopLevel(reparsed, ORDER))).toBe(serialised);
   });
 });
