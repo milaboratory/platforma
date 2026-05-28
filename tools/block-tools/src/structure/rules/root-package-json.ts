@@ -20,7 +20,7 @@ export function rootPackageJsonRules(): void {
   ensureScript("check", "turbo run check");
   ensureScript("build", "turbo run build");
   ensureScript("test", "turbo run test");
-  ensureScript("update-sdk", "block-tools structure refresh --update-deps");
+  ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
 
   ensureDevDeps({
     "@changesets/cli": "catalog:",

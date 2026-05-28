@@ -14,7 +14,7 @@ export function rootPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       check: "turbo run check",
       build: "turbo run build",
       test: "turbo run test",
-      "update-sdk": "block-tools structure refresh --update-deps",
+      "update-sdk": "block-tools structure refresh --update-deps-only",
     },
     peerDependencies: {
       oxlint: "*",
