@@ -23,6 +23,7 @@ packages:
   - lib/node/computable
   - lib/node/pf-driver
   - lib/model/pf-spec-driver
+  - lib/model/columns-collection-driver
   - lib/node/pl-client
   - lib/node/pl-healthcheck
   - lib/node/pl-tree

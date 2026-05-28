@@ -1,10 +1,10 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-filter-column.model";
 import type { platforma } from "@milaboratories/milaboratories.test-filter-column.model";
-import { blockSpec as tableTestBlockSpec } from "@milaboratories/milaboratories.test-block-table";
 import type { InferBlockState, Platforma } from "@platforma-sdk/model";
 import { createDatasetSelection, createPrimaryRef, wrapOutputs } from "@platforma-sdk/model";
 import type { ML, RawHelpers } from "@platforma-sdk/test";
 import { awaitStableState, blockTest } from "@platforma-sdk/test";
+import { blockSpec as tableTestBlockSpec } from "@milaboratories/milaboratories.test-block-table";
 import { blockSpec } from "this-block";
 import { assert } from "vitest";
 

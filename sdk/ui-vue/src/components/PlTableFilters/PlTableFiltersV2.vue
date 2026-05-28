@@ -4,16 +4,14 @@ import type {
   PlDataTableFiltersWithMeta,
   PFrameHandle,
   PTableColumnId,
-  CanonicalizedJson,
 } from "@platforma-sdk/model";
 import {
-  canonicalizeJson,
   Annotation,
   Domain,
   readAnnotation,
   readDomain,
   getUniqueSourceValuesWithLabels,
-  parseJson,
+  extractPObjectId,
   getPTableColumnId,
 } from "@platforma-sdk/model";
 import { computed, ref } from "vue";
@@ -68,7 +66,7 @@ const onUpdateFilters = (_value: PlAdvancedFilter) => {
 
 const options = computed<PlAdvancedFilterItem[]>(() => {
   return props.columns.map((col, idx) => {
-    const id = makeFilterColumnId(col);
+    const id = getPTableColumnId(col);
     const label =
       readAnnotation(col.spec, Annotation.Label)?.trim() ?? `Unlabeled ${col.type} ${idx}`;
     const alphabet =
@@ -112,24 +110,22 @@ function handleSuggestOptions(params: {
     return [];
   }
 
-  const strId = params.columnId as CanonicalizedJson<PTableColumnId>;
-  const tableColumnId = parseJson<PTableColumnId>(strId);
-
-  if (tableColumnId.type !== "column") {
+  const tableColumnId = params.columnId as PTableColumnId;
+  if (
+    typeof tableColumnId !== "object" ||
+    tableColumnId === null ||
+    tableColumnId.type !== "column"
+  ) {
     throw new Error("ColumnId should be of type 'column' for suggest options");
   }
 
   return getUniqueSourceValuesWithLabels(props.pframeHandle, {
-    columnId: tableColumnId.id,
+    columnId: extractPObjectId(tableColumnId.id),
     axisIdx: params.axisIdx,
     limit: 100,
     searchQuery: params.searchType === "label" ? params.searchStr : undefined,
     searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
   }).then((v) => v.values);
-}
-
-function makeFilterColumnId(spec: PTableColumnSpec): CanonicalizedJson<PTableColumnId> {
-  return canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
 }
 </script>
 

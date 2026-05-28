@@ -23,6 +23,7 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
+    "@milaboratories/columns-collection-driver": "workspace:*",
     "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/uikit": "workspace:*",

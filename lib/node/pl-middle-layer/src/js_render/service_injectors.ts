@@ -1,6 +1,15 @@
 import type { QuickJSHandle, VmFunctionImplementation } from "quickjs-emscripten";
-import type { InferServiceModel, ServiceBrand } from "@milaboratories/pl-model-common";
+import type {
+  CollectionHandle,
+  ColumnsCollectionDriverHost,
+  DiscoverColumnsOptions,
+  InferServiceModel,
+  PoolEntry,
+  SerializedColumnsSource,
+  ServiceBrand,
+} from "@milaboratories/pl-model-common";
 import { Services, ServiceNotRegisteredError } from "@milaboratories/pl-model-common";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   AxesId,
   AxesSpec,
@@ -8,6 +17,7 @@ import type {
   PColumn,
   PColumnSpec,
   PColumnValues,
+  PObjectId,
   PTableColumnId,
   PTableColumnSpec,
   SingleAxisSelector,
@@ -130,16 +140,12 @@ export function getServiceInjectors(): ServiceInjectorMap {
       };
     },
 
-    // Dialog has no model-side surface — workflow scripts cannot open save dialogs.
-    // Declared as an empty injector to satisfy the exhaustive ServiceInjectorMap.
-    Dialog: () => ({}) as Record<never, VmMethod>,
-
     PFrame: ({ host, vm }: ServiceInjectorContext) => ({
       createPFrame: (def: QuickJSHandle) =>
         vm.exportSingleValue(
           host.createPFrame(
             vm.importObjectViaJson(def) as PFrameDef<
-              PColumn<string | PColumnValues | DataInfo<string>>
+              PObjectId | PColumn<string | PColumnValues | DataInfo<string>>
             >,
           ),
         ),
@@ -148,7 +154,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
         vm.exportSingleValue(
           host.createPTable(
             vm.importObjectViaJson(def) as PTableDef<
-              PColumn<string | PColumnValues | DataInfo<string>>
+              PObjectId | PColumn<string | PColumnValues | DataInfo<string>>
             >,
           ),
         ),
@@ -157,10 +163,102 @@ export function getServiceInjectors(): ServiceInjectorMap {
         vm.exportSingleValue(
           host.createPTableV2(
             vm.importObjectViaJson(def) as PTableDefV2<
-              PColumn<string | PColumnValues | DataInfo<string>>
+              PObjectId | PColumn<string | PColumnValues | DataInfo<string>>
             >,
           ),
         ),
     }),
+
+    // Dialog has no model-side surface — workflow scripts cannot open save dialogs.
+    // Declared as an empty injector to satisfy the exhaustive ServiceInjectorMap.
+    Dialog: () => ({}) as Record<never, VmMethod>,
+
+    ColumnsCollection: ({ host, vm }: ServiceInjectorContext) => {
+      const driver = host.serviceRegistry.get(Services.ColumnsCollection);
+      if (!driver)
+        throw new ServiceNotRegisteredError(
+          `Service "${Services.ColumnsCollection}" has no factory in ModelServiceRegistry. Provide a non-null factory.`,
+        );
+      const specDriver = host.serviceRegistry.get(Services.PFrameSpec);
+      if (!specDriver)
+        throw new ServiceNotRegisteredError(
+          `Service "${Services.PFrameSpec}" has no factory in ModelServiceRegistry. Provide a non-null factory.`,
+        );
+
+      const bindings: ColumnsCollectionDriverHost<PlTreeNodeAccessor> = {
+        resolveAccessor: (h) => host.getAccessor(h),
+        getUpstreamBlockCtxes: () => host.getRawUpstreamBlockCtx(),
+        getSpecDriver: () => specDriver,
+        resolveSpec: (id: PObjectId) => {
+          const leaf = host.getColumnRegistry().resolve(id);
+          if (leaf === undefined) return undefined;
+          const specNode = leaf.accessor.traverse({
+            field: `${leaf.name}.spec`,
+            assertFieldType: "Input",
+            ignoreError: true,
+          });
+          return specNode?.getDataAsJson<PColumnSpec>();
+        },
+      };
+
+      const pinHandle = (entry: PoolEntry<CollectionHandle>): CollectionHandle => {
+        using guard = new PoolEntryGuard(entry);
+        host.addOnDestroy(guard.entry.unref);
+        return guard.keep().key;
+      };
+
+      return {
+        create: (sources: QuickJSHandle) =>
+          vm.exportSingleValue(
+            pinHandle(
+              driver.create(vm.importObjectViaJson(sources) as SerializedColumnsSource[], bindings),
+            ),
+          ),
+
+        isEmpty: (handle: QuickJSHandle) =>
+          vm.exportSingleValue(driver.isEmpty(vm.vm.getString(handle) as CollectionHandle)),
+
+        isFinal: (handle: QuickJSHandle) =>
+          vm.exportSingleValue(driver.isFinal(vm.vm.getString(handle) as CollectionHandle)),
+
+        getColumns: (handle: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.getColumns(vm.vm.getString(handle) as CollectionHandle, bindings),
+          ),
+
+        addSource: (handle: QuickJSHandle, sources: QuickJSHandle) =>
+          vm.exportSingleValue(
+            pinHandle(
+              driver.addSource(
+                vm.vm.getString(handle) as CollectionHandle,
+                vm.importObjectViaJson(sources) as SerializedColumnsSource[],
+                bindings,
+              ),
+            ),
+          ),
+
+        discover: (handle: QuickJSHandle, opts: QuickJSHandle) =>
+          vm.exportSingleValue(
+            pinHandle(
+              driver.discover(
+                vm.vm.getString(handle) as CollectionHandle,
+                vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
+                bindings,
+              ),
+            ),
+          ),
+
+        filter: (handle: QuickJSHandle, opts: QuickJSHandle) =>
+          vm.exportSingleValue(
+            pinHandle(
+              driver.filter(
+                vm.vm.getString(handle) as CollectionHandle,
+                vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
+                bindings,
+              ),
+            ),
+          ),
+      };
+    },
   };
 }

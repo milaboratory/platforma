@@ -170,6 +170,7 @@ export interface PColumnSelector extends AnchoredPColumnSelector {
 /**
  * Strict identifier for PColumns in an anchored context
  * Unlike APColumnMatcher, this requires exact matches on domain and axes
+ * @deprecated This is part of the legacy column matching API. The new Columns API (see sdk/model/src/columns/) now handles column and axis
  */
 export interface AnchoredPColumnId extends AnchoredPColumnSelector {
   /** Name is required for exact column identification */

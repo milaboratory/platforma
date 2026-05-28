@@ -69,7 +69,6 @@ export function filterDataInfoEntries<Blob>(
       break;
     }
     default:
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw new Error(`Unsupported data info type: ${type satisfies never}`);
   }
 

@@ -1,8 +1,17 @@
-import { Annotation, type PColumnSpec, type PObjectId } from "@milaboratories/pl-model-common";
-import { SpecDriver } from "@milaboratories/pf-spec-driver";
-import { describe, expect, test } from "vitest";
-import { deriveAllLabels, evaluateRules, type LabelableColumn, type RuleColumn } from "./utils";
+import {
+  Annotation,
+  createGlobalPObjectId,
+  type PColumnSpec,
+  type PObjectId,
+} from "@milaboratories/pl-model-common";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
+import { ColumnLazy } from "../../../columns";
+import {
+  createTestCollectionDriver,
+  type TestCollectionDriverHandle,
+} from "../../../columns/__test_helpers__/collection_driver";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,11 +109,6 @@ describe("deriveAllLabels", () => {
     expect(result["c2"]).toBe("Score 2");
   });
 
-  // Regression: LabelableColumn.linkerPath used to be `linkerPath` while
-  // deriveDistinctLabels.Entry expected `linkersPath`. Structural typing +
-  // optional fields hid the mismatch from the type checker — the field flowed
-  // through as "extra" and disambiguation silently broke. This asserts the
-  // linker label reaches the output.
   test("linkerPath flows into deriveDistinctLabels and produces the 'via' suffix", () => {
     const linkerSpec = makeSpec({
       name: "linker",
@@ -136,92 +140,79 @@ describe("deriveAllLabels", () => {
 // evaluateRules
 // ---------------------------------------------------------------------------
 
-function makeRuleColumn(id: string, spec: Partial<PColumnSpec> = {}): RuleColumn {
-  return {
-    id: id as PObjectId,
-    spec: makeSpec({ axesSpec: [{ name: "id", type: "String" }], ...spec }),
-  };
+let driverHandle: TestCollectionDriverHandle;
+
+beforeEach(() => {
+  driverHandle = createTestCollectionDriver();
+  driverHandle.installAmbientCtx();
+});
+
+afterEach(async () => {
+  driverHandle.uninstallAmbientCtx();
+  await driverHandle.dispose();
+});
+
+function gid(name: string): PObjectId {
+  return createGlobalPObjectId("test-block", name);
+}
+
+function makeLazyColumn(name: string, spec: Partial<PColumnSpec> = {}): ColumnLazy {
+  const s = makeSpec({ axesSpec: [{ name: "id", type: "String" }], ...spec });
+  const id = gid(name);
+  driverHandle.register([{ id, spec: s }]);
+  return ColumnLazy.fromColumn({ id, spec: s, data: undefined as never });
 }
 
 describe("evaluateRules", () => {
   test("returns empty map when rules or columns are empty", () => {
-    const driver = new SpecDriver();
-    expect(evaluateRules([], [makeRuleColumn("c1")], driver).size).toBe(0);
+    expect(evaluateRules([], [makeLazyColumn("c1")]).size).toBe(0);
     expect(
-      evaluateRules<ColumnVisibilityRule>([{ match: () => true, visibility: "hidden" }], [], driver)
-        .size,
+      evaluateRules<ColumnVisibilityRule>(
+        [{ match: { name: "anything" }, visibility: "hidden" }],
+        [],
+      ).size,
     ).toBe(0);
   });
 
-  test("evaluates predicate rules without touching the driver", () => {
-    const driver = new Proxy({} as SpecDriver, {
-      get() {
-        throw new Error("driver should not be called for predicate-only rules");
-      },
-    });
-
-    const rules: ColumnOrderRule[] = [
-      { match: (spec) => spec.name === "alpha", priority: 10 },
-      { match: (spec) => spec.name === "beta", priority: 5 },
-    ];
-    const result = evaluateRules(
-      rules,
-      [
-        makeRuleColumn("a", { name: "alpha" }),
-        makeRuleColumn("b", { name: "beta" }),
-        makeRuleColumn("c", { name: "gamma" }),
-      ],
-      driver,
-    );
-
-    expect(result.get("a" as PObjectId)?.priority).toBe(10);
-    expect(result.get("b" as PObjectId)?.priority).toBe(5);
-    expect(result.has("c" as PObjectId)).toBe(false);
-  });
-
-  test("evaluates selector rules via PFrameSpec.discoverColumns", () => {
-    const driver = new SpecDriver();
+  test("evaluates selector rules via the columnsCollection service", () => {
     const rules: ColumnVisibilityRule[] = [
       { match: { name: "^note$" }, visibility: "hidden" },
       { match: { name: "^score$" }, visibility: "optional" },
     ];
     const columns = [
-      makeRuleColumn("n", { name: "note" }),
-      makeRuleColumn("s", { name: "score" }),
-      makeRuleColumn("x", { name: "other" }),
+      makeLazyColumn("n", { name: "note" }),
+      makeLazyColumn("s", { name: "score" }),
+      makeLazyColumn("x", { name: "other" }),
     ];
 
-    const result = evaluateRules(rules, columns, driver);
+    const result = evaluateRules(rules, columns);
 
-    expect(result.get("n" as PObjectId)?.visibility).toBe("hidden");
-    expect(result.get("s" as PObjectId)?.visibility).toBe("optional");
-    expect(result.has("x" as PObjectId)).toBe(false);
+    expect(result.get(gid("n"))?.visibility).toBe("hidden");
+    expect(result.get(gid("s"))?.visibility).toBe("optional");
+    expect(result.has(gid("x"))).toBe(false);
   });
 
-  test("preserves original rule order when predicate and selector rules are mixed", () => {
-    const driver = new SpecDriver();
+  test("preserves original rule order with overlapping selector rules", () => {
     const rules: ColumnOrderRule[] = [
-      { match: (spec) => spec.name === "alpha", priority: 100 },
-      { match: { name: "^alpha$" }, priority: 1 }, // shadowed by the predicate above
+      { match: { name: "^alpha$" }, priority: 100 },
+      { match: { name: "^alpha$" }, priority: 1 }, // shadowed by the earlier rule
       { match: { name: "^beta$" }, priority: 50 },
     ];
-    const result = evaluateRules(
-      rules,
-      [makeRuleColumn("a", { name: "alpha" }), makeRuleColumn("b", { name: "beta" })],
-      driver,
-    );
+    const result = evaluateRules(rules, [
+      makeLazyColumn("a", { name: "alpha" }),
+      makeLazyColumn("b", { name: "beta" }),
+    ]);
 
-    expect(result.get("a" as PObjectId)?.priority).toBe(100);
-    expect(result.get("b" as PObjectId)?.priority).toBe(50);
+    expect(result.get(gid("a"))?.priority).toBe(100);
+    expect(result.get(gid("b"))?.priority).toBe(50);
   });
 
   test("dedupes columns by id before building spec frame (no duplicate-key crash)", () => {
-    const driver = new SpecDriver();
     const rules: ColumnVisibilityRule[] = [{ match: { name: "^dup$" }, visibility: "hidden" }];
-    const dup = makeRuleColumn("d", { name: "dup" });
+    const dup = makeLazyColumn("d", { name: "dup" });
 
-    const result = evaluateRules(rules, [dup, dup, dup], driver);
+    const result = evaluateRules(rules, [dup, dup, dup]);
 
-    expect(result.get("d" as PObjectId)?.visibility).toBe("hidden");
+    expect(result.get(gid("d"))?.visibility).toBe("hidden");
   });
 });

@@ -1,6 +1,5 @@
 import type { Branded } from "@milaboratories/helpers";
 import type { PoolEntry } from "../../pool_entry";
-import type { PObjectId } from "../../pool";
 import type {
   AxisSpec,
   AxesSpec,
@@ -15,6 +14,7 @@ import type {
 } from "./spec";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
 import { DataQuery, SpecQuery, SpecQueryJoinEntry } from "./query";
+import { PObjectId } from "../..";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -167,10 +167,10 @@ export interface DiscoverColumnsMappingVariant {
 export interface DiscoverColumnsResponseHit {
   /** The column that was found compatible */
   hit: PColumnIdAndSpec;
-  /** Possible ways to integrate this column with the existing set */
-  mappingVariants: DiscoverColumnsMappingVariant[];
   /** Linker steps traversed to reach this hit; empty for direct matches */
   path: DiscoverColumnsStepInfo[];
+  /** Possible ways to integrate this column with the existing set */
+  mappingVariants: DiscoverColumnsMappingVariant[];
 }
 
 /** Response from discover columns */
