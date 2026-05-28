@@ -12,15 +12,16 @@
 
 import type { BlockVars, Module, RunContext } from "./api";
 import type { JsonObject } from "./content-rules";
+import { withManagedBody } from "./content-rules";
 import { MemoryFileSystem } from "./fs/memory";
 import { createRunContext } from "./ctx";
 
-/** Step-1 stub: returns input unchanged. Body is invoked for shape
- *  testing only. Step 2 installs the active managed-body context so
- *  the module-global content-rule builders mutate the supplied input. */
+/** Layer-1 helper: install `input` as the active managed-body object,
+ *  invoke `body` (which calls content-rule builders), return the
+ *  mutated object. Used by unit tests of individual content-rule
+ *  builders (testing-strategy.md § "Layer 1"). */
 export function runRulesAgainst(input: JsonObject, body: () => void): JsonObject {
-  body();
-  return input;
+  return withManagedBody(input, body);
 }
 
 export type SimulateInitInput = {

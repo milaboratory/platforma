@@ -1,29 +1,57 @@
-// Content-rules DSL — stub.
+// Content-rules DSL — active context + first real builder (`ensureField`).
 //
-// Step-1 deliverable: shape only. The set of content-rule builders
-// (`ensure*` / `remove*` / `enforce*` / `transformAt`) is declared
-// here as a TypeScript type for stability of `api.ts`; full
-// implementations land in step 2 (one real builder for end-to-end)
-// and step 3 (the full set per content-rules.md). Like the outer-DSL
-// builders, content-rule builders are module-globals that read an
-// active managed-body context — the body lambda passed to
-// `managed(path, initial, () => { ... })` takes no arguments.
+// A `managed(path, initial, body)` body lambda is invoked by the runner
+// inside `withManagedBody(parsed, body)`. While the body runs, the
+// module-global `activeManagedObject` holds the parsed JSON object the
+// builders mutate. After the body returns, the runner serialises the
+// (possibly-mutated) object and writes back if it differs from disk.
+//
+// The full builder set (step 3) lands on the same active-context
+// mechanism. Step 2 ships `ensureField` end-to-end so the runner's
+// managed pass + post-run recheck have something real to exercise.
 
-/** Parsed-JSON object the active managed body mutates. */
-export type JsonObject = Record<string, unknown>;
+import { setAtPath } from "./parsers/json";
+import type { JsonObject } from "./parsers/json";
 
-/** Allowed dep version strings. */
+export type { JsonObject };
+
+/** Allowed dep version strings (full type lands in step 3). */
 export type DepVersion = "catalog:" | `workspace:${string}` | "*";
 
+let activeManagedObject: JsonObject | undefined;
+
+/** Engine-internal: run `body` with `parsed` installed as the active
+ *  managed-body object. Re-entry is rejected — managed bodies must not
+ *  nest. */
+export function withManagedBody(parsed: JsonObject, body: () => void): JsonObject {
+  if (activeManagedObject !== undefined) {
+    throw new Error("Nested managed(...) body — engine bug.");
+  }
+  activeManagedObject = parsed;
+  try {
+    body();
+    return parsed;
+  } finally {
+    activeManagedObject = undefined;
+  }
+}
+
+function requireActive(builder: string): JsonObject {
+  if (activeManagedObject === undefined) {
+    throw new Error(
+      `${builder}() only valid inside a managed(...) body. ` +
+        `Move this call inside managed(path, initial, () => {...}).`,
+    );
+  }
+  return activeManagedObject;
+}
+
 /**
- * Type of the content-rule builder set exposed inside managed bodies
- * (step 2+). For step 1 the type is declared but no implementations
- * exist — the runner is not yet wired up. The test harness in
- * `testing.ts` will construct a stub managed-body context for unit
- * tests of individual builders once they land.
+ * Set the value at `jsonPath` in the active managed-body object.
+ * Idempotent by construction — second call with the same value is a
+ * no-op on the serialised representation.
  */
-export type ContentBuilders = {
-  ensureField(jsonPath: string, value: unknown): void;
-  removeField(jsonPath: string, predicate?: (current: unknown) => boolean): void;
-  // ... full inventory in step 3 (see content-rules.md).
-};
+export function ensureField(jsonPath: string, value: unknown): void {
+  const obj = requireActive("ensureField");
+  setAtPath(obj, jsonPath, value);
+}
