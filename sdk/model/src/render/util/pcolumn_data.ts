@@ -3,7 +3,6 @@ import type {
   ParquetChunkMetadata,
   PartitionedDataInfoEntries,
   PColumn,
-  PColumnLazy,
   PColumnValues,
 } from "@milaboratories/pl-model-common";
 import {
@@ -606,14 +605,14 @@ export function getNumberOfRows(data: PColumnDataUniversal | undefined): number 
 }
 
 export function isPColumnReady(
-  c: PColumn<undefined | PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>,
-): c is PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal> {
+  c: PColumn<undefined | PColumnDataUniversal>,
+): c is PColumn<PColumnDataUniversal> {
   const isValues = (d: PColumnDataUniversal): d is PColumnValues => Array.isArray(d);
   const isAccessor = (d: PColumnDataUniversal): d is TreeNodeAccessor =>
     d instanceof TreeNodeAccessor;
 
   let ready = true;
-  const data = typeof c.data === "function" ? c.data() : c.data;
+  const data = c.data;
   if (data == null) {
     return false;
   } else if (isAccessor(data)) {
@@ -627,10 +626,7 @@ export function isPColumnReady(
 }
 
 export function allPColumnsReady(
-  columns: (
-    | PColumn<undefined | PColumnDataUniversal>
-    | PColumnLazy<undefined | PColumnDataUniversal>
-  )[],
-): columns is (PColumn<PColumnDataUniversal> | PColumnLazy<PColumnDataUniversal>)[] {
+  columns: PColumn<undefined | PColumnDataUniversal>[],
+): columns is PColumn<PColumnDataUniversal>[] {
   return columns.every(isPColumnReady);
 }

@@ -1,5 +1,5 @@
-import type { PObjectId } from "../../pool";
 import type { AxisId, AxisSpec, PColumnSpec } from "./spec/spec";
+import type { ColumnUniversalId } from "./spec/ids";
 
 export type PTableColumnSpecAxis = {
   type: "axis";
@@ -9,7 +9,13 @@ export type PTableColumnSpecAxis = {
 
 export type PTableColumnSpecColumn = {
   type: "column";
-  id: PObjectId;
+  /**
+   * Leaf column id as it appears in the SpecQuery — may be a rich
+   * {@link ColumnUniversalId} (Discovered / Overrided / Filtered) or a bare
+   * {@link PObjectId}. The host resolver strips to bare via `extractPObjectId`
+   * before physical lookup.
+   */
+  id: ColumnUniversalId;
   spec: PColumnSpec;
 };
 
@@ -23,7 +29,8 @@ export type PTableColumnIdAxis = {
 
 export type PTableColumnIdColumn = {
   type: "column";
-  id: PObjectId;
+  /** @see PTableColumnSpecColumn.id */
+  id: ColumnUniversalId;
 };
 
 /** Unified PTable column identifier */

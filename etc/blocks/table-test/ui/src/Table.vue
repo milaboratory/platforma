@@ -4,7 +4,7 @@ import { useApp } from "./app";
 
 const app = useApp();
 
-const tableSettingsV3 = usePlDataTableSettingsV2({
+const tableSettings = usePlDataTableSettingsV2({
   model: () => app.model.outputs.tableV3,
 });
 </script>
@@ -14,7 +14,7 @@ const tableSettingsV3 = usePlDataTableSettingsV2({
     <template #title>Table(don't forget run block)</template>
     <PlAgDataTableV2
       v-model="app.model.data.tableState"
-      :settings="tableSettingsV3"
+      :settings="tableSettings"
       show-export-button
     />
   </PlBlockPage>

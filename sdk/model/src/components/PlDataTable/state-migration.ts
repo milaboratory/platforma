@@ -15,13 +15,21 @@ import {
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
+  PlDataTableFilters,
   PlDataTableFiltersWithMeta,
-  PlDataTableGridStateCore,
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
-  PlTableColumnIdJson,
   PTableParamsV2,
+} from "./typesV8";
+import type {
+  PlDataTableFilters as PlDataTableFiltersV7,
+  PlDataTableFiltersWithMeta as PlDataTableFiltersWithMetaV7,
+  PlDataTableGridStateCore as PlDataTableGridStateCoreV7,
+  PlDataTableStateV2CacheEntry as PlDataTableStateV2V7CacheEntry,
+  PlDataTableStateV2Normalized as PlDataTableStateV2V7,
+  PlTableColumnIdJson,
+  PTableParamsV2 as PTableParamsV2V7,
 } from "./typesV7";
 import type {
   PlDataTableGridStateV6,
@@ -111,7 +119,7 @@ export type PlDataTableStateV2 =
         sheetsState: PlDataTableSheetState[];
         filtersState: PlDataTableFilterState[];
       }[];
-      pTableParams: PTableParamsV2;
+      pTableParams: PTableParamsV2V7;
     }
   | {
       version: 4;
@@ -135,15 +143,18 @@ export type PlDataTableStateV2 =
         sourceId: string;
         gridState: PlDataTableGridStateV5;
         sheetsState: PlDataTableSheetState[];
-        filtersState: null | PlDataTableFiltersWithMeta;
-        defaultFiltersState: null | PlDataTableFiltersWithMeta;
+        filtersState: null | PlDataTableFiltersWithMetaV7;
+        defaultFiltersState: null | PlDataTableFiltersWithMetaV7;
         searchString?: string;
       }[];
-      pTableParams: PTableParamsV2;
+      pTableParams: PTableParamsV2V7;
     }
   // v6 stored colIds as canonicalized full `PTableColumnSpec` (including
   // annotations + `pl7.app/trace`). v7 strips down to `PTableColumnId`.
   | PlDataTableStateV2V6
+  // v7 still had filter leaves serialised as `CanonicalizedJson<PTableColumnId>`
+  // strings and `sorting: []` for the "untouched" case.
+  | PlDataTableStateV2V7
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -168,7 +179,7 @@ export function upgradePlDataTableStateV2(
         ...entry,
         filtersState: [],
       })),
-      pTableParams: createDefaultPTableParams(),
+      pTableParams: createDefaultPTableParamsV7(),
     };
   }
   // v3 -> v4
@@ -182,7 +193,7 @@ export function upgradePlDataTableStateV2(
   if (state.version === 4) {
     state = migrateV4toV6(state);
   }
-  // v5 -> v6: unwrap `{source, labeled}` colIds in gridState back to bare PTableColumnSpec.
+  // v5 -> v6: unwrap `{source, labeled}` colIds in gridState.
   if (state.version === 5) {
     state = migrateV5toV6(state);
   }
@@ -190,12 +201,17 @@ export function upgradePlDataTableStateV2(
   if (state.version === 6) {
     state = migrateV6toV7(state);
   }
+  // v7 -> v8: parse CanonicalizedJson<PTableColumnId> filter leaves into object
+  // form; translate `sorting: []` into `sorting: null`.
+  if (state.version === 7) {
+    state = migrateV7toV8(state);
+  }
   return state;
 }
 
 /** Migrate v5 to v6: unwrap `{source, labeled}` colIds in gridState. */
 function migrateV5toV6(state: Extract<PlDataTableStateV2, { version: 5 }>): PlDataTableStateV2V6 {
-  // pTableParams reset: v5 stored DiscoveredPColumnId-based hiddenColIds with
+  // pTableParams reset: v5 stored ColumnDiscoveredId-based hiddenColIds with
   // empty-array fields (e.g. `{column, path: [], columnQualifications: [], ...}`).
   // v6 distills empty fields, so the same logical column serialises differently
   // and lookups would silently miss every previously-hidden discovered column.
@@ -206,7 +222,7 @@ function migrateV5toV6(state: Extract<PlDataTableStateV2, { version: 5 }>): PlDa
       ...entry,
       gridState: unwrapV5GridState(entry.gridState),
     })),
-    pTableParams: createDefaultPTableParams(),
+    pTableParams: createDefaultPTableParamsV7(),
   };
 }
 
@@ -242,11 +258,11 @@ function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridSt
 
 /** Migrate v6 to v7: rewrite each colId from a full PTableColumnSpec to its
  * compact PTableColumnId (drops annotations/spec body, ~16× smaller per column). */
-function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2Normalized {
+function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2V7 {
   return {
     version: 7,
     stateCache: state.stateCache.map(
-      (entry): PlDataTableStateV2CacheEntry => ({
+      (entry): PlDataTableStateV2V7CacheEntry => ({
         ...entry,
         gridState: shrinkV6GridState(entry.gridState),
       }),
@@ -266,7 +282,7 @@ function shrinkV6ColId(json: PlDataTableV6ColIdJson): PlTableColumnIdJson {
   return json as unknown as PlTableColumnIdJson;
 }
 
-function shrinkV6GridState(gridState: PlDataTableGridStateV6): PlDataTableGridStateCore {
+function shrinkV6GridState(gridState: PlDataTableGridStateV6): PlDataTableGridStateCoreV7 {
   return {
     columnOrder: gridState.columnOrder
       ? { orderedColIds: gridState.columnOrder.orderedColIds.map(shrinkV6ColId) }
@@ -291,14 +307,13 @@ function migrateV4toV6(state: Extract<PlDataTableStateV2, { version: 4 }>): PlDa
   const nextId = () => ++idCounter;
 
   const migratedCache: PlDataTableStateV2V6CacheEntry[] = state.stateCache.map((entry) => {
-    const leaves: PlDataTableFiltersWithMeta["filters"] = [];
+    const leaves: PlDataTableFiltersWithMetaV7["filters"] = [];
     for (const f of entry.filtersState) {
       if (f.filter !== null && !f.filter.disabled) {
-        const column = canonicalizeJson(f.id);
-        leaves.push(migrateTableFilter(column, f.filter.value, nextId));
+        leaves.push(migrateTableFilter(canonicalizeJson(f.id), f.filter.value, nextId));
       }
     }
-    const filtersState: PlDataTableFiltersWithMeta | null =
+    const filtersState: PlDataTableFiltersWithMetaV7 | null =
       leaves.length > 0 ? { id: nextId(), type: "and", filters: leaves } : null;
 
     return {
@@ -329,16 +344,17 @@ function migrateV4toV6(state: Extract<PlDataTableStateV2, { version: 4 }>): PlDa
             defaultFilters: null,
             sorting: state.pTableParams.sorting,
           }
-        : createDefaultPTableParams(),
+        : createDefaultPTableParamsV7(),
   };
 }
 
-/** Migrate a single per-column PlTableFilter to a tree-based FilterSpec node */
+/** Migrate a single per-column PlTableFilter to a v7-form tree node (legacy
+ *  string column ids). v7 → v8 later converts these to object form. */
 function migrateTableFilter(
   column: CanonicalizedJson<PTableColumnId>,
   filter: PlTableFilter,
   nextId: () => number,
-): PlDataTableFiltersWithMeta["filters"][number] {
+): PlDataTableFiltersWithMetaV7["filters"][number] {
   const id = nextId();
   switch (filter.type) {
     case "isNA":
@@ -404,7 +420,9 @@ function migrateTableFilter(
   }
 }
 
-export function createDefaultPTableParams(): PTableParamsV2 {
+/** Default pTableParams in the v7 shape (sorting: []). Used by intermediate
+ *  migration steps that produce v6/v7 state before the v7 → v8 conversion. */
+function createDefaultPTableParamsV7(): PTableParamsV2V7 {
   return {
     sourceId: null,
     hiddenColIds: null,
@@ -414,10 +432,121 @@ export function createDefaultPTableParams(): PTableParamsV2 {
   };
 }
 
+export function createDefaultPTableParams(): PTableParamsV2 {
+  return {
+    sourceId: null,
+    hiddenColIds: null,
+    filters: null,
+    defaultFilters: null,
+    sorting: null,
+  };
+}
+
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 7,
+    version: 8,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };
+}
+
+// --- v7 -> v8 migration ----------------------------------------------------
+// Parses CanonicalizedJson<PTableColumnId> filter leaves into the new object
+// form. Malformed leaves are dropped; groups that become empty after pruning
+// are dropped; cache entries whose tree fully prunes get filtersState: null.
+// Also translates `sorting: []` (legacy "untouched") into `sorting: null`.
+
+function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2Normalized {
+  const newCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => ({
+    sourceId: entry.sourceId,
+    gridState: entry.gridState,
+    sheetsState: entry.sheetsState,
+    filtersState: convertFiltersWithMeta(entry.filtersState),
+    defaultFiltersState: convertFiltersWithMeta(entry.defaultFiltersState),
+    searchString: entry.searchString,
+  }));
+
+  const params = state.pTableParams;
+  let pTableParams: PTableParamsV2;
+  if (params.sourceId === null) {
+    pTableParams = createDefaultPTableParams();
+  } else {
+    pTableParams = {
+      sourceId: params.sourceId,
+      hiddenColIds: params.hiddenColIds,
+      // Empty array in legacy state means "not touched" — translate to null so the
+      // model falls back to default sorting; non-empty stays as user's explicit value.
+      sorting: params.sorting.length === 0 ? null : params.sorting,
+      filters: convertFiltersPlain(params.filters),
+      defaultFilters: convertFiltersPlain(params.defaultFilters),
+    };
+  }
+
+  return { version: 8, stateCache: newCache, pTableParams };
+}
+
+function convertFiltersWithMeta(
+  node: null | PlDataTableFiltersWithMetaV7,
+): null | PlDataTableFiltersWithMeta {
+  if (node === null) return null;
+  const result = pruneFilterNode(node as unknown);
+  if (result === undefined) return null;
+  return result as PlDataTableFiltersWithMeta;
+}
+
+function convertFiltersPlain(node: null | PlDataTableFiltersV7): null | PlDataTableFilters {
+  if (node === null) return null;
+  const result = pruneFilterNode(node as unknown);
+  if (result === undefined) return null;
+  return result as PlDataTableFilters;
+}
+
+/** Recursively converts and prunes a legacy v7 filter tree. Preserves meta
+ *  fields (id/isExpanded/source/isSuppressed) on non-leaf nodes. Returns
+ *  `undefined` when the subtree is empty after pruning. */
+function pruneFilterNode(node: unknown): unknown | undefined {
+  if (!node || typeof node !== "object") return undefined;
+  const n = node as { type?: unknown };
+  if (n.type === "and" || n.type === "or") {
+    const filters = (n as { filters?: unknown[] }).filters ?? [];
+    const kept = filters.map((f) => pruneFilterNode(f)).filter((f): f is object => f !== undefined);
+    if (kept.length === 0) return undefined;
+    return { ...(n as object), type: n.type, filters: kept };
+  }
+  if (n.type === "not") {
+    const inner = pruneFilterNode((n as { filter?: unknown }).filter);
+    if (inner === undefined) return undefined;
+    return { ...(n as object), type: "not", filter: inner };
+  }
+  return convertLegacyLeaf(n);
+}
+
+function convertLegacyLeaf(leaf: {
+  type?: unknown;
+  column?: unknown;
+  rhs?: unknown;
+}): unknown | undefined {
+  if (leaf.type === undefined) return leaf;
+  const result: Record<string, unknown> = { ...leaf };
+  if ("column" in result) {
+    const c = parseLegacyLeafColumn(result.column);
+    if (c === undefined) return undefined;
+    result.column = c;
+  }
+  if ("rhs" in result) {
+    const c = parseLegacyLeafColumn(result.rhs);
+    if (c === undefined) return undefined;
+    result.rhs = c;
+  }
+  return result;
+}
+
+function parseLegacyLeafColumn(s: unknown): PTableColumnId | undefined {
+  if (typeof s !== "string") return undefined;
+  const parsed = parseJsonSafely(s as CanonicalizedJson<PTableColumnId>);
+  if (!parsed || typeof parsed !== "object") return undefined;
+  if (!("type" in parsed) || !("id" in parsed)) return undefined;
+  const t = (parsed as { type: unknown }).type;
+  if (t !== "axis" && t !== "column") return undefined;
+  return parsed as PTableColumnId;
 }

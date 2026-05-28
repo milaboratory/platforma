@@ -12,6 +12,7 @@ export const BLOCK_SERVICE_FLAGS = {
   requiresPFrameSpec: true,
   requiresPFrame: true,
   requiresDialog: true,
+  requiresColumnsCollection: true,
 } as const satisfies Partial<ServiceRequireFlags>;
 
 export type BlockServiceFlags = typeof BLOCK_SERVICE_FLAGS;

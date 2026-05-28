@@ -1,17 +1,24 @@
 import { describe, expect, it } from "vitest";
-import type { FilterSpec, FilterSpecLeaf } from "@milaboratories/pl-model-common";
+import type {
+  AxisId,
+  FilterSpec,
+  FilterSpecLeaf,
+  PObjectId,
+  PTableColumnId,
+} from "@milaboratories/pl-model-common";
 import { filterSpecToSpecQueryExpr } from "./filterToQuery";
 
-type QFilterSpec = FilterSpec<FilterSpecLeaf<string>>;
+type QFilterSpec = FilterSpec<FilterSpecLeaf<PTableColumnId>>;
 
-/** Helper: creates a CanonicalizedJson<PTableColumnId> for a regular column. */
-function colRef(id: string): string {
-  return JSON.stringify({ type: "column", id });
+/** Helper: creates a PTableColumnId for a regular column. */
+function colRef(id: string): PTableColumnId {
+  return { type: "column", id: id as PObjectId };
 }
 
-/** Helper: creates a CanonicalizedJson<PTableColumnId> for an axis. */
-function axisRef(id: string): string {
-  return JSON.stringify({ type: "axis", id });
+/** Helper: creates a PTableColumnId for an axis. AxisId stays as a string-shaped
+ *  value here because the converter passes `id` through to SingleAxisSelector. */
+function axisRef(id: string): PTableColumnId {
+  return { type: "axis", id: id as unknown as AxisId };
 }
 
 describe("filterSpecToSpecQueryExpr", () => {

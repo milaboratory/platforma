@@ -39,8 +39,6 @@ function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTe
   });
 }
 
-// ─── flattenTemplateTree ─────────────────────────────────────────────────────
-
 describe("flattenTemplateTree", () => {
   test("produces nodes in topological order for V2 template", () => {
     const data = parseTemplate(ExplicitTemplateEnterNumbers);
@@ -77,8 +75,6 @@ describe("flattenTemplateTree", () => {
   });
 });
 
-// ─── getOrCreateTemplateCache / dropTemplateCache ────────────────────────────
-
 describe("getOrCreateTemplateCache", () => {
   test("creates cache on first call and reuses on second", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
@@ -99,8 +95,6 @@ describe("dropTemplateCache", () => {
     });
   });
 });
-
-// ─── loadTemplateCached ──────────────────────────────────────────────────────
 
 describe("loadTemplateCached", () => {
   test("cache miss then cache hit returns same SignedResourceId", async () => {
@@ -184,8 +178,6 @@ describe("loadTemplateCached", () => {
   }, 15000);
 });
 
-// ─── cacheBlockPackTemplate ──────────────────────────────────────────────────
-
 describe("cacheBlockPackTemplate", () => {
   test("replaces prepared template with cached reference", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
@@ -235,8 +227,6 @@ describe("cacheBlockPackTemplate", () => {
   }, 15000);
 });
 
-// ─── Equivalence: cached vs legacy produce identical resources ───────────────
-
 describe("template cache produces equivalent resources", () => {
   test("cached and legacy templates deduplicate to same original (V2)", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
@@ -272,8 +262,6 @@ describe("template cache produces equivalent resources", () => {
   }, 30000);
 });
 
-// ─── Shared library dedup ────────────────────────────────────────────────────
-
 describe("shared library dedup", () => {
   test("two different templates sharing a library reuse the same cache entry", async () => {
     await TestHelpers.withTempRoot(async (pl) => {
@@ -302,8 +290,6 @@ describe("shared library dedup", () => {
     });
   }, 15000);
 });
-
-// ─── GC ──────────────────────────────────────────────────────────────────────
 
 describe("GC", () => {
   test("evicts entries when cache exceeds max entries", async () => {

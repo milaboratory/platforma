@@ -4,7 +4,7 @@ import type { PObjectId } from "../../pool";
 import { assertNever } from "../../util";
 import { getAxisId, type PColumn } from "./spec/spec";
 import type { PColumnValues } from "./data_info";
-import type { SpecQuery } from "./query/query_spec";
+import type { SpecQuery, SpecQueryJoinEntry } from "./query/query_spec";
 import { canonicalizeJson } from "../../json";
 import { mapSpecQueryColumns } from "./query";
 
@@ -422,8 +422,18 @@ export function sortPTableDef(def: PTableDef<PObjectId>): PTableDef<PObjectId> {
   };
 }
 
-export function mapPTableDefV2<C1, C2>(def: PTableDefV2<C1>, cb: (c: C1) => C2): PTableDefV2<C2> {
-  return { query: mapSpecQueryColumns(def.query, cb) };
+export function mapPTableDefV2<C1, C2>(
+  def: PTableDefV2<C1>,
+  visitor: {
+    /** Transform column references in leaf nodes (column, sparseToDenseColumn). */
+    column: (c: C1) => C2;
+    /** Visit a node after its children have been traversed. */
+    node?: (node: SpecQuery<C2>) => SpecQuery<C2>;
+    /** Visit a join entry after its inner query has been traversed. */
+    joinEntry?: (entry: SpecQueryJoinEntry<C2>) => SpecQueryJoinEntry<C2>;
+  },
+): PTableDefV2<C2> {
+  return { query: mapSpecQueryColumns(def.query, visitor) };
 }
 
 export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {
