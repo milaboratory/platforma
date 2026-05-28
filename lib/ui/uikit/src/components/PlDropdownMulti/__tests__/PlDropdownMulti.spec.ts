@@ -112,4 +112,42 @@ describe("PlDropdownMulti", () => {
     expect(wrapper.html()).not.toContain('"blockId"');
     expect(wrapper.html()).not.toContain('"__isRef"');
   });
+
+  it("does not leak raw JSON when a found option has an empty label", async () => {
+    const wrapper = mount(PlDropdownMulti, {
+      props: {
+        modelValue: [{ __isRef: true as const, blockId: "1", name: "Ref" }],
+        options: [{ label: "", value: { __isRef: true as const, blockId: "1", name: "Ref" } }],
+      },
+    });
+    await flushPromises();
+    // An option with empty `label` must not let `toDisplayString` JSON-stringify its value.
+    expect(wrapper.html()).not.toContain('"blockId"');
+    expect(wrapper.html()).not.toContain('"__isRef"');
+    // The chip is still rendered (not the missing branch — option is found).
+    expect(wrapper.find(".pl-chip").exists()).toBe(true);
+    expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(false);
+  });
+
+  it("replaces missing chips with normal chips when options later contain the values", async () => {
+    const wrapper = mount(PlDropdownMulti, {
+      props: {
+        modelValue: [1],
+        options: [{ text: "Option 2", value: 2 }],
+      },
+    });
+    await flushPromises();
+    expect(wrapper.findAll(".pl-dropdown-multi__chip--missing").length).toBe(1);
+
+    // Simulates the upstream block coming back: options now contain the value.
+    await wrapper.setProps({
+      options: [
+        { text: "Option 1", value: 1 },
+        { text: "Option 2", value: 2 },
+      ],
+    });
+    await flushPromises();
+    expect(wrapper.findAll(".pl-dropdown-multi__chip--missing").length).toBe(0);
+    expect(wrapper.findAll(".pl-chip").length).toBe(1);
+  });
 });

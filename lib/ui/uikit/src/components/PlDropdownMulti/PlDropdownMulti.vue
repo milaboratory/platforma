@@ -140,11 +140,14 @@ const selectedOptionsRef = computed(() => {
     .map((v) => {
       const opt = normalizedOptionsRef.value.find((o) => deepEqual(o.value, v));
       if (opt) {
-        return { ...opt, isMissing: false };
+        // Coerce empty labels via String() so Vue's `toDisplayString` never gets
+        // to JSON-stringify the raw value (the original "broken hash" bug).
+        return { ...opt, label: opt.label || String(opt.value), isMissing: false };
       }
       if (!optionsLoaded) {
         return undefined;
       }
+      // Empty `missingValueLabel` is honored verbatim — caller's explicit "render nothing".
       return {
         value: v,
         label: props.missingValueLabel,
@@ -320,7 +323,7 @@ watchPostEffect(() => {
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.isMissing ? opt.label : opt.label || opt.value }}
+              {{ opt.label }}
             </PlChip>
           </div>
 
@@ -359,7 +362,7 @@ watchPostEffect(() => {
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.isMissing ? opt.label : opt.label || opt.value }}
+              {{ opt.label }}
             </PlChip>
           </div>
           <DropdownListItem
