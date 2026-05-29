@@ -4,7 +4,7 @@
 
 import fsp from "node:fs/promises";
 import path from "node:path";
-import type { FileSystem } from "./api";
+import type { DirEntry, FileSystem } from "./api";
 
 export class NodeFileSystem implements FileSystem {
   constructor(private root: string) {}
@@ -55,6 +55,19 @@ export class NodeFileSystem implements FileSystem {
     }
     await walk(dir === "" || dir === "." ? "" : dir, a);
     return out.sort();
+  }
+
+  async listDir(dir: string): Promise<DirEntry[]> {
+    const a = this.abs(dir);
+    let entries;
+    try {
+      entries = await fsp.readdir(a, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+    return entries
+      .map((e) => ({ name: e.name, isDirectory: e.isDirectory() }))
+      .sort((x, y) => x.name.localeCompare(y.name));
   }
 
   async move(from: string, to: string): Promise<void> {

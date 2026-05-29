@@ -20,6 +20,8 @@
     "linter:check": "turbo run linter:check",
     "types:check": "turbo run types:check",
     "turbo-why": "node scripts/turbo-why.mjs",
+    "structure-all": "block-tools structure refresh --sdk-internal etc/blocks/*",
+    "structure-check-all": "block-tools structure check --sdk-internal etc/blocks/*",
     "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm formatter:check --output-logs=errors-only && pnpm linter:check --output-logs=errors-only",
     "ci:build": "pnpm ci:prepare && pnpm turbo-why build && pnpm build --output-logs=errors-only",
     "ci:build:local": "pnpm ci:prepare && pnpm turbo-why build:local && pnpm build:local --output-logs=errors-only",
@@ -36,6 +38,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
+    "@platforma-sdk/block-tools": "workspace:*",
     "@types/node": "catalog:",
     "@zed-industries/vscode-langservers-extracted": "catalog:",
     "husky": "catalog:",

@@ -15,7 +15,9 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 export function modelPackageJsonRules(): void {
   ensureField("type", "module");
-  ensureField("main", "dist/index.js");
+  // build emits both; main = CJS entry, module = ESM entry (prod convention).
+  ensureField("main", "dist/index.cjs");
+  ensureField("module", "dist/index.js");
   ensureField("types", "dist/index.d.ts");
   ensureField("exports", {
     ".": {
@@ -31,12 +33,12 @@ export function modelPackageJsonRules(): void {
   ensureScript("build", "ts-builder build --target block-model && block-tools build-model");
   ensureScript("check", "ts-builder check --target block-model");
 
-  ensureDep("@platforma-sdk/model", "catalog:");
+  ensureDep("@platforma-sdk/model", "sdk:");
 
   ensureDevDeps({
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:",
+    "@milaboratories/ts-builder": "sdk:",
+    "@milaboratories/ts-configs": "sdk:",
+    "@platforma-sdk/block-tools": "sdk:",
   });
 
   ensurePeerDeps({

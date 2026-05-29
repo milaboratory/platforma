@@ -18,12 +18,11 @@ export function uiPackageJsonRules(): void {
   ensureScript("build", "ts-builder build --target block-ui");
   ensureScript("check", "ts-builder check --target block-ui");
 
-  ensureDep("@platforma-sdk/ui-vue", "catalog:");
+  ensureDep("@platforma-sdk/ui-vue", "sdk:");
 
   ensureDevDeps({
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:",
+    "@milaboratories/ts-builder": "sdk:",
+    "@milaboratories/ts-configs": "sdk:",
   });
 
   ensurePeerDeps({

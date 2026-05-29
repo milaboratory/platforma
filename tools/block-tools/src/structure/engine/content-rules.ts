@@ -27,8 +27,47 @@ import type { YamlDocument } from "./parsers/yaml";
 
 export type { JsonObject };
 
-/** Allowed dep version strings. Specific versions live in the catalog. */
-export type DepVersion = "catalog:" | `workspace:${string}` | "*";
+/** Allowed dep version strings. Specific versions live in the catalog.
+ *  `"sdk:"` is an authoring abstraction, not an on-disk value: the engine
+ *  resolves it at write time (`workspace:*` when `ctx.isSdkInternal`, else
+ *  `"catalog:"`) and the resolved literal is what serializes. Use it for
+ *  every dep that is a member of the platforma monorepo's pnpm workspace
+ *  (the `@platforma-sdk/*` packages + `@milaboratories/ts-builder` /
+ *  `ts-configs`). See content-rules.md § "Dependency Versions". */
+export type DepVersion = "catalog:" | "sdk:" | `workspace:${string}` | "*";
+
+/** Resolve the `"sdk:"` sentinel to its on-disk literal. All other
+ *  `DepVersion` forms pass through unchanged — `"sdk:"` never serializes. */
+export function resolveDepVersion(
+  version: DepVersion,
+  isSdkInternal: boolean,
+): Exclude<DepVersion, "sdk:"> {
+  if (version === "sdk:") return isSdkInternal ? "workspace:*" : "catalog:";
+  return version;
+}
+
+const DEP_SECTION_KEYS = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+] as const;
+
+/** Resolve any `"sdk:"` sentinels in the dep sections of a generated
+ *  package.json object, in place. Mirrors `resolveDepVersion` for the
+ *  generator (`initial` content) path — the runner calls this on every
+ *  `generate()`-produced `.json` value so the sentinel never reaches disk
+ *  via a generator. */
+export function resolveSdkSentinelsInJson(value: unknown, isSdkInternal: boolean): void {
+  if (!isObject(value)) return;
+  for (const section of DEP_SECTION_KEYS) {
+    const sec = value[section];
+    if (!isObject(sec)) continue;
+    for (const k of Object.keys(sec)) {
+      if (sec[k] === "sdk:") sec[k] = isSdkInternal ? "workspace:*" : "catalog:";
+    }
+  }
+}
 
 type JsonState = {
   kind: "json";
@@ -268,7 +307,14 @@ function ensureInSection(
   version: DepVersion,
   section: DepSection,
 ): void {
-  const obj = requireJson(builder).obj;
+  const state = requireJson(builder);
+  const obj = state.obj;
+  // Resolve the `sdk:` sentinel against the run mode before writing — it
+  // must never reach disk (content-rules.md § "Dependency Versions").
+  const resolved =
+    version === "sdk:"
+      ? resolveDepVersion(version, ctxOrThrow(state, builder).isSdkInternal)
+      : version;
   // Single-section invariant: remove from any other section first.
   for (const s of DEP_SECTIONS) {
     if (s === section) continue;
@@ -277,7 +323,7 @@ function ensureInSection(
   }
   const existing = obj[section];
   const target: JsonObject = isObject(existing) ? existing : {};
-  target[name] = version;
+  target[name] = resolved;
   if (!isObject(existing)) obj[section] = target;
 }
 

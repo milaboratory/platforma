@@ -3,7 +3,6 @@
 import {
   ensureField,
   ensureScript,
-  ensureDep,
   ensureDevDeps,
   ensurePeerDeps,
   enforceFieldOrder,
@@ -15,11 +14,11 @@ export function testPackageJsonRules(): void {
 
   ensureScript("test", "vitest run");
 
-  ensureDep("@platforma-sdk/test", "catalog:");
-
+  // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
+    "@platforma-sdk/test": "sdk:",
+    "@milaboratories/ts-builder": "sdk:",
+    "@milaboratories/ts-configs": "sdk:",
     vitest: "catalog:",
   });
 

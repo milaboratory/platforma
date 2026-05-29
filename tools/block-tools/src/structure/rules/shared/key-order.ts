@@ -12,6 +12,7 @@ export const canonicalPackageJsonOrder = [
   "keywords",
   "type",
   "main",
+  "module",
   "types",
   "exports",
   "files",

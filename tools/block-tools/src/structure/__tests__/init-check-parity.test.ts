@@ -3,7 +3,9 @@
 //
 // For each variant:
 //  1. simulateInit populates an in-memory FS with seeds + scaffolds +
-//     fixed + managed in canonical form.
+//     fixed + managed in canonical form, then re-discovers the module set
+//     from that written FS (the same DISCOVERY `check` runs) — a real
+//     init→check round-trip, not a reuse of init's module set (G4).
 //  2. engine.run is invoked with `dryRun: true` on the same FS.
 //  3. result.changes must be empty (every primitive idempotent).
 

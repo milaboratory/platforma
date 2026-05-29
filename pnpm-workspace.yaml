@@ -163,6 +163,8 @@ packages:
   - tests/tengo-builder/3-software-dep
 
 catalog:
+  # CLI
+  "@inquirer/prompts": ^7.0.1
   # Build
   "typescript": ~5.9.3
   "tsconfig-paths": ^4.2.0

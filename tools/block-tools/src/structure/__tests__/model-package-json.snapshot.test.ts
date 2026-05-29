@@ -11,7 +11,8 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
   "name": "@platforma-open/test-org.demo.model",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {

@@ -24,8 +24,8 @@ export function rootPackageJsonRules(): void {
 
   ensureDevDeps({
     "@changesets/cli": "catalog:",
-    "@milaboratories/ts-builder": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:",
+    "@milaboratories/ts-builder": "sdk:",
+    "@platforma-sdk/block-tools": "sdk:",
     shx: "catalog:",
     turbo: "catalog:",
   });

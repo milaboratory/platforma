@@ -14,16 +14,15 @@ export function uiPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       check: "ts-builder check --target block-ui",
     },
     dependencies: {
-      "@platforma-sdk/ui-vue": "catalog:",
+      "@platforma-sdk/ui-vue": "sdk:",
     },
     peerDependencies: {
       "@types/node": "*",
       typescript: "*",
     },
     devDependencies: {
-      "@milaboratories/ts-builder": "catalog:",
-      "@milaboratories/ts-configs": "catalog:",
-      "@platforma-sdk/block-tools": "catalog:",
+      "@milaboratories/ts-builder": "sdk:",
+      "@milaboratories/ts-configs": "sdk:",
     },
   };
 }

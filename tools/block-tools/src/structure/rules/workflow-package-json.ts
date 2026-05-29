@@ -7,7 +7,6 @@ import {
   ensureScript,
   ensureDep,
   ensureDevDeps,
-  ensurePeerDeps,
   ensureWorkspaceScopeDeps,
   enforceFieldOrder,
 } from "../engine/api";
@@ -16,28 +15,21 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 export function workflowPackageJsonRules(): void {
   ensureField("type", "module");
 
-  ensureScript("fmt", "ts-builder format");
-  ensureScript("build", "tengo-builder build");
-  ensureScript("check", "ts-builder check --target block-workflow");
+  // No `fmt`: the workflow is Tengo, not TS (nothing for ts-builder/oxlint to
+  // process). Build + check go through pl-tengo. See the linter side-quest.
+  ensureScript("build", "rm -rf dist && pl-tengo build");
+  ensureScript("check", "pl-tengo check");
   ensureScript("test", "vitest run");
 
-  ensureDep("@platforma-sdk/workflow-tengo", "catalog:");
+  ensureDep("@platforma-sdk/workflow-tengo", "sdk:");
 
   // Pulls in every block-local software module as a workspace dep so
   // the workflow can reference the produced runenv assets.
   ensureWorkspaceScopeDeps("software");
 
   ensureDevDeps({
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:",
-    "@platforma-sdk/tengo-builder": "catalog:",
+    "@platforma-sdk/tengo-builder": "sdk:",
     vitest: "catalog:",
-  });
-
-  ensurePeerDeps({
-    "@types/node": "*",
-    typescript: "*",
   });
 
   enforceFieldOrder([...canonicalPackageJsonOrder]);
