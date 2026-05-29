@@ -75,3 +75,26 @@ tplTest.concurrent(
     ).rejects.toThrow(/wasm trap|memory|allocation|consume-memory/);
   },
 );
+
+// Per-import override raises the live cap. The fixture's consumeMemory is
+// asked for 40 MiB — over the 32 MiB default, but within the 50 MiB
+// override — so the allocation must succeed where it would otherwise trap
+// (see memory-cap-overflow-near.tpl.tengo for the same payload at the
+// default cap).
+tplTest.concurrent(
+  "assets.importWasm — opts.memoryLimit raises the live cap above the default",
+  async ({ pl, helper, expect, skip }) => {
+    if (!pl.hasCapability("wasm:v1")) {
+      skip();
+      return;
+    }
+    const result = await helper.renderTemplate(
+      false,
+      "wasm.memory-cap-override",
+      ["ack"],
+      () => ({}),
+    );
+    const ack = await result.computeOutput("ack", (a) => a?.getDataAsJson()).awaitStableValue();
+    expect(ack as string).toMatch(/consumed/);
+  },
+);

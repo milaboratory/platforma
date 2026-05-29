@@ -4,6 +4,7 @@
 
 plapi := import("plapi")
 ll := import(":ll")
+maps := import(":maps")
 
 /**
  * Imports a WebAssembly component. Bundles its bytes into the template pack
@@ -30,10 +31,10 @@ ll := import(":ll")
  *   - Per-render sandbox count: 64. The 65th `assets.importWasm(...)` in
  *     one render aborts the script.
  *
- *   - Per-instance memory cap: 32 MiB by default. A block can request an
- *     override on its WasmV1 dependency, clamped to the range
- *     [16 MiB, 64 MiB]. Allocations past the live cap trap inside the
- *     guest, which aborts the script.
+ *   - Per-instance memory cap: 32 MiB by default. The caller can override
+ *     per-import via `opts.memoryLimit` (bytes); the backend silently
+ *     clamps to the range [16 MiB, 64 MiB]. Allocations past the live
+ *     cap trap inside the guest, which aborts the script.
  *
  *   - Per-call wall-clock budget: 1 minute. A guest call that runs
  *     longer trips the engine's epoch deadline and traps, aborting the
@@ -56,14 +57,31 @@ ll := import(":ll")
  *                           including the namespace (NPM package name),
  *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
  *
+ * @param opts: map (optional) - per-import options:
+ *     - memoryLimit: int (bytes) — override the per-instance memory cap
+ *       just for this sandbox. Clamped to [16 MiB, 64 MiB] by the
+ *       backend; zero or omitted means "use the install-time default
+ *       (32 MiB unless the WasmV1 resource was created with a different
+ *       value)". Omit the option (or pass an empty map) for the default.
+ *
  * @return wasm: a tengo.Map keyed by WIT interface name —
  *               `wasm[<iface>][<resource>][<friendlyMethodName>]`
  *               where method names are camelCased from the WIT kebab-case
  *               (so WIT `from-json` → `fromJson`). Bare top-level funcs
  *               live at `wasm[<friendlyFuncName>]`.
  */
-importWasm := func(wasmName) {
-	return plapi.loadWasm(wasmName)
+importWasm := func(wasmName, ...rest) {
+	ll.assert(len(rest) <= 1, "assets.importWasm: too many arguments (want 1 or 2, got %d)", 1+len(rest))
+	if len(rest) == 0 {
+		return plapi.loadWasm(wasmName)
+	}
+	opts := rest[0]
+	ll.assert(ll.isMap(opts), "assets.importWasm: opts must be a map, got %v", opts)
+	memLimit := 0
+	if maps.containsKey(opts, "memoryLimit") {
+		memLimit = opts.memoryLimit
+	}
+	return plapi.loadWasm(wasmName, memLimit)
 }
 
 export ll.toStrict({
