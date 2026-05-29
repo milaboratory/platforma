@@ -1,0 +1,15 @@
+// Allocation well above the live 32 MiB cap (64 MiB — twice the live
+// cap; this is also the upper clamp on what a block could request via
+// DefaultMemoryLimit, but we don't override here, so for THIS render
+// it's just "way above the live cap"). Guest traps, script aborts.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["unreachable"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	api.table.consumeMemory(string(64 * 1024 * 1024))
+	return { unreachable: "reached end of body v2" }
+})

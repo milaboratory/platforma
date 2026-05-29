@@ -1,0 +1,65 @@
+// Verifies that two sibling instances produced by separate assets.importWasm
+// calls inside one render hold independent state. If the host accidentally
+// shared a Store between the two handles, instance B's columnCount would
+// reflect A's columns or vice versa.
+//
+// Instance A has 5 distinct columns; instance B has 1 column with a name
+// that doesn't appear in A. We assert state via column counts plus a
+// same-instance findColumn probe on each side (proves each handle sees
+// its own columns). Under the abort-on-err contract, a cross-instance
+// miss would kill the render, so we don't probe that here — the
+// counts-plus-own-find combo already distinguishes shared from isolated
+// stores: a shared store would surface A's columns through both handles
+// and the counts would be equal (or both findColumn calls would find
+// the "alpha" column).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs([
+	"countA", "countB",
+	"aFindFromA", "bFindFromB"
+])
+
+self.body(func(_inputs) {
+	specA := string(json.encode({
+		columns: [
+			{ name: "alpha",   type: "i32" },
+			{ name: "bravo",   type: "i32" },
+			{ name: "charlie", type: "i32" },
+			{ name: "delta",   type: "i32" },
+			{ name: "echo",    type: "i32" }
+		]
+	}))
+	specB := string(json.encode({
+		columns: [
+			{ name: "only-in-b", type: "string" }
+		]
+	}))
+
+	wasmA := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	wasmB := assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+
+	apiA := wasmA["demo:tables/api"]
+	apiB := wasmB["demo:tables/api"]
+
+	tableA := apiA.table.fromJson(specA)
+	tableB := apiB.table.fromJson(specB)
+
+	countA := string(tableA.columnCount())
+	countB := string(tableB.columnCount())
+
+	selA := string(json.encode({ name: "alpha" }))
+	selB := string(json.encode({ name: "only-in-b" }))
+
+	aFindFromA := string(tableA.findColumn(selA))
+	bFindFromB := string(tableB.findColumn(selB))
+
+	return {
+		countA:     countA,
+		countB:     countB,
+		aFindFromA: aFindFromA,
+		bFindFromB: bFindFromB
+	}
+})

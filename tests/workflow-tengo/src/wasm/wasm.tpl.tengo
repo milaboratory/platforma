@@ -1,0 +1,36 @@
+// Happy-path integration test for the wasm subsystem.
+//
+// Flow:
+//   1. tengo-builder sees `assets.importWasm("@platforma-tests/...")` and
+//      bundles the fixture component into this template's pack.
+//   2. At runtime, the same `assets.importWasm(...)` call (a thin SDK
+//      wrapper over plapi.loadWasm) returns a sandboxed component handle.
+//   3. We exercise the happy path of `from-json` + `find-column` on the
+//      `demo:tables/api` interface — `find-column` for an existing
+//      column returns the column descriptor as a string.
+//
+// The two failure arms (Err arm from `find-column` on a missing column,
+// and the trap from `always-panic`) live in their own templates because
+// any wasm-side failure aborts the script — they can't share a render
+// with the happy assertions.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["ok"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+
+	frame := api.table.fromJson(string(json.encode({
+		columns: [
+			{ name: "sample_id", type: "i32" },
+			{ name: "barcode",   type: "string" }
+		]
+	})))
+
+	return {
+		ok: string(frame.findColumn(string(json.encode({ name: "sample_id" }))))
+	}
+})
