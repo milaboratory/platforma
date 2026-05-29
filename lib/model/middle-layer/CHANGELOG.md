@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.24.0
+
+### Minor Changes
+
+- 7a8aeea: PFrame internal API: add `PFrameWasmAPIV4` — a self-contained WASM-spec factory that adds a stateless `rewriteLegacyFilters`, which upgrades selector-based legacy record filters into index-based data-layer boolean expressions for a given unified table spec (usable both for `getUniqueValues` and for composing a `filter` over a `table` query node). Also drop the `V2` suffix from the data-side create method on the (unreleased) `PFrameReadAPIV12`: `createTableV2` → `createTable`.
+
 ## 1.23.0
 
 ### Minor Changes
