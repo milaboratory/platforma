@@ -9,7 +9,7 @@ export function testPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     private: true,
     type: "module",
     scripts: {
-      test: "vitest run",
+      test: "vitest run --passWithNoTests",
     },
     peerDependencies: {
       "@types/node": "*",

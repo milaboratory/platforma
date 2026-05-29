@@ -25,7 +25,7 @@ export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown
       // shx rm -rf (not bare rm -rf) for cross-platform robustness (c8).
       build: "shx rm -rf dist && pl-tengo build",
       check: "pl-tengo check",
-      test: "vitest run",
+      test: "vitest run --passWithNoTests",
     },
     dependencies: {
       "@platforma-sdk/workflow-tengo": "sdk:",
@@ -33,6 +33,7 @@ export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown
     },
     devDependencies: {
       "@platforma-sdk/tengo-builder": "sdk:",
+      "@platforma-sdk/test": "sdk:",
       vitest: "catalog:",
       shx: "catalog:",
     },

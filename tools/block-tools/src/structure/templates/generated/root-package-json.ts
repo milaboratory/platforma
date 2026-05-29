@@ -4,16 +4,23 @@
 
 import type { BlockVars } from "../../engine/api";
 
-export function rootPackageJsonInitial(v: BlockVars): Record<string, unknown> {
+export function rootPackageJsonInitial(_v: BlockVars): Record<string, unknown> {
+  // No `name`: the root is never published (D2). Body rules re-assert
+  // (removeField("name")) as a drift-corrector.
   return {
-    name: v.facadeName,
     version: "1.0.0",
     private: true,
     scripts: {
       fmt: "turbo run fmt",
       check: "turbo run check",
       build: "turbo run build",
-      test: "turbo run test",
+      "build:dev": "env PL_PKG_DEV=local turbo run build",
+      test: "env PL_PKG_DEV=local turbo run test --concurrency 1 --env-mode=loose",
+      "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
+      "mark-stable": "turbo run mark-stable",
+      watch: "turbo watch build",
+      changeset: "changeset",
+      "version-packages": "changeset version",
       "update-sdk": "block-tools structure refresh --update-deps-only",
     },
     peerDependencies: {

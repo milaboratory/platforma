@@ -12,7 +12,7 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
 
-  ensureScript("test", "vitest run");
+  ensureScript("test", "vitest run --passWithNoTests");
 
   // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({

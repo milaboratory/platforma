@@ -21,7 +21,7 @@ export function workflowPackageJsonRules(): void {
   // monorepo. (c8)
   ensureScript("build", "shx rm -rf dist && pl-tengo build");
   ensureScript("check", "pl-tengo check");
-  ensureScript("test", "vitest run");
+  ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/workflow-tengo", "sdk:");
 
@@ -29,8 +29,13 @@ export function workflowPackageJsonRules(): void {
   // the workflow can reference the produced runenv assets.
   ensureWorkspaceScopeDeps("software");
 
+  // @platforma-sdk/test: workflow integration tests (e.g. mixcr's
+  // workflow/src/test/columns.test.ts) import it. The boilerplate workflow
+  // carries it; without it the canonical `test` script fails to resolve the
+  // import (the 5b "mixcr workflow test" blocker). F resolution: add the dep.
   ensureDevDeps({
     "@platforma-sdk/tengo-builder": "sdk:",
+    "@platforma-sdk/test": "sdk:",
     vitest: "catalog:",
     shx: "catalog:",
   });

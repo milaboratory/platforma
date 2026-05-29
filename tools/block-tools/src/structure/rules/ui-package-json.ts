@@ -15,15 +15,20 @@ export function uiPackageJsonRules(): void {
   ensureField("type", "module");
 
   ensureScript("fmt", "ts-builder format");
+  ensureScript("dev", "ts-builder serve --target block-ui");
   ensureScript("watch", "ts-builder build --target block-ui --watch");
   ensureScript("build", "ts-builder build --target block-ui");
   ensureScript("check", "ts-builder check --target block-ui");
+  // Canonical test script with --passWithNoTests (real blocks put UI
+  // tests in ui/, e.g. samples-and-data); empty UIs don't fail.
+  ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/ui-vue", "sdk:");
 
   ensureDevDeps({
     "@milaboratories/ts-builder": "sdk:",
     "@milaboratories/ts-configs": "sdk:",
+    vitest: "catalog:",
   });
 
   // typescript peer: kept for IDE type resolution. IDE-only and questionable —

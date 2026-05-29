@@ -32,6 +32,11 @@ export function modelPackageJsonRules(): void {
   ensureScript("watch", "ts-builder build --target block-model --watch");
   ensureScript("build", "ts-builder build --target block-model && block-tools build-model");
   ensureScript("check", "ts-builder check --target block-model");
+  // Canonical test script with --passWithNoTests: real blocks put unit
+  // tests in model/ (mixcr, sequence-properties), so the scope carries a
+  // test runner; --passWithNoTests keeps models with no test files
+  // (clonotype, antibody) from failing `turbo run test`.
+  ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/model", "sdk:");
 
@@ -39,6 +44,7 @@ export function modelPackageJsonRules(): void {
     "@milaboratories/ts-builder": "sdk:",
     "@milaboratories/ts-configs": "sdk:",
     "@platforma-sdk/block-tools": "sdk:",
+    vitest: "catalog:",
   });
 
   ensurePeerDeps({

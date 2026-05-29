@@ -28,6 +28,7 @@ export function modelPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       watch: "ts-builder build --target block-model --watch",
       build: "ts-builder build --target block-model && block-tools build-model",
       check: "ts-builder check --target block-model",
+      test: "vitest run --passWithNoTests",
     },
     dependencies: {
       "@platforma-sdk/model": "sdk:",
@@ -40,6 +41,7 @@ export function modelPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       "@milaboratories/ts-builder": "sdk:",
       "@milaboratories/ts-configs": "sdk:",
       "@platforma-sdk/block-tools": "sdk:",
+      vitest: "catalog:",
     },
   };
 }

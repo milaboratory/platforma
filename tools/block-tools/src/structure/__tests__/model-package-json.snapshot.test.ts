@@ -26,7 +26,8 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
     "fmt": "ts-builder format",
     "watch": "ts-builder build --target block-model --watch",
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "check": "ts-builder check --target block-model"
+    "check": "ts-builder check --target block-model",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@platforma-sdk/model": "catalog:"
@@ -38,7 +39,8 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:"
+    "@platforma-sdk/block-tools": "catalog:",
+    "vitest": "catalog:"
   }
 }
 `;

@@ -1,17 +1,27 @@
 {
-  "$schema": "https://turborepo.org/schema.json",
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.json"],
   "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "block-pack/**"]
+    "fmt": {
+      "cache": false
     },
     "check": {
       "dependsOn": ["^check"]
     },
-    "test": {
-      "dependsOn": ["build"]
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "block-pack/**"]
     },
-    "fmt": {
+    "build:dev": {
+      "dependsOn": ["build"],
+      "outputs": ["dist/**"]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
+    },
+    "mark-stable": {
+      "passThroughEnv": ["PL_REGISTRY", "AWS_*"],
       "cache": false
     }
   }

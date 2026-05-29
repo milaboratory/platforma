@@ -67,12 +67,19 @@ export function legacyCleanup(): void {
       "package.json",
       generate(() => rootPackageJsonInitial(blockVars())),
       () => {
-        removeScript("pretty"); // samples-and-data (prettier-era)
-        removeScript("build:dev"); // all 5 (PL_PKG_DEV dev-only helper, not canonical)
-        removeScript("lint"); // mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities (→ `check` via oxlint)
-        removeScript("type-check"); // mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities (→ `check` via ts-builder)
-        removeScript("test:dry-run"); // all 5 (turbo dry-run helper, not canonical)
-        removeScript("mark-stable"); // all 5 (not canonical)
+        // 5c CORRECTION (findings §2): build:dev / test:dry-run / mark-stable
+        // are canonical lifecycle scripts (now re-asserted by
+        // rootPackageJsonRules) — their 5b removal was the inverted-framing
+        // mistake and is reverted. lint / type-check were the 5b agent's
+        // own additions beyond the sanctioned set; removing them is also
+        // reverted so blocks that still carry them keep them (the canonical
+        // `check`/`fmt` cover the same ground but the scaffold no longer
+        // strips the explicit scripts).
+        //
+        // Genuinely-retired removals are KEPT: `pretty` (prettier → oxfmt,
+        // and `fmt` = ts-builder format = oxfmt is canonical now) and the
+        // standalone blocks-deps-updater dep (merged into block-tools).
+        removeScript("pretty"); // samples-and-data (prettier → oxfmt, replaced by `fmt`)
         removeDep("@platforma-sdk/blocks-deps-updater"); // samples-and-data (merged into block-tools)
       },
     );
