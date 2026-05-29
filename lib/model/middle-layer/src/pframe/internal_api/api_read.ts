@@ -91,13 +91,13 @@ export interface UniqueValuesRequestV2 {
  * Spec-side operations (finding columns, listing columns, retrieving
  * column specs, computing axis integrations) are not part of this
  * surface — callers cache column specs themselves or route through
- * WASM-spec. The data-side `createTableV2` accepts a pre-lowered
+ * WASM-spec. The data-side `createTable` accepts a pre-lowered
  * `DataQuery`; `getUniqueValues` takes pre-resolved indices via
  * {@link UniqueValuesRequestV2}.
  */
 export interface PFrameReadAPIV12 {
   /** Creates table from a pre-lowered data query. */
-  createTableV2(tableId: PTableId, dataQuery: DataQuery): PTableV9;
+  createTable(tableId: PTableId, dataQuery: DataQuery): PTableV9;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records. */
   getUniqueValues(
