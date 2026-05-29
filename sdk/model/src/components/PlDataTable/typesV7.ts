@@ -31,10 +31,18 @@ export type PlDataTableGridStateCore = {
       sort: "asc" | "desc";
     }[];
   };
-  /** Includes column visibility */
+  /** Includes column visibility.
+   *
+   * Stores the user's explicit overrides relative to the block-defined default
+   * visibility (the `pl7.app/table/visibility` annotation), NOT the absolute
+   * hidden set. This keeps saved state stable when the block changes a column's
+   * default visibility between runs (e.g. filter/ranking config flips a column
+   * default<->optional): unmentioned columns always follow their current default. */
   columnVisibility?: {
-    /** All colIds which were hidden */
+    /** Columns the user explicitly hid that the block default would have shown. */
     hiddenColIds: PlTableColumnIdJson[];
+    /** Columns the user explicitly showed that the block default would have hidden. */
+    shownColIds?: PlTableColumnIdJson[];
   };
 };
 
@@ -87,21 +95,37 @@ export type PTableParamsV2 =
   | {
       sourceId: null;
       hiddenColIds: null;
+      shownColIds?: null;
       sorting: [];
       filters: null;
       defaultFilters: null;
     }
   | {
       sourceId: string;
+      /** User's explicit hide overrides (vs block default visibility). */
       hiddenColIds: null | PTableColumnId[];
+      /** User's explicit show overrides (vs block default visibility). */
+      shownColIds?: null | PTableColumnId[];
       sorting: PTableSorting[];
       filters: null | PlDataTableFilters;
       defaultFilters: null | PlDataTableFilters;
     };
 
+/** Historical v7 normalized state (pre-deviation column visibility).
+ *
+ * Shape is identical to the current normalized state, but `columnVisibility`
+ * stored the ABSOLUTE hidden set rather than the user's deviations from the
+ * block-defined default visibility. The v7->v8 migration resets it (see
+ * state-migration.ts) so the deviation model starts clean. */
+export type PlDataTableStateV2V7 = {
+  version: 7;
+  stateCache: PlDataTableStateV2CacheEntry[];
+  pTableParams: PTableParamsV2;
+};
+
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades */
-  version: 7;
+  version: 8;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
   /** PTable params derived from the cache state for the current sourceId */

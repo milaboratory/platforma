@@ -20,6 +20,7 @@ import type {
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
+  PlDataTableStateV2V7,
   PlTableColumnIdJson,
   PTableParamsV2,
 } from "./typesV7";
@@ -144,6 +145,9 @@ export type PlDataTableStateV2 =
   // v6 stored colIds as canonicalized full `PTableColumnSpec` (including
   // annotations + `pl7.app/trace`). v7 strips down to `PTableColumnId`.
   | PlDataTableStateV2V6
+  // v7 stored columnVisibility as the absolute hidden set. v8 stores user
+  // deviations from the block-defined default visibility.
+  | PlDataTableStateV2V7
   // Normalized state
   | PlDataTableStateV2Normalized;
 
@@ -189,6 +193,13 @@ export function upgradePlDataTableStateV2(
   // v6 -> v7: shrink colIds from full PTableColumnSpec to PTableColumnId.
   if (state.version === 6) {
     state = migrateV6toV7(state);
+  }
+  // v7 -> v8: column visibility switched from an absolute hidden set to user
+  // deviations from the block default. Old absolute state can't be converted
+  // without the per-column defaults, so reset columnVisibility (one-time loss of
+  // custom column show/hide); defaults apply correctly from then on.
+  if (state.version === 7) {
+    state = migrateV7toV8(state);
   }
   return state;
 }
@@ -242,7 +253,7 @@ function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridSt
 
 /** Migrate v6 to v7: rewrite each colId from a full PTableColumnSpec to its
  * compact PTableColumnId (drops annotations/spec body, ~16× smaller per column). */
-function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2Normalized {
+function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2V7 {
   return {
     version: 7,
     stateCache: state.stateCache.map(
@@ -252,6 +263,28 @@ function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2Normalize
       }),
     ),
     pTableParams: state.pTableParams,
+  };
+}
+
+/** Migrate v7 to v8: column visibility moved from an absolute hidden set to
+ * user deviations from the block-defined default visibility. The old absolute
+ * set cannot be converted to deviations without the per-column defaults (which
+ * are not available here), so reset columnVisibility and the derived
+ * hidden/shown pTableParams. This is a one-time reset of custom column show/hide
+ * choices; the block-defined defaults apply correctly afterwards. */
+function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2Normalized {
+  return {
+    version: 8,
+    stateCache: state.stateCache.map(
+      (entry): PlDataTableStateV2CacheEntry => ({
+        ...entry,
+        gridState: { ...entry.gridState, columnVisibility: undefined },
+      }),
+    ),
+    pTableParams:
+      state.pTableParams.sourceId === null
+        ? state.pTableParams
+        : { ...state.pTableParams, hiddenColIds: null, shownColIds: null },
   };
 }
 
@@ -416,7 +449,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
 
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 7,
+    version: 8,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };

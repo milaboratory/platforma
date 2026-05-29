@@ -186,11 +186,13 @@ export function createPlDataTableV3<A, U>(
   ]);
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
+  const shownSpecs = state.pTableParams.shownColIds;
   const hiddenColumnIds = computeHiddenColumns(
     [...annotated.direct, ...annotated.linked].map((v) => v.column),
     sorting,
     filters,
     hiddenSpecs,
+    shownSpecs,
   );
 
   const visible = buildVisibleColumns(annotated, hiddenColumnIds);
@@ -452,15 +454,33 @@ function computeHiddenColumns(
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
   hiddenSpecs: Nil | PTableColumnId[],
+  shownSpecs: Nil | PTableColumnId[],
 ): Set<PObjectId> {
-  const alwaysHidden = columns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
-  const optionalHidden = !isNil(hiddenSpecs)
-    ? hiddenSpecs.filter((s): s is PTableColumnIdColumn => s.type === "column").map((s) => s.id)
-    : columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
-  const initial = [...alwaysHidden, ...optionalHidden];
+  const userHidden = new Set(
+    (hiddenSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  const userShown = new Set(
+    (shownSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  // Block default visibility (isColumnHidden / isColumnOptional) reconciled with
+  // the user's explicit show/hide overrides. Defaults always apply to untouched
+  // columns, so a column whose default flips between runs (e.g. filter/ranking
+  // config changed) follows its current default rather than a stale saved state.
+  const hidden = columns
+    .filter((c) => {
+      if (isColumnHidden(c.spec)) return true;
+      if (userShown.has(c.id)) return false;
+      if (userHidden.has(c.id)) return true;
+      return isColumnOptional(c.spec);
+    })
+    .map((c) => c.id);
   const preserved = collectPreservedColumnIds(sorting, filters);
 
-  return new Set(initial.filter((id) => !preserved.has(id)));
+  return new Set(hidden.filter((id) => !preserved.has(id)));
 }
 
 /** Collect IDs of columns that must remain visible (sorted, filtered). */
