@@ -70,7 +70,9 @@
 
   &__close-btn {
     position: absolute;
-    top: 10px;
+    // center vertically regardless of alert height (single- or multi-line)
+    top: 50%;
     right: 12px;
+    transform: translateY(-50%);
   }
 }
