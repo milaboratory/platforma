@@ -1,24 +1,27 @@
-// Integration-test template for `@platforma-sdk/workflow-tengo:pframes-rs`.
+// Integration test for the @milaboratories/pframes-rs-wasip2 wasm
+// component, called directly through assets.importWasm — no SDK wrapper
+// lib in between.
 //
-// The SDK lib wraps the `@milaboratories/pframes-rs-wasip2` WIT interface
-// (`milaboratories:pframes/spec` — frame / table / axes resources with
-// JSON-in / JSON-out methods). Importing the lib transitively bundles
-// the wasm component into this template's pack; the wrapper resolves the
-// host handle and proxies camelCase Tengo calls onto the WIT exports.
+// The component exposes the `milaboratories:pframes/spec` WIT interface
+// (frame / table / axes resources, see
+// core/pframes-rs/packages/wasip2/wit/world.wit). Every WIT method takes
+// a JSON-encoded string and returns a JSON-encoded string; block
+// authors marshal both sides themselves.
 //
-// Goal of this template: confirm the round-trip `Tengo map -> JSON ->
-// WIT call -> JSON -> Tengo map` works end-to-end via the SDK wrapper.
-// We call `frame.buildQuery` (a static method that returns a JSON
-// payload) because it's the simplest "real call" on the interface that
-// doesn't require setting up a frame instance first.
+// We call `frame.buildQuery` — a static method that returns the request
+// shape as JSON — because it's the simplest "real call" that doesn't
+// require setting up a frame instance first.
 
-self := import("@platforma-sdk/workflow-tengo:tpl")
-pframesRs := import("@platforma-sdk/workflow-tengo:pframes-rs")
-json := import("json")
+self   := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json   := import("json")
 
 self.defineOutputs(["resultJson"])
 
 self.body(func(_inputs) {
-	resp := pframesRs.frame.buildQuery({ version: "v1", column: "abundance" })
-	return { resultJson: string(json.encode(resp)) }
+	api := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
+	respJson := api.frame.buildQuery(
+		string(json.encode({ version: "v1", column: "abundance" }))
+	)
+	return { resultJson: respJson }
 })

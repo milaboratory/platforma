@@ -1,13 +1,12 @@
 import { tplTest } from "@platforma-sdk/test";
 
-// Integration smoke test for `@platforma-sdk/workflow-tengo:pframes-rs`.
-// Drives the SDK wrapper end-to-end: tengo-builder bundles the
-// @milaboratories/pframes-rs-wasip2 component via the wrapper's
-// `assets.importWasm` marker, the workflow controller precompiles +
-// caches it, and the wrapper's `frame.buildQuery` round-trips a Tengo
-// map through JSON to the WIT call.
+// Integration smoke test for the @milaboratories/pframes-rs-wasip2
+// wasm component. The template uses assets.importWasm directly — no
+// SDK wrapper. tengo-builder bundles the component, the workflow
+// controller precompiles + pins it, and frame.buildQuery returns the
+// expected JSON string.
 tplTest.concurrent(
-  "pframes-rs wrapper — frame.buildQuery round-trips through the wasm bridge",
+  "pframes-rs-wasip2 — frame.buildQuery returns the expected JSON",
   async ({ pl, helper, expect, skip }) => {
     if (!pl.hasCapability("wasm:v1")) {
       skip();
