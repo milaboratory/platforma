@@ -1,0 +1,42 @@
+// Unicode round-trip probe. The host<->guest bridge has to carry strings
+// through JSON encoding on both sides; any mishandling of non-ASCII bytes
+// would show up as either a JSON parse error in the guest or a corrupted
+// lookup miss on the host side.
+//
+// We build a table with column names spanning multiple non-ASCII scripts
+// and special characters, then look each one up. The output names are
+// distinct so the test can map each lookup to its expected metadata.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["emoji", "arabic", "cjk", "spaced", "mixed"])
+
+self.body(func(_inputs) {
+	tableSpec := string(json.encode({
+		columns: [
+			{ name: "🧬",         type: "i32"    },
+			{ name: "عمود",        type: "string" },
+			{ name: "列",          type: "i64"    },
+			{ name: "col with space", type: "f64"  },
+			{ name: "mix🚀tures✨",  type: "u8"    }
+		]
+	}))
+
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	table := api.table.fromJson(tableSpec)
+
+	lookup := func(name) {
+		sel := string(json.encode({ name: name }))
+		return string(table.findColumn(sel))
+	}
+
+	return {
+		emoji:  lookup("🧬"),
+		arabic: lookup("عمود"),
+		cjk:    lookup("列"),
+		spaced: lookup("col with space"),
+		mixed:  lookup("mix🚀tures✨")
+	}
+})

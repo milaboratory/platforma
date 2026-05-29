@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "@platforma-open/milaboratories.software-conda-empty": "catalog:",
-    "@platforma-sdk/workflow-tengo": "workspace:*"
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-tests/wasm-table-fixture": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

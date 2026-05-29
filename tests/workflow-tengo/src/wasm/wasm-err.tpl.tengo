@@ -1,0 +1,22 @@
+// result<X, string>::Err arm. The fixture's `find-column` returns the
+// Err variant for a column that doesn't exist; the bridge surfaces that
+// as a script-level abort. The test asserts the render fails with the
+// guest's error message.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["unreachable"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	frame := api.table.fromJson(string(json.encode({
+		columns: [
+			{ name: "sample_id", type: "i32" }
+		]
+	})))
+	// Missing column → guest returns result.Err → script aborts.
+	frame.findColumn(string(json.encode({ name: "no_such_col" })))
+	return { unreachable: "reached end of body v2" }
+})
