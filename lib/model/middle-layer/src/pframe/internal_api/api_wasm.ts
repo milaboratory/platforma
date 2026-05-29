@@ -63,8 +63,17 @@ export interface PFrameWasmAPIV4 {
 
   /**
    * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
-   * ordered path of wrapping steps (linker hops, filter joins). See
-   * {@link PFrameWasmAPIV3.buildQuery} for the folding semantics.
+   * ordered path of wrapping steps (linker hops, filter joins).
+   *
+   * Right-fold over `path` starting from `Column(column)`: each `linker` step
+   * wraps the current subquery as `linkerJoin`, each `filter` step as
+   * `innerJoin` with the filter column. `qualifications` annotate the
+   * outermost entry only.
+   *
+   * Pure over its input — no frame needed. Column ids are resolved later at
+   * {@link PFrameWasmV3.evaluateQuery} against the registered specs. Throws
+   * only on malformed input: shape violations and unknown step tags (so v1
+   * callers are shielded from step variants added in later versions).
    */
   buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
 
