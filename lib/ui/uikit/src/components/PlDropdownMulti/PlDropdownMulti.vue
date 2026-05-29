@@ -140,9 +140,9 @@ const selectedOptionsRef = computed(() => {
     .map((v) => {
       const opt = normalizedOptionsRef.value.find((o) => deepEqual(o.value, v));
       if (opt) {
-        // Coerce empty labels via String() so Vue's `toDisplayString` never gets
-        // to JSON-stringify the raw value (the original "broken hash" bug).
-        return { ...opt, label: opt.label || String(opt.value), isMissing: false };
+        // Found option with an empty label: fall back to the friendly label rather
+        // than rendering the raw value (which `toDisplayString` would JSON-stringify).
+        return { ...opt, label: opt.label || props.missingValueLabel, isMissing: false };
       }
       if (!optionsLoaded) {
         return undefined;
