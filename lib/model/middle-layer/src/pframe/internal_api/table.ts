@@ -70,7 +70,7 @@ export interface PTableV8 extends Disposable {
 }
 
 /**
- * Table view returned by `createTableV2`.
+ * Table view returned by `createTable`.
  *
  * PTable can be thought as having a composite primary key, consisting
  * of axes, and a set of data columns derived from PColumn values.
