@@ -17,8 +17,8 @@ export function uiPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       "@platforma-sdk/ui-vue": "sdk:",
     },
     peerDependencies: {
-      "@types/node": "*",
-      typescript: "*",
+      // "@types/node": "*",  // dropped (c6) — candidate for full removal after 5b
+      typescript: "*", // IDE-only, questionable; candidate for removal later (c7)
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",

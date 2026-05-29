@@ -17,7 +17,9 @@ export function workflowPackageJsonRules(): void {
 
   // No `fmt`: the workflow is Tengo, not TS (nothing for ts-builder/oxlint to
   // process). Build + check go through pl-tengo. See the linter side-quest.
-  ensureScript("build", "rm -rf dist && pl-tengo build");
+  // shx (not bare rm -rf) for cross-platform robustness, like the rest of the
+  // monorepo. (c8)
+  ensureScript("build", "shx rm -rf dist && pl-tengo build");
   ensureScript("check", "pl-tengo check");
   ensureScript("test", "vitest run");
 
@@ -30,6 +32,7 @@ export function workflowPackageJsonRules(): void {
   ensureDevDeps({
     "@platforma-sdk/tengo-builder": "sdk:",
     vitest: "catalog:",
+    shx: "catalog:",
   });
 
   enforceFieldOrder([...canonicalPackageJsonOrder]);

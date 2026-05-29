@@ -6,6 +6,7 @@ import {
   ensureDep,
   ensureDevDeps,
   ensurePeerDeps,
+  removeDep,
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
@@ -25,10 +26,16 @@ export function uiPackageJsonRules(): void {
     "@milaboratories/ts-configs": "sdk:",
   });
 
+  // typescript peer: kept for IDE type resolution. IDE-only and questionable —
+  // a candidate for removal later; verify in 5b whether it's still needed. (c7)
   ensurePeerDeps({
-    "@types/node": "*",
     typescript: "*",
   });
+  // @types/node peer dropped (c6): commented out here and pruned from existing
+  // blocks via removeDep. If 5b shows it is needed, re-enable the line below and
+  // remove the removeDep call; otherwise delete both to finalize.
+  // ensurePeerDep("@types/node", "*");
+  removeDep("@types/node");
 
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

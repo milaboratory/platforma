@@ -4,6 +4,7 @@
 
 import {
   ensureField,
+  ensureScript,
   ensureDevDep,
   ensureWorkspaceScopeDeps,
   enforceFieldOrder,
@@ -12,10 +13,15 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 export function blockPackageJsonRules(): void {
   // No `type: "module"`: the block facade's `index.js` is the CommonJS
-  // dev-block descriptor (`blockSpec` / `loadBlockDescription` via
-  // `require` + `__dirname`) that the middle layer loads — ESM would
-  // break it. The block has no TS sources to compile.
+  // dev-block descriptor (`blockSpec` via `require` + `__dirname`) that the
+  // middle layer loads — ESM would break it. The block has no TS sources to
+  // compile.
   ensureField("files", ["index.d.ts", "index.js"]);
+
+  // Block build = pack the dev block. shx rm -rf (not bare rm -rf) for
+  // cross-platform robustness, like the rest of the monorepo. (c8 — the
+  // structurer now owns/normalizes this script.)
+  ensureScript("build", "shx rm -rf ./block-pack && block-tools pack");
 
   // Workspace-scope: one entry per discovered module in the named scope.
   // Zero-module scopes contribute nothing. The block (facade) depends on
@@ -29,6 +35,8 @@ export function blockPackageJsonRules(): void {
 
   // build-time CLI → devDependencies (matches production blocks).
   ensureDevDep("@platforma-sdk/block-tools", "sdk:");
+  // shx for the cross-platform build script above. (c8)
+  ensureDevDep("shx", "catalog:");
 
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

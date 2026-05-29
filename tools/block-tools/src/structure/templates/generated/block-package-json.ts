@@ -29,9 +29,11 @@ export function blockPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     // No `type: "module"`: the block facade's index.js is CommonJS (the
     // dev-block descriptor the middle layer loads). ESM would break it.
     files: ["index.d.ts", "index.js"],
+    // shx rm -rf (not bare rm -rf) for cross-platform robustness (c8).
+    scripts: { build: "shx rm -rf ./block-pack && block-tools pack" },
     dependencies: deps,
     // block-tools is a build-time CLI (block pack) → devDependencies,
-    // matching every production block.
-    devDependencies: { "@platforma-sdk/block-tools": "sdk:" },
+    // matching every production block. shx powers the build script above.
+    devDependencies: { "@platforma-sdk/block-tools": "sdk:", shx: "catalog:" },
   };
 }

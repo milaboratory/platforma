@@ -22,7 +22,8 @@ export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown
       // nothing for oxlint/oxfmt to process (and it currently crashes on a
       // ts-builder config-path bug for oxlintrc-less packages — see the linter
       // side-quest). Tengo is built/checked by pl-tengo.
-      build: "rm -rf dist && pl-tengo build",
+      // shx rm -rf (not bare rm -rf) for cross-platform robustness (c8).
+      build: "shx rm -rf dist && pl-tengo build",
       check: "pl-tengo check",
       test: "vitest run",
     },
@@ -33,6 +34,7 @@ export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown
     devDependencies: {
       "@platforma-sdk/tengo-builder": "sdk:",
       vitest: "catalog:",
+      shx: "catalog:",
     },
   };
 }

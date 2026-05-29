@@ -1,7 +1,7 @@
 // Workflow-scope rules. The Tengo entry point is a templated seed
 // (substitutes ${shortName}); other config files are static.
 
-import { scope, fixed, managed, scaffold, seed, file, tpl, generate, blockVars } from "../engine/api";
+import { scope, managed, scaffold, seed, file, tpl, generate, remove, blockVars } from "../engine/api";
 import { workflowPackageJsonInitial } from "../templates/generated/workflow-package-json";
 import { workflowPackageJsonRules } from "./workflow-package-json";
 
@@ -12,8 +12,12 @@ export function workflowRules(): void {
     // neither creates nor removes it.
     // scaffold (not fixed): tengo test config is author-tunable.
     scaffold("vitest.config.mts", file("workflow/vitest.config.mts"));
-    fixed("index.js", file("workflow/index.js"));
-    fixed("index.d.ts", file("workflow/index.d.ts"));
+    // No workflow facade (index.js / index.d.ts): the block loader resolves the
+    // workflow via the `block:` components dist path (workflow/dist/.../main.plj.gz),
+    // never the JS facade. It was orphaned in production — dropped. Actively
+    // removed so existing blocks that carry it get cleaned (idempotent on absence).
+    remove("index.js");
+    remove("index.d.ts");
 
     seed(
       "src/main.tpl.tengo",
