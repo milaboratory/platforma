@@ -82,7 +82,13 @@ async function enumerateStandalone(fs: FileSystem): Promise<WorkspacePackage[]> 
   }
   const ws = (parseYamlText(wsRaw) ?? {}) as { packages?: string[] };
   const patterns = Array.isArray(ws.packages) ? ws.packages : [];
-  const dirs = new Set<string>();
+  // The block root ("") is ALWAYS a member, discovered implicitly (G5).
+  // pnpm treats the directory holding pnpm-workspace.yaml as the implicit
+  // workspace root, so the structurer reads the root package.json directly
+  // — no real block lists "." in `packages:` (it would break turbo's task
+  // graph), and the structurer never requires or writes it. The Set
+  // dedupes if a workspace did list ".".
+  const dirs = new Set<string>([""]);
   for (const pat of patterns) {
     const d = resolvePackagePath(pat);
     if (d === "" || (await fs.exists(d))) dirs.add(d);

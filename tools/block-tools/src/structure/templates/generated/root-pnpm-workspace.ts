@@ -26,7 +26,13 @@ const RUNENV_PYTHON_VERSION = "1.8.1";
 
 export function rootPnpmWorkspaceInitial(): Record<string, unknown> {
   const ctx = tryGetActiveRunContext();
-  const paths = (ctx?.modules ?? []).map((m) => (m.path === "" ? "." : m.path)).sort();
+  // Non-root module paths only. The block root ("") is discovered
+  // implicitly (G5) and must never be written as a "." entry — listing it
+  // breaks turbo's task graph. Root stays in ctx.modules for rule fan-out.
+  const paths = (ctx?.modules ?? [])
+    .filter((m) => m.path !== "")
+    .map((m) => m.path)
+    .sort();
   const catalog: Record<string, string> = { ...SDK_CATALOG_PINS };
   if ((ctx?.modules ?? []).some((m) => m.scope === "software")) {
     catalog[RUNENV_PYTHON] = RUNENV_PYTHON_VERSION;
