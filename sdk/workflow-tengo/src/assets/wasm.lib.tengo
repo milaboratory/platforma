@@ -32,9 +32,10 @@ maps := import(":maps")
  *     one render aborts the script.
  *
  *   - Per-instance memory cap: 32 MiB by default. The caller can override
- *     per-import via `opts.memoryLimit` (bytes); the backend silently
- *     clamps to the range [16 MiB, 64 MiB]. Allocations past the live
- *     cap trap inside the guest, which aborts the script.
+ *     per-import via `opts.memoryLimit` (int bytes or size-suffixed
+ *     string, e.g. `"50MiB"`); the backend silently clamps to the range
+ *     [16 MiB, 64 MiB]. Allocations past the live cap trap inside the
+ *     guest, which aborts the script.
  *
  *   - Per-call wall-clock budget: 1 minute. A guest call that runs
  *     longer trips the engine's epoch deadline and traps, aborting the
@@ -57,12 +58,16 @@ maps := import(":maps")
  *                           including the namespace (NPM package name),
  *                           e.g. "@milaboratories/pframes-rs-wasip2:main".
  *
- * @param opts: map (optional) - per-import options:
- *     - memoryLimit: int (bytes) — override the per-instance memory cap
- *       just for this sandbox. Clamped to [16 MiB, 64 MiB] by the
- *       backend; zero or omitted means "use the install-time default
- *       (32 MiB unless the WasmV1 resource was created with a different
- *       value)". Omit the option (or pass an empty map) for the default.
+ * @param opts: map (optional) - per-import options. Unknown keys are
+ *               rejected (typo guard — a misspelled `memorylimit` would
+ *               otherwise silently leave the default cap in place).
+ *     - memoryLimit: int (bytes) or string (size-suffixed, e.g.
+ *       "50MiB" — same form pt.mem(...) accepts; KiB/MiB/GiB for
+ *       base-2 or KB/MB/GB for decimal). Overrides the per-instance
+ *       memory cap just for this sandbox. Clamped to [16 MiB, 64 MiB]
+ *       by the backend; zero / "" / omitted means "use the install-time
+ *       default (32 MiB unless the WasmV1 resource was created with a
+ *       different value)".
  *
  * @return wasm: a tengo.Map keyed by WIT interface name —
  *               `wasm[<iface>][<resource>][<friendlyMethodName>]`
@@ -71,17 +76,36 @@ maps := import(":maps")
  *               live at `wasm[<friendlyFuncName>]`.
  */
 importWasm := func(wasmName, ...rest) {
-	ll.assert(len(rest) <= 1, "assets.importWasm: too many arguments (want 1 or 2, got %d)", 1+len(rest))
+	ll.assert(
+		len(rest) <= 1,
+		"assets.importWasm: too many arguments (want 1 or 2, got %d)",
+		1 + len(rest)
+	)
 	if len(rest) == 0 {
 		return plapi.loadWasm(wasmName)
 	}
 	opts := rest[0]
 	ll.assert(ll.isMap(opts), "assets.importWasm: opts must be a map, got %v", opts)
-	memLimit := 0
-	if maps.containsKey(opts, "memoryLimit") {
-		memLimit = opts.memoryLimit
+	// Typo guard: a caller who writes `memorylimit` or `memory_limit` (or
+	// expects some other key we don't recognise yet) should hear about it
+	// at the first call rather than silently get the default cap.
+	for k, _ in opts {
+		ll.assert(
+			k == "memoryLimit",
+			"assets.importWasm: unknown opts key %q (recognised: \"memoryLimit\")",
+			k
+		)
 	}
-	return plapi.loadWasm(wasmName, memLimit)
+	if !maps.containsKey(opts, "memoryLimit") {
+		return plapi.loadWasm(wasmName)
+	}
+	limit := opts.memoryLimit
+	ll.assert(
+		is_int(limit) || is_string(limit),
+		"assets.importWasm: opts.memoryLimit must be int (bytes) or string (e.g. \"50MiB\"), got %v",
+		limit
+	)
+	return plapi.loadWasm(wasmName, limit)
 }
 
 export ll.toStrict({

@@ -156,6 +156,36 @@ describe("import statements", () => {
       "variables are not allowed",
     );
   });
+
+  test("assets.importWasm with extra positional args keeps trailing args intact", () => {
+    // MILAB-6145: importWasm gained an optional 2nd opts arg
+    // (e.g. assets.importWasm("name", { memoryLimit: ... })). The build-
+    // time rewrite must preserve the trailing args — previously the
+    // substitution wrote its own `)` and corrupted multi-arg calls into
+    // syntactically broken output like `importWasm("normalized") opts)`.
+    const logger = createLogger("error");
+    const wasmImportWithOpts = `
+      assets := import("@platforma-sdk/workflow-tengo:assets")
+      opts := { memoryLimit: 50 * 1024 * 1024 }
+      wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main", opts)
+    `;
+
+    const parsed = parseSource(logger, "dist", wasmImportWithOpts, stubTplName, true);
+
+    // The dependency is still discovered from the literal.
+    expect(parsed.dependencies).toContainEqual({
+      type: "wasm",
+      pkg: "@milaboratories/pframes-rs-wasip2",
+      id: "main",
+    });
+
+    // The rewritten source still calls importWasm with two args; the
+    // `, opts)` tail survives the rewrite. The normalized form replaces
+    // the package literal in place but leaves the closing tokens alone.
+    expect(parsed.src).toContain(`importWasm("@milaboratories/pframes-rs-wasip2:main", opts)`);
+    // No stray `) opts)` from the old broken substitution.
+    expect(parsed.src).not.toMatch(/\)\s*opts\)/);
+  });
 });
 
 describe("parseSingleSourceLine", () => {
