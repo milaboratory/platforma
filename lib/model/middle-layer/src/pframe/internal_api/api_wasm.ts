@@ -11,6 +11,7 @@ import type {
   PTableRecordFilter,
   PTableSorting,
   DataQuery,
+  DataQueryBooleanExpression,
   SpecQuery,
   SpecQueryJoinEntry,
   SingleAxisSelector,
@@ -21,6 +22,67 @@ import type {
 } from "./delete_column";
 import type { DiscoverColumnsRequestV2, DiscoverColumnsResponse } from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+
+/**
+ * V4 PFrame API factory — pure spec-layer operations plus frame construction.
+ *
+ * Self-contained (does not extend {@link PFrameWasmAPIV3}, which is dropped
+ * once V4 is adopted). Same surface as V3 plus
+ * {@link PFrameWasmAPIV4.rewriteLegacyFilters}. The per-frame interface is
+ * unchanged, so {@link PFrameWasmAPIV4.createPFrame} still returns a
+ * {@link PFrameWasmV3}.
+ */
+export interface PFrameWasmAPIV4 {
+  /**
+   * Creates a new PFrame from a map of column IDs to column specifications.
+   */
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV3;
+
+  /**
+   * Expands an {@link AxesSpec} into {@link AxesId}s with parent information
+   * resolved.
+   */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /**
+   * Collapses {@link AxesId} into {@link AxesSpec}.
+   */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /**
+   * Finds the index of an axis matching the given selector.
+   * Returns -1 if no matching axis is found.
+   */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /**
+   * Finds the flat index of a table column matching the given
+   * selector within a table spec. Returns -1 if not found.
+   */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+
+  /**
+   * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
+   * ordered path of wrapping steps (linker hops, filter joins). See
+   * {@link PFrameWasmAPIV3.buildQuery} for the folding semantics.
+   */
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
+
+  /**
+   * Upgrades selector-based legacy record filters into index-based data-layer
+   * boolean expressions, resolved against the provided unified table spec
+   * (axes first, then columns).
+   *
+   * Stateless (no frame needed): filtering does not change a table's spec, so
+   * the resulting predicates are valid both for the V2 unique-values request
+   * (over the source column's single-column table) and for composing a
+   * `filter` over a `table` query node of that table.
+   */
+  rewriteLegacyFilters(request: {
+    tableSpec: PTableColumnSpec[];
+    filters: PTableRecordFilter[];
+  }): DataQueryBooleanExpression[];
+}
 
 /**
  * V3 PFrame interface — per-frame instance operations.
@@ -68,6 +130,9 @@ export interface PFrameWasmV3 extends Disposable {
 /**
  * V3 PFrame API factory — pure spec-layer operations plus frame construction.
  * Everything here is stateless and does not require a frame instance.
+ *
+ * Superseded by {@link PFrameWasmAPIV4} (adds `rewriteLegacyFilters`); will be
+ * removed in a future PFrames update.
  */
 export interface PFrameWasmAPIV3 {
   /**
