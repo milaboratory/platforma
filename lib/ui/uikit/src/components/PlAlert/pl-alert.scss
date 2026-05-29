@@ -70,8 +70,10 @@
 
   &__close-btn {
     position: absolute;
-    // center vertically regardless of alert height (single- or multi-line)
-    top: 50%;
+    // 24px is a single-line alert's vertical centre (12px padding + half the
+    // 24px content row). Hard-coding it instead of `top: 50%` keeps the X on
+    // the first line — not the middle — once the text wraps.
+    top: 24px;
     right: 12px;
     transform: translateY(-50%);
   }
