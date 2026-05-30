@@ -31,6 +31,10 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions } from "./sources/table-source-v2";
+import {
+  computeVisibilityDeviations,
+  type ColumnVisibilityState,
+} from "./sources/column-visibility";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -192,7 +196,7 @@ function makePartialState(
   state: GridState,
   api: GridApi<PlAgDataTableV2Row>,
 ): PlDataTableGridStateCore {
-  const deviations = computeVisibilityDeviations(api);
+  const deviations = computeVisibilityDeviations(readGridColumnVisibility(api));
   return {
     columnOrder: state.columnOrder as
       | {
@@ -214,32 +218,23 @@ function makePartialState(
   };
 }
 
-// Derive the user's explicit visibility overrides by comparing each column's
-// current visibility against its block-defined default (isColumnOptional on the
-// spec carried in ColDef.context). Only genuine deviations are recorded, so the
-// default always applies to untouched columns — including ones whose default
-// flips between runs.
-//
+// Map the live AG Grid columns to the minimal shape computeVisibilityDeviations needs.
 // Scope is column specs only: the block defines per-column defaults via
-// pl7.app/table/visibility, while axes have no such default and are always shown
-// when displayed. Axes and the row-number column (no column spec) are therefore
-// skipped — a manual hide/show of an axis is intentionally not persisted.
-function computeVisibilityDeviations(api: GridApi<PlAgDataTableV2Row>): {
-  hiddenColIds: PlTableColumnIdJson[];
-  shownColIds: PlTableColumnIdJson[];
-} {
-  const hiddenColIds: PlTableColumnIdJson[] = [];
-  const shownColIds: PlTableColumnIdJson[] = [];
+// pl7.app/table/visibility, while axes have no such default and are always shown when
+// displayed. Axes and the row-number column (no column spec) are therefore skipped —
+// a manual hide/show of an axis is intentionally not persisted.
+function readGridColumnVisibility(api: GridApi<PlAgDataTableV2Row>): ColumnVisibilityState[] {
+  const states: ColumnVisibilityState[] = [];
   for (const col of api.getAllGridColumns() ?? []) {
     const spec = col.getColDef().context as PTableColumnSpec | undefined;
     if (spec === undefined || spec.type !== "column") continue;
-    const colId = col.getColId() as PlTableColumnIdJson;
-    const isHidden = !col.isVisible();
-    const isOptional = isColumnOptional(spec.spec);
-    if (isHidden && !isOptional) hiddenColIds.push(colId);
-    else if (!isHidden && isOptional) shownColIds.push(colId);
+    states.push({
+      colId: col.getColId() as PlTableColumnIdJson,
+      hidden: !col.isVisible(),
+      optional: isColumnOptional(spec.spec),
+    });
   }
-  return { hiddenColIds, shownColIds };
+  return states;
 }
 
 // Normalize columnVisibility for comparison: no deviations is equivalent to undefined.

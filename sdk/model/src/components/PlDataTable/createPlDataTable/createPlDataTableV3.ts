@@ -28,6 +28,7 @@ import {
   evaluateRules,
   isColumnHidden,
   isColumnOptional,
+  resolveColumnHidden,
   withHidenAxesAnnotations,
   withLabelAnnotations,
   withTableVisualAnnotations,
@@ -448,8 +449,11 @@ function buildSecondaryGroups(
   ];
 }
 
-/** Determine which columns should be hidden based on state or optional-column defaults. */
-function computeHiddenColumns(
+/** Determine which columns should be hidden, reconciling block defaults with the
+ * user's explicit show/hide overrides. Sorted/filtered columns are force-kept visible.
+ *
+ * Exported for unit testing. */
+export function computeHiddenColumns(
   columns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
@@ -466,17 +470,17 @@ function computeHiddenColumns(
       .filter((s): s is PTableColumnIdColumn => s.type === "column")
       .map((s) => s.id),
   );
-  // Block default visibility (isColumnHidden / isColumnOptional) reconciled with
-  // the user's explicit show/hide overrides. Defaults always apply to untouched
-  // columns, so a column whose default flips between runs (e.g. filter/ranking
-  // config changed) follows its current default rather than a stale saved state.
+  // Reconcile each column's block default with the user's explicit overrides via the
+  // shared resolveColumnHidden, so the model and UI (makeColDef) can never diverge.
   const hidden = columns
-    .filter((c) => {
-      if (isColumnHidden(c.spec)) return true;
-      if (userShown.has(c.id)) return false;
-      if (userHidden.has(c.id)) return true;
-      return isColumnOptional(c.spec);
-    })
+    .filter((c) =>
+      resolveColumnHidden({
+        forcedHidden: isColumnHidden(c.spec),
+        optional: isColumnOptional(c.spec),
+        userShown: userShown.has(c.id),
+        userHidden: userHidden.has(c.id),
+      }),
+    )
     .map((c) => c.id);
   const preserved = collectPreservedColumnIds(sorting, filters);
 

@@ -31,6 +31,7 @@ export {
   isColumnOptional,
   getOrderPriority,
   getEffectiveVisibility,
+  resolveColumnHidden,
 } from "./createPlDataTable/utils";
 
 export type {

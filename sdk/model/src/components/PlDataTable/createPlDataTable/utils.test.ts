@@ -1,7 +1,13 @@
 import { Annotation, type PColumnSpec, type PObjectId } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import { describe, expect, test } from "vitest";
-import { deriveAllLabels, evaluateRules, type LabelableColumn, type RuleColumn } from "./utils";
+import {
+  deriveAllLabels,
+  evaluateRules,
+  resolveColumnHidden,
+  type LabelableColumn,
+  type RuleColumn,
+} from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 
 // ---------------------------------------------------------------------------
@@ -223,5 +229,41 @@ describe("evaluateRules", () => {
     const result = evaluateRules(rules, [dup, dup, dup], driver);
 
     expect(result.get("d" as PObjectId)?.visibility).toBe("hidden");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveColumnHidden — shared precedence for model (computeHiddenColumns) and
+// UI (makeColDef). The single place the reconciliation rule lives.
+// ---------------------------------------------------------------------------
+
+describe("resolveColumnHidden", () => {
+  const base = { forcedHidden: false, optional: false, userShown: false, userHidden: false };
+
+  test("forced-hidden columns stay hidden, even when the user showed them", () => {
+    expect(resolveColumnHidden({ ...base, forcedHidden: true })).toBe(true);
+    expect(resolveColumnHidden({ ...base, forcedHidden: true, userShown: true })).toBe(true);
+  });
+
+  test("an explicit user show wins over a hide override and over the optional default", () => {
+    expect(resolveColumnHidden({ ...base, userShown: true })).toBe(false);
+    expect(resolveColumnHidden({ ...base, userShown: true, userHidden: true })).toBe(false);
+    expect(resolveColumnHidden({ ...base, userShown: true, optional: true })).toBe(false);
+  });
+
+  test("an explicit user hide hides a column the default would have shown", () => {
+    expect(resolveColumnHidden({ ...base, userHidden: true })).toBe(true);
+  });
+
+  test("untouched columns follow their current optional default", () => {
+    expect(resolveColumnHidden({ ...base, optional: true })).toBe(true);
+    expect(resolveColumnHidden({ ...base, optional: false })).toBe(false);
+  });
+
+  // MILAB-6002 regression: a column whose default flips between runs and that the
+  // user never touched must follow the CURRENT default, not stale saved state.
+  test("a flipped default with no user override follows the new default", () => {
+    expect(resolveColumnHidden({ ...base, optional: false })).toBe(false); // run 1: shown
+    expect(resolveColumnHidden({ ...base, optional: true })).toBe(true); // run 2: re-hidden
   });
 });

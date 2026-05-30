@@ -21,6 +21,7 @@ import {
   isLinkerColumn as isLinkerColumnSpec,
   isColumnHidden,
   isColumnOptional,
+  resolveColumnHidden,
   matchAxisId,
   readAnnotation,
   readAnnotationJson,
@@ -260,14 +261,16 @@ export function makeColDef(
     headerName,
     lockPosition:
       spec.type === "axis" || (isLabelColumnSpec(spec.spec) && spec.spec.axesSpec.length === 1),
-    // Visibility = block default (isColumnOptional) reconciled with the user's
-    // explicit overrides. The block default always applies, so a column whose
-    // default flips between runs (e.g. filter/ranking config changed) is shown
-    // or hidden per its CURRENT default unless the user explicitly toggled it.
-    hide: shownColIds?.includes(colId)
-      ? false
-      : (hiddenColIds?.includes(colId) ?? false) ||
-        (spec.type === "column" && isColumnOptional(spec.spec)),
+    // Visibility = block default reconciled with the user's explicit overrides via the
+    // shared resolveColumnHidden (same precedence as the model's computeHiddenColumns).
+    // forcedHidden is false here: hidden columns are filtered out upstream by
+    // selectDisplayableIndices, and axes carry no table/visibility default.
+    hide: resolveColumnHidden({
+      forcedHidden: false,
+      optional: spec.type === "column" && isColumnOptional(spec.spec),
+      userShown: shownColIds?.includes(colId) ?? false,
+      userHidden: hiddenColIds?.includes(colId) ?? false,
+    }),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
