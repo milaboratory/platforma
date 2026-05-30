@@ -441,6 +441,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
   return {
     sourceId: null,
     hiddenColIds: null,
+    shownColIds: null,
     filters: null,
     defaultFilters: null,
     sorting: [],
