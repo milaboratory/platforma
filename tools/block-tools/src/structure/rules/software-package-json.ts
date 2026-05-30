@@ -10,7 +10,13 @@
 // `pl-pkg` build/prepublish scripts, and the canonical devDeps (runenv
 // from the catalog, package-builder via the `sdk:` sentinel).
 
-import { ensureField, ensureScript, ensureDevDeps, enforceFieldOrder } from "../engine/api";
+import {
+  ensureField,
+  ensureScript,
+  ensureDevDeps,
+  enforceAlphabeticalOrder,
+  enforceFieldOrder,
+} from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 export function softwarePackageJsonRules(): void {
@@ -25,5 +31,10 @@ export function softwarePackageJsonRules(): void {
     "@platforma-sdk/package-builder": "sdk:",
   });
 
+  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
+  enforceAlphabeticalOrder("dependencies");
+  enforceAlphabeticalOrder("devDependencies");
+  enforceAlphabeticalOrder("peerDependencies");
+  enforceAlphabeticalOrder("optionalDependencies");
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

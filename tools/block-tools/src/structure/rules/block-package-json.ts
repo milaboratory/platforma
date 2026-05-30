@@ -7,6 +7,7 @@ import {
   ensureScript,
   ensureDevDep,
   ensureWorkspaceScopeDeps,
+  enforceAlphabeticalOrder,
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
@@ -38,5 +39,10 @@ export function blockPackageJsonRules(): void {
   // shx for the cross-platform build script above. (c8)
   ensureDevDep("shx", "catalog:");
 
+  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
+  enforceAlphabeticalOrder("dependencies");
+  enforceAlphabeticalOrder("devDependencies");
+  enforceAlphabeticalOrder("peerDependencies");
+  enforceAlphabeticalOrder("optionalDependencies");
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

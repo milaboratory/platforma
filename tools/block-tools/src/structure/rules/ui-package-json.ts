@@ -7,6 +7,7 @@ import {
   ensureDevDeps,
   ensurePeerDeps,
   removeDep,
+  enforceAlphabeticalOrder,
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
@@ -42,5 +43,10 @@ export function uiPackageJsonRules(): void {
   // ensurePeerDep("@types/node", "*");
   removeDep("@types/node");
 
+  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
+  enforceAlphabeticalOrder("dependencies");
+  enforceAlphabeticalOrder("devDependencies");
+  enforceAlphabeticalOrder("peerDependencies");
+  enforceAlphabeticalOrder("optionalDependencies");
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

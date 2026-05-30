@@ -1,7 +1,17 @@
 // Workflow-scope rules. The Tengo entry point is a templated seed
 // (substitutes ${shortName}); other config files are static.
 
-import { scope, managed, scaffold, seed, file, tpl, generate, remove, blockVars } from "../engine/api";
+import {
+  scope,
+  managed,
+  scaffold,
+  seed,
+  file,
+  tpl,
+  generate,
+  remove,
+  blockVars,
+} from "../engine/api";
 import { workflowPackageJsonInitial } from "../templates/generated/workflow-package-json";
 import { workflowPackageJsonRules } from "./workflow-package-json";
 

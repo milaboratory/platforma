@@ -1,5 +1,5 @@
 const blockSpec = {
-  type: 'dev-v2',
+  type: "dev-v2",
   folder: __dirname,
 };
 

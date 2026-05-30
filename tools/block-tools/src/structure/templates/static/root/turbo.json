@@ -6,18 +6,21 @@
       "cache": false
     },
     "check": {
-      "dependsOn": ["^check"]
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "block-pack/**"]
+      "dependsOn": ["^build", "check"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "env": ["PL_PKG_DEV", "PL_DOCKER_REGISTRY_PUSH_TO"],
+      "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"]
     },
     "build:dev": {
       "dependsOn": ["build"],
-      "outputs": ["dist/**"]
+      "outputs": ["./dist/**"]
     },
     "test": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build:dev", "build"],
       "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
     },
     "mark-stable": {

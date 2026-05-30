@@ -10,6 +10,8 @@ import {
   ensureDevDeps,
   ensurePeerDeps,
   removeField,
+  pruneKeysMatching,
+  enforceAlphabeticalOrder,
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
@@ -27,20 +29,27 @@ export function rootPackageJsonRules(): void {
   // wrongly stripped build:dev/test:dry-run/mark-stable as "not canonical";
   // they are lifecycle-orchestration scripts with no replacement, so the
   // scaffold preserves them (the legacyCleanup removals are reverted).
-  // Values match the boilerplate verbatim — `test`/`test:dry-run` carry the
-  // PL_PKG_DEV + --env-mode=loose wrapper so a live backend's env reaches
-  // the integration tests through turbo.
+  // Values match the boilerplate — `test`/`test:dry-run` carry the
+  // PL_PKG_DEV wrapper; the live backend's env reaches the integration tests
+  // via the turbo `test` task's passThroughEnv (no --env-mode=loose needed).
   ensureScript("fmt", "turbo run fmt");
   ensureScript("check", "turbo run check");
   ensureScript("build", "turbo run build");
   ensureScript("build:dev", "env PL_PKG_DEV=local turbo run build");
-  ensureScript("test", "env PL_PKG_DEV=local turbo run test --concurrency 1 --env-mode=loose");
+  ensureScript("test", "env PL_PKG_DEV=local turbo run test --concurrency 1");
   ensureScript("test:dry-run", "env PL_PKG_DEV=local turbo run test --dry-run=json");
   ensureScript("mark-stable", "turbo run mark-stable");
   ensureScript("watch", "turbo watch build");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
+  // Full SDK-update flow: bump catalog (deps-only) → install → re-apply
+  // structure against the freshly-pulled deps (the two-step protocol from
+  // spec.md § "refresh", wrapped as one script).
+  ensureScript(
+    "update",
+    "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",
+  );
 
   ensureDevDeps({
     "@changesets/cli": "catalog:",
@@ -55,5 +64,21 @@ export function rootPackageJsonRules(): void {
     oxfmt: "*",
   });
 
+  // Strip dev-machine override clutter: keys like "//pnpm", "///pnpm", "--"
+  // carrying a pnpm/overrides sub-object (often absolute local paths). Left
+  // in place these are unknown keys that oxfmt would shove past the canonical
+  // sections, breaking `oxfmt --check`. (content-rules.md § root clutter.)
+  pruneKeysMatching((key, value): boolean => {
+    if (!/^(\/\/|--)/.test(key)) return false;
+    if (typeof value !== "object" || value === null) return false;
+    const v = value as { pnpm?: unknown; overrides?: unknown };
+    return v.pnpm !== undefined || v.overrides !== undefined;
+  });
+
+  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
+  enforceAlphabeticalOrder("dependencies");
+  enforceAlphabeticalOrder("devDependencies");
+  enforceAlphabeticalOrder("peerDependencies");
+  enforceAlphabeticalOrder("optionalDependencies");
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }
