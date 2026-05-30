@@ -266,7 +266,8 @@ export function makeColDef(
     // or hidden per its CURRENT default unless the user explicitly toggled it.
     hide: shownColIds?.includes(colId)
       ? false
-      : (hiddenColIds?.includes(colId) ?? false) || isColumnOptional(spec.spec),
+      : (hiddenColIds?.includes(colId) ?? false) ||
+        (spec.type === "column" && isColumnOptional(spec.spec)),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId

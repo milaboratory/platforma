@@ -218,7 +218,12 @@ function makePartialState(
 // current visibility against its block-defined default (isColumnOptional on the
 // spec carried in ColDef.context). Only genuine deviations are recorded, so the
 // default always applies to untouched columns — including ones whose default
-// flips between runs. Axes and the row-number column (no column spec) are skipped.
+// flips between runs.
+//
+// Scope is column specs only: the block defines per-column defaults via
+// pl7.app/table/visibility, while axes have no such default and are always shown
+// when displayed. Axes and the row-number column (no column spec) are therefore
+// skipped — a manual hide/show of an axis is intentionally not persisted.
 function computeVisibilityDeviations(api: GridApi<PlAgDataTableV2Row>): {
   hiddenColIds: PlTableColumnIdJson[];
   shownColIds: PlTableColumnIdJson[];
@@ -240,7 +245,8 @@ function computeVisibilityDeviations(api: GridApi<PlAgDataTableV2Row>): {
 // Normalize columnVisibility for comparison: no deviations is equivalent to undefined.
 function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
   const cv = state.columnVisibility;
-  const isEmpty = !cv || (cv.hiddenColIds.length === 0 && (cv.shownColIds?.length ?? 0) === 0);
+  const isEmpty =
+    !cv || ((cv.hiddenColIds?.length ?? 0) === 0 && (cv.shownColIds?.length ?? 0) === 0);
   return { ...state, columnVisibility: isEmpty ? undefined : cv };
 }
 

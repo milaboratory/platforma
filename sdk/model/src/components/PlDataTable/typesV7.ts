@@ -31,13 +31,11 @@ export type PlDataTableGridStateCore = {
       sort: "asc" | "desc";
     }[];
   };
-  /** Includes column visibility.
-   *
-   * Stores the user's explicit overrides relative to the block-defined default
-   * visibility (the `pl7.app/table/visibility` annotation), NOT the absolute
-   * hidden set. This keeps saved state stable when the block changes a column's
-   * default visibility between runs (e.g. filter/ranking config flips a column
-   * default<->optional): unmentioned columns always follow their current default. */
+  /** User overrides to column visibility, relative to the block-defined default
+   * (the `pl7.app/table/visibility` annotation) rather than the absolute hidden
+   * set. Keeps saved state stable when the block changes a column's default
+   * between runs (e.g. a filter/ranking column flips default<->optional):
+   * unmentioned columns follow their current default. */
   columnVisibility?: {
     /** Columns the user explicitly hid that the block default would have shown. */
     hiddenColIds: PlTableColumnIdJson[];
