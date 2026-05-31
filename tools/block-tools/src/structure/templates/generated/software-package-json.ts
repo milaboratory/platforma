@@ -41,8 +41,6 @@ export function softwarePackageJsonInitial(v: BlockVars): Record<string, unknown
     scripts: {
       build: "pl-pkg build",
       prepublishOnly: "pl-pkg prepublish",
-      "do-pack":
-        "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
       changeset: "changeset",
       "version-packages": "changeset version",
     },
@@ -50,7 +48,6 @@ export function softwarePackageJsonInitial(v: BlockVars): Record<string, unknown
     devDependencies: {
       "@platforma-open/milaboratories.runenv-python-3": "catalog:",
       "@platforma-sdk/package-builder": "sdk:",
-      shx: "catalog:",
     },
   };
 }
