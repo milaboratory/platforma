@@ -41,6 +41,10 @@ export type SimulateInitInput = {
   templates?: TemplateProvider;
   /** SDK-internal flag. Default `false` (standalone block). */
   isSdkInternal?: boolean;
+  /** Sync npm-latest lookup for the `onInitOrUpdate` catalog resolution.
+   *  Absent → the SDK catalog keeps its seed versions (no bump), matching
+   *  an offline scaffold; tests that assert init writes latest pass a mock. */
+  registryLookup?: (packageName: string) => string | undefined;
 };
 
 export type SimulatedInit = {
@@ -84,7 +88,11 @@ export async function simulateInit(input: SimulateInitInput): Promise<SimulatedI
   });
   const structure = input.structure ?? (await defaultStructure());
   const templates = input.templates ?? defaultTemplateProvider();
-  await engineRun(structure, fs, initCtx, { templates, initMode: true });
+  await engineRun(structure, fs, initCtx, {
+    templates,
+    initMode: true,
+    registryLookup: input.registryLookup,
+  });
 
   // Re-discover from the written FS — the returned ctx is what `check`
   // would build, not what `init` assembled (G4 round-trip).

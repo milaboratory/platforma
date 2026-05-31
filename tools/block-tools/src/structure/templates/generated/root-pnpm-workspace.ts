@@ -1,16 +1,19 @@
 // Initial `pnpm-workspace.yaml`. The `packages:` list is seeded from the
 // discovered modules. The catalog is split in two:
-//   - SDK packages: exact pins (a curated floor that init writes and
-//     `refresh --update-deps-only` later bumps to npm latest). Refresh keeps
-//     them exact.
-//   - infra / tooling: a `~`-floored set we control deliberately. Refresh
-//     leaves these untouched and update-deps does not bump them; bump the
-//     floor here when authoring the scaffold.
+//   - SDK packages: this map's KEYS define which SDK packages live in the
+//     catalog; the version strings are only the init-time SEED. On init the
+//     `onInitOrUpdate` frame overwrites them with npm latest (init requires
+//     network), so the seed values never survive a real init. They exist
+//     only as the pre-fetch placeholder and a sane fallback.
+//   - infra / tooling: a `~`-floored set we control deliberately. No rule
+//     ever fetches these — refresh leaves them untouched and update-deps
+//     does not match them. Bump the floor here when authoring the scaffold.
 
 import { getActiveRunContext } from "../../engine/builders";
+import { matchesBumpPattern } from "../../engine/registry-client";
 
-/** SDK packages — exact pins, kept exact by `ensureCatalogPin` on refresh
- *  and bumped to npm latest by `update-deps`. */
+/** SDK packages. Keys = catalog membership; values = init-time seed,
+ *  overwritten by the npm-latest fetch in the `onInitOrUpdate` frame. */
 export const SDK_CATALOG_PINS: Record<string, string> = {
   "@platforma-sdk/model": "1.64.0",
   "@platforma-sdk/ui-vue": "1.64.0",
@@ -22,6 +25,18 @@ export const SDK_CATALOG_PINS: Record<string, string> = {
   "@milaboratories/ts-builder": "1.3.1",
   "@milaboratories/ts-configs": "1.2.3",
 };
+
+// Invariant: every SDK pin must be fetched on init (match a bump pattern),
+// or its seed value would silently ship un-resolved. Caught at load time.
+for (const name of Object.keys(SDK_CATALOG_PINS)) {
+  if (!matchesBumpPattern(name)) {
+    throw new Error(
+      `SDK_CATALOG_PINS entry '${name}' matches no catalog bump pattern; ` +
+        `its seed version would never be resolved to npm latest on init. ` +
+        `Add it to CATALOG_BUMP_PATTERNS or move it to the infra floor.`,
+    );
+  }
+}
 
 /** Infra / tooling — a `~`-floored curated set. Not exact-pinned on refresh
  *  and not bumped by update-deps. */

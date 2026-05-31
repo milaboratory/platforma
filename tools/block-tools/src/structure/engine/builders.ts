@@ -15,7 +15,8 @@ import type {
   TreeNode,
   ScopeFrame,
   WhenFrame,
-  OnUpdateDepsFrame,
+  ModeFrame,
+  RunMode,
 } from "./ir";
 
 type TreeState = {
@@ -113,7 +114,7 @@ function validateSeedDisjointness(structure: Structure): void {
       for (const c of node.children) visit(c, node.scope);
       return;
     }
-    if (node.kind === "when" || node.kind === "onUpdateDeps") {
+    if (node.kind === "when" || node.kind === "mode") {
       for (const c of node.children) visit(c, scopeName);
       return;
     }
@@ -213,9 +214,9 @@ export function when(trigger: TriggerFn, body: () => void): void {
   );
 }
 
-export function onUpdateDeps(body: () => void): void {
-  const t = requireActiveTree("onUpdateDeps");
-  const frame: OnUpdateDepsFrame = { kind: "onUpdateDeps", children: [] };
+function pushModeFrame(builder: string, modes: RunMode[], body: () => void): void {
+  const t = requireActiveTree(builder);
+  const frame: ModeFrame = { kind: "mode", modes, children: [] };
   t.stack[t.stack.length - 1]!.push(frame);
   t.stack.push(frame.children);
   try {
@@ -223,6 +224,20 @@ export function onUpdateDeps(body: () => void): void {
   } finally {
     t.stack.pop();
   }
+}
+
+/** Leaves inside fire ONLY under `--update-deps-only` (mode
+ *  `"updateDeps"`); they are skipped on default refresh/check and init. */
+export function onUpdateDeps(body: () => void): void {
+  pushModeFrame("onUpdateDeps", ["updateDeps"], body);
+}
+
+/** Leaves inside fire on `init` AND `--update-deps-only`, but NOT on
+ *  default refresh/check. The frame for rules that resolve/write current
+ *  versions: both init and update-deps mean "fetch and write latest",
+ *  while a plain refresh leaves them as the author/lockfile has them. */
+export function onInitOrUpdate(body: () => void): void {
+  pushModeFrame("onInitOrUpdate", ["init", "updateDeps"], body);
 }
 
 export function fixed(path: string, content: ContentForm): void {

@@ -1,26 +1,8 @@
 import { describe, test, expect } from "vitest";
-import { ensureCatalogPin, ensureCatalogVersion, withManagedYaml } from "../../content-rules";
+import { ensureCatalogVersion, pinCatalogTo, withManagedYaml } from "../../content-rules";
 import { parseYaml, stringifyYaml } from "../../parsers/yaml";
 
-describe("ensureCatalogPin / ensureCatalogVersion", () => {
-  test("ensureCatalogPin strips ^ from an existing catalog entry", () => {
-    const doc = parseYaml("catalog:\n  yaml: ^2.5.0\n");
-    withManagedYaml(doc, () => ensureCatalogPin("yaml"));
-    expect((doc.toJSON() as { catalog: Record<string, string> }).catalog.yaml).toBe("2.5.0");
-  });
-
-  test("ensureCatalogPin strips ~ as well", () => {
-    const doc = parseYaml("catalog:\n  yaml: ~2.5.0\n");
-    withManagedYaml(doc, () => ensureCatalogPin("yaml"));
-    expect((doc.toJSON() as { catalog: Record<string, string> }).catalog.yaml).toBe("2.5.0");
-  });
-
-  test("ensureCatalogPin is a no-op when the entry is missing", () => {
-    const doc = parseYaml("catalog:\n  other: 1.0.0\n");
-    withManagedYaml(doc, () => ensureCatalogPin("missing"));
-    expect((doc.toJSON() as { catalog: Record<string, string> }).catalog.other).toBe("1.0.0");
-  });
-
+describe("ensureCatalogVersion / pinCatalogTo", () => {
   test("ensureCatalogVersion sets a specific version", () => {
     const doc = parseYaml("catalog:\n  yaml: 2.5.0\n");
     withManagedYaml(doc, () => ensureCatalogVersion("yaml", "2.6.0"));
@@ -33,15 +15,21 @@ describe("ensureCatalogPin / ensureCatalogVersion", () => {
     expect((doc.toJSON() as { catalog: Record<string, string> }).catalog.yaml).toBe("2.5.0");
   });
 
-  test("idempotent — pin + version double-run produces deep-equal output", () => {
-    const doc = parseYaml("catalog:\n  a: ^1.0.0\n  b: 2.0.0\n");
+  test("pinCatalogTo is an alias for ensureCatalogVersion", () => {
+    const doc = parseYaml("catalog:\n  yaml: 2.5.0\n");
+    withManagedYaml(doc, () => pinCatalogTo("yaml", "3.0.0"));
+    expect((doc.toJSON() as { catalog: Record<string, string> }).catalog.yaml).toBe("3.0.0");
+  });
+
+  test("idempotent — double-run produces deep-equal output", () => {
+    const doc = parseYaml("catalog:\n  a: 1.0.0\n  b: 2.0.0\n");
     withManagedYaml(doc, () => {
-      ensureCatalogPin("a");
+      ensureCatalogVersion("a", "1.5.0");
       ensureCatalogVersion("b", "2.1.0");
     });
     const once = stringifyYaml(doc);
     withManagedYaml(doc, () => {
-      ensureCatalogPin("a");
+      ensureCatalogVersion("a", "1.5.0");
       ensureCatalogVersion("b", "2.1.0");
     });
     const twice = stringifyYaml(doc);

@@ -1,18 +1,12 @@
-// Root `pnpm-workspace.yaml` content rules. Verifies the workspace
-// `packages:` list matches the discovered modules and keeps the SDK catalog
-// entries exact (strips `^` / `~`). Infra / tooling entries are
-// deliberately `~`-floored and left untouched here. Network-bumping
-// (`bumpCatalogToLatest`) lives behind a separate `onUpdateDeps` frame.
+// Root `pnpm-workspace.yaml` content rules. Default refresh is purely
+// structural here: it verifies the workspace `packages:` list matches the
+// discovered modules and leaves every catalog version exactly as the
+// author/lockfile has it. Version resolution (writing npm-latest for the
+// SDK families) lives in the separate `onInitOrUpdate` frame
+// (`rootCatalogBumpRules`), which fires on init + update-deps only.
 
-import { ensureWorkspaceModulePaths, ensureCatalogPin } from "../engine/api";
-import { SDK_CATALOG_PINS } from "../templates/generated/root-pnpm-workspace";
+import { ensureWorkspaceModulePaths } from "../engine/api";
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
-
-  // SDK packages are kept exact; the infra floor (turbo/shx/@changesets/cli/
-  // vitest + the software-gated runenv) keeps its `~` modifier untouched.
-  for (const name of Object.keys(SDK_CATALOG_PINS)) {
-    ensureCatalogPin(name);
-  }
 }

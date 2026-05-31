@@ -13,11 +13,7 @@ import { NodeTemplateProvider } from "../engine/templates";
 import { run as engineRun, type Change } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
 import { STRUCTURE } from "../structure-definition";
-import {
-  createRealRegistryClient,
-  prefetchLatestVersions,
-  makeSyncLookup,
-} from "../engine/registry-client";
+import { matchesBumpPattern, buildRegistryLookupForNames } from "../engine/registry-client";
 
 export type StructureMode = "check" | "refresh";
 
@@ -37,26 +33,21 @@ export type RunStructureResult = {
   changes: Change[];
 };
 
-/** Catalog package names matching the update-deps bump patterns —
- *  prefetched from npm so the sync `bumpCatalogToLatest` builder can read
- *  "latest" without doing I/O inside the managed body. */
-const BUMP_PATTERNS = [/^@platforma-sdk\//, /^@milaboratories\//];
-
+/** Resolve the registry lookup for `--update-deps-only`: read the on-disk
+ *  catalog, select the SDK families (bump patterns), prefetch their npm
+ *  "latest" so the sync `bumpCatalogToLatest` builder can read it without
+ *  doing I/O inside the managed body. A missing/unreadable workspace file
+ *  yields an empty lookup; a network failure during prefetch propagates. */
 async function buildRegistryLookup(root: string): Promise<(name: string) => string | undefined> {
   let catalogNames: string[] = [];
   try {
     const raw = await fsp.readFile(path.join(root, "pnpm-workspace.yaml"), "utf-8");
     const ws = (parseYamlText(raw) ?? {}) as { catalog?: Record<string, unknown> };
-    catalogNames = Object.keys(ws.catalog ?? {}).filter((n) =>
-      BUMP_PATTERNS.some((p) => p.test(n)),
-    );
+    catalogNames = Object.keys(ws.catalog ?? {}).filter(matchesBumpPattern);
   } catch {
     catalogNames = [];
   }
-  if (catalogNames.length === 0) return () => undefined;
-  const client = createRealRegistryClient();
-  const resolved = await prefetchLatestVersions(client, catalogNames);
-  return makeSyncLookup(resolved);
+  return buildRegistryLookupForNames(catalogNames);
 }
 
 export async function runStructureForPath(input: RunStructureInput): Promise<RunStructureResult> {
