@@ -119,12 +119,13 @@ export function matchesBumpPattern(name: string): boolean {
 /** Prefetch npm "latest" for `names` and return the sync lookup the
  *  runner passes to `bumpCatalogToLatest`. Empty list → a lookup that
  *  resolves nothing (no network). A network/registry failure REJECTS
- *  (callers that require the network — `init` — let it propagate). */
+ *  (callers that require the network — `init` — let it propagate).
+ *  `client` defaults to the live npm client; tests inject a mock. */
 export async function buildRegistryLookupForNames(
   names: readonly string[],
+  client: RegistryClient = createRealRegistryClient(),
 ): Promise<(packageName: string) => string | undefined> {
   if (names.length === 0) return () => undefined;
-  const client = createRealRegistryClient();
   const resolved = await prefetchLatestVersions(client, names);
   return makeSyncLookup(resolved);
 }
