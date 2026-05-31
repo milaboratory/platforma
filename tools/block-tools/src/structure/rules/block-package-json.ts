@@ -1,6 +1,5 @@
 // Block-level (orchestrator) `package.json` content rules.
-// Workspace-scope deps reflect ctx.modules at run time — see
-// content-rules.md § "block/package.json (workspace-scope deps)".
+// Workspace-scope deps reflect the discovered modules at run time.
 
 import {
   ensureField,
@@ -13,33 +12,36 @@ import {
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 export function blockPackageJsonRules(): void {
-  // No `type: "module"`: the block facade's `index.js` is the CommonJS
-  // dev-block descriptor (`blockSpec` via `require` + `__dirname`) that the
-  // middle layer loads — ESM would break it. The block has no TS sources to
-  // compile.
+  // type:"module" intentionally omitted: the facade's index.js is the
+  // CommonJS dev-block descriptor (module.exports / __dirname); ESM would
+  // break it. The facade has no TS sources to compile.
   ensureField("files", ["index.d.ts", "index.js"]);
 
-  // Block build = pack the dev block. shx rm -rf (not bare rm -rf) for
-  // cross-platform robustness, like the rest of the monorepo. (c8 — the
-  // structurer now owns/normalizes this script.)
   ensureScript("build", "shx rm -rf ./block-pack && block-tools pack");
+  ensureScript(
+    "mark-stable",
+    "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+  );
+  ensureScript(
+    "prepublishOnly",
+    "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+  );
+  ensureScript(
+    "do-pack",
+    "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz",
+  );
 
-  // Workspace-scope: one entry per discovered module in the named scope.
-  // Zero-module scopes contribute nothing. The block (facade) depends on
-  // its model / ui / workflow / software modules — NOT on its test module:
-  // the test package depends on the block (the `this-block` self-test
-  // alias), so a reciprocal block→test dep would be a pnpm/turbo cycle.
+  // One workspace dep per discovered module in the facade's scopes. The
+  // facade depends on model / ui / workflow — not software (the workflow
+  // owns it) and not test (a reciprocal dep would be a pnpm/turbo cycle).
   ensureWorkspaceScopeDeps("model");
   ensureWorkspaceScopeDeps("ui");
   ensureWorkspaceScopeDeps("workflow");
-  ensureWorkspaceScopeDeps("software");
 
-  // build-time CLI → devDependencies (matches production blocks).
   ensureDevDep("@platforma-sdk/block-tools", "sdk:");
-  // shx for the cross-platform build script above. (c8)
+  // shx powers the cross-platform build / do-pack scripts above.
   ensureDevDep("shx", "catalog:");
 
-  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
   enforceAlphabeticalOrder("peerDependencies");

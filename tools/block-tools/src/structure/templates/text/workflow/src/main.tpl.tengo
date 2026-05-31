@@ -1,5 +1,4 @@
 // Workflow entry point for ${shortName}.
-// Author owns this file; the structurer only seeds it at init time.
 
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 

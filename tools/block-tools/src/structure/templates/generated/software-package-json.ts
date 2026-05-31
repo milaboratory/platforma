@@ -1,14 +1,9 @@
 // Initial software `package.json` — full canonical python scaffold.
-// Mirrors the boilerplate / published single-software modules
-// (templates-strategy.md § "Software Module Scaffold"). Body rules in
-// rules/software-package-json.ts re-assert the same fields as
-// drift-correctors (Path A).
 //
 // init creates at most one software module, at the flat `software/` dir
-// with name `${facadeName}.software` (BlockVars.softwarePlatform is
-// single-valued and python-only at v1). On refresh the file already
-// exists, so this generator is not invoked — multi-software blocks keep
-// their own per-module names.
+// with name `${facadeName}.software`. On refresh the file already exists,
+// so this generator is not invoked — multi-software blocks keep their own
+// per-module names.
 
 import type { BlockVars } from "../../engine/api";
 
@@ -46,11 +41,16 @@ export function softwarePackageJsonInitial(v: BlockVars): Record<string, unknown
     scripts: {
       build: "pl-pkg build",
       prepublishOnly: "pl-pkg prepublish",
+      "do-pack":
+        "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
+      changeset: "changeset",
+      "version-packages": "changeset version",
     },
     "block-software": pythonBlockSoftware(),
     devDependencies: {
       "@platforma-open/milaboratories.runenv-python-3": "catalog:",
       "@platforma-sdk/package-builder": "sdk:",
+      shx: "catalog:",
     },
   };
 }

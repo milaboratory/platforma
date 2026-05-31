@@ -63,6 +63,20 @@ export function tryGetActiveRunContext(): RunContext | undefined {
   return activeRunContext;
 }
 
+/** Get-or-die counterpart of `tryGetActiveRunContext`. Generators run
+ *  only inside `engine.run()`; an absent context is framework misuse, not
+ *  a valid state, so throw rather than emit degenerate (empty) output.
+ *  Mirrors `blockVars()`. */
+export function getActiveRunContext(): RunContext {
+  if (!activeRunContext) {
+    throw new Error(
+      "getActiveRunContext() called outside engine.run(). " +
+        "Generators only see the run context during a run.",
+    );
+  }
+  return activeRunContext;
+}
+
 export function defineStructure(fn: () => void): Structure {
   if (activeTree) {
     throw new Error("defineStructure() cannot be called from inside another defineStructure().");
