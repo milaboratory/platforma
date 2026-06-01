@@ -2,6 +2,7 @@
 
 import * as path from "node:path";
 import * as fs from "node:fs";
+import * as zlib from "node:zlib";
 import { pathType } from "./util";
 import type { TemplatesAndLibs } from "./compiler";
 import { TengoTemplateCompiler } from "./compiler";
@@ -424,15 +425,24 @@ function addWasmFile(
   fullName: FullArtifactName,
   compiler: TengoTemplateCompiler,
 ) {
-  // wasm bytes are binary, but hashToSource carries strings only. We base64-encode
-  // the bytes; the sourceHash is sha256 of the base64 string so it stays consistent
-  // with the existing `hashToSource[hash] === stored value` invariant.
-  const bytes = fs.readFileSync(file);
-  assertWasmFileSize(file, bytes.length, fullName);
-  const source = bytes.toString("base64");
+  // wasm bytes are binary, but hashToSource carries strings only. The file is
+  // gzipped first (level 9 — block builds run rarely, so paying the slow-but-
+  // tight setting is fine) and then base64-encoded. The backend's wasm package
+  // sniffs the gzip header at PrecompileComponent time and gunzips before
+  // handing the bytes to wasmtime. Compressing here shrinks both the per-WASM
+  // resource footprint (a real wasm component compresses to ~30-40 % of its
+  // raw size) and the on-wire pack, which lets pframes-rs grow past the
+  // 3 MiB raw-size ceiling without hitting the backend's value-resource cap.
+  const raw = fs.readFileSync(file);
+  const compressed = zlib.gzipSync(raw, { level: zlib.constants.Z_BEST_COMPRESSION });
+  assertWasmFileSize(file, compressed.length, fullName);
+  const source = compressed.toString("base64");
   const wasm = new ArtifactSource(mode, fullName, getSha256(source), source, file, [], []);
 
-  logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+  logger.debug(
+    `Adding dependency ${fullNameToString(fullName)} from ${file} ` +
+      `(${raw.length} B raw → ${compressed.length} B gzipped)`,
+  );
   compiler.addWasm(wasm);
 }
 

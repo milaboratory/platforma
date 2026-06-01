@@ -1,0 +1,23 @@
+// Per-import memory-cap override. The default cap is 32 MiB, so a 40 MiB
+// allocation traps (cf. memory-cap-overflow-near.tpl.tengo). Here we
+// raise the cap to 50 MiB via the `memoryLimit` option on
+// assets.importWasm; the same 40 MiB allocation now succeeds.
+//
+// 50 MiB is comfortably inside the backend's clamp range
+// [16 MiB, 64 MiB], so the live cap on this Store is exactly 50 MiB.
+
+self   := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["ack"])
+
+self.body(func(_inputs) {
+	// Literal must be on the same line as importWasm( — tengo-builder's
+	// build-time regex is line-by-line. The opts map is hoisted into a
+	// local because Tengo's parser doesn't accept `{...}` as a second
+	// positional arg inline.
+	opts := { memoryLimit: 50 * 1024 * 1024 }
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main", opts)["demo:tables/api"]
+	// 40 MiB > default 32 MiB; with the 50 MiB override this fits.
+	return { ack: string(api.table.consumeMemory(string(40 * 1024 * 1024))) }
+})
