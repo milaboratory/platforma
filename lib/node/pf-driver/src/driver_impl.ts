@@ -33,6 +33,7 @@ import {
   sortSpecQuery,
   sortPTableDef,
   resolveAnnotationParents,
+  PFrameDriverError,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -42,6 +43,7 @@ import {
 } from "@milaboratories/ts-helpers";
 import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
+import { expandAxes, findTableColumn, rewriteLegacyFilters } from "@milaboratories/pframes-rs-wasm";
 import { tmpdir } from "node:os";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
@@ -455,20 +457,54 @@ export class AbstractPFrameDriver<
       );
     }
 
-    const { pFrameDataPromise, disposeSignal } = this.pFrames.getByKey(handle);
+    const { pFrameDataPromise, pFrameSpec, disposeSignal } = this.pFrames.getByKey(handle);
     const pFrameData = await pFrameDataPromise;
+
+    const column = pFrameSpec.listColumns().find((c) => c.columnId === request.columnId);
+    if (!column) {
+      const error = new PFrameDriverError(`getUniqueValues failed`);
+      error.cause = new Error(`column ${request.columnId} is not registered in the PFrame`);
+      throw error;
+    }
+
+    const axisIds = expandAxes(column.spec.axesSpec);
+    const tableSpec: PTableColumnSpec[] = [
+      ...column.spec.axesSpec.map(
+        (axisSpec, i): PTableColumnSpec => ({
+          type: "axis",
+          id: axisIds[i],
+          spec: axisSpec,
+        }),
+      ),
+      { type: "column", id: request.columnId, spec: column.spec },
+    ];
+
+    let axisIndex: number | undefined;
+    if (request.axis !== undefined) {
+      const index = findTableColumn(tableSpec, { type: "axis", id: request.axis });
+      if (index < 0) {
+        const error = new PFrameDriverError(`getUniqueValues failed`);
+        error.cause = new Error(
+          `axis ${JSON.stringify(request.axis)} not found among axes of column ${request.columnId}`,
+        );
+        throw error;
+      }
+      axisIndex = index;
+    }
+
+    const resolvedRequest: PFrameInternal.UniqueValuesRequestV2 = {
+      columnId: request.columnId,
+      axisIndex,
+      filters: rewriteLegacyFilters({
+        tableSpec,
+        filters: migrateFilters(request.filters, this.logger),
+      }),
+      limit: request.limit,
+    };
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
-      return await pFrameData.getUniqueValues(
-        {
-          ...request,
-          filters: migrateFilters(request.filters, this.logger),
-        },
-        {
-          signal: combinedSignal,
-        },
-      );
+      return await pFrameData.getUniqueValues(resolvedRequest, { signal: combinedSignal });
     });
   }
 

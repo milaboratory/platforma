@@ -25,7 +25,7 @@ export class PTableHolder implements Disposable {
   constructor(
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
-    public readonly pTablePromise: Promise<PFrameInternal.PTableV8>,
+    public readonly pTablePromise: Promise<PFrameInternal.PTableV9>,
     private readonly predecessor?: PoolEntry<PTableHandle, PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([
@@ -80,10 +80,8 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
     const defDisposeSignal = this.pTableDefs.tryGetByKey(key)?.disposeSignal;
     const combinedSignal = AbortSignal.any([disposeSignal, defDisposeSignal].filter((s) => !!s));
 
-    const { tableSpec, dataQuery } = params;
-    const table = pFramePromise.then((pFrame) =>
-      pFrame.createTableV2(key, { tableSpec, dataQuery }),
-    );
+    const { dataQuery } = params;
+    const table = pFramePromise.then((pFrame) => pFrame.createTable(key, dataQuery));
     return new PTableHolder(pFrameHandle, combinedSignal, table);
   }
 
