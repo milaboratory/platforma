@@ -1,5 +1,49 @@
 # @platforma-sdk/tengo-builder
 
+## 4.0.2
+
+### Patch Changes
+
+- c179f25: MILAB-6145: per-call memory-cap override on `assets.importWasm`.
+
+  - `assets.importWasm(name, opts?)` — new optional `opts` argument. Today
+    `opts.memoryLimit` (bytes) overrides the install-time per-instance
+    memory cap for just this sandbox; backend silently clamps to
+    `[16 MiB, 64 MiB]`. Omit `opts` (or omit the option) to keep the
+    install-time default (32 MiB unless the WasmV1 resource was created
+    with a different value).
+  - `pl-tengo` regex/substitution now passes multi-arg `import*` calls
+    through untouched. Previously the substitution rewrote
+    `assets.importWasm("name", opts)` into `assets.importWasm("normalized") opts)`
+    — a syntax error. Single-arg call sites are unchanged.
+
+  Tengo parser quirk worth knowing: `assets.importWasm("name", { ... })`
+  inline trips a parse error around `{`. Hoist the opts map into a local
+  first:
+
+  ```go
+  opts := { memoryLimit: 50 * 1024 * 1024 }
+  api := assets.importWasm("name", opts)["iface"]
+  ```
+
+- 906587b: MILAB-6324: gzip WASM artefacts in the template pack.
+
+  - `pl-tengo` now gzips every `.wasm` file (level 9) before base64-encoding it
+    into the pack's `hashToSource`. Real wasm components compress to ~30-40 % of
+    their raw size, so a `pframes-rs` build that was approaching the 2 MiB raw
+    ceiling now uses a fraction of the per-WASM resource cap and the on-wire
+    pack stays correspondingly smaller.
+  - The `MAX_WASM_FILE_BYTES` guard now applies to the gzipped payload. The
+    numeric cap is unchanged (2 MiB), so the check stays in sync with the
+    backend's 3 MiB value-resource limit; in practice each `.wasm` file can
+    now be several MiB raw before hitting it.
+  - Requires a backend built from `MILAB-6324-wasm-gzip` (or later): the
+    workflow controller sniffs the gzip header at precompile time and gunzips
+    before handing bytes to wasmtime. Older WASM-aware backends would reject
+    the gzip header as "not a valid wasm component" — there are no
+    WASM-using installations in the wild yet, so no compatibility window is
+    needed.
+
 ## 4.0.1
 
 ### Patch Changes
