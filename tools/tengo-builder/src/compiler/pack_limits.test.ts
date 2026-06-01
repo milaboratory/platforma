@@ -50,9 +50,9 @@ describe("assertTemplatePackSize", () => {
     let err: unknown;
     try {
       assertTemplatePackSize("@t/pkg:main 1.0.0", MAX_TEMPLATE_PACK_BYTES_GZIPPED + 1, [
-        { name: "@small/wasm:main", rawBytes: 100 * 1024 },
-        { name: "@big/wasm:main", rawBytes: 1.5 * 1024 * 1024 },
-        { name: "@mid/wasm:main", rawBytes: 800 * 1024 },
+        { name: "@small/wasm:main", storedBytes: 100 * 1024 },
+        { name: "@big/wasm:main", storedBytes: 1.5 * 1024 * 1024 },
+        { name: "@mid/wasm:main", storedBytes: 800 * 1024 },
       ]);
     } catch (e) {
       err = e;
@@ -91,8 +91,8 @@ describe("collectWasmContributions", () => {
     return "A".repeat(len);
   }
 
-  it("reports direct WASM dependencies with raw byte size derived from base64 length", () => {
-    const base64 = base64OfLength(400); // 400 base64 chars → 300 raw bytes
+  it("reports direct WASM dependencies with stored byte size derived from base64 length", () => {
+    const base64 = base64OfLength(400); // 400 base64 chars → 300 binary bytes
     const tpl: CompiledTemplateV3 = {
       type: "pl.tengo-template.v3",
       hashToSource: { "hash-a": base64 },
@@ -110,12 +110,12 @@ describe("collectWasmContributions", () => {
       },
     };
     const got = collectWasmContributions(tpl);
-    expect(got).toEqual([{ name: "@w/wasm:a", rawBytes: 300 }]);
+    expect(got).toEqual([{ name: "@w/wasm:a", storedBytes: 300 }]);
   });
 
   it("recurses into sub-templates and deduplicates by artefact name", () => {
-    const base64a = base64OfLength(800); // 600 raw
-    const base64b = base64OfLength(400); // 300 raw
+    const base64a = base64OfLength(800); // 600 binary bytes
+    const base64b = base64OfLength(400); // 300 binary bytes
     const tpl: CompiledTemplateV3 = {
       type: "pl.tengo-template.v3",
       hashToSource: { "hash-a": base64a, "hash-b": base64b },
@@ -149,8 +149,8 @@ describe("collectWasmContributions", () => {
     };
     const got = collectWasmContributions(tpl).sort((a, b) => a.name.localeCompare(b.name));
     expect(got).toEqual([
-      { name: "@w/wasm:a", rawBytes: 600 },
-      { name: "@w/wasm:b", rawBytes: 300 },
+      { name: "@w/wasm:a", storedBytes: 600 },
+      { name: "@w/wasm:b", storedBytes: 300 },
     ]);
   });
 

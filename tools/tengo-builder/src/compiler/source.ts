@@ -16,10 +16,16 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
 const namePattern = "[_a-zA-Z][_a-zA-Z0-9]*";
 
 const functionCallRE = (moduleName: string, fnName: string) => {
+  // `fnCall` captures from the function name through the first string
+  // argument (including the closing quote and any trailing whitespace);
+  // the closing-paren-or-comma check is a non-consuming lookahead, so
+  // any extra args (`assets.importWasm("name", { memoryLimit: ... })`)
+  // survive the rewrite in `compiler.ts` — only the literal is
+  // build-time material, anything past it is runtime config.
   return new RegExp(
     `\\b${moduleName}\\.(?<fnCall>(?<fnName>` +
       fnName +
-      `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`,
+      `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*)(?=[,)])`,
     "g",
   );
 };
@@ -454,10 +460,14 @@ function processAssetImport(
           artifacts.push(artifact);
 
           if (globalizeImports) {
-            // Replace all occurrences of this fnCall in originalLine
+            // Replace all occurrences of this fnCall in originalLine.
+            // fnCall ends right after the literal's closing quote + ws;
+            // the trailing `)` or `,` is preserved from the original
+            // line, so multi-arg calls (`fn("name", opts)`) keep their
+            // remaining args intact.
             originalLine = originalLine.replaceAll(
               fnCall,
-              `${fnName}("${artifact.pkg}:${artifact.id}")`,
+              `${fnName}("${artifact.pkg}:${artifact.id}"`,
             );
           }
         }
