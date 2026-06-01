@@ -14,7 +14,8 @@ import type {
   ColumnValueType,
 } from "./spec";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
-import { DataQuery, SpecQuery, SpecQueryJoinEntry } from "./query";
+import type { PTableRecordFilter } from "./table_calculate";
+import { DataQuery, DataQueryBooleanExpression, SpecQuery, SpecQueryJoinEntry } from "./query";
 
 /** Matches a string value either exactly or by regex pattern */
 export type StringMatcher =
@@ -255,4 +256,14 @@ export interface PFrameSpecDriver {
 
   /** Find the flat index of a table column matching the given selector. Returns -1 if not found. */
   findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+
+  /**
+   * Upgrades selector-based legacy record filters into index-based data-layer
+   * boolean expressions, resolved against the provided unified table spec
+   * (axes first, then columns).
+   */
+  rewriteLegacyFilters(request: {
+    tableSpec: PTableColumnSpec[];
+    filters: PTableRecordFilter[];
+  }): DataQueryBooleanExpression[];
 }

@@ -232,6 +232,16 @@ export class PlClient {
     return this._ll!.hasCapability(capability);
   }
 
+  /**
+   * True if the backend honors per-file `permissions` on workdir fill rules
+   * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
+   * for the full definition.
+   */
+  public get supportsWritableWorkdirFiles(): boolean {
+    this.checkInitialized();
+    return this._ll!.supportsWritableWorkdirFiles;
+  }
+
   /** User resources index for discovering data libraries and other shared resources. */
   public get userResources(): UserResources {
     if (!this._ll) throw new Error("Client not initialized");
@@ -331,7 +341,7 @@ export class PlClient {
 
         // Auto-set default color proof from the client root's signature.
         // Skip when backend doesn't implement the `set_default_color` TX request.
-        if (this.ll.supportsSetDefaultColor && !isNullSignedResourceId(clientRoot) && writable) {
+        if (this.ll.supportsResourceSignatures && !isNullSignedResourceId(clientRoot) && writable) {
           const parsed = parseSignedResourceId(clientRoot);
           if (parsed.signature) {
             tx.setDefaultColor(parsed.signature as ColorProof);

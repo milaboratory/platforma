@@ -10,12 +10,13 @@ import type { Trace } from "./trace";
 import { withTrace } from "./trace";
 import upath from "upath";
 import fsp from "node:fs/promises";
-import net from "node:net";
 import type { Required } from "utility-types";
 import * as os from "node:os";
+import { sleep } from "@milaboratories/ts-helpers";
 import type { ProxySettings } from "@milaboratories/pl-http";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
+import { plHealthCheck, ServingStatus } from "@milaboratories/pl-healthcheck";
 
 export const LocalConfigYaml = "config-local.yaml";
 
@@ -95,10 +96,87 @@ export class LocalPl {
     return this.wasStopped;
   }
 
-  async isAlive(): Promise<boolean> {
-    if (!(await isProcessAlive(notEmpty(this.pid)))) return false;
-    if (this.grpcPort === undefined) return true;
-    return await tcpProbe("127.0.0.1", this.grpcPort);
+  /**
+   * Polls the OS until the backend process is observed alive.
+   * Throws on timeout. Does NOT touch gRPC — use {@link isReady} for that.
+   */
+  async isAlive(opts?: { timeoutMs?: number; pollIntervalMs?: number }): Promise<void> {
+    const deadline = Date.now() + (opts?.timeoutMs ?? 120_000);
+    const pollMs = opts?.pollIntervalMs ?? 500;
+
+    while (true) {
+      if (Date.now() >= deadline) {
+        throw new Error("Timeout waiting for backend process to be alive");
+      }
+      await sleep(pollMs);
+      if (!this.pid) continue;
+      if (await isProcessAlive(this.pid)) return;
+    }
+  }
+
+  /**
+   * Polls `grpc.health.v1.Health/Check` until the backend reports SERVING.
+   * Throws on timeout, on missing `grpcPort`, or if the process dies mid-wait.
+   *
+   * Calling this method is an explicit statement that the caller wants a real
+   * readiness signal; if `grpcPort` is undefined we throw rather than silently
+   * degrade to a process-only check (use {@link isAlive} for that).
+   */
+  async isReady(opts?: {
+    grpcPort?: number;
+    timeoutMs?: number;
+    pollIntervalMs?: number;
+  }): Promise<void> {
+    const grpcPort = opts?.grpcPort ?? this.grpcPort;
+
+    if (grpcPort === undefined) {
+      throw new Error(
+        "isReady requires grpcPort to be configured — caller asked for a real readiness check but no gRPC port is available",
+      );
+    }
+
+    const deadline = Date.now() + (opts?.timeoutMs ?? 120_000);
+    const pollMs = opts?.pollIntervalMs ?? 500;
+    const requestTimeoutMs = Math.max(500, Math.min(pollMs, 2_000));
+
+    let processAlive = false;
+    let wasAlive = false;
+    let isFirstCheck = true;
+
+    while (true) {
+      if (Date.now() >= deadline) {
+        if (!processAlive) {
+          throw new Error("Timeout waiting for backend process to be alive");
+        }
+        throw new Error("Timeout waiting for backend to be ready");
+      }
+
+      if (!isFirstCheck) await sleep(pollMs);
+      isFirstCheck = false;
+
+      if (!this.pid) continue;
+
+      processAlive = await isProcessAlive(this.pid);
+      wasAlive = wasAlive || processAlive;
+      if (!processAlive) {
+        if (wasAlive) {
+          // saw the process alive at least once, now it's gone — definitive failure
+          throw new Error("Backend process died while waiting for readiness");
+        }
+        continue;
+      }
+
+      try {
+        const status = await plHealthCheck({
+          address: `127.0.0.1:${grpcPort}`,
+          defaultRequestTimeout: requestTimeoutMs,
+          service: "GRPC",
+        });
+        if (status === ServingStatus.SERVING) return;
+      } catch {
+        // not yet serving
+      }
+    }
   }
 
   debugInfo() {
@@ -138,9 +216,9 @@ export type LocalPlOptions = {
 
   /**
    * gRPC port the backend listens on (always on 127.0.0.1 for local).
-   * When set, {@link LocalPl.isAlive} additionally probes this TCP port so callers
-   * can distinguish a process that is alive but still binding from a process that is
-   * actually accepting gRPC connections.
+   * Required by {@link LocalPl.isReady}, which polls
+   * `grpc.health.v1.Health/Check` against this port to distinguish a process
+   * that is alive but still initializing from one actually serving gRPC.
    */
   readonly grpcPort?: number;
 
@@ -285,28 +363,6 @@ export function mergeDefaultOps(ops: LocalPlOptions, numCpu: number): LocalPlOpt
   delete withoutSpawnOps["spawnOptions"];
 
   return { ...result, ...withoutSpawnOps };
-}
-
-/** Resolves true if a TCP connect to host:port succeeds within timeoutMs. Used by
- * {@link LocalPl.isAlive} to verify the gRPC listener has actually bound — the backend
- * process can be alive long before its server sockets are accepting connections. */
-async function tcpProbe(host: string, port: number, timeoutMs = 500): Promise<boolean> {
-  return await new Promise<boolean>((resolve) => {
-    const socket = net.connect({ host, port });
-    const finalize = (ok: boolean) => {
-      socket.destroy();
-      resolve(ok);
-    };
-    const timer = setTimeout(() => finalize(false), timeoutMs);
-    socket.once("connect", () => {
-      clearTimeout(timer);
-      finalize(true);
-    });
-    socket.once("error", () => {
-      clearTimeout(timer);
-      finalize(false);
-    });
-  });
 }
 
 /** Gets default options for a platforma local binary

@@ -1,5 +1,47 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.11.22
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.18
+- @milaboratories/milaboratories.ui-examples.model@1.6.22
+
+## 1.11.21
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.17
+- @milaboratories/milaboratories.ui-examples.model@1.6.21
+
+## 1.11.20
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.16
+- @milaboratories/milaboratories.ui-examples.model@1.6.20
+
+## 1.11.19
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.15
+- @milaboratories/milaboratories.ui-examples.model@1.6.19
+
+## 1.11.18
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.11
+- @milaboratories/milaboratories.ui-examples.model@1.6.18
+
+## 1.11.17
+
+### Patch Changes
+
+- @platforma-sdk/model@1.77.10
+- @milaboratories/milaboratories.ui-examples.model@1.6.17
+
 ## 1.11.16
 
 ### Patch Changes

@@ -1,0 +1,23 @@
+// Happy-path companion to wasm.wasm-trap. After a separate
+// render aborts inside the same fixture, this render uses the same
+// wasm package from a fresh importWasm() call and exercises a normal
+// findColumn. Together they prove the engine / pinned-Component stays
+// healthy across a trapping render.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["fresh"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	table := api.table.fromJson(string(json.encode({
+		columns: [
+			{ name: "sample_id", type: "i32" }
+		]
+	})))
+	return {
+		fresh: string(table.findColumn(string(json.encode({ name: "sample_id" }))))
+	}
+})

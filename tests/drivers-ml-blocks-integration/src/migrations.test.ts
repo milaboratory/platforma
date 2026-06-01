@@ -78,20 +78,18 @@ test("v3: fresh block has correct initial dataVersion", async ({ expect }) => {
       description: "",
     });
 
-    // Give watcher time to sync and log blockStorage via watcher
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const blockDump = projectWatcher.getBlockDump(block1Id);
+    // Wait for the watcher's separate tree to sync the fresh block's storage
+    const blockDump = await projectWatcher.waitForBlockDump(block1Id, (d) => {
+      const data = d?.blockStorage?.data;
+      return isBlockStorage(data) && data.__dataVersion === "v3";
+    });
     console.log(
       "[Fresh Block Test] blockStorage dump:",
-      JSON.stringify(blockDump?.blockStorage, null, 2),
+      JSON.stringify(blockDump.blockStorage, null, 2),
     );
 
-    // Verify blockStorage data matches expected structure (if watcher has synced)
-    const blockStorageData = blockDump?.blockStorage?.data;
-    if (blockStorageData !== undefined) {
-      expect(isBlockStorage(blockStorageData)).toBe(true);
-      expect((blockStorageData as Record<string, unknown>).__dataVersion).toBe("v3");
-    }
+    expect(isBlockStorage(blockDump.blockStorage?.data)).toBe(true);
+    expect((blockDump.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
 
     await projectWatcher.abort();
   });
@@ -152,17 +150,16 @@ test("v3: migration from v1 to v3 (two migrations)", async ({ expect }) => {
     console.log("[v1→v3 Test] After migration, dataVersion:", storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe("v3");
 
-    // Wait for watcher to sync
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    // Log blockStorage after migration
-    const blockDump3 = projectWatcher.getBlockDump(block1Id);
+    // Wait for the watcher's separate tree to reflect the migrated blockStorage
+    const blockDump3 = await projectWatcher.waitForBlockDump(block1Id, (d) => {
+      const data = d?.blockStorage?.data;
+      return isBlockStorage(data) && data.__dataVersion === "v3";
+    });
     console.log("[v1→v3 Test] Step 4 - After migration:");
-    console.log("  blockStorage:", JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
+    console.log("  blockStorage:", JSON.stringify(blockDump3.blockStorage?.data, null, 2));
 
-    // Verify blockStorage structure after migration
-    expect(isBlockStorage(blockDump3?.blockStorage?.data)).toBe(true);
-    expect((blockDump3?.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
+    expect(isBlockStorage(blockDump3.blockStorage?.data)).toBe(true);
+    expect((blockDump3.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
 
     // Check the migrated state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
@@ -237,17 +234,16 @@ test("v3: migration from v2 to v3 (one migration)", async ({ expect }) => {
     console.log("[v2→v3 Test] After migration, dataVersion:", storageInfo3.dataVersion);
     expect(storageInfo3.dataVersion).toBe("v3");
 
-    // Wait for watcher to sync
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    // Log blockStorage after migration
-    const blockDump3 = projectWatcher.getBlockDump(block1Id);
+    // Wait for the watcher's separate tree to reflect the migrated blockStorage
+    const blockDump3 = await projectWatcher.waitForBlockDump(block1Id, (d) => {
+      const data = d?.blockStorage?.data;
+      return isBlockStorage(data) && data.__dataVersion === "v3";
+    });
     console.log("[v2→v3 Test] Step 4 - After migration:");
-    console.log("  blockStorage:", JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
+    console.log("  blockStorage:", JSON.stringify(blockDump3.blockStorage?.data, null, 2));
 
-    // Verify blockStorage structure after migration
-    expect(isBlockStorage(blockDump3?.blockStorage?.data)).toBe(true);
-    expect((blockDump3?.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
+    expect(isBlockStorage(blockDump3.blockStorage?.data)).toBe(true);
+    expect((blockDump3.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
 
     // Check the migrated state
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
@@ -324,17 +320,16 @@ test("v3: no migration needed when already at target version", async ({ expect }
       console.log("[No Migration Test] After update, dataVersion:", storageInfo3.dataVersion);
       expect(storageInfo3.dataVersion).toBe("v3");
 
-      // Wait for watcher to sync
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Log blockStorage after update (should be unchanged)
-      const blockDump3 = projectWatcher.getBlockDump(block1Id);
+      // Wait for the watcher's separate tree to reflect the (unchanged) v3 blockStorage
+      const blockDump3 = await projectWatcher.waitForBlockDump(block1Id, (d) => {
+        const data = d?.blockStorage?.data;
+        return isBlockStorage(data) && data.__dataVersion === "v3";
+      });
       console.log("[No Migration Test] Step 4 - After update (no migration):");
-      console.log("  blockStorage:", JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
+      console.log("  blockStorage:", JSON.stringify(blockDump3.blockStorage?.data, null, 2));
 
-      // Verify blockStorage structure is unchanged
-      expect(isBlockStorage(blockDump3?.blockStorage?.data)).toBe(true);
-      const blockStorageData3 = blockDump3?.blockStorage?.data as Record<string, unknown>;
+      expect(isBlockStorage(blockDump3.blockStorage?.data)).toBe(true);
+      const blockStorageData3 = blockDump3.blockStorage?.data as Record<string, unknown>;
       expect(blockStorageData3?.__dataVersion).toBe("v3");
       expect(blockStorageData3?.__data).toStrictEqual(v3State);
 
@@ -412,9 +407,6 @@ test("v3: migration failure prevents block pack update", async ({ expect }) => {
       storageInfo3.dataVersion,
     );
     expect(storageInfo3.dataVersion).toBe("v1");
-
-    // Wait for watcher to sync
-    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // Check the state - should be preserved (block pack update was rejected)
     const blockState = await prj.getBlockState(block1Id).awaitStableValue();
@@ -502,10 +494,7 @@ test("v3: fresh block with correct version survives block pack update", async ({
     const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
     console.log("[Fresh Update Test] After update, dataVersion:", storageInfo3.dataVersion);
 
-    // Wait for watcher to sync
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
-    // Log the corrupted storage
+    // Diagnostic dump (no assertion gates on the watcher here — asserted via prj.getBlockState below)
     const blockDump3 = projectWatcher.getBlockDump(block1Id);
     console.log("[Fresh Update Test] After update (data preserved):");
     console.log("  blockStorage:", JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
@@ -579,20 +568,19 @@ test("v3: unknown version edge case - resets to initial data", async ({ expect }
       const storageInfo3 = parseJson<StorageDebugView>(overview3.blocks[0].storageDebugView!);
       console.log("[Edge Case Test] After migration reset, dataVersion:", storageInfo3.dataVersion);
 
-      // Wait for watcher to sync
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Log blockStorage after migration reset
-      const blockDump3 = projectWatcher.getBlockDump(block1Id);
+      // Wait for the watcher's separate tree to reflect the reset blockStorage
+      const blockDump3 = await projectWatcher.waitForBlockDump(block1Id, (d) => {
+        const data = d?.blockStorage?.data;
+        return isBlockStorage(data) && data.__dataVersion === "v3";
+      });
       console.log("[Edge Case Test] Step 4 - After migration reset:");
-      console.log("  blockStorage:", JSON.stringify(blockDump3?.blockStorage?.data, null, 2));
+      console.log("  blockStorage:", JSON.stringify(blockDump3.blockStorage?.data, null, 2));
 
       // State version should now be v3 (target version) because data was reset to initial
       expect(storageInfo3.dataVersion).toBe("v3");
 
-      // Verify blockStorage structure after reset
-      expect(isBlockStorage(blockDump3?.blockStorage?.data)).toBe(true);
-      expect((blockDump3?.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
+      expect(isBlockStorage(blockDump3.blockStorage?.data)).toBe(true);
+      expect((blockDump3.blockStorage?.data as Record<string, unknown>)?.__dataVersion).toBe("v3");
 
       // Data should be reset to initialData (empty arrays and empty string)
       const blockState = await prj.getBlockState(block1Id).awaitStableValue();

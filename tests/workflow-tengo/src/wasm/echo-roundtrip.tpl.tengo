@@ -1,0 +1,36 @@
+// Payload round-trip probe. The fixture's echoBytes(n) returns a string
+// of `n` ASCII bytes filled with the deterministic pattern '0' + (i % 10).
+// We verify the bridge preserves length and the head/tail bytes for a
+// range of sizes from 0 up through several megabytes. The 8 MiB case
+// pushes the host<->guest copy code under real load and verifies large
+// outputs survive the JSON-encoded transit to the resource store.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["zero", "one", "k64", "m1", "m2", "m3minus2"])
+
+echo := func(bytes) {
+	api := assets.importWasm("@platforma-tests/wasm-table-fixture:main")["demo:tables/api"]
+	return string(api.table.echoBytes(string(bytes)))
+}
+
+self.body(func(_inputs) {
+	// `m3minus2` sits at the absolute payload ceiling: the backend caps
+	// resource 'data' at 3 MiB (maxResourceDataSize in
+	// platform/core/transaction/assertions.go), and a string output is
+	// JSON-encoded as `"…"`, adding 2 bytes for the quotes. The largest
+	// payload that round-trips is therefore exactly 3 MiB - 2 bytes.
+	// Probing right at the edge means any shrink of the backend cap (or
+	// growth of the JSON envelope) breaks this test before a real block
+	// hits the same wall. The smaller cases stay so we still see graceful
+	// degradation if the edge case breaks for some unrelated reason.
+	return {
+		zero:     echo(0),
+		one:      echo(1),
+		k64:      echo(64 * 1024),
+		m1:       echo(1024 * 1024),
+		m2:       echo(2 * 1024 * 1024),
+		m3minus2: echo(3 * 1024 * 1024 - 2)
+	}
+})

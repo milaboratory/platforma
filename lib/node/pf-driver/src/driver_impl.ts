@@ -33,6 +33,7 @@ import {
   sortSpecQuery,
   sortPTableDef,
   resolveAnnotationParents,
+  PFrameDriverError,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -42,6 +43,7 @@ import {
 } from "@milaboratories/ts-helpers";
 import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
+import { expandAxes, findTableColumn, rewriteLegacyFilters } from "@milaboratories/pframes-rs-wasm";
 import { tmpdir } from "node:os";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
@@ -71,7 +73,6 @@ import {
   PTableCachePlainOpsDefaults,
   type PTableCachePlainOps,
 } from "./ptable_cache_plain";
-import { createPFrame as createSpecFrame } from "@milaboratories/pframes-rs-wasm";
 
 export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
   extends PoolLocalBlobProvider<TreeEntry>, AsyncDisposable {}
@@ -194,26 +195,31 @@ export class AbstractPFrameDriver<
   }
 
   public createPTable(rawDef: PTableDef<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
-    using pFrameGuard = new PoolEntryGuard(this.createPFrame(extractAllColumns(rawDef.src)));
+    const columns = uniqueBy(extractAllColumns(rawDef.src), (c) => c.id);
+    using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
     const sortedDef = sortPTableDef(
       migrateTableFilter(
         mapPTableDef(rawDef, (c) => c.id),
         this.logger,
       ),
     );
-    const pTableEntry = this.pTableDefs.acquire({
-      type: "v1",
-      def: sortedDef,
-      pFrameHandle: pFrameGuard.key,
-    });
+    const pFrameSpec = this.pFrames.getByKey(pFrameGuard.key).pFrameSpec;
+    using pTableGuard = new PoolEntryGuard(
+      this.pTableDefs.acquireFromLegacy({
+        pFrameHandle: pFrameGuard.key,
+        def: sortedDef,
+        pFrameSpec,
+      }).entry,
+    );
     if (logPFrames()) {
       this.logger(
         "info",
-        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableEntry.key})`,
+        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableGuard.key})`,
       );
     }
 
     const pFrameEntry = pFrameGuard.keep();
+    const pTableEntry = pTableGuard.keep();
     const unref = () => {
       pTableEntry.unref();
       pFrameEntry.unref();
@@ -228,38 +234,27 @@ export class AbstractPFrameDriver<
 
   public createPTableV2(def: PTableDefV2<PColumn<PColumnData>>): PoolEntry<PTableHandle> {
     const columns = uniqueBy(collectSpecQueryColumns(def.query), (c) => c.id);
-    const columnsMap = columns.reduce(
-      (acc, col) => ((acc[col.id] = col.spec), acc),
-      {} as Record<string, PColumnSpec>,
-    );
-
     using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
-    const ValueTypes = new Set(Object.values(ValueType));
-    const specColumnsMap = Object.fromEntries(
-      Object.entries(columnsMap)
-        .filter(([, spec]) => ValueTypes.has(spec.valueType))
-        .map(([id, spec]) => [id, resolveAnnotationParents(spec)]),
-    );
-    const specFrame = createSpecFrame(specColumnsMap);
+    const pFrameSpec = this.pFrames.getByKey(pFrameGuard.key).pFrameSpec;
     const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
-    const { tableSpec, dataQuery } = specFrame.evaluateQuery(sortedQuery);
+    const { tableSpec, dataQuery } = pFrameSpec.evaluateQuery(sortedQuery);
 
-    const pTableEntry = this.pTableDefs.acquire({
-      type: "v2",
-      pFrameHandle: pFrameGuard.key,
-      def: {
+    using pTableGuard = new PoolEntryGuard(
+      this.pTableDefs.acquire({
+        pFrameHandle: pFrameGuard.key,
         tableSpec,
         dataQuery,
-      },
-    });
+      }),
+    );
     if (logPFrames()) {
       this.logger(
         "info",
-        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableEntry.key})`,
+        `Create PTable call (pFrameHandle = ${pFrameGuard.key}; pTableHandle = ${pTableGuard.key})`,
       );
     }
 
     const pFrameEntry = pFrameGuard.keep();
+    const pTableEntry = pTableGuard.keep();
     const unref = () => {
       pTableEntry.unref();
       pFrameEntry.unref();
@@ -293,7 +288,7 @@ export class AbstractPFrameDriver<
     return await this.tableConcurrencyLimiter.run(async () => {
       const shape = await pTable.getShape({ signal: combinedSignal });
       const clippedRange = clipRange(options.range, shape);
-      const specs = pTable.getSpec();
+      const specs = def.tableSpec;
       const separator = options.format === "tsv" ? "\t" : ",";
 
       const iterable = streamPTableRows({
@@ -371,10 +366,8 @@ export class AbstractPFrameDriver<
           : [],
     };
 
-    const { pFramePromise } = this.pFrames.getByKey(handle);
-    const pFrame = await pFramePromise;
-
-    const response = await pFrame.findColumns(iRequest);
+    const { pFrameSpec } = this.pFrames.getByKey(handle);
+    const response = pFrameSpec.findColumns(iRequest);
     return {
       hits: response.hits
         .filter(
@@ -395,15 +388,14 @@ export class AbstractPFrameDriver<
     handle: PFrameHandle,
     columnId: PObjectId,
   ): Promise<PColumnSpec | null> {
-    const { pFramePromise } = this.pFrames.getByKey(handle);
-    const pFrame = await pFramePromise;
-    return await pFrame.getColumnSpec(columnId);
+    const { pFrameSpec } = this.pFrames.getByKey(handle);
+    const info = pFrameSpec.listColumns().find((c) => c.columnId === columnId);
+    return info?.spec ?? null;
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    const { pFramePromise } = this.pFrames.getByKey(handle);
-    const pFrame = await pFramePromise;
-    return await pFrame.listColumns();
+    const { pFrameSpec } = this.pFrames.getByKey(handle);
+    return pFrameSpec.listColumns().map(({ columnId, spec }) => ({ columnId, spec }));
   }
 
   public async calculateTableData(
@@ -419,13 +411,15 @@ export class AbstractPFrameDriver<
       );
     }
 
-    using tableGuard = new PoolEntryGuard(
-      this.pTables.acquire({
-        type: "v1",
-        pFrameHandle: handle,
-        def: sortPTableDef(migrateTableFilter(request, this.logger)),
-      }),
-    );
+    const { pFrameSpec } = this.pFrames.getByKey(handle);
+    const sortedDef = sortPTableDef(migrateTableFilter(request, this.logger));
+    const { def, entry } = this.pTables.acquireFromLegacy({
+      pFrameHandle: handle,
+      def: sortedDef,
+      pFrameSpec,
+    });
+    using tableGuard = new PoolEntryGuard(entry);
+    const tableSpec = def.tableSpec;
     const { pTablePromise, disposeSignal } = tableGuard.resource;
     const pTable = await pTablePromise;
 
@@ -434,8 +428,7 @@ export class AbstractPFrameDriver<
       // TODO: throw error when more then 150k rows is requested
       // after pf-plots migration to stream API
 
-      const spec = pTable.getSpec();
-      const data = await pTable.getData([...spec.keys()], {
+      const data = await pTable.getData([...tableSpec.keys()], {
         range,
         signal: combinedSignal,
       });
@@ -445,7 +438,7 @@ export class AbstractPFrameDriver<
       });
       this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
 
-      return spec.map((spec, i) => ({
+      return tableSpec.map((spec, i) => ({
         spec: spec,
         data: data[i],
       }));
@@ -464,20 +457,54 @@ export class AbstractPFrameDriver<
       );
     }
 
-    const { pFramePromise, disposeSignal } = this.pFrames.getByKey(handle);
-    const pFrame = await pFramePromise;
+    const { pFrameDataPromise, pFrameSpec, disposeSignal } = this.pFrames.getByKey(handle);
+    const pFrameData = await pFrameDataPromise;
+
+    const column = pFrameSpec.listColumns().find((c) => c.columnId === request.columnId);
+    if (!column) {
+      const error = new PFrameDriverError(`getUniqueValues failed`);
+      error.cause = new Error(`column ${request.columnId} is not registered in the PFrame`);
+      throw error;
+    }
+
+    const axisIds = expandAxes(column.spec.axesSpec);
+    const tableSpec: PTableColumnSpec[] = [
+      ...column.spec.axesSpec.map(
+        (axisSpec, i): PTableColumnSpec => ({
+          type: "axis",
+          id: axisIds[i],
+          spec: axisSpec,
+        }),
+      ),
+      { type: "column", id: request.columnId, spec: column.spec },
+    ];
+
+    let axisIndex: number | undefined;
+    if (request.axis !== undefined) {
+      const index = findTableColumn(tableSpec, { type: "axis", id: request.axis });
+      if (index < 0) {
+        const error = new PFrameDriverError(`getUniqueValues failed`);
+        error.cause = new Error(
+          `axis ${JSON.stringify(request.axis)} not found among axes of column ${request.columnId}`,
+        );
+        throw error;
+      }
+      axisIndex = index;
+    }
+
+    const resolvedRequest: PFrameInternal.UniqueValuesRequestV2 = {
+      columnId: request.columnId,
+      axisIndex,
+      filters: rewriteLegacyFilters({
+        tableSpec,
+        filters: migrateFilters(request.filters, this.logger),
+      }),
+      limit: request.limit,
+    };
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
-      return await pFrame.getUniqueValues(
-        {
-          ...request,
-          filters: migrateFilters(request.filters, this.logger),
-        },
-        {
-          signal: combinedSignal,
-        },
-      );
+      return await pFrameData.getUniqueValues(resolvedRequest, { signal: combinedSignal });
     });
   }
 
@@ -487,12 +514,7 @@ export class AbstractPFrameDriver<
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
     const { def } = this.pTableDefs.getByKey(handle);
-    using table = this.pTables.acquire(def);
-
-    const { pTablePromise } = table.resource;
-    const pTable = await pTablePromise;
-
-    return pTable.getSpec();
+    return def.tableSpec;
   }
 
   public async getShape(handle: PTableHandle, signal?: AbortSignal): Promise<PTableShape> {

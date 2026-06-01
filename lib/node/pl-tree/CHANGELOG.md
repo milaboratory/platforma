@@ -1,5 +1,53 @@
 # @milaboratories/pl-tree
 
+## 1.12.6
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.10.1
+- @milaboratories/pl-errors@1.4.16
+
+## 1.12.5
+
+### Patch Changes
+
+- Updated dependencies [0a3af02]
+  - @milaboratories/pl-client@3.10.0
+  - @milaboratories/pl-errors@1.4.15
+
+## 1.12.4
+
+### Patch Changes
+
+- Updated dependencies [0c317f5]
+  - @milaboratories/pl-client@3.9.2
+  - @milaboratories/pl-errors@1.4.14
+
+## 1.12.3
+
+### Patch Changes
+
+- Updated dependencies [a0a909c]
+  - @milaboratories/pl-client@3.9.1
+  - @milaboratories/pl-errors@1.4.13
+
+## 1.12.2
+
+### Patch Changes
+
+- Updated dependencies [0ce161f]
+  - @milaboratories/pl-client@3.9.0
+  - @milaboratories/pl-errors@1.4.12
+
+## 1.12.1
+
+### Patch Changes
+
+- af6f1c0: project with errors could not open
+- Updated dependencies [af6f1c0]
+  - @milaboratories/pl-client@3.8.1
+  - @milaboratories/pl-errors@1.4.11
+
 ## 1.12.0
 
 ### Minor Changes

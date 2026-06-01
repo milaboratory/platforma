@@ -32,7 +32,7 @@ test(
 
     console.log(`Platforma: %o`, pl.debugInfo());
 
-    expect(await pl.isAlive()).toBeTruthy();
+    await pl.isAlive();
     expect(pl.pid).not.toBeUndefined();
 
     pl.stop();
@@ -57,14 +57,14 @@ test(
     await sleep(5000);
     console.log(`OldPlatforma: %o`, oldPl.debugInfo());
 
-    expect(await oldPl.isAlive()).toBeTruthy();
+    await oldPl.isAlive();
     const newPl = await localPlatformaInit(logger, options);
-    expect(await oldPl.isAlive()).toBeFalsy();
+    await expect(oldPl.isAlive({ timeoutMs: 1000 })).rejects.toThrow();
     await sleep(5000);
 
     console.log(`NewPlatforma: %o`, newPl.debugInfo());
 
-    expect(await newPl.isAlive()).toBeTruthy();
+    await newPl.isAlive();
     expect(newPl.pid).not.toBeUndefined();
     newPl.stop();
     await newPl.waitStopped();
@@ -87,17 +87,17 @@ test(
     });
     await sleep(1000);
 
-    expect(await pl.isAlive()).toBeTruthy();
+    await pl.isAlive();
     processStop(pl.pid!);
     await sleep(3000);
     console.log(`Platforma after first stop: %o`, pl.debugInfo());
 
-    expect(await pl.isAlive()).toBeTruthy();
+    await pl.isAlive();
     processStop(pl.pid!);
     await sleep(3000);
     console.log(`Platforma after second stop: %o`, pl.debugInfo());
 
-    expect(await pl.isAlive()).toBeTruthy();
+    await pl.isAlive();
     expect(pl.debugInfo().nRuns).toEqual(3);
 
     pl.stop();

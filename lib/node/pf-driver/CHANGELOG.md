@@ -1,5 +1,83 @@
 # @milaboratories/pf-driver
 
+## 1.5.0
+
+### Minor Changes
+
+- 98092a6: Migrate pf-driver to the pframes-rs 1.1.38 V5 addon surface.
+
+  - Bump `@milaboratories/pframes-rs-{node,wasip2,wasm}` to `1.1.38`.
+  - `pf-driver` switches off the V4 addon API: `createTableV2({ tableSpec, dataQuery })` → `createTable(dataQuery)`, the per-column `addColumnSpec`/`setColumnData` loop → a single bulk `addColumns(...)`, and `getUniqueValues` now sends pre-resolved indices (`UniqueValuesRequestV2`) — axis indices via `expandAxes` + `findTableColumn`, filters via WASM-spec's stateless `rewriteLegacyFilters`. `params.tableSpec` is retained on the JS-side cache only.
+  - `pl-model-middle-layer` drops the obsolete V4-era `PFrameInternal` interfaces (`PFrameFactoryAPIV4`, `PFrameReadAPIV11`, `PTableV8`, `PFrameV13`, `PFrameFactoryV4`); the published addon now implements `PFrameV14`/`PFrameFactoryV5`.
+  - `pf-spec-driver` / `pl-model-common` expose `rewriteLegacyFilters` on `PFrameSpecDriver` (wired through the service registry and workflow VM bridge).
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-model-common@1.43.0
+  - @milaboratories/pl-model-middle-layer@1.26.0
+
+## 1.4.17
+
+### Patch Changes
+
+- Updated dependencies [0a3af02]
+  - @milaboratories/pl-model-middle-layer@1.25.0
+
+## 1.4.16
+
+### Patch Changes
+
+- Updated dependencies [7a8aeea]
+  - @milaboratories/pl-model-middle-layer@1.24.0
+
+## 1.4.15
+
+### Patch Changes
+
+- Updated dependencies [a5bc059]
+  - @milaboratories/pl-model-middle-layer@1.23.0
+
+## 1.4.14
+
+### Patch Changes
+
+- Updated dependencies [d9ede09]
+  - @milaboratories/pl-model-middle-layer@1.22.0
+
+## 1.4.13
+
+### Patch Changes
+
+- 62e11be: Prepare pf-driver for the next pframes-rs-node addon revision.
+
+  - Declare V5 addon interfaces (`PFrameFactoryAPIV5`, `PTableV9`,
+    `PFrameReadAPIV12`, `PFrameV14`, `PFrameFactoryV5`) alongside the V4
+    ones so the next addon publish has a concrete TS contract to
+    implement. The current V4 surface is unchanged.
+  - Cache the WASM-spec frame on `PFrameHolder` and route
+    `driver.findColumns`, `getColumnSpec`, `listColumns` through it
+    instead of round-tripping through the addon. `getColumnSpec` and
+    `listColumns` now return only value-typed columns — the queryable
+    subset that exec can plan against.
+  - Lower V1 `createPTable` inputs via WASM-spec at construction time
+    and unify the def shape: `FullPTableDef` is now flat
+    `{ pFrameHandle, tableSpec, dataQuery }` for both V1 and V2 entry
+    points. The recursive sort/filter peeling in `createNewResourceV1`
+    is dropped; the existing `createTableV2` path materialises the
+    lowered query end-to-end.
+  - Switch the `driver.getSpec` PTable read to a JS-side lookup from the
+    cached def — no addon roundtrip.
+
+  After this PR every existing V4 addon call still works; pf-driver
+  just stops needing several of them. The remaining cutover (drop V4
+  interface declarations, switch to V5 addon calls, send pre-resolved
+  indices for `getUniqueValues`, bulk `addColumns`) lands in a follow-up
+  once the addon publishes V5.
+
+- Updated dependencies [62e11be]
+  - @milaboratories/pl-model-middle-layer@1.21.0
+
 ## 1.4.12
 
 ### Patch Changes

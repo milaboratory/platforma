@@ -1,4 +1,3 @@
-import { z } from "zod";
 import path from "node:path";
 import fsp from "node:fs/promises";
 import * as mime from "mime-types";
@@ -33,60 +32,36 @@ type ContentCtxUrl = {
 /** Describes a place relative to which any content references should be interpreted */
 export type ContentCtx = ContentCtxFs | ContentCtxUrl;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- utility function for future use
-function mustResolve(root: string, request: string): string {
-  const res = tryResolve(root, request);
-  if (res === undefined) throw new Error(`Can't resolve ${request} against ${root}`);
-  return res;
-}
-
-/** Zod type that resolves node module request into absolute content */
-export function ResolvedModuleFile(moduleRoot: string) {
-  return z.string().transform<ContentAbsoluteFile>((request, ctx) => {
-    const result = tryResolve(moduleRoot, request);
-    if (result === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Can't resolve ${request} against ${moduleRoot}`,
-      });
-      return z.NEVER;
-    }
-    return {
-      type: "absolute-file",
-      file: result,
-    };
-  });
+/** Resolves a node module request to an absolute file reference. */
+export function resolveModuleFile(moduleRoot: string, request: string): ContentAbsoluteFile {
+  const result = tryResolve(moduleRoot, request);
+  if (result === undefined) throw new Error(`Can't resolve ${request} against ${moduleRoot}`);
+  return { type: "absolute-file", file: result };
 }
 
 /**
- * Zod type that resolves node module request for folder into absolute folder,
- * given a list of expected index files in that folder
- * */
-export function ResolvedModuleFolder(
+ * Resolves a node module request for a folder to an absolute folder reference,
+ * given a list of expected index file names in that folder.
+ */
+export function resolveModuleFolder(
   moduleRoot: string,
-  ...indexFilesToLookFor: [string, ...string[]]
-) {
-  return z.string().transform<ContentAbsoluteFolder>((request, ctx) => {
-    const requestWithSlash = request.endsWith("/") ? request : `${request}/`;
-
-    for (const idxFile of indexFilesToLookFor) {
-      const result = tryResolve(moduleRoot, requestWithSlash + idxFile);
-      if (result !== undefined) {
-        if (!result.endsWith(idxFile))
-          throw new Error(`Unexpected resolve result ${result} with index file ${idxFile}`);
-        return {
-          type: "absolute-folder",
-          folder: result.slice(0, result.length - idxFile.length),
-        };
-      }
-    }
-
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `Can't resolve ${request} folder against ${moduleRoot}, no index file found (${indexFilesToLookFor.join(", ")})`,
-    });
-    return z.NEVER;
-  });
+  request: string,
+  indexFilesToLookFor: [string, ...string[]],
+): ContentAbsoluteFolder {
+  const requestWithSlash = request.endsWith("/") ? request : `${request}/`;
+  for (const idxFile of indexFilesToLookFor) {
+    const result = tryResolve(moduleRoot, requestWithSlash + idxFile);
+    if (result === undefined) continue;
+    if (!result.endsWith(idxFile))
+      throw new Error(`Unexpected resolve result ${result} with index file ${idxFile}`);
+    return {
+      type: "absolute-folder",
+      folder: result.slice(0, result.length - idxFile.length),
+    };
+  }
+  throw new Error(
+    `Can't resolve ${request} folder against ${moduleRoot}, no index file found (${indexFilesToLookFor.join(", ")})`,
+  );
 }
 
 export function mapLocalToAbsolute(

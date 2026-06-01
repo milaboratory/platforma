@@ -64,6 +64,6 @@ test("login falls back to getJwtToken when backend lacks auth:v2", async () => {
 test("hasCapability proxies to underlying LLPlClient", () => {
   const { client, ll } = makeStub({ hasAuthV2: true });
   expect(client.hasCapability("auth:v2")).toBe(true);
-  expect(client.hasCapability("treeFilter:v1")).toBe(false);
+  expect(client.hasCapability("treeFilter:v2")).toBe(false);
   expect(ll.hasCapability).toHaveBeenCalledWith("auth:v2");
 });

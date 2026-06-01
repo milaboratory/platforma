@@ -1,5 +1,181 @@
 # @milaboratories/pl-middle-layer
 
+## 1.63.0
+
+### Minor Changes
+
+- 98092a6: Migrate pf-driver to the pframes-rs 1.1.38 V5 addon surface.
+
+  - Bump `@milaboratories/pframes-rs-{node,wasip2,wasm}` to `1.1.38`.
+  - `pf-driver` switches off the V4 addon API: `createTableV2({ tableSpec, dataQuery })` → `createTable(dataQuery)`, the per-column `addColumnSpec`/`setColumnData` loop → a single bulk `addColumns(...)`, and `getUniqueValues` now sends pre-resolved indices (`UniqueValuesRequestV2`) — axis indices via `expandAxes` + `findTableColumn`, filters via WASM-spec's stateless `rewriteLegacyFilters`. `params.tableSpec` is retained on the JS-side cache only.
+  - `pl-model-middle-layer` drops the obsolete V4-era `PFrameInternal` interfaces (`PFrameFactoryAPIV4`, `PFrameReadAPIV11`, `PTableV8`, `PFrameV13`, `PFrameFactoryV4`); the published addon now implements `PFrameV14`/`PFrameFactoryV5`.
+  - `pf-spec-driver` / `pl-model-common` expose `rewriteLegacyFilters` on `PFrameSpecDriver` (wired through the service registry and workflow VM bridge).
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-model-common@1.43.0
+  - @milaboratories/pl-model-middle-layer@1.26.0
+  - @milaboratories/pf-spec-driver@1.4.0
+  - @milaboratories/pf-driver@1.5.0
+  - @milaboratories/pl-client@3.10.1
+  - @milaboratories/pl-deployments@3.0.2
+  - @milaboratories/pl-drivers@1.14.16
+  - @platforma-sdk/model@1.77.18
+  - @platforma-sdk/block-tools@2.10.1
+  - @milaboratories/pl-model-backend@1.4.1
+  - @milaboratories/pl-errors@1.4.16
+  - @milaboratories/pl-tree@1.12.6
+  - @platforma-sdk/workflow-tengo@6.1.0
+
+## 1.62.0
+
+### Minor Changes
+
+- 0a3af02: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo`'s `assets` lib gains `importWasm(name)`, a thin wrapper over the new `plapi.loadWasm` host builtin. Returns the component's WIT-interface map directly — block authors index by canonical WIT interface name and JSON-marshal arguments / results at the call site. No SDK-side wrapper per consumer; the consuming file mentions the package id directly (same pattern as `importSoftware` / `importAsset`).
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+  - `pl-client`'s `TestHelpers.getTestClient` JWT cache now keys on the live backend `instanceId` in addition to address / user / password / expiration. Prevents a stale JWT issued by a previous backend run (rotated `instanceId`) being handed to the first authenticated call after a restart — the test fixture re-logs in instead of surfacing `failed to authenticate request using any of available methods`.
+
+### Patch Changes
+
+- Updated dependencies [0a3af02]
+  - @milaboratories/pl-client@3.10.0
+  - @milaboratories/pl-model-backend@1.4.0
+  - @milaboratories/pl-model-middle-layer@1.25.0
+  - @platforma-sdk/block-tools@2.10.0
+  - @platforma-sdk/workflow-tengo@6.1.0
+  - @milaboratories/pl-drivers@1.14.15
+  - @milaboratories/pl-errors@1.4.15
+  - @milaboratories/pl-tree@1.12.5
+  - @milaboratories/pf-spec-driver@1.3.22
+  - @milaboratories/pf-driver@1.4.17
+  - @platforma-sdk/model@1.77.17
+
+## 1.61.12
+
+### Patch Changes
+
+- Updated dependencies [7a8aeea]
+  - @milaboratories/pl-model-middle-layer@1.24.0
+  - @milaboratories/pf-spec-driver@1.3.21
+  - @milaboratories/pf-driver@1.4.16
+  - @platforma-sdk/model@1.77.16
+  - @platforma-sdk/block-tools@2.9.4
+
+## 1.61.11
+
+### Patch Changes
+
+- Updated dependencies [a5bc059]
+  - @milaboratories/pl-model-middle-layer@1.23.0
+  - @milaboratories/pf-spec-driver@1.3.20
+  - @milaboratories/pf-driver@1.4.15
+  - @platforma-sdk/model@1.77.15
+  - @platforma-sdk/block-tools@2.9.3
+
+## 1.61.10
+
+### Patch Changes
+
+- Updated dependencies [7a5f121]
+  - @platforma-sdk/workflow-tengo@6.0.0
+
+## 1.61.9
+
+### Patch Changes
+
+- Updated dependencies [0c317f5]
+  - @milaboratories/pl-client@3.9.2
+  - @milaboratories/pl-model-backend@1.3.5
+  - @milaboratories/pl-drivers@1.14.14
+  - @milaboratories/pl-errors@1.4.14
+  - @milaboratories/pl-tree@1.12.4
+  - @platforma-sdk/block-tools@2.9.2
+  - @platforma-sdk/workflow-tengo@5.26.0
+
+## 1.61.8
+
+### Patch Changes
+
+- Updated dependencies [a0a909c]
+  - @milaboratories/pl-client@3.9.1
+  - @milaboratories/pl-model-backend@1.3.4
+  - @milaboratories/pl-drivers@1.14.13
+  - @milaboratories/pl-errors@1.4.13
+  - @milaboratories/pl-tree@1.12.3
+  - @platforma-sdk/block-tools@2.9.1
+  - @platforma-sdk/workflow-tengo@5.26.0
+
+## 1.61.7
+
+### Patch Changes
+
+- Updated dependencies [d9ede09]
+  - @milaboratories/pl-model-middle-layer@1.22.0
+  - @platforma-sdk/block-tools@2.9.0
+  - @milaboratories/pf-spec-driver@1.3.19
+  - @milaboratories/pf-driver@1.4.14
+  - @platforma-sdk/model@1.77.11
+
+## 1.61.6
+
+### Patch Changes
+
+- Updated dependencies [62e11be]
+  - @milaboratories/pl-model-middle-layer@1.21.0
+  - @milaboratories/pf-driver@1.4.13
+  - @milaboratories/pf-spec-driver@1.3.18
+  - @platforma-sdk/model@1.77.10
+  - @platforma-sdk/block-tools@2.8.4
+
+## 1.61.5
+
+### Patch Changes
+
+- Updated dependencies [8c027a2]
+  - @milaboratories/pl-deployments@3.0.1
+
+## 1.61.4
+
+### Patch Changes
+
+- Updated dependencies [0ce161f]
+  - @platforma-sdk/workflow-tengo@5.26.0
+  - @milaboratories/pl-client@3.9.0
+  - @milaboratories/pl-model-backend@1.3.3
+  - @milaboratories/pl-drivers@1.14.12
+  - @milaboratories/pl-errors@1.4.12
+  - @milaboratories/pl-tree@1.12.2
+  - @platforma-sdk/block-tools@2.8.3
+
+## 1.61.3
+
+### Patch Changes
+
+- Updated dependencies [af6f1c0]
+  - @milaboratories/pl-client@3.8.1
+  - @milaboratories/pl-tree@1.12.1
+  - @milaboratories/pl-model-backend@1.3.2
+  - @milaboratories/pl-drivers@1.14.11
+  - @milaboratories/pl-errors@1.4.11
+  - @platforma-sdk/block-tools@2.8.2
+  - @platforma-sdk/workflow-tengo@5.25.0
+
+## 1.61.2
+
+### Patch Changes
+
+- Updated dependencies [8d93fdf]
+  - @milaboratories/pl-deployments@3.0.0
+
 ## 1.61.1
 
 ### Patch Changes

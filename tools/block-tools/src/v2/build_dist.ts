@@ -5,7 +5,7 @@ import type {
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
 import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
-import { BlockPackDescriptionConsolidateToFolder } from "./model";
+import { consolidateBlockPackDescription } from "./model";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
@@ -23,8 +23,8 @@ async function workflowRequiredCapabilities(
   descriptionRelative: BlockPackDescriptionManifest,
   dst: string,
 ): Promise<string[] | undefined> {
-  // After BlockPackDescriptionConsolidateToFolder runs, components.workflow.main
-  // is always a {type: "relative", path: ...} reference into dst.
+  // After consolidateBlockPackDescription runs, components.workflow.main is
+  // always a `{type: "relative", path: ...}` reference into `dst`.
   const main = descriptionRelative.components.workflow.main;
   const bytes = await fsp.readFile(path.resolve(dst, main.path));
 
@@ -47,8 +47,11 @@ export async function buildBlockPackDist(
 ): Promise<BlockPackManifest> {
   await fsp.mkdir(dst, { recursive: true });
   const files: string[] = [];
-  const descriptionRelative: BlockPackDescriptionManifest =
-    await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
+  const descriptionRelative: BlockPackDescriptionManifest = await consolidateBlockPackDescription(
+    description,
+    dst,
+    files,
+  );
 
   // Per-block capability detection: mirror the workflow's
   // compile-time-computed `requiredCapabilities` onto the published

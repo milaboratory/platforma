@@ -1,0 +1,27 @@
+// Integration test for the @milaboratories/pframes-rs-wasip2 wasm
+// component, called directly through assets.importWasm — no SDK wrapper
+// lib in between.
+//
+// The component exposes the `milaboratories:pframes/spec` WIT interface
+// (frame / table / axes resources, see
+// core/pframes-rs/packages/wasip2/wit/world.wit). Every WIT method takes
+// a JSON-encoded string and returns a JSON-encoded string; block
+// authors marshal both sides themselves.
+//
+// We call `frame.buildQuery` — a static method that returns the request
+// shape as JSON — because it's the simplest "real call" that doesn't
+// require setting up a frame instance first.
+
+self   := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json   := import("json")
+
+self.defineOutputs(["resultJson"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
+	respJson := api.frame.buildQuery(
+		string(json.encode({ version: "v1", column: "abundance" }))
+	)
+	return { resultJson: respJson }
+})

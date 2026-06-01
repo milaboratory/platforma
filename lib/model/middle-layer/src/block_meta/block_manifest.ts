@@ -1,13 +1,24 @@
 import { z } from "zod";
-import { BlockComponents } from "./block_components";
+import type { BlockComponents } from "./block_components";
+import { WorkflowSchemaV1 } from "./block_components";
 import { ContentRelative, ContentRelativeBinary, ContentRelativeText } from "./content_types";
 import { CreateBlockPackDescriptionSchema } from "./block_description";
 import { BlockPackMeta } from "./block_meta";
 import { toMerged } from "es-toolkit";
 import type { BlockPackId } from "./block_id";
 
-export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
-export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
+export type BlockComponentsManifest = BlockComponents<ContentRelative, ContentRelative>;
+
+/**
+ * Block-components shape stored in a manifest. The consolidator always writes
+ * the wrapped `{type: "workflow-v1", main: ...}` form, so the manifest schema
+ * accepts the wrapped form only.
+ */
+export const BlockComponentsManifest = z.object({
+  workflow: WorkflowSchemaV1(ContentRelative),
+  model: ContentRelative,
+  ui: ContentRelative,
+}) satisfies z.ZodType<BlockComponentsManifest>;
 
 export const BlockPackMetaManifest = BlockPackMeta(ContentRelativeText, ContentRelativeBinary);
 export type BlockPackMetaManifest = z.infer<typeof BlockPackMetaManifest>;
