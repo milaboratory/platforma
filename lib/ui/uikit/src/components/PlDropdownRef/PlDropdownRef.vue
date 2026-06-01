@@ -53,6 +53,11 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
+     * Text shown in the field when the referenced upstream block / output no longer
+     * exists. Defaults to "Upstream value removed".
+     */
+    missingValueLabel?: string;
+    /**
      * Enables a button to clear the selected value (default: false)
      */
     clearable?: boolean;
@@ -75,6 +80,7 @@ const props = withDefaults(
     loadingOptionsHelper: undefined,
     error: undefined,
     placeholder: "...",
+    missingValueLabel: "Upstream value removed",
     clearable: false,
     required: false,
     disabled: false,
