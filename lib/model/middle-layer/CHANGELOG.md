@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.27.0
+
+### Minor Changes
+
+- d2d7fe5: Declare next-generation PFrame addon interfaces (`PTableV10`, `PFrameReadAPIV13`, `PFrameV15`, `PFrameFactoryV6`). `PTableV10` adds an `export(path, headers, ops?)` method that streams the full, sorted table to a file, selecting the output format from the file extension (`csv`/`tsv`/`parquet`/`xlsx`). The new interfaces are fully self-contained and do not reference the V9-era interfaces (`PTableV9`, `PFrameReadAPIV12`, `PFrameV14`, `PFrameFactoryV5`), which will be removed once the published addon implements the new surface.
+
 ## 1.26.0
 
 ### Minor Changes
