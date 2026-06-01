@@ -114,6 +114,13 @@ export function build(
       // regardless of host arch (cross-compile via qemu on non-x64 hosts).
       "--platform",
       defaults.DOCKER_BUILD_PLATFORM,
+      // Disable buildkit's SLSA provenance + SBOM attestations. They embed
+      // build-time timestamps into the manifest list, which produces a fresh
+      // image digest on every build of identical source. That breaks the
+      // content-addressable tag scheme (every dev rebuild re-pushes a new
+      // tag) and defeats publishDockerImage's `remoteImageExists` smart-skip.
+      "--provenance=false",
+      "--sbom=false",
       "-t",
       tag,
       context,
