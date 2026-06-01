@@ -3,8 +3,17 @@
 // to oxfmt (no enforce* calls there).
 
 import type { BlockVars } from "../../engine/api";
+import { getActiveRunContext } from "../../engine/builders";
 
 export function uiPackageJsonInitial(v: BlockVars): Record<string, unknown> {
+  const ctx = getActiveRunContext();
+  // The seeded ui (app.ts) imports the block's model package; depend on it.
+  // One workspace dep per discovered model module — mirrors the body rule's
+  // `ensureWorkspaceScopeDeps("model")`.
+  const modelDeps: Record<string, string> = {};
+  for (const m of ctx.modules) {
+    if (m.scope === "model") modelDeps[m.name] = "workspace:*";
+  }
   return {
     name: `${v.facadeName}.ui`,
     version: "1.0.0",
@@ -19,6 +28,8 @@ export function uiPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     },
     dependencies: {
       "@platforma-sdk/ui-vue": "sdk:",
+      vue: "catalog:",
+      ...modelDeps,
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",

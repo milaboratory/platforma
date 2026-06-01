@@ -8,7 +8,7 @@ import {
   scaffold,
   seed,
   file,
-  text,
+  tpl,
   generate,
   blockVars,
 } from "../engine/api";
@@ -29,7 +29,21 @@ export function uiRules(): void {
     // canonical default only when absent; never overwrite an author's CSP.
     scaffold("index.html", file("ui/index.html"));
 
-    seed("src/main.ts", text(`// UI entry point. Author owns this file.\n`));
+    // A minimal-but-REAL UI: an empty `main.ts` trips oxlint
+    // `unicorn(no-empty-file)`, and a complete block needs a UI that mounts
+    // the SDK app and renders. Seed the canonical three-file entry — mount
+    // (main.ts), app wiring the block model (app.ts), and a landing page
+    // (MainPage.vue). All three are author-owned seeds: written once at init,
+    // never touched on refresh.
+    seed("src/main.ts", file("ui/src/main.ts"));
+    seed(
+      "src/app.ts",
+      tpl("ui/src/app.tpl.ts", () => ({ modelPkg: `${blockVars().facadeName}.model` })),
+    );
+    seed(
+      "src/MainPage.vue",
+      tpl("ui/src/MainPage.tpl.vue", () => ({ shortName: blockVars().shortName })),
+    );
 
     managed(
       "package.json",
