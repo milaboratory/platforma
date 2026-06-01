@@ -48,6 +48,37 @@ export function getEffectiveVisibility(
   return undefined;
 }
 
+/**
+ * Reconcile a column's block-defined default visibility with the user's explicit
+ * show/hide overrides into a single "is this column hidden" decision.
+ *
+ * This is the single place the default-vs-override *precedence* lives. The model
+ * (visible table handle, see `computeHiddenColumns`) and the UI (grid `colDef`, see
+ * `makeColDef`) share it, so that decision can't drift between them — divergence
+ * there is what made MILAB-6002 reproduce in two places at once. Each caller layers
+ * its own context on top: the model force-keeps sorted/filtered columns visible
+ * (`collectPreservedColumnIds`); the UI filters forced-hidden columns out upstream
+ * (passing `forcedHidden: false`). Precedence:
+ *   1. forced-hidden (`pl7.app/table/visibility` = "hidden") — never shown;
+ *   2. an explicit user override — `shown` wins over `hidden`;
+ *   3. otherwise the column's CURRENT `optional` default.
+ *
+ * The default is applied last on purpose: a column whose default flips between runs
+ * (e.g. a filter/ranking column going default<->optional) follows its current
+ * default rather than a stale saved hidden set — the root cause of MILAB-6002.
+ */
+export function resolveColumnHidden(overrides: {
+  forcedHidden: boolean;
+  optional: boolean;
+  userShown: boolean;
+  userHidden: boolean;
+}): boolean {
+  if (overrides.forcedHidden) return true;
+  if (overrides.userShown) return false;
+  if (overrides.userHidden) return true;
+  return overrides.optional;
+}
+
 /** Get ordering priority for a column. Rule map lookup first, then annotation fallback. */
 export function getOrderPriority(
   col: RuleColumn,

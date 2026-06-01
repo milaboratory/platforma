@@ -31,6 +31,10 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions } from "./sources/table-source-v2";
+import {
+  computeVisibilityDeviations,
+  type ColumnVisibilityState,
+} from "./sources/column-visibility";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -129,9 +133,8 @@ const { gridApi, gridOptions } = useGrid({
 let isReloading = false;
 gridOptions.value.onGridPreDestroyed = (event) => {
   if (!isReloading) {
-    gridOptions.value.initialState = gridState.value = normalizeColumnVisibility(
-      makePartialState(event.api.getState()),
-      gridState.value,
+    gridOptions.value.initialState = gridState.value = makePartialState(
+      event.api.getState(),
       event.api,
     );
   }
@@ -141,11 +144,7 @@ gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  const partialState = normalizeColumnVisibility(
-    makePartialState(event.state),
-    gridState.value,
-    event.api,
-  );
+  const partialState = makePartialState(event.state, event.api);
   // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
   gridOptions.value.initialState = gridState.value = partialState;
 
@@ -187,8 +186,17 @@ const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
 });
 gridOptions.value.initialState = gridState.value;
 
-// Restore proper types erased by AgGrid
-function makePartialState(state: GridState): PlDataTableGridStateCore {
+// Restore proper types erased by AgGrid.
+// columnVisibility is stored as the user's *deviations* from the block-defined
+// default visibility, computed from the live grid columns (see
+// computeVisibilityDeviations) rather than copied from AG Grid's absolute
+// hidden-list. This keeps saved state stable across re-runs when the block
+// changes a column's default visibility (e.g. filter/ranking config changed).
+function makePartialState(
+  state: GridState,
+  api: GridApi<PlAgDataTableV2Row>,
+): PlDataTableGridStateCore {
+  const deviations = computeVisibilityDeviations(readGridColumnVisibility(api));
   return {
     columnOrder: state.columnOrder as
       | {
@@ -203,57 +211,38 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
           }[];
         }
       | undefined,
-    columnVisibility: state.columnVisibility as
-      | {
-          hiddenColIds: PlTableColumnIdJson[];
-        }
-      | undefined,
+    columnVisibility:
+      deviations.hiddenColIds.length === 0 && deviations.shownColIds.length === 0
+        ? undefined
+        : deviations,
   };
 }
 
-// AG Grid returns columnVisibility: undefined when all columns are visible.
-// We need to distinguish "no state yet" (use isColumnOptional defaults) from
-// "user explicitly showed all columns" (store []). This function normalizes
-// the undefined from AG Grid based on the previous state.
-function normalizeColumnVisibility(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-  api: GridApi<PlAgDataTableV2Row>,
-): PlDataTableGridStateCore {
-  if (partialState.columnVisibility !== undefined) return partialState;
-
-  if (prevState.columnVisibility !== undefined) {
-    // Had explicit visibility state before → user made all columns visible → store [].
-    return { ...partialState, columnVisibility: { hiddenColIds: [] } };
+// Map the live AG Grid columns to the minimal shape computeVisibilityDeviations needs.
+// Scope is column specs only: the block defines per-column defaults via
+// pl7.app/table/visibility, while axes have no such default and are always shown when
+// displayed. Axes and the row-number column (no column spec) are therefore skipped —
+// a manual hide/show of an axis is intentionally not persisted.
+function readGridColumnVisibility(api: GridApi<PlAgDataTableV2Row>): ColumnVisibilityState[] {
+  const states: ColumnVisibilityState[] = [];
+  for (const col of api.getAllGridColumns() ?? []) {
+    const spec = col.getColDef().context as PTableColumnSpec | undefined;
+    if (spec === undefined || spec.type !== "column") continue;
+    states.push({
+      colId: col.getColId() as PlTableColumnIdJson,
+      hidden: !col.isVisible(),
+      optional: isColumnOptional(spec.spec),
+    });
   }
-
-  // No previous explicit state → compute defaults from current columns
-  // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
-  const defaultHidden = getDefaultHiddenColIds(api);
-  if (defaultHidden.length > 0) {
-    return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
-  }
-
-  return partialState;
+  return states;
 }
 
-function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
-  const cols = api.getAllGridColumns();
-  if (!cols) return [];
-
-  return cols
-    .filter((col) => {
-      const spec = col.getColDef().context as PTableColumnSpec | undefined;
-      return spec !== undefined && spec.type === "column" && isColumnOptional(spec.spec);
-    })
-    .map((col) => col.getColId() as PlTableColumnIdJson);
-}
-
-// Normalize columnVisibility for comparison: undefined and { hiddenColIds: [] } are equivalent.
+// Normalize columnVisibility for comparison: no deviations is equivalent to undefined.
 function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
   const cv = state.columnVisibility;
-  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
-  return { ...state, columnVisibility: normalizedCv };
+  const isEmpty =
+    !cv || ((cv.hiddenColIds?.length ?? 0) === 0 && (cv.shownColIds?.length ?? 0) === 0);
+  return { ...state, columnVisibility: isEmpty ? undefined : cv };
 }
 
 // Reload AgGrid when new state arrives from server
@@ -262,7 +251,7 @@ watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
-    const selfState = makePartialState(gridApi.getState());
+    const selfState = makePartialState(gridApi.getState(), gridApi);
     if (
       !isJsonEqual(gridState, {}) &&
       !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
@@ -429,6 +418,7 @@ watch(
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
         hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
+        shownColIds: gridState.value.columnVisibility?.shownColIds,
         cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
           cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
