@@ -52,10 +52,13 @@ export function getEffectiveVisibility(
  * Reconcile a column's block-defined default visibility with the user's explicit
  * show/hide overrides into a single "is this column hidden" decision.
  *
- * This is the one place the precedence lives. Both the model (visible table handle,
- * see `computeHiddenColumns`) and the UI (grid `colDef`, see `makeColDef`) call it,
- * so the two can never drift — divergence between them is what made MILAB-6002
- * reproduce in two places at once. Precedence:
+ * This is the single place the default-vs-override *precedence* lives. The model
+ * (visible table handle, see `computeHiddenColumns`) and the UI (grid `colDef`, see
+ * `makeColDef`) share it, so that decision can't drift between them — divergence
+ * there is what made MILAB-6002 reproduce in two places at once. Each caller layers
+ * its own context on top: the model force-keeps sorted/filtered columns visible
+ * (`collectPreservedColumnIds`); the UI filters forced-hidden columns out upstream
+ * (passing `forcedHidden: false`). Precedence:
  *   1. forced-hidden (`pl7.app/table/visibility` = "hidden") — never shown;
  *   2. an explicit user override — `shown` wins over `hidden`;
  *   3. otherwise the column's CURRENT `optional` default.

@@ -134,10 +134,15 @@ export async function calculateGridOptions({
     tableSpecs,
   );
 
+  // Build lookup sets once (rather than Array.includes per column), mirroring the
+  // Set-based reconciliation in the model's computeHiddenColumns.
+  const hiddenColIdSet = new Set(hiddenColIds ?? []);
+  const shownColIdSet = new Set(shownColIds ?? []);
+
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
     ...fields.map((field) =>
-      makeColDef(field, tableSpecs[field], hiddenColIds, shownColIds, cellButtonAxisParams),
+      makeColDef(field, tableSpecs[field], hiddenColIdSet, shownColIdSet, cellButtonAxisParams),
     ),
   ];
 
@@ -234,8 +239,8 @@ export type PlAgCellButtonAxisParams = {
 export function makeColDef(
   iCol: number,
   spec: PTableColumnSpec,
-  hiddenColIds: PlTableColumnIdJson[] | undefined,
-  shownColIds: PlTableColumnIdJson[] | undefined,
+  hiddenColIds: ReadonlySet<PlTableColumnIdJson>,
+  shownColIds: ReadonlySet<PlTableColumnIdJson>,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
   const colId = canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
@@ -268,8 +273,8 @@ export function makeColDef(
     hide: resolveColumnHidden({
       forcedHidden: false,
       optional: spec.type === "column" && isColumnOptional(spec.spec),
-      userShown: shownColIds?.includes(colId) ?? false,
-      userHidden: hiddenColIds?.includes(colId) ?? false,
+      userShown: shownColIds.has(colId),
+      userHidden: hiddenColIds.has(colId),
     }),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,

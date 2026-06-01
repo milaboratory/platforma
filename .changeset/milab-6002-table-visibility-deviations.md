@@ -1,5 +1,5 @@
 ---
-'@platforma-sdk/model': patch
+'@platforma-sdk/model': minor
 '@platforma-sdk/ui-vue': patch
 ---
 
@@ -17,3 +17,6 @@ block's `pl7.app/table/visibility` default, so the current default always applie
 to untouched columns; the full and visible table handles reconcile the same way.
 Persisted state migrates v7 -> v8: a one-time reset of custom column show/hide,
 after which defaults apply correctly.
+
+Adds `resolveColumnHidden` to the public model API — the shared default-vs-override
+precedence used by the visible table handle and the grid — so this is a `minor` bump.
