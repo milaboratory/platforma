@@ -140,9 +140,10 @@ const selectedOptionsRef = computed(() => {
     .map((v) => {
       const opt = normalizedOptionsRef.value.find((o) => deepEqual(o.value, v));
       if (opt) {
-        // Found option with an empty label: fall back to the friendly label rather
-        // than rendering the raw value (which `toDisplayString` would JSON-stringify).
-        return { ...opt, label: opt.label || props.missingValueLabel, isMissing: false };
+        // Found: render the option's own (normalized) label verbatim — matches
+        // PlDropdown. `opt.label` is always a string (possibly ""), never an object,
+        // so there is no raw-value leak to guard against.
+        return { ...opt, isMissing: false };
       }
       if (!optionsLoaded) {
         return undefined;
