@@ -110,6 +110,17 @@ export function build(
     "docker",
     [
       "build",
+      // Pin platform so Platforma's linux/amd64 K8s nodes can run the image
+      // regardless of host arch (cross-compile via qemu on non-x64 hosts).
+      "--platform",
+      defaults.DOCKER_BUILD_PLATFORM,
+      // Disable buildkit's SLSA provenance + SBOM attestations. They embed
+      // build-time timestamps into the manifest list, which produces a fresh
+      // image digest on every build of identical source. That breaks the
+      // content-addressable tag scheme (every dev rebuild re-pushes a new
+      // tag) and defeats publishDockerImage's `remoteImageExists` smart-skip.
+      "--provenance=false",
+      "--sbom=false",
       "-t",
       tag,
       context,
@@ -150,7 +161,15 @@ export function push(tag: string) {
     throw result.error;
   }
   if (result.status !== 0) {
-    throw util.CLIError(`'docker push' failed with status ${result.status}`);
+    const registry = tag.split("/")[0];
+    throw util.CLIError(
+      `'docker push ${tag}' failed with status ${result.status}.\n` +
+        `If the error above mentions authentication or denied access, log in first:\n` +
+        `  aws login --profile <YOUR_PROFILE> \n` +
+        `Then login in docker:` +
+        `  aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${registry}\n` +
+        `(for a private ECR use 'aws ecr' and your region instead of 'ecr-public'/us-east-1).`,
+    );
   }
 }
 
