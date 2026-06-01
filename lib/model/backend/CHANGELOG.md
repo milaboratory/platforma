@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.1
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.10.1
+
 ## 1.4.0
 
 ### Minor Changes
