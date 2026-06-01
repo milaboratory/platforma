@@ -1,5 +1,50 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.1.0
+
+### Minor Changes
+
+- 0a3af02: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo`'s `assets` lib gains `importWasm(name)`, a thin wrapper over the new `plapi.loadWasm` host builtin. Returns the component's WIT-interface map directly — block authors index by canonical WIT interface name and JSON-marshal arguments / results at the call site. No SDK-side wrapper per consumer; the consuming file mentions the package id directly (same pattern as `importSoftware` / `importAsset`).
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+  - `pl-client`'s `TestHelpers.getTestClient` JWT cache now keys on the live backend `instanceId` in addition to address / user / password / expiration. Prevents a stale JWT issued by a previous backend run (rotated `instanceId`) being handed to the first authenticated call after a restart — the test fixture re-logs in instead of surfacing `failed to authenticate request using any of available methods`.
+
+## 6.0.0
+
+### Major Changes
+
+- 7a5f121: ptabler: emit Parquet Page Index, bloom filters on every column, `sorting_columns` and DataPage v2 from `WriteFrame`. Lets DataFusion's HashJoin DynamicFilter pushdown prune the right side of a left join at sub-row-group granularity (e.g. Lead Selection block on `pframes-rs`), and lets the UI's exact-match lookups skip pages on value columns too. Switches the writer from `duckdb COPY ... TO ...` (which does not emit the Page Index) to a streaming `pyarrow.parquet.ParquetWriter` fed by `duckdb_conn.execute(...).fetch_record_batch(...)`. Requires `pyarrow==24.0.0` — bloom-filter writing was only exposed to Python in PyArrow 24.
+
+  `Stats.numberOfBytes` semantics changed to be data-only (`SUM(LENGTH(CAST(col AS BLOB)))` over written rows) instead of `total_uncompressed_size` from the parquet column chunk. Identical data now produces identical `numberOfBytes`, regardless of writer encoder settings. **Breaking** for any consumer that compared raw byte numbers across writer versions; `dataDigest` is unaffected (content-only).
+
+  `@platforma-sdk/workflow-tengo` is bumped major because the `:pt` module's templates (`pt.import-dir`, `pt.workflow-run`, transitively `pt/index.lib`) call ptabler. Their on-disk output bytes change with this ptabler version, so any downstream block that pinned a workflow-tengo template hash must repin against the new version to avoid CID drift against cached artifacts.
+
+### Patch Changes
+
+- Updated dependencies [7a5f121]
+  - @platforma-open/milaboratories.software-ptabler@2.0.0
+
+## 5.26.0
+
+### Minor Changes
+
+- 0ce161f: `exec.builder().addFile(name, ref, opts)` and `exec.builder().writeFile(name, data, opts)` (and the plural `addFiles` / `writeFiles`) now accept a `{ writable: true }` option that lands the file as `0o600` in the workdir.
+
+  By default the workdir fill rule stays read-only (`0o400`), so the backend hardlinks the entry from the content-addressable archive cache — fast, inode-shared with the archive, immutable. Passing `writable: true` flips the rule to `0o600`, which forces the backend to copy the file to a fresh inode in the workdir, leaving the archive entry untouched. Use it only when the tool legitimately mutates an input in place (rare — usually a sign the tool violates input immutability).
+
+  The option propagates one layer down: `workdir.builder().addFile` / `writeFile` (plus plural forms) gained the same `{ writable }` option.
+
+  Workflows that don't pass `writable` keep the previous behavior and the same exec CID — the new field is only added to the settings resource when at least one file was marked writable.
+
+  The option is only effective against a backend that honors per-file workdir fill perms (pl PR #1830, post-3.5.0). `pl-client` exposes a `supportsWritableWorkdirFiles` getter on both `LLPlClient` and `PlClient` — true iff `serverInfo.coreVersion` is strictly after `3.5.0` (e.g. `3.5.0-224-g0ca182` or `3.5.1`). Older backends silently ignore the `writable` flag and land every file at the canonical archive perm.
+
 ## 5.25.0
 
 ### Minor Changes

@@ -5,6 +5,7 @@ json := import("json")
 ll := import(":ll")
 smart := import(":smart")
 swinfo := import(":assets.swinfo")
+wasm := import(":assets.wasm")
 maps := import(":maps")
 
 /**
@@ -69,5 +70,6 @@ export ll.toStrict({
 	importSoftware      : swinfo.importSoftware,
 	isSoftwareInfo      : swinfo.isSoftwareInfo,
 	importAsset         : importAsset,
-	isAssetInfo         : isAssetInfo
+	isAssetInfo         : isAssetInfo,
+	importWasm          : wasm.importWasm
 })

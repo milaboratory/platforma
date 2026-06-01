@@ -1,5 +1,130 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.26.0
+
+### Minor Changes
+
+- 98092a6: Migrate pf-driver to the pframes-rs 1.1.38 V5 addon surface.
+
+  - Bump `@milaboratories/pframes-rs-{node,wasip2,wasm}` to `1.1.38`.
+  - `pf-driver` switches off the V4 addon API: `createTableV2({ tableSpec, dataQuery })` → `createTable(dataQuery)`, the per-column `addColumnSpec`/`setColumnData` loop → a single bulk `addColumns(...)`, and `getUniqueValues` now sends pre-resolved indices (`UniqueValuesRequestV2`) — axis indices via `expandAxes` + `findTableColumn`, filters via WASM-spec's stateless `rewriteLegacyFilters`. `params.tableSpec` is retained on the JS-side cache only.
+  - `pl-model-middle-layer` drops the obsolete V4-era `PFrameInternal` interfaces (`PFrameFactoryAPIV4`, `PFrameReadAPIV11`, `PTableV8`, `PFrameV13`, `PFrameFactoryV4`); the published addon now implements `PFrameV14`/`PFrameFactoryV5`.
+  - `pf-spec-driver` / `pl-model-common` expose `rewriteLegacyFilters` on `PFrameSpecDriver` (wired through the service registry and workflow VM bridge).
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-model-common@1.43.0
+
+## 1.25.0
+
+### Minor Changes
+
+- 0a3af02: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo`'s `assets` lib gains `importWasm(name)`, a thin wrapper over the new `plapi.loadWasm` host builtin. Returns the component's WIT-interface map directly — block authors index by canonical WIT interface name and JSON-marshal arguments / results at the call site. No SDK-side wrapper per consumer; the consuming file mentions the package id directly (same pattern as `importSoftware` / `importAsset`).
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+  - `pl-client`'s `TestHelpers.getTestClient` JWT cache now keys on the live backend `instanceId` in addition to address / user / password / expiration. Prevents a stale JWT issued by a previous backend run (rotated `instanceId`) being handed to the first authenticated call after a restart — the test fixture re-logs in instead of surfacing `failed to authenticate request using any of available methods`.
+
+## 1.24.0
+
+### Minor Changes
+
+- 7a8aeea: PFrame internal API: add `PFrameWasmAPIV4` — a self-contained WASM-spec factory that adds a stateless `rewriteLegacyFilters`, which upgrades selector-based legacy record filters into index-based data-layer boolean expressions for a given unified table spec (usable both for `getUniqueValues` and for composing a `filter` over a `table` query node). Also drop the `V2` suffix from the data-side create method on the (unreleased) `PFrameReadAPIV12`: `createTableV2` → `createTable`.
+
+## 1.23.0
+
+### Minor Changes
+
+- a5bc059: PFrames PTableV9: remove `filter` / `sort` methods from the interface.
+
+  `PTableV9` previously declared `filter(tableId, request: PTableRecordFilter[])`
+  and `sort(tableId, request: PTableSorting[])`, both taking spec-based
+  selectors. Implementing those would force `pframes-rs-node` to either keep
+  a JS-side spec→data adapter or retain `pframes_rs_spec` in its exec crate
+  purely to translate filter / sort selectors — defeating the broader effort
+  to push selector resolution to the caller side via WASM-spec.
+
+  The cleaner cut, made now while `V9` is still pre-adoption: drop the two
+  methods. Callers compose filtering and sorting into the input `DataQuery`
+  of the next `createTableV2` call (via `QueryData::Filter` / `Sort` over a
+  `QueryData::Table` leaf) — exactly the same vocabulary already used by
+  `getUniqueValues` V2.
+
+  No production caller depends on `V9.filter` / `.sort` yet (the interface
+  shipped with PR #1658 but hasn't been adopted). `PTableV8` retains both
+  methods unchanged.
+
+## 1.22.0
+
+### Minor Changes
+
+- d9ede09: Decouple Zod from TypeScript types in the block-meta / block-tools-v2 layer:
+
+  - Domain types in `pl-model-middle-layer/block_meta` are now canonical TS
+    declarations (with a single `Content` discriminated-union as the source of
+    truth for content shapes). Schemas that survive are pegged to TS types via
+    `satisfies z.ZodType<T>`; transform-bearing boundary schemas use
+    `satisfies z.ZodType<T, z.ZodTypeDef, any>`.
+  - The `Workflow<>` and `BlockComponents<>` Zod factories in
+    `pl-model-middle-layer` are replaced by plain TS generics (`Workflow<T>`,
+    `BlockComponents<W, U>`) plus a concrete `BlockComponentsDescriptionRaw`
+    boundary schema with a normalizing `string → {type:"workflow-v1", main:...}`
+    coercion for `package.json` authoring.
+  - In `@platforma-sdk/block-tools/v2`, every `.transform(...)`/`.pipe(...)`
+    pipeline becomes a named async function: `resolveBlockPackDescription`,
+    `consolidateBlockPackDescription`, `embedBlockPackMetaAbsoluteBase64`,
+    `embedBlockPackMetaAbsoluteBytes`, `embedBlockPackMetaBytes`,
+    `blockComponentsManifestToAbsoluteUrl`, `addRelativePathPrefix`,
+    `parseGlobalOverviewReg`. The unused `BlockDescriptionToExplicitBinaryBytes`,
+    `GlobalOverviewToExplicitBinaryBytes`, `GlobalOverviewToExplicitBinaryBase64`
+    Zod factories are deleted.
+  - The `BlockComponentsAbsoluteUrl` Zod factory that lived in
+    `pl-model-middle-layer/block_components.ts` (input: `ContentRelativeBinary`)
+    is removed — it was unreachable from any caller. The block-tools variant
+    is replaced by `blockComponentsManifestToAbsoluteUrl(manifest, prefix)`.
+
+  All exported TS type names and shapes are preserved; downstream consumers
+  (`@milaboratories/pl-middle-layer`, blocks) keep compiling without source
+  changes beyond the `@platforma-sdk/block-tools` import-name updates already
+  applied in this PR.
+
+## 1.21.0
+
+### Minor Changes
+
+- 62e11be: Prepare pf-driver for the next pframes-rs-node addon revision.
+
+  - Declare V5 addon interfaces (`PFrameFactoryAPIV5`, `PTableV9`,
+    `PFrameReadAPIV12`, `PFrameV14`, `PFrameFactoryV5`) alongside the V4
+    ones so the next addon publish has a concrete TS contract to
+    implement. The current V4 surface is unchanged.
+  - Cache the WASM-spec frame on `PFrameHolder` and route
+    `driver.findColumns`, `getColumnSpec`, `listColumns` through it
+    instead of round-tripping through the addon. `getColumnSpec` and
+    `listColumns` now return only value-typed columns — the queryable
+    subset that exec can plan against.
+  - Lower V1 `createPTable` inputs via WASM-spec at construction time
+    and unify the def shape: `FullPTableDef` is now flat
+    `{ pFrameHandle, tableSpec, dataQuery }` for both V1 and V2 entry
+    points. The recursive sort/filter peeling in `createNewResourceV1`
+    is dropped; the existing `createTableV2` path materialises the
+    lowered query end-to-end.
+  - Switch the `driver.getSpec` PTable read to a JS-side lookup from the
+    cached def — no addon roundtrip.
+
+  After this PR every existing V4 addon call still works; pf-driver
+  just stops needing several of them. The remaining cutover (drop V4
+  interface declarations, switch to V5 addon calls, send pre-resolved
+  indices for `getUniqueValues`, bulk `addColumns`) lands in a follow-up
+  once the addon publishes V5.
+
 ## 1.20.0
 
 ### Minor Changes

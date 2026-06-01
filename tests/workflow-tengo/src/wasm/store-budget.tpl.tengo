@@ -1,0 +1,36 @@
+// Per-render Store-budget probe. The backend caps a single render at
+// MaxWasmStoresPerRender = 64 sandboxed instances. Calling importWasm 65
+// times aborts the script on the 65th call with a clear cap-mentioning
+// error — same family-wide pattern as importSoftware / importAsset /
+// importTemplate (unrecoverable load failures abort the script).
+//
+// The .test.ts side asserts the render fails (via expect().rejects);
+// this template just runs the loop so the 65th iteration triggers the
+// abort.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["unreachable"])
+
+self.body(func(_inputs) {
+	// Bind the return value to a local — a bare `assets.importWasm(...)`
+	// expression-statement is eligible for dead-code elimination by the
+	// Tengo VM (its return is discarded, the SDK wrapper's body has no
+	// other visible effect), in which case the bridge would never be
+	// invoked and the cap would never fire. Tengo has no `_` blank
+	// identifier, so we use a regular local that the compiler keeps live.
+	w := undefined
+	for i := 0; i < 65; i++ {
+		w = assets.importWasm("@platforma-tests/wasm-table-fixture:main")
+	}
+	// Touch `w` after the loop so the compiler can't prove it's dead.
+	if is_undefined(w) {
+		return { unreachable: "fixture did not load" }
+	}
+	// The 65th call above must abort the script; this return is
+	// unreachable. If the cap is silently raised and we reach here, the
+	// test sees the "unreachable" output instead of the expected render
+	// failure.
+	return { unreachable: "reached end of loop without aborting" }
+})

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "2.18.0",
+  "version": "3.0.2",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "keywords": [],
   "license": "UNLICENSED",
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-healthcheck": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",

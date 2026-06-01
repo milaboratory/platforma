@@ -9,7 +9,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import { isNil } from "@milaboratories/helpers";
 
-/** Minimal subset of PTableV8 required by streamPTableRows. */
+/** Minimal subset of PTableV9 required by streamPTableRows. */
 export interface PTableDataSource {
   getData(
     columnIndices: number[],

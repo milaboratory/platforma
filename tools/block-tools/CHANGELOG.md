@@ -1,5 +1,120 @@
 # @platforma-sdk/block-tools
 
+## 2.10.1
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-model-common@1.43.0
+  - @milaboratories/pl-model-middle-layer@1.26.0
+  - @milaboratories/pl-model-backend@1.4.1
+
+## 2.10.0
+
+### Minor Changes
+
+- 0a3af02: MILAB-6145: tengo-builder learns a `wasm` artefact type; declare WASM runtime requirement on packed blocks.
+
+  - `pl-tengo` detects `assets.importWasm("@pkg:id")` in tengo sources (regex-based, like the other `import*` calls) and resolves the bytes from each dependency's `package.json` `exports[*].wasm` condition. Subpath `.` maps to id `main`; `./foo` maps to id `foo`.
+  - `@platforma-sdk/workflow-tengo`'s `assets` lib gains `importWasm(name)`, a thin wrapper over the new `plapi.loadWasm` host builtin. Returns the component's WIT-interface map directly — block authors index by canonical WIT interface name and JSON-marshal arguments / results at the call site. No SDK-side wrapper per consumer; the consuming file mentions the package id directly (same pattern as `importSoftware` / `importAsset`).
+  - `BlockPackMeta` gains `requiredCapabilities?: string[]` — Desktop matches it
+    against the backend's `serverInfo.capabilities` at install time. Forward-
+    compatible with old Desktops (Zod's `z.object` strips unknown keys).
+  - `pl-client`'s `MaintenanceAPI.Ping.Response` exposes the new `capabilities` field added in pl backend (proto field 9).
+  - `pl-middle-layer` exposes a `serverCapabilities` getter alongside the existing `serverPlatform`.
+  - `pl-tengo` enforces two build-time size guards that mirror backend ingest caps: each `.wasm` file must be ≤ 2 MiB raw (the backend stores it as a value resource, capped at 3 MiB after base64+JSON marshal), and each gzipped template pack must be ≤ ~3.4 MiB (backend `TemplatePackSizeLimit` is 3.5 MiB). Failures point at the offending artefact and, for over-large packs, list each WASM in the tree by size — so block authors see the cause at build time instead of getting an opaque "resource too large" error at publish or render.
+  - `pl-client`'s `TestHelpers.getTestClient` JWT cache now keys on the live backend `instanceId` in addition to address / user / password / expiration. Prevents a stale JWT issued by a previous backend run (rotated `instanceId`) being handed to the first authenticated call after a restart — the test fixture re-logs in instead of surfacing `failed to authenticate request using any of available methods`.
+
+### Patch Changes
+
+- Updated dependencies [0a3af02]
+  - @milaboratories/pl-model-backend@1.4.0
+  - @milaboratories/pl-model-middle-layer@1.25.0
+
+## 2.9.4
+
+### Patch Changes
+
+- Updated dependencies [7a8aeea]
+  - @milaboratories/pl-model-middle-layer@1.24.0
+
+## 2.9.3
+
+### Patch Changes
+
+- Updated dependencies [a5bc059]
+  - @milaboratories/pl-model-middle-layer@1.23.0
+
+## 2.9.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.5
+
+## 2.9.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.4
+
+## 2.9.0
+
+### Minor Changes
+
+- d9ede09: Decouple Zod from TypeScript types in the block-meta / block-tools-v2 layer:
+
+  - Domain types in `pl-model-middle-layer/block_meta` are now canonical TS
+    declarations (with a single `Content` discriminated-union as the source of
+    truth for content shapes). Schemas that survive are pegged to TS types via
+    `satisfies z.ZodType<T>`; transform-bearing boundary schemas use
+    `satisfies z.ZodType<T, z.ZodTypeDef, any>`.
+  - The `Workflow<>` and `BlockComponents<>` Zod factories in
+    `pl-model-middle-layer` are replaced by plain TS generics (`Workflow<T>`,
+    `BlockComponents<W, U>`) plus a concrete `BlockComponentsDescriptionRaw`
+    boundary schema with a normalizing `string → {type:"workflow-v1", main:...}`
+    coercion for `package.json` authoring.
+  - In `@platforma-sdk/block-tools/v2`, every `.transform(...)`/`.pipe(...)`
+    pipeline becomes a named async function: `resolveBlockPackDescription`,
+    `consolidateBlockPackDescription`, `embedBlockPackMetaAbsoluteBase64`,
+    `embedBlockPackMetaAbsoluteBytes`, `embedBlockPackMetaBytes`,
+    `blockComponentsManifestToAbsoluteUrl`, `addRelativePathPrefix`,
+    `parseGlobalOverviewReg`. The unused `BlockDescriptionToExplicitBinaryBytes`,
+    `GlobalOverviewToExplicitBinaryBytes`, `GlobalOverviewToExplicitBinaryBase64`
+    Zod factories are deleted.
+  - The `BlockComponentsAbsoluteUrl` Zod factory that lived in
+    `pl-model-middle-layer/block_components.ts` (input: `ContentRelativeBinary`)
+    is removed — it was unreachable from any caller. The block-tools variant
+    is replaced by `blockComponentsManifestToAbsoluteUrl(manifest, prefix)`.
+
+  All exported TS type names and shapes are preserved; downstream consumers
+  (`@milaboratories/pl-middle-layer`, blocks) keep compiling without source
+  changes beyond the `@platforma-sdk/block-tools` import-name updates already
+  applied in this PR.
+
+### Patch Changes
+
+- Updated dependencies [d9ede09]
+  - @milaboratories/pl-model-middle-layer@1.22.0
+
+## 2.8.4
+
+### Patch Changes
+
+- Updated dependencies [62e11be]
+  - @milaboratories/pl-model-middle-layer@1.21.0
+
+## 2.8.3
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.3
+
+## 2.8.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.3.2
+
 ## 2.8.1
 
 ### Patch Changes

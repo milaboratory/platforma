@@ -1,40 +1,74 @@
-from typing import List, Literal, Optional, Dict
-from msgspec import Struct
-import msgspec.json
+"""Materialise a polars LazyFrame into a partitioned PFrame on disk.
+
+The heavy lifting (per-partition parquet writes, bloom filters, page index,
+digests, byte counts, `.datainfo` JSON emission) is delegated to the
+`polars_pf.convert` extension from pframes-rs, which uses arrow-rs's writer
+with `BloomFilterPosition::AfterRowGroup` to keep memory bounded — the
+in-memory bloom accumulation in pyarrow's writer is what caused the OOM in
+the previous Python-only implementation.
+
+The Python side here owns:
+  * spec validation (`frame_name` shape, axis/column counts, dup names,
+    `partition_key_length < len(axes)`),
+  * the lazy pipeline that produces the intermediate parquet (cast, optional
+    null-axis filter for non-strict mode); the sort by axes is done
+    out-of-core by DuckDB afterwards, not by Polars (Polars' in-memory sort
+    OOMs on wide million-row frames),
+  * registering the sink with `StepContext` so the executor flushes it,
+  * scheduling the DuckDB sort + `polars_pf.convert` call after the sink completes.
+
+The `DataInfo*` / `Stats` / `NumberOfBytes` Structs below are kept as public
+types so legacy ptabler consumers that import them keep working, but
+write_frame no longer builds them in Python — `polars_pf.convert` writes
+the canonical JSON envelope directly to `<column>.datainfo`.
+"""
+from typing import Dict, List, Optional
 import os
-import polars as pl
+
 import duckdb
-import hashlib
+import polars as pl
+from msgspec import Struct
+from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
+from polars_pf.json.spec import AxisType, ColumnType
 
 from .base import PStep, StepContext
 from ..common import toPolarsType
 
-type AxisType = Literal['Int', 'Long', 'String']
-type ColumnType = Literal['Int', 'Long', 'Float', 'Double', 'String']
+__all__ = [
+    "AxisMapping",
+    "AxisType",
+    "ColumnMapping",
+    "ColumnType",
+    "ConversionParams",
+    "DataInfo",
+    "DataInfoAxis",
+    "DataInfoColumn",
+    "DataInfoPart",
+    "NumberOfBytes",
+    "Stats",
+    "WriteFrame",
+]
 
-class AxisMapping(Struct, rename="camel"):
-    column: str
-    type: AxisType
-
-class ColumnMapping(Struct, rename="camel"):
-    column: str
-    type: ColumnType
 
 class DataInfoAxis(Struct, rename="camel"):
     id: str
     type: AxisType
 
+
 class DataInfoColumn(Struct, rename="camel"):
     id: str
     type: ColumnType
+
 
 class NumberOfBytes(Struct, rename="camel"):
     axes: List[int]
     column: int
 
+
 class Stats(Struct, rename="camel"):
     number_of_rows: Optional[int] = None
     number_of_bytes: Optional[NumberOfBytes] = None
+
 
 class DataInfoPart(Struct, rename="camel"):
     data: str
@@ -43,50 +77,26 @@ class DataInfoPart(Struct, rename="camel"):
     data_digest: str
     stats: Optional[Stats] = None
 
+
 class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
     partition_key_length: int
     parts: Dict[str, DataInfoPart]
 
-def hash(prefix: str, lf: pl.LazyFrame, expr: pl.Expr) -> str:
-    hasher = hashlib.sha256(prefix.encode())
-    data = lf.select(expr.cast(pl.String).chash.sha2_256()).collect()
-    [hasher.update((h if h is not None else "|~|").encode()) for (h,) in data.iter_rows()]
-    return hasher.hexdigest()
 
-def get_column_null_count(conn: duckdb.DuckDBPyConnection, path: str, column_name: str):
-    result = conn.execute("""
-        SELECT SUM(stats_null_count), path_in_schema
-        FROM parquet_metadata(?)
-        WHERE path_in_schema = ?
-        GROUP BY path_in_schema
-    """, [path, column_name]).fetchall()
-    return result[0][0]
+# Row-group size shared by the DuckDB sort output and convert's read batch size
+ROW_GROUP_SIZE = 122_880
 
-def get_number_of_bytes_in_column(conn: duckdb.DuckDBPyConnection, path: str, column_name: str) -> int:
-    result = conn.execute("""
-        SELECT SUM(total_uncompressed_size), path_in_schema
-        FROM parquet_metadata(?)
-        WHERE path_in_schema = ?
-        GROUP BY path_in_schema
-    """, [path, column_name]).fetchall()
-    return result[0][0]
 
-def get_number_of_rows_in_column(conn: duckdb.DuckDBPyConnection, path: str) -> int:
-    result = conn.execute("""
-        SELECT num_rows
-        FROM parquet_file_metadata(?)
-    """, [path]).fetchall()
-    return result[0][0]
+def _escape(name: str) -> str:
+    """Quote a SQL identifier, doubling any embedded double-quotes."""
+    return '"' + name.replace('"', '""') + '"'
 
-def escape(name):
-    return f'"{name.replace('"', '""')}"'
 
 class WriteFrame(PStep, tag="write_frame"):
+    """PStep that materializes a polars LazyFrame into a partitioned PFrame
+    directory. Corresponds to the `WriteFrameStep` TypeScript type.
     """
-    PStep to create a PFrame from provided lazy table.
 
-    Corresponds to the WriteFrameStep defined in the TypeScript type definitions.
-    """
     input_table: str
     frame_name: str
     axes: List[AxisMapping]
@@ -94,204 +104,111 @@ class WriteFrame(PStep, tag="write_frame"):
     partition_key_length: int = 0
     strict: bool = False
 
-    def execute(self, ctx: StepContext):
+    def execute(self, ctx: StepContext) -> None:
+        self._validate()
+
+        lf = ctx.get_table(self.input_table)
+        frame_dir = os.path.join(ctx.settings.root_folder, self.frame_name)
+        os.makedirs(frame_dir)
+
+        cast_exprs = [
+            pl.col(a.column).cast(toPolarsType(a.type)) for a in self.axes
+        ] + [
+            pl.col(c.column).cast(toPolarsType(c.type), strict=False)
+            for c in self.columns
+        ]
+        lf = lf.select(cast_exprs)
+        if not self.strict:
+            lf = lf.filter(
+                pl.all_horizontal([pl.col(a.column).is_not_null() for a in self.axes])
+            )
+
+        unsorted_parquet = os.path.join(frame_dir, "unsorted.parquet")
+        lf = lf.sink_parquet(path=unsorted_parquet, lazy=True)
+        ctx.add_sink(lf)
+        
+        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
+        spill_dir = str(ctx.settings.spill_folder or frame_dir)
+        ctx.chain_task(
+            lambda: self._sort_and_convert(
+                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir
+            )
+        )
+
+    def _validate(self) -> None:
         if not self.frame_name or not self.frame_name.strip():
             raise ValueError("The 'frame_name' cannot be empty.")
         if self.frame_name != os.path.basename(self.frame_name):
             raise ValueError("The 'frame_name' must be a directory name, not a path.")
-        
         if not self.axes:
             raise ValueError("At least one axis must be specified.")
         if not self.columns:
             raise ValueError("At least one column must be specified.")
-        
-        axis_columns = [axis.column for axis in self.axes]
-        column_columns = [column.column for column in self.columns]
-        all_columns = axis_columns + column_columns
-        if len(all_columns) != len(set(all_columns)):
+
+        axis_columns = [a.column for a in self.axes]
+        column_columns = [c.column for c in self.columns]
+        if len(set(axis_columns + column_columns)) != len(axis_columns) + len(
+            column_columns
+        ):
             duplicates = list(set(axis_columns) & set(column_columns))
-            raise ValueError(f"Column identifiers used in both axes and columns: [{', '.join(duplicates)}]")
-        
+            raise ValueError(
+                f"Column identifiers used in both axes and columns: [{', '.join(duplicates)}]"
+            )
+
         if self.partition_key_length < 0 or self.partition_key_length >= len(self.axes):
             raise ValueError(
                 f"The 'partition_key_length' ({self.partition_key_length}) must be "
                 f"strictly less than the number of axes ({len(self.axes)})."
             )
-        
-        lf = ctx.get_table(self.input_table)
 
-        frame_dir = os.path.join(ctx.settings.root_folder, self.frame_name)
-        os.makedirs(frame_dir)
-
-        cast_expressions = []
-        for axis in self.axes:
-            cast_expressions.append(pl.col(axis.column).cast(toPolarsType(axis.type)))
-        for column in self.columns:
-            cast_expressions.append(pl.col(column.column).cast(toPolarsType(column.type), strict=False))
-        lf = lf.select(cast_expressions)
-
-        if not self.strict:
-            filter_expressions = [pl.col(axis.column).is_not_null() for axis in self.axes]
-            lf = lf.filter(pl.all_horizontal(filter_expressions))
-        
-        lf = lf.sort([axis.column for axis in self.axes], nulls_last=False)
-        
-        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
-        lf = lf.sink_parquet(path=intermediate_parquet, lazy=True)
-        
-        ctx.add_sink(lf)
-        
-        ctx.chain_task(lambda: self.write_partitions_with_bloom_filters(intermediate_parquet))
-
-    def write_partitions_with_bloom_filters(self, intermediate_parquet: str):
+    def _sort_and_convert(
+        self,
+        unsorted_parquet: str,
+        intermediate_parquet: str,
+        frame_dir: str,
+        spill_dir: str,
+    ) -> None:
+        order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in self.axes)
+        conn = duckdb.connect(database=":memory:")
         try:
-            frame_dir = os.path.dirname(intermediate_parquet)
-            duckdb_conn = duckdb.connect(database=':memory:')
-            duckdb_conn.execute("SET temp_directory TO ?;", [frame_dir])
-
-            if self.strict:
-                for axis in self.axes:
-                    null_count = get_column_null_count(duckdb_conn, intermediate_parquet, axis.column)
-                    if null_count > 0:
-                        raise ValueError(f"Found {null_count} null values in axis '{axis.column}'.")
-            
-            axis_identifiers = [escape(axis.column) for axis in self.axes]
-            duplicate_check = duckdb_conn.execute(f"""
-                SELECT {', '.join(axis_identifiers)}, COUNT(*) as count
-                FROM read_parquet(?)
-                GROUP BY {', '.join(axis_identifiers)}
-                HAVING COUNT(*) > 1
-                LIMIT 1
-            """, [intermediate_parquet]).fetchall()
-            
-            if duplicate_check:
-                duplicate_row = duplicate_check[0]
-                duplicate_values = list(duplicate_row[:-1])
-                raise ValueError(
-                    f"Multiple rows with the same axis key: {duplicate_values} detected. "
-                    "Consider aggregation or adding another axis."
+            conn.execute("SET temp_directory TO ?;", [spill_dir])
+            conn.execute(
+                f"""
+                COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
+                TO '{intermediate_parquet}'
+                (
+                    PRESERVE_ORDER TRUE,
+                    FORMAT PARQUET,
+                    ROW_GROUP_SIZE {ROW_GROUP_SIZE},
+                    COMPRESSION 'UNCOMPRESSED'
                 )
-
-            data_info_by_column = {}
-            for column in self.columns:
-                data_info_by_column[column.column] = DataInfo(
-                    partition_key_length=self.partition_key_length,
-                    parts={}
-                )
-            
-            non_partitioned_axes = self.axes[self.partition_key_length:]
-            axes_info = [DataInfoAxis(id=axis.column, type=axis.type) for axis in non_partitioned_axes]
-            columns_info = {
-                column.column: DataInfoColumn(id=column.column, type=column.type) for column in self.columns
-            }
-            def create_part_info(data_file, column, nrows, axes_hash, axes_nbytes):
-                data_path = os.path.join(frame_dir, data_file)
-
-                column_hash = hash(column.type, pl.scan_parquet(data_path), pl.col(column.column))
-                column_nbytes = get_number_of_bytes_in_column(duckdb_conn, data_path, column.column)
-                data_digest = hashlib.sha256(f"{axes_hash}{column_hash}".encode()).hexdigest()
-                
-                return DataInfoPart(
-                    data=data_file,
-                    axes=axes_info,
-                    column=columns_info[column.column],
-                    data_digest=data_digest,
-                    stats=Stats(
-                        number_of_rows=nrows,
-                        number_of_bytes=NumberOfBytes(
-                            axes=axes_nbytes,
-                            column=column_nbytes,
-                        )),
-                )
-            
-            def get_common_part_info(data_file, column):
-                data_path = os.path.join(frame_dir, data_file)
-
-                nrows = get_number_of_rows_in_column(duckdb_conn, data_path)
-                axes_hash = hash(
-                    "~".join([axis.type for axis in axes_info]),
-                    pl.scan_parquet(data_path),
-                    pl.concat_str([axis.id for axis in axes_info], separator="~"),
-                )
-                axes_nbytes = [
-                    get_number_of_bytes_in_column(duckdb_conn, data_path, axis.id) for axis in axes_info
-                ]
-                return nrows, axes_hash, axes_nbytes
-            
-            axis_identifiers = [escape(axis.column) for axis in self.axes]
-            all_column_identifiers = axis_identifiers + [escape(column.column) for column in self.columns]
-            def create_part_data(data_file: str, row=None):
-                query_params = [intermediate_parquet]
-                if row is not None:
-                    where_conditions = []
-                    for i, value in enumerate(row):
-                        where_conditions.append(f"{axis_identifiers[i]} = ?")
-                        query_params.append(value)
-                    
-                    query = f"""
-                        WITH filtered_data AS (
-                            SELECT *
-                            FROM read_parquet(?)
-                            WHERE {' AND '.join(where_conditions)}
-                        )
-                        SELECT {', '.join(all_column_identifiers[len(row):])}
-                        FROM filtered_data
-                        ORDER BY {', '.join(axis_identifiers[len(row):])}
-                    """
-                else:
-                    query = f"""
-                        SELECT {', '.join(all_column_identifiers)}
-                        FROM read_parquet(?)
-                        ORDER BY {', '.join(axis_identifiers)}
-                    """
-                
-                # To disable bloom filters set `DICTIONARY_SIZE_LIMIT 1`
-                # <https://duckdb.org/2025/03/07/parquet-bloom-filters-in-duckdb.html>
-                # PARQUET_VERSION ensures consistent uncompressed byte sizes across DuckDB versions
-                # <https://duckdb.org/2025/01/22/parquet-encodings.html>
-                # Changes in COPY parameters must be indicated as a new field in stats
-                # to ensure correct deduplication!
-                duckdb_conn.execute(f"""
-                    COPY ({query})
-                    TO '{os.path.join(frame_dir, data_file)}'
-                    (
-                        PRESERVE_ORDER TRUE,
-                        FORMAT PARQUET,
-                        PARQUET_VERSION 'V2',
-                        ROW_GROUP_SIZE 122880,
-                        DICTIONARY_SIZE_LIMIT 12288,
-                        BLOOM_FILTER_FALSE_POSITIVE_RATIO 0.01,
-                        COMPRESSION 'ZSTD',
-                        COMPRESSION_LEVEL 3
-                    )
-                """, query_params)
-            
-            if self.partition_key_length > 0:
-                partitioned_axes = [axis.column for axis in self.axes][:self.partition_key_length]
-                distinct_axes_df = pl.read_parquet(intermediate_parquet).select(partitioned_axes).unique()
-                for i, row in enumerate(distinct_axes_df.iter_rows()):
-                    part_key = msgspec.json.encode(list(row)).decode('utf-8')
-                    data_file = f"partition_{i}.parquet"
-                    create_part_data(data_file, row)
-                    nrows, axes_hash, axes_nbytes = get_common_part_info(data_file, column)
-                    for column in self.columns:
-                        part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
-                        data_info_by_column[column.column].parts[part_key] = part_info
-            elif pl.scan_parquet(intermediate_parquet).select(pl.len()).collect().item() > 0:
-                part_key = msgspec.json.encode(list()).decode('utf-8')
-                data_file = "partition_0.parquet"
-                create_part_data(data_file)
-                nrows, axes_hash, axes_nbytes = get_common_part_info(data_file, column)
-                for column in self.columns:
-                    part_info = create_part_info(data_file, column, nrows, axes_hash, axes_nbytes)
-                    data_info_by_column[column.column].parts[part_key] = part_info
-
-            for column_name, data_info in data_info_by_column.items():
-                datainfo_path = os.path.join(frame_dir, f"{column_name}.datainfo")
-                with open(datainfo_path, 'wb') as f:
-                    f.write(msgspec.json.encode(data_info))
-            
+                """,
+                [unsorted_parquet],
+            )
         finally:
-            duckdb_conn.close()
+            conn.close()
+            if os.path.exists(unsorted_parquet):
+                os.remove(unsorted_parquet)
+
+        self._convert(intermediate_parquet, frame_dir)
+
+    def _convert(self, intermediate_parquet: str, frame_dir: str) -> None:
+        params = ConversionParams(
+            frame_dir=frame_dir,
+            axes=self.axes,
+            columns=self.columns,
+            partition_key_length=self.partition_key_length,
+            strict=self.strict,
+            zstd_level=3,
+            row_group_size=ROW_GROUP_SIZE,
+            bloom_filter_fpp=0.05,
+            data_page_size=256 * 1024,
+            dict_page_size_limit=256 * 1024,
+            column_index_truncate_length=None,
+            digest_prefix="v02-",
+        )
+        try:
+            convert(intermediate_parquet, params)
+        finally:
             if os.path.exists(intermediate_parquet):
                 os.remove(intermediate_parquet)

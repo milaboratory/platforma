@@ -4,16 +4,19 @@ import {
   collapseAxes,
   findAxis,
   findTableColumn,
+  rewriteLegacyFilters,
 } from "@milaboratories/pframes-rs-wasm";
 import type {
   AxesId,
   AxesSpec,
   BuildQueryInput,
+  DataQueryBooleanExpression,
   PColumnInfo,
   PColumnSpec,
   PFrameSpecDriver,
   PTableColumnId,
   PTableColumnSpec,
+  PTableRecordFilter,
   SingleAxisSelector,
   SpecFrameHandle,
   SpecQueryJoinEntry,
@@ -209,6 +212,21 @@ export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
       const error = new PFrameSpecDriverError(`findTableColumn failed`);
       error.cause = new Error(
         `selector: ${JSON.stringify(selector)}, ` + `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
+  }
+
+  rewriteLegacyFilters(request: {
+    tableSpec: PTableColumnSpec[];
+    filters: PTableRecordFilter[];
+  }): DataQueryBooleanExpression[] {
+    try {
+      return rewriteLegacyFilters(request);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`rewriteLegacyFilters failed`);
+      error.cause = new Error(
+        `request: ${JSON.stringify(request)}, ` + `error:\n${ensureError(err)}`,
       );
       throw error;
     }

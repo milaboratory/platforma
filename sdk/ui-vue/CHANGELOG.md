@@ -1,5 +1,55 @@
 # @platforma-sdk/ui-vue
 
+## 1.77.18
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-model-common@1.43.0
+  - @milaboratories/pf-spec-driver@1.4.0
+  - @platforma-sdk/model@1.77.18
+  - @milaboratories/uikit@2.14.17
+
+## 1.77.17
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.22
+- @platforma-sdk/model@1.77.17
+- @milaboratories/uikit@2.14.16
+
+## 1.77.16
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.21
+- @platforma-sdk/model@1.77.16
+- @milaboratories/uikit@2.14.15
+
+## 1.77.15
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.20
+- @platforma-sdk/model@1.77.15
+- @milaboratories/uikit@2.14.14
+
+## 1.77.11
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.19
+- @platforma-sdk/model@1.77.11
+- @milaboratories/uikit@2.14.13
+
+## 1.77.10
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.3.18
+- @platforma-sdk/model@1.77.10
+- @milaboratories/uikit@2.14.12
+
 ## 1.77.4
 
 ### Patch Changes

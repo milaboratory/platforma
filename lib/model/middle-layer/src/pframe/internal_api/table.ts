@@ -1,40 +1,25 @@
-import type {
-  PTableColumnId,
-  PTableColumnSpec,
-  PTableRecordFilter,
-  PTableShape,
-  PTableSorting,
-  PTableVector,
-  TableRange,
-} from "@milaboratories/pl-model-common";
-import type { PTableId } from "./common";
+import type { PTableShape, PTableVector, TableRange } from "@milaboratories/pl-model-common";
 
 /**
- * Table view returned as a result of create table operation.
+ * Table view returned by `createTable`.
  *
- * PTable can be thought as having a composite primary key, consisting of axes,
- * and a set of data columns derived from PColumn values.
- * */
-export interface PTableV8 extends Disposable {
+ * PTable can be thought as having a composite primary key, consisting
+ * of axes, and a set of data columns derived from PColumn values.
+ * The table's column spec is owned by the caller — selector → index
+ * resolution runs on the caller side via WASM-spec.
+ */
+export interface PTableV9 extends Disposable {
   /**
-   * Returns ordered array of table axes specs (primary key "columns" in SQL
-   * terms) and data column specs (regular "columns" in SQL terms).
+   * Get PTable disk footprint in bytes.
    *
-   * Data for a specific table column can be retrieved using unified indexing
-   * corresponding to elements in this array.
+   * @param ops.withPredecessors When true, the footprint includes
+   *   every registered predecessor table reachable through the
+   *   query lineage. When false or omitted, only this table's own
+   *   materialised data is counted.
    *
-   * Axes are always listed first.
-   * */
-  getSpec(): PTableColumnSpec[];
-
-  /** Transforms unified column identifiers into unified indices of columns. */
-  getColumnIndices(columnIds: PTableColumnId[]): number[];
-
-  /**
-   * Get PTable disk footprint in bytes
    * Warning: This call materializes the join.
    */
-  getFootprint(ops?: { signal?: AbortSignal }): Promise<number>;
+  getFootprint(ops?: { withPredecessors?: boolean; signal?: AbortSignal }): Promise<number>;
 
   /**
    * Unified table shape
@@ -58,12 +43,6 @@ export interface PTableV8 extends Disposable {
       signal?: AbortSignal;
     },
   ): Promise<PTableVector[]>;
-
-  /** Filters the table and returns new PTable instance */
-  filter(tableId: PTableId, request: PTableRecordFilter[]): PTableV8;
-
-  /** Sorts the table and returns new PTable instance. */
-  sort(tableId: PTableId, request: PTableSorting[]): PTableV8;
 
   /** Deallocates all underlying resources */
   dispose(): void;
