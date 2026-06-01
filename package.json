@@ -4,7 +4,7 @@
   "scripts": {
     "build": "turbo run build --summarize",
     "build:local": "PL_PKG_DEV=local pnpm build",
-    "test": "turbo run test --concurrency 1 --summarize",
+    "test": "turbo run test --concurrency 2 --summarize",
     "test:no-cache": "pnpm test -- --force",
     "test:local": "PL_PKG_DEV=local pnpm test",
     "test:local+dry-run": "pnpm test:local -- --dry-run=json",

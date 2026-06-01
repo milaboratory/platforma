@@ -8,7 +8,7 @@ export default defineConfig(
       setupFiles: ["./vitest/setup.worker-jitter.ts"],
       testTimeout: 15000,
       maxConcurrency: 1,
-      maxWorkers: 2,
+      maxWorkers: 4,
       retry: 2,
       reporters: ["verbose"],
       sequence: {
