@@ -7,7 +7,6 @@ import type {
   JsonPartitionedDataInfo,
   ParquetChunk,
   ParquetPartitionedDataInfo,
-  PColumnSpec,
   PObjectId,
 } from "@milaboratories/pl-model-common";
 import type { HttpServerInfo } from "./http_helpers";
@@ -55,32 +54,6 @@ export type DataInfo<Blob> =
   | JsonPartitionedDataInfo<Blob>
   | BinaryPartitionedDataInfo<Blob>
   | ParquetPartitionedDataInfo<ParquetChunk<Blob>>;
-
-/** API exposed by PFrames library allowing to create and provide data for
- * PFrame objects */
-export interface PFrameFactoryAPIV4 extends Disposable {
-  /** Associates data source with this PFrame */
-  setDataSource(dataSource: PFrameDataSourceV2): void;
-
-  /** Adds PColumn without data info */
-  addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
-
-  /**
-   * Assign data info to the specified PColumn.
-   * For parquet data info, schema resolution via network is performed during this call.
-   */
-  setColumnData(
-    columnId: PObjectId,
-    dataInfo: DataInfo<PFrameBlobId>,
-    options?: {
-      signal?: AbortSignal;
-    },
-  ): Promise<void>;
-
-  /** Releases all the data previously added to PFrame using methods above,
-   * any interactions with disposed PFrame will result in exception */
-  dispose(): void;
-}
 
 /**
  * Structural type information needed by the data side: axis value
