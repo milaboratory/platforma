@@ -30,7 +30,7 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
 }
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
-  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV13>;
+  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV14>;
   /**
    * WASM-spec frame built from this PFrame's columns. Source of truth
    * for spec-side operations: column discovery, selector resolution,
@@ -110,21 +110,24 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
       }));
 
       const pFrameData = PFrameFactory.createPFrame({ frameId, spillPath: this.spillPath, logger });
-      const promises: Promise<void>[] = [];
       try {
         pFrameData.setDataSource({
           ...this.localBlobProvider.makeDataSource(this.disposeSignal),
           parquetServer: this.remoteBlobProvider.httpServerInfo(),
         });
 
-        for (const column of jsonifiedColumns) {
-          pFrameData.addColumnSpec(column.id, column.spec);
-          promises.push(
-            pFrameData.setColumnData(column.id, column.data, { signal: this.disposeSignal }),
-          );
-        }
-
-        this.pFrameDataPromise = Promise.all(promises)
+        this.pFrameDataPromise = pFrameData
+          .addColumns(
+            jsonifiedColumns.map((c) => ({
+              id: c.id,
+              typeSpec: {
+                axes: c.spec.axesSpec.map((a) => a.type),
+                columns: [c.spec.valueType],
+              },
+              data: c.data,
+            })),
+            { signal: this.disposeSignal },
+          )
           .then(() => pFrameData)
           .catch((err) => {
             this.dispose();
@@ -137,13 +140,9 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
             throw error;
           });
       } catch (err: unknown) {
-        // setDataSource / addColumnSpec / setColumnData threw synchronously
-        // before pFrameDataPromise was assigned — dispose the addon's
-        // pFrameData explicitly (the dispose() path can't reach it yet).
-        // `allSettled` attaches handlers to any in-flight setColumnData
-        // promises so they don't trigger unhandled-rejection warnings
-        // when the dispose below rejects them.
-        void Promise.allSettled(promises);
+        // setDataSource / addColumns threw synchronously before
+        // pFrameDataPromise was assigned — dispose the addon's pFrameData
+        // explicitly (the dispose() path can't reach it yet).
         pFrameData.dispose();
         throw err;
       }

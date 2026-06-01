@@ -10,6 +10,7 @@ import type {
   PColumnValues,
   PTableColumnId,
   PTableColumnSpec,
+  PTableRecordFilter,
   SingleAxisSelector,
   BuildQueryInput,
   DeleteColumnRequest,
@@ -125,6 +126,16 @@ export function getServiceInjectors(): ServiceInjectorMap {
             driver.findTableColumn(
               vm.importObjectViaJson(tableSpec) as PTableColumnSpec[],
               vm.importObjectViaJson(selector) as PTableColumnId,
+            ),
+          ),
+
+        rewriteLegacyFilters: (request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.rewriteLegacyFilters(
+              vm.importObjectViaJson(request) as {
+                tableSpec: PTableColumnSpec[];
+                filters: PTableRecordFilter[];
+              },
             ),
           ),
       };
