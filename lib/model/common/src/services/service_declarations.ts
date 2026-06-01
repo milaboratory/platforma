@@ -43,6 +43,7 @@ export const Services = {
       "collapseAxes",
       "findAxis",
       "findTableColumn",
+      "rewriteLegacyFilters",
     ] as const,
     uiMethods: [
       "createSpecFrame",
@@ -55,6 +56,7 @@ export const Services = {
       "collapseAxes",
       "findAxis",
       "findTableColumn",
+      "rewriteLegacyFilters",
     ] as const,
   }),
   PFrame: service<PFrameModelDriver, PFrameDriver>()({
