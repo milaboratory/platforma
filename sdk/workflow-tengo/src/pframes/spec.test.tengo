@@ -1,6 +1,7 @@
 test := import(":test")
 pSpec := import(":pframes.spec")
 json := import("json")
+canonical := import(":canonical")
 
 TestMakeTrace := func() {
 	trace1 := pSpec.makeTrace(undefined, {type: "type", label: "the label"})
@@ -262,4 +263,35 @@ TestSpecDistiller := func() {
 	}
 
 	test.isEqual(distilledSpecs, specs)
+}
+
+// MILAB-6319 regression tests — guard the nested-string fix at spec.lib.tengo:278.
+//
+// makeTrace produces a STRING (valueStr) that becomes the value of the
+// `pl7.app/trace` annotation on column specs. Before the fix this string
+// was built with `json.encode`, whose Go-map iteration is randomized per
+// call — and because the string is embedded inside the parent spec JSON,
+// pl's outer-level canonicalization cannot reach inside it. The non-canonical
+// inner key order pollutes the spec's CID and breaks dedup.
+
+TestMakeTraceValueStrIsDeterministic := func() {
+	step := { type: "Xsv", label: "TSV to PColumn", importance: 10, id: "tsv" }
+
+	first := pSpec.makeTrace(undefined, step).valueStr
+	for i := 0; i < 200; i++ {
+		test.isEqual(first, pSpec.makeTrace(undefined, step).valueStr,
+			"makeTrace.valueStr drifted across calls — nested-string non-determinism returned")
+	}
+}
+
+TestMakeTraceValueStrIsSortedKeys := func() {
+	step := { type: "Xsv", label: "TSV to PColumn", importance: 10, id: "tsv" }
+	trace := pSpec.makeTrace(undefined, step)
+
+	// Expected exact sorted-key output.
+	expected := "[{\"id\":\"tsv\",\"importance\":10,\"label\":\"TSV to PColumn\",\"type\":\"Xsv\"}]"
+	test.isEqual(expected, trace.valueStr)
+
+	// Sanity: canonical encoding of the same value produces the same bytes.
+	test.isEqual(canonical.encode([step]), trace.valueStr)
 }
