@@ -1,28 +1,15 @@
 // Test-scope rules.
 
-import {
-  scope,
-  fixed,
-  managed,
-  scaffold,
-  seed,
-  file,
-  text,
-  generate,
-  blockVars,
-} from "../engine/api";
-import { testPackageJsonInitial } from "../templates/generated/test-package-json";
-import { testPackageJsonRules } from "./test-package-json";
+import { scope, fixed, managed, scaffold, seed, file, text, generate } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { testPackageJsonInitial, testPackageJsonRules } from "./test-package-json";
 
 export function testRules(): void {
   scope("test", () => {
-    // tsconfig carries an explicit `files: []` alongside `include:
-    // ["src/**/*"]`: a freshly-init'd block has no test sources yet (the
-    // test-framework project seeds them later), and tsc errors `TS18003: No
-    // inputs were found` when an `include` matches nothing. The empty `files`
-    // array suppresses that error for an empty scope while `include` still
-    // type-checks real tests once present — so the build/check gate passes on
-    // a test-less block without forcing a fake test into the scaffold.
+    // tsconfig carries `files: []` alongside `include: ["src/**/*"]`: tsc
+    // errors TS18003 when an `include` matches nothing, so an empty `files`
+    // lets the check pass on a test-less block while `include` still
+    // type-checks real tests once present.
     fixed("tsconfig.json", file("test/tsconfig.json"));
     // scaffold (not fixed): integration tests legitimately tune timeout /
     // retry per block. Write the canonical default if absent; never
@@ -30,11 +17,8 @@ export function testRules(): void {
     scaffold("vitest.config.mts", file("test/vitest.config.mts"));
 
     // A trivial, backend-free demo test so a freshly-init'd block ships a
-    // COMPLETE, runnable test suite (`pnpm test` green out of the box) rather
-    // than an empty scope. Real integration tests (which need a live backend
-    // via @platforma-sdk/test) are seeded later by the test-framework
-    // project; this placeholder just demonstrates the harness works. Seed:
-    // author-owned, written once at init, never touched on refresh.
+    // runnable suite (`pnpm test` green out of the box) rather than an empty
+    // scope. Author-owned seed: written once at init, untouched on refresh.
     seed(
       "src/demo.test.ts",
       text(
@@ -47,7 +31,7 @@ export function testRules(): void {
 
     managed(
       "package.json",
-      generate(() => testPackageJsonInitial(blockVars())),
+      generate(() => testPackageJsonInitial(getActiveRunContext())),
       () => {
         testPackageJsonRules();
       },

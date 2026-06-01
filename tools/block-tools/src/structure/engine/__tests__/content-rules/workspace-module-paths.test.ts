@@ -24,11 +24,11 @@ const modules: Module[] = [
 const ctx = createRunContext({ blockVars: vars, modules });
 
 describe("ensureWorkspaceModulePaths", () => {
-  // G5: the root module ("") is discovered implicitly and is NEVER written
+  // The root module ("") is discovered implicitly and is NEVER written
   // to `packages:` — listing "." there would break turbo's task graph.
   const nonRootModules = modules.filter((m) => m.path !== "");
 
-  test("writes a sorted packages list of non-root modules (root excluded, G5)", () => {
+  test("writes a sorted packages list of non-root modules (root excluded)", () => {
     const doc = parseYaml("packages: []\n");
     withManagedYaml(doc, () => ensureWorkspaceModulePaths(), { ctx });
     const json = doc.toJSON() as { packages: string[] };

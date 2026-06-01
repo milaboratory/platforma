@@ -93,11 +93,11 @@ export function defineStructure(fn: () => void): Structure {
       );
     }
     const structure: Structure = { children: root };
-    // Spec § "Engine Lifecycle" phase 2 validation: a path may not
-    // appear as both `seed` and any engine-managed primitive
-    // (`fixed` / `managed` / `scaffold`) within the same scope. The
-    // two contracts (write-once-and-ignore vs rewrite-on-every-refresh)
-    // are mutually exclusive. Detect at tree-build time.
+    // Validation: a path may not appear as both `seed` and any
+    // engine-managed primitive (`fixed` / `managed` / `scaffold`) within
+    // the same scope. The two contracts (write-once-and-ignore vs
+    // rewrite-on-every-refresh) are mutually exclusive. Detect at
+    // tree-build time.
     validateSeedDisjointness(structure);
     return structure;
   } finally {
@@ -149,7 +149,7 @@ function validateSeedDisjointness(structure: Structure): void {
             `is declared as both seed and ${others}. Seeds are block-author territory ` +
             `(written once at init, untouched thereafter); engine-managed primitives ` +
             `(fixed/managed/scaffold) rewrite on every refresh. The two contracts cannot ` +
-            `coexist on the same path. See dsl-example.md § "File Kinds Recap".`,
+            `coexist on the same path.`,
         );
       }
     }

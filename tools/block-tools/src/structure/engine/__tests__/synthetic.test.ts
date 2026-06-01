@@ -1,6 +1,6 @@
 // Synthetic-fixture round trip through the IR.
 //
-// Exercises module-global builders (D2): `defineStructure(() => { ... })`
+// Exercises module-global builders: `defineStructure(() => { ... })`
 // with builders imported by name. Covers a scope frame, a when frame, both
 // mode frames (`onUpdateDeps` and `onInitOrUpdate`), a rename. Asserts IR
 // shape, the post-flatten ordered list (including the per-leaf `modes`

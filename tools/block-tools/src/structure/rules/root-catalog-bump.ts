@@ -13,7 +13,8 @@
 // from the parent monorepo, so catalog resolution never applies there.
 
 import { onInitOrUpdate, scope, when, managed, generate, bumpCatalogToLatest } from "../engine/api";
-import { rootPnpmWorkspaceInitial } from "../templates/generated/root-pnpm-workspace";
+import { getActiveRunContext } from "../engine/builders";
+import { rootPnpmWorkspaceInitial } from "./root-pnpm-workspace";
 
 export function rootCatalogBumpRules(): void {
   onInitOrUpdate(() => {
@@ -28,7 +29,7 @@ export function rootCatalogBumpRules(): void {
           // ContentForm is required, so reuse the generator.
           managed(
             "pnpm-workspace.yaml",
-            generate(() => rootPnpmWorkspaceInitial()),
+            generate(() => rootPnpmWorkspaceInitial(getActiveRunContext())),
             () => {
               // SDK families → exact latest (default modifier). Infra /
               // runtime entries don't match these patterns and stay floored.

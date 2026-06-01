@@ -1,44 +1,30 @@
 // Migrations + legacy cleanup live here.
 //
-// Two patterns coexist (see dsl-example.md § "Compound Migration With
-// Folder Rename + Package Update" and § "Legacy-Cleanup Pattern Inside
-// `migrations.ts`"):
+// Two patterns coexist:
 //
 // 1. One-shot migrations gated on filesystem state. Folder renames,
 //    cross-cutting one-time transforms. Use `when(pathExists/pathMissing)`
-//    to ensure the migration fires once and becomes idempotent on
-//    subsequent runs.
+//    so the migration fires once and is idempotent on subsequent runs.
 //
 // 2. Legacy cleanup primitives. Unconditional `removeScript`,
 //    `removeDep`, `remove(path)` calls naming artefacts the canonical
 //    layout never produces. Idempotent by definition (no-op on absent
-//    keys/paths). Each line is a one-way decision once shipped — every
-//    block converges.
-//
-// The legacyCleanup() function below is the home for cleanup rules;
-// step 5b experiments grow the rule set against real external blocks.
+//    keys/paths). Each line is a one-way decision: every block converges.
 
-import {
-  scope,
-  remove,
-  managed,
-  generate,
-  removeScript,
-  removeDep,
-  blockVars,
-} from "../engine/api";
-import { rootPackageJsonInitial } from "../templates/generated/root-package-json";
+import { scope, remove, managed, generate, removeScript, removeDep } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { rootPackageJsonInitial } from "./root-package-json";
 
 export function testFrameworkMigration(): void {
-  // No active rename-bearing migration in v1. Hold for the test
-  // framework rollout (see spec § "Goals" point 7).
+  // No active rename-bearing migration yet. Reserved for the test
+  // framework rollout.
 }
 
 // Unconditional legacy-cleanup rules. Each is a no-op on an
 // already-canonical block (remove on an absent path, removeScript /
 // removeDep on an absent key) and idempotent, so they sit at top level
-// with no `when` gate. Grown against the step-5b experiment blocks; the
-// trailing comment on each line names the block(s) it was discovered on.
+// with no `when` gate. The trailing comment on each line names the real
+// block(s) that carry the artefact being cleaned.
 //
 // Root-scope cleanup is skipped for `--sdk-internal` blocks (no root
 // module in that mode), so it never touches in-monorepo blocks.
@@ -59,28 +45,18 @@ export function legacyCleanup(): void {
     remove("eslint.config.mjs"); // all 5 experiment blocks
   });
 
-  // Root-scope cleanup. The second `managed("package.json")` body
-  // composes after rootRules (dsl-example.md § "Legacy-Cleanup Pattern").
+  // Root-scope cleanup. The second `managed("package.json")` body composes
+  // after rootRules.
   scope("root", () => {
     remove(".prettierrc"); // samples-and-data, sequence-properties (prettier → oxfmt)
     managed(
       "package.json",
-      generate(() => rootPackageJsonInitial(blockVars())),
+      generate(() => rootPackageJsonInitial(getActiveRunContext())),
       () => {
-        // 5c CORRECTION (findings §2): build:dev / test:dry-run / mark-stable
-        // are canonical lifecycle scripts (now re-asserted by
-        // rootPackageJsonRules) — their 5b removal was the inverted-framing
-        // mistake and is reverted. lint / type-check were the 5b agent's
-        // own additions beyond the sanctioned set; removing them is also
-        // reverted so blocks that still carry them keep them (the canonical
-        // `check`/`fmt` cover the same ground but the scaffold no longer
-        // strips the explicit scripts).
-        //
-        // Genuinely-retired removals are KEPT: `pretty` (prettier → oxfmt,
-        // and `fmt` = ts-builder format = oxfmt is canonical now) and the
-        // standalone blocks-deps-updater dep (merged into block-tools).
-        removeScript("pretty"); // samples-and-data (prettier → oxfmt, replaced by `fmt`)
-        removeDep("@platforma-sdk/blocks-deps-updater"); // samples-and-data (merged into block-tools)
+        // `pretty` (prettier) is superseded by the canonical `fmt` (oxfmt);
+        // the standalone deps-updater was merged into block-tools.
+        removeScript("pretty"); // samples-and-data
+        removeDep("@platforma-sdk/blocks-deps-updater"); // samples-and-data
       },
     );
   });
