@@ -17,11 +17,16 @@ import { fullNameToString } from "./package";
 //      3.5 MiB per gzipped template pack, checked before the pack itself is
 //      stored as a TengoTemplatePackV1 value resource.
 
-// 2 MiB raw → ~2.67 MiB base64 + JSON wrapper → comfortably under the 3 MiB
-// per-value-resource cap with ~330 KiB headroom for the WasmV1Data wrapper
-// (Name, Version, Runtime, DefaultMemoryLimit, JSON syntax). WasmV1Data.Code
-// is a Go `[]byte`, which encoding/json serialises as base64 — that's where
-// the 4/3 expansion comes from.
+// Cap on the gzipped wasm payload that ends up in WasmV1Data.Code on the
+// backend. 2 MiB gzipped → ~2.67 MiB base64 + JSON wrapper → comfortably
+// under the 3 MiB per-value-resource cap with ~330 KiB headroom for the
+// WasmV1Data wrapper (Name, Version, Runtime, DefaultMemoryLimit, JSON
+// syntax). WasmV1Data.Code is a Go `[]byte`, which encoding/json serialises
+// as base64 — that's where the 4/3 expansion comes from.
+//
+// The tengo-builder gzips wasm files before adding them to the pack; this
+// cap therefore admits raw .wasm files several times larger than 2 MiB
+// (real wasm components compress to ~30-40 % of their raw size).
 export const MAX_WASM_FILE_BYTES = 2 * 1024 * 1024;
 
 // 100 KiB below the backend's 3.5 MiB so blocks don't break on small
@@ -41,8 +46,8 @@ export function assertWasmFileSize(
 ): void {
   if (byteLength <= MAX_WASM_FILE_BYTES) return;
   throw new Error(
-    `WASM artefact ${fullNameToString(fullName)} from ${file} is ${formatBytes(byteLength)}, ` +
-      `which exceeds tengo-builder's ${formatBytes(MAX_WASM_FILE_BYTES)} per-WASM cap. ` +
+    `WASM artefact ${fullNameToString(fullName)} from ${file} is ${formatBytes(byteLength)} ` +
+      `gzipped, which exceeds tengo-builder's ${formatBytes(MAX_WASM_FILE_BYTES)} per-WASM cap. ` +
       `The backend stores each WASM as a single value resource (3 MiB hard cap after base64+JSON ` +
       `marshal — see maxResourceDataSize in pl: platform/core/transaction/assertions.go). ` +
       `Strip debug info or run \`wasm-opt -Oz\` to shrink it.`,
@@ -52,8 +57,13 @@ export function assertWasmFileSize(
 export interface WasmContribution {
   /** Artefact name as stored under TemplateDataV3.wasm (e.g. "@pkg:id"). */
   readonly name: string;
-  /** Raw WASM bytes — decoded from the base64-encoded source in hashToSource. */
-  readonly rawBytes: number;
+  /**
+   * Bytes this artefact contributes to the pack, measured after gzip and
+   * before base64 — i.e. the size of the binary payload stored on the
+   * backend in WasmV1Data.Code. Decoded from the base64-encoded source in
+   * hashToSource.
+   */
+  readonly storedBytes: number;
 }
 
 /**
@@ -69,10 +79,10 @@ export function collectWasmContributions(tpl: CompiledTemplateV3): WasmContribut
     for (const [name, ref] of Object.entries(t.wasm ?? {})) {
       if (seen.has(name)) continue;
       const base64 = tpl.hashToSource[ref.sourceHash];
-      // base64 encodes 3 raw bytes per 4 chars; the off-by-padding is at most
-      // 2 bytes per artefact — fine for a human-readable size breakdown.
-      const rawBytes = base64 != null ? Math.floor((base64.length * 3) / 4) : 0;
-      seen.set(name, { name, rawBytes });
+      // base64 encodes 3 binary bytes per 4 chars; the off-by-padding is at
+      // most 2 bytes per artefact — fine for a human-readable size breakdown.
+      const storedBytes = base64 != null ? Math.floor((base64.length * 3) / 4) : 0;
+      seen.set(name, { name, storedBytes });
     }
     for (const sub of Object.values(t.templates ?? {})) walk(sub);
   }
@@ -86,12 +96,12 @@ export function assertTemplatePackSize(
   wasmContributions: readonly WasmContribution[],
 ): void {
   if (gzippedByteLength <= MAX_TEMPLATE_PACK_BYTES_GZIPPED) return;
-  const ranked = [...wasmContributions].sort((a, b) => b.rawBytes - a.rawBytes);
+  const ranked = [...wasmContributions].sort((a, b) => b.storedBytes - a.storedBytes);
   const breakdown =
     ranked.length === 0
       ? "\n  (no WASM artefacts in this pack — heavy libs, software descriptors, or sub-templates are the likely cause.)"
-      : "\nWASM artefacts in this pack (raw bytes):\n" +
-        ranked.map((w) => `  - ${w.name} — ${formatBytes(w.rawBytes)}`).join("\n");
+      : "\nWASM artefacts in this pack (gzipped, pre-base64):\n" +
+        ranked.map((w) => `  - ${w.name} — ${formatBytes(w.storedBytes)}`).join("\n");
   throw new Error(
     `Template pack ${templateName} is ${formatBytes(gzippedByteLength)} gzipped, ` +
       `which exceeds tengo-builder's ${formatBytes(MAX_TEMPLATE_PACK_BYTES_GZIPPED)} per-pack cap. ` +
