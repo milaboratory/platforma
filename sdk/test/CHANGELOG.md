@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.77.18
+
+### Patch Changes
+
+- Updated dependencies [98092a6]
+  - @milaboratories/pl-middle-layer@1.63.0
+  - @milaboratories/pl-client@3.10.1
+  - @platforma-sdk/model@1.77.18
+  - @milaboratories/pl-tree@1.12.6
+
 ## 1.77.17
 
 ### Patch Changes
