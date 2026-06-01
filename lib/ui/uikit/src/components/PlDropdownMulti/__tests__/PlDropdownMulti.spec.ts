@@ -129,6 +129,23 @@ describe("PlDropdownMulti", () => {
     expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(false);
   });
 
+  it("renders a found option's empty label as empty, never the missing label", async () => {
+    const wrapper = mount(PlDropdownMulti, {
+      props: {
+        modelValue: [1],
+        // Distinctive text so a regression to the `|| missingValueLabel` fallback is obvious.
+        missingValueLabel: "SHOULD-NOT-APPEAR",
+        options: [{ label: "", value: 1 }],
+      },
+    });
+    await flushPromises();
+    // A found option renders its own (empty) label verbatim — matches PlDropdown. It must
+    // not borrow the missing-value text, which is reserved for values absent from options.
+    expect(wrapper.find(".pl-chip").exists()).toBe(true);
+    expect(wrapper.find(".pl-dropdown-multi__chip--missing").exists()).toBe(false);
+    expect(wrapper.html()).not.toContain("SHOULD-NOT-APPEAR");
+  });
+
   it("replaces missing chips with normal chips when options later contain the values", async () => {
     const wrapper = mount(PlDropdownMulti, {
       props: {
