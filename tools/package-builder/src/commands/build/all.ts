@@ -3,6 +3,7 @@ import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 import * as envs from "../../core/envs";
+import * as defaults from "../../defaults";
 
 export default class BuildAll extends Command {
   static override description =
@@ -41,16 +42,30 @@ export default class BuildAll extends Command {
       core.allPlatforms = flags["all-platforms"];
       core.fullDirHash = flags["full-dir-hash"];
 
+      const isDevLocal = core.buildMode === "dev-local";
+
+      // Docker build defaults to OFF outside CI — including dev-local. Block
+      // developers run 'pnpm run build:dev' on every save and do not want a
+      // slow cross-compile + push on each iteration. To publish dev images,
+      // they invoke a separate script (template ships 'publish:docker:dev')
+      // that sets PL_DOCKER_BUILD=1 + PL_DOCKER_AUTOPUSH=1.
       const buildDocker = cmdOpts.shouldDoAction(
         envs.isCI(),
         flags["docker-build"],
         flags["docker-no-build"],
       );
 
+      // When dev-local explicitly opts into a docker build (--docker-build /
+      // PL_DOCKER_BUILD=1) and no --docker-registry is set, fall back to the
+      // shared dev ECR.
+      const dockerRegistry =
+        flags["docker-registry"] ??
+        (isDevLocal && buildDocker ? defaults.DEV_DOCKER_REGISTRY : undefined);
+
       if (buildDocker) {
         core.buildDockerImages({
           ids: flags["package-id"],
-          registry: flags["docker-registry"],
+          registry: dockerRegistry,
           strictPlatformMatching: envs.isCI(),
         });
       }
@@ -71,8 +86,12 @@ export default class BuildAll extends Command {
         packageIds: flags["package-id"] ? flags["package-id"] : undefined,
       });
 
+      // Auto-push defaults to OFF outside CI. Dev iteration doesn't push;
+      // explicit opt-in via --docker-autopush / PL_DOCKER_AUTOPUSH=1 (which
+      // 'publish:docker:dev' sets) flips it. Private packages never push by
+      // default — the dev ECR is public.
       const autopush = cmdOpts.shouldDoAction(
-        envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
+        envs.isCI() && !core.pkgInfo.isPrivate,
         flags["docker-autopush"],
         flags["docker-no-autopush"],
       );
@@ -80,6 +99,10 @@ export default class BuildAll extends Command {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.
         //       once we support content-addressable archives, we can publish everything here (not just docker).
+
+        // The user is expected to have already 'docker login'-ed to the target
+        // registry (CI workflows handle their own login step). If push fails
+        // because of auth, docker.push surfaces a self-explanatory error.
         core.publishDockerImages({
           ids: flags["package-id"],
           pushTo: flags["docker-push-to"],

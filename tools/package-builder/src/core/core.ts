@@ -368,20 +368,19 @@ export class Core {
         continue;
       }
 
-      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(
-          options?.strictPlatformMatching ? "debug" : "warn",
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
-            ` is currently not supported by Platforma Backend docker feature`,
-        );
-        continue;
-      }
-
-      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
-        this.logger.debug(
-          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
-        );
-        continue;
+      // Docker images are always built as linux/amd64 (Platforma's K8s target);
+      // on non-x64 hosts pl-pkg cross-compiles via qemu so dev iteration on
+      // Macs works. In CI, strictPlatformMatching is set on the caller side
+      // and we still want exactly one matrix leg (linux/x64) to do the work —
+      // otherwise every arm/windows runner duplicates the build and Windows
+      // runners outright fail on 'docker build --platform linux/amd64'.
+      if (options?.strictPlatformMatching) {
+        if (util.currentOS() !== "linux" || util.currentArch() !== "x64") {
+          this.logger.debug(
+            `Docker image build skipped for '${artifact.id}': strict-platform mode requires linux/x64 host`,
+          );
+          continue;
+        }
       }
 
       this.buildDockerImage(artifact.id, artifact, options?.registry);
@@ -432,10 +431,11 @@ export class Core {
     docker.addTag(localTag, dstTag);
     // do not remove local tag to make 'local' builds to also work with docker.
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, "docker", util.currentArch());
+    // Docker images target linux/amd64 regardless of host (see docker.build).
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(pkgID, "docker", "x64");
     writeBuiltArtifactInfo(artInfoPath, {
       type: "docker",
-      platform: util.currentPlatform(),
+      platform: "linux-x64",
       remoteArtifactLocation: dstTag,
       entrypoint: docker.getImageEntrypoint(localTag),
     });
@@ -714,9 +714,14 @@ export class Core {
   }) {
     this.logger.info(`Publishing docker images...`);
 
-    const packagesToPublish = options?.ids ?? [
-      ...new Set([...this.buildablePackages.keys(), ...this.dockerPackages.keys()]),
-    ];
+    // Iterate only dockerPackages (matches buildDockerImages). Previously we
+    // also iterated buildablePackages.keys(), but for entrypoints with a python
+    // or conda binary that autogens a docker image, the binary key (e.g. "main")
+    // and the virtual docker key ("main:docker") both resolve to the same
+    // docker artifact via getArtifact's :docker fallback. That caused
+    // publishDockerImage to run twice — first push succeeded, second saw the
+    // tag in the registry and logged a misleading "Skipping push..." line.
+    const packagesToPublish = options?.ids ?? Array.from(this.dockerPackages.keys());
     this.logger.debug(`Selected packages:\n  ${packagesToPublish.join("\n  ")}`);
     this.logger.debug(`All known packages:\n  ${Array.from(this.packages.keys()).join("\n  ")}`);
 
@@ -731,20 +736,18 @@ export class Core {
         continue;
       }
 
-      if (!artifacts.dockerArchitectures.includes(util.currentArch())) {
-        this.logger.log(
-          options?.strictPlatformMatching ? "debug" : "warn",
-          `Docker image generation was skipped because host architecture '${util.currentArch()}'` +
-            ` is currently not supported by Platforma Backend docker feature`,
-        );
-        continue;
-      }
-
-      if (options?.strictPlatformMatching && util.currentOS() !== "linux") {
-        this.logger.debug(
-          `Docker image generation was skipped: not a linux OS and 'strictPlatformMatching' is enabled`,
-        );
-        continue;
+      // Mirror the gate in buildDockerImages: in strict (CI) mode, only the
+      // linux/x64 leg publishes so we don't race parallel pushes of the same
+      // tag from arm and windows matrix legs. Dev (non-strict) mode pushes
+      // unconditionally — the cross-compile produced a valid linux/amd64
+      // image regardless of host.
+      if (options?.strictPlatformMatching) {
+        if (util.currentOS() !== "linux" || util.currentArch() !== "x64") {
+          this.logger.debug(
+            `Docker image publish skipped for '${pkg.id}': strict-platform mode requires linux/x64 host`,
+          );
+          continue;
+        }
       }
 
       this.publishDockerImage(pkg, options?.pushTo);
@@ -759,11 +762,10 @@ export class Core {
       throw util.CLIError(`package '${artifact.id}' is not a docker package`);
     }
 
-    const artInfoPath = this.pkgInfo.artifactInfoLocation(
-      artifact.id,
-      "docker",
-      util.currentArch(),
-    );
+    // Matches the "x64" write in buildDockerImage — docker artifacts are always
+    // cross-compiled to linux/amd64 so we look up the x64 descriptor regardless
+    // of host.
+    const artInfoPath = this.pkgInfo.artifactInfoLocation(artifact.id, "docker", "x64");
     const artInfo = readBuiltArtifactInfo(artInfoPath);
     const tag = artInfo.remoteArtifactLocation;
     const pushTag = pushTo ? `${pushTo}:${tag.split(":").slice(-1)[0]}` : tag;
