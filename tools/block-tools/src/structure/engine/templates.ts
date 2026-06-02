@@ -14,6 +14,9 @@ import path from "node:path";
 export interface TemplateProvider {
   /** Read a static template file (under `<root>/static/`). */
   staticRead(p: string): string;
+  /** Read a static template file as raw bytes (under `<root>/static/`).
+   *  For binary assets (logos, images) that must not be utf-8 decoded. */
+  staticReadBinary(p: string): Uint8Array;
   /** Read a text template file (under `<root>/text/`). */
   textRead(p: string): string;
 }
@@ -25,6 +28,10 @@ export class NodeTemplateProvider implements TemplateProvider {
 
   staticRead(p: string): string {
     return fs.readFileSync(path.resolve(this.root, "static", p), "utf-8");
+  }
+
+  staticReadBinary(p: string): Uint8Array {
+    return fs.readFileSync(path.resolve(this.root, "static", p));
   }
 
   textRead(p: string): string {
@@ -42,6 +49,12 @@ export class MemoryTemplateProvider implements TemplateProvider {
     const v = this.files[k];
     if (v === undefined) throw new Error(`MemoryTemplateProvider: missing '${k}'`);
     return v;
+  }
+
+  staticReadBinary(p: string): Uint8Array {
+    // In-memory templates are stored as strings; expose their bytes. Real
+    // binary assets are exercised through NodeTemplateProvider on disk.
+    return new TextEncoder().encode(this.staticRead(p));
   }
 
   textRead(p: string): string {

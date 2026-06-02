@@ -10,6 +10,7 @@ import {
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { blockComponents } from "../templates/generated/block-package-json";
 
 export function blockPackageJsonRules(): void {
   // type:"module" intentionally omitted: the facade's index.js is the
@@ -41,6 +42,12 @@ export function blockPackageJsonRules(): void {
   ensureDevDep("@platforma-sdk/block-tools", "sdk:");
   // shx powers the cross-platform build / do-pack scripts above.
   ensureDevDep("shx", "catalog:");
+
+  // `block.components` is fully determined by the discovered modules — keep
+  // it in sync on refresh. `block.meta` is deliberately NOT touched here: it
+  // is an author-owned seed (set once in the init package.json), so refresh
+  // must never overwrite the author's title / description / logo.
+  ensureField("block.components", blockComponents());
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

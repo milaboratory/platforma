@@ -16,6 +16,9 @@ export interface FileSystem {
   read(path: string): Promise<string>;
   /** Write file (utf-8). Creates parent dirs as needed. Overwrites. */
   write(path: string, content: string): Promise<void>;
+  /** Write raw bytes. Creates parent dirs as needed. Overwrites. For binary
+   *  assets (logos, images) that must not be utf-8 encoded. */
+  writeBinary(path: string, content: Uint8Array): Promise<void>;
   /** Path exists (file or directory). */
   exists(path: string): Promise<boolean>;
   /** Recursive listing under a directory (relative paths, files only).

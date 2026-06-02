@@ -268,6 +268,13 @@ export function file(path: string): ContentForm {
   return { kind: "file", path };
 }
 
+/** A binary static asset (e.g. a logo) read verbatim from `<root>/static/`.
+ *  Unlike `file()`, the bytes are never decoded to a string — use for
+ *  images / archives. Only valid inside `seed()` / `scaffold()`. */
+export function binaryFile(path: string): ContentForm {
+  return { kind: "binary", path };
+}
+
 export function text(value: string): ContentForm {
   return { kind: "text", value };
 }
