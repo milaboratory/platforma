@@ -1,7 +1,6 @@
 // Validation: a path cannot be declared as both `seed` and any
 // engine-managed primitive (`fixed` / `managed` / `scaffold`) within
-// the same scope. See spec.md § "Engine Lifecycle" phase 2 and
-// dsl-example.md § "File Kinds Recap".
+// the same scope.
 
 import { describe, expect, test } from "vitest";
 import { defineStructure, scope, seed, managed, fixed, scaffold, text, file } from "../engine/api";

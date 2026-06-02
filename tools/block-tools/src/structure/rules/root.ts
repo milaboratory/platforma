@@ -3,11 +3,10 @@
 // skip this whole scope: the parent monorepo owns root files. Hence the
 // `when(({ ctx }) => !ctx.isSdkInternal, ...)` wrapper.
 
-import { scope, when, fixed, managed, file, generate, blockVars } from "../engine/api";
-import { rootPackageJsonInitial } from "../templates/generated/root-package-json";
-import { rootPnpmWorkspaceInitial } from "../templates/generated/root-pnpm-workspace";
-import { rootPackageJsonRules } from "./root-package-json";
-import { rootPnpmWorkspaceRules } from "./root-pnpm-workspace";
+import { scope, when, fixed, managed, file, generate } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { rootPackageJsonInitial, rootPackageJsonRules } from "./root-package-json";
+import { rootPnpmWorkspaceInitial, rootPnpmWorkspaceRules } from "./root-pnpm-workspace";
 import { rootGitignoreRules } from "./root-gitignore";
 
 export function rootRules(): void {
@@ -21,7 +20,7 @@ export function rootRules(): void {
 
         managed(
           "package.json",
-          generate(() => rootPackageJsonInitial(blockVars())),
+          generate(() => rootPackageJsonInitial(getActiveRunContext())),
           () => {
             rootPackageJsonRules();
           },
@@ -29,7 +28,7 @@ export function rootRules(): void {
 
         managed(
           "pnpm-workspace.yaml",
-          generate(() => rootPnpmWorkspaceInitial()),
+          generate(() => rootPnpmWorkspaceInitial(getActiveRunContext())),
           () => {
             rootPnpmWorkspaceRules();
           },

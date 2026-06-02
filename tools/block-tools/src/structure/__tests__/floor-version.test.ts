@@ -1,7 +1,6 @@
 // Floor-version refusal — when `.structure` carries a version below
 // `STRUCTURE_MIN_SUPPORTED`, structurer entry points must abort with a
 // hard error pointing at the legacy-migration skill.
-// testing-strategy.md § "Floor-Version Refusal Test".
 
 import { describe, test, expect } from "vitest";
 import {

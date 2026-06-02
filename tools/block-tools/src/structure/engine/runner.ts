@@ -1,8 +1,9 @@
 // Engine runner — structural pass, managed pass, post-run recheck.
 //
-// `run(structure, fs, ctx, opts)` drives one block through phases 3-7 of
-// the spec lifecycle (DISCOVERY happens in the caller, which constructs
-// `ctx.modules`). The function is shared by `check`, `refresh`,
+// `run(structure, fs, ctx, opts)` drives one block through the structural
+// pass, managed pass, and post-run recheck (DISCOVERY happens in the
+// caller, which constructs `ctx.modules`). The function is shared by
+// `check`, `refresh`,
 // `refresh --update-deps-only`, and `init`. The mode (see `currentMode`)
 // selects which leaves fire — a leaf fires iff its `modes` include the
 // current one:
@@ -18,12 +19,12 @@
 //                                              bump; no recheck)
 //   - dryRun=false, opts.initMode=true       → init, mode "init" (default
 //                                              + onInitOrUpdate leaves +
-//                                              seeds; no recheck — Layer-2
-//                                              test runs an explicit
-//                                              dry-run afterwards instead)
+//                                              seeds; no recheck — the
+//                                              init→check test runs an
+//                                              explicit dry-run afterwards)
 //
-// Idempotency invariant is enforced by phase 7: after a successful
-// refresh, the runner reruns the lifecycle in dry-run mode (fresh
+// Idempotency invariant is enforced by the post-run recheck: after a
+// successful refresh, the runner reruns the lifecycle in dry-run mode (fresh
 // rediscover when supplied) and throws `RecheckError` on any non-empty
 // change list. The error carries the failing item's
 // (scope, path, primitive, action) tuple for diagnostics.

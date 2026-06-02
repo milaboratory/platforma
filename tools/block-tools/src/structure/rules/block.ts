@@ -1,9 +1,9 @@
 // Block-scope rules — the orchestrator package at `block/`.
 // Workspace-scope deps in the body resolve from ctx.modules.
 
-import { scope, fixed, managed, seed, file, binaryFile, generate, blockVars } from "../engine/api";
-import { blockPackageJsonInitial } from "../templates/generated/block-package-json";
-import { blockPackageJsonRules } from "./block-package-json";
+import { scope, fixed, managed, seed, file, binaryFile, generate } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { blockPackageJsonInitial, blockPackageJsonRules } from "./block-package-json";
 
 export function blockRules(): void {
   scope("block", () => {
@@ -20,7 +20,7 @@ export function blockRules(): void {
 
     managed(
       "package.json",
-      generate(() => blockPackageJsonInitial(blockVars())),
+      generate(() => blockPackageJsonInitial(getActiveRunContext())),
       () => {
         blockPackageJsonRules();
       },

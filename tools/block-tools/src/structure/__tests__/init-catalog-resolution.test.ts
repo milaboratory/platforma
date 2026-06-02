@@ -16,7 +16,7 @@ import { run as engineRun } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
 import { STRUCTURE } from "../structure-definition";
 import { matchesBumpPattern } from "../engine/registry-client";
-import { SDK_CATALOG_PINS, INFRA_CATALOG_FLOOR } from "../templates/generated/root-pnpm-workspace";
+import { SDK_CATALOG_PACKAGES, INFRA_CATALOG_FLOOR } from "../rules/root-pnpm-workspace";
 import type { BlockVars } from "../engine/api";
 
 const VARS: BlockVars = {
@@ -28,9 +28,9 @@ const VARS: BlockVars = {
 };
 
 // A distinct mock "latest" per SDK package so we can prove per-name
-// resolution. Anything not in the SDK pin set resolves to undefined.
+// resolution. Anything not in the SDK set resolves to undefined.
 const LATEST: Record<string, string> = Object.fromEntries(
-  Object.keys(SDK_CATALOG_PINS).map((n, i) => [n, `9${i}.4.2`]),
+  SDK_CATALOG_PACKAGES.map((n, i) => [n, `9${i}.4.2`]),
 );
 const mockLookup = (name: string): string | undefined => LATEST[name];
 
@@ -44,7 +44,7 @@ describe("version model — init fetch + no-pin-on-refresh", () => {
     const cat = catalogOf(await fs.read("pnpm-workspace.yaml"));
 
     // Every SDK family entry resolved to the mocked latest (exact, no modifier).
-    for (const name of Object.keys(SDK_CATALOG_PINS)) {
+    for (const name of SDK_CATALOG_PACKAGES) {
       expect(matchesBumpPattern(name)).toBe(true);
       expect(cat[name]).toBe(LATEST[name]);
     }

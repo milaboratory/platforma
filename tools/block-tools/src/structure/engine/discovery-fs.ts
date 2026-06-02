@@ -1,26 +1,26 @@
-// Filesystem-backed DISCOVERY (spec.md § "Engine Lifecycle" phase 1).
+// Filesystem-backed DISCOVERY.
 //
 // The engine runner consumes a fully-assembled `RunContext` (modules,
 // version, blockVars). This module is the "caller" that builds it from a
 // block directory, working through the engine's `FileSystem` abstraction
 // — so the same code path serves the CLI (NodeFileSystem) and the
-// in-memory Layer-2 round-trip (MemoryFileSystem). Layer-2 re-discovers
-// from the just-written FS instead of reusing init's module set, which is
-// what makes the init→check parity invariant mean what it claims (G4).
+// in-memory init→check round-trip (MemoryFileSystem), which re-discovers
+// from the just-written FS instead of reusing init's module set, so a
+// discovery/classification regression surfaces in the parity invariant.
 //
 // Two enumeration modes:
 //
 //   - Standalone (default): read the block-root `pnpm-workspace.yaml`,
 //     read each `packages:` member's `package.json` (literal paths only —
-//     globs are a hard error, D7), classify via `discoverModules`. This
-//     is the spec's canonical path.
+//     globs are a hard error), classify via `discoverModules`. This is the
+//     canonical path.
 //
 //   - SDK-internal (`--sdk-internal`): in-monorepo blocks (e.g.
 //     `etc/blocks/*`) have NO block-local `pnpm-workspace.yaml` — they
 //     are members of the parent monorepo's workspace. The block's
 //     modules are therefore enumerated by scanning the block directory
 //     for sub-package `package.json` files (depth-limited, skipping
-//     `node_modules`). See the structurer plan's step-5a G1 note.
+//     `node_modules`).
 //
 // `.structure` version is read (missing → 0) and floor-checked. BlockVars
 // are parsed from the block-scope module's `package.json` `name` (the
@@ -55,7 +55,7 @@ async function readJsonIfExists(fs: FileSystem, rel: string): Promise<PackageJso
 
 /** Resolve a single pnpm-workspace `packages:` entry to a block-relative
  *  directory path. Entries are literal paths only — the structurer does
- *  not expand globs (D7): no real block uses them, and a globbing surface
+ *  not expand globs: no real block uses them, and a globbing surface
  *  with no caller is dead complexity. A `*` anywhere is a hard error. */
 function resolvePackagePath(pattern: string): string {
   if (pattern.includes("*")) {
@@ -82,7 +82,7 @@ async function enumerateStandalone(fs: FileSystem): Promise<WorkspacePackage[]> 
   }
   const ws = (parseYamlText(wsRaw) ?? {}) as { packages?: string[] };
   const patterns = Array.isArray(ws.packages) ? ws.packages : [];
-  // The block root ("") is ALWAYS a member, discovered implicitly (G5).
+  // The block root ("") is ALWAYS a member, discovered implicitly.
   // pnpm treats the directory holding pnpm-workspace.yaml as the implicit
   // workspace root, so the structurer reads the root package.json directly
   // — no real block lists "." in `packages:` (it would break turbo's task

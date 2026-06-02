@@ -1,6 +1,6 @@
 // Canonical top-level key order for `package.json` files.
 // Used by `enforceFieldOrder(canonicalPackageJsonOrder)` at the end of
-// every `*-package-json.ts` body (content-rules.md § "JSON Field Order").
+// every `*-package-json.ts` body.
 // Per-block extensions: rules call
 // `enforceFieldOrder([...canonicalPackageJsonOrder, "customKey"])`.
 //

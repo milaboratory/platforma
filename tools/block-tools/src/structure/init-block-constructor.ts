@@ -4,9 +4,8 @@
 // engine in init mode against a NodeFileSystem rooted at the target dir.
 //
 // Replaces the manual `git clone platforma-block-boilerplate` workflow
-// and `pl-dev create-block` (templates-strategy.md § "What `init`
-// Absorbs"). `--platform` is single-valued: a freshly-init'd block has
-// at most one software module.
+// and `pl-dev create-block`. `--platform` is single-valued: a
+// freshly-init'd block has at most one software module.
 
 import { confirm, input, select } from "@inquirer/prompts";
 import { NodeFileSystem } from "./engine/fs/node";
@@ -16,7 +15,7 @@ import { createRunContext, modulesForInit } from "./engine/ctx";
 import { STRUCTURE } from "./structure-definition";
 import { STRUCTURE_VERSION } from "./engine/version";
 import { matchesBumpPattern, buildRegistryLookupForNames } from "./engine/registry-client";
-import { SDK_CATALOG_PINS } from "./templates/generated/root-pnpm-workspace";
+import { SDK_CATALOG_PACKAGES } from "./rules/root-pnpm-workspace";
 import type { BlockVars } from "./engine/api";
 
 /** Platform choices `init` can scaffold a software module for. Python is
@@ -141,10 +140,10 @@ export async function runInit(init: InitInput): Promise<BlockVars> {
 
   // Init REQUIRES network: resolve the SDK catalog families to npm latest
   // before the run, so the generated block carries real current versions
-  // (no `1.0.0`-style placeholders). The names come from the SDK pin map's
-  // keys — there is no on-disk pnpm-workspace.yaml to read yet. A registry
-  // failure aborts init rather than silently shipping stale seed versions.
-  const sdkNames = Object.keys(SDK_CATALOG_PINS).filter(matchesBumpPattern);
+  // (no placeholders). The names come from the SDK catalog package list —
+  // there is no on-disk pnpm-workspace.yaml to read yet. A registry failure
+  // aborts init rather than silently shipping an unresolved placeholder.
+  const sdkNames = SDK_CATALOG_PACKAGES.filter(matchesBumpPattern);
   let registryLookup: (name: string) => string | undefined;
   try {
     registryLookup = await buildRegistryLookupForNames(sdkNames);

@@ -2,9 +2,9 @@
 // `src/index.ts` seed is dropped by `init` and never touched again
 // (block author owns it).
 
-import { scope, fixed, managed, seed, file, generate, blockVars } from "../engine/api";
-import { modelPackageJsonInitial } from "../templates/generated/model-package-json";
-import { modelPackageJsonRules } from "./model-package-json";
+import { scope, fixed, managed, seed, file, generate } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { modelPackageJsonInitial, modelPackageJsonRules } from "./model-package-json";
 
 export function modelRules(): void {
   scope("model", () => {
@@ -22,7 +22,7 @@ export function modelRules(): void {
 
     managed(
       "package.json",
-      generate(() => modelPackageJsonInitial(blockVars())),
+      generate(() => modelPackageJsonInitial(getActiveRunContext())),
       () => {
         modelPackageJsonRules();
       },

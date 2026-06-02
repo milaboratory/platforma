@@ -13,8 +13,8 @@ import {
   remove,
   blockVars,
 } from "../engine/api";
-import { workflowPackageJsonInitial } from "../templates/generated/workflow-package-json";
-import { workflowPackageJsonRules } from "./workflow-package-json";
+import { getActiveRunContext } from "../engine/builders";
+import { workflowPackageJsonInitial, workflowPackageJsonRules } from "./workflow-package-json";
 
 export function workflowRules(): void {
   scope("workflow", () => {
@@ -42,7 +42,7 @@ export function workflowRules(): void {
 
     managed(
       "package.json",
-      generate(() => workflowPackageJsonInitial(blockVars())),
+      generate(() => workflowPackageJsonInitial(getActiveRunContext())),
       () => {
         workflowPackageJsonRules();
       },

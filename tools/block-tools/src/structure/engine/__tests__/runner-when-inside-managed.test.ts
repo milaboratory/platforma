@@ -1,8 +1,7 @@
 // End-to-end runner test: `when(...)` called inside a managed body
 // receives the post-structural-pass TriggerContext from the runner.
 //
-// Scenario mirrors the compound-migration pattern from
-// `dsl-example.md` § "Mutation-Outside-Managed-Body": a rename creates
+// Scenario mirrors the compound-migration pattern: a rename creates
 // `test-legacy/`; the managed body for `block/package.json` carries a
 // `when(pathExists("test-legacy/"), ...)` block that rewrites the dep
 // once the rename has landed.

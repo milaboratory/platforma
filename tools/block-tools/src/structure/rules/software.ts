@@ -1,14 +1,13 @@
 // Software-scope rules. One scope body, N modules — the engine fans out
-// once per discovered software module (dsl-example.md § "Multi-module
-// fan-out"). Zero software modules → entire scope body no-ops.
+// once per discovered software module. Zero software modules → entire
+// scope body no-ops.
 //
 // Seeds (`software/src/main.py` + `requirements.txt`) are written once by
-// `init` and never touched again — the block author owns them
-// (templates-strategy.md § "Software Module Scaffold").
+// `init` and never touched again — the block author owns them.
 
-import { scope, managed, seed, generate, text, blockVars } from "../engine/api";
-import { softwarePackageJsonInitial } from "../templates/generated/software-package-json";
-import { softwarePackageJsonRules } from "./software-package-json";
+import { scope, managed, seed, generate, text } from "../engine/api";
+import { getActiveRunContext } from "../engine/builders";
+import { softwarePackageJsonInitial, softwarePackageJsonRules } from "./software-package-json";
 
 const MAIN_PY_SEED = `import sys
 
@@ -25,7 +24,7 @@ export function softwareRules(): void {
 
     managed(
       "package.json",
-      generate(() => softwarePackageJsonInitial(blockVars())),
+      generate(() => softwarePackageJsonInitial(getActiveRunContext())),
       () => {
         softwarePackageJsonRules();
       },

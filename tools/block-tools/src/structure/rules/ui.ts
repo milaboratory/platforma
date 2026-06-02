@@ -12,29 +12,24 @@ import {
   generate,
   blockVars,
 } from "../engine/api";
-import { uiPackageJsonInitial } from "../templates/generated/ui-package-json";
-import { uiPackageJsonRules } from "./ui-package-json";
+import { getActiveRunContext } from "../engine/builders";
+import { uiPackageJsonInitial, uiPackageJsonRules } from "./ui-package-json";
 
 export function uiRules(): void {
   scope("ui", () => {
     fixed("tsconfig.json", file("ui/tsconfig.json"));
     fixed(".oxlintrc.json", file("ui/.oxlintrc.json"));
-    // ui needs its own .oxfmtrc.json (like model): without a block-local
-    // oxfmt config, `ts-builder check --target block-ui` points oxfmt at a
-    // bundled config path that ts-builder@1.5.0 fails to resolve. Real
-    // canonical blocks + the boilerplate ship this file.
+    // Block-local oxfmt config — the ui is oxfmt-checked (`ts-builder check
+    // --target block-ui`).
     fixed(".oxfmtrc.json", file("ui/.oxfmtrc.json"));
-    // scaffold (not fixed): index.html carries the block's Content-Security-
-    // Policy, which is block-specific (some blocks need `data:`). Write the
-    // canonical default only when absent; never overwrite an author's CSP.
+    // scaffold (not fixed): index.html carries a block-specific CSP. Write
+    // the canonical default only when absent; never overwrite an author's.
     scaffold("index.html", file("ui/index.html"));
 
-    // A minimal-but-REAL UI: an empty `main.ts` trips oxlint
-    // `unicorn(no-empty-file)`, and a complete block needs a UI that mounts
-    // the SDK app and renders. Seed the canonical three-file entry — mount
-    // (main.ts), app wiring the block model (app.ts), and a landing page
-    // (MainPage.vue). All three are author-owned seeds: written once at init,
-    // never touched on refresh.
+    // A minimal-but-real UI: mount (main.ts), app wiring the block model
+    // (app.ts), and a landing page (MainPage.vue). An empty main.ts would
+    // trip oxlint `unicorn(no-empty-file)`. Author-owned seeds: written once
+    // at init, untouched on refresh.
     seed("src/main.ts", file("ui/src/main.ts"));
     seed(
       "src/app.ts",
@@ -47,7 +42,7 @@ export function uiRules(): void {
 
     managed(
       "package.json",
-      generate(() => uiPackageJsonInitial(blockVars())),
+      generate(() => uiPackageJsonInitial(getActiveRunContext())),
       () => {
         uiPackageJsonRules();
       },

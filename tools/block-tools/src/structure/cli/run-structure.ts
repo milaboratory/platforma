@@ -2,8 +2,8 @@
 // oclif commands. Wraps DISCOVERY (discover-fs) + the engine runner for
 // one block path, handling the standalone vs `--sdk-internal` split, the
 // `--update-deps-only` registry prefetch, and the post-run recheck's
-// fresh re-discovery. Each block path is processed independently (spec.md
-// § "Multi-block runs" — no cross-block state).
+// fresh re-discovery. Each block path is processed independently (no
+// cross-block state).
 
 import path from "node:path";
 import fsp from "node:fs/promises";
@@ -71,7 +71,7 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
     registryLookup,
     // Fresh re-discovery for the post-run recheck (default refresh only)
     // — re-reads the just-written tree so a rename that shifted the
-    // module map is observed (spec.md phase 7).
+    // module map is observed.
     rediscover: async () =>
       discoverRunContext({
         fs,

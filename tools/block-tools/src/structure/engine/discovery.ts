@@ -1,5 +1,4 @@
-// Workspace-package classification — the seven scope detection rules
-// from dsl-example.md § "Scopes And Module Discovery".
+// Workspace-package classification — the seven scope detection rules.
 //
 // Input: the parsed package.json of every workspace member, plus its
 // block-relative path. Output: `Module[]` (scope + name + path).
@@ -78,13 +77,13 @@ export function classifyOne(wp: WorkspacePackage, siblingNames: Set<string>): Sc
     return override as Scope;
   }
 
-  // Standalone implicit root (G6): the package at path "" is present
+  // Standalone implicit root: the package at path "" is present
   // because pnpm-workspace.yaml lives there, so it IS the workspace root —
   // classify it as `root` unconditionally, BEFORE any detection rule. A
   // nameless root carrying legacy facade cruft (`files: ["index.d.ts",
   // "index.js"]` + block-tools, e.g. sequence-properties) must NOT fall
   // through to the rule-4 block fallback and become a nameless second
-  // `block` module — root-as-facade is a forbidden anti-pattern (D2).
+  // `block` module — root-as-facade is a forbidden anti-pattern.
   // SDK-internal enumeration never produces a path-"" package (it scans
   // sub-package dirs), so this only ever fires in standalone mode.
   if (isRoot(wp.path)) return "root";

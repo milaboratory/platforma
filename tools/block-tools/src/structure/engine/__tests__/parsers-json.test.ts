@@ -67,7 +67,7 @@ describe("JSON parser — round trip + jsonPath helpers", () => {
 describe("reorderTopLevel — known keys ordered, unknowns ride preceding known", () => {
   const ORDER = ["name", "version", "private", "scripts", "dependencies", "pnpm"];
 
-  test("worked example from content-rules.md preserves grouping", () => {
+  test("worked example preserves grouping", () => {
     const input: JsonObject = {
       name: "x",
       private: true,

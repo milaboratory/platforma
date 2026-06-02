@@ -1,7 +1,7 @@
-// Root `package.json` content rules. Initial skeleton in
-// templates/generated/root-package-json.ts; this body re-asserts the
-// canonical scripts, devDeps, peerDeps, and the final field-order
-// projection (enforceFieldOrder is the LAST call).
+// Root `package.json`: the initial generator and the drift-correcting body
+// rules, co-located. The body re-asserts the canonical scripts, devDeps,
+// peerDeps, and the final field-order projection (enforceFieldOrder is the
+// LAST call).
 
 import {
   ensureField,
@@ -12,8 +12,48 @@ import {
   pruneKeysMatching,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+
+export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown> {
+  // No `name`: the root is never published. Body rules re-assert
+  // (removeField("name")) as a drift-corrector.
+  return {
+    version: "1.0.0",
+    private: true,
+    scripts: {
+      fmt: "turbo run fmt",
+      check: "turbo run check",
+      build: "turbo run build",
+      "build:dev": "env PL_PKG_DEV=local turbo run build",
+      test: "env PL_PKG_DEV=local turbo run test --concurrency 1",
+      "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
+      "mark-stable": "turbo run mark-stable",
+      "do-pack": "turbo run do-pack",
+      watch: "turbo watch build",
+      changeset: "changeset",
+      "version-packages": "changeset version",
+      // Deprecated in favour of `update` (the full refresh → install →
+      // refresh flow); kept for compatibility.
+      "update-sdk": "block-tools structure refresh --update-deps-only",
+      update:
+        "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",
+    },
+    peerDependencies: {
+      oxlint: "*",
+      oxfmt: "*",
+    },
+    devDependencies: {
+      "@changesets/cli": "catalog:",
+      "@milaboratories/ts-builder": "sdk:",
+      "@platforma-sdk/block-tools": "sdk:",
+      shx: "catalog:",
+      turbo: "catalog:",
+    },
+    packageManager: "pnpm@9.12.0",
+  };
+}
 
 export function rootPackageJsonRules(): void {
   ensureField("packageManager", "pnpm@9.12.0");
