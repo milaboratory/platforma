@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.78.1
+
+### Patch Changes
+
+- 9650c2b: MILAB-6318: on error, `getDataAsJsonOrUndefined` now throws the resource's error message (unwrapped from the backend's `{"message": ...}` envelope, tagged with the resolve path) instead of `getDataAsJson`'s generic "Resource has no content." Not-ready returns `undefined` (loading); ready returns the parsed value.
+
 ## 1.78.0
 
 ### Minor Changes
