@@ -20,6 +20,7 @@ canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 execFormula := import(":exec.formula")
+metricProvider := import(":exec.metric-provider")
 units := import(":units")
 feats := import(":feats")
 
@@ -55,6 +56,13 @@ builder := func() {
 	cpuRequest := undefined
 	ramRequest := undefined
 	gpuMemory := undefined
+
+	// Phase 3: resource formulas
+	memFormulaAst := undefined
+	memFormulaFallback := undefined
+	cpuFormulaAst := undefined
+	cpuFormulaFallback := undefined
+	fileTags := {}   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 	commandName := ""
 	cache := 0
@@ -444,6 +452,52 @@ builder := func() {
 		},
 
 		/**
+		 * Sets a resource formula that computes the RAM request from input file
+		 * metrics (size / line count) at run time on the backend.
+		 *
+		 * Requires a backend with getBlobSize support. On older backends the
+		 * formula is skipped and the `{ fallback: ... }` value is used as a
+		 * static RAM request instead.
+		 *
+		 * @param ast - a formula node produced via exec.formula
+		 * @param opts: { fallback?: number | string } - static RAM used when the
+		 *        backend lacks getBlobSize support.
+		 *
+		 * @return builder
+		 */
+		memFormula: func(ast, ...opts) {
+			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.memFormula: expected a formula node from exec.formula")
+			memFormulaAst = ast
+			if len(opts) > 0 && ll.isMap(opts[0]) && !is_undefined(opts[0].fallback) {
+				memFormulaFallback = opts[0].fallback
+			}
+			return self
+		},
+
+		/**
+		 * Sets a resource formula that computes the CPU request from input file
+		 * metrics (size / line count) at run time on the backend.
+		 *
+		 * Requires a backend with getBlobSize support. On older backends the
+		 * formula is skipped and the `{ fallback: ... }` value is used as a
+		 * static CPU request instead.
+		 *
+		 * @param ast - a formula node produced via exec.formula
+		 * @param opts: { fallback?: number } - static CPU used when the backend
+		 *        lacks getBlobSize support.
+		 *
+		 * @return builder
+		 */
+		cpuFormula: func(ast, ...opts) {
+			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.cpuFormula: expected a formula node from exec.formula")
+			cpuFormulaAst = ast
+			if len(opts) > 0 && ll.isMap(opts[0]) && !is_undefined(opts[0].fallback) {
+				cpuFormulaFallback = opts[0].fallback
+			}
+			return self
+		},
+
+		/**
 		 * Requests GPU resources from the underlying executor.
 		 *
 		 * @param args: ...string - optional minimum VRAM size string (e.g. "16GiB").
@@ -787,8 +841,14 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
-				sets.add(writableFiles, fileName)
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				if opts[0].writable == true {
+					sets.add(writableFiles, fileName)
+				}
+				if !is_undefined(opts[0].tag) {
+					ll.assert(is_string(opts[0].tag), "exec.builder().addFile: tag must be a string")
+					fileTags[fileName] = opts[0].tag
+				}
 			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
 			return self
@@ -1104,6 +1164,62 @@ builder := func() {
 			if (is_int(ramRequest)) {
 				ramRequest = string(ramRequest) + "b"
 			}
+
+			// Phase 3: resolve formulas (tags -> file lists) and apply the
+			// hasBlobSize fallback gate. The static quota below stays populated;
+			// the pure exec template overrides ram/cpu per-dimension when the
+			// corresponding formula meta input is present. lineCount metrics are
+			// computed via the INJECTED provider (`:exec.metric-provider`) — we
+			// must never statically import `:exec.metrics` here (it imports `:pt`,
+			// and `:pt` imports `:exec`: that cycle crashes the test dep-walker).
+			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst)
+			resolvedMem := undefined
+			resolvedCpu := undefined
+			lineCountMapResource := undefined
+
+			if hasFormula {
+				if !feats.hasBlobSize {
+					if !is_undefined(memFormulaAst) {
+						ll.assert(!is_undefined(memFormulaFallback), "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on memFormula or upgrade the backend.")
+						if is_undefined(ramRequest) { ramRequest = memFormulaFallback }
+					}
+					if !is_undefined(cpuFormulaAst) {
+						ll.assert(!is_undefined(cpuFormulaFallback), "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on cpuFormula or upgrade the backend.")
+						if is_undefined(cpuRequest) { cpuRequest = cpuFormulaFallback }
+					}
+					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
+				} else {
+					tagMap := {}
+					for fileName, tag in fileTags {
+						existing := is_undefined(tagMap[tag]) ? [] : tagMap[tag]
+						tagMap[tag] = append(existing, fileName)
+					}
+					allFiles := []
+					for fileName, _ in filesToAdd { allFiles = append(allFiles, fileName) }
+
+					neededLineCount := {}
+					if !is_undefined(memFormulaAst) {
+						resolvedMem = execFormula.resolveAst(memFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedMem)
+						if !is_undefined(refs.lineCount) { for fn in refs.lineCount { neededLineCount[fn] = true } }
+					}
+					if !is_undefined(cpuFormulaAst) {
+						resolvedCpu = execFormula.resolveAst(cpuFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedCpu)
+						if !is_undefined(refs.lineCount) { for fn in refs.lineCount { neededLineCount[fn] = true } }
+					}
+
+					if len(neededLineCount) > 0 {
+						ll.assert(metricProvider.isSet(),
+							"exec.builder: lineCount resource formulas require importing the metrics provider. Add `import(\":exec.metrics\")` to your workflow to enable f.lineCount().")
+						provider := metricProvider.get()
+						perFile := {}
+						for fn, _ in neededLineCount { perFile[fn] = provider.lineCountResource(filesToAdd[fn], fn) }
+						lineCountMapResource = provider.aggregateMetricMap(perFile)
+					}
+				}
+			}
+
 			quotaData := {
 				queue: queue,
 				cpu: cpuRequest,
@@ -1117,6 +1233,12 @@ builder := func() {
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
+			// CID-transparent meta inputs (service fields): resolved formula ASTs
+			// and the line-count metric map. hasBlobSize implies service-field
+			// support, so these never affect the exec dedup CID.
+			if !is_undefined(resolvedMem) { metaExecInputs["__memFormula__"] = smart.createJsonResource(resolvedMem) }
+			if !is_undefined(resolvedCpu) { metaExecInputs["__cpuFormula__"] = smart.createJsonResource(resolvedCpu) }
+			if !is_undefined(lineCountMapResource) { metaExecInputs["__metric_lineCount__"] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
