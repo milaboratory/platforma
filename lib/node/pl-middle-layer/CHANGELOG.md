@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.0
+
+### Minor Changes
+
+- e4c4c21: support file link signing
+
+### Patch Changes
+
+- Updated dependencies [e4c4c21]
+  - @milaboratories/pl-drivers@1.15.0
+
 ## 1.63.2
 
 ### Patch Changes

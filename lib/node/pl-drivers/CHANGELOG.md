@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.15.0
+
+### Minor Changes
+
+- e4c4c21: support file link signing
+
 ## 1.14.16
 
 ### Patch Changes
