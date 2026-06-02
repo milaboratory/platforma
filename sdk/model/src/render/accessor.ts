@@ -11,6 +11,7 @@ import type {
   RangeBytes,
 } from "@milaboratories/pl-model-common";
 import { isPColumn, mapPObjectData } from "@milaboratories/pl-model-common";
+import { parseErrorLikeSafe } from "@milaboratories/pl-error-like";
 import { getCfgRenderCtx } from "../internal";
 import { FutureRef } from "./future";
 import type { AccessorHandle } from "./internal";
@@ -220,11 +221,18 @@ export class TreeNodeAccessor {
     // Not ready → undefined (loading). getIsReadyOrError() registers the
     // readiness dependency, so the lambda re-runs once the resource finishes.
     if (!this.getIsReadyOrError()) return undefined;
-    // Errored → surface the actual error, rather than getDataAsJson's generic
-    // "Resource has no content." throw (or returning stale content).
+    // Errored → surface the actual error. The error node's content is a
+    // serialized ErrorLike; decode it and throw its message, rather than
+    // getDataAsJson's generic "Resource has no content." (or returning stale
+    // content).
     const error = this.getError();
-    if (error !== undefined)
-      throw new Error(error.getDataAsString() ?? "Resource computation failed.");
+    if (error !== undefined) {
+      const raw = error.getDataAsString();
+      const parsed = raw === undefined ? undefined : parseErrorLikeSafe(raw);
+      throw new Error(
+        parsed?.success ? parsed.data.message : (raw ?? "Resource computation failed."),
+      );
+    }
     // Ready → parse the content.
     return this.getDataAsJson<T>();
   }
