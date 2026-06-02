@@ -3,7 +3,7 @@
 // (AND of all on the path from root). Track which run modes the leaf
 // fires in (its enclosing mode frame, or the `["default", "init"]`
 // default) and emit that as `modes` on the FlatItem. No execution here —
-// execution lives in `runner.ts` (step 2).
+// execution lives in `runner.ts`.
 
 import type { Module, RunContext, Scope } from "./api";
 import type { FlatItem, LeafItem, RunMode, Structure, TreeNode, TriggerFn } from "./ir";
@@ -24,7 +24,7 @@ function resolveRelative(modulePath: string, fileRel: string): string {
 
 /**
  * Lexicographic sort of modules by `path`.
- * Used for deterministic fan-out order (per spec.md).
+ * Used for deterministic fan-out order.
  */
 function modulesByScope(modules: Module[], scope: Scope): Module[] {
   return modules

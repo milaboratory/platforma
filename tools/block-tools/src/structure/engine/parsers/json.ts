@@ -4,7 +4,7 @@
 // managed pass uses. The dot-notation helpers (`getAtPath`, `setAtPath`,
 // `hasAtPath`, `deleteAtPath`) back the content-rule builders. `reorderTopLevel`
 // implements the "known keys in declared order, unknown keys stay adjacent to
-// preceding known key" projection from content-rules.md.
+// preceding known key" projection.
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
@@ -102,8 +102,6 @@ export function deleteAtPath(obj: JsonObject, jsonPath: string): void {
  *  - Unknown keys (not in `order`) stay adjacent to the preceding known
  *    key they followed in the source. Unknown keys appearing before any
  *    known key go first, in source order.
- *
- * Implementation matches content-rules.md § "JS Implementation Sketch".
  */
 export function reorderTopLevel(obj: JsonObject, order: readonly string[]): JsonObject {
   const known = new Set(order);

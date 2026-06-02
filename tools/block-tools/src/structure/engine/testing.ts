@@ -1,17 +1,16 @@
 // Test helpers for the engine.
 //
-// `runRulesAgainst`: Layer-1 unit helper — install `input` as the active
+// `runRulesAgainst`: unit helper — install `input` as the active
 // managed-body object, invoke the body lambda, return the mutated object.
-// (testing-strategy.md § "Layer 1")
 //
-// `simulateInit`: Layer-2 helper — produce an in-memory FS populated as
-// if `block-tools structure init` had just run for the given BlockVars,
-// then RE-DISCOVER the module set from that written FS (the same DISCOVERY
-// the real `check` runs) rather than reusing init's module set. The
-// returned `ctx` is the rediscovered one — running `engine.run(STRUCTURE,
-// fs, {...ctx, dryRun: true})` against the same fs and asserting no
-// changes is then a genuine init→check round-trip (G4): a discovery /
-// classification regression surfaces instead of being masked.
+// `simulateInit`: produce an in-memory FS populated as if `block-tools
+// structure init` had just run for the given BlockVars, then RE-DISCOVER
+// the module set from that written FS (the same DISCOVERY the real `check`
+// runs) rather than reusing init's module set. The returned `ctx` is the
+// rediscovered one — running `engine.run(STRUCTURE, fs, {...ctx, dryRun:
+// true})` against the same fs and asserting no changes is then a genuine
+// init→check round-trip: a discovery / classification regression surfaces
+// instead of being masked.
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -95,7 +94,7 @@ export async function simulateInit(input: SimulateInitInput): Promise<SimulatedI
   });
 
   // Re-discover from the written FS — the returned ctx is what `check`
-  // would build, not what `init` assembled (G4 round-trip).
+  // would build, not what `init` assembled.
   const ctx = await discoverRunContext({ fs, isSdkInternal });
   return { fs, ctx };
 }

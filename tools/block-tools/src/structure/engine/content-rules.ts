@@ -7,8 +7,8 @@
 //   - line list (.gitignore)                 → withManagedLines(lines, body)
 //
 // Each builder verifies it is invoked under the matching active state
-// and throws otherwise. The full inventory matches content-rules.md:
-// JSON ensure*/remove*/require*/prune/enforce*/transform; YAML catalog
+// and throws otherwise. The full inventory: JSON
+// ensure*/remove*/require*/prune/enforce*/transform; YAML catalog
 // management + workspace module paths; gitignore line management.
 
 import { registerInnerWhenHandler, tryGetActiveRunContext } from "./builders";
@@ -33,7 +33,7 @@ export type { JsonObject };
  *  `"catalog:"`) and the resolved literal is what serializes. Use it for
  *  every dep that is a member of the platforma monorepo's pnpm workspace
  *  (the `@platforma-sdk/*` packages + `@milaboratories/ts-builder` /
- *  `ts-configs`). See content-rules.md § "Dependency Versions". */
+ *  `ts-configs`). */
 export type DepVersion = "catalog:" | "sdk:" | `workspace:${string}` | "*";
 
 /** Resolve the `"sdk:"` sentinel to its on-disk literal. All other
@@ -310,7 +310,7 @@ function ensureInSection(
   const state = requireJson(builder);
   const obj = state.obj;
   // Resolve the `sdk:` sentinel against the run mode before writing — it
-  // must never reach disk (content-rules.md § "Dependency Versions").
+  // must never reach disk.
   const resolved =
     version === "sdk:"
       ? resolveDepVersion(version, ctxOrThrow(state, builder).isSdkInternal)
@@ -471,7 +471,7 @@ export function transformAt<T = unknown>(jsonPath: string, transform: (current: 
 // ============================================================
 
 /** Set the workspace `packages:` list to all discovered NON-root module
- *  paths (sorted lex). The block root ("") is discovered implicitly (G5)
+ *  paths (sorted lex). The block root ("") is discovered implicitly
  *  and is NEVER written to `packages:` — listing "." there breaks turbo's
  *  task graph. Equality-guarded — skips the rewrite when the existing
  *  list already matches, so a YAML round-trip on an already-canonical

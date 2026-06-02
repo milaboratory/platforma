@@ -1,4 +1,5 @@
-// Test `package.json` content rules.
+// Test `package.json`: the initial generator and the drift-correcting body
+// rules, co-located.
 
 import {
   ensureField,
@@ -8,8 +9,34 @@ import {
   removeDep,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+
+export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
+  const v = ctx.blockVars;
+  return {
+    name: `${v.facadeName}.test`,
+    version: "1.0.0",
+    private: true,
+    type: "module",
+    scripts: {
+      // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
+      // config). Slots into the turbo `check` task.
+      check: "ts-builder type-check --target block-test",
+      test: "vitest run --passWithNoTests",
+    },
+    peerDependencies: {
+      typescript: "*",
+    },
+    devDependencies: {
+      "@platforma-sdk/test": "sdk:",
+      "@milaboratories/ts-builder": "sdk:",
+      "@milaboratories/ts-configs": "sdk:",
+      vitest: "catalog:",
+    },
+  };
+}
 
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
