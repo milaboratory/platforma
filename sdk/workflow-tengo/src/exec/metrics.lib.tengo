@@ -19,6 +19,7 @@ pt := import(":pt")
 exp := import(":pt.expression")
 smart := import(":smart")
 times := import("times")
+metricProvider := import(":exec.metric-provider")
 
 // 30-day input cache for the per-file line-count PTabler workflow. The line
 // count of an immutable input file never changes, so a long cache avoids
@@ -101,6 +102,14 @@ aggregateMetricMap := func(perFile) {
 	}
 	return b.build()
 }
+
+// Self-registers into the DI slot the `:exec` builder reads. Runs at module
+// load: a block opts into lineCount resource formulas by importing this module
+// (`:exec.metrics`) in its workflow. See `:exec.metric-provider`.
+metricProvider.set({
+	lineCountResource: lineCountResource,
+	aggregateMetricMap: aggregateMetricMap
+})
 
 export ll.toStrict({
 	lineCountResource: lineCountResource,

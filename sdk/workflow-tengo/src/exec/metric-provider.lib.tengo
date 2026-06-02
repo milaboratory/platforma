@@ -1,0 +1,29 @@
+/**
+ * Dependency-injection slot for the pre-exec metric implementation.
+ *
+ * Broken out of `:exec` to avoid the import cycle
+ *   :exec -> :exec.metrics -> :pt -> :exec
+ * which the test dependency walker cannot handle (stack overflow). This leaf
+ * module imports only `:ll`, so `:exec` can safely import it.
+ *
+ * The pt-based implementation lives in `:exec.metrics`. That module registers
+ * itself into this slot at load time (top-level `metricProvider.set(...)`).
+ * The `:exec` builder reads the slot via `get` only when a formula references
+ * the lineCount metric.
+ *
+ * Opt-in: a block enables lineCount resource formulas by importing
+ * `:exec.metrics` in its workflow. `:workflow` does NOT import it automatically.
+ */
+
+ll := import(":ll")
+
+// Module-level slot. `ll.toStrict` below freezes the exported MAP of closures,
+// not this variable — `_provider` remains a mutable module var that the
+// closures can reassign.
+_provider := undefined
+
+export ll.toStrict({
+	set: func(p) { _provider = p },
+	get: func() { return _provider },
+	isSet: func() { return !is_undefined(_provider) }
+})
