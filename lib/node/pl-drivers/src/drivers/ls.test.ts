@@ -153,7 +153,8 @@ describe("LsDriver additionalInfo threading", () => {
   const storageInfo = {
     storageId: "test-storage",
     storageName: "Test Storage",
-    resourceId: "res-id" as any,
+    // Signed resource id format "<globalId>|<signatureHex>" — required by asSignedResourceId.
+    resourceId: "res-id|deadbeef" as any,
     resourceType: { name: "LS/test-storage", version: "1" },
   };
 
