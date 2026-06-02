@@ -21,6 +21,7 @@ import type { PTableDefPool } from "./ptable_def_pool";
 export class PTableHolder implements Disposable {
   private readonly abortController = new AbortController();
   private readonly combinedDisposeSignal: AbortSignal;
+  private cacheSizePromise?: Promise<number>;
 
   constructor(
     public readonly pFrame: PFrameHandle,
@@ -36,6 +37,18 @@ export class PTableHolder implements Disposable {
 
   public get disposeSignal(): AbortSignal {
     return this.combinedDisposeSignal;
+  }
+
+  public get cacheSize(): Promise<number> {
+    if (this.cacheSizePromise === undefined) {
+      this.cacheSizePromise = this.pTablePromise.then((pTable) =>
+        pTable.getFootprint({
+          withPredecessors: false,
+          signal: this.abortController.signal,
+        }),
+      );
+    }
+    return this.cacheSizePromise;
   }
 
   [Symbol.dispose](): void {
