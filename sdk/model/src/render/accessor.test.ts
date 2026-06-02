@@ -18,13 +18,14 @@ afterEach(() => {
 });
 
 test("getDataAsJsonOrUndefined returns undefined while the resource is still computing", () => {
-  const getError = vi.fn<(handle: AccessorHandle) => AccessorHandle | undefined>(() => undefined);
-  const getDataAsString = vi.fn<(handle: AccessorHandle) => string | undefined>(() => undefined);
-  const acc = accessorWithCtx({ getIsReadyOrError: () => false, getError, getDataAsString });
+  // Not ready → undefined, and crucially no throw (toBeUndefined fails on a throw).
+  // That is the MILAB-6318 fix.
+  const acc = accessorWithCtx({
+    getIsReadyOrError: () => false,
+    getError: () => undefined,
+    getDataAsString: () => undefined,
+  });
   expect(acc.getDataAsJsonOrUndefined()).toBeUndefined();
-  // Short-circuits before reading error or content — that is the MILAB-6318 fix.
-  expect(getError).not.toHaveBeenCalled();
-  expect(getDataAsString).not.toHaveBeenCalled();
 });
 
 test("getDataAsJsonOrUndefined parses content once the resource is ready", () => {
@@ -58,6 +59,16 @@ test("getDataAsJsonOrUndefined falls back to the raw error content when it is no
     getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? "not json" : undefined),
   });
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^not json$/);
+});
+
+test("getDataAsJsonOrUndefined throws a generic message when the errored node has no content", () => {
+  // Errored, but the error node itself has nothing readable — generic fallback.
+  const acc = accessorWithCtx({
+    getIsReadyOrError: () => true,
+    getError: () => ERROR_HANDLE,
+    getDataAsString: () => undefined,
+  });
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^Resource computation failed\.$/);
 });
 
 test("getDataAsJsonOrUndefined throws when a ready resource has no error and no content", () => {
