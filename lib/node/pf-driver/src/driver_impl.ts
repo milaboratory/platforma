@@ -322,7 +322,7 @@ export class AbstractPFrameDriver<
         bytesWritten = writeStream.bytesWritten;
       });
 
-      const overallSize = await pTable.getFootprint({ signal: combinedSignal });
+      const overallSize = await tableGuard.resource.cacheSize;
       this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
 
       // rowsWritten equals the clipped range length — the generator streams the
@@ -433,9 +433,7 @@ export class AbstractPFrameDriver<
         signal: combinedSignal,
       });
 
-      const overallSize = await pTable.getFootprint({
-        signal: combinedSignal,
-      });
+      const overallSize = await tableGuard.resource.cacheSize;
       this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
 
       return tableSpec.map((spec, i) => ({
@@ -530,9 +528,7 @@ export class AbstractPFrameDriver<
         signal: combinedSignal,
       });
 
-      const overallSize = await pTable.getFootprint({
-        signal: combinedSignal,
-      });
+      const overallSize = await tableGuard.resource.cacheSize;
 
       return { shape, overallSize };
     });
@@ -560,9 +556,7 @@ export class AbstractPFrameDriver<
         signal: combinedSignal,
       });
 
-      const overallSize = await pTable.getFootprint({
-        signal: combinedSignal,
-      });
+      const overallSize = await tableGuard.resource.cacheSize;
 
       return { data, overallSize };
     });
