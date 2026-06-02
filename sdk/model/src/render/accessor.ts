@@ -21,6 +21,18 @@ export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | unde
   return value === undefined ? undefined : cb(value);
 }
 
+/**
+ * Decode an error node's serialized `ErrorLike` into a display message. Prefers
+ * a `PlError`'s `fullMessage` (the SDK-developer detail) when present; falls
+ * back to the raw string if it is not a serialized `ErrorLike`.
+ */
+function decodeErrorMessage(raw: string): string {
+  const parsed = parseErrorLikeSafe(raw);
+  if (!parsed.success) return raw;
+  const e = parsed.data;
+  return e.type === "PlError" ? (e.fullMessage ?? e.message) : e.message;
+}
+
 type FieldMapOps = {
   /**
    * Type of fields to iterate over.
@@ -221,15 +233,15 @@ export class TreeNodeAccessor {
     // Not ready → undefined (loading). getIsReadyOrError() registers the
     // readiness dependency, so the lambda re-runs once the resource finishes.
     if (!this.getIsReadyOrError()) return undefined;
-    // Errored → throw the actual error. The error node holds a serialized
-    // ErrorLike; decode it and throw its message, not getDataAsJson's generic
-    // "Resource has no content."
+    // Errored → throw the actual error, decoded from the error node and tagged
+    // with the resolve path for debugging context. Beats getDataAsJson's
+    // generic "Resource has no content."
     const error = this.getError();
     if (error !== undefined) {
       const raw = error.getDataAsString();
-      if (raw === undefined) throw new Error("Resource computation failed.");
-      const parsed = parseErrorLikeSafe(raw);
-      throw new Error(parsed.success ? parsed.data.message : raw);
+      const message = raw === undefined ? "Resource computation failed." : decodeErrorMessage(raw);
+      const path = this.resolvePath.join(".");
+      throw new Error(path ? `${message} (at ${path})` : message);
     }
     // Ready → parse the content.
     return this.getDataAsJson<T>();
