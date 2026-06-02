@@ -1,0 +1,108 @@
+/**
+ * Pre-exec metric helpers for resource formulas.
+ *
+ * Computes per-file line counts via PTabler and aggregates them into a single
+ * keyed map resource. Consumed by the exec builder (Task 6) to produce the
+ * `__metric_lineCount__` meta input, and read back by the pure template
+ * (Task 7), which adds +1 per file to recover the true line count.
+ *
+ * Header off-by-one: we pass `hasHeader: false`, but the current PTabler/Polars
+ * read path ignores it and always treats the first physical line as a header
+ * (see `src/pt/index.lib.tengo` frame step generation, ~line 56). So the count
+ * this module produces is (total lines - 1); Task 7's +1 restores the total.
+ * `hasHeader: false` is passed for forward-compatibility if PTabler later
+ * honors it — if that happens, the +1 in Task 7 must be revisited.
+ */
+
+ll := import(":ll")
+pt := import(":pt")
+exp := import(":pt.expression")
+smart := import(":smart")
+times := import("times")
+
+// 30-day input cache for the per-file line-count PTabler workflow. The line
+// count of an immutable input file never changes, so a long cache avoids
+// recomputation across runs. The standard `times` library has no `day` unit,
+// so days are expressed as hours * 24 (matching the repo convention, e.g.
+// `src/pframes/xsv-builder.lib.tengo` cacheInputsDays).
+LINECOUNT_CACHE := 30 * times.hour * 24
+
+// The single column the file is read into. Reading with a \x01 delimiter and
+// no header means each input line becomes exactly one row in this column.
+_LINE_COLUMN := "line"
+
+// The output file name and the aggregation result column. Both are part of the
+// PRODUCER CONTRACT below.
+_COUNT_FILE := "count.ndjson"
+_COUNT_FIELD := "n"
+
+/**
+ * Builds a one-file PTabler workflow that counts the rows (= lines) of a single
+ * input file and saves the count, returning a reference to the saved content.
+ *
+ * Mechanism: the file is read as a single column named "line" using a \x01
+ * delimiter, so every line of the file maps to exactly one row. We request
+ * `hasHeader: false`, but current PTabler ignores it and Polars consumes the
+ * first physical line as a header, so the produced count is (total lines - 1).
+ * Polars auto-detects compression from the file extension. The row count is
+ * aggregated into a column named "n" and written as ndjson.
+ *
+ * Runs on the LIGHT queue with a 30-day input cache.
+ *
+ * PRODUCER CONTRACT (Task 7 must match this exactly):
+ *   - output content file name: "count.ndjson"
+ *   - format: ndjson (one object per line; here exactly one line)
+ *   - shape: {"n": <int>} where <int> is (number of physical lines in the
+ *            file - 1), because the first line is consumed as a header by the
+ *            current read path. Task 7 adds +1 to recover the total line count.
+ *
+ * @param fileRef: reference - resource reference to the input file blob.
+ * @param fileName: string - name to assign the file inside PTabler. Its
+ *        extension drives Polars' compression auto-detection.
+ * @return field - reference to the ndjson content resource holding the count.
+ */
+lineCountResource := func(fileRef, fileName) {
+	wf := pt.workflow()
+	wf.inLightQueue()
+	wf.cacheInputs(LINECOUNT_CACHE)
+
+	// Single \x01-delimited, header-less column => one row per line. Explicit
+	// schema makes the column name deterministic (no reliance on Polars'
+	// default header-less naming). inferSchema is off so the type is fixed.
+	df := wf.frame(fileRef, {
+		format: "csv",
+		delimiter: "\x01",
+		hasHeader: false,
+		inferSchema: false,
+		schema: [{ column: _LINE_COLUMN, type: "String" }],
+		fileName: fileName
+	})
+
+	counted := df.agg(exp.col(_LINE_COLUMN).count().alias(_COUNT_FIELD))
+	counted.saveContent(_COUNT_FILE, { format: "ndjson" })
+
+	result := wf.run()
+	return result.getFileContent(_COUNT_FILE)
+}
+
+/**
+ * Aggregates per-file count content references into a single map resource keyed
+ * by file name.
+ *
+ * @param perFile: map - { fileName: countResourceRef } where each value is a
+ *        reference produced by `lineCountResource`.
+ * @return resource - a map resource whose fields are the file names and whose
+ *         values are the corresponding count content references.
+ */
+aggregateMetricMap := func(perFile) {
+	b := smart.mapBuilder()
+	for fileName, resourceRef in perFile {
+		b.add(fileName, resourceRef)
+	}
+	return b.build()
+}
+
+export ll.toStrict({
+	lineCountResource: lineCountResource,
+	aggregateMetricMap: aggregateMetricMap
+})
