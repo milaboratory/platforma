@@ -100,3 +100,32 @@ export function makeSyncLookup(
 ): (packageName: string) => string | undefined {
   return (name) => resolved.get(name);
 }
+
+/** Catalog package-name patterns the version-resolution rules
+ *  (`bumpCatalogToLatest`) match against — the `@platforma-sdk/*` and
+ *  `@milaboratories/*` SDK families. Infra/runtime entries (turbo, shx,
+ *  …) are deliberately NOT here: they stay a curated floor, not auto-latest.
+ *  Shared so `init` (names from the SDK pin map) and `refresh
+ *  --update-deps-only` (names from the on-disk catalog) select the same
+ *  set. */
+export const CATALOG_BUMP_PATTERNS: readonly RegExp[] = [/^@platforma-sdk\//, /^@milaboratories\//];
+
+/** True if `name` is a version-resolved SDK package (matches any bump
+ *  pattern). */
+export function matchesBumpPattern(name: string): boolean {
+  return CATALOG_BUMP_PATTERNS.some((p) => p.test(name));
+}
+
+/** Prefetch npm "latest" for `names` and return the sync lookup the
+ *  runner passes to `bumpCatalogToLatest`. Empty list → a lookup that
+ *  resolves nothing (no network). A network/registry failure REJECTS
+ *  (callers that require the network — `init` — let it propagate).
+ *  `client` defaults to the live npm client; tests inject a mock. */
+export async function buildRegistryLookupForNames(
+  names: readonly string[],
+  client: RegistryClient = createRealRegistryClient(),
+): Promise<(packageName: string) => string | undefined> {
+  if (names.length === 0) return () => undefined;
+  const resolved = await prefetchLatestVersions(client, names);
+  return makeSyncLookup(resolved);
+}

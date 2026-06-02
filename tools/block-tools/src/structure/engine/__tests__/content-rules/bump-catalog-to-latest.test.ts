@@ -83,4 +83,44 @@ describe("bumpCatalogToLatest (mocked registry)", () => {
     const client = createMockRegistryClient({});
     await expect(client.getLatestVersion("anything")).rejects.toThrow(/no version configured/);
   });
+
+  test("default modifier writes the exact resolved version (no operator)", () => {
+    const doc = parseYaml("catalog:\n  '@platforma-sdk/model': 1.0.0\n");
+    withManagedYaml(doc, () => bumpCatalogToLatest(/^@platforma-sdk\//), {
+      getLatestVersion: () => "2.3.4",
+    });
+    const cat = (doc.toJSON() as { catalog: Record<string, string> }).catalog;
+    expect(cat["@platforma-sdk/model"]).toBe("2.3.4");
+  });
+
+  test("caret modifier prepends ^ to the resolved version", () => {
+    const doc = parseYaml("catalog:\n  '@platforma-sdk/model': 1.0.0\n");
+    withManagedYaml(doc, () => bumpCatalogToLatest(/^@platforma-sdk\//, "^"), {
+      getLatestVersion: () => "2.3.4",
+    });
+    const cat = (doc.toJSON() as { catalog: Record<string, string> }).catalog;
+    expect(cat["@platforma-sdk/model"]).toBe("^2.3.4");
+  });
+
+  test("tilde modifier prepends ~ to the resolved version", () => {
+    const doc = parseYaml("catalog:\n  '@platforma-sdk/model': 1.0.0\n");
+    withManagedYaml(doc, () => bumpCatalogToLatest(/^@platforma-sdk\//, "~"), {
+      getLatestVersion: () => "2.3.4",
+    });
+    const cat = (doc.toJSON() as { catalog: Record<string, string> }).catalog;
+    expect(cat["@platforma-sdk/model"]).toBe("~2.3.4");
+  });
+
+  test("idempotent with a modifier — second run produces the same YAML", () => {
+    const doc = parseYaml("catalog:\n  '@platforma-sdk/model': 1.0.0\n");
+    const getLatestVersion = () => "2.3.4";
+    withManagedYaml(doc, () => bumpCatalogToLatest(/^@platforma-sdk\//, "^"), { getLatestVersion });
+    const once = stringifyYaml(doc);
+    withManagedYaml(doc, () => bumpCatalogToLatest(/^@platforma-sdk\//, "^"), { getLatestVersion });
+    const twice = stringifyYaml(doc);
+    expect(twice).toBe(once);
+    expect(
+      (doc.toJSON() as { catalog: Record<string, string> }).catalog["@platforma-sdk/model"],
+    ).toBe("^2.3.4");
+  });
 });

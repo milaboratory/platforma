@@ -1,33 +1,37 @@
-// Update-deps-mode catalog rules. The single `onUpdateDeps(...)` frame
-// here is what makes `block-tools structure refresh --update-deps-only`
-// do anything: its leaves fire only when `ctx.updateDepsOnly` is true,
-// and every other rule in the structure is skipped in that mode (and
-// these are skipped on a default refresh). See dsl-example.md
-// § "Update-Deps Mode Block" and spec.md § "refresh".
+// Catalog version-resolution rules. The single `onInitOrUpdate(...)` frame
+// here resolves the SDK catalog families to npm latest. Its leaves fire on
+// `init` AND `refresh --update-deps-only` (mode "init" + "updateDeps") —
+// both mean "fetch and write current versions" — and are skipped on a
+// default refresh/check, which leaves catalog versions exactly as the
+// author/lockfile has them.
 //
 // The network call lives in `bumpCatalogToLatest`, which reads prefetched
-// "latest" versions from the runner's `registryLookup` (the CLI prefetches
-// the catalog's package versions before the run; unit tests pass a mock).
-// Wrapped in the same root-scope `when(!isSdkInternal)` guard as the rest
-// of the root rules — internal blocks get their catalog from the parent
-// monorepo, so catalog bumps never apply there.
+// "latest" versions from the runner's `registryLookup` (the CLI / init
+// constructor prefetches the SDK catalog versions before the run; unit
+// tests pass a mock). Wrapped in the same root-scope `when(!isSdkInternal)`
+// guard as the rest of the root rules — internal blocks get their catalog
+// from the parent monorepo, so catalog resolution never applies there.
 
-import { onUpdateDeps, scope, when, managed, generate, bumpCatalogToLatest } from "../engine/api";
+import { onInitOrUpdate, scope, when, managed, generate, bumpCatalogToLatest } from "../engine/api";
 import { rootPnpmWorkspaceInitial } from "../templates/generated/root-pnpm-workspace";
 
 export function rootCatalogBumpRules(): void {
-  onUpdateDeps(() => {
+  onInitOrUpdate(() => {
     scope("root", () => {
       when(
         ({ ctx }) => !ctx.isSdkInternal,
         () => {
-          // `initial` is never exercised in update-deps-only mode (you
-          // only bump deps on an existing block), but a ContentForm is
-          // required; reuse the same generator root.ts uses.
+          // On init, the default root rules create pnpm-workspace.yaml from
+          // this same generator (the curated SDK floor); this leaf then
+          // overwrites the SDK entries with npm latest. On update-deps the
+          // file already exists, so `initial` is not exercised — but a
+          // ContentForm is required, so reuse the generator.
           managed(
             "pnpm-workspace.yaml",
             generate(() => rootPnpmWorkspaceInitial()),
             () => {
+              // SDK families → exact latest (default modifier). Infra /
+              // runtime entries don't match these patterns and stay floored.
               bumpCatalogToLatest(/^@platforma-sdk\//);
               bumpCatalogToLatest(/^@milaboratories\//);
             },

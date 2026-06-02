@@ -1,14 +1,22 @@
 // Tree IR for the structurer engine.
 //
 // `defineStructure(fn)` invokes module-global builders that append to a
-// tree of group frames (`scope` / `when` / `onUpdateDeps`) and leaf
+// tree of group frames (`scope` / `when` / mode frames) and leaf
 // primitives (file / folder actions). `flatten` walks this tree to a
 // flat ordered list of `FlatItem`s — each with concrete scope, bound
-// module path, composed trigger, resolved filesystem path, and the
-// `updateDepsOnly` flag (true iff the leaf was inside an
-// `onUpdateDeps` frame).
+// module path, composed trigger, resolved filesystem path, and the set
+// of run modes the leaf fires in.
 
 import type { Scope, RunContext } from "./api";
+
+/** The three leaf-firing modes. `check` and `refresh` share the
+ *  `"default"` mode — they run the same leaves, the `dryRun` flag (carried
+ *  separately on `RunContext`) only decides whether writes happen.
+ *  `"updateDeps"` is `--update-deps-only`; `"init"` is the init
+ *  constructor. A leaf declares which modes it fires in via its enclosing
+ *  mode frame (see `ModeFrame`); the runner derives the current mode from
+ *  the run context and keeps only the leaves whose membership includes it. */
+export type RunMode = "default" | "updateDeps" | "init";
 
 /** Predicate evaluated against derived trigger context. */
 export type TriggerContext = {
@@ -87,20 +95,22 @@ export type WhenFrame = {
   children: TreeNode[];
 };
 
-/** Top-level mode frame: contained leaves fire only when
- *  `ctx.updateDepsOnly` is true; all other leaves are skipped in that
- *  mode. Mutually exclusive with normal-mode leaves at runtime. */
-export type OnUpdateDepsFrame = {
-  kind: "onUpdateDeps";
+/** Top-level mode frame: contained leaves fire only in the listed run
+ *  modes. Leaves outside any mode frame fire in `["default", "init"]`
+ *  (refresh/check + init). `onUpdateDeps()` produces `["updateDeps"]`;
+ *  `onInitOrUpdate()` produces `["init", "updateDeps"]`. */
+export type ModeFrame = {
+  kind: "mode";
+  modes: RunMode[];
   children: TreeNode[];
 };
 
-export type TreeNode = LeafItem | ScopeFrame | WhenFrame | OnUpdateDepsFrame;
+export type TreeNode = LeafItem | ScopeFrame | WhenFrame | ModeFrame;
 
 /** Structure object returned by `defineStructure`. */
 export type Structure = {
   /** Top-level children — may contain leaves, scope frames, when
-   *  frames, and onUpdateDeps frames. */
+   *  frames, and mode frames. */
   children: TreeNode[];
 };
 
@@ -110,8 +120,9 @@ export type Structure = {
  * After fan-out: one entry per (leaf × matching module). `scope` is
  * always set; `modulePath` is the workspace path the leaf is bound to
  * (empty string for the workspace root). `triggers` is the AND of all
- * enclosing `when` predicates. `updateDepsOnly` is true iff the leaf
- * was inside an `onUpdateDeps` frame.
+ * enclosing `when` predicates. `modes` is the set of run modes the leaf
+ * fires in — `["default", "init"]` outside any mode frame, otherwise the
+ * enclosing mode frame's `modes`.
  */
 export type FlatItem = {
   leaf: LeafItem;
@@ -122,5 +133,5 @@ export type FlatItem = {
   /** For rename, the resolved destination. */
   resolvedTo?: string;
   triggers: TriggerFn[];
-  updateDepsOnly: boolean;
+  modes: RunMode[];
 };

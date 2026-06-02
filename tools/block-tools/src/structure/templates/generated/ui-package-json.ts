@@ -1,4 +1,6 @@
-// Initial UI `package.json` — full canonical content (Path A).
+// Initial UI `package.json`. Authored oxfmt-clean: the ui is one of the
+// two scopes `ts-builder check` runs oxfmt on, so the body cedes ordering
+// to oxfmt (no enforce* calls there).
 
 import type { BlockVars } from "../../engine/api";
 
@@ -18,14 +20,13 @@ export function uiPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     dependencies: {
       "@platforma-sdk/ui-vue": "sdk:",
     },
-    peerDependencies: {
-      // "@types/node": "*",  // dropped (c6) — candidate for full removal after 5b
-      typescript: "*", // IDE-only, questionable; candidate for removal later (c7)
-    },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
       "@milaboratories/ts-configs": "sdk:",
       vitest: "catalog:",
+    },
+    peerDependencies: {
+      typescript: "*",
     },
   };
 }

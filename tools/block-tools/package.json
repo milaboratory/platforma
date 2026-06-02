@@ -65,6 +65,7 @@
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "oclif": "catalog:",
+    "oxfmt": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",
     "typescript": "catalog:",

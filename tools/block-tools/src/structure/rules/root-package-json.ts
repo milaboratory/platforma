@@ -1,8 +1,7 @@
-// Root `package.json` content rules.
-// Initial skeleton in templates/generated/root-package-json.ts; this body
-// adds canonical scripts, devDeps, peerDeps, and the final field-order
-// projection. enforceFieldOrder is the LAST call (explicit opt-in per
-// content-rules.md).
+// Root `package.json` content rules. Initial skeleton in
+// templates/generated/root-package-json.ts; this body re-asserts the
+// canonical scripts, devDeps, peerDeps, and the final field-order
+// projection (enforceFieldOrder is the LAST call).
 
 import {
   ensureField,
@@ -19,19 +18,13 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 export function rootPackageJsonRules(): void {
   ensureField("packageManager", "pnpm@9.12.0");
 
-  // Root is never published — it carries no `name` (D2). Every real
-  // canonical block root (mixcr/clonotype/antibody/sequence-properties) is
-  // already nameless; the scaffold actively deletes any stray `name`.
+  // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");
 
-  // Canonical lifecycle script set — learned from the boilerplate (the
-  // authority `init` replaces) and the real canonical block roots. 5b
-  // wrongly stripped build:dev/test:dry-run/mark-stable as "not canonical";
-  // they are lifecycle-orchestration scripts with no replacement, so the
-  // scaffold preserves them (the legacyCleanup removals are reverted).
-  // Values match the boilerplate — `test`/`test:dry-run` carry the
-  // PL_PKG_DEV wrapper; the live backend's env reaches the integration tests
-  // via the turbo `test` task's passThroughEnv (no --env-mode=loose needed).
+  // Canonical lifecycle script set. `test` / `test:dry-run` carry the
+  // PL_PKG_DEV wrapper; the live backend's env reaches the integration
+  // tests via the turbo `test` task's passThroughEnv (no --env-mode=loose
+  // needed).
   ensureScript("fmt", "turbo run fmt");
   ensureScript("check", "turbo run check");
   ensureScript("build", "turbo run build");
@@ -39,13 +32,14 @@ export function rootPackageJsonRules(): void {
   ensureScript("test", "env PL_PKG_DEV=local turbo run test --concurrency 1");
   ensureScript("test:dry-run", "env PL_PKG_DEV=local turbo run test --dry-run=json");
   ensureScript("mark-stable", "turbo run mark-stable");
+  ensureScript("do-pack", "turbo run do-pack");
   ensureScript("watch", "turbo watch build");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
+  // Deprecated in favour of `update`; kept for compatibility.
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
   // Full SDK-update flow: bump catalog (deps-only) → install → re-apply
-  // structure against the freshly-pulled deps (the two-step protocol from
-  // spec.md § "refresh", wrapped as one script).
+  // structure against the freshly-pulled deps, wrapped as one script.
   ensureScript(
     "update",
     "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",
@@ -64,10 +58,10 @@ export function rootPackageJsonRules(): void {
     oxfmt: "*",
   });
 
-  // Strip dev-machine override clutter: keys like "//pnpm", "///pnpm", "--"
-  // carrying a pnpm/overrides sub-object (often absolute local paths). Left
-  // in place these are unknown keys that oxfmt would shove past the canonical
-  // sections, breaking `oxfmt --check`. (content-rules.md § root clutter.)
+  // Strip committed dev-machine override clutter: keys like "//pnpm",
+  // "///pnpm", "--" carrying a pnpm/overrides sub-object (often absolute
+  // local paths). Left in place these are unknown top-level keys that oxfmt
+  // shoves past the canonical sections, breaking `oxfmt --check`.
   pruneKeysMatching((key, value): boolean => {
     if (!/^(\/\/|--)/.test(key)) return false;
     if (typeof value !== "object" || value === null) return false;
@@ -75,7 +69,6 @@ export function rootPackageJsonRules(): void {
     return v.pnpm !== undefined || v.overrides !== undefined;
   });
 
-  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
   enforceAlphabeticalOrder("peerDependencies");

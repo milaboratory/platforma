@@ -1,14 +1,11 @@
-// Software `package.json` content rules. One body, N modules — fan-out
-// is driven by `ctx.modules` (see dsl-example.md § "Multi-module fan-out").
+// Software `package.json` content rules. One body, N modules — fan-out is
+// driven by `ctx.modules`.
 //
 // Drift-correctors only: identity (name/version), `description`, and the
-// `block-software` descriptor are author-owned / opaque and left
-// untouched — re-asserting them would clobber real multi-software blocks
-// on refresh. Init→check parity holds because the generator's values for
-// those fields survive the body unchanged. The body enforces the
-// structural essentials: ESM type, the publish `files` glob, the
-// `pl-pkg` build/prepublish scripts, and the canonical devDeps (runenv
-// from the catalog, package-builder via the `sdk:` sentinel).
+// `block-software` descriptor are author-owned / opaque and left untouched
+// — re-asserting them would clobber real multi-software blocks on refresh.
+// The body enforces the structural essentials: ESM type, the publish
+// `files` glob, the lifecycle scripts, and the canonical devDeps.
 
 import {
   ensureField,
@@ -25,13 +22,20 @@ export function softwarePackageJsonRules(): void {
 
   ensureScript("build", "pl-pkg build");
   ensureScript("prepublishOnly", "pl-pkg prepublish");
+  ensureScript(
+    "do-pack",
+    "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
+  );
+  ensureScript("changeset", "changeset");
+  ensureScript("version-packages", "changeset version");
 
   ensureDevDeps({
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@platforma-sdk/package-builder": "sdk:",
+    // shx powers the do-pack script above.
+    shx: "catalog:",
   });
 
-  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
   enforceAlphabeticalOrder("peerDependencies");

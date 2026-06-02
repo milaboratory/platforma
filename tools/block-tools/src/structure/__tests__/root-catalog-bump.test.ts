@@ -1,6 +1,8 @@
-// Step-5a DoD: the `onUpdateDeps` frame in `rootCatalogBumpRules` must
-// fire ONLY under `--update-deps-only`, and normal-mode leaves must be
-// the inverse. Mocked registry — no network.
+// The `onInitOrUpdate` frame in `rootCatalogBumpRules` resolves the SDK
+// catalog to npm latest. It must fire on `init` AND `--update-deps-only`,
+// but NOT on a default refresh; default-mode leaves are the inverse (fire
+// on init + default refresh, skipped under --update-deps-only). Mocked
+// registry — no network.
 
 import { describe, test, expect } from "vitest";
 import { parse as parseYaml } from "yaml";
@@ -60,7 +62,7 @@ const MOCK_LATEST: Record<string, string> = {
 const mockLookup = (name: string): string | undefined => MOCK_LATEST[name];
 
 describe("rootCatalogBumpRules mode split", () => {
-  test("default refresh: catalog untouched, normal-mode leaf fires", async () => {
+  test("default refresh: catalog untouched, default-mode leaf fires", async () => {
     const fs = freshFs();
     await engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup });
 
@@ -69,11 +71,11 @@ describe("rootCatalogBumpRules mode split", () => {
     ).catalog;
     expect(cat["@platforma-sdk/model"]).toBe("1.0.0");
     expect(cat["@milaboratories/ts-builder"]).toBe("1.0.0");
-    // Normal-mode leaf did fire.
+    // Default-mode leaf did fire.
     expect(await fs.exists("MARKER.txt")).toBe(true);
   });
 
-  test("--update-deps-only: SDK catalog bumped, normal-mode leaf skipped", async () => {
+  test("--update-deps-only: SDK catalog bumped, default-mode leaf skipped", async () => {
     const fs = freshFs();
     await engineRun(STRUCTURE, fs, ctx(true), { registryLookup: mockLookup });
 
@@ -84,7 +86,22 @@ describe("rootCatalogBumpRules mode split", () => {
     expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
     // Non-matching dep left alone.
     expect(cat["lodash"]).toBe("1.0.0");
-    // Normal-mode leaf was skipped in update-deps-only mode.
+    // Default-mode leaf was skipped in update-deps-only mode.
     expect(await fs.exists("MARKER.txt")).toBe(false);
+  });
+
+  test("init: SDK catalog bumped AND default-mode leaf fires", async () => {
+    const fs = freshFs();
+    await engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup, initMode: true });
+
+    const cat = (
+      parseYaml(await fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> }
+    ).catalog;
+    // onInitOrUpdate fired → SDK bumped.
+    expect(cat["@platforma-sdk/model"]).toBe("9.9.9");
+    expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
+    expect(cat["lodash"]).toBe("1.0.0");
+    // Default-mode leaf also fired on init.
+    expect(await fs.exists("MARKER.txt")).toBe(true);
   });
 });

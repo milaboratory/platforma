@@ -1,7 +1,11 @@
-// Model `package.json` content rules.
-// Identity (name/version) stays untouched; the body enforces type/main/
-// types/exports + canonical scripts + canonical dep sets, then opts in
-// to canonical field order at the end.
+// Model `package.json` content rules. Identity (name/version) stays
+// untouched; the body enforces type/main/types/exports + canonical scripts
+// + canonical dep sets, then projects canonical field / dependency order.
+//
+// The enforce* calls produce exactly oxfmt's order (canonicalPackageJsonOrder
+// is derived from oxfmt), so refreshing a legacy block whose package.json is
+// not yet canonically ordered yields oxfmt-clean output — the build→check
+// gate (oxfmt --check, run before any fmt) passes without a prior `pnpm fmt`.
 
 import {
   ensureField,
@@ -33,10 +37,9 @@ export function modelPackageJsonRules(): void {
   ensureScript("watch", "ts-builder build --target block-model --watch");
   ensureScript("build", "ts-builder build --target block-model && block-tools build-model");
   ensureScript("check", "ts-builder check --target block-model");
-  // Canonical test script with --passWithNoTests: real blocks put unit
-  // tests in model/ (mixcr, sequence-properties), so the scope carries a
-  // test runner; --passWithNoTests keeps models with no test files
-  // (clonotype, antibody) from failing `turbo run test`.
+  // --passWithNoTests: real blocks put unit tests in model/ (mixcr,
+  // sequence-properties); models with no test files don't fail `turbo run
+  // test`.
   ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/model", "sdk:");
@@ -53,7 +56,6 @@ export function modelPackageJsonRules(): void {
     typescript: "*",
   });
 
-  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
   enforceAlphabeticalOrder("peerDependencies");

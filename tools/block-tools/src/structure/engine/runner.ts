@@ -3,19 +3,24 @@
 // `run(structure, fs, ctx, opts)` drives one block through phases 3-7 of
 // the spec lifecycle (DISCOVERY happens in the caller, which constructs
 // `ctx.modules`). The function is shared by `check`, `refresh`,
-// `refresh --update-deps-only`, and `init`:
-//   - dryRun=true                            → check (no writes)
-//   - dryRun=false, updateDepsOnly=false     → refresh default
-//                                              (writes + .structure
-//                                              bump + post-run recheck)
-//   - dryRun=false, updateDepsOnly=true      → refresh --update-deps-only
-//                                              (only onUpdateDeps leaves
-//                                              fire; no version bump;
-//                                              no recheck)
-//   - dryRun=false, opts.initMode=true       → init (seeds also written;
-//                                              no recheck — Layer-2 test
-//                                              runs an explicit dry-run
-//                                              afterwards instead)
+// `refresh --update-deps-only`, and `init`. The mode (see `currentMode`)
+// selects which leaves fire — a leaf fires iff its `modes` include the
+// current one:
+//   - dryRun=true                            → check, mode "default" (no
+//                                              writes)
+//   - dryRun=false, updateDepsOnly=false     → refresh, mode "default"
+//                                              (writes + .structure bump +
+//                                              post-run recheck)
+//   - dryRun=false, updateDepsOnly=true      → refresh --update-deps-only,
+//                                              mode "updateDeps" (only
+//                                              onUpdateDeps/onInitOrUpdate
+//                                              leaves fire; no version
+//                                              bump; no recheck)
+//   - dryRun=false, opts.initMode=true       → init, mode "init" (default
+//                                              + onInitOrUpdate leaves +
+//                                              seeds; no recheck — Layer-2
+//                                              test runs an explicit
+//                                              dry-run afterwards instead)
 //
 // Idempotency invariant is enforced by phase 7: after a successful
 // refresh, the runner reruns the lifecycle in dry-run mode (fresh
@@ -24,7 +29,7 @@
 // (scope, path, primitive, action) tuple for diagnostics.
 
 import { stringify as yamlStringify } from "yaml";
-import type { ContentForm, FlatItem, Structure, TriggerContext, ManagedBody } from "./ir";
+import type { ContentForm, FlatItem, RunMode, Structure, TriggerContext, ManagedBody } from "./ir";
 import type { RunContext, Scope } from "./api";
 import type { FileSystem } from "./fs/api";
 import type { TemplateProvider } from "./templates";
@@ -212,8 +217,17 @@ function passesTriggers(item: FlatItem, tctx: TriggerContext): boolean {
   return true;
 }
 
-function filterByMode(items: FlatItem[], updateDepsOnly: boolean): FlatItem[] {
-  return items.filter((i) => i.updateDepsOnly === updateDepsOnly);
+/** Derive the active run mode from the context + init flag. `check`
+ *  (dryRun) and `refresh` share `"default"` — same leaves, the `dryRun`
+ *  flag alone decides whether writes land. */
+function currentMode(ctx: RunContext, initMode: boolean): RunMode {
+  if (initMode) return "init";
+  if (ctx.updateDepsOnly) return "updateDeps";
+  return "default";
+}
+
+function filterByMode(items: FlatItem[], mode: RunMode): FlatItem[] {
+  return items.filter((i) => i.modes.includes(mode));
 }
 
 async function applyStructural(
@@ -359,7 +373,7 @@ async function executePass(
   initMode: boolean,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
 ): Promise<Change[]> {
-  const items = filterByMode(flat, ctx.updateDepsOnly);
+  const items = filterByMode(flat, currentMode(ctx, initMode));
   const changes: Change[] = [];
 
   // Structural pass.

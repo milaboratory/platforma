@@ -15,6 +15,8 @@ import { run as engineRun } from "./engine/runner";
 import { createRunContext, modulesForInit } from "./engine/ctx";
 import { STRUCTURE } from "./structure-definition";
 import { STRUCTURE_VERSION } from "./engine/version";
+import { matchesBumpPattern, buildRegistryLookupForNames } from "./engine/registry-client";
+import { SDK_CATALOG_PINS } from "./templates/generated/root-pnpm-workspace";
 import type { BlockVars } from "./engine/api";
 
 /** Platform choices `init` can scaffold a software module for. Python is
@@ -137,7 +139,23 @@ export async function runInit(init: InitInput): Promise<BlockVars> {
     dryRun: false,
   });
 
-  await engineRun(STRUCTURE, fs, ctx, { templates, initMode: true });
+  // Init REQUIRES network: resolve the SDK catalog families to npm latest
+  // before the run, so the generated block carries real current versions
+  // (no `1.0.0`-style placeholders). The names come from the SDK pin map's
+  // keys — there is no on-disk pnpm-workspace.yaml to read yet. A registry
+  // failure aborts init rather than silently shipping stale seed versions.
+  const sdkNames = Object.keys(SDK_CATALOG_PINS).filter(matchesBumpPattern);
+  let registryLookup: (name: string) => string | undefined;
+  try {
+    registryLookup = await buildRegistryLookupForNames(sdkNames);
+  } catch (err) {
+    throw new Error(
+      `init requires network access to resolve SDK catalog versions from npm, ` +
+        `but the registry lookup failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  await engineRun(STRUCTURE, fs, ctx, { templates, initMode: true, registryLookup });
   init.log(
     `Initialised block '${vars.facadeName}'${
       vars.softwarePlatform ? ` (software: ${vars.softwarePlatform})` : " (no software)"

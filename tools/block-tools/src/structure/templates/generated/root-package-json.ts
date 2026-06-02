@@ -1,11 +1,10 @@
-// Initial root `package.json` — full canonical content (Path A).
-// Body rules in rules/root-package-json.ts re-assert the same fields
-// as drift-correctors.
+// Initial root `package.json`. Body rules in rules/root-package-json.ts
+// re-assert the same fields as drift-correctors.
 
 import type { BlockVars } from "../../engine/api";
 
 export function rootPackageJsonInitial(_v: BlockVars): Record<string, unknown> {
-  // No `name`: the root is never published (D2). Body rules re-assert
+  // No `name`: the root is never published. Body rules re-assert
   // (removeField("name")) as a drift-corrector.
   return {
     version: "1.0.0",
@@ -18,9 +17,12 @@ export function rootPackageJsonInitial(_v: BlockVars): Record<string, unknown> {
       test: "env PL_PKG_DEV=local turbo run test --concurrency 1",
       "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
       "mark-stable": "turbo run mark-stable",
+      "do-pack": "turbo run do-pack",
       watch: "turbo watch build",
       changeset: "changeset",
       "version-packages": "changeset version",
+      // Deprecated in favour of `update` (the full refresh → install →
+      // refresh flow); kept for compatibility.
       "update-sdk": "block-tools structure refresh --update-deps-only",
       update:
         "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",

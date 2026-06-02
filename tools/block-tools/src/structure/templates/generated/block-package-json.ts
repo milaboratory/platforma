@@ -1,39 +1,36 @@
-// Initial block-level (orchestrator) `package.json` — full canonical
-// content (Path A). Workspace-scope deps reflect ctx.modules at run
-// time; the generator pre-computes them so body rules are pure
-// drift-correctors (templates-strategy.md § "Generator Form In Use").
+// Initial block-level (orchestrator) `package.json`. Workspace-scope deps
+// reflect the discovered modules at run time; the generator pre-computes
+// them so the body rules are pure drift-correctors.
 
 import type { BlockVars } from "../../engine/api";
-import { tryGetActiveRunContext } from "../../engine/builders";
+import { getActiveRunContext } from "../../engine/builders";
 
 export function blockPackageJsonInitial(v: BlockVars): Record<string, unknown> {
-  const ctx = tryGetActiveRunContext();
+  const ctx = getActiveRunContext();
   const deps: Record<string, string> = {};
-  // The block (facade) depends on its model / ui / workflow / software
-  // modules — NOT on its test module. The test package depends on the
-  // block (the `this-block` self-test alias); a reciprocal block→test
-  // dep would be a pnpm/turbo cycle. Dependency flows test → block only.
-  for (const m of ctx?.modules ?? []) {
-    if (
-      m.scope === "model" ||
-      m.scope === "ui" ||
-      m.scope === "workflow" ||
-      m.scope === "software"
-    ) {
+  // The facade depends on its model / ui / workflow modules — not on its
+  // software module (the workflow owns that dep) and not on its test module
+  // (the test package depends on the facade, so a reciprocal dep would be a
+  // pnpm/turbo cycle).
+  for (const m of ctx.modules) {
+    if (m.scope === "model" || m.scope === "ui" || m.scope === "workflow") {
       deps[m.name] = "workspace:*";
     }
   }
   return {
     name: `${v.facadeName}.block`,
     version: "1.0.0",
-    // No `type: "module"`: the block facade's index.js is CommonJS (the
-    // dev-block descriptor the middle layer loads). ESM would break it.
+    // type:"module" intentionally omitted.
     files: ["index.d.ts", "index.js"],
-    // shx rm -rf (not bare rm -rf) for cross-platform robustness (c8).
-    scripts: { build: "shx rm -rf ./block-pack && block-tools pack" },
+    scripts: {
+      build: "shx rm -rf ./block-pack && block-tools pack",
+      "mark-stable":
+        "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+      prepublishOnly:
+        "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+      "do-pack": "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz",
+    },
     dependencies: deps,
-    // block-tools is a build-time CLI (block pack) → devDependencies,
-    // matching every production block. shx powers the build script above.
     devDependencies: { "@platforma-sdk/block-tools": "sdk:", shx: "catalog:" },
   };
 }

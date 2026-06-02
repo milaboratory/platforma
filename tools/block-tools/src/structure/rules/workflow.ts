@@ -4,6 +4,7 @@
 import {
   scope,
   managed,
+  fixed,
   scaffold,
   seed,
   file,
@@ -17,9 +18,12 @@ import { workflowPackageJsonRules } from "./workflow-package-json";
 
 export function workflowRules(): void {
   scope("workflow", () => {
-    // No workflow tsconfig: pl-tengo compiles Tengo, not TS. Blocks that
-    // keep an inline-TS helper test own their own tsconfig — the tool
-    // neither creates nor removes it.
+    // tsconfig for the TypeScript vitest integration tests under src/test
+    // (e.g. mixcr's workflow/src/test/columns.test.ts). types:[] keeps the
+    // isomorphic workflow free of ambient Node/DOM types.
+    fixed("tsconfig.json", file("workflow/tsconfig.json"));
+    // Tengo source formatter (emacs batch); the `format` script invokes it.
+    fixed("format.el", file("workflow/format.el"));
     // scaffold (not fixed): tengo test config is author-tunable.
     scaffold("vitest.config.mts", file("workflow/vitest.config.mts"));
     // No workflow facade (index.js / index.d.ts): the block loader resolves the

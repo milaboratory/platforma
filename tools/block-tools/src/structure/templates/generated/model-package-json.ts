@@ -1,6 +1,8 @@
-// Initial model `package.json` — full canonical content (Path A).
-// Body rules in rules/model-package-json.ts re-assert the same fields
-// as drift-correctors (templates-strategy.md § "Generator Form In Use").
+// Initial model `package.json`. Body rules in
+// rules/model-package-json.ts re-assert the same fields as
+// drift-correctors. Authored oxfmt-clean: the model is one of the two
+// scopes `ts-builder check` runs oxfmt on, so the body cedes field /
+// dependency ordering to oxfmt (no enforce* calls there).
 
 import type { BlockVars } from "../../engine/api";
 
@@ -33,15 +35,15 @@ export function modelPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     dependencies: {
       "@platforma-sdk/model": "sdk:",
     },
-    peerDependencies: {
-      "@types/node": "*",
-      typescript: "*",
-    },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
       "@milaboratories/ts-configs": "sdk:",
       "@platforma-sdk/block-tools": "sdk:",
       vitest: "catalog:",
+    },
+    peerDependencies: {
+      "@types/node": "*",
+      typescript: "*",
     },
   };
 }

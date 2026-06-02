@@ -8,7 +8,7 @@
 // active context (set up by `defineStructure`) and append to its tree.
 // Calling a builder outside `defineStructure` throws at runtime.
 
-import type { ContentForm, ManagedBody, Structure, TriggerFn } from "./ir";
+import type { ContentForm, ManagedBody, RunMode, Structure, TriggerFn } from "./ir";
 
 export type Scope = "root" | "block" | "model" | "ui" | "workflow" | "test" | "software";
 
@@ -47,11 +47,11 @@ export type Module = {
 export type RunContext = {
   /** `--sdk-internal` flag. */
   isSdkInternal: boolean;
-  /** `--update-deps-only` flag. When true, only `onUpdateDeps` leaves
-   *  fire; all normal-mode leaves are skipped. The caller is then
-   *  expected to run `pnpm install` and re-invoke `refresh` without
-   *  the flag for the normal-mode rules to apply against the updated
-   *  dep set. */
+  /** `--update-deps-only` flag. When true, the run is in mode
+   *  `"updateDeps"`: only `onUpdateDeps` / `onInitOrUpdate` leaves fire;
+   *  all default-mode leaves are skipped. The caller is then expected to
+   *  run `pnpm install` and re-invoke `refresh` without the flag for the
+   *  default-mode rules to apply against the updated dep set. */
   updateDepsOnly: boolean;
   /** Discovered modules (every scope). */
   modules: Module[];
@@ -64,13 +64,14 @@ export type RunContext = {
   dryRun: boolean;
 };
 
-export type { ContentForm, ManagedBody, Structure, TriggerFn };
+export type { ContentForm, ManagedBody, RunMode, Structure, TriggerFn };
 
 export {
   defineStructure,
   scope,
   when,
   onUpdateDeps,
+  onInitOrUpdate,
   fixed,
   managed,
   scaffold,
@@ -112,7 +113,6 @@ export {
   transformAt,
   // YAML managed builders
   ensureWorkspaceModulePaths,
-  ensureCatalogPin,
   ensureCatalogVersion,
   pinCatalogTo,
   bumpCatalogToLatest,

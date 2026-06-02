@@ -1,4 +1,4 @@
-// Initial test `package.json` — full canonical content (Path A).
+// Initial test `package.json`.
 
 import type { BlockVars } from "../../engine/api";
 
@@ -9,10 +9,12 @@ export function testPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     private: true,
     type: "module",
     scripts: {
+      // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
+      // config). Slots into the turbo `check` task.
+      check: "ts-builder type-check --target block-test",
       test: "vitest run --passWithNoTests",
     },
     peerDependencies: {
-      "@types/node": "*",
       typescript: "*",
     },
     devDependencies: {

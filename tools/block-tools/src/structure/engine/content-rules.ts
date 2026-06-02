@@ -496,17 +496,6 @@ function readCatalogString(state: YamlState, name: string): string | undefined {
   return typeof node === "string" ? node : undefined;
 }
 
-/** Strip leading `^` or `~` from `catalog.<name>` (no-op if missing or
- *  already exact). */
-export function ensureCatalogPin(name: string): void {
-  const state = requireYaml("ensureCatalogPin");
-  const cur = readCatalogString(state, name);
-  if (cur === undefined) return;
-  const stripped = cur.replace(/^[\^~]/, "");
-  if (stripped === cur) return;
-  state.doc.setIn(["catalog", name], stripped);
-}
-
 /** Set `catalog.<name>` to `version` exactly. Creates the entry if
  *  missing. */
 export function ensureCatalogVersion(name: string, version: string): void {
@@ -523,10 +512,16 @@ export function pinCatalogTo(name: string, version: string): void {
   ensureCatalogVersion(name, version);
 }
 
+/** Range modifier prepended to a resolved version: exact (default), `^`
+ *  (compatible), or `~` (patch-level). */
+export type CatalogModifier = "" | "^" | "~";
+
 /** Bump every `catalog.*` entry matching `pattern` to the latest version
  *  obtained from the active state's `getLatestVersion` accessor (which
- *  the caller pre-resolves; no network call is made here). */
-export function bumpCatalogToLatest(pattern: RegExp): void {
+ *  the caller pre-resolves; no network call is made here). `modifier`
+ *  prepends a range operator to the written version — default `""`
+ *  writes the exact resolved version. */
+export function bumpCatalogToLatest(pattern: RegExp, modifier: CatalogModifier = ""): void {
   const state = requireYaml("bumpCatalogToLatest");
   if (!state.getLatestVersion) return;
   const json = state.doc.toJSON() as { catalog?: Record<string, unknown> } | null;
@@ -536,9 +531,10 @@ export function bumpCatalogToLatest(pattern: RegExp): void {
     if (!pattern.test(name)) continue;
     const latest = state.getLatestVersion(name);
     if (latest === undefined) continue;
+    const desired = `${modifier}${latest}`;
     const cur = readCatalogString(state, name);
-    if (cur === latest) continue;
-    state.doc.setIn(["catalog", name], latest);
+    if (cur === desired) continue;
+    state.doc.setIn(["catalog", name], desired);
   }
 }
 
