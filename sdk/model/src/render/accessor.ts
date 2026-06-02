@@ -207,24 +207,23 @@ export class TreeNodeAccessor {
    * Like {@link getDataAsJson}, but does not throw while the resource is still
    * computing. Three states:
    *
-   * - **Not ready** → returns `undefined` (loading). A field that resolves
-   *   before its resource is ready (routine on remote backends) would make
-   *   {@link getDataAsJson} throw "Resource has no content." mid-calculation,
-   *   surfacing a transient "Some outputs have errors" banner that clears once
-   *   the resource finishes (MILAB-6318).
-   * - **Errored** → throws the resource error.
+   * - **Not ready** → returns `undefined` (loading).
+   * - **Errored** → throws the resource's error.
    * - **Ready** → returns the parsed content.
    *
-   * Prefer this over {@link getDataAsJson} in reactive output lambdas.
+   * Prefer this over {@link getDataAsJson} in reactive output lambdas: a field
+   * that resolves before its resource is ready (routine on remote backends)
+   * makes {@link getDataAsJson} throw "Resource has no content." mid-calculation,
+   * flashing a transient "Some outputs have errors" banner that clears when the
+   * resource finishes (MILAB-6318).
    */
   public getDataAsJsonOrUndefined<T>(): T | undefined {
     // Not ready → undefined (loading). getIsReadyOrError() registers the
     // readiness dependency, so the lambda re-runs once the resource finishes.
     if (!this.getIsReadyOrError()) return undefined;
-    // Errored → surface the actual error. The error node's content is a
-    // serialized ErrorLike; decode it and throw its message, rather than
-    // getDataAsJson's generic "Resource has no content." (or returning stale
-    // content).
+    // Errored → throw the actual error. The error node holds a serialized
+    // ErrorLike; decode it and throw its message, not getDataAsJson's generic
+    // "Resource has no content."
     const error = this.getError();
     if (error !== undefined) {
       const raw = error.getDataAsString();
