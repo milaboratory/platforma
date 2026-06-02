@@ -2,21 +2,25 @@
   "name": "@milaboratories/milaboratories.test-blob-url-custom-protocol",
   "version": "1.0.63",
   "private": true,
-  "scripts": {
-    "build": "rm -rf ./block-pack && block-tools pack"
-  },
   "files": [
     "index.d.ts",
     "index.js"
   ],
+  "scripts": {
+    "build": "shx rm -rf ./block-pack && block-tools pack",
+    "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "do-pack": "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz"
+  },
   "dependencies": {
-    "@platforma-sdk/model": "workspace:*",
-    "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow": "workspace:*",
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.model": "workspace:*",
-    "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui": "workspace:*"
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
-    "@platforma-sdk/block-tools": "workspace:*"
+    "@platforma-sdk/block-tools": "workspace:*",
+    "shx": "catalog:"
   },
   "block": {
     "components": {

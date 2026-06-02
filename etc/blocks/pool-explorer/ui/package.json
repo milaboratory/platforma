@@ -23,7 +23,10 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "typescript": "catalog:",
+    "vitest": "catalog:",
     "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "*"
   }
 }
