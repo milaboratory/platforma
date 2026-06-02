@@ -79,6 +79,7 @@ export {
   remove,
   rename,
   file,
+  binaryFile,
   text,
   tpl,
   generate,

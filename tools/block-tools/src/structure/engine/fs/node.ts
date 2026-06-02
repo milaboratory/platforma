@@ -23,6 +23,12 @@ export class NodeFileSystem implements FileSystem {
     await fsp.writeFile(a, content, "utf-8");
   }
 
+  async writeBinary(p: string, content: Uint8Array): Promise<void> {
+    const a = this.abs(p);
+    await fsp.mkdir(path.dirname(a), { recursive: true });
+    await fsp.writeFile(a, content);
+  }
+
   async exists(p: string): Promise<boolean> {
     try {
       await fsp.stat(this.abs(p));

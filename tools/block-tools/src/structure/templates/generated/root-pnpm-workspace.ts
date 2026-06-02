@@ -45,6 +45,12 @@ export const INFRA_CATALOG_FLOOR: Record<string, string> = {
   shx: "~0.4.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
+  // The seeded ui depends on `vue` (catalog:). `@platforma-sdk/ui-vue` pins
+  // vue as an EXACT regular dependency (not a peer), so the block must pin the
+  // SAME exact version — a floated `~` lets the ui resolve a newer 3.5.x than
+  // ui-vue's, yielding two vue instances and a SdkPluginV3-vs-Plugin type
+  // clash in `main.ts`. Keep this in lockstep with ui-vue's vue pin.
+  vue: "3.5.24",
 };
 
 /** Catalog name of the python runenv. Added to a block's catalog only when

@@ -145,7 +145,34 @@ function resolveContent(
       }
       return value;
     }
+    case "binary":
+      throw new Error(
+        `binary('${form.path}') cannot be resolved to a string; it is only valid ` +
+          `inside seed()/scaffold(), which copy it verbatim via fs.writeBinary.`,
+      );
   }
+}
+
+/** Write a leaf's content to disk, dispatching binary assets (copied
+ *  verbatim, never utf-8 decoded) from string content. */
+async function writeLeafContent(
+  fs: FileSystem,
+  resolvedPath: string,
+  form: ContentForm,
+  templates: TemplateProvider | undefined,
+  isSdkInternal: boolean,
+): Promise<void> {
+  if (form.kind === "binary") {
+    if (!templates) {
+      throw new Error(
+        `binary('${form.path}'): no TemplateProvider configured. ` +
+          `Pass opts.templates to engine.run(...).`,
+      );
+    }
+    await fs.writeBinary(resolvedPath, templates.staticReadBinary(form.path));
+    return;
+  }
+  await fs.write(resolvedPath, resolveContent(form, resolvedPath, templates, isSdkInternal));
 }
 
 /** Dispatch managed-body parse → mutate → serialize by file extension /
@@ -263,8 +290,9 @@ async function applyStructural(
   }
   if (leaf.kind === "scaffold") {
     if (await fs.exists(item.resolvedPath)) return undefined;
-    const initial = resolveContent(leaf.initial, item.resolvedPath, templates, isSdkInternal);
-    if (!dryRun) await fs.write(item.resolvedPath, initial);
+    if (!dryRun) {
+      await writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+    }
     return {
       scope: item.scope,
       path: item.resolvedPath,
@@ -280,8 +308,9 @@ async function applyStructural(
     // pass simply skipping seeds (vacuously fine).
     if (!initMode) return undefined;
     if (await fs.exists(item.resolvedPath)) return undefined;
-    const initial = resolveContent(leaf.initial, item.resolvedPath, templates, isSdkInternal);
-    if (!dryRun) await fs.write(item.resolvedPath, initial);
+    if (!dryRun) {
+      await writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+    }
     return {
       scope: item.scope,
       path: item.resolvedPath,

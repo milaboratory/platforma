@@ -11,6 +11,7 @@ import {
   ensureDep,
   ensureDevDeps,
   ensurePeerDeps,
+  ensureWorkspaceScopeDeps,
   removeDep,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
@@ -30,6 +31,10 @@ export function uiPackageJsonRules(): void {
   ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/ui-vue", "sdk:");
+  // The seeded ui (main.ts) imports `createApp` from vue.
+  ensureDep("vue", "catalog:");
+  // The seeded ui (app.ts) imports the block's model package.
+  ensureWorkspaceScopeDeps("model");
 
   ensureDevDeps({
     "@milaboratories/ts-builder": "sdk:",

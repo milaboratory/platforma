@@ -14,7 +14,7 @@ function normalise(p: string): string {
 }
 
 export class MemoryFileSystem implements FileSystem {
-  private files = new Map<string, string>();
+  private files = new Map<string, string | Uint8Array>();
 
   constructor(initial?: Record<string, string>) {
     if (initial) {
@@ -24,11 +24,12 @@ export class MemoryFileSystem implements FileSystem {
     }
   }
 
-  /** Snapshot of all files — handy for assertions. */
+  /** Snapshot of all files — handy for assertions. Binary entries are
+   *  rendered as a placeholder so the snapshot stays a string map. */
   snapshot(): Record<string, string> {
     const out: Record<string, string> = {};
     for (const [k, v] of [...this.files.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-      out[k] = v;
+      out[k] = typeof v === "string" ? v : `<binary:${v.byteLength} bytes>`;
     }
     return out;
   }
@@ -37,10 +38,15 @@ export class MemoryFileSystem implements FileSystem {
     const n = normalise(path);
     const v = this.files.get(n);
     if (v === undefined) throw new Error(`ENOENT: ${path}`);
+    if (typeof v !== "string") throw new Error(`read: ${path} is a binary file`);
     return v;
   }
 
   async write(path: string, content: string): Promise<void> {
+    this.files.set(normalise(path), content);
+  }
+
+  async writeBinary(path: string, content: Uint8Array): Promise<void> {
     this.files.set(normalise(path), content);
   }
 

@@ -36,7 +36,11 @@ export type ContentForm =
   | { kind: "file"; path: string }
   | { kind: "text"; value: string }
   | { kind: "tpl"; path: string; vars: TplVarsLike }
-  | { kind: "generate"; fn: () => unknown };
+  | { kind: "generate"; fn: () => unknown }
+  // A binary static asset (e.g. a logo PNG) copied verbatim from the
+  // template tree. Carried as raw bytes, never decoded to a string —
+  // only `seed` / `scaffold` consume it (via fs.writeBinary).
+  | { kind: "binary"; path: string };
 
 /** Builder-body for a `managed` file (the content-rules lambda). */
 export type ManagedBody = () => void;
