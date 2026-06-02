@@ -214,6 +214,15 @@ export function when(trigger: TriggerFn, body: () => void): void {
   );
 }
 
+/** Trigger factory: true when at least one file in the leaf's module
+ *  matches `glob` (module-relative — see `TriggerContext.filesMatch`). Use
+ *  to gate a rule on the presence of co-located files, e.g. add a vitest
+ *  `test` script only when `src/**\/*.test.ts` exists. Pairs with `when`:
+ *  `when(whenFilesExist("src/**\/*.test.ts"), () => { ... })`. */
+export function whenFilesExist(glob: string): TriggerFn {
+  return (tctx) => tctx.filesMatch(glob);
+}
+
 function pushModeFrame(builder: string, modes: RunMode[], body: () => void): void {
   const t = requireActiveTree(builder);
   const frame: ModeFrame = { kind: "mode", modes, children: [] };

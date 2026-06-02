@@ -26,8 +26,7 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
     "fmt": "ts-builder format",
     "watch": "ts-builder build --target block-model --watch",
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "check": "ts-builder check --target block-model",
-    "test": "vitest run --passWithNoTests"
+    "check": "ts-builder check --target block-model"
   },
   "dependencies": {
     "@platforma-sdk/model": "catalog:"

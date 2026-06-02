@@ -13,13 +13,17 @@ import {
   ensureField,
   ensureScript,
   ensureDep,
+  ensureDevDep,
   ensureDevDeps,
   ensurePeerDeps,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  when,
+  whenFilesExist,
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -45,7 +49,8 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
       watch: "ts-builder build --target block-model --watch",
       build: "ts-builder build --target block-model && block-tools build-model",
       check: "ts-builder check --target block-model",
-      test: "vitest run --passWithNoTests",
+      // No `test`: the vitest `test` script is wired by the body rule ONLY
+      // when co-located test files exist (a freshly-init'd model has none).
     },
     dependencies: {
       "@platforma-sdk/model": "sdk:",
@@ -82,10 +87,6 @@ export function modelPackageJsonRules(): void {
   ensureScript("watch", "ts-builder build --target block-model --watch");
   ensureScript("build", "ts-builder build --target block-model && block-tools build-model");
   ensureScript("check", "ts-builder check --target block-model");
-  // --passWithNoTests: real blocks put unit tests in model/ (mixcr,
-  // sequence-properties); models with no test files don't fail `turbo run
-  // test`.
-  ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/model", "sdk:");
 
@@ -99,6 +100,19 @@ export function modelPackageJsonRules(): void {
   ensurePeerDeps({
     "@types/node": "*",
     typescript: "*",
+  });
+
+  // The vitest `test` script + node ambient types are wired ONLY when the
+  // model carries co-located unit tests (`src/**/*.test.ts`). A test-less
+  // model gets neither — turbo simply has no `test` task for it, and the
+  // scope stays a refresh fixpoint. When tests ARE present, `@types/node`
+  // is promoted from peer to a devDep (the single-section invariant drops
+  // the peer) so the tests' `node:*` imports resolve under the
+  // `types: ["node"]` that model/tsconfig adds under the same predicate.
+  // Runs AFTER ensurePeerDeps so the promotion is not reverted.
+  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
+    ensureScript("test", "vitest run --passWithNoTests");
+    ensureDevDep("@types/node", "*");
   });
 
   enforceAlphabeticalOrder("dependencies");

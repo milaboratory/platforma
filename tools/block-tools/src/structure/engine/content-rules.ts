@@ -172,7 +172,7 @@ export function withManagedBody(
 
 export type WithManagedYamlOpts = WithManagedOpts & {
   /** Sync accessor for prefetched latest versions. Required for
-   *  `bumpCatalogToLatest` to take effect. */
+   *  `ensureCatalogLatest` to take effect. */
   getLatestVersion?: (packageName: string) => string | undefined;
 };
 
@@ -496,46 +496,53 @@ function readCatalogString(state: YamlState, name: string): string | undefined {
   return typeof node === "string" ? node : undefined;
 }
 
-/** Set `catalog.<name>` to `version` exactly. Creates the entry if
- *  missing. */
+/** Add `catalog.<name>` at `version` ONLY if the key is absent. An entry
+ *  the block already carries is left untouched — no overwrite, no
+ *  downgrade. This is the seeding primitive for curated fixed versions
+ *  (`INFRA_CATALOG_FLOOR`, the python runenv pin): on
+ *  `refresh --update-deps-only` a missing standard catalog key is added,
+ *  while a key the block already pins keeps its own version. To force a
+ *  specific version regardless of what is present, use `pinCatalogTo`. */
 export function ensureCatalogVersion(name: string, version: string): void {
   const state = requireYaml("ensureCatalogVersion");
-  const cur = readCatalogString(state, name);
-  if (cur === version) return;
+  if (readCatalogString(state, name) !== undefined) return;
   state.doc.setIn(["catalog", name], version);
 }
 
-/** Same as `ensureCatalogVersion` — declared separately so authors can
- *  signal intent ("override a previous bump") and rely on top-to-bottom
- *  declaration order. */
+/** Set `catalog.<name>` to `version` EXACTLY — creates the entry if
+ *  missing, overwrites it (including a downgrade) if present. Use to force
+ *  a specific version; with top-to-bottom declaration order a later
+ *  `pinCatalogTo` overrides an earlier `ensureCatalogLatest`. Distinct
+ *  from `ensureCatalogVersion`, which never touches a present key. */
 export function pinCatalogTo(name: string, version: string): void {
-  ensureCatalogVersion(name, version);
+  const state = requireYaml("pinCatalogTo");
+  if (readCatalogString(state, name) === version) return;
+  state.doc.setIn(["catalog", name], version);
 }
 
-/** Range modifier prepended to a resolved version: exact (default), `^`
- *  (compatible), or `~` (patch-level). */
-export type CatalogModifier = "" | "^" | "~";
-
-/** Bump every `catalog.*` entry matching `pattern` to the latest version
- *  obtained from the active state's `getLatestVersion` accessor (which
- *  the caller pre-resolves; no network call is made here). `modifier`
- *  prepends a range operator to the written version — default `""`
- *  writes the exact resolved version. */
-export function bumpCatalogToLatest(pattern: RegExp, modifier: CatalogModifier = ""): void {
-  const state = requireYaml("bumpCatalogToLatest");
+/** Resolve `catalog.<name>` to npm "latest" from the active state's
+ *  prefetched `getLatestVersion` accessor (the caller pre-resolves; no
+ *  network here), creating the key if absent. No-op when no latest is
+ *  available — default refresh passes no lookup, and a name that was not
+ *  prefetched resolves to `undefined`; in both cases any existing entry is
+ *  left untouched. This is the SDK-family resolver: on
+ *  `refresh --update-deps-only` it both SEEDS a missing standard SDK key
+ *  and refreshes a present one, and on `init` it overwrites the
+ *  placeholder with the real latest. */
+export function ensureCatalogLatest(name: string): void {
+  const state = requireYaml("ensureCatalogLatest");
   if (!state.getLatestVersion) return;
-  const json = state.doc.toJSON() as { catalog?: Record<string, unknown> } | null;
-  const catalog = json?.catalog;
-  if (!catalog) return;
-  for (const name of Object.keys(catalog)) {
-    if (!pattern.test(name)) continue;
-    const latest = state.getLatestVersion(name);
-    if (latest === undefined) continue;
-    const desired = `${modifier}${latest}`;
-    const cur = readCatalogString(state, name);
-    if (cur === desired) continue;
-    state.doc.setIn(["catalog", name], desired);
-  }
+  const latest = state.getLatestVersion(name);
+  if (latest === undefined) return;
+  if (readCatalogString(state, name) === latest) return;
+  state.doc.setIn(["catalog", name], latest);
+}
+
+/** Remove `catalog.<name>` if present; no-op when absent. */
+export function ensureCatalogAbsent(name: string): void {
+  const state = requireYaml("ensureCatalogAbsent");
+  if (!state.doc.hasIn(["catalog", name])) return;
+  state.doc.deleteIn(["catalog", name]);
 }
 
 // ============================================================

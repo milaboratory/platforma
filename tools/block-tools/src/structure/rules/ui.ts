@@ -11,13 +11,37 @@ import {
   tpl,
   generate,
   blockVars,
+  when,
+  whenFilesExist,
+  ensureField,
+  removeField,
+  pruneKeysMatching,
 } from "../engine/api";
 import { getActiveRunContext } from "../engine/builders";
 import { uiPackageJsonInitial, uiPackageJsonRules } from "./ui-package-json";
+import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function uiRules(): void {
   scope("ui", () => {
-    fixed("tsconfig.json", file("ui/tsconfig.json"));
+    // tsconfig is managed (not fixed) so node ambient types can be provided
+    // CONDITIONALLY. The body still enforces the canonical shape (what the
+    // old `fixed` form guaranteed) — `{extends, include}` with NO stray
+    // keys — and, ONLY when the ui carries co-located unit tests
+    // (`src/**/*.test.ts`), adds `compilerOptions.types: ["node"]` so tests
+    // importing `node:*` type-check under vue-tsc (FC-5b — provide node
+    // types, do NOT exclude the tests). A test-less ui is canonicalised to
+    // bare `{extends, include}` and stays a refresh fixpoint. The matching
+    // `@types/node` devDep is wired by the package.json rule under the same
+    // predicate.
+    managed("tsconfig.json", file("ui/tsconfig.json"), () => {
+      ensureField("extends", "@milaboratories/ts-configs/block/ui");
+      removeField("compilerOptions");
+      when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
+        ensureField("compilerOptions.types", ["node"]);
+      });
+      ensureField("include", ["src/**/*"]);
+      pruneKeysMatching((k) => k !== "extends" && k !== "include" && k !== "compilerOptions");
+    });
     fixed(".oxlintrc.json", file("ui/.oxlintrc.json"));
     // Block-local oxfmt config — the ui is oxfmt-checked (`ts-builder check
     // --target block-ui`).

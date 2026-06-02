@@ -11,10 +11,13 @@ import {
   ensureWorkspaceScopeDeps,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  when,
+  whenFilesExist,
   type RunContext,
 } from "../engine/api";
 import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -27,7 +30,8 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
       // to process. Tengo is built and checked by pl-tengo.
       build: "shx rm -rf dist && pl-tengo build",
       check: "pl-tengo check",
-      test: "vitest run --passWithNoTests",
+      // No `test`: the vitest `test` script is wired by the body rule ONLY
+      // when co-located test files exist (a freshly-init'd workflow has none).
       // Tengo source formatter (emacs batch). Falls back to a notice when
       // emacs is absent, so the script never hard-fails the environment.
       format: "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'",
@@ -53,9 +57,17 @@ export function workflowPackageJsonRules(): void {
   // pl-tengo. shx powers the cross-platform build clean-up.
   ensureScript("build", "shx rm -rf dist && pl-tengo build");
   ensureScript("check", "pl-tengo check");
-  ensureScript("test", "vitest run --passWithNoTests");
   // Tengo source formatter (emacs batch); no-op notice when emacs is absent.
   ensureScript("format", "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'");
+  // The vitest `test` script is wired ONLY when the workflow carries
+  // co-located integration tests (`src/**/*.test.ts`, incl. `src/test/`).
+  // A test-less workflow gets no `test` task and stays a refresh fixpoint.
+  // (Workflow tests type-check via the standalone workflow/tsconfig with
+  // `types: []` — they pull their types from `@platforma-sdk/test` — so no
+  // node-types wiring is needed here, unlike model/ui.)
+  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
+    ensureScript("test", "vitest run --passWithNoTests");
+  });
 
   ensureDep("@platforma-sdk/workflow-tengo", "sdk:");
 

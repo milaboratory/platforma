@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { bumpCatalogToLatest, pinCatalogTo, withManagedYaml } from "../../content-rules";
+import { ensureCatalogLatest, pinCatalogTo, withManagedYaml } from "../../content-rules";
 import { parseYaml, stringifyYaml } from "../../parsers/yaml";
 import {
   createMockRegistryClient,
@@ -22,7 +22,7 @@ describe("pinCatalogTo", () => {
     expect(cat["@platforma-sdk/new"]).toBe("0.1.0");
   });
 
-  test("declared-last wins: pin overrides bumpCatalogToLatest", async () => {
+  test("declared-last wins: pin overrides ensureCatalogLatest", async () => {
     const doc = parseYaml(
       ["catalog:", "  '@platforma-sdk/model': 1.0.0", "  '@platforma-sdk/lock': 1.0.0"].join("\n") +
         "\n",
@@ -40,7 +40,9 @@ describe("pinCatalogTo", () => {
     withManagedYaml(
       doc,
       () => {
-        bumpCatalogToLatest(/^@platforma-sdk\//);
+        ensureCatalogLatest("@platforma-sdk/model");
+        ensureCatalogLatest("@platforma-sdk/lock");
+        // A later pin overrides the resolved latest — and is downgrade-capable.
         pinCatalogTo("@platforma-sdk/lock", "1.42.3");
       },
       { getLatestVersion },

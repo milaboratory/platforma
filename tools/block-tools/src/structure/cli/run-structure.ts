@@ -6,14 +6,13 @@
 // cross-block state).
 
 import path from "node:path";
-import fsp from "node:fs/promises";
-import { parse as parseYamlText } from "yaml";
 import { NodeFileSystem } from "../engine/fs/node";
 import { NodeTemplateProvider } from "../engine/templates";
 import { run as engineRun, type Change } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
 import { STRUCTURE } from "../structure-definition";
 import { matchesBumpPattern, buildRegistryLookupForNames } from "../engine/registry-client";
+import { SDK_CATALOG_PACKAGES } from "../rules/root-pnpm-workspace";
 
 export type StructureMode = "check" | "refresh";
 
@@ -33,21 +32,17 @@ export type RunStructureResult = {
   changes: Change[];
 };
 
-/** Resolve the registry lookup for `--update-deps-only`: read the on-disk
- *  catalog, select the SDK families (bump patterns), prefetch their npm
- *  "latest" so the sync `bumpCatalogToLatest` builder can read it without
- *  doing I/O inside the managed body. A missing/unreadable workspace file
- *  yields an empty lookup; a network failure during prefetch propagates. */
-async function buildRegistryLookup(root: string): Promise<(name: string) => string | undefined> {
-  let catalogNames: string[] = [];
-  try {
-    const raw = await fsp.readFile(path.join(root, "pnpm-workspace.yaml"), "utf-8");
-    const ws = (parseYamlText(raw) ?? {}) as { catalog?: Record<string, unknown> };
-    catalogNames = Object.keys(ws.catalog ?? {}).filter(matchesBumpPattern);
-  } catch {
-    catalogNames = [];
-  }
-  return buildRegistryLookupForNames(catalogNames);
+/** Resolve the registry lookup for `--update-deps-only`: prefetch npm
+ *  "latest" for the SDK catalog MEMBERSHIP list (`SDK_CATALOG_PACKAGES`),
+ *  not the on-disk catalog keys, so the sync `ensureCatalogLatest` builder
+ *  can SEED a standard SDK key the block does not yet carry (the FC-3 fix)
+ *  — reading the on-disk catalog could never resolve an absent key. Mirrors
+ *  the `runInit` prefetch. A network failure during prefetch propagates. */
+async function buildRegistryLookup(): Promise<(name: string) => string | undefined> {
+  // Every SDK_CATALOG_PACKAGES entry matches a bump pattern (enforced at
+  // load time in root-pnpm-workspace); filter defensively all the same.
+  const names = SDK_CATALOG_PACKAGES.filter(matchesBumpPattern);
+  return buildRegistryLookupForNames(names);
 }
 
 export async function runStructureForPath(input: RunStructureInput): Promise<RunStructureResult> {
@@ -64,7 +59,7 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
     dryRun,
   });
 
-  const registryLookup = input.updateDepsOnly ? await buildRegistryLookup(root) : undefined;
+  const registryLookup = input.updateDepsOnly ? await buildRegistryLookup() : undefined;
 
   const result = await engineRun(STRUCTURE, fs, ctx, {
     templates,

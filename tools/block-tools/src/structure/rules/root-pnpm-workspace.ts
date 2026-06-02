@@ -74,7 +74,7 @@ export const INFRA_CATALOG_FLOOR: Record<string, string> = {
  *  the block carries a software module. Pinned to an EXACT version — updating
  *  the python runenv is an explicit author decision, never automatic. */
 export const RUNENV_PYTHON = "@platforma-open/milaboratories.runenv-python-3";
-const RUNENV_PYTHON_VERSION = "1.8.2";
+export const RUNENV_PYTHON_VERSION = "1.8.2";
 
 export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknown> {
   // Non-root module paths only. The block root ("") is discovered
