@@ -1,11 +1,12 @@
 // Synthetic-fixture round trip through the IR.
 //
 // Exercises module-global builders (D2): `defineStructure(() => { ... })`
-// with builders imported by name. Covers a scope frame, a when frame,
-// an onUpdateDeps frame (D1), a rename. Asserts IR shape, the
-// post-flatten ordered list (including the updateDepsOnly flag), and
-// that two independent build invocations produce structurally-equal
-// trees (the active-context machinery resets cleanly between runs).
+// with builders imported by name. Covers a scope frame, a when frame, both
+// mode frames (`onUpdateDeps` and `onInitOrUpdate`), a rename. Asserts IR
+// shape, the post-flatten ordered list (including the per-leaf `modes`
+// set), and that two independent build invocations produce
+// structurally-equal trees (the active-context machinery resets cleanly
+// between runs).
 
 import { describe, test, expect } from "vitest";
 import {
@@ -13,6 +14,7 @@ import {
   scope,
   when,
   onUpdateDeps,
+  onInitOrUpdate,
   fixed,
   managed,
   remove,
@@ -44,7 +46,14 @@ function buildStructure(): Structure {
     onUpdateDeps(() => {
       scope("root", () => {
         managed("pnpm-workspace.yaml", file("root/pnpm-workspace.yaml"), () => {
-          /* catalog bumps live here (step 3) */
+          /* update-deps-only catalog bumps live here */
+        });
+      });
+    });
+    onInitOrUpdate(() => {
+      scope("root", () => {
+        managed("catalog.yaml", file("root/catalog.yaml"), () => {
+          /* init + update-deps version resolution lives here */
         });
       });
     });
@@ -54,7 +63,7 @@ function buildStructure(): Structure {
 describe("synthetic fixture", () => {
   test("IR shape matches expectation", () => {
     const s = buildStructure();
-    expect(s.children.length).toBe(3);
+    expect(s.children.length).toBe(4);
     const rootFrame = s.children[0]!;
     expect(rootFrame.kind).toBe("scope");
     if (rootFrame.kind !== "scope") throw new Error("unreachable");
@@ -64,10 +73,17 @@ describe("synthetic fixture", () => {
     expect(rootFrame.children[1]!.kind).toBe("remove");
     expect(rootFrame.children[2]!.kind).toBe("managed");
     expect(rootFrame.children[3]!.kind).toBe("when");
-    expect(s.children[2]!.kind).toBe("onUpdateDeps");
+    // Both mode frames flatten to `kind: "mode"`, distinguished by `modes`.
+    const updFrame = s.children[2]!;
+    const initUpdFrame = s.children[3]!;
+    expect(updFrame.kind).toBe("mode");
+    expect(initUpdFrame.kind).toBe("mode");
+    if (updFrame.kind !== "mode" || initUpdFrame.kind !== "mode") throw new Error("unreachable");
+    expect(updFrame.modes).toEqual(["updateDeps"]);
+    expect(initUpdFrame.modes).toEqual(["init", "updateDeps"]);
   });
 
-  test("flatten produces expected flat-item list (updateDepsOnly tagged)", () => {
+  test("flatten produces expected flat-item list (per-leaf modes tagged)", () => {
     const s = buildStructure();
     const ctx = createRunContext({
       blockVars: {
@@ -83,18 +99,31 @@ describe("synthetic fixture", () => {
       ],
     });
     const flat = flatten(s, ctx);
-    // 4 leaves in root scope + 1 in model + 1 in onUpdateDeps→root.
-    expect(flat.length).toBe(6);
+    // 4 leaves in root scope + 1 in model + 1 in onUpdateDeps→root + 1 in
+    // onInitOrUpdate→root.
+    expect(flat.length).toBe(7);
     expect(flat[0]!.resolvedPath).toBe("turbo.json");
-    expect(flat[0]!.updateDepsOnly).toBe(false);
+    // A normal leaf fires on default refresh/check + init, never update-deps.
+    expect(flat[0]!.modes).toEqual(["default", "init"]);
+
     const renameItem = flat.find((f) => f.leaf.kind === "rename");
     expect(renameItem).toBeDefined();
     expect(renameItem!.resolvedPath).toBe("test/");
     expect(renameItem!.resolvedTo).toBe("test-legacy/");
     expect(renameItem!.triggers.length).toBe(1);
-    const updItems = flat.filter((f) => f.updateDepsOnly);
-    expect(updItems.length).toBe(1);
-    expect(updItems[0]!.resolvedPath).toBe("pnpm-workspace.yaml");
+
+    const updOnly = flat.find((f) => f.resolvedPath === "pnpm-workspace.yaml");
+    expect(updOnly!.modes).toEqual(["updateDeps"]);
+
+    const initOrUpd = flat.find((f) => f.resolvedPath === "catalog.yaml");
+    expect(initOrUpd!.modes).toEqual(["init", "updateDeps"]);
+
+    // Leaves that fire in update-deps mode = both mode-framed leaves.
+    const updItems = flat.filter((f) => f.modes.includes("updateDeps"));
+    expect(updItems.map((f) => f.resolvedPath).sort()).toEqual([
+      "catalog.yaml",
+      "pnpm-workspace.yaml",
+    ]);
   });
 
   test("two builds produce structurally-equal trees", () => {

@@ -1,7 +1,6 @@
 import { describe, test, expect } from "vitest";
 import {
   ensureField,
-  ensureCatalogPin,
   ensureGitignoreEntries,
   ensureCatalogVersion,
   withManagedBody,
@@ -22,7 +21,7 @@ describe("active-state guards", () => {
   test("YAML-only builder throws inside a JSON body", () => {
     expect(() =>
       withManagedBody({}, () => {
-        ensureCatalogPin("yaml");
+        ensureCatalogVersion("yaml", "1.0.0");
       }),
     ).toThrow(/requires a YAML-managed body/);
   });

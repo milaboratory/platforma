@@ -1,16 +1,13 @@
-// Initial workflow `package.json` — full canonical content (Path A).
-// ensureWorkspaceScopeDeps("software") in the body fills in workspace
-// software deps based on discovered modules — generator carries the
-// canonical "base" shape; body adds workspace deps reflecting actual
-// software modules.
+// Initial workflow `package.json`. Workspace software deps are filled from
+// the discovered modules; the generator carries the canonical base shape.
 
 import type { BlockVars } from "../../engine/api";
-import { tryGetActiveRunContext } from "../../engine/builders";
+import { getActiveRunContext } from "../../engine/builders";
 
 export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown> {
-  const ctx = tryGetActiveRunContext();
+  const ctx = getActiveRunContext();
   const softwareDeps: Record<string, string> = {};
-  for (const m of ctx?.modules ?? []) {
+  for (const m of ctx.modules) {
     if (m.scope === "software") softwareDeps[m.name] = "workspace:*";
   }
   return {
@@ -18,14 +15,14 @@ export function workflowPackageJsonInitial(v: BlockVars): Record<string, unknown
     version: "1.0.0",
     type: "module",
     scripts: {
-      // No `fmt` (ts-builder format): the workflow is Tengo, not TS — there is
-      // nothing for oxlint/oxfmt to process (and it currently crashes on a
-      // ts-builder config-path bug for oxlintrc-less packages — see the linter
-      // side-quest). Tengo is built/checked by pl-tengo.
-      // shx rm -rf (not bare rm -rf) for cross-platform robustness (c8).
+      // No `fmt`: the workflow is Tengo, not TS — nothing for oxlint/oxfmt
+      // to process. Tengo is built and checked by pl-tengo.
       build: "shx rm -rf dist && pl-tengo build",
       check: "pl-tengo check",
       test: "vitest run --passWithNoTests",
+      // Tengo source formatter (emacs batch). Falls back to a notice when
+      // emacs is absent, so the script never hard-fails the environment.
+      format: "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'",
     },
     dependencies: {
       "@platforma-sdk/workflow-tengo": "sdk:",
