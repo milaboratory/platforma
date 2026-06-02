@@ -1,16 +1,19 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { TreeNodeAccessor } from "./accessor";
-import type { AccessorHandle, GlobalCfgRenderCtxMethods } from "./internal";
+import * as internal from "../internal";
+import type { AccessorHandle } from "./internal";
 
 const HANDLE = "test-handle" as AccessorHandle;
 
-function accessorWithCtx(ctx: Partial<GlobalCfgRenderCtxMethods>): TreeNodeAccessor {
-  globalThis.cfgRenderCtx = ctx as unknown as typeof globalThis.cfgRenderCtx;
+type RenderCtx = ReturnType<typeof internal.getCfgRenderCtx>;
+
+function accessorWithCtx(ctx: Partial<RenderCtx>): TreeNodeAccessor {
+  vi.spyOn(internal, "getCfgRenderCtx").mockReturnValue(ctx as RenderCtx);
   return new TreeNodeAccessor(HANDLE, []);
 }
 
 afterEach(() => {
-  globalThis.cfgRenderCtx = undefined as unknown as typeof globalThis.cfgRenderCtx;
+  vi.restoreAllMocks();
 });
 
 test("getDataAsJsonOrUndefined returns undefined while the resource is still computing", () => {

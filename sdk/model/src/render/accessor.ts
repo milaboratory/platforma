@@ -204,23 +204,24 @@ export class TreeNodeAccessor {
 
   /**
    * Like {@link getDataAsJson}, but returns `undefined` while the resource is
-   * still being computed instead of throwing.
+   * still computing instead of throwing.
    *
-   * Prefer this in reactive output lambdas. A field that is resolved but whose
-   * blob has not been fetched yet (routine on remote backends) makes
-   * {@link getDataAsJson} throw "Resource has no content." mid-calculation,
-   * surfacing a transient "Some outputs have errors" banner that clears once
-   * the blob arrives (MILAB-6318).
+   * Prefer this in reactive output lambdas. A field that resolves before its
+   * resource is ready (routine on remote backends) makes {@link getDataAsJson}
+   * throw "Resource has no content." mid-calculation, surfacing a transient
+   * "Some outputs have errors" banner that clears once the resource finishes
+   * (MILAB-6318).
    *
    * A resource that has reached a terminal state (ready or error) but still
    * carries no content is a genuine error and throws, matching
    * {@link getDataAsJson}.
    */
   public getDataAsJsonOrUndefined<T>(): T | undefined {
+    // getIsReadyOrError() marks the computable unstable while not ready, which
+    // schedules recomputation once the resource finishes. Load-bearing, not a
+    // redundant guard over getDataAsJson — keep it.
     if (!this.getIsReadyOrError()) return undefined;
-    const content = this.getDataAsString();
-    if (content == undefined) throw new Error("Resource has no content.");
-    return JSON.parse(content);
+    return this.getDataAsJson<T>();
   }
 
   /**
