@@ -228,10 +228,9 @@ export class TreeNodeAccessor {
     const error = this.getError();
     if (error !== undefined) {
       const raw = error.getDataAsString();
-      const parsed = raw === undefined ? undefined : parseErrorLikeSafe(raw);
-      throw new Error(
-        parsed?.success ? parsed.data.message : (raw ?? "Resource computation failed."),
-      );
+      if (raw === undefined) throw new Error("Resource computation failed.");
+      const parsed = parseErrorLikeSafe(raw);
+      throw new Error(parsed.success ? parsed.data.message : raw);
     }
     // Ready → parse the content.
     return this.getDataAsJson<T>();
