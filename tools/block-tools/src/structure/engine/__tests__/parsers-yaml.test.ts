@@ -12,7 +12,7 @@ packages:
   - block
   - model
 
-# Pinned SDK versions — bump via block-tools structure refresh --update-deps.
+# Pinned SDK versions — bump via block-tools structure refresh --update-deps-only.
 catalog:
   # SDK packages — keep alphabetical for diff friendliness.
   "@platforma-sdk/model": 1.2.3

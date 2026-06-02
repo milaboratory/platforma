@@ -1,32 +1,56 @@
-// Initial software `package.json` — full canonical content.
-// Body rules in rules/software-package-json.ts re-assert the same
-// fields as drift-correctors. Matches the Path A contract per
-// templates-strategy.md § "Generator Form In Use" — generator carries
-// canonical content, body rules guard against block-author drift.
+// Initial software `package.json` — full canonical python scaffold.
+// Mirrors the boilerplate / published single-software modules
+// (templates-strategy.md § "Software Module Scaffold"). Body rules in
+// rules/software-package-json.ts re-assert the same fields as
+// drift-correctors (Path A).
 //
-// init creates at most one software module (BlockVars.softwarePlatform
-// is single-valued). For refresh on existing multi-software blocks
-// the file already exists, so this generator is not invoked — the
-// canonical name we compute here is the init-time name and would not
-// collide with any other software module on refresh.
+// init creates at most one software module, at the flat `software/` dir
+// with name `${facadeName}.software` (BlockVars.softwarePlatform is
+// single-valued and python-only at v1). On refresh the file already
+// exists, so this generator is not invoked — multi-software blocks keep
+// their own per-module names.
 
 import type { BlockVars } from "../../engine/api";
 
-export function softwarePackageJsonInitial(v: BlockVars): Record<string, unknown> {
-  const slug = (v.softwarePlatform ?? "").toLowerCase();
-  const suffix = slug ? `software-${slug}` : "software";
+/** The `block-software` package-builder descriptor for a python
+ *  entrypoint. Kept opaque by the engine; rule authors edit it via
+ *  `transformAt("block-software", ...)`. The `:3.12.10` tag inside
+ *  `environment` is the runenv artifact tag (python version), distinct
+ *  from the npm catalog version. */
+function pythonBlockSoftware(): Record<string, unknown> {
   return {
-    name: `${v.facadeName}.${suffix}`,
-    version: "1.0.0",
-    private: true,
-    type: "module",
-    scripts: {
-      build: "block-tools build-software",
+    entrypoints: {
+      main: {
+        binary: {
+          artifact: {
+            type: "python",
+            registry: "platforma-open",
+            environment: "@platforma-open/milaboratories.runenv-python-3:3.12.10",
+            dependencies: { toolset: "pip", requirements: "requirements.txt" },
+            root: "./src",
+          },
+          cmd: ["python", "{pkg}/main.py"],
+        },
+      },
     },
+  };
+}
+
+export function softwarePackageJsonInitial(v: BlockVars): Record<string, unknown> {
+  return {
+    name: `${v.facadeName}.software`,
+    version: "1.0.0",
+    type: "module",
+    description: "Block Software",
+    files: ["./dist/**/*"],
+    scripts: {
+      build: "pl-pkg build",
+      prepublishOnly: "pl-pkg prepublish",
+    },
+    "block-software": pythonBlockSoftware(),
     devDependencies: {
-      "@milaboratories/ts-builder": "catalog:",
-      "@platforma-sdk/block-tools": "catalog:",
-      "@platforma-sdk/package-builder": "catalog:",
+      "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+      "@platforma-sdk/package-builder": "sdk:",
     },
   };
 }

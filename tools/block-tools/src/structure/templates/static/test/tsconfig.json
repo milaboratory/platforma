@@ -1,4 +1,4 @@
 {
-  "extends": "@milaboratories/ts-configs/block-test.json",
+  "extends": "@milaboratories/ts-configs/block/test",
   "include": ["src/**/*"]
 }

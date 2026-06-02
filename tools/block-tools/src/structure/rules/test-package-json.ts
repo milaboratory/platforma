@@ -3,9 +3,9 @@
 import {
   ensureField,
   ensureScript,
-  ensureDep,
   ensureDevDeps,
   ensurePeerDeps,
+  enforceAlphabeticalOrder,
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
@@ -13,13 +13,13 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
 
-  ensureScript("test", "vitest run");
+  ensureScript("test", "vitest run --passWithNoTests");
 
-  ensureDep("@platforma-sdk/test", "catalog:");
-
+  // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({
-    "@milaboratories/ts-builder": "catalog:",
-    "@milaboratories/ts-configs": "catalog:",
+    "@platforma-sdk/test": "sdk:",
+    "@milaboratories/ts-builder": "sdk:",
+    "@milaboratories/ts-configs": "sdk:",
     vitest: "catalog:",
   });
 
@@ -28,5 +28,10 @@ export function testPackageJsonRules(): void {
     typescript: "*",
   });
 
+  // Match oxfmt: alphabetise dependency sections (no-op on absent sections).
+  enforceAlphabeticalOrder("dependencies");
+  enforceAlphabeticalOrder("devDependencies");
+  enforceAlphabeticalOrder("peerDependencies");
+  enforceAlphabeticalOrder("optionalDependencies");
   enforceFieldOrder([...canonicalPackageJsonOrder]);
 }

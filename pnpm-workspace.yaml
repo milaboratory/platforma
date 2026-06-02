@@ -217,6 +217,7 @@ catalog:
 
   # Util & other libs
 
+  "@inquirer/prompts": ^7.0.1
   "testcontainers": ^10.18.0
   "utility-types": ^3.11.0
   "denque": ^2.1.0

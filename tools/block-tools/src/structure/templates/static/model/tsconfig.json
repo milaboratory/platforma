@@ -1,7 +1,4 @@
 {
-  "extends": "@milaboratories/ts-configs/block-model.json",
-  "include": ["src/**/*"],
-  "compilerOptions": {
-    "outDir": "dist"
-  }
+  "extends": "@milaboratories/ts-configs/block/model",
+  "include": ["src/**/*"]
 }

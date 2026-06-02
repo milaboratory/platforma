@@ -31,7 +31,12 @@ import type { TemplateProvider } from "./templates";
 import { substituteVars } from "./templates";
 import { flatten } from "./flatten";
 import { withRunContext } from "./builders";
-import { withManagedBody, withManagedYaml, withManagedLines } from "./content-rules";
+import {
+  withManagedBody,
+  withManagedYaml,
+  withManagedLines,
+  resolveSdkSentinelsInJson,
+} from "./content-rules";
 import { parseJson, stringifyJson } from "./parsers/json";
 import type { JsonObject } from "./parsers/json";
 import { parseYaml, stringifyYaml } from "./parsers/yaml";
@@ -65,6 +70,12 @@ export type RunOptions = {
    *  the post-run recheck. The caller is expected to follow with an
    *  explicit dry-run check (Layer-2 invariant). */
   initMode?: boolean;
+  /** Sync accessor for prefetched npm "latest" versions, consumed by
+   *  `bumpCatalogToLatest` inside `onUpdateDeps` managed bodies. The CLI
+   *  prefetches the catalog's package versions before the run (network)
+   *  and passes the resulting sync map here; unit tests pass a mock.
+   *  Absent → `bumpCatalogToLatest` is a no-op (default refresh). */
+  registryLookup?: (packageName: string) => string | undefined;
 };
 
 export class RecheckError extends Error {
@@ -86,6 +97,7 @@ function resolveContent(
   form: ContentForm,
   filePath: string,
   templates: TemplateProvider | undefined,
+  isSdkInternal: boolean,
 ): string {
   switch (form.kind) {
     case "text":
@@ -113,6 +125,9 @@ function resolveContent(
     case "generate": {
       const value = form.fn();
       if (filePath.endsWith(".json")) {
+        // Resolve `sdk:` sentinels in the generated dep sections so the
+        // initial content matches what the body rules re-assert.
+        resolveSdkSentinelsInJson(value, isSdkInternal);
         return stringifyJson(value);
       }
       if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
@@ -137,6 +152,7 @@ function runManagedBody(
   raw: string,
   body: ManagedBody,
   tctx: TriggerContext,
+  registryLookup: ((packageName: string) => string | undefined) | undefined,
 ): string {
   const base = path.split("/").pop() ?? path;
   if (path.endsWith(".json")) {
@@ -149,7 +165,7 @@ function runManagedBody(
   }
   if (path.endsWith(".yaml") || path.endsWith(".yml")) {
     const doc = parseYaml(raw);
-    withManagedYaml(doc, body, { triggerContext: tctx });
+    withManagedYaml(doc, body, { triggerContext: tctx, getLatestVersion: registryLookup });
     return stringifyYaml(doc);
   }
   if (base === ".gitignore" || base.endsWith(".gitignore")) {
@@ -206,10 +222,11 @@ async function applyStructural(
   dryRun: boolean,
   templates: TemplateProvider | undefined,
   initMode: boolean,
+  isSdkInternal: boolean,
 ): Promise<Change | undefined> {
   const leaf = item.leaf;
   if (leaf.kind === "fixed") {
-    const desired = resolveContent(leaf.content, item.resolvedPath, templates);
+    const desired = resolveContent(leaf.content, item.resolvedPath, templates, isSdkInternal);
     const exists = await fs.exists(item.resolvedPath);
     if (!exists) {
       if (!dryRun) await fs.write(item.resolvedPath, desired);
@@ -232,7 +249,7 @@ async function applyStructural(
   }
   if (leaf.kind === "scaffold") {
     if (await fs.exists(item.resolvedPath)) return undefined;
-    const initial = resolveContent(leaf.initial, item.resolvedPath, templates);
+    const initial = resolveContent(leaf.initial, item.resolvedPath, templates, isSdkInternal);
     if (!dryRun) await fs.write(item.resolvedPath, initial);
     return {
       scope: item.scope,
@@ -249,7 +266,7 @@ async function applyStructural(
     // pass simply skipping seeds (vacuously fine).
     if (!initMode) return undefined;
     if (await fs.exists(item.resolvedPath)) return undefined;
-    const initial = resolveContent(leaf.initial, item.resolvedPath, templates);
+    const initial = resolveContent(leaf.initial, item.resolvedPath, templates, isSdkInternal);
     if (!dryRun) await fs.write(item.resolvedPath, initial);
     return {
       scope: item.scope,
@@ -292,6 +309,8 @@ async function applyManaged(
   dryRun: boolean,
   tctx: TriggerContext,
   templates: TemplateProvider | undefined,
+  registryLookup: ((packageName: string) => string | undefined) | undefined,
+  isSdkInternal: boolean,
 ): Promise<Change | undefined> {
   if (item.leaf.kind !== "managed") return undefined;
   const leaf = item.leaf;
@@ -302,13 +321,13 @@ async function applyManaged(
   let created = false;
 
   if (!exists) {
-    beforeRaw = resolveContent(leaf.initial, path, templates);
+    beforeRaw = resolveContent(leaf.initial, path, templates, isSdkInternal);
     created = true;
   } else {
     beforeRaw = await fs.read(path);
   }
 
-  const after = runManagedBody(path, beforeRaw, leaf.body, tctx);
+  const after = runManagedBody(path, beforeRaw, leaf.body, tctx, registryLookup);
 
   if (created) {
     if (!dryRun) await fs.write(path, after);
@@ -338,6 +357,7 @@ async function executePass(
   dryRun: boolean,
   templates: TemplateProvider | undefined,
   initMode: boolean,
+  registryLookup: ((packageName: string) => string | undefined) | undefined,
 ): Promise<Change[]> {
   const items = filterByMode(flat, ctx.updateDepsOnly);
   const changes: Change[] = [];
@@ -348,7 +368,7 @@ async function executePass(
   for (const item of items) {
     if (item.leaf.kind === "managed") continue;
     if (!passesTriggers(item, tctx1)) continue;
-    const change = await applyStructural(item, fs, dryRun, templates, initMode);
+    const change = await applyStructural(item, fs, dryRun, templates, initMode, ctx.isSdkInternal);
     if (change) changes.push(change);
   }
 
@@ -359,7 +379,15 @@ async function executePass(
   for (const item of items) {
     if (item.leaf.kind !== "managed") continue;
     if (!passesTriggers(item, tctx2)) continue;
-    const change = await applyManaged(item, fs, dryRun, tctx2, templates);
+    const change = await applyManaged(
+      item,
+      fs,
+      dryRun,
+      tctx2,
+      templates,
+      registryLookup,
+      ctx.isSdkInternal,
+    );
     if (change) changes.push(change);
   }
 
@@ -380,7 +408,15 @@ export async function run(
   return withRunContext(ctx, async () => {
     const flat = flatten(structure, ctx);
     const initMode = !!opts.initMode;
-    const changes = await executePass(flat, fs, ctx, ctx.dryRun, opts.templates, initMode);
+    const changes = await executePass(
+      flat,
+      fs,
+      ctx,
+      ctx.dryRun,
+      opts.templates,
+      initMode,
+      opts.registryLookup,
+    );
 
     const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
 
@@ -400,6 +436,7 @@ export async function run(
         true,
         opts.templates,
         false,
+        opts.registryLookup,
       );
       // Ignore .structure self-write (already up to date after
       // writeStructureVersion above).

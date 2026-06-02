@@ -1,3 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxfmt/configuration_schema.json"
+  "extends": ["node_modules/@milaboratories/ts-builder/configs/oxfmt.json"],
+  "ignorePatterns": ["dist", "coverage", "CHANGELOG.md"]
 }
