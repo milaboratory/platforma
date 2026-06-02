@@ -78,6 +78,9 @@ export function getActiveRunContext(): RunContext {
   return activeRunContext;
 }
 
+/** The single entry point: build a {@link Structure} from `fn`, which calls
+ *  the scaffold-DSL builders (`scope`, `fixed`, `managed`, `seed`, …). Throws
+ *  if called nested, or if `fn` leaves an unclosed group frame. */
 export function defineStructure(fn: () => void): Structure {
   if (activeTree) {
     throw new Error("defineStructure() cannot be called from inside another defineStructure().");
@@ -156,6 +159,8 @@ function validateSeedDisjointness(structure: Structure): void {
   }
 }
 
+/** Open a scope (`root` / `block` / `model` / `ui` / `workflow` / `test` /
+ *  `software`); builders called inside `body` attach to it. Cannot nest. */
 export function scope(name: Scope, body: () => void): void {
   const t = requireActiveTree("scope");
   if (t.inScope) {
@@ -179,6 +184,8 @@ export function scope(name: Scope, body: () => void): void {
 type InnerWhenHandler = (trigger: TriggerFn, body: () => void) => boolean;
 let innerWhenHandler: InnerWhenHandler | undefined;
 
+/** Engine-internal: register the inner-mode `when` handler (set by
+ *  `content-rules.ts` at load time to avoid a circular import). */
 export function registerInnerWhenHandler(h: InnerWhenHandler): void {
   innerWhenHandler = h;
 }
@@ -249,30 +256,43 @@ export function onInitOrUpdate(body: () => void): void {
   pushModeFrame("onInitOrUpdate", ["init", "updateDeps"], body);
 }
 
+/** Engine-OWNED file: (re)written verbatim from `content` on every refresh —
+ *  author edits are overwritten. */
 export function fixed(path: string, content: ContentForm): void {
   appendNode("fixed", { kind: "fixed", path, content });
 }
 
+/** Engine-RECONCILED file: parsed from disk (or `initial` when absent),
+ *  mutated by `body` (the JSON/YAML/lines builders), then re-serialised.
+ *  Content the body does not touch is preserved. */
 export function managed(path: string, initial: ContentForm, body: ManagedBody): void {
   appendNode("managed", { kind: "managed", path, initial, body });
 }
 
+/** Write-once file: created from `initial` if absent (on init AND refresh),
+ *  never overwritten once present. For files the author subsequently owns. */
 export function scaffold(path: string, initial: ContentForm): void {
   appendNode("scaffold", { kind: "scaffold", path, initial });
 }
 
+/** Author-owned starter file: written from `initial` only on `init`, and only
+ *  if absent; `refresh` / `check` never touch it. */
 export function seed(path: string, initial: ContentForm): void {
   appendNode("seed", { kind: "seed", path, initial });
 }
 
+/** Delete `path` if present, on every refresh. */
 export function remove(path: string): void {
   appendNode("remove", { kind: "remove", path });
 }
 
+/** Rename file `from` → `to` on refresh (migrating a renamed scaffold file). */
 export function rename(from: string, to: string): void {
   appendNode("rename", { kind: "rename", from, to });
 }
 
+/** Content form: a UTF-8 static template read from the structurer's static
+ *  templates. Use inside `fixed` / `managed` / `scaffold` / `seed`. */
 export function file(path: string): ContentForm {
   return { kind: "file", path };
 }
@@ -284,10 +304,13 @@ export function binaryFile(path: string): ContentForm {
   return { kind: "binary", path };
 }
 
+/** Content form: an inline literal string. */
 export function text(value: string): ContentForm {
   return { kind: "text", value };
 }
 
+/** Content form: a text template (the structurer's `text/` templates) with
+ *  `${var}` placeholders substituted from `vars`. */
 export function tpl(
   path: string,
   vars: Record<string, string> | (() => Record<string, string>),
@@ -295,10 +318,16 @@ export function tpl(
   return { kind: "tpl", path, vars };
 }
 
+/** Content form: content computed at run time. The return value is serialised
+ *  as JSON / YAML by the target file's extension, or used verbatim if it is
+ *  already a string. */
 export function generate(fn: () => unknown): ContentForm {
   return { kind: "generate", fn };
 }
 
+/** The active run's {@link BlockVars} (block name parts + software platform).
+ *  Valid only during a run (inside a generator or managed body); throws
+ *  otherwise. */
 export function blockVars(): BlockVars {
   if (!activeRunContext) {
     throw new Error(

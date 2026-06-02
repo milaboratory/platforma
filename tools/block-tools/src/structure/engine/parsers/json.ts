@@ -15,9 +15,91 @@ export function parseJson(raw: string): unknown {
   return JSON.parse(raw);
 }
 
-/** Canonical serialiser: 2-space indent, trailing newline. */
-export function stringifyJson(value: unknown): string {
-  return JSON.stringify(value, null, 2) + "\n";
+// oxfmt formats JSON two ways, keyed on filename:
+//   - package.json: every array/object fully expanded, one element per line,
+//     regardless of width (what `JSON.stringify(…, 2)` already produces).
+//   - any other .json (e.g. tsconfig.json): oxfmt's generic shape —
+//       * objects: always expanded, one property per line (oxfmt preserves
+//         the brace newline, so the expanded form is a fixpoint);
+//       * arrays: collapsed onto one line when that line — its indent, the
+//         `"key": ` prefix, the flat array, and a trailing comma if a sibling
+//         follows — fits `PRINT_WIDTH` (oxfmt's default 100), else broken one
+//         element per line.
+//     This is exactly the form `oxfmt` itself produces, verified against
+//     oxfmt 0.35 at the array boundary (≤100 collapses, 101 breaks; a
+//     trailing comma counts) and across all in-mono blocks. The single-
+//     element `include` array was the regression: `JSON.stringify` expanded
+//     it while oxfmt collapses it.
+// `stringifyJson` defaults to the expanded form; callers serialising a
+// generic .json pass `{ collapse: true }` so the output is oxfmt-clean by
+// construction (no prior `pnpm fmt` needed for `check` — the same
+// emit-clean-by-design contract as the canonical key/dependency ordering).
+const PRINT_WIDTH = 100;
+const INDENT = 2;
+
+/** One-line rendering of an array, matching oxfmt's flat spacing: `[a, b]`
+ *  (no inner padding), nested objects inline as `{ "k": v }`, empty `[]`.
+ *  Only arrays collapse, so this is the array-fits primitive. */
+function flatArray(value: unknown[]): string {
+  if (value.length === 0) return "[]";
+  return "[" + value.map(flatValue).join(", ") + "]";
+}
+
+/** One-line rendering of any value (used inside a collapsed array, where
+ *  contained objects render inline). */
+function flatValue(value: unknown): string {
+  if (Array.isArray(value)) return flatArray(value);
+  if (isObject(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return "{}";
+    return (
+      "{ " + entries.map(([k, v]) => `${JSON.stringify(k)}: ${flatValue(v)}`).join(", ") + " }"
+    );
+  }
+  return JSON.stringify(value);
+}
+
+/** Print `value` starting at `column`. Objects always break (one property per
+ *  line); arrays collapse when their flat line — `column` + the flat array +
+ *  `reserved` (1 for a trailing comma when a sibling follows) — fits
+ *  `PRINT_WIDTH`, else break. `indent` is the leading-space width of the line
+ *  the container opens on. */
+function printValue(value: unknown, indent: number, column: number, reserved: number): string {
+  const inner = indent + INDENT;
+  const pad = " ".repeat(inner);
+  if (Array.isArray(value)) {
+    const flat = flatArray(value);
+    if (column + flat.length + reserved <= PRINT_WIDTH) return flat;
+    const last = value.length - 1;
+    const lines = value.map((item, i) => pad + printValue(item, inner, inner, i === last ? 0 : 1));
+    return "[\n" + lines.join(",\n") + "\n" + " ".repeat(indent) + "]";
+  }
+  if (isObject(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return "{}";
+    const last = entries.length - 1;
+    const lines = entries.map(([k, v], i) => {
+      const prefix = `${pad}${JSON.stringify(k)}: `;
+      return prefix + printValue(v, inner, prefix.length, i === last ? 0 : 1);
+    });
+    return "{\n" + lines.join(",\n") + "\n" + " ".repeat(indent) + "}";
+  }
+  return JSON.stringify(value);
+}
+
+/** Canonical serialiser: 2-space indent, trailing newline.
+ *  Default — every container expanded (the package.json shape, byte-identical
+ *  to `JSON.stringify(…, 2)`).
+ *  `{ collapse: true }` — oxfmt's generic-.json shape: containers that fit
+ *  `PRINT_WIDTH` collapse onto one line. Used for tsconfig.json and any other
+ *  non-package.json the engine emits, so `oxfmt --check` passes without a
+ *  prior format pass. */
+export function stringifyJson(value: unknown, opts?: { collapse?: boolean }): string {
+  if (!opts?.collapse) return JSON.stringify(value, null, 2) + "\n";
+  // Normalise through a round-trip so non-JSON inputs (undefined values,
+  // functions) are dropped exactly as `JSON.stringify` would.
+  const normalized = JSON.parse(JSON.stringify(value ?? null));
+  return printValue(normalized, 0, 0, 0) + "\n";
 }
 
 function splitPath(jsonPath: string): string[] {

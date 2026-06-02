@@ -19,7 +19,7 @@ import { SDK_CATALOG_PACKAGES } from "./rules/root-pnpm-workspace";
 import type { BlockVars } from "./engine/api";
 
 /** Platform choices `init` can scaffold a software module for. Python is
- *  the only platform with a real, buildable scaffold at v1 (Q2); any other
+ *  the only platform with a real, buildable scaffold at v1; any other
  *  value is rejected rather than scaffolded as a non-buildable placeholder,
  *  which would defeat the "init must produce a working block" intent.
  *  `softwarePlatform` stays in BlockVars for when another platform gets a

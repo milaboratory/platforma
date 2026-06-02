@@ -155,6 +155,9 @@ export type WithManagedOpts = {
   triggerContext?: TriggerContext;
 };
 
+/** Engine-internal: run `body` with `obj` as the active JSON state so the
+ *  JSON builders mutate it; returns the mutated object. Exported for tests —
+ *  the runner calls this for managed `.json` files. */
 export function withManagedBody(
   obj: JsonObject,
   body: () => void,
@@ -176,6 +179,8 @@ export type WithManagedYamlOpts = WithManagedOpts & {
   getLatestVersion?: (packageName: string) => string | undefined;
 };
 
+/** Engine-internal: run `body` with `doc` as the active YAML state (for
+ *  `pnpm-workspace.yaml`); returns the mutated document. Exported for tests. */
 export function withManagedYaml(
   doc: YamlDocument,
   body: () => void,
@@ -197,6 +202,8 @@ export function withManagedYaml(
   }
 }
 
+/** Engine-internal: run `body` with `lines` as the active line-based state
+ *  (for `.gitignore`); returns the mutated lines. Exported for tests. */
 export function withManagedLines(
   lines: string[],
   body: () => void,
@@ -282,11 +289,12 @@ export function ensureFieldEntries(jsonPath: string, entries: Record<string, unk
   if (!isObject(current)) setAtPath(obj, jsonPath, base);
 }
 
-// scripts.<name>
+/** Set `scripts.<name>` to `command`. */
 export function ensureScript(name: string, command: string): void {
   ensureField(`scripts.${name}`, command);
 }
 
+/** Remove `scripts.<name>` if present. */
 export function removeScript(name: string): void {
   removeField(`scripts.${name}`);
 }
@@ -327,22 +335,31 @@ function ensureInSection(
   if (!isObject(existing)) obj[section] = target;
 }
 
+/** Pin `name` to `version` in `dependencies`. Enforces the single-section
+ *  invariant — `name` may live in only one dependency section, so it is
+ *  removed from the others first. A `sdk:` sentinel version is resolved
+ *  against the run's `--sdk-internal` flag before it reaches disk. */
 export function ensureDep(name: string, version: DepVersion): void {
   ensureInSection("ensureDep", name, version, "dependencies");
 }
 
+/** Pin `name` to `version` in `devDependencies` (see {@link ensureDep} for the
+ *  single-section + `sdk:` semantics). */
 export function ensureDevDep(name: string, version: DepVersion): void {
   ensureInSection("ensureDevDep", name, version, "devDependencies");
 }
 
+/** Pin `name` to `version` in `peerDependencies` (see {@link ensureDep}). */
 export function ensurePeerDep(name: string, version: DepVersion): void {
   ensureInSection("ensurePeerDep", name, version, "peerDependencies");
 }
 
+/** Pin `name` to `version` in `optionalDependencies` (see {@link ensureDep}). */
 export function ensureOptionalDep(name: string, version: DepVersion): void {
   ensureInSection("ensureOptionalDep", name, version, "optionalDependencies");
 }
 
+/** Remove `name` from every dependency section. */
 export function removeDep(name: string): void {
   const obj = requireJson("removeDep").obj;
   for (const s of DEP_SECTIONS) {
@@ -351,18 +368,22 @@ export function removeDep(name: string): void {
   }
 }
 
+/** Bulk {@link ensureDep} for each `name → version` entry. */
 export function ensureDeps(entries: Record<string, DepVersion>): void {
   for (const [n, v] of Object.entries(entries)) ensureDep(n, v);
 }
 
+/** Bulk {@link ensureDevDep} for each `name → version` entry. */
 export function ensureDevDeps(entries: Record<string, DepVersion>): void {
   for (const [n, v] of Object.entries(entries)) ensureDevDep(n, v);
 }
 
+/** Bulk {@link ensurePeerDep} for each `name → version` entry. */
 export function ensurePeerDeps(entries: Record<string, DepVersion>): void {
   for (const [n, v] of Object.entries(entries)) ensurePeerDep(n, v);
 }
 
+/** Bulk {@link ensureOptionalDep} for each `name → version` entry. */
 export function ensureOptionalDeps(entries: Record<string, DepVersion>): void {
   for (const [n, v] of Object.entries(entries)) ensureOptionalDep(n, v);
 }
@@ -377,20 +398,27 @@ function ensureWorkspaceScopeIn(builder: string, scope: Scope, section: DepSecti
   }
 }
 
+/** Add every discovered module of `scope` as a `workspace:*` entry in
+ *  `dependencies` — wires a block's intra-workspace links (e.g. the test
+ *  scope depending on the other scopes). Single-section invariant per
+ *  {@link ensureDep}. */
 export function ensureWorkspaceScopeDeps(scope: Scope): void {
   ensureWorkspaceScopeIn("ensureWorkspaceScopeDeps", scope, "dependencies");
 }
 
+/** Like {@link ensureWorkspaceScopeDeps}, into `devDependencies`. */
 export function ensureWorkspaceScopeDevDeps(scope: Scope): void {
   ensureWorkspaceScopeIn("ensureWorkspaceScopeDevDeps", scope, "devDependencies");
 }
 
+/** Like {@link ensureWorkspaceScopeDeps}, into `peerDependencies`. */
 export function ensureWorkspaceScopePeerDeps(scope: Scope): void {
   ensureWorkspaceScopeIn("ensureWorkspaceScopePeerDeps", scope, "peerDependencies");
 }
 
 // --- Prune ---
 
+/** Delete every top-level key for which `predicate(key, value)` is true. */
 export function pruneKeysMatching(predicate: (key: string, value: unknown) => boolean): void {
   const obj = requireJson("pruneKeysMatching").obj;
   for (const k of Object.keys(obj)) {
@@ -398,6 +426,8 @@ export function pruneKeysMatching(predicate: (key: string, value: unknown) => bo
   }
 }
 
+/** Delete every key of the object at `jsonPath` for which
+ *  `predicate(key, value)` is true. No-op if the path is not an object. */
 export function pruneKeysMatchingAt(
   jsonPath: string,
   predicate: (key: string, value: unknown) => boolean,
@@ -418,10 +448,15 @@ function applyOrderInPlace(o: JsonObject, order: readonly string[]): void {
   for (const k of Object.keys(reordered)) o[k] = reordered[k];
 }
 
+/** Reorder top-level keys to `orderedKeys`; keys not listed keep their
+ *  position relative to the preceding listed key. Typically the LAST call in
+ *  a managed body, projecting the canonical field order. */
 export function enforceFieldOrder(orderedKeys: string[]): void {
   applyOrderInPlace(requireJson("enforceFieldOrder").obj, orderedKeys);
 }
 
+/** Like {@link enforceFieldOrder}, applied to the object at `jsonPath`. No-op
+ *  if the path is not an object. */
 export function enforceFieldOrderAt(jsonPath: string, orderedKeys: string[]): void {
   const obj = requireJson("enforceFieldOrderAt").obj;
   const sub = getAtPath(obj, jsonPath);
@@ -440,6 +475,10 @@ function sortAlphabeticalInPlace(o: JsonObject, recursive: boolean): void {
   }
 }
 
+/** Sort keys alphabetically. Called with no args it is a deliberate no-op
+ *  (guards against accidental whole-file sorts); pass a `jsonPath` to sort one
+ *  object, or `{ recursive: true }` to sort the whole tree. Matches oxfmt's
+ *  dependency-section ordering. */
 export function enforceAlphabeticalOrder(
   jsonPath: string = "",
   opts: { recursive?: boolean } = {},
@@ -459,6 +498,8 @@ export function enforceAlphabeticalOrder(
 
 // --- Generic transform escape hatch ---
 
+/** Escape hatch: replace the value at `jsonPath` with `transform(current)`,
+ *  for shapes the typed builders above do not cover. */
 export function transformAt<T = unknown>(jsonPath: string, transform: (current: T) => T): void {
   const obj = requireJson("transformAt").obj;
   const current = getAtPath(obj, jsonPath) as T;

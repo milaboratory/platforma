@@ -31,7 +31,7 @@ function buildStructure(): Structure {
       fixed("turbo.json", file("root/turbo.json"));
       remove(".prettierrc");
       managed("package.json", file("root/package.json"), () => {
-        /* body — step 1 stub */
+        /* body — stub */
       });
       when(
         ({ ctx }) => !ctx.isSdkInternal,

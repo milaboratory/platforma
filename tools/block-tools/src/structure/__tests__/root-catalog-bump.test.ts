@@ -85,8 +85,8 @@ describe("rootCatalogBumpRules mode split", () => {
     // Present SDK keys refreshed to latest.
     expect(cat["@platforma-sdk/model"]).toBe("9.9.9");
     expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
-    // FC-3 fix: standard infra-floor keys ABSENT from the on-disk catalog are
-    // now SEEDED add-if-absent (no manual seed step needed).
+    // standard infra-floor keys ABSENT from the on-disk catalog are
+    // SEEDED add-if-absent (no manual seed step needed).
     expect(cat["shx"]).toBe("~0.4.0");
     expect(cat["turbo"]).toBe("~2.8.11");
     expect(cat["vitest"]).toBe("~4.0.18");

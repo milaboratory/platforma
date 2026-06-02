@@ -135,7 +135,9 @@ function resolveContent(
         // Resolve `sdk:` sentinels in the generated dep sections so the
         // initial content matches what the body rules re-assert.
         resolveSdkSentinelsInJson(value, isSdkInternal);
-        return stringifyJson(value);
+        // package.json stays fully expanded (oxfmt's package.json shape);
+        // every other .json collapses to oxfmt's generic-file shape.
+        return stringifyJson(value, { collapse: !filePath.endsWith("package.json") });
       }
       if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
         return yamlStringify(value);
@@ -195,7 +197,9 @@ function runManagedBody(
       throw new Error(`managed: parsed value at '${path}' is not a JSON object`);
     }
     withManagedBody(parsed, body, { triggerContext: tctx });
-    return stringifyJson(parsed);
+    // package.json stays fully expanded; other .json (tsconfig, …) collapses
+    // to oxfmt's generic-file shape.
+    return stringifyJson(parsed, { collapse: base !== "package.json" });
   }
   if (path.endsWith(".yaml") || path.endsWith(".yml")) {
     const doc = parseYaml(raw);
@@ -479,10 +483,10 @@ export async function run(
     const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
 
     if (isRefreshDefault) {
-      // Phase 6: version bump.
+      // version bump
       await writeStructureVersion(fs);
 
-      // Phase 7: post-run recheck. Fresh discovery → fresh flatten →
+      // post-run recheck. Fresh discovery → fresh flatten →
       // dry-run. Any change list emits RecheckError on the first item.
       const recheckCtxBase = opts.rediscover ? await opts.rediscover(fs) : ctx;
       const recheckCtx: RunContext = { ...recheckCtxBase, dryRun: true };

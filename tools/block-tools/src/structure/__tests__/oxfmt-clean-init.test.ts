@@ -23,7 +23,15 @@ function oxfmtAvailable(): boolean {
 describe("oxfmt-clean init output (model + ui)", () => {
   const available = oxfmtAvailable();
 
-  test.runIf(available)("model + ui init package.json pass oxfmt --check", async () => {
+  // Both files `ts-builder check` runs oxfmt on, per scope: package.json AND
+  // tsconfig.json. tsconfig is the regression that motivated the
+  // width-collapsing serialiser — oxfmt collapses its single-element
+  // `include` array, which the plain `JSON.stringify` expansion left
+  // non-clean. Guard both so a future serialiser change is caught here, not
+  // in the build→check gate.
+  const FILES = ["package.json", "tsconfig.json"];
+
+  test.runIf(available)("model + ui init package.json + tsconfig pass oxfmt --check", async () => {
     const vars: BlockVars = {
       facadeName: "@platforma-open/test-org.demo",
       baseName: "test-org.demo",
@@ -35,16 +43,18 @@ describe("oxfmt-clean init output (model + ui)", () => {
 
     const root = mkdtempSync(path.join(tmpdir(), "oxfmt-clean-"));
     for (const scope of ["model", "ui"]) {
-      const content = await fs.read(`${scope}/package.json`);
       mkdirSync(path.join(root, scope), { recursive: true });
-      writeFileSync(path.join(root, scope, "package.json"), content);
-      const r = spawnSync("oxfmt", ["--check", path.join(scope, "package.json")], {
-        cwd: root,
-        encoding: "utf-8",
-      });
-      expect(r.status, `${scope}/package.json is not oxfmt-clean:\n${r.stdout}\n${r.stderr}`).toBe(
-        0,
-      );
+      for (const fileName of FILES) {
+        const content = await fs.read(`${scope}/${fileName}`);
+        writeFileSync(path.join(root, scope, fileName), content);
+        const r = spawnSync("oxfmt", ["--check", path.join(scope, fileName)], {
+          cwd: root,
+          encoding: "utf-8",
+        });
+        expect(r.status, `${scope}/${fileName} is not oxfmt-clean:\n${r.stdout}\n${r.stderr}`).toBe(
+          0,
+        );
+      }
     }
   });
 

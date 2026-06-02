@@ -10,7 +10,7 @@
 // "latest" versions from the runner's `registryLookup` (the CLI / init
 // constructor prefetches the SDK catalog membership list before the run;
 // unit tests pass a mock). Seeding the SDK keys from the membership list
-// (not the on-disk catalog) is what fixes the FC-3 install failures: a
+// (not the on-disk catalog) is what fixes the install failures: a
 // migrated block that never carried `@milaboratories/ts-builder` etc. now
 // gets them ADDED on `--update-deps-only`, no manual catalog seed required.
 //

@@ -61,7 +61,7 @@ jobs:
         # Gate: every block under etc/blocks/* must be up to date with the
         # canonical structure (block-tools structure check --sdk-internal).
         # block-tools is built by the preceding Build step.
-        run: pnpm run structure-check-all
+        run: pnpm run check-blocks
 
       - name: Login to ECR
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
