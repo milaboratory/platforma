@@ -70,13 +70,9 @@
 
   &__close-btn {
     position: absolute;
-    // 24px is a single-line alert's vertical centre (12px padding + half the
-    // 24px content row). Hard-coding it instead of `top: 50%` keeps the X on
-    // the first line — not the middle — once the text wraps.
-    top: 24px;
+    // Centre the 40px button on the first content row. The row's centre sits at
+    // 24px (12px padding + half the 24px row); top = 24 − 20 (half the button).
+    top: 4px;
     right: 12px;
-    // Centres the button on that line via its own height — stays centred if the
-    // button is ever resized, unlike a hard-coded `top: 4px` (= 24 − 40/2).
-    transform: translateY(-50%);
   }
 }
