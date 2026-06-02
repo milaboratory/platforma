@@ -53,6 +53,16 @@ jobs:
           PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
         run: pnpm run ci:build:local
 
+      - name: Structure check (internal blocks)
+        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Gate: every block under etc/blocks/* must be up to date with the
+        # canonical structure (block-tools structure check --sdk-internal).
+        # block-tools is built by the preceding Build step.
+        run: pnpm run structure-check-all
+
       - name: Login to ECR
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         id: ecr-login

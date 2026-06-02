@@ -12,6 +12,7 @@ import { workflowRules } from "./rules/workflow";
 import { testRules } from "./rules/test";
 import { softwareRules } from "./rules/software";
 import { testFrameworkMigration, legacyCleanup } from "./rules/migrations";
+import { rootCatalogBumpRules } from "./rules/root-catalog-bump";
 
 export const STRUCTURE = defineStructure(() => {
   rootRules();
@@ -23,4 +24,5 @@ export const STRUCTURE = defineStructure(() => {
   softwareRules();
   testFrameworkMigration();
   legacyCleanup();
+  rootCatalogBumpRules();
 });

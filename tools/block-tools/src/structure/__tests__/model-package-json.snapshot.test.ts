@@ -11,7 +11,8 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
   "name": "@platforma-open/test-org.demo.model",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -25,19 +26,21 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
     "fmt": "ts-builder format",
     "watch": "ts-builder build --target block-model --watch",
     "build": "ts-builder build --target block-model && block-tools build-model",
-    "check": "ts-builder check --target block-model"
+    "check": "ts-builder check --target block-model",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@platforma-sdk/model": "catalog:"
   },
-  "peerDependencies": {
-    "@types/node": "*",
-    "typescript": "*"
-  },
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:"
+    "@platforma-sdk/block-tools": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
   }
 }
 `;

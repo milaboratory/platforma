@@ -18,14 +18,70 @@
 // The legacyCleanup() function below is the home for cleanup rules;
 // step 5b experiments grow the rule set against real external blocks.
 
+import {
+  scope,
+  remove,
+  managed,
+  generate,
+  removeScript,
+  removeDep,
+  blockVars,
+} from "../engine/api";
+import { rootPackageJsonInitial } from "../templates/generated/root-package-json";
+
 export function testFrameworkMigration(): void {
   // No active rename-bearing migration in v1. Hold for the test
   // framework rollout (see spec § "Goals" point 7).
 }
 
+// Unconditional legacy-cleanup rules. Each is a no-op on an
+// already-canonical block (remove on an absent path, removeScript /
+// removeDep on an absent key) and idempotent, so they sit at top level
+// with no `when` gate. Grown against the step-5b experiment blocks; the
+// trailing comment on each line names the block(s) it was discovered on.
+//
+// Root-scope cleanup is skipped for `--sdk-internal` blocks (no root
+// module in that mode), so it never touches in-monorepo blocks.
 export function legacyCleanup(): void {
-  // Step 5b will populate this with unconditional removeScript /
-  // removeDep / remove(path) calls discovered against real external
-  // blocks (samples-and-data, mixcr-clonotyping, clonotype-clustering,
-  // antibody-sequence-liabilities, sequence-properties).
+  // eslint → oxlint: the canonical layout ships `.oxlintrc.json` /
+  // `.oxfmtrc.json`; flat eslint configs are retired.
+  scope("model", () => {
+    remove("eslint.config.mjs"); // samples-and-data, mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities
+    remove("vite.config.mts"); // samples-and-data (vite build → ts-builder)
+  });
+  scope("ui", () => {
+    remove("eslint.config.mjs"); // samples-and-data, mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities
+    remove("vite.config.ts"); // samples-and-data (vite build → ts-builder)
+    remove("tsconfig.app.json"); // samples-and-data (vite-era split tsconfig)
+    remove("tsconfig.node.json"); // samples-and-data (vite-era split tsconfig)
+  });
+  scope("test", () => {
+    remove("eslint.config.mjs"); // all 5 experiment blocks
+  });
+
+  // Root-scope cleanup. The second `managed("package.json")` body
+  // composes after rootRules (dsl-example.md § "Legacy-Cleanup Pattern").
+  scope("root", () => {
+    remove(".prettierrc"); // samples-and-data, sequence-properties (prettier → oxfmt)
+    managed(
+      "package.json",
+      generate(() => rootPackageJsonInitial(blockVars())),
+      () => {
+        // 5c CORRECTION (findings §2): build:dev / test:dry-run / mark-stable
+        // are canonical lifecycle scripts (now re-asserted by
+        // rootPackageJsonRules) — their 5b removal was the inverted-framing
+        // mistake and is reverted. lint / type-check were the 5b agent's
+        // own additions beyond the sanctioned set; removing them is also
+        // reverted so blocks that still carry them keep them (the canonical
+        // `check`/`fmt` cover the same ground but the scaffold no longer
+        // strips the explicit scripts).
+        //
+        // Genuinely-retired removals are KEPT: `pretty` (prettier → oxfmt,
+        // and `fmt` = ts-builder format = oxfmt is canonical now) and the
+        // standalone blocks-deps-updater dep (merged into block-tools).
+        removeScript("pretty"); // samples-and-data (prettier → oxfmt, replaced by `fmt`)
+        removeDep("@platforma-sdk/blocks-deps-updater"); // samples-and-data (merged into block-tools)
+      },
+    );
+  });
 }

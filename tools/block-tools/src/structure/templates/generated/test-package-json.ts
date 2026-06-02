@@ -9,18 +9,16 @@ export function testPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     private: true,
     type: "module",
     scripts: {
-      test: "vitest run",
-    },
-    dependencies: {
-      "@platforma-sdk/test": "catalog:",
+      test: "vitest run --passWithNoTests",
     },
     peerDependencies: {
       "@types/node": "*",
       typescript: "*",
     },
     devDependencies: {
-      "@milaboratories/ts-builder": "catalog:",
-      "@milaboratories/ts-configs": "catalog:",
+      "@platforma-sdk/test": "sdk:",
+      "@milaboratories/ts-builder": "sdk:",
+      "@milaboratories/ts-configs": "sdk:",
       vitest: "catalog:",
     },
   };

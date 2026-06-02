@@ -24,18 +24,22 @@ const modules: Module[] = [
 const ctx = createRunContext({ blockVars: vars, modules });
 
 describe("ensureWorkspaceModulePaths", () => {
-  test("writes a sorted packages list reflecting all modules (root → '.')", () => {
+  // G5: the root module ("") is discovered implicitly and is NEVER written
+  // to `packages:` — listing "." there would break turbo's task graph.
+  const nonRootModules = modules.filter((m) => m.path !== "");
+
+  test("writes a sorted packages list of non-root modules (root excluded, G5)", () => {
     const doc = parseYaml("packages: []\n");
     withManagedYaml(doc, () => ensureWorkspaceModulePaths(), { ctx });
     const json = doc.toJSON() as { packages: string[] };
-    expect(json.packages).toEqual([".", "block", "model", "test", "ui", "workflow"]);
+    expect(json.packages).toEqual(["block", "model", "test", "ui", "workflow"]);
   });
 
   test("creates packages list if missing", () => {
     const doc = parseYaml("# empty\n");
     withManagedYaml(doc, () => ensureWorkspaceModulePaths(), { ctx });
     const json = doc.toJSON() as { packages: string[] };
-    expect(json.packages.length).toBe(modules.length);
+    expect(json.packages.length).toBe(nonRootModules.length);
   });
 
   test("idempotent — second run leaves the YAML output unchanged", () => {

@@ -1,4 +1,3 @@
 {
-  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  "extends": ["@milaboratories/ts-configs/oxlint.json"]
+  "extends": ["node_modules/@milaboratories/ts-builder/dist/configs/oxlint-block-model.json"]
 }

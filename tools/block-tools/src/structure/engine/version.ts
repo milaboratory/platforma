@@ -58,5 +58,6 @@ export async function writeStructureVersion(
   version: number = STRUCTURE_VERSION,
 ): Promise<void> {
   const payload: StructureMeta = { version };
-  await fs.write(STRUCTURE_META_FILE, JSON.stringify(payload, null, 2) + "\n");
+  // Compact, single-line — this is a tiny machine file, no pretty-print.
+  await fs.write(STRUCTURE_META_FILE, JSON.stringify(payload));
 }

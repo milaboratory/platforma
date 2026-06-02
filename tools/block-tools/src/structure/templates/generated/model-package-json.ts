@@ -9,7 +9,11 @@ export function modelPackageJsonInitial(v: BlockVars): Record<string, unknown> {
     name: `${v.facadeName}.model`,
     version: "1.0.0",
     type: "module",
-    main: "dist/index.js",
+    // The block-model build emits both index.cjs and index.js. `main` is
+    // the CommonJS entry (require fallback); `module` the ESM entry.
+    // Matches the modern production convention (clonotype-clustering).
+    main: "dist/index.cjs",
+    module: "dist/index.js",
     types: "dist/index.d.ts",
     exports: {
       ".": {
@@ -24,18 +28,20 @@ export function modelPackageJsonInitial(v: BlockVars): Record<string, unknown> {
       watch: "ts-builder build --target block-model --watch",
       build: "ts-builder build --target block-model && block-tools build-model",
       check: "ts-builder check --target block-model",
+      test: "vitest run --passWithNoTests",
     },
     dependencies: {
-      "@platforma-sdk/model": "catalog:",
+      "@platforma-sdk/model": "sdk:",
     },
     peerDependencies: {
       "@types/node": "*",
       typescript: "*",
     },
     devDependencies: {
-      "@milaboratories/ts-builder": "catalog:",
-      "@milaboratories/ts-configs": "catalog:",
-      "@platforma-sdk/block-tools": "catalog:",
+      "@milaboratories/ts-builder": "sdk:",
+      "@milaboratories/ts-configs": "sdk:",
+      "@platforma-sdk/block-tools": "sdk:",
+      vitest: "catalog:",
     },
   };
 }

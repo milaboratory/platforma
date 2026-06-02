@@ -78,6 +78,17 @@ export function classifyOne(wp: WorkspacePackage, siblingNames: Set<string>): Sc
     return override as Scope;
   }
 
+  // Standalone implicit root (G6): the package at path "" is present
+  // because pnpm-workspace.yaml lives there, so it IS the workspace root —
+  // classify it as `root` unconditionally, BEFORE any detection rule. A
+  // nameless root carrying legacy facade cruft (`files: ["index.d.ts",
+  // "index.js"]` + block-tools, e.g. sequence-properties) must NOT fall
+  // through to the rule-4 block fallback and become a nameless second
+  // `block` module — root-as-facade is a forbidden anti-pattern (D2).
+  // SDK-internal enumeration never produces a path-"" package (it scans
+  // sub-package dirs), so this only ever fires in standalone mode.
+  if (isRoot(wp.path)) return "root";
+
   const deps = depKeys(wp.pkg);
 
   // 1. software — top-level `block-software` field OR
@@ -123,9 +134,8 @@ export function classifyOne(wp: WorkspacePackage, siblingNames: Set<string>): Sc
   // 6. test — @platforma-sdk/test in deps.
   if (deps.has("@platforma-sdk/test")) return "test";
 
-  // 7. root — workspace root that didn't match rules 1-6.
-  if (isRoot(wp.path)) return "root";
-
+  // (root — the workspace root, path "", is classified above, before the
+  // detection rules, so it can never reach this fallthrough.)
   return undefined;
 }
 

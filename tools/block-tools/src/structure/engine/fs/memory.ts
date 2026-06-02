@@ -3,7 +3,7 @@
 // file exists. Used by tests, by `simulateInit`, and by the runner's
 // post-run recheck dry-run pass.
 
-import type { FileSystem } from "./api";
+import type { DirEntry, FileSystem } from "./api";
 
 function normalise(p: string): string {
   // Collapse repeated slashes, strip leading "./" and trailing "/".
@@ -63,6 +63,28 @@ export class MemoryFileSystem implements FileSystem {
       if (n === "" || k.startsWith(prefix)) out.push(k);
     }
     return out.sort();
+  }
+
+  async listDir(dir: string): Promise<DirEntry[]> {
+    const n = normalise(dir);
+    const prefix = n === "" ? "" : `${n}/`;
+    // Map immediate child name → isDirectory (a child is a directory if
+    // the remainder after the first segment still contains a "/").
+    const children = new Map<string, boolean>();
+    for (const k of this.files.keys()) {
+      if (n !== "" && !k.startsWith(prefix)) continue;
+      const rest = n === "" ? k : k.slice(prefix.length);
+      if (rest === "") continue;
+      const slash = rest.indexOf("/");
+      if (slash < 0) {
+        children.set(rest, children.get(rest) ?? false);
+      } else {
+        children.set(rest.slice(0, slash), true);
+      }
+    }
+    return [...children.entries()]
+      .map(([name, isDirectory]) => ({ name, isDirectory }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async move(from: string, to: string): Promise<void> {
