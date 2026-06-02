@@ -60,6 +60,56 @@ _metric := func(metricName, args) {
 	return node
 }
 
+evaluate := undefined
+evaluate = func(node, resolver) {
+	op := node.op
+	if op == "const" { return node.value }
+	if op == "metricSum" {
+		fn := resolver[node.metric]
+		ll.assert(!is_undefined(fn), "exec.formula.evaluate: no resolver for metric %q", node.metric)
+		return fn(node.files, node.default)
+	}
+
+	if op == "add" { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
+	if op == "sub" { return evaluate(node.a, resolver) - evaluate(node.b, resolver) }
+	if op == "mul" { return evaluate(node.a, resolver) * evaluate(node.b, resolver) }
+	if op == "div" {
+		b := evaluate(node.b, resolver)
+		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
+		return evaluate(node.a, resolver) / b
+	}
+	if op == "divCeil" {
+		b := evaluate(node.b, resolver)
+		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
+		a := evaluate(node.a, resolver)
+		// ceiling division; assumes a >= 0 (resource metrics — sizes, line counts — are non-negative)
+		return (a + b - 1) / b
+	}
+
+	if op == "max" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a > b ? a : b }
+	if op == "min" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a < b ? a : b }
+	if op == "clamp" {
+		v := evaluate(node.value, resolver)
+		lo := evaluate(node.lo, resolver)
+		hi := evaluate(node.hi, resolver)
+		if v < lo { v = lo }
+		if v > hi { v = hi }
+		return v
+	}
+
+	if op == "gt"  { return evaluate(node.a, resolver) > evaluate(node.b, resolver) }
+	if op == "gte" { return evaluate(node.a, resolver) >= evaluate(node.b, resolver) }
+	if op == "lt"  { return evaluate(node.a, resolver) < evaluate(node.b, resolver) }
+	if op == "lte" { return evaluate(node.a, resolver) <= evaluate(node.b, resolver) }
+	if op == "and" { return evaluate(node.a, resolver) && evaluate(node.b, resolver) }
+	if op == "or"  { return evaluate(node.a, resolver) || evaluate(node.b, resolver) }
+	if op == "not" { return !evaluate(node.a, resolver) }
+
+	if op == "if" { return evaluate(node.cond, resolver) ? evaluate(node.then, resolver) : evaluate(node["else"], resolver) }
+
+	ll.panic("exec.formula.evaluate: unknown op %q", op)
+}
+
 export {
 	size:      func(...args) { return _metric("size", args) },
 	lineCount: func(...args) { return _metric("lineCount", args) },
@@ -89,5 +139,7 @@ export {
 	or:  func(a, b) { return _bin("or", a, b) },
 	not: func(a) { return { op: "not", a: _wrap(a) } },
 
-	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } }
+	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
+
+	evaluate: evaluate
 }

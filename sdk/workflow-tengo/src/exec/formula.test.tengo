@@ -40,3 +40,47 @@ TestFormulaLogic := func() {
 	test.isEqual("not", node.op)
 	test.isEqual("lt", node.a.op)
 }
+
+// fake resolver: size sums a fixed per-file table, lineCount sums another
+_fakeResolver := {
+	size: func(files, def) {
+		table := { "a": 100, "b": 250 }
+		total := 0
+		for fn in files { total += table[fn] }
+		return total
+	},
+	lineCount: func(files, def) {
+		table := { "a": 9, "b": 19 }
+		total := 0
+		for fn in files { total += table[fn] }
+		return total
+	}
+}
+
+TestFormulaEvaluateArithmetic := func() {
+	test.isEqual(7, f.evaluate(f.add(3, 4), _fakeResolver))
+	test.isEqual(3, f.evaluate(f.div(10, 3), _fakeResolver))      // truncating
+	test.isEqual(4, f.evaluate(f.divCeil(10, 3), _fakeResolver))  // ceiling
+	test.isEqual(20, f.evaluate(f.mul(f.sub(7, 2), 4), _fakeResolver))
+}
+
+TestFormulaEvaluateBoundsAndCond := func() {
+	test.isEqual(5, f.evaluate(f.clamp(2, 5, 10), _fakeResolver))   // raised to lo
+	test.isEqual(10, f.evaluate(f.clamp(99, 5, 10), _fakeResolver)) // capped to hi
+	test.isEqual(8, f.evaluate(f.max(8, 3), _fakeResolver))
+	test.isEqual(1, f.evaluate(f["if"](f.gt(5, 2), 1, 0), _fakeResolver))
+	test.isEqual(0, f.evaluate(f["if"](f.lt(5, 2), 1, 0), _fakeResolver))
+}
+
+TestFormulaEvaluateMetricSum := func() {
+	node := { op: "metricSum", metric: "size", files: ["a", "b"] }
+	test.isEqual(350, f.evaluate(node, _fakeResolver))
+	lc := { op: "metricSum", metric: "lineCount", files: ["a"] }
+	test.isEqual(9, f.evaluate(lc, _fakeResolver))
+}
+
+TestFormulaEvaluateLogic := func() {
+	test.isEqual(3, f.evaluate(f.min(3, 8), _fakeResolver))
+	test.isTrue(f.evaluate(f.and(f.gte(5, 5), f.lte(2, 9)), _fakeResolver))
+	test.isFalse(f.evaluate(f.or(f.gt(1, 2), f.not(f.lt(1, 2))), _fakeResolver))
+}
