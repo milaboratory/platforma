@@ -22,8 +22,16 @@ export type RunMode = "default" | "updateDeps" | "init";
 export type TriggerContext = {
   ctx: RunContext;
   version: number;
+  /** Block-relative path queries against the post-structural FS snapshot. */
   pathExists(path: string): boolean;
   pathMissing(path: string): boolean;
+  /** True if any file in the snapshot matches `glob`, resolved
+   *  MODULE-RELATIVE to the leaf's bound module: a co-located-test glob
+   *  inside `scope("model")` is checked under the `model/` dir. At the
+   *  block root the glob is block-relative. Unlike `pathExists`/`pathMissing`
+   *  (block-relative), `filesMatch` is the module-aware predicate used by
+   *  `whenFilesExist`. */
+  filesMatch(glob: string): boolean;
 };
 
 export type TriggerFn = (tctx: TriggerContext) => boolean;

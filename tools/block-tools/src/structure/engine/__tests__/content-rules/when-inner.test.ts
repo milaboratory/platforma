@@ -46,6 +46,7 @@ function makeTctx(
     version: opts.version ?? 1,
     pathExists: (p) => paths.has(p),
     pathMissing: (p) => !paths.has(p),
+    filesMatch: () => false,
   };
 }
 

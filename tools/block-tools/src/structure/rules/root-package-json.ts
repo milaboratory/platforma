@@ -35,10 +35,10 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
       changeset: "changeset",
       "version-packages": "changeset version",
       // Deprecated in favour of `update` (the full refresh → install →
-      // refresh flow); kept for compatibility.
+      // refresh → format flow); kept for compatibility.
       "update-sdk": "block-tools structure refresh --update-deps-only",
       update:
-        "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",
+        "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm fmt",
     },
     peerDependencies: {
       oxlint: "*",
@@ -79,10 +79,12 @@ export function rootPackageJsonRules(): void {
   // Deprecated in favour of `update`; kept for compatibility.
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
   // Full SDK-update flow: bump catalog (deps-only) → install → re-apply
-  // structure against the freshly-pulled deps, wrapped as one script.
+  // structure against the freshly-pulled deps → format the result, wrapped
+  // as one script. `pnpm fmt` (turbo run fmt) leaves the tree oxfmt-clean
+  // after the structural rewrite so a follow-up `pnpm check` passes.
   ensureScript(
     "update",
-    "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh",
+    "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm fmt",
   );
 
   ensureDevDeps({

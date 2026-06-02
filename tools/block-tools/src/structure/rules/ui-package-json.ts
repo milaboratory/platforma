@@ -11,16 +11,20 @@ import {
   ensureField,
   ensureScript,
   ensureDep,
+  ensureDevDep,
   ensureDevDeps,
   ensurePeerDeps,
   ensureWorkspaceScopeDeps,
   removeDep,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  when,
+  whenFilesExist,
   type RunContext,
 } from "../engine/api";
 import { scopeDepMap } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -34,7 +38,8 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
       watch: "ts-builder build --target block-ui --watch",
       build: "ts-builder build --target block-ui",
       check: "ts-builder check --target block-ui",
-      test: "vitest run --passWithNoTests",
+      // No `test`: the vitest `test` script is wired by the body rule ONLY
+      // when co-located test files exist (a freshly-init'd ui has none).
     },
     dependencies: {
       "@platforma-sdk/ui-vue": "sdk:",
@@ -62,9 +67,6 @@ export function uiPackageJsonRules(): void {
   ensureScript("watch", "ts-builder build --target block-ui --watch");
   ensureScript("build", "ts-builder build --target block-ui");
   ensureScript("check", "ts-builder check --target block-ui");
-  // --passWithNoTests: real blocks put UI tests in ui/ (e.g.
-  // samples-and-data); empty UIs don't fail `turbo run test`.
-  ensureScript("test", "vitest run --passWithNoTests");
 
   ensureDep("@platforma-sdk/ui-vue", "sdk:");
   // The seeded ui (main.ts) imports `createApp` from vue.
@@ -78,13 +80,25 @@ export function uiPackageJsonRules(): void {
     vitest: "catalog:",
   });
 
-  // The ui builds with `--target block-ui` (types: []), so it carries no
-  // browser/vitest ambient types — only the `typescript` peer for IDE type
-  // resolution. Drop any stray `@types/node` peer a legacy block declares.
+  // The ui builds with `--target block-ui` (types: []), so by default it
+  // carries no browser/vitest/node ambient types — only the `typescript`
+  // peer for IDE type resolution. Drop any stray `@types/node` a legacy
+  // block declares...
   ensurePeerDeps({
     typescript: "*",
   });
   removeDep("@types/node");
+
+  // ...but a ui WITH co-located unit tests (`src/**/*.test.ts`) needs the
+  // vitest `test` script AND node ambient types: re-add `@types/node` as a
+  // devDep so `types: ["node"]` in ui/tsconfig (wired under the same
+  // predicate) resolves the tests' `node:*` imports. A test-less ui keeps
+  // the lean default (no test script, no @types/node) and stays a fixpoint.
+  // Runs AFTER removeDep so the dev dep is not stripped.
+  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
+    ensureScript("test", "vitest run --passWithNoTests");
+    ensureDevDep("@types/node", "*");
+  });
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

@@ -70,6 +70,7 @@ export {
   defineStructure,
   scope,
   when,
+  whenFilesExist,
   onUpdateDeps,
   onInitOrUpdate,
   fixed,
@@ -116,7 +117,8 @@ export {
   ensureWorkspaceModulePaths,
   ensureCatalogVersion,
   pinCatalogTo,
-  bumpCatalogToLatest,
+  ensureCatalogLatest,
+  ensureCatalogAbsent,
   // Lines managed builders
   ensureGitignoreEntries,
   removeGitignoreEntries,

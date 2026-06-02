@@ -36,6 +36,7 @@ import type { FileSystem } from "./fs/api";
 import type { TemplateProvider } from "./templates";
 import { substituteVars } from "./templates";
 import { flatten } from "./flatten";
+import { matchesGlob } from "./glob";
 import { withRunContext } from "./builders";
 import {
   withManagedBody,
@@ -229,12 +230,24 @@ function snapshotHas(snap: Set<string>, p: string): boolean {
   return snap.has(n);
 }
 
-function buildTriggerCtx(snap: Set<string>, ctx: RunContext): TriggerContext {
+/** Build the trigger context for one leaf. `pathExists`/`pathMissing` are
+ *  block-relative; `filesMatch` resolves its glob MODULE-RELATIVE to
+ *  `modulePath` so the same predicate (`whenFilesExist("src/*.test.ts")`)
+ *  reads the right module when a scope fans out. The snapshot is shared
+ *  across leaves; only the resolution prefix differs per item. */
+function buildTriggerCtx(snap: Set<string>, ctx: RunContext, modulePath: string): TriggerContext {
   return {
     ctx,
     version: ctx.version,
     pathExists: (p: string) => snapshotHas(snap, p),
     pathMissing: (p: string) => !snapshotHas(snap, p),
+    filesMatch: (glob: string) => {
+      const resolved = modulePath ? `${modulePath}/${glob}` : glob;
+      for (const entry of snap) {
+        if (matchesGlob(resolved, entry)) return true;
+      }
+      return false;
+    },
   };
 }
 
@@ -406,11 +419,12 @@ async function executePass(
   const items = filterByMode(flat, currentMode(ctx, initMode));
   const changes: Change[] = [];
 
-  // Structural pass.
+  // Structural pass. The trigger context is per-item: `filesMatch` resolves
+  // module-relative, so it must carry the leaf's bound module path.
   const snap1 = await buildSnapshot(fs);
-  const tctx1 = buildTriggerCtx(snap1, ctx);
   for (const item of items) {
     if (item.leaf.kind === "managed") continue;
+    const tctx1 = buildTriggerCtx(snap1, ctx, item.modulePath);
     if (!passesTriggers(item, tctx1)) continue;
     const change = await applyStructural(item, fs, dryRun, templates, initMode, ctx.isSdkInternal);
     if (change) changes.push(change);
@@ -419,9 +433,9 @@ async function executePass(
   // Re-snapshot after structural pass — managed-body triggers see the
   // post-rename / post-delete world.
   const snap2 = await buildSnapshot(fs);
-  const tctx2 = buildTriggerCtx(snap2, ctx);
   for (const item of items) {
     if (item.leaf.kind !== "managed") continue;
+    const tctx2 = buildTriggerCtx(snap2, ctx, item.modulePath);
     if (!passesTriggers(item, tctx2)) continue;
     const change = await applyManaged(
       item,
