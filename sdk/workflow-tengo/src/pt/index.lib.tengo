@@ -440,6 +440,13 @@ workflow := func() {
 			steps = append(steps, step)
 		},
 
+		// Test helper: returns the last raw step map (calls step fn with nil ctx).
+		// Only valid for steps that do not use ctx (e.g. read_csv, read_parquet).
+		_testGetLastRawStep: func() {
+			ll.assert(len(steps) > 0, "_testGetLastRawStep: no steps registered")
+			return steps[len(steps)-1](undefined)
+		},
+
 		/**
 		 * Creates a new DataFrame in the workflow by reading from an input source.
 		 * The input can be a resource reference, a string containing file content, or a structured map
@@ -513,6 +520,8 @@ workflow := func() {
 			nRowsOpt := undefined
 			ignoreErrorsOpt := undefined
 			commentPrefixOpt := undefined
+			delimiterOpt := undefined
+			hasHeaderOpt := undefined
 
 			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
@@ -610,6 +619,20 @@ workflow := func() {
 				commentPrefixOpt = opts.commentPrefix
 			}
 
+			if !is_undefined(opts.delimiter) {
+				if !is_string(opts.delimiter) {
+					ll.panic("'delimiter' option must be a string. Got: %T", opts.delimiter)
+				}
+				delimiterOpt = opts.delimiter
+			}
+
+			if !is_undefined(opts.hasHeader) {
+				if !is_bool(opts.hasHeader) {
+					ll.panic("'hasHeader' option must be a bool. Got: %T", opts.hasHeader)
+				}
+				hasHeaderOpt = opts.hasHeader
+			}
+
 			if !is_undefined(fileRef) {
 				ll.assert(
 					smart.isReference(fileRef),
@@ -681,6 +704,17 @@ workflow := func() {
 
 				if !is_undefined(commentPrefixOpt) {
 					step.commentPrefix = commentPrefixOpt
+				}
+
+				// Phase 3: explicit delimiter overrides the format-derived default.
+				if !is_undefined(delimiterOpt) {
+					step.delimiter = delimiterOpt
+				}
+
+				// Accepted for forward-compat; current PTabler ignores hasHeader (Polars
+				// defaults has_header=true). lineCount compensates with +1.
+				if !is_undefined(hasHeaderOpt) {
+					step.hasHeader = hasHeaderOpt
 				}
 			}
 

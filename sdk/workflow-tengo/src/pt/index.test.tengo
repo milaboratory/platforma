@@ -149,3 +149,31 @@ TestSlicedColumnInputRefersToSameName := func() {
 	]), [{ axisIndex: 0, constant: "X" }])
 	test.isEqual({ type: "column", column: "renamed" }, entry._getSpecQuery().input)
 }
+
+TestFrameDelimiterOverride := func() {
+	// wf.frame with explicit delimiter overrides the format-derived default.
+	wf := pt.workflow()
+	wf.frame("col1,col2\n1,2", { format: "csv", delimiter: "\x01", hasHeader: false, fileName: "in.csv" })
+	step := wf._testGetLastRawStep()
+	test.isEqual("read_csv", step.type)
+	test.isEqual("\x01", step.delimiter)
+	test.isEqual(false, step.hasHeader)
+}
+
+TestFrameCsvDefaultDelimiter := func() {
+	// Without explicit delimiter, csv format must still produce ",".
+	wf := pt.workflow()
+	wf.frame("col1,col2\n1,2", { format: "csv", fileName: "in.csv" })
+	step := wf._testGetLastRawStep()
+	test.isEqual("read_csv", step.type)
+	test.isEqual(",", step.delimiter)
+}
+
+TestFrameTsvDefaultDelimiter := func() {
+	// Without explicit delimiter, tsv format must still produce "\t".
+	wf := pt.workflow()
+	wf.frame("col1\tcol2\n1\t2", { format: "tsv", fileName: "in.tsv" })
+	step := wf._testGetLastRawStep()
+	test.isEqual("read_csv", step.type)
+	test.isEqual("\t", step.delimiter)
+}
