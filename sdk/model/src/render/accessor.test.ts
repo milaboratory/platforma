@@ -36,14 +36,28 @@ test("getDataAsJsonOrUndefined parses content once the resource is ready", () =>
   expect(acc.getDataAsJsonOrUndefined<{ min_len: number }>()).toEqual({ min_len: 7 });
 });
 
-test("getDataAsJsonOrUndefined throws the resource error when the resource errored", () => {
+test("getDataAsJsonOrUndefined throws the decoded error message when the resource errored", () => {
+  const errorLike = JSON.stringify({
+    type: "StandardError",
+    name: "Error",
+    message: "upstream blew up",
+  });
   const acc = accessorWithCtx({
     getIsReadyOrError: () => true,
     getError: () => ERROR_HANDLE,
-    getDataAsString: (handle: AccessorHandle) =>
-      handle === ERROR_HANDLE ? "upstream blew up" : undefined,
+    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? errorLike : undefined),
   });
-  expect(() => acc.getDataAsJsonOrUndefined()).toThrow("upstream blew up");
+  // Anchored: asserts the *decoded* message, not the serialized ErrorLike JSON.
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^upstream blew up$/);
+});
+
+test("getDataAsJsonOrUndefined falls back to the raw error content when it is not a serialized ErrorLike", () => {
+  const acc = accessorWithCtx({
+    getIsReadyOrError: () => true,
+    getError: () => ERROR_HANDLE,
+    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? "not json" : undefined),
+  });
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^not json$/);
 });
 
 test("getDataAsJsonOrUndefined throws when a ready resource has no error and no content", () => {
