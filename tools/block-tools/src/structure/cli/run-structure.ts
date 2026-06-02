@@ -35,8 +35,8 @@ export type RunStructureResult = {
 /** Resolve the registry lookup for `--update-deps-only`: prefetch npm
  *  "latest" for the SDK catalog MEMBERSHIP list (`SDK_CATALOG_PACKAGES`),
  *  not the on-disk catalog keys, so the sync `ensureCatalogLatest` builder
- *  can SEED a standard SDK key the block does not yet carry (the FC-3 fix)
- *  — reading the on-disk catalog could never resolve an absent key. Mirrors
+ *  can SEED a standard SDK key the block does not yet carry — reading
+ *  the on-disk catalog could never resolve an absent key. Mirrors
  *  the `runInit` prefetch. A network failure during prefetch propagates. */
 async function buildRegistryLookup(): Promise<(name: string) => string | undefined> {
   // Every SDK_CATALOG_PACKAGES entry matches a bump pattern (enforced at

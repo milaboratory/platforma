@@ -22,7 +22,7 @@ describe("ensureCatalogLatest (mocked registry)", () => {
     expect(cat["@platforma-sdk/model"]).toBe("2.0.0");
   });
 
-  test("add-if-absent: seeds a missing key from the resolved latest (the FC-3 fix)", async () => {
+  test("add-if-absent: seeds a missing key from the resolved latest", async () => {
     const doc = parseYaml("catalog:\n  unrelated: 9.9.9\n");
     const getLatestVersion = await lookupFor({ "@milaboratories/ts-builder": "3.4.5" });
     withManagedYaml(doc, () => ensureCatalogLatest("@milaboratories/ts-builder"), {

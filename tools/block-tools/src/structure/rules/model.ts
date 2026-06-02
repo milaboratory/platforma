@@ -22,12 +22,12 @@ import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 export function modelRules(): void {
   scope("model", () => {
     // tsconfig is managed (not fixed) so node ambient types can be provided
-    // CONDITIONALLY. The body still enforces the canonical shape (what the
-    // old `fixed` form guaranteed) — `{extends, include}` with NO stray
-    // keys — and, ONLY when the model carries co-located unit tests
-    // (`src/**/*.test.ts`), adds `compilerOptions.types: ["node"]` so those
-    // tests type-check (FC-5b — provide node types, do NOT exclude the
-    // tests). A test-less model is canonicalised to bare `{extends, include}`
+    // CONDITIONALLY. The body still enforces the canonical shape —
+    // `{extends, include}` with NO stray keys — and, ONLY when the model
+    // carries co-located unit tests (`src/**/*.test.ts`), adds
+    // `compilerOptions.types: ["node"]` so those tests type-check: provide
+    // node types, do NOT exclude the tests. A test-less model is
+    // canonicalised to bare `{extends, include}`
     // and stays a refresh fixpoint. The matching `@types/node` devDep is
     // wired by the package.json rule under the same predicate.
     managed("tsconfig.json", file("model/tsconfig.json"), () => {

@@ -31,6 +31,42 @@ describe("JSON parser — round trip + jsonPath helpers", () => {
     expect(stringifyJson(parsed)).toBe(raw);
   });
 
+  test("collapse: arrays within print width go on one line, wide ones break", () => {
+    // oxfmt's generic-.json shape (tsconfig et al.): the object expands one
+    // property per line while a short array collapses onto its line. The
+    // single-element `include` array — the case that regressed output to
+    // non-oxfmt-clean under JSON.stringify (which expanded it) — must collapse.
+    const tsconfig = { extends: "@milaboratories/ts-configs/block/model", include: ["src/**/*"] };
+    expect(stringifyJson(tsconfig, { collapse: true })).toBe(
+      '{\n  "extends": "@milaboratories/ts-configs/block/model",\n  "include": ["src/**/*"]\n}\n',
+    );
+    // A line wider than PRINT_WIDTH (100) breaks one element per line.
+    const x = "x".repeat(40);
+    const y = "y".repeat(40);
+    const z = "z".repeat(40);
+    const wide = { a: [x, y, z] };
+    expect(stringifyJson(wide, { collapse: true })).toBe(
+      `{\n  "a": [\n    "${x}",\n    "${y}",\n    "${z}"\n  ]\n}\n`,
+    );
+  });
+
+  test("default (no collapse) keeps every container expanded — the package.json shape", () => {
+    // Without { collapse }, output is byte-identical to JSON.stringify(_, 2):
+    // package.json must stay fully expanded to match oxfmt's package.json
+    // formatting (which never collapses).
+    const value = { include: ["src/**/*"], deps: { a: "1.0.0" } };
+    expect(stringifyJson(value)).toBe(JSON.stringify(value, null, 2) + "\n");
+  });
+
+  test("collapse: empty containers stay compact, non-empty objects expand", () => {
+    // Empty `[]` / `{}` render inline; a non-empty object always breaks one
+    // property per line (oxfmt preserves the expanded object, arrays collapse
+    // by width).
+    expect(stringifyJson({ a: [], b: {}, c: { d: 1 } }, { collapse: true })).toBe(
+      '{\n  "a": [],\n  "b": {},\n  "c": {\n    "d": 1\n  }\n}\n',
+    );
+  });
+
   test("getAtPath / hasAtPath", () => {
     const obj: JsonObject = { a: { b: { c: 42 } } };
     expect(getAtPath(obj, "a.b.c")).toBe(42);

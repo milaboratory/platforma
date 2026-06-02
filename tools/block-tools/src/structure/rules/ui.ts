@@ -24,12 +24,12 @@ import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 export function uiRules(): void {
   scope("ui", () => {
     // tsconfig is managed (not fixed) so node ambient types can be provided
-    // CONDITIONALLY. The body still enforces the canonical shape (what the
-    // old `fixed` form guaranteed) — `{extends, include}` with NO stray
-    // keys — and, ONLY when the ui carries co-located unit tests
-    // (`src/**/*.test.ts`), adds `compilerOptions.types: ["node"]` so tests
-    // importing `node:*` type-check under vue-tsc (FC-5b — provide node
-    // types, do NOT exclude the tests). A test-less ui is canonicalised to
+    // CONDITIONALLY. The body still enforces the canonical shape —
+    // `{extends, include}` with NO stray keys — and, ONLY when the ui
+    // carries co-located unit tests (`src/**/*.test.ts`), adds
+    // `compilerOptions.types: ["node"]` so tests importing `node:*`
+    // type-check under vue-tsc: provide node types, do NOT exclude the
+    // tests. A test-less ui is canonicalised to
     // bare `{extends, include}` and stays a refresh fixpoint. The matching
     // `@types/node` devDep is wired by the package.json rule under the same
     // predicate.

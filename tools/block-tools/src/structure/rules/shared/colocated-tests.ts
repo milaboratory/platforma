@@ -1,4 +1,4 @@
-// Shared definition for co-located unit-test handling (FC-5b + FC-10).
+// Shared definition for co-located unit-test handling.
 //
 // A block's model / ui / workflow scope MAY carry co-located vitest unit
 // tests (`src/**/*.test.ts`, including nested `src/test/*.test.ts`). The
