@@ -203,24 +203,29 @@ export class TreeNodeAccessor {
   }
 
   /**
-   * Like {@link getDataAsJson}, but returns `undefined` while the resource is
-   * still computing instead of throwing.
+   * Like {@link getDataAsJson}, but does not throw while the resource is still
+   * computing. Three states:
    *
-   * Prefer this in reactive output lambdas. A field that resolves before its
-   * resource is ready (routine on remote backends) makes {@link getDataAsJson}
-   * throw "Resource has no content." mid-calculation, surfacing a transient
-   * "Some outputs have errors" banner that clears once the resource finishes
-   * (MILAB-6318).
+   * - **Not ready** → returns `undefined` (loading). A field that resolves
+   *   before its resource is ready (routine on remote backends) would make
+   *   {@link getDataAsJson} throw "Resource has no content." mid-calculation,
+   *   surfacing a transient "Some outputs have errors" banner that clears once
+   *   the resource finishes (MILAB-6318).
+   * - **Errored** → throws the resource error.
+   * - **Ready** → returns the parsed content.
    *
-   * A resource that has reached a terminal state (ready or error) but still
-   * carries no content is a genuine error and throws, matching
-   * {@link getDataAsJson}.
+   * Prefer this over {@link getDataAsJson} in reactive output lambdas.
    */
   public getDataAsJsonOrUndefined<T>(): T | undefined {
-    // getIsReadyOrError() marks the computable unstable while not ready, which
-    // schedules recomputation once the resource finishes. Load-bearing, not a
-    // redundant guard over getDataAsJson — keep it.
+    // Not ready → undefined (loading). getIsReadyOrError() registers the
+    // readiness dependency, so the lambda re-runs once the resource finishes.
     if (!this.getIsReadyOrError()) return undefined;
+    // Errored → surface the actual error, rather than getDataAsJson's generic
+    // "Resource has no content." throw (or returning stale content).
+    const error = this.getError();
+    if (error !== undefined)
+      throw new Error(error.getDataAsString() ?? "Resource computation failed.");
+    // Ready → parse the content.
     return this.getDataAsJson<T>();
   }
 
