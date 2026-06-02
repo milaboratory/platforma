@@ -8,9 +8,9 @@ const ERROR_HANDLE = "error-handle" as AccessorHandle;
 
 type RenderCtx = ReturnType<typeof internal.getCfgRenderCtx>;
 
-function accessorWithCtx(ctx: Partial<RenderCtx>): TreeNodeAccessor {
+function accessorWithCtx(ctx: Partial<RenderCtx>, resolvePath: string[] = []): TreeNodeAccessor {
   vi.spyOn(internal, "getCfgRenderCtx").mockReturnValue(ctx as RenderCtx);
-  return new TreeNodeAccessor(HANDLE, []);
+  return new TreeNodeAccessor(HANDLE, resolvePath);
 }
 
 afterEach(() => {
@@ -50,6 +50,38 @@ test("getDataAsJsonOrUndefined throws the decoded error message when the resourc
   });
   // Anchored: asserts the *decoded* message, not the serialized ErrorLike JSON.
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^upstream blew up$/);
+});
+
+test("getDataAsJsonOrUndefined prefers a PlError's fullMessage over its message", () => {
+  // PlError carries fullMessage (SDK-developer detail); the single thrown string
+  // should be the richer one.
+  const errorLike = JSON.stringify({
+    type: "PlError",
+    name: "PlTengoError",
+    message: "short",
+    fullMessage: "detailed SDK message",
+  });
+  const acc = accessorWithCtx({
+    getIsReadyOrError: () => true,
+    getError: () => ERROR_HANDLE,
+    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? errorLike : undefined),
+  });
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^detailed SDK message$/);
+});
+
+test("getDataAsJsonOrUndefined tags the thrown error with the resolve path", () => {
+  // The path identifies which resolve failed when a lambda reads several fields.
+  const errorLike = JSON.stringify({ type: "StandardError", name: "Error", message: "boom" });
+  const acc = accessorWithCtx(
+    {
+      getIsReadyOrError: () => true,
+      getError: () => ERROR_HANDLE,
+      getDataAsString: (handle: AccessorHandle) =>
+        handle === ERROR_HANDLE ? errorLike : undefined,
+    },
+    ["outputs", "isEmpty"],
+  );
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^boom \(at outputs\.isEmpty\)$/);
 });
 
 test("getDataAsJsonOrUndefined falls back to the raw error content when it is not a serialized ErrorLike", () => {
