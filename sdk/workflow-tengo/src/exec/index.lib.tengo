@@ -19,6 +19,7 @@ constants := import(":constants")
 canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+execFormula := import(":exec.formula")
 units := import(":units")
 feats := import(":feats")
 
@@ -1290,5 +1291,6 @@ export ll.toStrict({
 	// Gate .gpuMemory() calls in blocks that have a CPU fallback path:
 	//   if exec.hasGpu { builder = builder.gpuMemory("16GiB") }
 	// Calling .gpuMemory() against a backend without GPU produces a permanent error.
-	hasGpu: feats.hasGpu
+	hasGpu: feats.hasGpu,
+	formula: execFormula
 })
