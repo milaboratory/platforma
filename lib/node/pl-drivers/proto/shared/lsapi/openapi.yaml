@@ -59,6 +59,14 @@ components:
         isDir:
           type: boolean
           description: is_dir is true for an item that can have subitems.
+        additionalInfo:
+          type: object
+          additionalProperties:
+            type: string
+          description: |-
+            additional_info carries the signed identity envelope for federative storages.
+             KV schema: v=1, path, uid, sid, role, exp, kid, signed, sig.
+             Empty for non-federative storages. Verifiers MUST ignore unknown keys.
         fullName:
           type: string
           description: |-

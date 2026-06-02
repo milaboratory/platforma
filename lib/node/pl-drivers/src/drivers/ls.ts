@@ -34,18 +34,18 @@ export interface InternalLsDriver extends sdk.LsDriver {
    * */
   getLocalFileHandle(localPath: string): Promise<sdk.LocalImportFileHandle>;
 
-  listRemoteFilesWithAdditionalInfo(
+  listRemoteFilesWithFileStats(
     storage: sdk.StorageHandle,
     fullPath: string,
-  ): Promise<ListRemoteFilesResultWithAdditionalInfo>;
+  ): Promise<ListRemoteFilesResultWithFileStats>;
 }
 
-export type ListRemoteFilesResultWithAdditionalInfo = {
+export type ListRemoteFilesResultWithFileStats = {
   parent?: string;
-  entries: LsEntryWithAdditionalInfo[];
+  entries: LsEntryWithFileStats[];
 };
 
-export type LsEntryWithAdditionalInfo = sdk.LsEntry & {
+export type LsEntryWithFileStats = sdk.LsEntry & {
   size: number;
 };
 
@@ -217,7 +217,7 @@ export class LsDriver implements InternalLsDriver {
           type: e.isDir ? "dir" : "file",
           name: e.name,
           fullPath: e.fullName,
-          handle: createIndexImportHandle(storageData.storageId, e.fullName),
+          handle: createIndexImportHandle(storageData.storageId, e.fullName, e.additionalInfo),
         })),
       };
     }
@@ -249,10 +249,10 @@ export class LsDriver implements InternalLsDriver {
     return { entries };
   }
 
-  public async listRemoteFilesWithAdditionalInfo(
+  public async listRemoteFilesWithFileStats(
     storageHandle: sdk.StorageHandle,
     fullPath: string,
-  ): Promise<ListRemoteFilesResultWithAdditionalInfo> {
+  ): Promise<ListRemoteFilesResultWithFileStats> {
     const storageData = parseStorageHandle(storageHandle);
     if (!storageData.isRemote) {
       throw new Error(`Storage ${storageData.name} is not remote`);
@@ -266,7 +266,7 @@ export class LsDriver implements InternalLsDriver {
         type: e.isDir ? "dir" : "file",
         name: e.name,
         fullPath: e.fullName,
-        handle: createIndexImportHandle(storageData.storageId, e.fullName),
+        handle: createIndexImportHandle(storageData.storageId, e.fullName, e.additionalInfo),
         size: Number(e.size),
       })),
     };

@@ -54,6 +54,11 @@ export const ImportFileHandleIndexData = z.object({
   storageId: z.string(),
   /** Path inside storage */
   path: z.string(),
+  /**
+   * Federative identity envelope from LsAPI.List.Response.ListItem.additional_info.
+   * Absent for non-federative storages (backwards compatible: old handles parse unchanged).
+   */
+  additionalInfo: z.record(z.string(), z.string()).optional(),
 });
 export type ImportFileHandleIndexData = z.infer<typeof ImportFileHandleIndexData>;
 

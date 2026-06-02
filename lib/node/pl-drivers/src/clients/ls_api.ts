@@ -68,6 +68,7 @@ export class ClientLs {
         name: item.name,
         size: BigInt(item.size),
         isDir: item.isDir,
+        additionalInfo: item.additionalInfo ?? {},
         fullName: item.fullName,
         directory: item.directory,
         lastModified: parseTimestamp(item.lastModified),
