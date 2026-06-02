@@ -22,18 +22,12 @@ export function softwarePackageJsonRules(): void {
 
   ensureScript("build", "pl-pkg build");
   ensureScript("prepublishOnly", "pl-pkg prepublish");
-  ensureScript(
-    "do-pack",
-    "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
-  );
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
 
   ensureDevDeps({
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@platforma-sdk/package-builder": "sdk:",
-    // shx powers the do-pack script above.
-    shx: "catalog:",
   });
 
   enforceAlphabeticalOrder("dependencies");
