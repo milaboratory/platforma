@@ -1,0 +1,42 @@
+test := import(":test")
+f := import(":exec.formula")
+
+TestFormulaConstructors := func() {
+	test.isEqual({ op: "add", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.add(2, 3))
+	test.isEqual({ op: "clamp", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.clamp(1, 2, 3))
+	test.isEqual("divCeil", f.divCeil(10, 3).op)
+}
+
+TestFormulaAutoWrap := func() {
+	node := f.mul(f.size("reads"), 4)
+	test.isEqual("mul", node.op)
+	test.isEqual("metric", node.a.op)
+	test.isEqual({ op: "const", value: 4 }, node.b)
+}
+
+TestFormulaUnits := func() {
+	test.isEqual({ op: "const", value: 16 * 1073741824 }, f.gib(16))
+	test.isEqual({ op: "const", value: 256 * 1048576 }, f.mib(256))
+	test.isEqual({ op: "const", value: 2 * 1000000000 }, f.gb(2))
+}
+
+TestFormulaMetricNodes := func() {
+	test.isEqual({ op: "metric", metric: "size" }, f.size())
+	test.isEqual({ op: "metric", metric: "size", tag: "reads" }, f.size("reads"))
+	test.isEqual({ op: "metric", metric: "size", tag: "ref", default: 0 }, f.size("ref", { default: 0 }))
+	test.isEqual("lineCount", f.lineCount("reads").metric)
+}
+
+TestFormulaConditional := func() {
+	node := f["if"](f.gt(f.size(), 100), f.gib(16), f.gib(8))
+	test.isEqual("if", node.op)
+	test.isEqual("gt", node.cond.op)
+	test.isEqual(16 * 1073741824, node.then.value)
+	test.isEqual(8 * 1073741824, node["else"].value)
+}
+
+TestFormulaLogic := func() {
+	node := f.not(f.lt(1, 2))
+	test.isEqual("not", node.op)
+	test.isEqual("lt", node.a.op)
+}

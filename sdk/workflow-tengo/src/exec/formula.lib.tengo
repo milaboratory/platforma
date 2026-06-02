@@ -1,0 +1,93 @@
+// Pure AST constructors for resource-formula expressions (exec.formula).
+// The exec builder resolves these nodes (tags -> files) and the pure exec
+// template evaluates them at run time.
+
+ll := import(":ll")
+
+// ---- AST node shapes -------------------------------------------------------
+// const:      { op: "const", value: <int> }
+// arithmetic: { op: "add"|"sub"|"mul"|"div"|"divCeil", a: <node>, b: <node> }
+// bounds:     { op: "max"|"min", a, b } | { op: "clamp", value, lo, hi }
+// compare:    { op: "gt"|"gte"|"lt"|"lte", a, b }
+// logic:      { op: "and"|"or", a, b } | { op: "not", a }
+// cond:       { op: "if", cond, then, else }
+// metric:     { op: "metric", metric: "size"|"lineCount", "tag,?": <string>, "default,?": <int> }
+//             (the builder later resolves "metric" -> "metricSum" with concrete files)
+// Note: if.cond and not.a may be const-wrapped if given a bare int; the
+// evaluator treats any nonzero const as truthy.
+
+GIB := 1073741824
+MIB := 1048576
+KIB := 1024
+GB  := 1000000000
+MB  := 1000000
+KB  := 1000
+
+_KNOWN_OPS := {
+	"const": true, "metric": true,
+	"add": true, "sub": true, "mul": true, "div": true, "divCeil": true,
+	"max": true, "min": true, "clamp": true,
+	"gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true,
+	"if": true
+}
+
+_wrap := func(x) {
+	if is_map(x) && !is_undefined(x.op) {
+		ll.assert(_KNOWN_OPS[x.op] == true, "exec.formula: not a valid expression node (unknown op %v)", x.op)
+		return x
+	}
+	ll.assert(is_int(x), "exec.formula: expected an expression node or an integer, got %v", x)
+	return { op: "const", value: x }
+}
+
+_bin := func(op, a, b) { return { op: op, a: _wrap(a), b: _wrap(b) } }
+
+// metric(metricName, args) where args may be: (), ("tag"), ({default:n}), ("tag", {default:n})
+_metric := func(metricName, args) {
+	node := { op: "metric", metric: metricName }
+	for arg in args {
+		if is_string(arg) {
+			ll.assert(is_undefined(node.tag), "exec.formula.%s: tag specified more than once", metricName)
+			node.tag = arg
+		} else if is_map(arg) && !is_undefined(arg.default) {
+			ll.assert(is_undefined(node.default), "exec.formula.%s: default specified more than once", metricName)
+			ll.assert(is_int(arg.default), "exec.formula.%s: default must be an integer", metricName)
+			node.default = arg.default
+		} else {
+			ll.panic("exec.formula.%s: unexpected argument %v", metricName, arg)
+		}
+	}
+	return node
+}
+
+export {
+	size:      func(...args) { return _metric("size", args) },
+	lineCount: func(...args) { return _metric("lineCount", args) },
+
+	gib: func(n) { ll.assert(is_int(n), "exec.formula.gib: n must be an integer"); return { op: "const", value: n * GIB } },
+	mib: func(n) { ll.assert(is_int(n), "exec.formula.mib: n must be an integer"); return { op: "const", value: n * MIB } },
+	kib: func(n) { ll.assert(is_int(n), "exec.formula.kib: n must be an integer"); return { op: "const", value: n * KIB } },
+	gb:  func(n) { ll.assert(is_int(n), "exec.formula.gb: n must be an integer");  return { op: "const", value: n * GB } },
+	mb:  func(n) { ll.assert(is_int(n), "exec.formula.mb: n must be an integer");  return { op: "const", value: n * MB } },
+	kb:  func(n) { ll.assert(is_int(n), "exec.formula.kb: n must be an integer");  return { op: "const", value: n * KB } },
+
+	add:     func(a, b) { return _bin("add", a, b) },
+	sub:     func(a, b) { return _bin("sub", a, b) },
+	mul:     func(a, b) { return _bin("mul", a, b) },
+	div:     func(a, b) { return _bin("div", a, b) },
+	divCeil: func(a, b) { return _bin("divCeil", a, b) },
+
+	max:   func(a, b) { return _bin("max", a, b) },
+	min:   func(a, b) { return _bin("min", a, b) },
+	clamp: func(value, lo, hi) { return { op: "clamp", value: _wrap(value), lo: _wrap(lo), hi: _wrap(hi) } },
+
+	gt:  func(a, b) { return _bin("gt", a, b) },
+	gte: func(a, b) { return _bin("gte", a, b) },
+	lt:  func(a, b) { return _bin("lt", a, b) },
+	lte: func(a, b) { return _bin("lte", a, b) },
+	and: func(a, b) { return _bin("and", a, b) },
+	or:  func(a, b) { return _bin("or", a, b) },
+	not: func(a) { return { op: "not", a: _wrap(a) } },
+
+	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } }
+}
