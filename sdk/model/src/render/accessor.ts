@@ -11,7 +11,6 @@ import type {
   RangeBytes,
 } from "@milaboratories/pl-model-common";
 import { isPColumn, mapPObjectData } from "@milaboratories/pl-model-common";
-import { parseErrorLikeSafe } from "@milaboratories/pl-error-like";
 import { getCfgRenderCtx } from "../internal";
 import { FutureRef } from "./future";
 import type { AccessorHandle } from "./internal";
@@ -22,15 +21,19 @@ export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | unde
 }
 
 /**
- * Decode an error node's serialized `ErrorLike` into a display message. Prefers
- * a `PlError`'s `fullMessage` (the SDK-developer detail) when present; falls
- * back to the raw string if it is not a serialized `ErrorLike`.
+ * Decode an error node's content into a display message. The backend serializes
+ * a resource error as `{"message": "..."}` (`ResourceError`); unwrap that to the
+ * human-readable message. Falls back to the raw string when the content is not
+ * that envelope (e.g. plain text, or an unexpected shape).
  */
 function decodeErrorMessage(raw: string): string {
-  const parsed = parseErrorLikeSafe(raw);
-  if (!parsed.success) return raw;
-  const e = parsed.data;
-  return e.type === "PlError" ? (e.fullMessage ?? e.message) : e.message;
+  try {
+    const parsed = JSON.parse(raw) as { message?: unknown };
+    if (typeof parsed?.message === "string") return parsed.message;
+  } catch {
+    // Not JSON — surface the raw content.
+  }
+  return raw;
 }
 
 type FieldMapOps = {
