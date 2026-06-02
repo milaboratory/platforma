@@ -37,60 +37,53 @@ test("getDataAsJsonOrUndefined parses content once the resource is ready", () =>
   expect(acc.getDataAsJsonOrUndefined<{ min_len: number }>()).toEqual({ min_len: 7 });
 });
 
-test("getDataAsJsonOrUndefined throws the decoded error message when the resource errored", () => {
-  const errorLike = JSON.stringify({
-    type: "StandardError",
-    name: "Error",
-    message: "upstream blew up",
-  });
+test("getDataAsJsonOrUndefined throws the error node's message when the resource errored", () => {
+  // The backend serializes a resource error as {"message": "..."}; the thrown
+  // string is the unwrapped message, not the raw JSON envelope.
+  const resourceError = JSON.stringify({ message: "upstream blew up" });
   const acc = accessorWithCtx({
     getIsReadyOrError: () => true,
     getError: () => ERROR_HANDLE,
-    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? errorLike : undefined),
+    getDataAsString: (handle: AccessorHandle) =>
+      handle === ERROR_HANDLE ? resourceError : undefined,
   });
-  // Anchored: asserts the *decoded* message, not the serialized ErrorLike JSON.
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^upstream blew up$/);
-});
-
-test("getDataAsJsonOrUndefined prefers a PlError's fullMessage over its message", () => {
-  // PlError carries fullMessage (SDK-developer detail); the single thrown string
-  // should be the richer one.
-  const errorLike = JSON.stringify({
-    type: "PlError",
-    name: "PlTengoError",
-    message: "short",
-    fullMessage: "detailed SDK message",
-  });
-  const acc = accessorWithCtx({
-    getIsReadyOrError: () => true,
-    getError: () => ERROR_HANDLE,
-    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? errorLike : undefined),
-  });
-  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^detailed SDK message$/);
 });
 
 test("getDataAsJsonOrUndefined tags the thrown error with the resolve path", () => {
   // The path identifies which resolve failed when a lambda reads several fields.
-  const errorLike = JSON.stringify({ type: "StandardError", name: "Error", message: "boom" });
+  const resourceError = JSON.stringify({ message: "boom" });
   const acc = accessorWithCtx(
     {
       getIsReadyOrError: () => true,
       getError: () => ERROR_HANDLE,
       getDataAsString: (handle: AccessorHandle) =>
-        handle === ERROR_HANDLE ? errorLike : undefined,
+        handle === ERROR_HANDLE ? resourceError : undefined,
     },
     ["outputs", "isEmpty"],
   );
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^boom \(at outputs\.isEmpty\)$/);
 });
 
-test("getDataAsJsonOrUndefined falls back to the raw error content when it is not a serialized ErrorLike", () => {
+test("getDataAsJsonOrUndefined falls back to the raw content when it is not a message envelope", () => {
+  // Plain text (not JSON) → surfaced verbatim.
   const acc = accessorWithCtx({
     getIsReadyOrError: () => true,
     getError: () => ERROR_HANDLE,
     getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? "not json" : undefined),
   });
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow(/^not json$/);
+});
+
+test("getDataAsJsonOrUndefined falls back to the raw content when JSON has no string message", () => {
+  // Valid JSON but not the {message} envelope → surfaced verbatim.
+  const raw = JSON.stringify({ code: 42 });
+  const acc = accessorWithCtx({
+    getIsReadyOrError: () => true,
+    getError: () => ERROR_HANDLE,
+    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? raw : undefined),
+  });
+  expect(() => acc.getDataAsJsonOrUndefined()).toThrow(raw);
 });
 
 test("getDataAsJsonOrUndefined throws a generic message when the errored node has no content", () => {
