@@ -1,17 +1,21 @@
 {
   "name": "@milaboratories/milaboratories.test-filter-column.workflow",
-  "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "private": true,
   "description": "Tengo-based template",
+  "type": "module",
   "scripts": {
-    "build": "shx rm -rf dist && pl-tengo check && pl-tengo build"
+    "build": "shx rm -rf dist && pl-tengo build",
+    "check": "pl-tengo check",
+    "format": "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "workspace:*",
-    "shx": "catalog:"
+    "@platforma-sdk/test": "workspace:*",
+    "shx": "catalog:",
+    "vitest": "catalog:"
   }
 }

@@ -5,9 +5,10 @@
   "description": "Block tests",
   "keywords": [],
   "files": [],
+  "type": "module",
   "scripts": {
-    "test": "vitest",
-    "check": "ts-builder check --target block-test",
+    "test": "vitest run --passWithNoTests",
+    "check": "ts-builder type-check --target block-test",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target block-test",
@@ -22,7 +23,9 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
-    "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "*"
   }
 }

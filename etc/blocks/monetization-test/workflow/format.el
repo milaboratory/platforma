@@ -40,4 +40,3 @@
 ;; call format on every file.
 (dolist (file files)
   (format-file file))
-
