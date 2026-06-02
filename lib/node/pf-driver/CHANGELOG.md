@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.5.2
+
+### Patch Changes
+
+- 59c92e1: Cache footprint instead of recalculating each time
+
 ## 1.5.1
 
 ### Patch Changes
