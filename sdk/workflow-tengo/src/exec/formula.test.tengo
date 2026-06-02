@@ -84,3 +84,49 @@ TestFormulaEvaluateLogic := func() {
 	test.isTrue(f.evaluate(f.and(f.gte(5, 5), f.lte(2, 9)), _fakeResolver))
 	test.isFalse(f.evaluate(f.or(f.gt(1, 2), f.not(f.lt(1, 2))), _fakeResolver))
 }
+
+TestResolveTagsToFiles := func() {
+	tagMap := { "reads": ["r1.fastq.gz", "r2.fastq.gz"], "ref": ["ref.fasta"] }
+	allFiles := ["r1.fastq.gz", "r2.fastq.gz", "ref.fasta"]
+
+	resolved := f.resolveAst(f.size("reads"), tagMap, allFiles)
+	test.isEqual({ op: "metricSum", metric: "size", files: ["r1.fastq.gz", "r2.fastq.gz"] }, resolved)
+
+	all := f.resolveAst(f.size(), tagMap, allFiles)
+	test.isEqual(["r1.fastq.gz", "r2.fastq.gz", "ref.fasta"], all.files)
+}
+
+TestResolveDefaultSubstitution := func() {
+	resolved := f.resolveAst(f.size("missing", { default: 0 }), {}, [])
+	test.isEqual({ op: "const", value: 0 }, resolved)
+}
+
+TestReferencedMetricFiles := func() {
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	formula := f.add(f.mul(f.size("reads"), 4), f.lineCount("reads"))
+	resolved := f.resolveAst(formula, tagMap, ["r1.fastq", "r2.fastq"])
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)
+	test.isTrue(is_undefined(refs.size), "size must not require pre-exec")
+}
+
+TestResolveLineCountCompressionAccepted := func() {
+	// .fastq.gz: compression suffix stripped -> ext "fastq" is line-oriented -> accepted, no panic
+	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.gz"] }, ["r1.fastq.gz"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.gz"] }, resolved)
+}
+
+TestResolveRecursesInPlace := func() {
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	// add(mul(size("reads"), 4), lineCount("reads"))
+	resolved := f.resolveAst(f.add(f.mul(f.size("reads"), 4), f.lineCount("reads")), tagMap, allFiles)
+	test.isEqual("add", resolved.op)
+	test.isEqual("metricSum", resolved.a.a.op)   // size("reads") inside mul
+	test.isEqual("size", resolved.a.a.metric)
+	test.isEqual({ op: "const", value: 4 }, resolved.a.b)
+	test.isEqual("metricSum", resolved.b.op)     // lineCount("reads")
+	test.isEqual("lineCount", resolved.b.metric)
+	test.isEqual(["r1.fastq", "r2.fastq"], resolved.b.files)
+}
+

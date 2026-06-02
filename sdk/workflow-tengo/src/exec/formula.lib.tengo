@@ -3,6 +3,7 @@
 // template evaluates them at run time.
 
 ll := import(":ll")
+text := import("text")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -24,7 +25,7 @@ MB  := 1000000
 KB  := 1000
 
 _KNOWN_OPS := {
-	"const": true, "metric": true,
+	"const": true, "metric": true, "metricSum": true,
 	"add": true, "sub": true, "mul": true, "div": true, "divCeil": true,
 	"max": true, "min": true, "clamp": true,
 	"gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true,
@@ -110,6 +111,82 @@ evaluate = func(node, resolver) {
 	ll.panic("exec.formula.evaluate: unknown op %q", op)
 }
 
+// ---- builder-time resolution helpers ---------------------------------------
+
+// extensions lineCount (text row counting) can stream
+_LINECOUNT_OK := { "csv": true, "tsv": true, "txt": true, "fastq": true, "fq": true, "fasta": true, "fa": true, "tab": true }
+_COMPRESSION_EXT := { "gz": "gzip", "bz2": "bzip2", "zst": "zstd" }
+
+_baseAndCompression := func(fileName) {
+	parts := text.split(fileName, ".")
+	compression := "none"
+	if len(parts) >= 2 && !is_undefined(_COMPRESSION_EXT[parts[len(parts)-1]]) {
+		compression = _COMPRESSION_EXT[parts[len(parts)-1]]
+		parts = parts[0:len(parts)-1]
+	}
+	ext := len(parts) >= 2 ? parts[len(parts)-1] : ""
+	return { ext: ext, compression: compression }
+}
+
+_assertMetricCompatible := func(metric, fileName) {
+	if metric == "lineCount" {
+		info := _baseAndCompression(fileName)
+		ll.assert(!is_undefined(_LINECOUNT_OK[info.ext]),
+			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, info.ext)
+	}
+	// size is always compatible
+}
+
+resolveAst := undefined
+resolveAst = func(node, tagMap, allFiles) {
+	op := node.op
+	if op == "metric" {
+		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
+		if len(files) == 0 {
+			ll.assert(!is_undefined(node.default),
+				"exec.formula: tag %q has no files and no { default: ... } was given", node.tag)
+			return { op: "const", value: node.default }
+		}
+		for fn in files { _assertMetricCompatible(node.metric, fn) }
+		out := { op: "metricSum", metric: node.metric, files: files }
+		if !is_undefined(node.default) { out.default = node.default }
+		return out
+	}
+	out := {}
+	for k, v in node {
+		if is_map(v) && !is_undefined(v.op) {
+			out[k] = resolveAst(v, tagMap, allFiles)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+referencedMetricFiles := func(resolvedNode) {
+	acc := {}
+	walk := undefined
+	walk = func(n) {
+		if n.op == "metricSum" {
+			if n.metric != "size" {
+				existing := is_undefined(acc[n.metric]) ? [] : acc[n.metric]
+				for fn in n.files {
+					seen := false
+					for e in existing { if e == fn { seen = true } }
+					if !seen { existing = append(existing, fn) }
+				}
+				acc[n.metric] = existing
+			}
+			return
+		}
+		for k, v in n {
+			if is_map(v) && !is_undefined(v.op) { walk(v) }
+		}
+	}
+	walk(resolvedNode)
+	return acc
+}
+
 export {
 	size:      func(...args) { return _metric("size", args) },
 	lineCount: func(...args) { return _metric("lineCount", args) },
@@ -141,5 +218,7 @@ export {
 
 	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
 
-	evaluate: evaluate
+	evaluate:              evaluate,
+	resolveAst:            resolveAst,
+	referencedMetricFiles: referencedMetricFiles
 }
