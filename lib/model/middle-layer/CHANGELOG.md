@@ -1,5 +1,33 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.29.0
+
+### Minor Changes
+
+- b0c2b5f: Add `PFrameDriver.exportPTable(handle, { path, columnIndices })` — exports the table to a file natively via `PTableV10.export`, selecting the format from the `path` extension (`csv`/`tsv`/`parquet`/`xlsx`). `columnIndices` selects the columns to export; column headers are derived on the driver side from each field's label annotation (falling back to its spec name), the same way `writePTableToFs` builds CSV/TSV headers. For `xlsx`, the driver checks the table shape and rejects exports whose data rows exceed the 1,000,000-row per-sheet limit (below Excel's hard cap of 1,048,576). The driver currently voids `columnIndices` and exports the full table — it will be honoured once the `PTableV11` native update lands.
+
+  Add the next PFrames addon interface version — `PFrameFactoryV7` / `PFrameV16` / `PFrameReadAPIV14` / `PTableV11` — where `PTableV11.export` takes `headers` as a `Record<number, string>` (unified column index → header name) that both selects the columns to export (its keys) and names them (its values), instead of a positional `string[]`. The current `V6`/`V15`/`V13`/`V10` surface is unchanged and still used by the driver; the new version is defined ahead of its PFrames implementation, after which the monorepo will migrate and drop the old one.
+
+  `PlAgCsvExporter` no longer hardcodes the output format — it offers the available formats as save-dialog file-type filters and derives the format from the chosen path. When the runtime advertises `exportPTable` it exports the visible table handle directly (`csv`/`tsv`/`parquet`/`xlsx`, no gzip); otherwise it falls back to `writePTableToFs` (`csv`/`tsv`, plain or gzip-compressed depending on the chosen `.gz` extension).
+
+### Patch Changes
+
+- Updated dependencies [b0c2b5f]
+  - @milaboratories/pl-model-common@1.45.0
+
+## 1.28.0
+
+### Minor Changes
+
+- fbff717: Switch the PFrames addon surface to the `PFrameFactoryV6`/`PFrameV15`/`PTableV10` interface (`@milaboratories/pframes-rs-*` bumped to `1.1.41`) and drop the superseded `PFrameFactoryV5`/`PFrameV14`/`PFrameReadAPIV12`/`PTableV9` declarations.
+
+  Add `PFrameDriver.exportPTable(handle, path)` to the driver surface and wire it through the service bridge. The method is a placeholder that always rejects with "not implemented" — the native export implementation will be added separately.
+
+### Patch Changes
+
+- Updated dependencies [fbff717]
+  - @milaboratories/pl-model-common@1.44.0
+
 ## 1.27.0
 
 ### Minor Changes

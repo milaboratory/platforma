@@ -17,7 +17,7 @@ const csvExportAvailable = isCsvExportAvailable();
 const exporting = shallowRef(false);
 const initiateExport = () => {
   const nativeOptions: ExportOptions | undefined = !isNil(props.tableHandle)
-    ? { tableHandle: props.tableHandle, format: "csv" }
+    ? { tableHandle: props.tableHandle }
     : undefined;
 
   if (isNil(nativeOptions)) {

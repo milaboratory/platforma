@@ -1,5 +1,27 @@
 # @milaboratories/pl-tree
 
+## 1.12.9
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.11.1
+- @milaboratories/pl-errors@1.4.19
+
+## 1.12.8
+
+### Patch Changes
+
+- Updated dependencies [e61785b]
+  - @milaboratories/pl-client@3.11.0
+  - @milaboratories/pl-errors@1.4.18
+
+## 1.12.7
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.10.2
+- @milaboratories/pl-errors@1.4.17
+
 ## 1.12.6
 
 ### Patch Changes

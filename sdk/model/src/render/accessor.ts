@@ -20,6 +20,22 @@ export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | unde
   return value === undefined ? undefined : cb(value);
 }
 
+/**
+ * Decode an error node's content into a display message. The backend serializes
+ * a resource error as `{"message": "..."}` (`ResourceError`); unwrap that to the
+ * human-readable message. Falls back to the raw string when the content is not
+ * that envelope (e.g. plain text, or an unexpected shape).
+ */
+function decodeErrorMessage(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw) as { message?: unknown };
+    if (typeof parsed?.message === "string") return parsed.message;
+  } catch {
+    // Not JSON — surface the raw content.
+  }
+  return raw;
+}
+
 type FieldMapOps = {
   /**
    * Type of fields to iterate over.
@@ -203,24 +219,34 @@ export class TreeNodeAccessor {
   }
 
   /**
-   * Like {@link getDataAsJson}, but returns `undefined` while the resource is
-   * still computing instead of throwing.
+   * Like {@link getDataAsJson}, but does not throw while the resource is still
+   * computing. Three states:
    *
-   * Prefer this in reactive output lambdas. A field that resolves before its
-   * resource is ready (routine on remote backends) makes {@link getDataAsJson}
-   * throw "Resource has no content." mid-calculation, surfacing a transient
-   * "Some outputs have errors" banner that clears once the resource finishes
-   * (MILAB-6318).
+   * - **Not ready** → returns `undefined` (loading).
+   * - **Errored** → throws the resource's error.
+   * - **Ready** → returns the parsed content.
    *
-   * A resource that has reached a terminal state (ready or error) but still
-   * carries no content is a genuine error and throws, matching
-   * {@link getDataAsJson}.
+   * Prefer this over {@link getDataAsJson} in reactive output lambdas: a field
+   * that resolves before its resource is ready (routine on remote backends)
+   * makes {@link getDataAsJson} throw "Resource has no content." mid-calculation,
+   * flashing a transient "Some outputs have errors" banner that clears when the
+   * resource finishes (MILAB-6318).
    */
   public getDataAsJsonOrUndefined<T>(): T | undefined {
-    // getIsReadyOrError() marks the computable unstable while not ready, which
-    // schedules recomputation once the resource finishes. Load-bearing, not a
-    // redundant guard over getDataAsJson — keep it.
+    // Not ready → undefined (loading). getIsReadyOrError() registers the
+    // readiness dependency, so the lambda re-runs once the resource finishes.
     if (!this.getIsReadyOrError()) return undefined;
+    // Errored → throw the actual error, decoded from the error node and tagged
+    // with the resolve path for debugging context. Beats getDataAsJson's
+    // generic "Resource has no content."
+    const error = this.getError();
+    if (error !== undefined) {
+      const raw = error.getDataAsString();
+      const message = raw === undefined ? "Resource computation failed." : decodeErrorMessage(raw);
+      const path = this.resolvePath.join(".");
+      throw new Error(path ? `${message} (at ${path})` : message);
+    }
+    // Ready → parse the content.
     return this.getDataAsJson<T>();
   }
 

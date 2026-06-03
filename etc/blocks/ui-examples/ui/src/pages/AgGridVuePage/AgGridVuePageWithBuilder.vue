@@ -45,7 +45,7 @@ const app = useApp();
 
 function generateData(): Row[] {
   return times(10, (i) => {
-    const importFileHandle = app.model.args.handles[i];
+    const importFileHandle = app.model.data.handles[i];
     const importProgress = importFileHandle
       ? app.model.outputs?.progresses?.[importFileHandle]
       : undefined;
@@ -193,7 +193,7 @@ const { gridOptions, gridApi } = useAgGridOptions<Row>(({ builder }) => {
       headerName: "File input",
       extensions: ["fastq.gz"],
       setImportFileHandle: (params) => {
-        app.model.args.handles[params.data.id] = params.newValue ?? undefined;
+        app.model.data.handles[params.data.id] = params.newValue ?? undefined;
       },
       resolveImportProgress: (cellData) => {
         return cellData.value?.importProgress;

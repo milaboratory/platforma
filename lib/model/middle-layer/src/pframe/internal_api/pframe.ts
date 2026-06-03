@@ -1,18 +1,21 @@
 import type { PFrameFactoryAPIV5 } from "./api_factory";
-import type { PFrameReadAPIV12, PFrameReadAPIV13 } from "./api_read";
+import type { PFrameReadAPIV13, PFrameReadAPIV14 } from "./api_read";
 import type { Logger } from "./common";
 import type { PFrameId } from "./common";
 
-/** Full PFrame surface — factory operations plus data-side reads. */
-export interface PFrameV14 extends PFrameFactoryAPIV5, PFrameReadAPIV12 {}
+/**
+ * Full PFrame surface — factory operations plus data-side reads. Exposes
+ * {@link PFrameReadAPIV13}, whose tables provide the `export` method.
+ */
+export interface PFrameV15 extends PFrameFactoryAPIV5, PFrameReadAPIV13 {}
 
 /**
  * Full PFrame surface — factory operations plus data-side reads.
  *
- * Identical to {@link PFrameV14} but exposes {@link PFrameReadAPIV13}, whose
- * tables add the `export` method.
+ * Identical to {@link PFrameV15} but exposes {@link PFrameReadAPIV14}, whose
+ * tables' `export` takes a column-index → header map.
  */
-export interface PFrameV15 extends PFrameFactoryAPIV5, PFrameReadAPIV13 {}
+export interface PFrameV16 extends PFrameFactoryAPIV5, PFrameReadAPIV14 {}
 
 export type PFrameOptionsV2 = {
   /** PFrame ID for logging purposes */
@@ -23,13 +26,16 @@ export type PFrameOptionsV2 = {
   logger?: Logger;
 };
 
-/** PFrame management functions exposed by the PFrame module. */
-export interface PFrameFactoryV5 {
+/**
+ * PFrame management functions exposed by the PFrame module. Creates
+ * {@link PFrameV15} instances, whose tables provide the `export` method.
+ */
+export interface PFrameFactoryV6 {
   /**
    * Create a new PFrame instance.
    * @warning Use concurrency limiting to avoid OOM crashes when multiple instances are simultaneously in use.
    */
-  createPFrame(options: PFrameOptionsV2): PFrameV14;
+  createPFrame(options: PFrameOptionsV2): PFrameV15;
 
   /**
    * Dump active allocations from all PFrames instances in pprof format.
@@ -42,17 +48,18 @@ export interface PFrameFactoryV5 {
 }
 
 /**
- * PFrame management functions exposed by the PFrame module.
+ * PFrame management functions exposed by the PFrame module. Creates
+ * {@link PFrameV16} instances, whose tables' `export` takes a
+ * column-index → header map.
  *
- * Identical to {@link PFrameFactoryV5} but creates {@link PFrameV15} instances,
- * whose tables add the `export` method.
+ * Identical to {@link PFrameFactoryV6} apart from the created PFrame surface.
  */
-export interface PFrameFactoryV6 {
+export interface PFrameFactoryV7 {
   /**
    * Create a new PFrame instance.
    * @warning Use concurrency limiting to avoid OOM crashes when multiple instances are simultaneously in use.
    */
-  createPFrame(options: PFrameOptionsV2): PFrameV15;
+  createPFrame(options: PFrameOptionsV2): PFrameV16;
 
   /**
    * Dump active allocations from all PFrames instances in pprof format.

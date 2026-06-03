@@ -43,6 +43,7 @@ import {
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { isAbortedError } from "./errors";
+import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
   timeout?: number;
@@ -580,7 +581,6 @@ export class LLPlClient implements WireClientProviderFactory {
           basic: { login: user, password },
           expiration: `${ttl}s`,
           requestedRole: role,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
       return notEmpty((await resp).data, "REST: empty response for login request").token;
@@ -617,10 +617,57 @@ export class LLPlClient implements WireClientProviderFactory {
           token: { token: Buffer.from(bytes).toString("base64") },
           expiration: `${ttl}s`,
           requestedRole: role,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
       return notEmpty((await resp).data, "REST: empty response for login request").token;
+    }
+  }
+
+  /** Login via SSO: forwards the raw IdP /token JSON body to the backend.
+   * Backend validates signature + nonce + audience and mints a Platforma JWT. */
+  public async loginSSO(tokenResponse: Uint8Array): Promise<string> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (
+        await cl.login({
+          credentials: {
+            oneofKind: "sso",
+            sso: { tokenResponse },
+          },
+        }).response
+      ).token;
+    } else {
+      const resp = cl.POST("/v1/auth/login", {
+        body: {
+          sso: { tokenResponse: Buffer.from(tokenResponse).toString("base64") },
+        } as any,
+      });
+      return notEmpty((await resp).data, "REST: empty response for SSO login request").token;
+    }
+  }
+
+  /** Request a one-time PKCE nonce + its expiry from the backend. The desktop is
+   * expected to place the nonce verbatim into the OIDC auth-request before
+   * redirecting to the IdP; the backend enforces the expiry on {@link loginSSO}. */
+  public async beginSSOLogin(): Promise<{ nonce: string; expiresAt: Date }> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      const resp = (await cl.beginSSOLogin({}).response).flow;
+      if (resp.oneofKind !== "publicPkce") {
+        throw new Error(`beginSSOLogin: unsupported flow ${resp.oneofKind}`);
+      }
+      const exp = notEmpty(resp.publicPkce.expiresAt, "beginSSOLogin: missing expiresAt");
+      return {
+        nonce: resp.publicPkce.nonce,
+        expiresAt: Timestamp.toDate(exp),
+      };
+    } else {
+      const wsResponse = notEmpty(
+        (await cl.POST("/v1/auth/sso/begin-login", { body: {} })).data,
+        "REST: empty response for beginSSOLogin request",
+      );
+      const pkce = notEmpty(wsResponse.publicPkce, "REST: missing publicPkce in beginSSOLogin");
+      return { nonce: pkce.nonce, expiresAt: new Date(pkce.expiresAt) };
     }
   }
 
@@ -662,7 +709,6 @@ export class LLPlClient implements WireClientProviderFactory {
       );
       resp = {
         ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         capabilities: (pingData as any).capabilities ?? [],
       };
     }
