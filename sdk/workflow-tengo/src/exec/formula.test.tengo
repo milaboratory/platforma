@@ -126,6 +126,17 @@ TestResolveLineCountCompressionAccepted := func() {
 	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.gz"] }, resolved)
 }
 
+TestResolveLineCountUppercaseExtensionAccepted := func() {
+	// Extension matching is case-insensitive: .FASTQ / .TXT are valid line-oriented
+	// formats (the line-counter binary reads them raw and counts '\n'). A lowercase
+	// compression suffix is still stripped first, so .FASTQ.gz is accepted too.
+	upper := f.resolveAst(f.lineCount("reads"), { "reads": ["READS.FASTQ"] }, ["READS.FASTQ"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["READS.FASTQ"] }, upper)
+
+	upperBase := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.FASTQ.gz"] }, ["reads.FASTQ.gz"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.FASTQ.gz"] }, upperBase)
+}
+
 TestResolveRecursesInPlace := func() {
 	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
 	allFiles := ["r1.fastq", "r2.fastq"]
