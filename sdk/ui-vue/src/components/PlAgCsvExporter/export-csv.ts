@@ -1,5 +1,6 @@
 import { type ColDef, type ColGroupDef, type GridApi } from "ag-grid-enterprise";
 import type {
+  FileFilter,
   PTableHandle,
   PTableColumnSpec,
   PFrameSpecDriver,
@@ -11,16 +12,57 @@ import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable";
 
-/** Options for the native CSV export path. */
+/** Options for the native table export. */
 export interface ExportOptions {
   tableHandle: PTableHandle;
-  format: "csv" | "tsv" | "parquet" | "xlsx";
   defaultFileName?: string;
 }
 
+/** Save-dialog file-type filters for the native `exportPTable` path. */
+const NATIVE_EXPORT_FILTERS: FileFilter[] = [
+  { name: "CSV", extensions: ["csv"] },
+  { name: "TSV", extensions: ["tsv"] },
+  { name: "Parquet", extensions: ["parquet"] },
+  { name: "Excel", extensions: ["xlsx"] },
+];
+
 /**
- * CSV export via the platforma desktop runtime. Prompts for a save destination
- * via the `Dialog` service, then writes the PTable to the chosen path.
+ * Save-dialog file-type filters for the `writePTableToFs` fallback. csv/tsv
+ * only, offered both plain and gzip-compressed — a trailing `.gz` in the
+ * chosen path selects gzip compression.
+ */
+const FALLBACK_EXPORT_FILTERS: FileFilter[] = [
+  { name: "CSV (gzip)", extensions: ["csv.gz"] },
+  { name: "CSV", extensions: ["csv"] },
+  { name: "TSV (gzip)", extensions: ["tsv.gz"] },
+  { name: "TSV", extensions: ["tsv"] },
+];
+
+/** Table format from a save path, ignoring a trailing `.gz`. e.g. `"t.csv.gz"` → `"csv"`. */
+function tableFormatFromPath(path: string): string {
+  const lower = path.toLowerCase();
+  const base = lower.endsWith(".gz") ? lower.slice(0, -3) : lower;
+  return base.slice(base.lastIndexOf(".") + 1);
+}
+
+/** True when `path` ends with one of the filters' extensions (e.g. `".csv"`). */
+function matchesFilterExtension(path: string, filters: FileFilter[]): boolean {
+  return filters.some(({ extensions }) => extensions.some((ext) => path.endsWith("." + ext)));
+}
+
+/**
+ * Table export via the platforma desktop runtime. Prompts for a save
+ * destination via the `Dialog` service — offering the available output formats
+ * as file-type filters so the user picks the format — then writes the PTable to
+ * the chosen path.
+ *
+ * Prefers the native `PFrame.exportPTable` when the runtime advertises it: the
+ * table handle is the *visible* one, so exporting the whole handle reproduces
+ * exactly the visible columns/rows, and the format (`csv`/`tsv`/`parquet`/
+ * `xlsx`) is taken from the chosen file extension. Falls back to streaming the
+ * visible columns via `PFrame.writePTableToFs` (`csv`/`tsv`, optionally
+ * gzip-compressed when the chosen path ends in `.gz`) on runtimes that do not
+ * advertise `exportPTable`.
  */
 export async function exportCsv(
   gridApi: GridApi,
@@ -38,42 +80,46 @@ export async function exportCsv(
 
   if (typeof pframe.exportPTable === "function") {
     const { canceled, path } = await dialog.showSaveDialog({
-      defaultFileName: `${baseFileName}.${nativeOptions.format}`,
+      defaultFileName: `${baseFileName}.csv`,
+      filters: NATIVE_EXPORT_FILTERS,
     });
-    if (canceled || isNil(path)) {
+    if (canceled || isNil(path) || !matchesFilterExtension(path, NATIVE_EXPORT_FILTERS)) {
       return undefined;
     }
 
     await pframe.exportPTable(nativeOptions.tableHandle, path);
     return undefined;
-  } else if (nativeOptions.format === "csv" || nativeOptions.format === "tsv") {
-    if (isNil(pframeSpec)) {
-      throw new Error("pframeSpec service is not available");
-    }
+  }
 
-    const specs = await pframe.getSpec(nativeOptions.tableHandle);
-    const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
-    if (isNil(columnIndices)) {
-      return undefined;
-    }
+  if (isNil(pframeSpec)) {
+    throw new Error("pframeSpec service is not available");
+  }
 
-    const { canceled, path } = await dialog.showSaveDialog({
-      defaultFileName: `${baseFileName}.${nativeOptions.format}.gz`,
-    });
-    if (canceled || isNil(path)) {
-      return undefined;
-    }
-
-    return pframe.writePTableToFs(nativeOptions.tableHandle, {
-      path,
-      format: nativeOptions.format,
-      columnIndices,
-      compression: { type: "gzip" },
-    });
-  } else {
-    // silently cancel save request
+  const { canceled, path } = await dialog.showSaveDialog({
+    defaultFileName: `${baseFileName}.csv.gz`,
+    filters: FALLBACK_EXPORT_FILTERS,
+  });
+  if (canceled || isNil(path) || !matchesFilterExtension(path, FALLBACK_EXPORT_FILTERS)) {
     return undefined;
   }
+
+  const format = tableFormatFromPath(path);
+  if (format !== "csv" && format !== "tsv") {
+    return undefined;
+  }
+
+  const specs = await pframe.getSpec(nativeOptions.tableHandle);
+  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
+  if (isNil(columnIndices)) {
+    return undefined;
+  }
+
+  return pframe.writePTableToFs(nativeOptions.tableHandle, {
+    path,
+    format,
+    columnIndices,
+    ...(path.toLowerCase().endsWith(".gz") && { compression: { type: "gzip" } }),
+  });
 }
 
 function formatTimestamp(d: Date): string {
