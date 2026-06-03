@@ -521,7 +521,6 @@ workflow := func() {
 			ignoreErrorsOpt := undefined
 			commentPrefixOpt := undefined
 			delimiterOpt := undefined
-			hasHeaderOpt := undefined
 
 			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
@@ -626,13 +625,6 @@ workflow := func() {
 				delimiterOpt = opts.delimiter
 			}
 
-			if !is_undefined(opts.hasHeader) {
-				if !is_bool(opts.hasHeader) {
-					ll.panic("'hasHeader' option must be a bool. Got: %T", opts.hasHeader)
-				}
-				hasHeaderOpt = opts.hasHeader
-			}
-
 			if !is_undefined(fileRef) {
 				ll.assert(
 					smart.isReference(fileRef),
@@ -706,15 +698,11 @@ workflow := func() {
 					step.commentPrefix = commentPrefixOpt
 				}
 
-				// Phase 3: explicit delimiter overrides the format-derived default.
+				// Explicit delimiter overrides the format-derived default. General
+				// read_csv option — independent of the resource-formula path, which
+				// counts lines via the line-counter binary, not PTabler.
 				if !is_undefined(delimiterOpt) {
 					step.delimiter = delimiterOpt
-				}
-
-				// Accepted for forward-compat; current PTabler ignores hasHeader
-				// (Polars defaults has_header=true), so this option has no effect yet.
-				if !is_undefined(hasHeaderOpt) {
-					step.hasHeader = hasHeaderOpt
 				}
 			}
 
