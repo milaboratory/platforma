@@ -111,6 +111,21 @@ evaluate = func(node, resolver) {
 	ll.panic("exec.formula.evaluate: unknown op %q", op)
 }
 
+// evaluateResource evaluates a formula destined for a resource quota (ram / cpu)
+// and asserts the result is usable: a positive integer. This catches formulas
+// that resolve to a bool (e.g. a top-level comparison like f.gt(...)) or to a
+// non-positive number (an f.sub that underflows, or a metric that floored to 0)
+// BEFORE the value reaches the quota — where it would otherwise become an opaque
+// "trueb" RAM string or a 0-core request and fail deep in the backend. `label`
+// ("ram" / "cpu") names the offending dimension in the error.
+evaluateResource := func(node, resolver, label) {
+	v := evaluate(node, resolver)
+	ll.assert(is_int(v) && v > 0,
+		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.clamp(...).",
+		label, v)
+	return v
+}
+
 // ---- builder-time resolution helpers ---------------------------------------
 
 // extensions lineCount (text row counting) can stream
@@ -188,6 +203,11 @@ referencedMetricFiles := func(resolvedNode) {
 }
 
 export {
+	// size: total bytes of the referenced input files (blob size; no pre-exec).
+	// lineCount: total NEWLINE characters across the referenced files — a file
+	//   with N newlines reports N, so a final line without a trailing newline is
+	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
+	//   only for line-oriented text formats (see _LINECOUNT_OK above).
 	size:      func(...args) { return _metric("size", args) },
 	lineCount: func(...args) { return _metric("lineCount", args) },
 
@@ -219,6 +239,7 @@ export {
 	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
 
 	evaluate:              evaluate,
+	evaluateResource:      evaluateResource,
 	resolveAst:            resolveAst,
 	referencedMetricFiles: referencedMetricFiles
 }

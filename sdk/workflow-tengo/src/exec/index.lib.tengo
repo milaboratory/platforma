@@ -473,6 +473,16 @@ builder := func() {
 		 * formula is skipped and the `{ fallback: ... }` value is used as a
 		 * static RAM request instead.
 		 *
+		 * The formula must evaluate to a positive integer number of bytes. A
+		 * non-positive or non-integer result (e.g. a top-level comparison, or an
+		 * f.sub that underflows) is rejected at run time — floor it with f.max /
+		 * f.clamp if a metric can be zero.
+		 *
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately.
+		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number | string } - static RAM used when the
 		 *        backend lacks getBlobSize support.
@@ -495,6 +505,15 @@ builder := func() {
 		 * Requires a backend with getBlobSize support. On older backends the
 		 * formula is skipped and the `{ fallback: ... }` value is used as a
 		 * static CPU request instead.
+		 *
+		 * The formula must evaluate to a positive integer number of cores. A
+		 * non-positive or non-integer result is rejected at run time — floor it
+		 * with f.max / f.clamp if a metric can be zero.
+		 *
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately.
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number } - static CPU used when the backend
