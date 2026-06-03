@@ -1,6 +1,6 @@
 import { uniqueId } from "@milaboratories/helpers";
 import { platforma } from "@milaboratories/milaboratories.ui-examples.model";
-import { animate, defineApp, makeEaseOut } from "@platforma-sdk/ui-vue";
+import { animate, defineAppV3, makeEaseOut } from "@platforma-sdk/ui-vue";
 import { computed, reactive, ref } from "vue";
 import AddSectionPage from "./pages/AddSectionPage.vue";
 import AdvancedFilterPage from "./pages/PlAdvancedFilterPage.vue";
@@ -39,7 +39,7 @@ import StatePage from "./pages/StatePage.vue";
 import TypographyPage from "./pages/TypographyPage.vue";
 import UseWatchFetchPage from "./pages/UseWatchFetchPage.vue";
 
-export const sdkPlugin = defineApp(
+export const sdkPlugin = defineAppV3(
   platforma,
   (app) => {
     // Additional data
@@ -51,7 +51,7 @@ export const sdkPlugin = defineApp(
       data.counter++;
     }
 
-    const argsAsJson = computed(() => JSON.stringify(app.snapshot.args));
+    const argsAsJson = computed(() => JSON.stringify(app.snapshot.blockStorage));
 
     const progressRef = ref<boolean | number>();
 
@@ -73,7 +73,7 @@ export const sdkPlugin = defineApp(
 
     function createSection(label: string) {
       const id = uniqueId();
-      app.model.ui.dynamicSections.push({
+      app.model.data.dynamicSections.push({
         id,
         label,
       });
