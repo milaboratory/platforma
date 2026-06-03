@@ -29,7 +29,7 @@ getResourceTypes := func(queueName) {
 		return result
 	}
 
-  //
+	//
 	// Fallback: existing logic for backward compatibility with older backends
 	//
 	runnerType := constants.RUNNER_EXECUTOR
