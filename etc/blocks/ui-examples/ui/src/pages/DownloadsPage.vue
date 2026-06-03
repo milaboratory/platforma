@@ -10,18 +10,18 @@ const downloadExampleFiles = {
     const data = {
       message: "Hello World",
       timestamp: new Date().toISOString(),
-      numbers: app.model.args.numbers,
+      numbers: app.model.data.numbers,
     };
     downloadContent([JSON.stringify(data, null, 2), "application/json"], "example-data.json");
   },
 
   downloadCSV: () => {
-    const csvContent = `Name,Value,Timestamp\nExample,${app.model.args.numbers.join(";")},${new Date().toISOString()}`;
+    const csvContent = `Name,Value,Timestamp\nExample,${app.model.data.numbers.join(";")},${new Date().toISOString()}`;
     downloadContent([csvContent, "text/csv"], "example-data.csv");
   },
 
   downloadText: () => {
-    const textContent = `Current numbers: ${app.model.args.numbers.join(", ")}\nGenerated at: ${new Date().toLocaleString()}`;
+    const textContent = `Current numbers: ${app.model.data.numbers.join(", ")}\nGenerated at: ${new Date().toLocaleString()}`;
     downloadContent([textContent, "text/plain"], "example-report.txt");
   },
 
@@ -38,7 +38,7 @@ const downloadExampleFiles = {
 
   downloadTypedArray: () => {
     // Create a typed array with sample data
-    const uint8Array = new Uint8Array(app.model.args.numbers.map((n) => n % 256));
+    const uint8Array = new Uint8Array(app.model.data.numbers.map((n) => n % 256));
     downloadContent([uint8Array, "application/octet-stream"], "typed-array.dat");
   },
 

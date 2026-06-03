@@ -10,30 +10,27 @@ import type {
 } from "@platforma-sdk/model";
 import {
   Annotation,
-  BlockModel,
+  BlockModelV3,
   createPlDataTableStateV2,
   createPlDataTableV2,
+  DataModelBuilder,
   PColumnName,
   stringifyJson,
   ValueType,
 } from "@platforma-sdk/model";
-import { z } from "zod";
 
-export const ImportFileHandleSchema = z
-  .string()
-  .optional()
-  .refine<ImportFileHandle | undefined>(
-    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
-  );
+/** Args that drive computation (workflow). Derived from the block data model. */
+export type BlockArgs = {
+  numbers: number[];
+  handles: (ImportFileHandle | undefined)[];
+};
 
-export const $BlockArgs = z.object({
-  numbers: z.array(z.coerce.number()),
-  handles: z.array(ImportFileHandleSchema),
-});
-
-export type BlockArgs = z.infer<typeof $BlockArgs>;
-
-export type UiState = {
+/**
+ * Full persistent block data model (v3). Merges the former block args with the
+ * former UI state — the v3 data model is the single source of persistent state,
+ * and {@link BlockArgs} is derived from it via `.args()`.
+ */
+export type BlockData = BlockArgs & {
   dataTableV2: {
     sourceId?: string;
     numRows: number;
@@ -49,26 +46,29 @@ export type UiState = {
   }[];
 };
 
-export const platforma = BlockModel.create("Heavy")
+const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
+  numbers: [1, 2, 3, 4],
+  handles: [],
+  dataTableV2: {
+    sourceId: "source_1",
+    numRows: 200,
+    state: createPlDataTableStateV2(),
+  },
+  dynamicSections: [],
+  datasets: [],
+}));
 
-  .withArgs<BlockArgs>({ numbers: [1, 2, 3, 4], handles: [] })
+export const platforma = BlockModelV3.create(dataModel)
 
-  .withUiState<UiState>({
-    dataTableV2: {
-      sourceId: "source_1",
-      numRows: 200,
-      state: createPlDataTableStateV2(),
-    },
-    dynamicSections: [],
-    datasets: [],
-  })
-
-  .argsValid((ctx) => {
-    if (ctx.args.numbers.length === 5) {
+  .args<BlockArgs>((data) => {
+    if (data.numbers.length === 5) {
       throw new Error("argsValid: test error");
     }
+    if (data.numbers.length === 0) {
+      throw new Error("Numbers are required");
+    }
 
-    return ctx.args.numbers.length > 0;
+    return { numbers: data.numbers, handles: data.handles };
   })
 
   .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
@@ -80,7 +80,7 @@ export const platforma = BlockModel.create("Heavy")
   })
 
   .output("ptV2Sheets", (ctx) => {
-    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
+    const rowCount = ctx.data.dataTableV2.numRows ?? 0;
     const sheets = [
       {
         axis: {
@@ -101,7 +101,7 @@ export const platforma = BlockModel.create("Heavy")
   })
 
   .outputWithStatus("ptV2", (ctx) => {
-    const rowCount = ctx.uiState.dataTableV2.numRows ?? 0;
+    const rowCount = ctx.data.dataTableV2.numRows ?? 0;
     const makePartitionId = (rowCount: number, i: number) => Math.floor((2 * i) / (rowCount + 1));
     const columns: PColumn<PColumnValues>[] = [
       {
@@ -307,11 +307,11 @@ export const platforma = BlockModel.create("Heavy")
         }),
       });
     }
-    return createPlDataTableV2(ctx, columns, ctx.uiState.dataTableV2.state);
+    return createPlDataTableV2(ctx, columns, ctx.data.dataTableV2.state);
   })
 
   .title((ctx) => {
-    if (ctx.args.numbers.length === 5) {
+    if (ctx.data.numbers.length === 5) {
       throw new Error("block title: test error");
     }
 
@@ -319,7 +319,7 @@ export const platforma = BlockModel.create("Heavy")
   })
 
   .sections((ctx) => {
-    const dynamicSections = (ctx.uiState.dynamicSections ?? []).map((it) => ({
+    const dynamicSections = (ctx.data.dynamicSections ?? []).map((it) => ({
       type: "link" as const,
       href: `/section?id=${it.id}` as const,
       label: it.label,
@@ -379,7 +379,7 @@ export const platforma = BlockModel.create("Heavy")
     ];
   })
 
-  .done(2); // api version 2
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;
