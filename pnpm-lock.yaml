@@ -22,14 +22,14 @@ catalogs:
       specifier: ~1.13.4
       version: 1.13.4
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.38
-      version: 1.1.38
+      specifier: 1.1.41
+      version: 1.1.41
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.1.38
-      version: 1.1.38
+      specifier: 1.1.41
+      version: 1.1.41
     '@milaboratories/pframes-rs-wasm':
-      specifier: 1.1.38
-      version: 1.1.38
+      specifier: 1.1.41
+      version: 1.1.41
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -46,8 +46,8 @@ catalogs:
       specifier: ^4.0.37
       version: 4.0.37
     '@platforma-open/milaboratories.runenv-python-3':
-      specifier: 1.8.8
-      version: 1.8.8
+      specifier: 1.10.0
+      version: 1.10.0
     '@platforma-open/milaboratories.software-conda-empty':
       specifier: ^1.0.1
       version: 1.0.1
@@ -1865,7 +1865,7 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.38(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.41(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
@@ -1985,10 +1985,10 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.38(encoding@0.1.13)
+        version: 1.1.41(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.38(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.41(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -2468,10 +2468,10 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.38(encoding@0.1.13)
+        version: 1.1.41(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.38(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.41(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -2778,7 +2778,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.8.8
+        version: 1.10.0
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
@@ -2787,7 +2787,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.8.8
+        version: 1.10.0
       '@platforma-sdk/package-builder':
         specifier: 'workspace:'
         version: link:../../tools/package-builder
@@ -3142,7 +3142,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.38
+        version: 1.1.41
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -3793,7 +3793,7 @@ importers:
         version: link:../ts-configs
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.8.8
+        version: 1.10.0
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.3(vitest@4.1.3)
@@ -5052,31 +5052,31 @@ packages:
     resolution: {integrity: sha512-zOkD4aWNbembwI+AsPTz7nmWC1VPA4rwGBc+Nd5jPpKVh7rCtZwQrlOP5mVqRVMKIAjb1nU8kzzCGfqNPqfJjA==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.38':
-    resolution: {integrity: sha512-dAzaGazWbN2pevT1yv1o9Vmlmjhf7rZrSP8qyejlqCa40iwNxf6DRBqB9s2DSkWmuT3PpC3d0pJRWry04rAKeA==}
+  '@milaboratories/pframes-rs-node@1.1.41':
+    resolution: {integrity: sha512-gC9LaukKQhFlaY2ciV/ZTyiKqhIYHYaj4PerFWRc8Xnv339ABFLZooh+Q8aI8ylhHE+4klvFL0Eidg32k0jokw==}
 
-  '@milaboratories/pframes-rs-serv@1.1.38':
-    resolution: {integrity: sha512-xWEoG8Zo/SWVKEKBOSYAM1uDFmrkDJCnfP5QEsmnL5fdE/c+u3BGva++lvKdBOcr4l9yPFBUt6hF2H3s8ZfyEA==}
+  '@milaboratories/pframes-rs-serv@1.1.41':
+    resolution: {integrity: sha512-OnSL43+SJDOCgzHgQIhawS6nxe7ZfM3gOefHFJhe3t6L42bWJFF+8rUUPWbF+DybMXQuDBIOU8v4iwLJGsaQ5Q==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasip2@1.1.38':
-    resolution: {integrity: sha512-m3WynMDBJkRmkDUvqDNfAfveYkuRQh+xxFG9by2uPyiZyt5BSo25KsuC7FxxbE9mRbu4kw/r4jxkMkkSXN2KFw==}
+  '@milaboratories/pframes-rs-wasip2@1.1.41':
+    resolution: {integrity: sha512-90sD8WotapOKK/pjmMOsPHnlJ3qMfXbqJwdHfPyUEKHJLsrEYNatGdvHbRzCfPy6Sxl/yE1Bx1nzzEwcaIPyrw==}
 
-  '@milaboratories/pframes-rs-wasm@1.1.38':
-    resolution: {integrity: sha512-3ZfQkiDnRJHScNxI/RJ/R9ztTqEb8ur67fcTDSRH9MgbfxBwT9z9rgk6zfmFn9df4xr2iSRHOFL8vT4sYz4g5w==}
+  '@milaboratories/pframes-rs-wasm@1.1.41':
+    resolution: {integrity: sha512-pl0jL1nS5hM9AHwTUuX3pf9W0EfbcydlZTSuDdKy6MOnrs1nnEUzY6pS+p+bnxKofhHM/LYwmbDKZiX/XCKoew==}
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.9
-      '@milaboratories/pl-model-common': 1.42.0
-      '@milaboratories/pl-model-middle-layer': 1.24.0
+      '@milaboratories/pl-model-common': 1.43.0
+      '@milaboratories/pl-model-middle-layer': 1.27.0
 
   '@milaboratories/pl-error-like@1.12.10':
     resolution: {integrity: sha512-iHmnLG5lxJqcymUmEL8onCDGEADk1S/5RNACQ5yfTCNcCkUc+7hYrDHQpFmWXPPGC9sG+NTBxt4wr5m8UsLm2g==}
 
-  '@milaboratories/pl-model-common@1.42.0':
-    resolution: {integrity: sha512-ttX9OcQ9kgEhgyXZNkC7+vtsCaxjz+uNwmU8d2LlA56cpWgWV9WONi91w8nCRGFf9WboSgUVVaFj2XxiT9QHXQ==}
+  '@milaboratories/pl-model-common@1.43.0':
+    resolution: {integrity: sha512-iXDytbsIy6fd2zRFqDbZceuxDpBmGH9wS2UDHpT3PAxmnneBBddW4/VILWw4HLzzXhvXYOz3FpGl/CNc76pTJQ==}
 
-  '@milaboratories/pl-model-middle-layer@1.24.0':
-    resolution: {integrity: sha512-kOpEEAG+SqgKHFG0bwDqF4oowq+ArhgGCFpqDq97hZnnJdYVP2JQW8srgpMbT28r9rwgLWficD+UntBTJN/tVQ==}
+  '@milaboratories/pl-model-middle-layer@1.27.0':
+    resolution: {integrity: sha512-nDMBkj7P6JG+LfqeoR4nhmQiA77cAtvXSMvsV5ijsgZT8+A7Am+JXiwgHsii7vC9VvfSV80SUrv0MCvFrwR9qQ==}
 
   '@milaboratories/software-pframes-conv@2.2.9':
     resolution: {integrity: sha512-w+GaazDSqEgqYUJ38I5lgOsggyZJpcBVGvDMHIX1pyTdvPjWAOWu3mLkScaYuWeitFfh8aAedf5vrLqXtnX8bw==}
@@ -5535,8 +5535,14 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7':
     resolution: {integrity: sha512-vJiU68NKgyupW5meeWB/pZZ8y5wewPV6/EcRQ2BwUhSyikDQrn83XzBlc/nTu9UmbYmBqQTrt59x0qKtcC0ILw==}
 
+  '@platforma-open/milaboratories.runenv-python-3.12.10-clustering@0.1.1':
+    resolution: {integrity: sha512-hnr1tf0dwoqTyjtUVZcwQm13O0V8kz4jCUz+yvOgdvWMrbg4o/h1KbghtM8HivI+tRoowc629QJWdy0bc7inQA==}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.4':
     resolution: {integrity: sha512-Yo47x/rm/FF8x/7q2o7TXdAS7pEWqBd/+aHnQzgNAF0DYljzln99mq1L4lMrQx08SJBGrh84ZtgQl/weTzWSIw==}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-humanness@0.2.0':
+    resolution: {integrity: sha512-YjKFPXe+caABLre5oZTwAxFHvVCEb5K8rVTEIUBhFYMtfLipVIix0LXi6LxWoOYdhoEeKgIc4zlWFDKs1xaEoQ==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-parapred@1.1.0':
     resolution: {integrity: sha512-nEM4eEj7pFT6yi+P5028qtgK5v9A9H0XdVHDtrKX7xW5Jipc1RIliOEU3gzaH0E7UAzPFQGSqShlwakRcGXwdQ==}
@@ -5550,11 +5556,14 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-scientific-slim@1.1.0':
     resolution: {integrity: sha512-CSLEjBYUdHDf66QAfgQ9jo+MoW63Wr0ygdIncJE2siO2jMUzYCqgCNd8bMjaMfZa3YBC9bHca3Cjxbp4VYc54A==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.13':
-    resolution: {integrity: sha512-tcBFvA8WopRz82OlDAduJYqpdaU3zquF3sj5bViPQNmuS1W6pzyO7cWBE2fkRtw2wfADnsGVxx5pJkkpn8BZsA==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.1.0':
+    resolution: {integrity: sha512-Z9OIHbWfq0OsTUvmJIK6HBm8qLIli5xxHlGsiNx012YU69snwgi2edioMjUQ1vr5eWPA/9+Xs8Ih9z+aWbmUpQ==}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.8.8':
-    resolution: {integrity: sha512-ku4W8q6q/etWO5zxp6vN5E8+Az9B0sxFoHhp536dOoBLx+sJTfjXAECYI3M97LrZkErk1bHTZCN+GU16lmMtug==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.14':
+    resolution: {integrity: sha512-HPpVvYGURPGUcxHgbDFRuL3jpYcDP+vPhaZD6zd+9/1RObkQtYkHR5UOKQYefC+gwMeyIiLhK+UYukgvvpYEnQ==}
+
+  '@platforma-open/milaboratories.runenv-python-3@1.10.0':
+    resolution: {integrity: sha512-v1NlxvEjYRdn+Bq2cr26rXj+etDtFx0EO6txpB4Q3Ts009S8dgJHrYZ9vrp+7e9u7f/EHn/X22r2ibaCNPql3g==}
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
@@ -11407,31 +11416,31 @@ snapshots:
 
   '@milaboratories/helpers@1.14.2': {}
 
-  '@milaboratories/pframes-rs-node@1.1.38(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.1.41(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.14.1
-      '@milaboratories/pframes-rs-serv': 1.1.38
-      '@milaboratories/pl-model-common': 1.42.0
+      '@milaboratories/pframes-rs-serv': 1.1.41
+      '@milaboratories/pl-model-common': 1.43.0
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.38':
+  '@milaboratories/pframes-rs-serv@1.1.41':
     dependencies:
       '@milaboratories/helpers': 1.14.1
-      '@milaboratories/pl-model-common': 1.42.0
-      '@milaboratories/pl-model-middle-layer': 1.24.0
+      '@milaboratories/pl-model-common': 1.43.0
+      '@milaboratories/pl-model-middle-layer': 1.27.0
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.1.38': {}
+  '@milaboratories/pframes-rs-wasip2@1.1.41': {}
 
-  '@milaboratories/pframes-rs-wasm@1.1.38(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.41(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pframes-rs-wasip2': 1.1.38
+      '@milaboratories/pframes-rs-wasip2': 1.1.41
       '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
@@ -11440,17 +11449,17 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.25.76
 
-  '@milaboratories/pl-model-common@1.42.0':
+  '@milaboratories/pl-model-common@1.43.0':
     dependencies:
       '@milaboratories/helpers': 1.14.2
       '@milaboratories/pl-error-like': 1.12.10
       canonicalize: 2.1.0
       zod: 3.25.76
 
-  '@milaboratories/pl-model-middle-layer@1.24.0':
+  '@milaboratories/pl-model-middle-layer@1.27.0':
     dependencies:
       '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-model-common': 1.42.0
+      '@milaboratories/pl-model-common': 1.43.0
       es-toolkit: 1.39.10
       utility-types: 3.11.0
       zod: 3.25.76
@@ -11847,7 +11856,11 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7': {}
 
+  '@platforma-open/milaboratories.runenv-python-3.12.10-clustering@0.1.1': {}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.4': {}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-humanness@0.2.0': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-parapred@1.1.0': {}
 
@@ -11857,17 +11870,22 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-scientific-slim@1.1.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.13': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.1.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.8.8':
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.14': {}
+
+  '@platforma-open/milaboratories.runenv-python-3@1.10.0':
     dependencies:
-      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.13
+      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.14
       '@platforma-open/milaboratories.runenv-python-3.12.10-atls': 1.2.7
+      '@platforma-open/milaboratories.runenv-python-3.12.10-clustering': 0.1.1
       '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad': 1.1.4
+      '@platforma-open/milaboratories.runenv-python-3.12.10-humanness': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-parapred': 1.1.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-rapids': 1.6.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda': 1.3.5
       '@platforma-open/milaboratories.runenv-python-3.12.10-scientific-slim': 1.1.0
+      '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda': 0.1.0
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1': {}
 
