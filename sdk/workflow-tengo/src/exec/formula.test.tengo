@@ -130,3 +130,57 @@ TestResolveRecursesInPlace := func() {
 	test.isEqual(["r1.fastq", "r2.fastq"], resolved.b.files)
 }
 
+// Note on panic-path coverage: the formula's rejection contracts (lineCount on
+// an unsupported extension, a tag with no files and no { default }, division by
+// zero, _wrap on a non-node) all go through ll.assert / ll.panic, which are
+// terminal in Tengo (no recover / try-catch — see pframes/table-builder.test.tengo).
+// They cannot be exercised from a unit test and are instead verified by reading.
+// The tests below cover the non-panic behavior those same code paths produce.
+
+TestResolveRecursesIntoClampAndIf := func() {
+	// resolveAst must recurse through the non-binary node shapes — clamp
+	// (value/lo/hi) and if (cond/then/else) — not just the binary a/b shape of
+	// add/mul. It resolves embedded metrics while copying the other fields through.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+
+	resolvedClamp := f.resolveAst(f.clamp(f.size("reads"), f.gib(1), f.gib(4)), tagMap, allFiles)
+	test.isEqual("clamp", resolvedClamp.op)
+	test.isEqual("metricSum", resolvedClamp.value.op)            // size("reads") resolved in `value`
+	test.isEqual(["r1.fastq", "r2.fastq"], resolvedClamp.value.files)
+	test.isEqual(1073741824, resolvedClamp.lo.value)             // 1 GiB lo bound preserved
+	test.isEqual(4 * 1073741824, resolvedClamp.hi.value)         // 4 GiB hi bound preserved
+
+	resolvedIf := f.resolveAst(f["if"](f.gt(f.lineCount("reads"), 100), f.gib(16), f.gib(8)), tagMap, allFiles)
+	test.isEqual("if", resolvedIf.op)
+	test.isEqual("metricSum", resolvedIf.cond.a.op)              // lineCount("reads") inside the gt cond
+	test.isEqual("lineCount", resolvedIf.cond.a.metric)
+	test.isEqual(16 * 1073741824, resolvedIf.then.value)
+	test.isEqual(8 * 1073741824, resolvedIf["else"].value)
+}
+
+TestReferencedMetricFilesTraversesClampAndIf := func() {
+	// lineCount files nested inside clamp / if must still be discovered (they
+	// require a pre-exec); size must still be excluded (computed inline via
+	// getBlobSize, no pre-exec needed). Exercises the walk through both shapes.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	formula := f["if"](
+		f.gt(f.size("reads"), 1000),
+		f.clamp(f.lineCount("reads"), f.mib(512), f.gib(2)),
+		f.gib(1))
+	resolved := f.resolveAst(formula, tagMap, allFiles)
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)        // found inside clamp inside if
+	test.isTrue(is_undefined(refs.size), "size must not require pre-exec")
+}
+
+TestResolveDefaultCarriedWhenTagHasFiles := func() {
+	// When a tag HAS files, the metric resolves to metricSum and any { default }
+	// is carried through onto the metricSum node. Distinct from the empty-tag
+	// path (TestResolveDefaultSubstitution), which substitutes a const instead.
+	tagMap := { "reads": ["r1.fastq"] }
+	resolved := f.resolveAst(f.size("reads", { default: 7 }), tagMap, ["r1.fastq"])
+	test.isEqual({ op: "metricSum", metric: "size", files: ["r1.fastq"], default: 7 }, resolved)
+}
+
