@@ -5,6 +5,8 @@
 
 self := import(":tpl.light")
 
+ll := import(":ll")
+text := import("text")
 validation := import(":validation")
 
 smart := import(":smart")
@@ -19,6 +21,7 @@ maps := import(":maps")
 runcmd := import(":exec.runcmd")
 feats := import(":feats")
 R := import(":exec.R")
+execFormula := import(":exec.formula")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
@@ -39,6 +42,14 @@ EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
 
 // awaits the whole input map to become ready
 self.awaitState("ResourceReady")
+
+// When a line-count metric map is attached (resource-formula evaluation), wait
+// for every per-file count content resource inside it to become ready before
+// the body reads their bytes. Guarded so it's only awaited when present, so
+// formula-free exec runs are unaffected.
+if !is_undefined(self.rawMetaInputs()["__metric_lineCount__"]) {
+	self.awaitState("__metric_lineCount__", { wildcard: "*" }, "ResourceReady")
+}
 
 self.validateInputs({
 	filesToAdd: { any: validation.resource() },
@@ -88,7 +99,15 @@ self.validateInputs({
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string"
-	}
+	},
+
+	// Optional resource-formula meta inputs. __memFormula__/__cpuFormula__ are
+	// resolved ASTs (JSON resources, auto-unmarshaled to tengo maps);
+	// __metric_lineCount__ is a map resource (fileName -> content resource with
+	// that file's line count, auto-unmarshaled to a tengo map of resource refs).
+	"__memFormula__,?": "any",
+	"__cpuFormula__,?": "any",
+	"__metric_lineCount__,?": { any: validation.resource() }
 })
 
 self.body(func(inputs) {
@@ -102,7 +121,49 @@ self.body(func(inputs) {
 
 	wdBuilder := workdir.builder()
 
-	quota := inputs.quota
+	// Clone so we don't mutate the shared inputs view; resource-formula
+	// evaluation may override ram/cpu below before quota is consumed.
+	quota := maps.clone(inputs.quota)
+
+	// Resource-formula evaluation. Meta inputs arrive already unmarshaled in the
+	// inputs map (JSON resources -> tengo maps, the map resource -> a tengo map
+	// of fileName -> content resource ref), mirroring how `quota` itself arrives
+	// as `inputs.quota`. We evaluate the resolved ASTs and override the
+	// corresponding quota dimension per-formula.
+	memFormula := inputs["__memFormula__"]
+	cpuFormula := inputs["__cpuFormula__"]
+	if !is_undefined(memFormula) || !is_undefined(cpuFormula) {
+		fileRefs := inputs.filesToAdd
+		lineCountMap := inputs["__metric_lineCount__"]
+		resolver := {
+			// size: sum of blob sizes (bytes) of the referenced input files.
+			size: func(files, def) {
+				total := 0
+				for fn in files {
+					total += ll.getBlobSize(fileRefs[fn].id)
+				}
+				return total
+			},
+			// lineCount: sum of the awaited per-file line counts. Each map entry
+			// is a content resource holding a base-10 int (no trailing newline).
+			lineCount: func(files, def) {
+				ll.assert(!is_undefined(lineCountMap), "exec-impl: a lineCount formula was evaluated but the __metric_lineCount__ metric map is missing")
+				total := 0
+				for fn in files {
+					data := lineCountMap[fn].getData()
+					total += int(text.trim(string(data), "\n \r\t"))
+				}
+				return total
+			}
+		}
+		if !is_undefined(memFormula) {
+			quota.ram = string(execFormula.evaluate(memFormula, resolver)) + "b"
+		}
+		if !is_undefined(cpuFormula) {
+			quota.cpu = execFormula.evaluate(cpuFormula, resolver)
+		}
+	}
+
 	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
 	// Names whose fill-rule should land 0o600 (writable) instead of the
