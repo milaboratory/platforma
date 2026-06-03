@@ -41,118 +41,118 @@ async function libraryFileHandle(driverKit: {
 }
 
 /**
- * size formula: memFormula(f.add(f.gib(1), f.size("reads"))) = 1 GiB + S bytes.
- * cpuFormula(f.add(2, 1)) = 3 cores.
- * Proves a `size` metric flows from the input blob into the allocated RAM, and
- * cpu reflects the formula (not a queue default).
+ * File-based cases — rendered via exec.run.formula_limits with a `mode` input.
+ * Each `mode` selects a mem/cpu formula inside the template; we read back the
+ * allocated quota the backend echoes and assert it equals the formula's output.
+ *
+ * Coverage spread across the modes:
+ *   size      — a size metric flows from the input blob into allocated RAM.
+ *   lineCount — the line-counter sub-exec runs and its count flows into RAM.
+ *   multi     — two files under one tag: size sums both blobs and lineCount sums
+ *               both counts (metric map has 2 entries → exercises the aggregate
+ *               map + the impl's wildcard await), and divCeil rounds up.
  */
-tplTest.concurrent(
-  "formula-size: ram = 1GiB + fileSize, cpu = 3",
-  async ({ helper, expect, driverKit }) => {
-    const handle = await libraryFileHandle(driverKit);
-
-    const result = await helper.renderTemplate(
-      false,
-      "exec.run.formula_limits",
-      ["limits"],
-      (tx) => ({
-        file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
-        mode: tx.createValue(Pl.JsonObject, JSON.stringify("size")),
-      }),
-    );
-
-    const limits = await result
-      .computeOutput("limits", (a) => a?.getDataAsString())
-      .awaitStableValue();
-
-    expect(limits).toBeDefined();
-    const [ramStr, cpuStr] = limits!.split(",");
-    const ram = Number(ramStr);
-    const cpu = Number(cpuStr);
-
-    const expectedRam = 1 * GIB + FIXTURE_BYTES;
-    // eslint-disable-next-line no-console
-    console.log(
-      `[formula-size] ram=${ram} cpu=${cpu} | expected ram=${expectedRam} (1GiB + ${FIXTURE_BYTES}) cpu=3`,
-    );
-
-    expect(ram).eq(expectedRam);
-    expect(cpu).eq(3);
+const fileCases = [
+  {
+    mode: "size",
+    desc: "ram = 1GiB + fileSize, cpu = 3",
+    expectedRam: 1 * GIB + FIXTURE_BYTES,
+    expectedCpu: 3,
   },
-  120000,
-);
+  {
+    mode: "lineCount",
+    desc: "ram = 512MiB + lineCount*1024, cpu = 2",
+    expectedRam: 512 * MIB + FIXTURE_NEWLINES * 1024,
+    expectedCpu: 2,
+  },
+  {
+    mode: "multi",
+    // cpu = divCeil(2*lineCount, 50); ceiling of 84/50 = 2 (truncating div = 1).
+    // Robust to a ±1 newline-vs-line ambiguity in the counter: divCeil(86,50)=2 too.
+    desc: "ram = 1GiB + 2*fileSize, cpu = divCeil(2*lineCount, 50) (multi-file aggregation)",
+    expectedRam: 1 * GIB + 2 * FIXTURE_BYTES,
+    expectedCpu: Math.ceil((2 * FIXTURE_NEWLINES) / 50),
+  },
+] as const;
+
+for (const tc of fileCases) {
+  tplTest.concurrent(
+    `formula-${tc.mode}: ${tc.desc}`,
+    async ({ helper, expect, driverKit }) => {
+      const handle = await libraryFileHandle(driverKit);
+
+      const result = await helper.renderTemplate(
+        false,
+        "exec.run.formula_limits",
+        ["limits"],
+        (tx) => ({
+          file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
+          mode: tx.createValue(Pl.JsonObject, JSON.stringify(tc.mode)),
+        }),
+      );
+
+      const limits = await result
+        .computeOutput("limits", (a) => a?.getDataAsString())
+        .awaitStableValue();
+
+      expect(limits).toBeDefined();
+      const [ramStr, cpuStr] = limits!.split(",");
+      // eslint-disable-next-line no-console
+      console.log(
+        `[formula-${tc.mode}] ram=${ramStr} cpu=${cpuStr} | expected ram=${tc.expectedRam} cpu=${tc.expectedCpu}`,
+      );
+
+      expect(Number(ramStr)).eq(tc.expectedRam);
+      expect(Number(cpuStr)).eq(tc.expectedCpu);
+    },
+    120000,
+  );
+}
 
 /**
- * lineCount formula: memFormula(f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024)))
- * = 512 MiB + L * 1024 bytes. cpuFormula(f.add(1, 1)) = 2.
- * Proves the line-counter sub-exec fetched the software, ran, and produced a
- * line count (newline count = 42) that flowed into the allocated RAM.
+ * Constant-only cases — no file, no metric. Each renders its own template (the
+ * formula is baked into the template, not selected by a `mode` input) and proves
+ * a different slice of the evaluator wires through the ephemeral impl:
+ *   formula_const — the constant-arithmetic plumbing (builder → pure template →
+ *                   ephemeral impl eval → quota override), independent of files.
+ *   formula_ops   — non-arithmetic ops (clamp, comparison, conditional) evaluate
+ *                   against the real evaluator, not just the unit-test resolver.
  */
-tplTest.concurrent(
-  "formula-lineCount: ram = 512MiB + lineCount*1024, cpu = 2",
-  async ({ helper, expect, driverKit }) => {
-    const handle = await libraryFileHandle(driverKit);
-
-    const result = await helper.renderTemplate(
-      false,
-      "exec.run.formula_limits",
-      ["limits"],
-      (tx) => ({
-        file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
-        mode: tx.createValue(Pl.JsonObject, JSON.stringify("lineCount")),
-      }),
-    );
-
-    const limits = await result
-      .computeOutput("limits", (a) => a?.getDataAsString())
-      .awaitStableValue();
-
-    expect(limits).toBeDefined();
-    const [ramStr, cpuStr] = limits!.split(",");
-    const ram = Number(ramStr);
-    const cpu = Number(cpuStr);
-
-    const expectedRam = 512 * MIB + FIXTURE_NEWLINES * 1024;
-    const observedLineCount = (ram - 512 * MIB) / 1024;
-    // eslint-disable-next-line no-console
-    console.log(
-      `[formula-lineCount] ram=${ram} cpu=${cpu} | expected ram=${expectedRam} lineCount=${FIXTURE_NEWLINES} observed=${observedLineCount}`,
-    );
-
-    expect(ram).eq(expectedRam);
-    expect(cpu).eq(2);
+const constCases = [
+  {
+    template: "exec.run.formula_const",
+    desc: "ram = 2GiB, cpu = 3 (no file, no metric)",
+    expectedRam: 2 * GIB,
+    expectedCpu: 3,
   },
-  120000,
-);
-
-/**
- * Plumbing-only: a CONSTANT formula with no file and no metric. Confirms the
- * formula meta-input path (builder -> pure template -> ephemeral impl eval ->
- * quota override) end-to-end, independent of file import / metric resolution.
- */
-tplTest.concurrent(
-  "formula-const: ram = 2GiB, cpu = 3 (no file, no metric)",
-  async ({ helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      "exec.run.formula_const",
-      ["limits"],
-      (_tx) => ({}),
-    );
-
-    const limits = await result
-      .computeOutput("limits", (a) => a?.getDataAsString())
-      .awaitStableValue();
-
-    expect(limits).toBeDefined();
-    const [ramStr, cpuStr] = limits!.split(",");
-    // eslint-disable-next-line no-console
-    console.log(
-      `[formula-const] ram=${Number(ramStr)} cpu=${Number(cpuStr)} | expected ram=${2 * GIB} cpu=3`,
-    );
-
-    expect(Number(ramStr)).eq(2 * GIB);
-    expect(Number(cpuStr)).eq(3);
+  {
+    template: "exec.run.formula_ops",
+    desc: "ram = 4GiB (clamp caps 8GiB→4GiB), cpu = 2 (if/gt selects)",
+    expectedRam: 4 * GIB,
+    expectedCpu: 2,
   },
-  60000,
-);
+] as const;
+
+for (const tc of constCases) {
+  tplTest.concurrent(
+    `${tc.template}: ${tc.desc}`,
+    async ({ helper, expect }) => {
+      const result = await helper.renderTemplate(false, tc.template, ["limits"], (_tx) => ({}));
+
+      const limits = await result
+        .computeOutput("limits", (a) => a?.getDataAsString())
+        .awaitStableValue();
+
+      expect(limits).toBeDefined();
+      const [ramStr, cpuStr] = limits!.split(",");
+      // eslint-disable-next-line no-console
+      console.log(
+        `[${tc.template}] ram=${ramStr} cpu=${cpuStr} | expected ram=${tc.expectedRam} cpu=${tc.expectedCpu}`,
+      );
+
+      expect(Number(ramStr)).eq(tc.expectedRam);
+      expect(Number(cpuStr)).eq(tc.expectedCpu);
+    },
+    60000,
+  );
+}
