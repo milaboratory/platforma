@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.78.4
+
+### Patch Changes
+
+- Updated dependencies [b0c2b5f]
+  - @milaboratories/pl-model-common@1.45.0
+  - @milaboratories/pl-model-middle-layer@1.29.0
+  - @milaboratories/ptabler-expression-js@1.2.28
+
 ## 1.78.2
 
 ### Patch Changes
