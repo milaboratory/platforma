@@ -515,15 +515,20 @@ test("exportPTable writes a CSV with derived headers", async ({ expect }) => {
 
   using pTable = driver.createPTableV2({ query: { type: "column", column } });
 
-  const filePath = join(fs.mkdtempSync(join(os.tmpdir(), "pf-export-")), "table.csv");
+  const tempDir = fs.mkdtempSync(join(os.tmpdir(), "pf-export-"));
+  try {
+    const filePath = join(tempDir, "table.csv");
 
-  await uiDriver.exportPTable(pTable.key, filePath);
+    await uiDriver.exportPTable(pTable.key, filePath);
 
-  const content = fs.readFileSync(filePath, "utf-8");
-  const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
 
-  // Header row uses labels derived from the column/axis specs.
-  expect(lines[0]).toBe("Sample,Score");
-  // Sorted ascending by the axis by default.
-  expect(lines.slice(1)).toEqual(["a,10", "b,20", "c,30"]);
+    // Header row uses labels derived from the column/axis specs.
+    expect(lines[0]).toBe("Sample,Score");
+    // Sorted ascending by the axis by default.
+    expect(lines.slice(1)).toEqual(["a,10", "b,20", "c,30"]);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });

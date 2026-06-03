@@ -363,16 +363,16 @@ export class AbstractPFrameDriver<
     const headers = def.tableSpec.map(columnLabel);
 
     return await this.tableConcurrencyLimiter.run(async () => {
-      // xlsx is capped at 1,000,000 rows per sheet (below Excel's hard 1,048,576
-      // limit).
+      // Cap total rows (data + header) per xlsx sheet below Excel's hard limit
+      // of 1,048,576; the header row counts toward the cap.
       if (path.toLowerCase().endsWith(".xlsx")) {
-        const xlsxMaxRowsPerSheet = 1_000_000;
+        const XLSX_MAX_ROWS_PER_SHEET = 1_000_000;
         const shape = await pTable.getShape({ signal: combinedSignal });
-        if (shape.rows > xlsxMaxRowsPerSheet) {
+        if (shape.rows + 1 > XLSX_MAX_ROWS_PER_SHEET) {
           const error = new PFrameDriverError(`exportPTable failed`);
           error.cause = new Error(
-            `xlsx export rejected: ${shape.rows} rows exceed the per-sheet limit of ` +
-              `${xlsxMaxRowsPerSheet} rows (including the header row)`,
+            `xlsx export rejected: ${shape.rows} data rows plus a header exceed the per-sheet ` +
+              `limit of ${XLSX_MAX_ROWS_PER_SHEET} rows`,
           );
           throw error;
         }
