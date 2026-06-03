@@ -519,7 +519,7 @@ test("exportPTable writes a CSV with derived headers", async ({ expect }) => {
   try {
     const filePath = join(tempDir, "table.csv");
 
-    await uiDriver.exportPTable(pTable.key, filePath);
+    await uiDriver.exportPTable(pTable.key, { path: filePath, columnIndices: [0, 1] });
 
     const content = fs.readFileSync(filePath, "utf-8");
     const lines = content.split(/\r?\n/).filter((l) => l.length > 0);

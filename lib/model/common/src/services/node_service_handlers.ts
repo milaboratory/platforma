@@ -29,7 +29,7 @@ export function createNodeServiceHandlers(driverKit: DriverKit): NodeServiceHand
       getSpec: (handle) => pFrameDriver.getSpec(handle),
       getData: (handle, columnIndices, range) => pFrameDriver.getData(handle, columnIndices, range),
       writePTableToFs: (handle, options) => pFrameDriver.writePTableToFs(handle, options),
-      exportPTable: (handle, path) => pFrameDriver.exportPTable(handle, path),
+      exportPTable: (handle, options) => pFrameDriver.exportPTable(handle, options),
     },
   };
 }
