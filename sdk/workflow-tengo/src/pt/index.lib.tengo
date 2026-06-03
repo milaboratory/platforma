@@ -711,8 +711,8 @@ workflow := func() {
 					step.delimiter = delimiterOpt
 				}
 
-				// Accepted for forward-compat; current PTabler ignores hasHeader (Polars
-				// defaults has_header=true). lineCount compensates with +1.
+				// Accepted for forward-compat; current PTabler ignores hasHeader
+				// (Polars defaults has_header=true), so this option has no effect yet.
 				if !is_undefined(hasHeaderOpt) {
 					step.hasHeader = hasHeaderOpt
 				}
