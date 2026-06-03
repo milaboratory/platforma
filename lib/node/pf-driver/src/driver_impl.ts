@@ -54,6 +54,7 @@ import type {
   AbstractInternalPFrameDriver,
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
 } from "./driver_decl";
 import { logPFrames } from "./logging";
 import {
@@ -343,9 +344,13 @@ export class AbstractPFrameDriver<
 
   public async exportPTable(
     handle: PTableHandle,
-    path: string,
+    options: ExportPTableOptions,
     signal?: AbortSignal,
   ): Promise<void> {
+    const { path, columnIndices } = options;
+
+    void columnIndices; // TODO
+
     this.logger("info", `[ExportPTable] ENTER (handle = ${handle}, path = ${path})`);
     const startTime = performance.now();
 

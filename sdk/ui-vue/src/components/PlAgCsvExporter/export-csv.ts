@@ -75,6 +75,15 @@ export async function exportCsv(
   if (isNil(pframe)) {
     throw new Error("pframe service is not available");
   }
+  if (isNil(pframeSpec)) {
+    throw new Error("pframeSpec service is not available");
+  }
+
+  const specs = await pframe.getSpec(nativeOptions.tableHandle);
+  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
+  if (isNil(columnIndices)) {
+    return undefined;
+  }
 
   const baseFileName = nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`;
 
@@ -87,12 +96,8 @@ export async function exportCsv(
       return undefined;
     }
 
-    await pframe.exportPTable(nativeOptions.tableHandle, path);
+    await pframe.exportPTable(nativeOptions.tableHandle, { path, columnIndices });
     return undefined;
-  }
-
-  if (isNil(pframeSpec)) {
-    throw new Error("pframeSpec service is not available");
   }
 
   const { canceled, path } = await dialog.showSaveDialog({
@@ -105,12 +110,6 @@ export async function exportCsv(
 
   const format = tableFormatFromPath(path);
   if (format !== "csv" && format !== "tsv") {
-    return undefined;
-  }
-
-  const specs = await pframe.getSpec(nativeOptions.tableHandle);
-  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
-  if (isNil(columnIndices)) {
     return undefined;
   }
 
