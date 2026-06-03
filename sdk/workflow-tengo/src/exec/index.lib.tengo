@@ -20,9 +20,23 @@ canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
 execFormula := import(":exec.formula")
-metricProvider := import(":exec.metric-provider")
 units := import(":units")
 feats := import(":feats")
+
+// line-counter: small Go binary from the software-small-binaries catalogue.
+// CLI: `line-counter --input <file> --output <file>`; writes the exact line
+// count as a base-10 integer with no trailing newline. Run via the exec
+// builder() factory below (recursive function call within :exec — no import,
+// no cycle, no DI) to compute f.lineCount() metrics inline.
+lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:line-counter")
+
+// Forward declarations. The bodies are assigned after builder() (below) so
+// they can call the builder() factory recursively; declaring the names here
+// lets builder().run() reference them at compile time (Tengo resolves
+// module-level identifiers lexically — a closure cannot see a name declared
+// textually after the enclosing function).
+_lineCountResource := undefined
+_aggregateLineCountMap := undefined
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -1169,9 +1183,10 @@ builder := func() {
 			// hasBlobSize fallback gate. The static quota below stays populated;
 			// the pure exec template overrides ram/cpu per-dimension when the
 			// corresponding formula meta input is present. lineCount metrics are
-			// computed via the INJECTED provider (`:exec.metric-provider`) — we
-			// must never statically import `:exec.metrics` here (it imports `:pt`,
-			// and `:pt` imports `:exec`: that cycle crashes the test dep-walker).
+			// computed INLINE by running the `line-counter` Go binary via the
+			// builder() factory itself (see _lineCountResource). That is a plain
+			// recursive function call within :exec — no import of :pt or any
+			// metrics module — so there is no import cycle.
 			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst)
 			resolvedMem := undefined
 			resolvedCpu := undefined
@@ -1210,12 +1225,11 @@ builder := func() {
 					}
 
 					if len(neededLineCount) > 0 {
-						ll.assert(metricProvider.isSet(),
-							"exec.builder: lineCount resource formulas require importing the metrics provider. Add `import(\":exec.metrics\")` to your workflow to enable f.lineCount().")
-						provider := metricProvider.get()
 						perFile := {}
-						for fn, _ in neededLineCount { perFile[fn] = provider.lineCountResource(filesToAdd[fn], fn) }
-						lineCountMapResource = provider.aggregateMetricMap(perFile)
+						for fn, _ in neededLineCount {
+							perFile[fn] = _lineCountResource(fn, filesToAdd[fn])
+						}
+						lineCountMapResource = _aggregateLineCountMap(perFile)
 					}
 				}
 			}
@@ -1404,6 +1418,37 @@ builder := func() {
 	})
 
 	return self
+}
+
+// _lineCountResource runs the line-counter binary on one file and returns a
+// reference to the content resource holding that file's exact line count.
+// Streaming binary => fixed small memory; light queue; 30-day input cache.
+// Defined after builder() so it can call the factory recursively (a plain
+// function call within :exec — no import, no cycle, no DI).
+_lineCountResource = func(fileName, fileRef) {
+	countOut := "linecount.txt"
+	res := builder().
+		software(lineCounterSoft).
+		addFile(fileName, fileRef).
+		arg("--input").arg(fileName).
+		arg("--output").arg(countOut).
+		saveFileContent(countOut).
+		inLightQueue().
+		cacheInputs(30 * 24 * times.hour).
+		mem("256MiB").
+		cpu(1).
+		run()
+	return res.getFileContent(countOut)
+}
+
+// _aggregateLineCountMap collects per-file line-count content references into a
+// single keyed map resource (fileName -> count content ref).
+_aggregateLineCountMap = func(perFile) {
+	b := smart.mapBuilder()
+	for fileName, ref in perFile {
+		b.add(fileName, ref)
+	}
+	return b.build()
 }
 
 export ll.toStrict({
