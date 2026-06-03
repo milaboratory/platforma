@@ -137,6 +137,18 @@ TestResolveLineCountUppercaseExtensionAccepted := func() {
 	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.FASTQ.gz"] }, upperBase)
 }
 
+TestResolveLineCountUppercaseCompressionAccepted := func() {
+	// Compression suffix matching is case-insensitive too: .GZ / .Zst strip just
+	// like .gz / .zst, leaving a line-oriented base extension. The line-counter
+	// binary likewise lowercases the suffix before decompressing, so the count is
+	// correct (small-binaries case-insensitive release).
+	gz := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.fastq.GZ"] }, ["reads.fastq.GZ"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.fastq.GZ"] }, gz)
+
+	zst := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.fasta.Zst"] }, ["reads.fasta.Zst"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.fasta.Zst"] }, zst)
+}
+
 TestResolveRecursesInPlace := func() {
 	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
 	allFiles := ["r1.fastq", "r2.fastq"]

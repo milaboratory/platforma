@@ -135,9 +135,14 @@ _COMPRESSION_EXT := { "gz": "gzip", "bz2": "bzip2", "zst": "zstd" }
 _baseAndCompression := func(fileName) {
 	parts := text.split(fileName, ".")
 	compression := "none"
-	if len(parts) >= 2 && !is_undefined(_COMPRESSION_EXT[parts[len(parts)-1]]) {
-		compression = _COMPRESSION_EXT[parts[len(parts)-1]]
-		parts = parts[0:len(parts)-1]
+	// Compression suffix matched case-insensitively (mirrors the line-counter
+	// binary, which lowercases the suffix before inferring compression).
+	if len(parts) >= 2 {
+		lastLower := text.to_lower(parts[len(parts)-1])
+		if !is_undefined(_COMPRESSION_EXT[lastLower]) {
+			compression = _COMPRESSION_EXT[lastLower]
+			parts = parts[0:len(parts)-1]
+		}
 	}
 	ext := len(parts) >= 2 ? parts[len(parts)-1] : ""
 	return { ext: ext, compression: compression }
@@ -146,12 +151,11 @@ _baseAndCompression := func(fileName) {
 _assertMetricCompatible := func(metric, fileName) {
 	if metric == "lineCount" {
 		info := _baseAndCompression(fileName)
-		// Case-insensitive extension match so .TXT / .FASTQ are accepted. The
-		// compression suffix in _baseAndCompression stays case-sensitive on
-		// purpose: the line-counter binary only decompresses lowercase
-		// .gz/.bz2/.zst, so e.g. "reads.fastq.GZ" is (correctly) rejected here
-		// rather than handed to the binary, which would miscount the still-
-		// compressed bytes.
+		// Case-insensitive extension match so .TXT / .FASTQ are accepted.
+		// Compression suffixes are matched case-insensitively too (in
+		// _baseAndCompression), mirroring the line-counter binary which lowercases
+		// the suffix before decompressing — so "reads.fastq.GZ" is accepted and
+		// counted correctly.
 		ll.assert(!is_undefined(_LINECOUNT_OK[text.to_lower(info.ext)]),
 			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, info.ext)
 	}
