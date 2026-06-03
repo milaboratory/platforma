@@ -1,7 +1,6 @@
 import { type ColDef, type ColGroupDef, type GridApi } from "ag-grid-enterprise";
 import type {
   PTableHandle,
-  PTableDownloadFormat,
   PTableColumnSpec,
   PFrameSpecDriver,
   WritePTableToFsResult,
@@ -15,14 +14,13 @@ import { PlAgDataTableRowNumberColId } from "../PlAgDataTable";
 /** Options for the native CSV export path. */
 export interface ExportOptions {
   tableHandle: PTableHandle;
-  format: PTableDownloadFormat;
+  format: "csv" | "tsv" | "parquet" | "xlsx";
   defaultFileName?: string;
 }
 
 /**
- * CSV export via the platforma desktop runtime. Prompts for a save
- * destination via the `Dialog` service, then streams the PTable to the
- * chosen path via `PFrame.writePTableToFs`.
+ * CSV export via the platforma desktop runtime. Prompts for a save destination
+ * via the `Dialog` service, then writes the PTable to the chosen path.
  */
 export async function exportCsv(
   gridApi: GridApi,
@@ -35,31 +33,47 @@ export async function exportCsv(
   if (isNil(pframe)) {
     throw new Error("pframe service is not available");
   }
-  if (isNil(pframeSpec)) {
-    throw new Error("pframeSpec service is not available");
-  }
 
-  const specs = await pframe.getSpec(nativeOptions.tableHandle);
-  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
-  if (isNil(columnIndices)) {
+  const baseFileName = nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`;
+
+  if (typeof pframe.exportPTable === "function") {
+    const { canceled, path } = await dialog.showSaveDialog({
+      defaultFileName: `${baseFileName}.${nativeOptions.format}`,
+    });
+    if (canceled || isNil(path)) {
+      return undefined;
+    }
+
+    await pframe.exportPTable(nativeOptions.tableHandle, path);
+    return undefined;
+  } else if (nativeOptions.format === "csv" || nativeOptions.format === "tsv") {
+    if (isNil(pframeSpec)) {
+      throw new Error("pframeSpec service is not available");
+    }
+
+    const specs = await pframe.getSpec(nativeOptions.tableHandle);
+    const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
+    if (isNil(columnIndices)) {
+      return undefined;
+    }
+
+    const { canceled, path } = await dialog.showSaveDialog({
+      defaultFileName: `${baseFileName}.${nativeOptions.format}.gz`,
+    });
+    if (canceled || isNil(path)) {
+      return undefined;
+    }
+
+    return pframe.writePTableToFs(nativeOptions.tableHandle, {
+      path,
+      format: nativeOptions.format,
+      columnIndices,
+      compression: { type: "gzip" },
+    });
+  } else {
+    // silently cancel save request
     return undefined;
   }
-
-  const { canceled, path } = await dialog.showSaveDialog({
-    defaultFileName:
-      (nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`) +
-      `.${nativeOptions.format}.gz`,
-  });
-  if (canceled || isNil(path)) {
-    return undefined;
-  }
-
-  return pframe.writePTableToFs(nativeOptions.tableHandle, {
-    path,
-    format: nativeOptions.format,
-    columnIndices,
-    compression: { type: "gzip" },
-  });
 }
 
 function formatTimestamp(d: Date): string {
