@@ -8,6 +8,7 @@ import type { AddParameterToAllMethods } from "./type_util";
 import type {
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
   PTableShape,
   PTableVector,
   TableRange,
@@ -103,6 +104,20 @@ export interface PFrameDriver {
     handle: PTableHandle,
     options: WritePTableToFsOptions,
   ): Promise<WritePTableToFsResult>;
+
+  /**
+   * Export the table to a file. The output format is selected from the file
+   * extension of `options.path` (`csv`, `tsv`, `parquet`, or `xlsx`).
+   *
+   * `options.columnIndices` selects the columns to export (output order). Column
+   * headers are derived on the driver side from each field's label annotation
+   * (falling back to its spec name), so the caller supplies only the path and
+   * the columns.
+   *
+   * For `xlsx` the driver rejects tables whose row count would exceed the
+   * 1,000,000-row per-sheet limit (below Excel's hard cap of 1,048,576).
+   */
+  exportPTable(handle: PTableHandle, options: ExportPTableOptions): Promise<void>;
 }
 
 //
@@ -117,4 +132,9 @@ type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriver
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<_T extends never>() {}
 
-assert<TypeEqualityGuard<Omit<PFrameDriver, "writePTableToFs">, ExpectedPFrameDriverType>>();
+assert<
+  TypeEqualityGuard<
+    Omit<PFrameDriver, "writePTableToFs" | "exportPTable">,
+    ExpectedPFrameDriverType
+  >
+>();

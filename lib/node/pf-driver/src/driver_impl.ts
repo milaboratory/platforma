@@ -49,11 +49,12 @@ import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import * as zlib from "node:zlib";
-import { streamPTableRows } from "./csv_writer";
+import { columnLabel, streamPTableRows } from "./csv_writer";
 import type {
   AbstractInternalPFrameDriver,
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
 } from "./driver_decl";
 import { logPFrames } from "./logging";
 import {
@@ -338,6 +339,62 @@ export class AbstractPFrameDriver<
       }
 
       return { path: options.path, rowsWritten, bytesWritten };
+    });
+  }
+
+  public async exportPTable(
+    handle: PTableHandle,
+    options: ExportPTableOptions,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const { path, columnIndices } = options;
+
+    void columnIndices; // TODO
+
+    this.logger("info", `[ExportPTable] ENTER (handle = ${handle}, path = ${path})`);
+    const startTime = performance.now();
+
+    const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
+    const pTable = await pTablePromise;
+
+    const combinedSignal = AbortSignal.any(
+      [signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
+    );
+
+    // Headers mirror the CSV/TSV path (axes first, then data columns): the
+    // label annotation when present, otherwise the spec name.
+    const headers = def.tableSpec.map(columnLabel);
+
+    return await this.tableConcurrencyLimiter.run(async () => {
+      // Cap data rows per xlsx sheet below Excel's hard limit of 1,048,576.
+      if (path.toLowerCase().endsWith(".xlsx")) {
+        const XLSX_MAX_ROWS_PER_SHEET = 1_000_000;
+        const shape = await pTable.getShape({ signal: combinedSignal });
+        if (shape.rows > XLSX_MAX_ROWS_PER_SHEET) {
+          const error = new PFrameDriverError(`exportPTable failed`);
+          error.cause = new Error(
+            `xlsx export rejected: ${shape.rows} rows exceed the per-sheet ` +
+              `limit of ${XLSX_MAX_ROWS_PER_SHEET} rows`,
+          );
+          throw error;
+        }
+      }
+
+      await pTable.export(path, headers, { signal: combinedSignal });
+
+      const overallSize = await tableGuard.resource.cacheSize;
+      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
+
+      if (logPFrames()) {
+        const durationMs = Math.round(performance.now() - startTime);
+        this.logger(
+          "info",
+          `[ExportPTable] complete (handle = ${handle}, path = ${path}), ` +
+            `duration = ${durationMs}ms`,
+        );
+      }
     });
   }
 

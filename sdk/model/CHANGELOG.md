@@ -1,5 +1,29 @@
 # @platforma-sdk/model
 
+## 1.78.4
+
+### Patch Changes
+
+- Updated dependencies [b0c2b5f]
+  - @milaboratories/pl-model-common@1.45.0
+  - @milaboratories/pl-model-middle-layer@1.29.0
+  - @milaboratories/ptabler-expression-js@1.2.28
+
+## 1.78.2
+
+### Patch Changes
+
+- Updated dependencies [fbff717]
+  - @milaboratories/pl-model-common@1.44.0
+  - @milaboratories/pl-model-middle-layer@1.28.0
+  - @milaboratories/ptabler-expression-js@1.2.27
+
+## 1.78.1
+
+### Patch Changes
+
+- 9650c2b: MILAB-6318: on error, `getDataAsJsonOrUndefined` now throws the resource's error message (unwrapped from the backend's `{"message": ...}` envelope, tagged with the resolve path) instead of `getDataAsJson`'s generic "Resource has no content." Not-ready returns `undefined` (loading); ready returns the parsed value.
+
 ## 1.78.0
 
 ### Minor Changes

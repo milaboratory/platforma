@@ -1,5 +1,25 @@
 # @milaboratories/pl-client
 
+## 3.11.1
+
+### Patch Changes
+
+- Updated dependencies [b0c2b5f]
+  - @milaboratories/pl-model-common@1.45.0
+
+## 3.11.0
+
+### Minor Changes
+
+- e61785b: Add SSO login surface to `UnauthenticatedPlClient`: `ssoConfig()` projects the first advertised `SSOAuthMethod` from `authMethodsSync`, `beginSSOLogin()` requests a one-time PKCE nonce, and `loginSSO({ tokenResponse })` exchanges the IdP `/token` response for a Platforma JWT. New exported types: `SSOAuthMethod`, `SSOLoginAttempt`, `SSOFlowType`. Mirrors the spec in `text/work/projects/sso-and-access-control/parameterization.md`.
+
+## 3.10.2
+
+### Patch Changes
+
+- Updated dependencies [fbff717]
+  - @milaboratories/pl-model-common@1.44.0
+
 ## 3.10.1
 
 ### Patch Changes

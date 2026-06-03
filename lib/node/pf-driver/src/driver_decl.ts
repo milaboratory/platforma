@@ -16,12 +16,14 @@ import type {
   UniqueValuesResponse,
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
 } from "@milaboratories/pl-model-common";
 import type { PoolEntry } from "@milaboratories/helpers";
 
 export type {
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
   PTableDownloadFormat,
 } from "@milaboratories/pl-model-common";
 
@@ -89,4 +91,16 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
     handle: PTableHandle,
     options: WritePTableToFsOptions,
   ): Promise<WritePTableToFsResult>;
+
+  /**
+   * Export the table to a file, selecting the format from the extension of
+   * `options.path` (`csv`/`tsv`/`parquet`/`xlsx`). `options.columnIndices`
+   * selects the columns to export (output order); headers are derived from
+   * each field's label annotation (falling back to the spec name).
+   */
+  exportPTable(
+    handle: PTableHandle,
+    options: ExportPTableOptions,
+    signal?: AbortSignal,
+  ): Promise<void>;
 }

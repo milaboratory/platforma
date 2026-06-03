@@ -17,10 +17,10 @@ function positiveNumberRule(v: string): string | undefined {
 
 const numbers = computed({
   get() {
-    return app.model.args.numbers.join(",");
+    return app.model.data.numbers.join(",");
   },
   set(v) {
-    app.model.args.numbers = v
+    app.model.data.numbers = v
       .split(",")
       .filter((s) => s !== "")
       .map((s) => {
@@ -41,12 +41,12 @@ const numbers = computed({
       {{ app.error }}
     </PlAlert>
     <fieldset>
-      <legend>Args snapshot (app.snapshot.args)</legend>
-      {{ app.snapshot.args }}
+      <legend>Block storage snapshot (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
     <fieldset>
-      <legend>Args (model) (app.model.args)</legend>
-      {{ app.model.args }}
+      <legend>Args (model) (app.model.data)</legend>
+      {{ app.model.data }}
     </fieldset>
     <PlAlert label="Outputs" type="info" monospace pre>
       {{ app.model.outputs }}
