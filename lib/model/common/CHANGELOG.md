@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-common
 
+## 1.44.0
+
+### Minor Changes
+
+- fbff717: Switch the PFrames addon surface to the `PFrameFactoryV6`/`PFrameV15`/`PTableV10` interface (`@milaboratories/pframes-rs-*` bumped to `1.1.41`) and drop the superseded `PFrameFactoryV5`/`PFrameV14`/`PFrameReadAPIV12`/`PTableV9` declarations.
+
+  Add `PFrameDriver.exportPTable(handle, path)` to the driver surface and wire it through the service bridge. The method is a placeholder that always rejects with "not implemented" — the native export implementation will be added separately.
+
 ## 1.43.0
 
 ### Minor Changes
