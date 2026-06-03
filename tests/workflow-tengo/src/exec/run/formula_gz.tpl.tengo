@@ -1,0 +1,44 @@
+/**
+ * End-to-end check for case-insensitive COMPRESSED input handling.
+ *
+ * The input is a gzipped fixture, added under an UPPERCASE ".GZ" name. Two
+ * things must line up for the count to be right: the SDK must strip the
+ * uppercase compression suffix to accept lineCount (formula.lib case-insensitive
+ * handling), and the line-counter binary must DECOMPRESS it before counting
+ * (>= 1.1.1; software-small-binaries >= 2.1.1). A pre-1.1.1 binary reads the
+ * gzip bytes raw and miscounts — so this test fails unless the fixed binary is
+ * wired through end to end.
+ *
+ * The ",gz" arg suffix keeps this exec CID-distinct from the other formula
+ * templates (formula meta inputs are CID-transparent).
+ *
+ * memFormula = 512 MiB + lineCount("reads")*1024 ; cpuFormula = 1 + 1 = 2.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	inputFile := file.importFile(inputs.file).file
+
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},gz").
+		addFile("reads.fastq.GZ", inputFile, { tag: "reads" }).
+		memFormula(f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024))).
+		cpuFormula(f.add(1, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})

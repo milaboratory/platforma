@@ -25,18 +25,29 @@ const FIXTURE_NAME = "maybe_the_number_of_lines_is_the_answer.txt";
 const FIXTURE_BYTES = 327;
 const FIXTURE_NEWLINES = 42;
 
-async function libraryFileHandle(driverKit: {
-  lsDriver: {
-    getStorageList: () => Promise<{ name: string; handle: unknown }[]>;
-    listFiles: (h: unknown, p: string) => Promise<{ entries: { name: string; handle: unknown }[] }>;
-  };
-}) {
+// Gzipped fixture (decompresses to 5 newlines) for the uppercase-compressed
+// lineCount path. Added under an UPPERCASE ".GZ" name in formula_gz.tpl.tengo.
+const GZ_FIXTURE_NAME = "formula_gz_5lines.fastq.gz";
+const GZ_FIXTURE_LINES = 5;
+
+async function libraryFileHandle(
+  driverKit: {
+    lsDriver: {
+      getStorageList: () => Promise<{ name: string; handle: unknown }[]>;
+      listFiles: (
+        h: unknown,
+        p: string,
+      ) => Promise<{ entries: { name: string; handle: unknown }[] }>;
+    };
+  },
+  name = FIXTURE_NAME,
+) {
   const storages = await driverKit.lsDriver.getStorageList();
   const library = storages.find((s) => s.name === env.libraryStorage);
   if (!library) throw new Error(`library storage "${env.libraryStorage}" not found`);
   const files = await driverKit.lsDriver.listFiles(library.handle, "");
-  const ourFile = files.entries.find((f) => f.name === FIXTURE_NAME);
-  if (!ourFile) throw new Error(`fixture ${FIXTURE_NAME} not found in library storage`);
+  const ourFile = files.entries.find((f) => f.name === name);
+  if (!ourFile) throw new Error(`fixture ${name} not found in library storage`);
   return ourFile.handle;
 }
 
@@ -156,3 +167,39 @@ for (const tc of constCases) {
     60000,
   );
 }
+
+/**
+ * Uppercase-compressed input, end-to-end. The fixture is gzipped and added under
+ * an UPPERCASE ".GZ" name (see formula_gz.tpl.tengo). Passing proves two things
+ * line up: the SDK strips the uppercase compression suffix to accept lineCount,
+ * AND the wired line-counter binary (>= 1.1.1, via software-small-binaries
+ * >= 2.1.1) decompresses before counting. A pre-1.1.1 binary reads the gzip
+ * bytes raw and returns a wrong (tiny) count — so this guards the dependency
+ * bump, not just the SDK code.
+ */
+tplTest.concurrent(
+  "formula-gz: UPPERCASE .GZ input decompressed and line-counted, ram = 512MiB + 5*1024, cpu = 2",
+  async ({ helper, expect, driverKit }) => {
+    const handle = await libraryFileHandle(driverKit, GZ_FIXTURE_NAME);
+
+    const result = await helper.renderTemplate(false, "exec.run.formula_gz", ["limits"], (tx) => ({
+      file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
+    }));
+
+    const limits = await result
+      .computeOutput("limits", (a) => a?.getDataAsString())
+      .awaitStableValue();
+
+    expect(limits).toBeDefined();
+    const [ramStr, cpuStr] = limits!.split(",");
+    const expectedRam = 512 * MIB + GZ_FIXTURE_LINES * 1024;
+    // eslint-disable-next-line no-console
+    console.log(
+      `[formula-gz] ram=${ramStr} cpu=${cpuStr} | expected ram=${expectedRam} (512MiB + ${GZ_FIXTURE_LINES}*1024) cpu=2`,
+    );
+
+    expect(Number(ramStr)).eq(expectedRam);
+    expect(Number(cpuStr)).eq(2);
+  },
+  120000,
+);
