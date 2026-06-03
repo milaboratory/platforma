@@ -1213,14 +1213,14 @@ builder := func() {
 
 			if hasFormula {
 				if !feats.hasBlobSize {
-					if !is_undefined(memFormulaAst) {
-						ll.assert(!is_undefined(memFormulaFallback), "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on memFormula or upgrade the backend.")
-						if is_undefined(ramRequest) { ramRequest = memFormulaFallback }
-					}
-					if !is_undefined(cpuFormulaAst) {
-						ll.assert(!is_undefined(cpuFormulaFallback), "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on cpuFormula or upgrade the backend.")
-						if is_undefined(cpuRequest) { cpuRequest = cpuFormulaFallback }
-					}
+					// Backend can't evaluate formulas (no getBlobSize). Fall back to
+					// the per-dimension { fallback } values, or fail with a clear
+					// error if a formula has none. Pure decision, unit-tested in
+					// exec.formula (applyFormulaFallback).
+					fb := execFormula.applyFormulaFallback(memFormulaAst, memFormulaFallback, cpuFormulaAst, cpuFormulaFallback, ramRequest, cpuRequest)
+					ll.assert(is_undefined(fb.err), fb.err)
+					ramRequest = fb.ram
+					cpuRequest = fb.cpu
 					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
 				} else {
 					tagMap := {}
@@ -1269,9 +1269,9 @@ builder := func() {
 			// CID-transparent meta inputs (service fields): resolved formula ASTs
 			// and the line-count metric map. hasBlobSize implies service-field
 			// support, so these never affect the exec dedup CID.
-			if !is_undefined(resolvedMem) { metaExecInputs["__memFormula__"] = smart.createJsonResource(resolvedMem) }
-			if !is_undefined(resolvedCpu) { metaExecInputs["__cpuFormula__"] = smart.createJsonResource(resolvedCpu) }
-			if !is_undefined(lineCountMapResource) { metaExecInputs["__metric_lineCount__"] = lineCountMapResource }
+			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
+			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
+			if !is_undefined(lineCountMapResource) { metaExecInputs[execConstants.META_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's

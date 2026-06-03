@@ -68,7 +68,7 @@ evaluate = func(node, resolver) {
 	if op == "metricSum" {
 		fn := resolver[node.metric]
 		ll.assert(!is_undefined(fn), "exec.formula.evaluate: no resolver for metric %q", node.metric)
-		return fn(node.files, node.default)
+		return fn(node.files)
 	}
 
 	if op == "add" { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
@@ -173,9 +173,11 @@ resolveAst = func(node, tagMap, allFiles) {
 			return { op: "const", value: node.default }
 		}
 		for fn in files { _assertMetricCompatible(node.metric, fn) }
-		out := { op: "metricSum", metric: node.metric, files: files }
-		if !is_undefined(node.default) { out.default = node.default }
-		return out
+		// A metricSum always has >= 1 file (the empty-tag case became a const
+		// above), and the resolver computes the metric from those files — so a
+		// carried { default } would be dead data. default is intentionally NOT
+		// placed on the metricSum; it only drives the empty-tag const substitution.
+		return { op: "metricSum", metric: node.metric, files: files }
 	}
 	out := {}
 	for k, v in node {
@@ -210,6 +212,33 @@ referencedMetricFiles := func(resolvedNode) {
 	}
 	walk(resolvedNode)
 	return acc
+}
+
+// applyFormulaFallback resolves the static ram/cpu requests to use when the
+// backend lacks getBlobSize support — formulas cannot be evaluated, so each
+// dimension that HAS a formula needs a { fallback } (else an error), and the
+// fallback applies only when no static .mem()/.cpu() was already set (static
+// wins). Pure (hasBlobSize is decided by the caller), so the !hasBlobSize gate
+// is unit-testable here; the caller asserts `err` is undefined and applies the
+// returned ram/cpu. Returns { ram, cpu, err } (err is a message string or
+// undefined). Field is `err`, not `error` — `error` is a reserved word in Tengo.
+applyFormulaFallback := func(memAst, memFallback, cpuAst, cpuFallback, ram, cpu) {
+	res := { ram: ram, cpu: cpu, err: undefined }
+	if !is_undefined(memAst) {
+		if is_undefined(memFallback) {
+			res.err = "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on memFormula or upgrade the backend."
+			return res
+		}
+		if is_undefined(res.ram) { res.ram = memFallback }
+	}
+	if !is_undefined(cpuAst) {
+		if is_undefined(cpuFallback) {
+			res.err = "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on cpuFormula or upgrade the backend."
+			return res
+		}
+		if is_undefined(res.cpu) { res.cpu = cpuFallback }
+	}
+	return res
 }
 
 export {
@@ -251,5 +280,6 @@ export {
 	evaluate:              evaluate,
 	evaluateResource:      evaluateResource,
 	resolveAst:            resolveAst,
-	referencedMetricFiles: referencedMetricFiles
+	referencedMetricFiles: referencedMetricFiles,
+	applyFormulaFallback:  applyFormulaFallback
 }
