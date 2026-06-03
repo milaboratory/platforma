@@ -47,7 +47,7 @@ self.awaitState("ResourceReady")
 // for every per-file count content resource inside it to become ready before
 // the body reads their bytes. Guarded so it's only awaited when present, so
 // formula-free exec runs are unaffected.
-if !is_undefined(self.rawMetaInputs()["__metric_lineCount__"]) {
+if !is_undefined(self.rawInputs()["__metric_lineCount__"]) {
 	self.awaitState("__metric_lineCount__", { wildcard: "*" }, "ResourceReady")
 }
 
@@ -107,7 +107,9 @@ self.validateInputs({
 	// that file's line count, auto-unmarshaled to a tengo map of resource refs).
 	"__memFormula__,?": "any",
 	"__cpuFormula__,?": "any",
-	"__metric_lineCount__,?": { any: validation.resource() }
+	// Map of fileName -> field referencing that file's line-count content
+	// resource. Entries are field refs (not bare resources), so accept "any".
+	"__metric_lineCount__,?": "any"
 })
 
 self.body(func(inputs) {
@@ -150,6 +152,8 @@ self.body(func(inputs) {
 				ll.assert(!is_undefined(lineCountMap), "exec-impl: a lineCount formula was evaluated but the __metric_lineCount__ metric map is missing")
 				total := 0
 				for fn in files {
+					// As a regular input, each map entry auto-unmarshals to a
+					// resolved content-resource handle; read its bytes directly.
 					data := lineCountMap[fn].getData()
 					total += int(text.trim(string(data), "\n \r\t"))
 				}
