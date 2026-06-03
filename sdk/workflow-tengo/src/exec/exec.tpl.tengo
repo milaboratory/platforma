@@ -87,7 +87,9 @@ self.validateInputs({
 	// (fileName -> content resource with that file's line count).
 	"__memFormula__,?": "any",
 	"__cpuFormula__,?": "any",
-	"__metric_lineCount__,?": { any: validation.resource() }
+	// Map of fileName -> field referencing that file's line-count content
+	// resource. Entries are field refs (not bare resources), so accept "any".
+	"__metric_lineCount__,?": "any"
 })
 
 self.body(func(inputs) {
@@ -114,12 +116,18 @@ self.body(func(inputs) {
 	if !is_undefined(self.rawMetaInputs()["__cpuFormula__"]) {
 		metaImplInputs["__cpuFormula__"] = self.rawMetaInputs()["__cpuFormula__"]
 	}
-	if !is_undefined(self.rawMetaInputs()["__metric_lineCount__"]) {
-		metaImplInputs["__metric_lineCount__"] = self.rawMetaInputs()["__metric_lineCount__"]
-	}
-
 	pureImplInputs := {
 		mainPlan: plan
+	}
+
+	// The line-count metric map is forwarded as a REGULAR input to the ephemeral
+	// impl (not a meta input) so the impl can `awaitState` its per-file content
+	// resources by name — awaitState navigates regular fields, not service/meta
+	// fields. The ephemeral impl is not deduplicated, so this does not affect the
+	// pure template's CID (the map stays a meta input ON THE PURE TEMPLATE, so
+	// CID-transparency / R12 is preserved).
+	if !is_undefined(self.rawMetaInputs()["__metric_lineCount__"]) {
+		pureImplInputs["__metric_lineCount__"] = self.rawMetaInputs()["__metric_lineCount__"]
 	}
 
 	if !is_undefined(inputs.runOptions.monetization) {
