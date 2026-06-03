@@ -146,7 +146,13 @@ _baseAndCompression := func(fileName) {
 _assertMetricCompatible := func(metric, fileName) {
 	if metric == "lineCount" {
 		info := _baseAndCompression(fileName)
-		ll.assert(!is_undefined(_LINECOUNT_OK[info.ext]),
+		// Case-insensitive extension match so .TXT / .FASTQ are accepted. The
+		// compression suffix in _baseAndCompression stays case-sensitive on
+		// purpose: the line-counter binary only decompresses lowercase
+		// .gz/.bz2/.zst, so e.g. "reads.fastq.GZ" is (correctly) rejected here
+		// rather than handed to the binary, which would miscount the still-
+		// compressed bytes.
+		ll.assert(!is_undefined(_LINECOUNT_OK[text.to_lower(info.ext)]),
 			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, info.ext)
 	}
 	// size is always compatible
