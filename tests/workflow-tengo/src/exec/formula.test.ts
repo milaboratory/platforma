@@ -30,6 +30,14 @@ const FIXTURE_NEWLINES = 42;
 const GZ_FIXTURE_NAME = "formula_gz_5lines.fastq.gz";
 const GZ_FIXTURE_LINES = 5;
 
+// Zstd fixture (decompresses to 7 newlines) — proves the line-counter handles
+// the zstd codec too; only .gz was proven end-to-end before.
+const ZST_FIXTURE_NAME = "formula_zst_7lines.fastq.zst";
+const ZST_FIXTURE_LINES = 7;
+
+// Single line with NO trailing newline => the line-counter reports 0 newlines.
+const NO_NEWLINE_FIXTURE_NAME = "formula_no_newline.txt";
+
 async function libraryFileHandle(
   driverKit: {
     lsDriver: {
@@ -169,22 +177,83 @@ for (const tc of constCases) {
 }
 
 /**
- * Uppercase-compressed input, end-to-end. The fixture is gzipped and added under
- * an UPPERCASE ".GZ" name (see formula_gz.tpl.tengo). Passing proves two things
- * line up: the SDK strips the uppercase compression suffix to accept lineCount,
- * AND the wired line-counter binary (>= 1.1.1, via software-small-binaries
- * >= 2.1.1) decompresses before counting. A pre-1.1.1 binary reads the gzip
- * bytes raw and returns a wrong (tiny) count — so this guards the dependency
- * bump, not just the SDK code.
+ * Compressed lineCount input, end-to-end. Each fixture is compressed and added
+ * under a name carrying the codec suffix; the count is right only if TWO things
+ * line up: the SDK strips the compression suffix to accept lineCount, AND the
+ * wired line-counter binary (>= 1.1.1, via software-small-binaries >= 2.1.1)
+ * decompresses before counting. A pre-1.1.1 binary reads the compressed bytes
+ * raw and returns a wrong (tiny) count — so these guard the dependency bump, not
+ * just the SDK code.
+ *
+ *   .GZ  — UPPERCASE suffix also exercises case-insensitive suffix stripping.
+ *   .zst — covers the zstd codec (previously only gzip was proven end-to-end).
+ */
+const compressedCases = [
+  {
+    template: "exec.run.formula_gz",
+    fixture: GZ_FIXTURE_NAME,
+    lines: GZ_FIXTURE_LINES,
+    label: "UPPERCASE .GZ",
+  },
+  {
+    template: "exec.run.formula_zst",
+    fixture: ZST_FIXTURE_NAME,
+    lines: ZST_FIXTURE_LINES,
+    label: ".zst",
+  },
+] as const;
+
+for (const tc of compressedCases) {
+  tplTest.concurrent(
+    `formula-compressed ${tc.label}: decompressed + line-counted, ram = 512MiB + ${tc.lines}*1024, cpu = 2`,
+    async ({ helper, expect, driverKit }) => {
+      const handle = await libraryFileHandle(driverKit, tc.fixture);
+
+      const result = await helper.renderTemplate(false, tc.template, ["limits"], (tx) => ({
+        file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
+      }));
+
+      const limits = await result
+        .computeOutput("limits", (a) => a?.getDataAsString())
+        .awaitStableValue();
+
+      expect(limits).toBeDefined();
+      const [ramStr, cpuStr] = limits!.split(",");
+      const expectedRam = 512 * MIB + tc.lines * 1024;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[formula-compressed ${tc.label}] ram=${ramStr} cpu=${cpuStr} | expected ram=${expectedRam} (512MiB + ${tc.lines}*1024) cpu=2`,
+      );
+
+      expect(Number(ramStr)).eq(expectedRam);
+      expect(Number(cpuStr)).eq(2);
+    },
+    120000,
+  );
+}
+
+/**
+ * Zero-newline edge. A file whose only line has NO trailing newline reports
+ * lineCount 0 (the counter counts '\n' bytes). Reuses formula_limits in
+ * `lineCount` mode (ram = 512MiB + lineCount*1024): the metric contributes 0, so
+ * ram must be exactly the 512MiB floor. Proves (a) a 0 metric does not trip the
+ * positive-integer result guard once floored, and (b) the counter's "0" output
+ * parses cleanly into the sum.
  */
 tplTest.concurrent(
-  "formula-gz: UPPERCASE .GZ input decompressed and line-counted, ram = 512MiB + 5*1024, cpu = 2",
+  "formula-zero-lineCount: 0 newlines => ram = 512MiB (floor holds), cpu = 2",
   async ({ helper, expect, driverKit }) => {
-    const handle = await libraryFileHandle(driverKit, GZ_FIXTURE_NAME);
+    const handle = await libraryFileHandle(driverKit, NO_NEWLINE_FIXTURE_NAME);
 
-    const result = await helper.renderTemplate(false, "exec.run.formula_gz", ["limits"], (tx) => ({
-      file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
-    }));
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.formula_limits",
+      ["limits"],
+      (tx) => ({
+        file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
+        mode: tx.createValue(Pl.JsonObject, JSON.stringify("lineCount")),
+      }),
+    );
 
     const limits = await result
       .computeOutput("limits", (a) => a?.getDataAsString())
@@ -192,10 +261,10 @@ tplTest.concurrent(
 
     expect(limits).toBeDefined();
     const [ramStr, cpuStr] = limits!.split(",");
-    const expectedRam = 512 * MIB + GZ_FIXTURE_LINES * 1024;
+    const expectedRam = 512 * MIB; // 512MiB + 0*1024
     // eslint-disable-next-line no-console
     console.log(
-      `[formula-gz] ram=${ramStr} cpu=${cpuStr} | expected ram=${expectedRam} (512MiB + ${GZ_FIXTURE_LINES}*1024) cpu=2`,
+      `[formula-zero-lineCount] ram=${ramStr} cpu=${cpuStr} | expected ram=${expectedRam} cpu=2`,
     );
 
     expect(Number(ramStr)).eq(expectedRam);
