@@ -7,24 +7,24 @@ import { isJsonEqual, uniqueId } from "@milaboratories/helpers";
 const app = useApp();
 
 onMounted(() => {
-  if (app.model.ui.datasets === undefined) {
-    app.model.ui.datasets = [];
+  if (app.model.data.datasets === undefined) {
+    app.model.data.datasets = [];
   }
 });
 
 const addDataset = () => {
-  app.model.ui.datasets.push({ id: uniqueId(), label: "New" });
+  app.model.data.datasets.push({ id: uniqueId(), label: "New" });
 };
 
 const removeDataset = (id: string) => {
-  app.model.ui.datasets = app.model.ui.datasets.filter((d) => d.id !== id);
+  app.model.data.datasets = app.model.data.datasets.filter((d) => d.id !== id);
 };
 
 const datasetsChangesCount = ref(0);
 
 const isDatasetsEqual = ref(true);
 
-watch(app.model.ui.datasets, (datasets, oldDatasets) => {
+watch(app.model.data.datasets, (datasets, oldDatasets) => {
   datasetsChangesCount.value++;
   console.log(datasets, oldDatasets);
   isDatasetsEqual.value = isJsonEqual(datasets, oldDatasets);
@@ -36,7 +36,7 @@ watch(app.model.ui.datasets, (datasets, oldDatasets) => {
     <template #title>State page</template>
     <PlRow>{{ datasetsChangesCount }} {{ isDatasetsEqual }}</PlRow>
     <PlRow wrap>
-      <div v-for="dataset in app.model.ui.datasets" :key="dataset.id" :class="$style.dataset">
+      <div v-for="dataset in app.model.data.datasets" :key="dataset.id" :class="$style.dataset">
         <PlTextField v-model="dataset.label" label="Label" />
         <PlIcon16 name="close" @click="removeDataset(dataset.id)" />
       </div>

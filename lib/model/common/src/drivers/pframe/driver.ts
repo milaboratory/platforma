@@ -8,6 +8,7 @@ import type { AddParameterToAllMethods } from "./type_util";
 import type {
   WritePTableToFsOptions,
   WritePTableToFsResult,
+  ExportPTableOptions,
   PTableShape,
   PTableVector,
   TableRange,
@@ -105,13 +106,18 @@ export interface PFrameDriver {
   ): Promise<WritePTableToFsResult>;
 
   /**
-   * Export the full, sorted table to a file at `path`. The output format is
-   * selected from the file extension (`csv`, `tsv`, `parquet`, or `xlsx`).
+   * Export the table to a file. The output format is selected from the file
+   * extension of `options.path` (`csv`, `tsv`, `parquet`, or `xlsx`).
    *
-   * Column headers are derived on the driver side from the table spec, so the
-   * caller only supplies the destination path (e.g. via the `Dialog` service).
+   * `options.columnIndices` selects the columns to export (output order). Column
+   * headers are derived on the driver side from each field's label annotation
+   * (falling back to its spec name), so the caller supplies only the path and
+   * the columns.
+   *
+   * For `xlsx` the driver rejects tables whose row count would exceed the
+   * 1,000,000-row per-sheet limit (below Excel's hard cap of 1,048,576).
    */
-  exportPTable(handle: PTableHandle, path: string): Promise<void>;
+  exportPTable(handle: PTableHandle, options: ExportPTableOptions): Promise<void>;
 }
 
 //

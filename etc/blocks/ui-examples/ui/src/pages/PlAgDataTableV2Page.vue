@@ -27,7 +27,7 @@ const sources = Array.from({ length: 10 }, (_, i) => ({
 
 const loading = ref(false);
 const tableSettings = usePlDataTableSettingsV2({
-  sourceId: () => (loading.value ? "loading_source" : app.model.ui.dataTableV2.sourceId),
+  sourceId: () => (loading.value ? "loading_source" : app.model.data.dataTableV2.sourceId),
   model: () => app.model.outputs.ptV2,
   sheets: () => app.model.outputs.ptV2Sheets,
 });
@@ -118,7 +118,7 @@ const resetSelection = async () => {
     </template>
     <PlAgDataTableV2
       ref="tableRef"
-      v-model="app.model.ui.dataTableV2.state"
+      v-model="app.model.data.dataTableV2.state"
       v-model:selection="selection"
       :settings="tableSettings"
       :cell-renderer-selector="cellRendererSelector"
@@ -127,8 +127,8 @@ const resetSelection = async () => {
       @new-data-rendered="focusFirstSelectedRow"
     >
       <template #before-sheets>
-        <PlDropdown v-model="app.model.ui.dataTableV2.sourceId" :options="sources" clearable />
-        <PlNumberField v-model="app.model.ui.dataTableV2.numRows" />
+        <PlDropdown v-model="app.model.data.dataTableV2.sourceId" :options="sources" clearable />
+        <PlNumberField v-model="app.model.data.dataTableV2.numRows" />
       </template>
     </PlAgDataTableV2>
   </PlBlockPage>

@@ -265,3 +265,13 @@ export interface WritePTableToFsResult {
   rowsWritten: number;
   bytesWritten: number;
 }
+
+/** Options for {@link PFrameDriver.exportPTable}. */
+export interface ExportPTableOptions {
+  /** Destination file path; its extension selects the output format
+   * (`csv`/`tsv`/`parquet`/`xlsx`). */
+  path: string;
+  /** Unified indices of the columns to export, in output order
+   * (axes first, then data columns). */
+  columnIndices: number[];
+}
