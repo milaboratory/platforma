@@ -78,7 +78,16 @@ self.validateInputs({
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string"
-	}
+	},
+
+	// Optional resource-formula meta inputs (attached by the exec builder when
+	// memFormula/cpuFormula are used). Forwarded to the ephemeral impl, which
+	// awaits + evaluates them. __memFormula__/__cpuFormula__ are JSON resources
+	// holding resolved ASTs; __metric_lineCount__ is a map resource
+	// (fileName -> content resource with that file's line count).
+	"__memFormula__,?": "any",
+	"__cpuFormula__,?": "any",
+	"__metric_lineCount__,?": { any: validation.resource() }
 })
 
 self.body(func(inputs) {
@@ -94,6 +103,19 @@ self.body(func(inputs) {
 
 	metaImplInputs := {
 		quota: is_undefined(self.rawMetaInputs().quota) ? self.rawInputs().quota : self.rawMetaInputs().quota
+	}
+
+	// Forward the resource-formula meta inputs (when present) untouched to the
+	// ephemeral impl. The pure template performs NO evaluation — the impl awaits
+	// the line-count metric map and evaluates the formulas, overriding quota.
+	if !is_undefined(self.rawMetaInputs()["__memFormula__"]) {
+		metaImplInputs["__memFormula__"] = self.rawMetaInputs()["__memFormula__"]
+	}
+	if !is_undefined(self.rawMetaInputs()["__cpuFormula__"]) {
+		metaImplInputs["__cpuFormula__"] = self.rawMetaInputs()["__cpuFormula__"]
+	}
+	if !is_undefined(self.rawMetaInputs()["__metric_lineCount__"]) {
+		metaImplInputs["__metric_lineCount__"] = self.rawMetaInputs()["__metric_lineCount__"]
 	}
 
 	pureImplInputs := {
