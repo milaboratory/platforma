@@ -89,7 +89,7 @@ export async function* streamPTableRows(options: StreamPTableRowsOptions): Async
 // ── Helpers (low-level) ──────────────────────────────────────────────
 
 /** Extract a human-readable label from a PTableColumnSpec. */
-function columnLabel(spec: PTableColumnSpec): string {
+export function columnLabel(spec: PTableColumnSpec): string {
   const annotation = readAnnotation(spec.spec, Annotation.Label);
   return isNil(annotation) ? spec.spec.name : annotation.trim();
 }

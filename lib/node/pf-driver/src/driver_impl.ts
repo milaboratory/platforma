@@ -49,7 +49,7 @@ import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import * as zlib from "node:zlib";
-import { streamPTableRows } from "./csv_writer";
+import { columnLabel, streamPTableRows } from "./csv_writer";
 import type {
   AbstractInternalPFrameDriver,
   WritePTableToFsOptions,
@@ -342,11 +342,56 @@ export class AbstractPFrameDriver<
   }
 
   public async exportPTable(
-    _handle: PTableHandle,
-    _path: string,
-    _signal?: AbortSignal,
+    handle: PTableHandle,
+    path: string,
+    signal?: AbortSignal,
   ): Promise<void> {
-    throw new PFrameDriverError("exportPTable is not implemented yet");
+    this.logger("info", `[ExportPTable] ENTER (handle = ${handle}, path = ${path})`);
+    const startTime = performance.now();
+
+    const { def, disposeSignal: defDisposeSignal } = this.pTableDefs.getByKey(handle);
+    using tableGuard = new PoolEntryGuard(this.pTables.acquire(def));
+    const { pTablePromise, disposeSignal } = tableGuard.resource;
+    const pTable = await pTablePromise;
+
+    const combinedSignal = AbortSignal.any(
+      [signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
+    );
+
+    // Headers mirror the CSV/TSV path (axes first, then data columns): the
+    // label annotation when present, otherwise the spec name.
+    const headers = def.tableSpec.map(columnLabel);
+
+    return await this.tableConcurrencyLimiter.run(async () => {
+      // xlsx is capped at 1,000,000 rows per sheet (below Excel's hard 1,048,576
+      // limit).
+      if (path.toLowerCase().endsWith(".xlsx")) {
+        const xlsxMaxRowsPerSheet = 1_000_000;
+        const shape = await pTable.getShape({ signal: combinedSignal });
+        if (shape.rows > xlsxMaxRowsPerSheet) {
+          const error = new PFrameDriverError(`exportPTable failed`);
+          error.cause = new Error(
+            `xlsx export rejected: ${shape.rows} rows exceed the per-sheet limit of ` +
+              `${xlsxMaxRowsPerSheet} rows (including the header row)`,
+          );
+          throw error;
+        }
+      }
+
+      await pTable.export(path, headers, { signal: combinedSignal });
+
+      const overallSize = await tableGuard.resource.cacheSize;
+      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
+
+      if (logPFrames()) {
+        const durationMs = Math.round(performance.now() - startTime);
+        this.logger(
+          "info",
+          `[ExportPTable] complete (handle = ${handle}, path = ${path}), ` +
+            `duration = ${durationMs}ms`,
+        );
+      }
+    });
   }
 
   //

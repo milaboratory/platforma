@@ -108,8 +108,13 @@ export interface PFrameDriver {
    * Export the full, sorted table to a file at `path`. The output format is
    * selected from the file extension (`csv`, `tsv`, `parquet`, or `xlsx`).
    *
-   * Column headers are derived on the driver side from the table spec, so the
-   * caller only supplies the destination path (e.g. via the `Dialog` service).
+   * Column headers are derived on the driver side from each field's label
+   * annotation (falling back to its spec name), axes first then data columns,
+   * so the caller only supplies the destination path (e.g. via the `Dialog`
+   * service).
+   *
+   * For `xlsx` the driver rejects tables whose row count would exceed the
+   * 1,000,000-row per-sheet limit (below Excel's hard cap of 1,048,576).
    */
   exportPTable(handle: PTableHandle, path: string): Promise<void>;
 }
