@@ -39,24 +39,38 @@ self.body(func(inputs) {
 		// 512 MiB + lineCount("reads") * 1024 bytes ; 1 + 1 = 2 cores
 		memAst = f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024))
 		cpuAst = f.add(1, 1)
+	} else if mode == "multi" {
+		// Two files share tag "reads": size("reads") sums BOTH blob sizes, and
+		// lineCount("reads") sums BOTH line counts — so the line-count metric map
+		// carries two entries, exercising _aggregateLineCountMap and the impl's
+		// wildcard await over more than one per-file count. divCeil proves ceiling
+		// division: with 2*42=84 lines, divCeil(84, 50) = 2 (truncating div = 1).
+		memAst = f.add(f.gib(1), f.size("reads"))
+		cpuAst = f.divCeil(f.lineCount("reads"), 50)
 	} else {
 		ll.panic("formula_limits: unknown mode %v", mode)
 	}
 
 	// Heavy queue (large default cpu/ram cap) leaves headroom so a ~1 GiB /
 	// few-core formula request is not capped by the queue limit.
-	// `mode` is appended to the echoed arg so the two modes produce CID-distinct
-	// execs: formula meta inputs are CID-transparent, so size-mode and
-	// lineCount-mode would otherwise dedup to one run (and one allocation).
-	run := exec.builder().
+	// `mode` is appended to the echoed arg so the modes produce CID-distinct
+	// execs: formula meta inputs are CID-transparent, so they would otherwise
+	// dedup to one run (and one allocation).
+	b := exec.builder().
 		inHeavyQueue().
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu}," + mode).
 		addFile("input.txt", inputFile, { tag: "reads" }).
 		memFormula(memAst).
 		cpuFormula(cpuAst).
-		saveStdoutContent().
-		run()
+		saveStdoutContent()
+
+	// Second file under the same tag, to exercise multi-file metric aggregation.
+	if mode == "multi" {
+		b = b.addFile("input2.txt", inputFile, { tag: "reads" })
+	}
+
+	run := b.run()
 
 	return {
 		limits: run.getStdoutContent()

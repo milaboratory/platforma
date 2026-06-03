@@ -1,0 +1,36 @@
+/**
+ * Non-arithmetic resource-formula ops, end-to-end (no addFile, no metric):
+ *   - clamp caps an 8 GiB request to the 4 GiB hi bound  -> ram = 4 GiB
+ *   - if(gt(8GiB, 4GiB)) selects between two cpu values  -> cpu = 2
+ *
+ * Proves clamp / comparison / conditional evaluate inside the ephemeral impl
+ * against the REAL evaluator, not merely against the unit-test fake resolver.
+ * Companion to formula_const, which covers only the constant-arithmetic path.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	// The ",ops" suffix is load-bearing: formula meta inputs are CID-transparent,
+	// so without it this exec (hello-world, no files, "{ram},{cpu}") would dedup
+	// to the same allocation as formula_const and silently read ITS quota.
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},ops").
+		memFormula(f.clamp(f.gib(8), f.gib(1), f.gib(4))).
+		cpuFormula(f["if"](f.gt(f.gib(8), f.gib(4)), 2, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})
