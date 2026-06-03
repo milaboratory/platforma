@@ -161,10 +161,10 @@ self.body(func(inputs) {
 			}
 		}
 		if !is_undefined(memFormula) {
-			quota.ram = string(execFormula.evaluate(memFormula, resolver)) + "b"
+			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram")) + "b"
 		}
 		if !is_undefined(cpuFormula) {
-			quota.cpu = execFormula.evaluate(cpuFormula, resolver)
+			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
 		}
 	}
 

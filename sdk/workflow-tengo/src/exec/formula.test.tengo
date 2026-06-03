@@ -72,6 +72,16 @@ TestFormulaEvaluateBoundsAndCond := func() {
 	test.isEqual(0, f.evaluate(f["if"](f.lt(5, 2), 1, 0), _fakeResolver))
 }
 
+TestEvaluateResourceAcceptsPositiveInt := func() {
+	// evaluateResource returns the evaluated value unchanged for a valid resource
+	// formula (a positive integer). The rejection path (a bool or non-positive
+	// result) goes through ll.assert, which is terminal in Tengo, so it cannot be
+	// exercised from a unit test — only the accepted contract is checked here.
+	test.isEqual(1073741824, f.evaluateResource(f.gib(1), _fakeResolver, "ram"))
+	test.isEqual(3, f.evaluateResource(f.add(2, 1), _fakeResolver, "cpu"))
+	test.isEqual(350, f.evaluateResource({ op: "metricSum", metric: "size", files: ["a", "b"] }, _fakeResolver, "ram"))
+}
+
 TestFormulaEvaluateMetricSum := func() {
 	node := { op: "metricSum", metric: "size", files: ["a", "b"] }
 	test.isEqual(350, f.evaluate(node, _fakeResolver))
