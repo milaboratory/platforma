@@ -6,7 +6,7 @@ import { useApp } from "../app";
 const app = useApp();
 
 const section = computed(() =>
-  app.model.ui.dynamicSections.find((it) => it.id === app.queryParams.id),
+  app.model.data.dynamicSections.find((it) => it.id === app.queryParams.id),
 );
 
 const label = computed({
@@ -21,7 +21,7 @@ const label = computed({
 });
 
 const deleteSection = () => {
-  app.model.ui.dynamicSections = app.model.ui.dynamicSections.filter(
+  app.model.data.dynamicSections = app.model.data.dynamicSections.filter(
     (it) => it.id !== app.queryParams.id,
   );
   app.navigateTo("/add-section");
