@@ -73,6 +73,7 @@ export const Services = {
       "getSpec",
       "getData",
       "writePTableToFs",
+      "exportPTable",
     ] as const,
   }),
   Dialog: service<Record<string, never>, DialogService>()({

@@ -341,6 +341,14 @@ export class AbstractPFrameDriver<
     });
   }
 
+  public async exportPTable(
+    _handle: PTableHandle,
+    _path: string,
+    _signal?: AbortSignal,
+  ): Promise<void> {
+    throw new PFrameDriverError("exportPTable is not implemented yet");
+  }
+
   //
   // PFrame instance methods
   //

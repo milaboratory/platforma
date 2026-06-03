@@ -89,4 +89,11 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
     handle: PTableHandle,
     options: WritePTableToFsOptions,
   ): Promise<WritePTableToFsResult>;
+
+  /**
+   * Export the full, sorted table to a file, selecting the format from the
+   * file extension (`csv`/`tsv`/`parquet`/`xlsx`). Headers are derived from
+   * the table spec on the driver side.
+   */
+  exportPTable(handle: PTableHandle, path: string, signal?: AbortSignal): Promise<void>;
 }

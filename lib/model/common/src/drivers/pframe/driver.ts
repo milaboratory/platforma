@@ -103,6 +103,15 @@ export interface PFrameDriver {
     handle: PTableHandle,
     options: WritePTableToFsOptions,
   ): Promise<WritePTableToFsResult>;
+
+  /**
+   * Export the full, sorted table to a file at `path`. The output format is
+   * selected from the file extension (`csv`, `tsv`, `parquet`, or `xlsx`).
+   *
+   * Column headers are derived on the driver side from the table spec, so the
+   * caller only supplies the destination path (e.g. via the `Dialog` service).
+   */
+  exportPTable(handle: PTableHandle, path: string): Promise<void>;
 }
 
 //
@@ -117,4 +126,9 @@ type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriver
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<_T extends never>() {}
 
-assert<TypeEqualityGuard<Omit<PFrameDriver, "writePTableToFs">, ExpectedPFrameDriverType>>();
+assert<
+  TypeEqualityGuard<
+    Omit<PFrameDriver, "writePTableToFs" | "exportPTable">,
+    ExpectedPFrameDriverType
+  >
+>();
