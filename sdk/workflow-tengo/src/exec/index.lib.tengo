@@ -1225,10 +1225,11 @@ builder := func() {
 
 			if hasFormula {
 				if !feats.hasBlobSize {
-					// Backend can't evaluate formulas (no getBlobSize). Fall back to
-					// the per-dimension { fallback } values, or fail with a clear
-					// error if a formula has none. Pure decision, unit-tested in
-					// exec.formula (applyFormulaFallback).
+					// Backend can't evaluate formulas (no getBlobSize). Each formula
+					// dimension falls back to its { fallback }, or to a static
+					// .mem()/.cpu() if no { fallback } was given; error only when a
+					// dimension has neither. Pure decision, unit-tested in exec.formula
+					// (applyFormulaFallback).
 					fb := execFormula.applyFormulaFallback(memFormulaAst, memFormulaFallback, cpuFormulaAst, cpuFormulaFallback, ramRequest, cpuRequest)
 					ll.assert(is_undefined(fb.err), fb.err)
 					ramRequest = fb.ram
