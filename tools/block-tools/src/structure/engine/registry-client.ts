@@ -1,4 +1,4 @@
-// npm registry client used by `bumpCatalogToLatest`.
+// npm registry client used by the catalog ensure-family (`ensureCatalogLatest`).
 //
 // The content-rule builder is synchronous; the runner pre-resolves
 // "latest" versions via this client and passes a sync lookup function
@@ -32,20 +32,28 @@ export function parseRetryAfter(header: string | null): number | null {
 
 async function fetchWithRetry(url: string): Promise<Response> {
   for (let attempt = 1; ; attempt++) {
+    let res: Response;
+    // Only the network call is retry-eligible: a transport error
+    // (timeout, DNS, reset) is transient. HTTP-status handling sits
+    // OUTSIDE this catch so a non-retryable status (404/403) throws
+    // immediately instead of being swallowed and retried.
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-      if (res.ok) return res;
-      const retryable = res.status === 429 || res.status >= 500;
-      if (!retryable || attempt > RETRY_COUNT) {
-        throw new Error(`registry returned HTTP ${res.status}`);
-      }
-      const retryAfterMs = parseRetryAfter(res.headers.get("retry-after"));
-      if (retryAfterMs != null) {
-        await sleep(retryAfterMs);
-        continue;
-      }
+      res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     } catch (err) {
       if (attempt > RETRY_COUNT) throw err;
+      const delay = RETRY_BASE_MS * 2 ** (attempt - 1) * (0.8 + 0.4 * Math.random());
+      await sleep(delay);
+      continue;
+    }
+    if (res.ok) return res;
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt > RETRY_COUNT) {
+      throw new Error(`registry returned HTTP ${res.status}`);
+    }
+    const retryAfterMs = parseRetryAfter(res.headers.get("retry-after"));
+    if (retryAfterMs != null) {
+      await sleep(retryAfterMs);
+      continue;
     }
     const delay = RETRY_BASE_MS * 2 ** (attempt - 1) * (0.8 + 0.4 * Math.random());
     await sleep(delay);
