@@ -110,7 +110,7 @@ export function makeSyncLookup(
 }
 
 /** Catalog package-name patterns the version-resolution rules
- *  (`bumpCatalogToLatest`) match against — the `@platforma-sdk/*` and
+ *  (`ensureCatalogLatest`) match against — the `@platforma-sdk/*` and
  *  `@milaboratories/*` SDK families. Infra/runtime entries (turbo, shx,
  *  …) are deliberately NOT here: they stay a curated floor, not auto-latest.
  *  Shared so `init` (names from the SDK pin map) and `refresh
@@ -125,7 +125,8 @@ export function matchesBumpPattern(name: string): boolean {
 }
 
 /** Prefetch npm "latest" for `names` and return the sync lookup the
- *  runner passes to `bumpCatalogToLatest`. Empty list → a lookup that
+ *  runner passes to the catalog ensure-family (`ensureCatalogLatest`).
+ *  Empty list → a lookup that
  *  resolves nothing (no network). A network/registry failure REJECTS
  *  (callers that require the network — `init` — let it propagate).
  *  `client` defaults to the live npm client; tests inject a mock. */
