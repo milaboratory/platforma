@@ -78,10 +78,10 @@ export type RunOptions = {
    *  explicit dry-run check (Layer-2 invariant). */
   initMode?: boolean;
   /** Sync accessor for prefetched npm "latest" versions, consumed by
-   *  `bumpCatalogToLatest` inside `onUpdateDeps` managed bodies. The CLI
+   *  `ensureCatalogLatest` inside `onUpdateDeps` managed bodies. The CLI
    *  prefetches the catalog's package versions before the run (network)
    *  and passes the resulting sync map here; unit tests pass a mock.
-   *  Absent → `bumpCatalogToLatest` is a no-op (default refresh). */
+   *  Absent → `ensureCatalogLatest` is a no-op (default refresh). */
   registryLookup?: (packageName: string) => string | undefined;
 };
 
