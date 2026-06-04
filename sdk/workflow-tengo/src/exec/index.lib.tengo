@@ -1271,8 +1271,14 @@ builder := func() {
 				ram: ramRequest
 			}
 			if !is_undefined(gpuMemory) {
-				ll.assert(!is_undefined(cpuRequest), "exec.builder: cpu() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
-				ll.assert(!is_undefined(ramRequest), "exec.builder: mem() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
+				// A cpuFormula/memFormula satisfies this requirement just like a static
+				// .cpu()/.mem(): it provides an explicit request, computed at run time
+				// (the ephemeral impl overrides the quota before allocation; gpuMemory is
+				// forwarded alongside), and the { fallback } covers no-getBlobSize backends.
+				// Without this, gpuMemory + a formula would wrongly assert on hasBlobSize
+				// backends (where ramRequest/cpuRequest stay undefined) yet pass on older ones.
+				ll.assert(!is_undefined(cpuRequest) || !is_undefined(cpuFormulaAst), "exec.builder: cpu() or cpuFormula() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
+				ll.assert(!is_undefined(ramRequest) || !is_undefined(memFormulaAst), "exec.builder: mem() or memFormula() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
 				quotaData.gpuMemory = gpuMemory
 			}
 			metaExecInputs := {
