@@ -231,7 +231,8 @@ referencedMetricFiles := func(resolvedNode) {
 }
 
 // applyFormulaFallback resolves the static ram/cpu to use when the backend
-// lacks getBlobSize support and formulas cannot be evaluated. A formula
+// cannot evaluate resource formulas at run time (no getBlobSize, or no
+// service-field support so the meta inputs can't ride CID-transparently). A formula
 // dimension needs SOME static value to fall back to: either an explicit
 // { fallback } or a static .mem()/.cpu(). A static request always wins (the
 // formula won't run on this backend) and doubles as the fallback — so the
@@ -244,14 +245,14 @@ applyFormulaFallback := func(memAst, memFallback, cpuAst, cpuFallback, ram, cpu)
 	res := { ram: ram, cpu: cpu, err: undefined }
 	if !is_undefined(memAst) && is_undefined(res.ram) {
 		if is_undefined(memFallback) {
-			res.err = "exec.builder: memFormula needs a static fallback on backends without getBlobSize support. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
+			res.err = "exec.builder: memFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
 			return res
 		}
 		res.ram = memFallback
 	}
 	if !is_undefined(cpuAst) && is_undefined(res.cpu) {
 		if is_undefined(cpuFallback) {
-			res.err = "exec.builder: cpuFormula needs a static fallback on backends without getBlobSize support. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
+			res.err = "exec.builder: cpuFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
 			return res
 		}
 		res.cpu = cpuFallback
@@ -279,6 +280,9 @@ export {
 	sub:     func(a, b) { return _bin("sub", a, b) },
 	mul:     func(a, b) { return _bin("mul", a, b) },
 	div:     func(a, b) { return _bin("div", a, b) },
+	// divCeil(a, b): ceiling of a/b. Assumes a >= 0 and b > 0 — the resource-metric
+	// domain (sizes, line counts, positive constants). A negative a (e.g. an
+	// underflowing f.sub) can be off by one; floor such inputs with f.max first.
 	divCeil: func(a, b) { return _bin("divCeil", a, b) },
 
 	max:   func(a, b) { return _bin("max", a, b) },
