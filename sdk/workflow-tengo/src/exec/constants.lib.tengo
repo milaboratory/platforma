@@ -16,7 +16,7 @@ UI_TASKS_QUEUE := "ui-tasks"
 RUNNER_BATCH    := "batch"    // batch system execution (k8s jobs, etc.)
 RUNNER_EXECUTOR := "executor" // local binary execution
 
-// Meta-input field names for Phase 3 resource formulas. The exec builder
+// Meta-input field names for resource formulas. The exec builder
 // (.run()) writes these, the pure exec template forwards them, and the
 // ephemeral exec impl reads + awaits them. Defined here so the cross-file
 // contract has one source of truth — a rename can't silently drift between the

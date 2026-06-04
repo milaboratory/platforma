@@ -71,7 +71,7 @@ builder := func() {
 	ramRequest := undefined
 	gpuMemory := undefined
 
-	// Phase 3: resource formulas
+	// resource-formula builder state (memFormula / cpuFormula / addFile tags)
 	memFormulaAst := undefined
 	memFormulaFallback := undefined
 	cpuFormulaAst := undefined
@@ -1210,7 +1210,7 @@ builder := func() {
 				ramRequest = string(ramRequest) + "b"
 			}
 
-			// Phase 3: resolve formulas (tags -> file lists) and apply the
+			// Resolve formulas (tags -> file lists) and apply the
 			// hasBlobSize fallback gate. The static quota below stays populated;
 			// the ephemeral exec impl overrides ram/cpu per-dimension when the
 			// corresponding formula meta input is present. lineCount metrics are
