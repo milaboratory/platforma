@@ -476,6 +476,7 @@ workflow := func() {
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
 		 *   - `commentPrefix` {string} (optional): The prefix string used to comment out lines in the CSV file.
+		 *   - `delimiter` {string} (optional): Field delimiter for csv/tsv reads. Overrides the format-derived default (`,` for csv, `\t` for tsv).
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
