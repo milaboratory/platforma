@@ -47,7 +47,7 @@ export default class BuildAll extends Command {
       // Docker build defaults to OFF outside CI — including dev-local. Block
       // developers run 'pnpm run build:dev' on every save and do not want a
       // slow cross-compile + push on each iteration. To publish dev images,
-      // they invoke a separate script (template ships 'publish:docker:dev')
+      // they invoke a separate script (template ships 'build:docker-dev')
       // that sets PL_DOCKER_BUILD=1 + PL_DOCKER_AUTOPUSH=1.
       const buildDocker = cmdOpts.shouldDoAction(
         envs.isCI(),
@@ -88,7 +88,7 @@ export default class BuildAll extends Command {
 
       // Auto-push defaults to OFF outside CI. Dev iteration doesn't push;
       // explicit opt-in via --docker-autopush / PL_DOCKER_AUTOPUSH=1 (which
-      // 'publish:docker:dev' sets) flips it. Private packages never push by
+      // 'build:docker-dev' sets) flips it. Private packages never push by
       // default — the dev ECR is public.
       const autopush = cmdOpts.shouldDoAction(
         envs.isCI() && !core.pkgInfo.isPrivate,
@@ -108,6 +108,19 @@ export default class BuildAll extends Command {
           pushTo: flags["docker-push-to"],
           strictPlatformMatching: envs.isCI(),
         });
+
+        // For public ECR pushes, surface the human-readable Gallery URL so a
+        // developer can open the browser and confirm their image landed. The
+        // effective push destination is --docker-push-to if set, otherwise
+        // the --docker-registry / DEV_DOCKER_REGISTRY chain.
+        const effectiveRegistry = flags["docker-push-to"] ?? dockerRegistry;
+        if (effectiveRegistry?.startsWith("public.ecr.aws/")) {
+          const galleryUrl =
+            "https://" + effectiveRegistry.replace(/^public\.ecr\.aws/, "gallery.ecr.aws");
+          logger.info("================");
+          logger.info(`Public ECR repository: ${galleryUrl}`);
+          logger.info("===============");
+        }
       }
     } catch (e) {
       logger.debug(e);
