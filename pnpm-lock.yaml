@@ -2529,6 +2529,9 @@ importers:
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.31.0
+      semver:
+        specifier: 'catalog:'
+        version: 7.7.2
       undici:
         specifier: 'catalog:'
         version: 7.16.0
@@ -2560,9 +2563,6 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.3(vitest@4.1.3)
-      semver:
-        specifier: 'catalog:'
-        version: 7.7.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
