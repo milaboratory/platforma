@@ -269,6 +269,17 @@ TestFallbackOnlyMemFormula := func() {
 	test.isTrue(is_undefined(res.err))
 }
 
+TestFallbackStaticServesAsImplicitFallback := func() {
+	// A formula with NO explicit { fallback } but a static .mem()/.cpu() already
+	// set: the static request doubles as the old-backend fallback, so there is
+	// no error (a required { fallback } that the static value overrides anyway
+	// would be dead config). Errors only when neither static nor fallback exists.
+	res := f.applyFormulaFallback(f.size(), undefined, f.size(), undefined, "64GiB", 16)
+	test.isEqual("64GiB", res.ram)
+	test.isEqual(16, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
 // ============================================================================
 // Added by deep-dive review (2026-06-03): coverage for documented-but-untested
 // evaluator contracts, a non-binary clamp branch, the referencedMetricFiles

@@ -231,27 +231,30 @@ referencedMetricFiles := func(resolvedNode) {
 }
 
 // applyFormulaFallback resolves the static ram/cpu to use when the backend
-// lacks getBlobSize support and formulas cannot be evaluated. Each dimension
-// with a formula needs a { fallback } (else an error); the fallback applies
-// only when no static .mem()/.cpu() was set (static wins). Returns
-// { ram, cpu, err }, err being a message string or undefined — the caller
-// asserts err is undefined, then applies ram/cpu. (Field is `err`, not `error`:
-// `error` is a reserved word in Tengo.)
+// lacks getBlobSize support and formulas cannot be evaluated. A formula
+// dimension needs SOME static value to fall back to: either an explicit
+// { fallback } or a static .mem()/.cpu(). A static request always wins (the
+// formula won't run on this backend) and doubles as the fallback — so the
+// fallback fills in only when no static request was set, and the sole error
+// case is a formula dimension with NEITHER a static request NOR a { fallback }.
+// Returns { ram, cpu, err }, err being a message string or undefined — the
+// caller asserts err is undefined, then applies ram/cpu. (Field is `err`, not
+// `error`: `error` is a reserved word in Tengo.)
 applyFormulaFallback := func(memAst, memFallback, cpuAst, cpuFallback, ram, cpu) {
 	res := { ram: ram, cpu: cpu, err: undefined }
-	if !is_undefined(memAst) {
+	if !is_undefined(memAst) && is_undefined(res.ram) {
 		if is_undefined(memFallback) {
-			res.err = "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on memFormula or upgrade the backend."
+			res.err = "exec.builder: memFormula needs a static fallback on backends without getBlobSize support. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
 			return res
 		}
-		if is_undefined(res.ram) { res.ram = memFallback }
+		res.ram = memFallback
 	}
-	if !is_undefined(cpuAst) {
+	if !is_undefined(cpuAst) && is_undefined(res.cpu) {
 		if is_undefined(cpuFallback) {
-			res.err = "exec.builder: resource formulas require a backend with getBlobSize support. Provide { fallback: ... } on cpuFormula or upgrade the backend."
+			res.err = "exec.builder: cpuFormula needs a static fallback on backends without getBlobSize support. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
 			return res
 		}
-		if is_undefined(res.cpu) { res.cpu = cpuFallback }
+		res.cpu = cpuFallback
 	}
 	return res
 }
