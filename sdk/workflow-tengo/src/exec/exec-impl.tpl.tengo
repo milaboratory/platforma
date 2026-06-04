@@ -157,7 +157,9 @@ self.body(func(inputs) {
 					// As a regular input, each map entry auto-unmarshals to a
 					// resolved content-resource handle; read its bytes directly.
 					data := lineCountMap[fn].getData()
-					total += int(text.trim(string(data), "\n \r\t"))
+					n := int(text.trim(string(data), "\n \r\t"))
+					ll.assert(!is_undefined(n), "exec-impl: lineCount for %q is not a base-10 integer: %q", fn, string(data))
+					total += n
 				}
 				return total
 			}

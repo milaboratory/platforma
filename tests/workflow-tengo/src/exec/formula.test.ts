@@ -314,7 +314,7 @@ const rejectCases = [
   {
     mode: "boolCpu",
     needsFile: false,
-    pattern: /\(cpu\) must evaluate to a positive integer/, // R24: top-level comparison -> bool
+    pattern: /\(cpu\) must compute a number/, // R24/F1: top-level comparison rejected structurally
     desc: "cpuFormula = comparison (bool) rejected, names cpu",
   },
   {

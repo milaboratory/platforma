@@ -304,16 +304,16 @@ TestFormulaIfNotTruthyIntCondition := func() {
 }
 
 TestFormulaLogicOpsOfIntsReturnInt := func() {
-	// Tengo && / || yield the deciding OPERAND, not a coerced bool. So f.and/f.or of
-	// integer operands evaluate to an INTEGER — meaning a top-level f.and/f.or used as
-	// a resource formula slips past evaluateResource's `is_int(v) && v > 0` guard,
-	// unlike f.gt/f.lt/f.not (which yield a bool and ARE rejected). Documents the R24
-	// coverage gap (see review report).
+	// Tengo && / || yield the deciding OPERAND, not a coerced bool, so f.and/f.or of
+	// integer operands evaluate to an INTEGER at the evaluate() level (f.gt/f.lt/f.not
+	// yield a bool). Because that int would otherwise slip past evaluateResource's
+	// `is_int(v) && v > 0` check, evaluateResource now rejects comparison/logic ops
+	// structurally at the top level (F1 fix) — they belong only inside f.if(...). That
+	// reject is an ll.assert panic (terminal in Tengo, not assertable here); this test
+	// pins the underlying evaluate() operand semantics the guard protects against.
 	test.isTrue(is_int(f.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
 	test.isTrue(is_int(f.evaluate(f.and(2, 3), _fakeResolver)))   // 2 && 3 -> 3 (int)
 	test.isFalse(is_int(f.evaluate(f.gt(5, 2), _fakeResolver)))   // 5 > 2 -> true (bool)
-	// the gap: a nonsense logical mem formula is ACCEPTED (returns 1) not rejected
-	test.isEqual(1, f.evaluateResource(f.or(1, 0), _fakeResolver, "ram"))
 }
 
 TestReferencedMetricFilesDedupesRepeatedFile := func() {
