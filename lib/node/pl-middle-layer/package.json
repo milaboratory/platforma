@@ -55,6 +55,7 @@
     "es-toolkit": "catalog:",
     "lru-cache": "catalog:",
     "quickjs-emscripten": "catalog:",
+    "semver": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:",
@@ -67,7 +68,6 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
-    "semver": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
