@@ -24,6 +24,9 @@ GB  := 1000000000
 MB  := 1000000
 KB  := 1000
 
+// Ops _wrap accepts as valid expression nodes. "metricSum" is builder-internal
+// (resolveAst rewrites "metric" -> "metricSum" with concrete files); the DSL
+// never emits it directly.
 _KNOWN_OPS := {
 	"const": true, "metric": true, "metricSum": true,
 	"add": true, "sub": true, "mul": true, "div": true, "divCeil": true,
@@ -31,6 +34,10 @@ _KNOWN_OPS := {
 	"gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true,
 	"if": true
 }
+
+// Comparison/logic ops. Rejected at the top level of a resource formula
+// (evaluateResource) — they are meaningful only inside f.if(...).
+_BOOL_OPS := { "gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true }
 
 _wrap := func(x) {
 	if is_map(x) && !is_undefined(x.op) {
@@ -93,6 +100,7 @@ evaluate = func(node, resolver) {
 		v := evaluate(node.value, resolver)
 		lo := evaluate(node.lo, resolver)
 		hi := evaluate(node.hi, resolver)
+		ll.assert(lo <= hi, "exec.formula.clamp: lo (%v) must be <= hi (%v) — inverted bounds collapse every input to hi", lo, hi)
 		if v < lo { v = lo }
 		if v > hi { v = hi }
 		return v
@@ -112,13 +120,18 @@ evaluate = func(node, resolver) {
 }
 
 // evaluateResource evaluates a formula destined for a resource quota (ram / cpu)
-// and asserts the result is usable: a positive integer. This catches formulas
-// that resolve to a bool (e.g. a top-level comparison like f.gt(...)) or to a
-// non-positive number (an f.sub that underflows, or a metric that floored to 0)
-// BEFORE the value reaches the quota — where it would otherwise become an opaque
-// "trueb" RAM string or a 0-core request and fail deep in the backend. `label`
-// ("ram" / "cpu") names the offending dimension in the error.
+// and asserts the result is usable: a positive integer. It first rejects a
+// comparison/logic op at the top level — Tengo's && / || return the deciding
+// OPERAND (an int), so a top-level f.and/f.or of ints would otherwise pass the
+// is_int check; comparisons and logic belong only inside f.if(...). The
+// positive-int check then catches a non-positive result (an f.sub that
+// underflows, or a metric that floored to 0) BEFORE it reaches the quota as an
+// opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu") names
+// the offending dimension.
 evaluateResource := func(node, resolver, label) {
+	ll.assert(is_undefined(_BOOL_OPS[node.op]),
+		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.if(...).",
+		label, node.op)
 	v := evaluate(node, resolver)
 	ll.assert(is_int(v) && v > 0,
 		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.clamp(...).",
@@ -166,8 +179,13 @@ resolveAst = func(node, tagMap, allFiles) {
 	if op == "metric" {
 		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
 		if len(files) == 0 {
-			ll.assert(!is_undefined(node.default),
-				"exec.formula: tag %q has no files and no { default: ... } was given", node.tag)
+			if is_undefined(node.tag) {
+				ll.assert(!is_undefined(node.default),
+					"exec.formula: f.%s() references all input files but the exec has none, and no { default: ... } was given", node.metric)
+			} else {
+				ll.assert(!is_undefined(node.default),
+					"exec.formula: tag %q has no files and no { default: ... } was given", node.tag)
+			}
 			return { op: "const", value: node.default }
 		}
 		for fn in files { _assertMetricCompatible(node.metric, fn) }

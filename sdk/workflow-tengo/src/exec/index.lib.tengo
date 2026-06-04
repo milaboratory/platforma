@@ -1453,7 +1453,7 @@ _lineCountResource = func(fileName, fileRef) {
 		arg("--output").arg(countOut).
 		saveFileContent(countOut).
 		inLightQueue().
-		cacheInputs(30 * 24 * times.hour).
+		cacheInputsDays(30).
 		mem("256MiB").
 		cpu(1).
 		run()

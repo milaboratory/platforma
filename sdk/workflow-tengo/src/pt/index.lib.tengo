@@ -623,6 +623,8 @@ workflow := func() {
 				if !is_string(opts.delimiter) {
 					ll.panic("'delimiter' option must be a string. Got: %T", opts.delimiter)
 				}
+				ll.assert(finalFormat == "csv" || finalFormat == "tsv",
+					"'delimiter' option applies only to csv/tsv reads, not %q", finalFormat)
 				delimiterOpt = opts.delimiter
 			}
 
