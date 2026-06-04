@@ -1,0 +1,67 @@
+/**
+ * Negative-path resource-formula templates: each `mode` builds a formula that
+ * MUST be rejected, proving the run-time guards actually fire end-to-end.
+ *
+ *   negative — memFormula underflows (f.sub) to a negative byte count -> rejected (ram)
+ *   zero     — memFormula evaluates to exactly 0                       -> rejected (ram)
+ *   boolCpu  — cpuFormula is a top-level comparison (a bool)           -> rejected (cpu)
+ *   bam      — f.lineCount() on a .bam file (unsupported format)       -> rejected at builder time
+ *
+ * The positive-integer result guard (R24) lives in the ephemeral impl
+ * (exec.formula.evaluateResource); the format-compatibility guard (R10) lives
+ * in the builder (resolveAst -> _assertMetricCompatible). Both surface to the
+ * test as a render failure (the impl panic propagates to the awaited output;
+ * the builder panic fails the render directly).
+ *
+ * The ",reject-<mode>" arg suffix keeps each failing exec CID-distinct — formula
+ * meta inputs are CID-transparent, so identical args would otherwise dedup the
+ * failing execs into one and a later mode would read an earlier mode's error.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	mode := inputs.mode
+
+	b := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},reject-" + mode).
+		saveStdoutContent()
+
+	if mode == "negative" {
+		// 1 GiB - 2 GiB underflows to a negative byte count -> rejected (ram).
+		b = b.memFormula(f.sub(f.gib(1), f.gib(2))).cpuFormula(f.add(1, 1))
+	} else if mode == "zero" {
+		// 1 GiB - 1 GiB = 0 -> a zero RAM request is rejected (ram).
+		b = b.memFormula(f.sub(f.gib(1), f.gib(1))).cpuFormula(f.add(1, 1))
+	} else if mode == "boolCpu" {
+		// A top-level comparison evaluates to a bool, not an int -> rejected (cpu).
+		b = b.memFormula(f.gib(1)).cpuFormula(f.gt(f.gib(8), f.gib(4)))
+	} else if mode == "bam" {
+		// f.lineCount() on a .bam file: the builder's format check rejects it before
+		// any pre-exec runs. The file content is irrelevant — the guard keys off the
+		// extension — so we reuse the standard text fixture under a .bam name.
+		inputFile := file.importFile(inputs.file).file
+		b = b.addFile("reads.bam", inputFile, { tag: "reads" }).
+			memFormula(f.add(f.mib(512), f.lineCount("reads"))).
+			cpuFormula(f.add(1, 1))
+	} else {
+		ll.panic("formula_reject: unknown mode %v", mode)
+	}
+
+	run := b.run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})

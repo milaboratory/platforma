@@ -35,6 +35,13 @@ const GZ_FIXTURE_LINES = 5;
 const ZST_FIXTURE_NAME = "formula_zst_7lines.fastq.zst";
 const ZST_FIXTURE_LINES = 7;
 
+// Bzip2 fixture (decompresses to 6 newlines). bz2 is an advertised codec (spec
+// R14, formula.lib _COMPRESSION_EXT) but was the only one with no e2e proof;
+// added by the review. Verified the shipped line-counter binary (1.1.1) decodes
+// it (.bz2 and .BZ2 → 6).
+const BZ2_FIXTURE_NAME = "formula_bz2_6lines.fastq.bz2";
+const BZ2_FIXTURE_LINES = 6;
+
 // Single line with NO trailing newline => the line-counter reports 0 newlines.
 const NO_NEWLINE_FIXTURE_NAME = "formula_no_newline.txt";
 
@@ -201,6 +208,12 @@ const compressedCases = [
     lines: ZST_FIXTURE_LINES,
     label: ".zst",
   },
+  {
+    template: "exec.run.formula_bz2",
+    fixture: BZ2_FIXTURE_NAME,
+    lines: BZ2_FIXTURE_LINES,
+    label: ".bz2",
+  },
 ] as const;
 
 for (const tc of compressedCases) {
@@ -269,6 +282,121 @@ tplTest.concurrent(
 
     expect(Number(ramStr)).eq(expectedRam);
     expect(Number(cpuStr)).eq(2);
+  },
+  120000,
+);
+
+/**
+ * Negative-path cases — added by the deep-dive review (2026-06-03).
+ *
+ * The positive-integer result guard (R24) and the lineCount format-compatibility
+ * guard (R10) previously had NO automated coverage: the Tengo unit layer cannot
+ * reach them (ll.assert is terminal — no try/catch), and no e2e case exercised a
+ * rejection. Each case renders exec.run.formula_reject in a `mode` whose formula
+ * must be rejected, and asserts the render REJECTS with the guard's message — and,
+ * for R24, that the message names the offending dimension (ram / cpu). The regex
+ * checks dimension + phrase together (the message is "...(ram) must evaluate to a
+ * positive integer...").
+ */
+const rejectCases = [
+  {
+    mode: "negative",
+    needsFile: false,
+    pattern: /\(ram\) must evaluate to a positive integer/, // R24: f.sub underflow
+    desc: "memFormula underflow (negative) rejected, names ram",
+  },
+  {
+    mode: "zero",
+    needsFile: false,
+    pattern: /\(ram\) must evaluate to a positive integer/, // R24: unfloored 0
+    desc: "memFormula = 0 (unfloored) rejected, names ram",
+  },
+  {
+    mode: "boolCpu",
+    needsFile: false,
+    pattern: /\(cpu\) must evaluate to a positive integer/, // R24: top-level comparison -> bool
+    desc: "cpuFormula = comparison (bool) rejected, names cpu",
+  },
+  {
+    mode: "bam",
+    needsFile: true,
+    pattern: /lineCount is not supported for file/, // R10: unsupported format, builder-time
+    desc: "f.lineCount() on a .bam file rejected at builder time",
+  },
+] as const;
+
+for (const tc of rejectCases) {
+  tplTest.concurrent(
+    `formula-reject ${tc.mode}: ${tc.desc}`,
+    async ({ helper, expect, driverKit }) => {
+      const handle = tc.needsFile ? await libraryFileHandle(driverKit) : undefined;
+
+      // The render must fail. R24 rejections surface when the awaited output
+      // resolves (the ephemeral impl panics in evaluateResource); the R10
+      // rejection fails the render directly (builder-time assert). Wrapping
+      // render + await in one thunk catches both timings.
+      await expect(async () => {
+        const result = await helper.renderTemplate(
+          false,
+          "exec.run.formula_reject",
+          ["limits"],
+          (tx) => {
+            const ins: Record<string, ReturnType<typeof tx.createValue>> = {
+              mode: tx.createValue(Pl.JsonObject, JSON.stringify(tc.mode)),
+            };
+            if (tc.needsFile && handle !== undefined) {
+              ins.file = tx.createValue(Pl.JsonObject, JSON.stringify(handle));
+            }
+            return ins;
+          },
+        );
+        await result.computeOutput("limits", (a) => a?.getDataAsString()).awaitStableValue();
+      }).rejects.toThrow(tc.pattern);
+    },
+    120000,
+  );
+}
+
+/**
+ * R11/R12 direct proof — added by the review. The headline guarantee is that
+ * adding/changing a formula does NOT change the exec CID, so adopting a formula
+ * cannot bust dedup. Render the SAME exec twice (identical software/arg/no
+ * files), differing ONLY in the memFormula value (2 GiB vs 4 GiB). The renders
+ * run sequentially, so the first allocates; if the formula is CID-transparent
+ * the second shares the CID and dedups to that SAME allocation — both reads
+ * return 2 GiB. If a formula ever affected the CID, the second would allocate
+ * 4 GiB and the values would diverge. (This harness dedups across renders — that
+ * is exactly why the other formula templates carry a "load-bearing" arg suffix
+ * to stay distinct; formula_cid uses a constant ",cid" suffix so the two renders
+ * share a CID with each other but not with formula_const / formula_ops.)
+ */
+tplTest.concurrent(
+  "formula-cid-transparency: changing only the memFormula dedups to one allocation (R11)",
+  async ({ helper, expect }) => {
+    const readRam = async (memGib: number) => {
+      const result = await helper.renderTemplate(
+        false,
+        "exec.run.formula_cid",
+        ["limits"],
+        (tx) => ({
+          memGib: tx.createValue(Pl.JsonObject, JSON.stringify(memGib)),
+        }),
+      );
+      const out = await result
+        .computeOutput("limits", (a) => a?.getDataAsString())
+        .awaitStableValue();
+      return Number(out!.split(",")[0]);
+    };
+
+    const ram2 = await readRam(2); // first render allocates: 2 GiB
+    const ram4 = await readRam(4); // CID-transparent => dedups to the 2 GiB allocation
+    // eslint-disable-next-line no-console
+    console.log(
+      `[formula-cid] ram(memGib=2)=${ram2} ram(memGib=4)=${ram4} (equal => CID-transparent)`,
+    );
+
+    expect(ram2).eq(2 * GIB);
+    expect(ram4).eq(2 * GIB); // NOT 4 GiB: the second exec deduped to the first despite a different formula
   },
   120000,
 );

@@ -269,3 +269,69 @@ TestFallbackOnlyMemFormula := func() {
 	test.isTrue(is_undefined(res.err))
 }
 
+// ============================================================================
+// Added by deep-dive review (2026-06-03): coverage for documented-but-untested
+// evaluator contracts, a non-binary clamp branch, the referencedMetricFiles
+// dedup loop, .bz2 acceptance, and the and/or-vs-bool R24 boundary.
+// ============================================================================
+
+TestFormulaDivCeilExactDivision := func() {
+	// divCeil is (a+b-1)/b; an EXACT division must not round up (off-by-one guard).
+	// The pre-existing suite only covers the inexact case divCeil(10,3)=4.
+	test.isEqual(3, f.evaluate(f.divCeil(9, 3), _fakeResolver))   // exact -> 3, not 4
+	test.isEqual(2, f.evaluate(f.divCeil(6, 3), _fakeResolver))   // exact -> 2
+	test.isEqual(1, f.evaluate(f.divCeil(1, 1), _fakeResolver))   // exact -> 1
+	test.isEqual(0, f.evaluate(f.divCeil(0, 3), _fakeResolver))   // 0 -> 0
+	test.isEqual(4, f.evaluate(f.divCeil(7, 2), _fakeResolver))   // inexact -> 4
+}
+
+TestFormulaClampValueInRange := func() {
+	// The passthrough branch: a value already within [lo,hi] returns unchanged.
+	// Existing suite covers only the raise-to-lo and cap-to-hi branches.
+	test.isEqual(7, f.evaluate(f.clamp(7, 5, 10), _fakeResolver))    // in range -> unchanged
+	test.isEqual(5, f.evaluate(f.clamp(5, 5, 10), _fakeResolver))    // on lo boundary
+	test.isEqual(10, f.evaluate(f.clamp(10, 5, 10), _fakeResolver))  // on hi boundary
+}
+
+TestFormulaIfNotTruthyIntCondition := func() {
+	// formula.lib documents: "the evaluator treats any nonzero const as truthy" for
+	// if.cond / not.a given a bare int. Every existing if/not test feeds a comparison
+	// (already a bool); this pins the documented truthy-int contract.
+	test.isEqual(10, f.evaluate(f["if"](1, 10, 20), _fakeResolver))  // nonzero -> then
+	test.isEqual(20, f.evaluate(f["if"](0, 10, 20), _fakeResolver))  // zero -> else
+	test.isFalse(f.evaluate(f.not(5), _fakeResolver))                // !nonzero -> false
+	test.isTrue(f.evaluate(f.not(0), _fakeResolver))                 // !0 -> true
+}
+
+TestFormulaLogicOpsOfIntsReturnInt := func() {
+	// Tengo && / || yield the deciding OPERAND, not a coerced bool. So f.and/f.or of
+	// integer operands evaluate to an INTEGER — meaning a top-level f.and/f.or used as
+	// a resource formula slips past evaluateResource's `is_int(v) && v > 0` guard,
+	// unlike f.gt/f.lt/f.not (which yield a bool and ARE rejected). Documents the R24
+	// coverage gap (see review report).
+	test.isTrue(is_int(f.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
+	test.isTrue(is_int(f.evaluate(f.and(2, 3), _fakeResolver)))   // 2 && 3 -> 3 (int)
+	test.isFalse(is_int(f.evaluate(f.gt(5, 2), _fakeResolver)))   // 5 > 2 -> true (bool)
+	// the gap: a nonsense logical mem formula is ACCEPTED (returns 1) not rejected
+	test.isEqual(1, f.evaluateResource(f.or(1, 0), _fakeResolver, "ram"))
+}
+
+TestReferencedMetricFilesDedupesRepeatedFile := func() {
+	// referencedMetricFiles must collapse a file referenced by lineCount more than once
+	// (e.g. once in a condition and once in a branch) to a single pre-exec. Existing
+	// tests reference each file exactly once, leaving the dedup loop unexercised.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	formula := f.add(f.lineCount("reads"), f.mul(f.lineCount("reads"), 2))
+	resolved := f.resolveAst(formula, tagMap, allFiles)
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)   // each file once, not duplicated
+}
+
+TestResolveLineCountBz2Accepted := func() {
+	// R14 lists .bz2 as a supported compression suffix, but only .gz/.zst were covered.
+	// The builder must strip .bz2 and accept the line-oriented base extension.
+	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.bz2"] }, ["r1.fastq.bz2"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.bz2"] }, resolved)
+}
+

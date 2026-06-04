@@ -1,0 +1,40 @@
+/**
+ * Direct proof of CID-transparency (R11/R12): a memFormula does NOT participate
+ * in the exec dedup CID.
+ *
+ * The exec is identical across renders — same software, same arg (including a
+ * constant ",cid" suffix that isolates it from the other formula templates),
+ * NO input files — except for the memFormula value, which is driven by
+ * inputs.memGib. If formula meta inputs are CID-transparent, two renders with
+ * different memGib share one CID and dedup to a single allocation, so both read
+ * back the SAME ram. If a formula ever leaked into the CID, the two would
+ * allocate separately and the ram values would diverge.
+ *
+ * (The ",cid" suffix is constant across both renders, so it does NOT distinguish
+ * them from each other — it only keeps this exec distinct from formula_const /
+ * formula_ops so this test can't perturb their allocations.)
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},cid").
+		memFormula(f.gib(inputs.memGib)).
+		cpuFormula(f.add(2, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})
