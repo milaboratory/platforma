@@ -2,9 +2,9 @@
 "@platforma-sdk/package-builder": minor
 ---
 
-Add `build:docker-dev` flow for publishing block-software dev images to a public ECR.
+Add `build:dev-remote` flow for publishing block-software dev images to a public ECR.
 
-Block developers can now invoke `pnpm run build:docker-dev` (env `PL_DOCKER_BUILD=1 PL_DOCKER_AUTOPUSH=1`) to cross-compile a `linux/amd64` docker image and push it to `public.ecr.aws/u5p1x5q2/pl-containers` (override via `PL_DOCKER_REGISTRY` / `PL_DOCKER_REGISTRY_PUSH_TO`). `pnpm run build:dev` keeps its previous no-docker behaviour so the dev loop stays fast.
+Block developers can now invoke `pnpm run build:dev-remote` (env `PL_DOCKER_BUILD=1 PL_DOCKER_AUTOPUSH=1`) to cross-compile a `linux/amd64` docker image and push it to `public.ecr.aws/u5p1x5q2/pl-containers` (override via `PL_DOCKER_REGISTRY` / `PL_DOCKER_REGISTRY_PUSH_TO`). `pnpm run build:dev` keeps its previous no-docker behaviour so the dev loop stays fast.
 
 Other fixes shipped together:
 
