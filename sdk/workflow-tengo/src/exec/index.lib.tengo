@@ -470,8 +470,9 @@ builder := func() {
 		 * metrics (size / line count) at run time on the backend.
 		 *
 		 * Requires a backend with getBlobSize support. On older backends the
-		 * formula is skipped and the `{ fallback: ... }` value is used as a
-		 * static RAM request instead.
+		 * formula is skipped and a static RAM request is used instead: the
+		 * `{ fallback: ... }` value, or — if none is given — a static `.mem()`
+		 * set on the same builder. One of the two must be present (else an error).
 		 *
 		 * The formula must evaluate to a positive integer number of bytes. A
 		 * non-positive or non-integer result (e.g. a top-level comparison, or an
@@ -492,8 +493,13 @@ builder := func() {
 		memFormula: func(ast, ...opts) {
 			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.memFormula: expected a formula node from exec.formula")
 			memFormulaAst = ast
-			if len(opts) > 0 && ll.isMap(opts[0]) && !is_undefined(opts[0].fallback) {
-				memFormulaFallback = opts[0].fallback
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				for k, _ in opts[0] {
+					ll.assert(k == "fallback", "exec.builder.memFormula: unknown option %q (only { fallback } is supported)", k)
+				}
+				if !is_undefined(opts[0].fallback) {
+					memFormulaFallback = opts[0].fallback
+				}
 			}
 			return self
 		},
@@ -503,8 +509,9 @@ builder := func() {
 		 * metrics (size / line count) at run time on the backend.
 		 *
 		 * Requires a backend with getBlobSize support. On older backends the
-		 * formula is skipped and the `{ fallback: ... }` value is used as a
-		 * static CPU request instead.
+		 * formula is skipped and a static CPU request is used instead: the
+		 * `{ fallback: ... }` value, or — if none is given — a static `.cpu()`
+		 * set on the same builder. One of the two must be present (else an error).
 		 *
 		 * The formula must evaluate to a positive integer number of cores. A
 		 * non-positive or non-integer result is rejected at run time — floor it
@@ -524,8 +531,13 @@ builder := func() {
 		cpuFormula: func(ast, ...opts) {
 			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.cpuFormula: expected a formula node from exec.formula")
 			cpuFormulaAst = ast
-			if len(opts) > 0 && ll.isMap(opts[0]) && !is_undefined(opts[0].fallback) {
-				cpuFormulaFallback = opts[0].fallback
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				for k, _ in opts[0] {
+					ll.assert(k == "fallback", "exec.builder.cpuFormula: unknown option %q (only { fallback } is supported)", k)
+				}
+				if !is_undefined(opts[0].fallback) {
+					cpuFormulaFallback = opts[0].fallback
+				}
 			}
 			return self
 		},
