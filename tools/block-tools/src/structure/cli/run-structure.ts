@@ -52,7 +52,7 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
   const fs = new NodeFileSystem(root);
   const templates = new NodeTemplateProvider(input.templatesRoot);
 
-  const ctx = await discoverRunContext({
+  const ctx = discoverRunContext({
     fs,
     isSdkInternal: input.isSdkInternal,
     updateDepsOnly: input.updateDepsOnly,
@@ -61,13 +61,13 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
 
   const registryLookup = input.updateDepsOnly ? await buildRegistryLookup() : undefined;
 
-  const result = await engineRun(STRUCTURE, fs, ctx, {
+  const result = engineRun(STRUCTURE, fs, ctx, {
     templates,
     registryLookup,
     // Fresh re-discovery for the post-run recheck (default refresh only)
     // — re-reads the just-written tree so a rename that shifted the
     // module map is observed.
-    rediscover: async () =>
+    rediscover: () =>
       discoverRunContext({
         fs,
         isSdkInternal: input.isSdkInternal,

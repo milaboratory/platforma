@@ -64,24 +64,22 @@ const mockLookup = (name: string): string | undefined => MOCK_LATEST[name];
 describe("rootCatalogBumpRules mode split", () => {
   test("default refresh: catalog untouched, default-mode leaf fires", async () => {
     const fs = freshFs();
-    await engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup });
+    engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup });
 
-    const cat = (
-      parseYaml(await fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> }
-    ).catalog;
+    const cat = (parseYaml(fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> })
+      .catalog;
     expect(cat["@platforma-sdk/model"]).toBe("1.0.0");
     expect(cat["@milaboratories/ts-builder"]).toBe("1.0.0");
     // Default-mode leaf did fire.
-    expect(await fs.exists("MARKER.txt")).toBe(true);
+    expect(fs.exists("MARKER.txt")).toBe(true);
   });
 
   test("--update-deps-only: SDK catalog bumped, infra floor seeded, default-mode leaf skipped", async () => {
     const fs = freshFs();
-    await engineRun(STRUCTURE, fs, ctx(true), { registryLookup: mockLookup });
+    engineRun(STRUCTURE, fs, ctx(true), { registryLookup: mockLookup });
 
-    const cat = (
-      parseYaml(await fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> }
-    ).catalog;
+    const cat = (parseYaml(fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> })
+      .catalog;
     // Present SDK keys refreshed to latest.
     expect(cat["@platforma-sdk/model"]).toBe("9.9.9");
     expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
@@ -93,21 +91,20 @@ describe("rootCatalogBumpRules mode split", () => {
     // Non-matching dep left alone.
     expect(cat["lodash"]).toBe("1.0.0");
     // Default-mode leaf was skipped in update-deps-only mode.
-    expect(await fs.exists("MARKER.txt")).toBe(false);
+    expect(fs.exists("MARKER.txt")).toBe(false);
   });
 
   test("init: SDK catalog bumped AND default-mode leaf fires", async () => {
     const fs = freshFs();
-    await engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup, initMode: true });
+    engineRun(STRUCTURE, fs, ctx(false), { registryLookup: mockLookup, initMode: true });
 
-    const cat = (
-      parseYaml(await fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> }
-    ).catalog;
+    const cat = (parseYaml(fs.read("pnpm-workspace.yaml")) as { catalog: Record<string, string> })
+      .catalog;
     // onInitOrUpdate fired → SDK bumped.
     expect(cat["@platforma-sdk/model"]).toBe("9.9.9");
     expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
     expect(cat["lodash"]).toBe("1.0.0");
     // Default-mode leaf also fired on init.
-    expect(await fs.exists("MARKER.txt")).toBe(true);
+    expect(fs.exists("MARKER.txt")).toBe(true);
   });
 });

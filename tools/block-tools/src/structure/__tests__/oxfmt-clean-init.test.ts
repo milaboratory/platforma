@@ -39,13 +39,13 @@ describe("oxfmt-clean init output (model + ui)", () => {
       orgScope: "test-org",
       shortName: "demo",
     };
-    const { fs } = await simulateInit({ vars });
+    const { fs } = simulateInit({ vars });
 
     const root = mkdtempSync(path.join(tmpdir(), "oxfmt-clean-"));
     for (const scope of ["model", "ui"]) {
       mkdirSync(path.join(root, scope), { recursive: true });
       for (const fileName of FILES) {
-        const content = await fs.read(`${scope}/${fileName}`);
+        const content = fs.read(`${scope}/${fileName}`);
         writeFileSync(path.join(root, scope, fileName), content);
         const r = spawnSync("oxfmt", ["--check", path.join(scope, fileName)], {
           cwd: root,

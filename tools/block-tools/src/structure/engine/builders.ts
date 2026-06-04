@@ -44,14 +44,16 @@ function appendNode(builder: string, node: TreeNode): void {
   t.stack[t.stack.length - 1]!.push(node);
 }
 
-/** Engine-internal: scope `blockVars()` lookups during a run. Accepts
- *  sync or async bodies; awaits Promise-returning ones so the active
- *  context survives across `await` points inside the runner. */
-export async function withRunContext<T>(ctx: RunContext, fn: () => T | Promise<T>): Promise<T> {
+/** Engine-internal: scope `blockVars()` lookups during a run. The body is
+ *  synchronous, so the module-global `activeRunContext` cannot be observed
+ *  by an interleaved run — a sync call stack runs to completion before any
+ *  other `run()` can start. The try/finally restores the previous context
+ *  (supporting the nested-run case the post-run recheck used to imply). */
+export function withRunContext<T>(ctx: RunContext, fn: () => T): T {
   const prev = activeRunContext;
   activeRunContext = ctx;
   try {
-    return await fn();
+    return fn();
   } finally {
     activeRunContext = prev;
   }

@@ -9,17 +9,17 @@ import { MemoryFileSystem } from "../fs/memory";
 describe("MemoryFileSystem", () => {
   test("write + read + exists", async () => {
     const fs = new MemoryFileSystem();
-    expect(await fs.exists("a.json")).toBe(false);
-    await fs.write("a.json", "{}");
-    expect(await fs.read("a.json")).toBe("{}");
-    expect(await fs.exists("a.json")).toBe(true);
+    expect(fs.exists("a.json")).toBe(false);
+    fs.write("a.json", "{}");
+    expect(fs.read("a.json")).toBe("{}");
+    expect(fs.exists("a.json")).toBe(true);
   });
 
   test("directory exists when a child file is present", async () => {
     const fs = new MemoryFileSystem({ "model/package.json": "{}" });
-    expect(await fs.exists("model")).toBe(true);
-    expect(await fs.exists("model/")).toBe(true);
-    expect(await fs.exists("ui")).toBe(false);
+    expect(fs.exists("model")).toBe(true);
+    expect(fs.exists("model/")).toBe(true);
+    expect(fs.exists("ui")).toBe(false);
   });
 
   test("list recurses", async () => {
@@ -28,9 +28,9 @@ describe("MemoryFileSystem", () => {
       "b/c.txt": "2",
       "b/d/e.txt": "3",
     });
-    expect(await fs.list("")).toEqual(["a.txt", "b/c.txt", "b/d/e.txt"]);
-    expect(await fs.list("b")).toEqual(["b/c.txt", "b/d/e.txt"]);
-    expect(await fs.list("missing")).toEqual([]);
+    expect(fs.list("")).toEqual(["a.txt", "b/c.txt", "b/d/e.txt"]);
+    expect(fs.list("b")).toEqual(["b/c.txt", "b/d/e.txt"]);
+    expect(fs.list("missing")).toEqual([]);
   });
 
   test("move renames directory subtrees", async () => {
@@ -39,11 +39,11 @@ describe("MemoryFileSystem", () => {
       "test/b/c.ts": "y",
       "keep.txt": "z",
     });
-    await fs.move("test", "test-legacy");
-    expect(await fs.exists("test")).toBe(false);
-    expect(await fs.read("test-legacy/a.ts")).toBe("x");
-    expect(await fs.read("test-legacy/b/c.ts")).toBe("y");
-    expect(await fs.read("keep.txt")).toBe("z");
+    fs.move("test", "test-legacy");
+    expect(fs.exists("test")).toBe(false);
+    expect(fs.read("test-legacy/a.ts")).toBe("x");
+    expect(fs.read("test-legacy/b/c.ts")).toBe("y");
+    expect(fs.read("keep.txt")).toBe("z");
   });
 
   test("delete is recursive and idempotent", async () => {
@@ -51,9 +51,9 @@ describe("MemoryFileSystem", () => {
       "x/y.ts": "1",
       "x/z.ts": "2",
     });
-    await fs.delete("x");
-    expect(await fs.exists("x")).toBe(false);
-    await fs.delete("x"); // no-op
-    expect(await fs.exists("x")).toBe(false);
+    fs.delete("x");
+    expect(fs.exists("x")).toBe(false);
+    fs.delete("x"); // no-op
+    expect(fs.exists("x")).toBe(false);
   });
 });

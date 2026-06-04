@@ -69,7 +69,7 @@ export type RunOptions = {
   /** Called before the post-run recheck to obtain a fresh RunContext
    *  reflecting the just-written FS state (re-reads `pnpm-workspace.yaml`).
    *  If absent, recheck reuses the original ctx with `dryRun: true`. */
-  rediscover?: (fs: FileSystem) => Promise<RunContext>;
+  rediscover?: (fs: FileSystem) => RunContext;
   /** Template provider used by `file(...)` and `tpl(...)` content forms.
    *  Required whenever the structure references such forms. */
   templates?: TemplateProvider;
@@ -159,13 +159,13 @@ function resolveContent(
 
 /** Write a leaf's content to disk, dispatching binary assets (copied
  *  verbatim, never utf-8 decoded) from string content. */
-async function writeLeafContent(
+function writeLeafContent(
   fs: FileSystem,
   resolvedPath: string,
   form: ContentForm,
   templates: TemplateProvider | undefined,
   isSdkInternal: boolean,
-): Promise<void> {
+): void {
   if (form.kind === "binary") {
     if (!templates) {
       throw new Error(
@@ -173,10 +173,10 @@ async function writeLeafContent(
           `Pass opts.templates to engine.run(...).`,
       );
     }
-    await fs.writeBinary(resolvedPath, templates.staticReadBinary(form.path));
+    fs.writeBinary(resolvedPath, templates.staticReadBinary(form.path));
     return;
   }
-  await fs.write(resolvedPath, resolveContent(form, resolvedPath, templates, isSdkInternal));
+  fs.write(resolvedPath, resolveContent(form, resolvedPath, templates, isSdkInternal));
 }
 
 /** Dispatch managed-body parse → mutate → serialize by file extension /
@@ -216,8 +216,8 @@ function runManagedBody(
   );
 }
 
-async function buildSnapshot(fs: FileSystem): Promise<Set<string>> {
-  const files = await fs.list("");
+function buildSnapshot(fs: FileSystem): Set<string> {
+  const files = fs.list("");
   const out = new Set<string>();
   for (const f of files) {
     out.add(f);
@@ -275,20 +275,20 @@ function filterByMode(items: FlatItem[], mode: RunMode): FlatItem[] {
   return items.filter((i) => i.modes.includes(mode));
 }
 
-async function applyStructural(
+function applyStructural(
   item: FlatItem,
   fs: FileSystem,
   dryRun: boolean,
   templates: TemplateProvider | undefined,
   initMode: boolean,
   isSdkInternal: boolean,
-): Promise<Change | undefined> {
+): Change | undefined {
   const leaf = item.leaf;
   if (leaf.kind === "fixed") {
     const desired = resolveContent(leaf.content, item.resolvedPath, templates, isSdkInternal);
-    const exists = await fs.exists(item.resolvedPath);
+    const exists = fs.exists(item.resolvedPath);
     if (!exists) {
-      if (!dryRun) await fs.write(item.resolvedPath, desired);
+      if (!dryRun) fs.write(item.resolvedPath, desired);
       return {
         scope: item.scope,
         path: item.resolvedPath,
@@ -296,9 +296,9 @@ async function applyStructural(
         action: "create",
       };
     }
-    const current = await fs.read(item.resolvedPath);
+    const current = fs.read(item.resolvedPath);
     if (current === desired) return undefined;
-    if (!dryRun) await fs.write(item.resolvedPath, desired);
+    if (!dryRun) fs.write(item.resolvedPath, desired);
     return {
       scope: item.scope,
       path: item.resolvedPath,
@@ -307,9 +307,9 @@ async function applyStructural(
     };
   }
   if (leaf.kind === "scaffold") {
-    if (await fs.exists(item.resolvedPath)) return undefined;
+    if (fs.exists(item.resolvedPath)) return undefined;
     if (!dryRun) {
-      await writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
     }
     return {
       scope: item.scope,
@@ -325,9 +325,9 @@ async function applyStructural(
     // init action depositing canonical seed content, then the check
     // pass simply skipping seeds (vacuously fine).
     if (!initMode) return undefined;
-    if (await fs.exists(item.resolvedPath)) return undefined;
+    if (fs.exists(item.resolvedPath)) return undefined;
     if (!dryRun) {
-      await writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
     }
     return {
       scope: item.scope,
@@ -337,8 +337,8 @@ async function applyStructural(
     };
   }
   if (leaf.kind === "remove") {
-    if (!(await fs.exists(item.resolvedPath))) return undefined;
-    if (!dryRun) await fs.delete(item.resolvedPath);
+    if (!fs.exists(item.resolvedPath)) return undefined;
+    if (!dryRun) fs.delete(item.resolvedPath);
     return {
       scope: item.scope,
       path: item.resolvedPath,
@@ -347,13 +347,13 @@ async function applyStructural(
     };
   }
   if (leaf.kind === "rename") {
-    if (!(await fs.exists(item.resolvedPath))) return undefined;
+    if (!fs.exists(item.resolvedPath)) return undefined;
     const to = item.resolvedTo!;
-    if (await fs.exists(to)) {
+    if (fs.exists(to)) {
       // dest exists — treat as already-renamed; no change.
       return undefined;
     }
-    if (!dryRun) await fs.move(item.resolvedPath, to);
+    if (!dryRun) fs.move(item.resolvedPath, to);
     return {
       scope: item.scope,
       path: item.resolvedPath,
@@ -364,7 +364,7 @@ async function applyStructural(
   return undefined;
 }
 
-async function applyManaged(
+function applyManaged(
   item: FlatItem,
   fs: FileSystem,
   dryRun: boolean,
@@ -372,11 +372,11 @@ async function applyManaged(
   templates: TemplateProvider | undefined,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
   isSdkInternal: boolean,
-): Promise<Change | undefined> {
+): Change | undefined {
   if (item.leaf.kind !== "managed") return undefined;
   const leaf = item.leaf;
   const path = item.resolvedPath;
-  const exists = await fs.exists(path);
+  const exists = fs.exists(path);
 
   let beforeRaw: string;
   let created = false;
@@ -385,13 +385,13 @@ async function applyManaged(
     beforeRaw = resolveContent(leaf.initial, path, templates, isSdkInternal);
     created = true;
   } else {
-    beforeRaw = await fs.read(path);
+    beforeRaw = fs.read(path);
   }
 
   const after = runManagedBody(path, beforeRaw, leaf.body, tctx, registryLookup);
 
   if (created) {
-    if (!dryRun) await fs.write(path, after);
+    if (!dryRun) fs.write(path, after);
     return {
       scope: item.scope,
       path,
@@ -400,7 +400,7 @@ async function applyManaged(
     };
   }
   if (after === beforeRaw) return undefined;
-  if (!dryRun) await fs.write(path, after);
+  if (!dryRun) fs.write(path, after);
   return {
     scope: item.scope,
     path,
@@ -411,7 +411,7 @@ async function applyManaged(
 
 /** Execute one pass over the flattened items: structural items first
  *  (declaration order), then managed items. Returns the change list. */
-async function executePass(
+function executePass(
   flat: FlatItem[],
   fs: FileSystem,
   ctx: RunContext,
@@ -419,29 +419,29 @@ async function executePass(
   templates: TemplateProvider | undefined,
   initMode: boolean,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
-): Promise<Change[]> {
+): Change[] {
   const items = filterByMode(flat, currentMode(ctx, initMode));
   const changes: Change[] = [];
 
   // Structural pass. The trigger context is per-item: `filesMatch` resolves
   // module-relative, so it must carry the leaf's bound module path.
-  const snap1 = await buildSnapshot(fs);
+  const snap1 = buildSnapshot(fs);
   for (const item of items) {
     if (item.leaf.kind === "managed") continue;
     const tctx1 = buildTriggerCtx(snap1, ctx, item.modulePath);
     if (!passesTriggers(item, tctx1)) continue;
-    const change = await applyStructural(item, fs, dryRun, templates, initMode, ctx.isSdkInternal);
+    const change = applyStructural(item, fs, dryRun, templates, initMode, ctx.isSdkInternal);
     if (change) changes.push(change);
   }
 
   // Re-snapshot after structural pass — managed-body triggers see the
   // post-rename / post-delete world.
-  const snap2 = await buildSnapshot(fs);
+  const snap2 = buildSnapshot(fs);
   for (const item of items) {
     if (item.leaf.kind !== "managed") continue;
     const tctx2 = buildTriggerCtx(snap2, ctx, item.modulePath);
     if (!passesTriggers(item, tctx2)) continue;
-    const change = await applyManaged(
+    const change = applyManaged(
       item,
       fs,
       dryRun,
@@ -461,16 +461,16 @@ async function executePass(
  * semantics. Throws `RecheckError` if the post-run dry-run finds any
  * leftover diff after a successful refresh.
  */
-export async function run(
+export function run(
   structure: Structure,
   fs: FileSystem,
   ctx: RunContext,
   opts: RunOptions = {},
-): Promise<RunResult> {
-  return withRunContext(ctx, async () => {
+): RunResult {
+  return withRunContext(ctx, () => {
     const flat = flatten(structure, ctx);
     const initMode = !!opts.initMode;
-    const changes = await executePass(
+    const changes = executePass(
       flat,
       fs,
       ctx,
@@ -484,14 +484,14 @@ export async function run(
 
     if (isRefreshDefault) {
       // version bump
-      await writeStructureVersion(fs);
+      writeStructureVersion(fs);
 
       // post-run recheck. Fresh discovery → fresh flatten →
       // dry-run. Any change list emits RecheckError on the first item.
-      const recheckCtxBase = opts.rediscover ? await opts.rediscover(fs) : ctx;
+      const recheckCtxBase = opts.rediscover ? opts.rediscover(fs) : ctx;
       const recheckCtx: RunContext = { ...recheckCtxBase, dryRun: true };
       const recheckFlat = flatten(structure, recheckCtx);
-      const recheckChanges = await executePass(
+      const recheckChanges = executePass(
         recheckFlat,
         fs,
         recheckCtx,
@@ -511,7 +511,7 @@ export async function run(
     // Init mode: write .structure so the resulting tree carries the
     // current version (matches what `init` ships to disk).
     if (initMode && !ctx.dryRun) {
-      await writeStructureVersion(fs);
+      writeStructureVersion(fs);
     }
 
     return { changes };

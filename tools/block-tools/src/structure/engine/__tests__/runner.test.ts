@@ -58,7 +58,7 @@ describe("runner — init + refresh + check", () => {
   test("init (fresh FS): structural + managed primitives all fire", async () => {
     const fs = new MemoryFileSystem();
     const ctx = ctxFor();
-    const result = await run(syntheticStructure(), fs, ctx);
+    const result = run(syntheticStructure(), fs, ctx);
     // Expected changes: fixed root/turbo.json + managed root/package.json
     // + fixed model/tsconfig.json. remove("legacy.txt") is no-op (file
     // never existed). Plus the .structure-version write at end (not in
@@ -70,14 +70,14 @@ describe("runner — init + refresh + check", () => {
     expect(paths).not.toContain("legacy.txt");
 
     // Files actually written.
-    expect(await fs.exists("turbo.json")).toBe(true);
-    expect(await fs.exists("model/tsconfig.json")).toBe(true);
-    const pkg = JSON.parse(await fs.read("package.json"));
+    expect(fs.exists("turbo.json")).toBe(true);
+    expect(fs.exists("model/tsconfig.json")).toBe(true);
+    const pkg = JSON.parse(fs.read("package.json"));
     expect(pkg.type).toBe("module");
     expect(pkg.scripts.build).toBe("echo build");
     // .structure-version written.
-    expect(await fs.exists(STRUCTURE_META_FILE)).toBe(true);
-    expect(JSON.parse(await fs.read(STRUCTURE_META_FILE))).toEqual({
+    expect(fs.exists(STRUCTURE_META_FILE)).toBe(true);
+    expect(JSON.parse(fs.read(STRUCTURE_META_FILE))).toEqual({
       version: STRUCTURE_VERSION,
     });
   });
@@ -85,52 +85,52 @@ describe("runner — init + refresh + check", () => {
   test("refresh (second run on same FS): idempotent — zero changes", async () => {
     const fs = new MemoryFileSystem();
     const ctx = ctxFor();
-    await run(syntheticStructure(), fs, ctx);
-    const second = await run(syntheticStructure(), fs, ctx);
+    run(syntheticStructure(), fs, ctx);
+    const second = run(syntheticStructure(), fs, ctx);
     expect(second.changes).toEqual([]);
   });
 
   test("check (dryRun): no writes; reports what refresh would do", async () => {
     const fs = new MemoryFileSystem();
     const ctx = ctxFor({ dryRun: true });
-    const result = await run(syntheticStructure(), fs, ctx);
+    const result = run(syntheticStructure(), fs, ctx);
     // Reports the same primitives that refresh would apply.
     const paths = result.changes.map((c) => c.path).sort();
     expect(paths).toContain("turbo.json");
     expect(paths).toContain("package.json");
     expect(paths).toContain("model/tsconfig.json");
     // No actual writes.
-    expect(await fs.exists("turbo.json")).toBe(false);
-    expect(await fs.exists(STRUCTURE_META_FILE)).toBe(false);
+    expect(fs.exists("turbo.json")).toBe(false);
+    expect(fs.exists(STRUCTURE_META_FILE)).toBe(false);
   });
 
   test("refresh removes a file that does exist", async () => {
     const fs = new MemoryFileSystem({ "legacy.txt": "x" });
     const ctx = ctxFor();
-    const result = await run(syntheticStructure(), fs, ctx);
+    const result = run(syntheticStructure(), fs, ctx);
     const removed = result.changes.find((c) => c.primitive === "remove");
     expect(removed).toBeDefined();
     expect(removed!.path).toBe("legacy.txt");
-    expect(await fs.exists("legacy.txt")).toBe(false);
+    expect(fs.exists("legacy.txt")).toBe(false);
   });
 });
 
 describe("runner — .structure write gated by mode", () => {
   test("refresh default mode writes .structure", async () => {
     const fs = new MemoryFileSystem();
-    await run(syntheticStructure(), fs, ctxFor());
-    expect(await fs.exists(STRUCTURE_META_FILE)).toBe(true);
+    run(syntheticStructure(), fs, ctxFor());
+    expect(fs.exists(STRUCTURE_META_FILE)).toBe(true);
   });
 
   test("check (dryRun) does NOT write .structure", async () => {
     const fs = new MemoryFileSystem();
-    await run(syntheticStructure(), fs, ctxFor({ dryRun: true }));
-    expect(await fs.exists(STRUCTURE_META_FILE)).toBe(false);
+    run(syntheticStructure(), fs, ctxFor({ dryRun: true }));
+    expect(fs.exists(STRUCTURE_META_FILE)).toBe(false);
   });
 
   test("refresh --update-deps-only does NOT write .structure", async () => {
     const fs = new MemoryFileSystem();
-    await run(syntheticStructure(), fs, ctxFor({ updateDepsOnly: true }));
-    expect(await fs.exists(STRUCTURE_META_FILE)).toBe(false);
+    run(syntheticStructure(), fs, ctxFor({ updateDepsOnly: true }));
+    expect(fs.exists(STRUCTURE_META_FILE)).toBe(false);
   });
 });

@@ -31,59 +31,56 @@ type Pkg = {
 type Tsconfig = { compilerOptions?: { types?: unknown } };
 
 async function refresh(fs: Awaited<ReturnType<typeof simulateInit>>["fs"]) {
-  const ctx = await discoverRunContext({ fs, isSdkInternal: false });
-  await engineRun(STRUCTURE, fs, ctx, {
+  const ctx = discoverRunContext({ fs, isSdkInternal: false });
+  engineRun(STRUCTURE, fs, ctx, {
     templates: defaultTemplateProvider(),
-    rediscover: async () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
+    rediscover: () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
   });
 }
 
 describe("co-located test wiring (real STRUCTURE)", () => {
   test("a model test wires test script + @types/node devDep + node types; ui (no test) stays lean", async () => {
-    const { fs } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
     // Author drops a co-located unit test into the model scope only.
-    await fs.write(
-      "model/src/label.test.ts",
-      `import { test } from "vitest";\ntest("x", () => {});\n`,
-    );
+    fs.write("model/src/label.test.ts", `import { test } from "vitest";\ntest("x", () => {});\n`);
 
     await refresh(fs);
 
-    const model = JSON.parse(await fs.read("model/package.json")) as Pkg;
+    const model = JSON.parse(fs.read("model/package.json")) as Pkg;
     expect(model.scripts?.test).toBe("vitest run --passWithNoTests");
     expect(model.devDependencies?.["@types/node"]).toBe("*");
     // promoted from peer -> dev (single-section invariant drops the peer)
     expect(model.peerDependencies?.["@types/node"]).toBeUndefined();
 
-    const modelTs = JSON.parse(await fs.read("model/tsconfig.json")) as Tsconfig;
+    const modelTs = JSON.parse(fs.read("model/tsconfig.json")) as Tsconfig;
     expect(modelTs.compilerOptions?.types).toEqual(["node"]);
 
     // ui has no co-located test -> stays lean.
-    const ui = JSON.parse(await fs.read("ui/package.json")) as Pkg;
+    const ui = JSON.parse(fs.read("ui/package.json")) as Pkg;
     expect(ui.scripts?.test).toBeUndefined();
     expect(ui.devDependencies?.["@types/node"]).toBeUndefined();
-    const uiTs = JSON.parse(await fs.read("ui/tsconfig.json")) as Tsconfig;
+    const uiTs = JSON.parse(fs.read("ui/tsconfig.json")) as Tsconfig;
     expect(uiTs.compilerOptions?.types).toBeUndefined();
   });
 
   test("test-less block: refresh is a fixpoint (no test script, no node types)", async () => {
-    const { fs } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
 
     const before = {
-      model: await fs.read("model/package.json"),
-      modelTs: await fs.read("model/tsconfig.json"),
-      ui: await fs.read("ui/package.json"),
-      uiTs: await fs.read("ui/tsconfig.json"),
-      workflow: await fs.read("workflow/package.json"),
+      model: fs.read("model/package.json"),
+      modelTs: fs.read("model/tsconfig.json"),
+      ui: fs.read("ui/package.json"),
+      uiTs: fs.read("ui/tsconfig.json"),
+      workflow: fs.read("workflow/package.json"),
     };
 
     await refresh(fs);
 
-    expect(await fs.read("model/package.json")).toBe(before.model);
-    expect(await fs.read("model/tsconfig.json")).toBe(before.modelTs);
-    expect(await fs.read("ui/package.json")).toBe(before.ui);
-    expect(await fs.read("ui/tsconfig.json")).toBe(before.uiTs);
-    expect(await fs.read("workflow/package.json")).toBe(before.workflow);
+    expect(fs.read("model/package.json")).toBe(before.model);
+    expect(fs.read("model/tsconfig.json")).toBe(before.modelTs);
+    expect(fs.read("ui/package.json")).toBe(before.ui);
+    expect(fs.read("ui/tsconfig.json")).toBe(before.uiTs);
+    expect(fs.read("workflow/package.json")).toBe(before.workflow);
 
     // none of the test-less scopes carry a `test` script
     const model = JSON.parse(before.model) as Pkg;
@@ -95,18 +92,15 @@ describe("co-located test wiring (real STRUCTURE)", () => {
   });
 
   test("a workflow test wires its test script (no node-types wiring needed there)", async () => {
-    const { fs } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
-    await fs.write(
-      "workflow/src/wf.test.ts",
-      `import { test } from "vitest";\ntest("x", () => {});\n`,
-    );
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    fs.write("workflow/src/wf.test.ts", `import { test } from "vitest";\ntest("x", () => {});\n`);
 
     await refresh(fs);
 
-    const workflow = JSON.parse(await fs.read("workflow/package.json")) as Pkg;
+    const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
     expect(workflow.scripts?.test).toBe("vitest run --passWithNoTests");
     // workflow tsconfig stays standalone — no node types added there
-    const wfTs = parseYaml(await fs.read("workflow/tsconfig.json")) as { types?: unknown };
+    const wfTs = parseYaml(fs.read("workflow/tsconfig.json")) as { types?: unknown };
     // (workflow tsconfig is JSON, but parseYaml reads JSON too; types:[] unchanged)
     expect(wfTs.types).toEqual([]);
   });
