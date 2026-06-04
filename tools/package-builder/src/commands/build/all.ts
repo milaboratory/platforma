@@ -113,7 +113,7 @@ export default class BuildAll extends Command {
         if (effectiveRegistry?.startsWith("public.ecr.aws/")) {
           const galleryUrl =
             "https://" + effectiveRegistry.replace(/^public\.ecr\.aws/, "gallery.ecr.aws");
-          logger.info("================");
+          logger.info("===============");
           logger.info(`Public ECR repository: ${galleryUrl}`);
           logger.info("===============");
         }
