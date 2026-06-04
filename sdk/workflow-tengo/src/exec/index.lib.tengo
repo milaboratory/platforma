@@ -1200,7 +1200,7 @@ builder := func() {
 
 			// Phase 3: resolve formulas (tags -> file lists) and apply the
 			// hasBlobSize fallback gate. The static quota below stays populated;
-			// the pure exec template overrides ram/cpu per-dimension when the
+			// the ephemeral exec impl overrides ram/cpu per-dimension when the
 			// corresponding formula meta input is present. lineCount metrics are
 			// computed INLINE by running the `line-counter` Go binary via the
 			// builder() factory itself (see _lineCountResource). That is a plain
