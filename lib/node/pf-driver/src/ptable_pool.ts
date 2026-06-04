@@ -26,7 +26,7 @@ export class PTableHolder implements Disposable {
   constructor(
     public readonly pFrame: PFrameHandle,
     pFrameDisposeSignal: AbortSignal,
-    public readonly pTablePromise: Promise<PFrameInternal.PTableV10>,
+    public readonly pTablePromise: Promise<PFrameInternal.PTableV11>,
     private readonly predecessor?: PoolEntry<PTableHandle, PTableHolder>,
   ) {
     this.combinedDisposeSignal = AbortSignal.any([
