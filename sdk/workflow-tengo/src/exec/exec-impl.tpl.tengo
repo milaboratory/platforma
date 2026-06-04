@@ -144,6 +144,7 @@ self.body(func(inputs) {
 			size: func(files) {
 				total := 0
 				for fn in files {
+					ll.assert(!is_undefined(fileRefs[fn]), "exec-impl: resource formula references file %q, which is not among the exec's input files", fn)
 					total += ll.getBlobSize(fileRefs[fn].id)
 				}
 				return total
@@ -156,6 +157,7 @@ self.body(func(inputs) {
 				for fn in files {
 					// As a regular input, each map entry auto-unmarshals to a
 					// resolved content-resource handle; read its bytes directly.
+					ll.assert(!is_undefined(lineCountMap[fn]), "exec-impl: lineCount metric map has no entry for %q (the line-counter pre-exec did not produce a count for this file)", fn)
 					data := lineCountMap[fn].getData()
 					n := int(text.trim(string(data), "\n \r\t"))
 					ll.assert(!is_undefined(n), "exec-impl: lineCount for %q is not a base-10 integer: %q", fn, string(data))
