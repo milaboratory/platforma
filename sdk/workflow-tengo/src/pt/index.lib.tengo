@@ -469,6 +469,12 @@ workflow := func() {
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
 		 *   - `commentPrefix` {string} (optional): The prefix string used to comment out lines in the CSV file.
+		 *   - `raiseIfEmpty` {boolean} (optional): When `false`, a zero-byte input file is read as an empty
+		 *                                          table using the declared `schema` for columns, instead of
+		 *                                          raising a polars `NoDataError`. Defaults to `true` (polars
+		 *                                          default). Provide a complete `schema` covering every column
+		 *                                          referenced downstream when opting into this — the synthesized
+		 *                                          empty frame only contains the columns you declared.
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -513,6 +519,7 @@ workflow := func() {
 			nRowsOpt := undefined
 			ignoreErrorsOpt := undefined
 			commentPrefixOpt := undefined
+			raiseIfEmptyOpt := undefined
 
 			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
@@ -608,6 +615,13 @@ workflow := func() {
 					ll.panic("'commentPrefix' option must be a string. Got: %T", opts.commentPrefix)
 				}
 				commentPrefixOpt = opts.commentPrefix
+			}
+
+			if !is_undefined(opts.raiseIfEmpty) {
+				if !is_bool(opts.raiseIfEmpty) {
+					ll.panic("'raiseIfEmpty' option must be a boolean. Got: %T", opts.raiseIfEmpty)
+				}
+				raiseIfEmptyOpt = opts.raiseIfEmpty
 			}
 
 			if !is_undefined(fileRef) {
@@ -707,6 +721,10 @@ workflow := func() {
 
 			if !is_undefined(nRowsOpt) {
 				step.nRows = nRowsOpt
+			}
+
+			if !is_undefined(raiseIfEmptyOpt) {
+				step.raiseIfEmpty = raiseIfEmptyOpt
 			}
 
 			self.addRawStep(step)

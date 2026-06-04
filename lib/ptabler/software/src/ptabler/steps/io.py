@@ -28,6 +28,10 @@ class BaseReadLogic(PStep):
     infer_schema: Optional[bool]
     ignore_errors: Optional[bool]
     n_rows: Optional[int]
+    # When set to False, a zero-byte input file is treated as an empty table
+    # (using the declared `schema` for columns) instead of raising a polars
+    # NoDataError. Defaults to None (existing strict polars behavior).
+    raise_if_empty: Optional[bool]
 
     def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
         """
@@ -51,16 +55,16 @@ class BaseReadLogic(PStep):
                 if col_spec.type:
                     polars_type_obj = toPolarsType(col_spec.type)
                     defined_column_types[col_spec.column] = polars_type_obj
-                
+
                 if col_spec.null_value is not None:
                     defined_null_values[col_spec.column] = col_spec.null_value
 
         if defined_column_types:
             scan_kwargs["schema_overrides"] = defined_column_types
-        
+
         if defined_null_values:
             scan_kwargs["null_values"] = defined_null_values
-        
+
         if self.n_rows is not None:
             scan_kwargs["n_rows"] = self.n_rows
 
@@ -71,8 +75,21 @@ class BaseReadLogic(PStep):
             scan_kwargs["ignore_errors"] = self.ignore_errors
 
         file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
+
+        if self.raise_if_empty is False:
+            try:
+                file_is_empty = os.path.getsize(file_path) == 0
+            except OSError:
+                file_is_empty = False
+            if file_is_empty:
+                ctx.put_table(
+                    self.name,
+                    pl.LazyFrame(schema=defined_column_types) if defined_column_types else pl.LazyFrame(),
+                )
+                return
+
         lazy_frame = self._do_scan(file_path, scan_kwargs)
-        
+
         ctx.put_table(self.name, lazy_frame)
 
 class ReadCsv(BaseReadLogic, tag="read_csv"):
@@ -90,6 +107,7 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
     infer_schema: Optional[bool] = None
     ignore_errors: Optional[bool] = None
     n_rows: Optional[int] = None
+    raise_if_empty: Optional[bool] = None
 
     def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
         """
@@ -99,7 +117,9 @@ class ReadCsv(BaseReadLogic, tag="read_csv"):
             scan_kwargs["separator"] = self.delimiter
         if self.comment_prefix is not None:
             scan_kwargs["comment_prefix"] = self.comment_prefix
-    
+        if self.raise_if_empty is not None:
+            scan_kwargs["raise_if_empty"] = self.raise_if_empty
+
         return pl.scan_csv(file_path, **scan_kwargs)
 
 class ReadNdjson(BaseReadLogic, tag="read_ndjson"):
@@ -114,6 +134,7 @@ class ReadNdjson(BaseReadLogic, tag="read_ndjson"):
     infer_schema: Optional[bool] = None
     ignore_errors: Optional[bool] = None
     n_rows: Optional[int] = None
+    raise_if_empty: Optional[bool] = None
 
     def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
         """
@@ -133,6 +154,7 @@ class ReadParquet(BaseReadLogic, tag="read_parquet"):
     infer_schema: Optional[bool] = None
     ignore_errors: Optional[bool] = None
     n_rows: Optional[int] = None
+    raise_if_empty: Optional[bool] = None
 
     def _do_scan(self, file_path: str, scan_kwargs: Dict[str, Any]) -> pl.LazyFrame:
         """
