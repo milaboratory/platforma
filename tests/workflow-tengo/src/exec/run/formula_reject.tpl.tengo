@@ -7,8 +7,8 @@
  *   boolCpu  — cpuFormula is a top-level comparison (a bool)           -> rejected (cpu)
  *   bam      — f.lineCount() on a .bam file (unsupported format)       -> rejected at builder time
  *
- * The positive-integer result guard (R24) lives in the ephemeral impl
- * (exec.formula.evaluateResource); the format-compatibility guard (R10) lives
+ * The positive-integer result guard lives in the ephemeral impl
+ * (exec.formula.evaluateResource); the format-compatibility guard lives
  * in the builder (resolveAst -> _assertMetricCompatible). Both surface to the
  * test as a render failure (the impl panic propagates to the awaited output;
  * the builder panic fails the render directly).

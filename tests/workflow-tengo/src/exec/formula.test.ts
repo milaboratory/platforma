@@ -35,8 +35,8 @@ const GZ_FIXTURE_LINES = 5;
 const ZST_FIXTURE_NAME = "formula_zst_7lines.fastq.zst";
 const ZST_FIXTURE_LINES = 7;
 
-// Bzip2 fixture (decompresses to 6 newlines). bz2 is an advertised codec (spec
-// R14, formula.lib _COMPRESSION_EXT) but was the only one with no e2e proof;
+// Bzip2 fixture (decompresses to 6 newlines). bz2 is an advertised codec
+// (formula.lib _COMPRESSION_EXT) but was the only one with no e2e proof;
 // added by the review. Verified the shipped line-counter binary (1.1.1) decodes
 // it (.bz2 and .BZ2 → 6).
 const BZ2_FIXTURE_NAME = "formula_bz2_6lines.fastq.bz2";
@@ -289,12 +289,12 @@ tplTest.concurrent(
 /**
  * Negative-path cases — added by the deep-dive review (2026-06-03).
  *
- * The positive-integer result guard (R24) and the lineCount format-compatibility
- * guard (R10) previously had NO automated coverage: the Tengo unit layer cannot
+ * The positive-integer result guard and the lineCount format-compatibility
+ * guard previously had NO automated coverage: the Tengo unit layer cannot
  * reach them (ll.assert is terminal — no try/catch), and no e2e case exercised a
  * rejection. Each case renders exec.run.formula_reject in a `mode` whose formula
  * must be rejected, and asserts the render REJECTS with the guard's message — and,
- * for R24, that the message names the offending dimension (ram / cpu). The regex
+ * for the positive-integer guard, that the message names the offending dimension (ram / cpu). The regex
  * checks dimension + phrase together (the message is "...(ram) must evaluate to a
  * positive integer...").
  */
@@ -302,25 +302,25 @@ const rejectCases = [
   {
     mode: "negative",
     needsFile: false,
-    pattern: /\(ram\) must evaluate to a positive integer/, // R24: f.sub underflow
+    pattern: /\(ram\) must evaluate to a positive integer/, // result underflows to negative (f.sub)
     desc: "memFormula underflow (negative) rejected, names ram",
   },
   {
     mode: "zero",
     needsFile: false,
-    pattern: /\(ram\) must evaluate to a positive integer/, // R24: unfloored 0
+    pattern: /\(ram\) must evaluate to a positive integer/, // result is an unfloored 0
     desc: "memFormula = 0 (unfloored) rejected, names ram",
   },
   {
     mode: "boolCpu",
     needsFile: false,
-    pattern: /\(cpu\) must compute a number/, // R24/F1: top-level comparison rejected structurally
+    pattern: /\(cpu\) must compute a number/, // top-level comparison rejected structurally
     desc: "cpuFormula = comparison (bool) rejected, names cpu",
   },
   {
     mode: "bam",
     needsFile: true,
-    pattern: /lineCount is not supported for file/, // R10: unsupported format, builder-time
+    pattern: /lineCount is not supported for file/, // unsupported lineCount format, rejected at builder time
     desc: "f.lineCount() on a .bam file rejected at builder time",
   },
 ] as const;
@@ -331,8 +331,8 @@ for (const tc of rejectCases) {
     async ({ helper, expect, driverKit }) => {
       const handle = tc.needsFile ? await libraryFileHandle(driverKit) : undefined;
 
-      // The render must fail. R24 rejections surface when the awaited output
-      // resolves (the ephemeral impl panics in evaluateResource); the R10
+      // The render must fail. Positive-integer-guard rejections surface when the awaited
+      // output resolves (the ephemeral impl panics in evaluateResource); the format-guard
       // rejection fails the render directly (builder-time assert). Wrapping
       // render + await in one thunk catches both timings.
       await expect(async () => {
@@ -358,7 +358,7 @@ for (const tc of rejectCases) {
 }
 
 /**
- * R11/R12 direct proof — added by the review. The headline guarantee is that
+ * CID-transparency direct proof — added by the review. The headline guarantee is that
  * adding/changing a formula does NOT change the exec CID, so adopting a formula
  * cannot bust dedup. Render the SAME exec twice (identical software/arg/no
  * files), differing ONLY in the memFormula value (2 GiB vs 4 GiB). The renders
@@ -371,7 +371,7 @@ for (const tc of rejectCases) {
  * share a CID with each other but not with formula_const / formula_ops.)
  */
 tplTest.concurrent(
-  "formula-cid-transparency: changing only the memFormula dedups to one allocation (R11)",
+  "formula-cid-transparency: changing only the memFormula dedups to one allocation",
   async ({ helper, expect }) => {
     const readRam = async (memGib: number) => {
       const result = await helper.renderTemplate(

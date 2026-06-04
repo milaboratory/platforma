@@ -126,7 +126,7 @@ self.body(func(inputs) {
 	// resources by name — awaitState navigates regular fields, not service/meta
 	// fields. The ephemeral impl is not deduplicated, so this does not affect the
 	// pure template's CID (the map stays a meta input ON THE PURE TEMPLATE, so
-	// CID-transparency / R12 is preserved).
+	// CID-transparency is preserved).
 	if !is_undefined(self.rawMetaInputs()[execConstants.META_INPUT_LINE_COUNT]) {
 		pureImplInputs[execConstants.META_INPUT_LINE_COUNT] = self.rawMetaInputs()[execConstants.META_INPUT_LINE_COUNT]
 	}

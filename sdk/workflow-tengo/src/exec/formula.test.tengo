@@ -283,7 +283,7 @@ TestFallbackStaticServesAsImplicitFallback := func() {
 // ============================================================================
 // Added by deep-dive review (2026-06-03): coverage for documented-but-untested
 // evaluator contracts, a non-binary clamp branch, the referencedMetricFiles
-// dedup loop, .bz2 acceptance, and the and/or-vs-bool R24 boundary.
+// dedup loop, .bz2 acceptance, and the and/or-vs-bool result-guard boundary.
 // ============================================================================
 
 TestFormulaDivCeilExactDivision := func() {
@@ -319,7 +319,7 @@ TestFormulaLogicOpsOfIntsReturnInt := func() {
 	// integer operands evaluate to an INTEGER at the evaluate() level (f.gt/f.lt/f.not
 	// yield a bool). Because that int would otherwise slip past evaluateResource's
 	// `is_int(v) && v > 0` check, evaluateResource now rejects comparison/logic ops
-	// structurally at the top level (F1 fix) — they belong only inside f.if(...). That
+	// structurally at the top level — they belong only inside f.if(...). That
 	// reject is an ll.assert panic (terminal in Tengo, not assertable here); this test
 	// pins the underlying evaluate() operand semantics the guard protects against.
 	test.isTrue(is_int(f.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
@@ -340,7 +340,7 @@ TestReferencedMetricFilesDedupesRepeatedFile := func() {
 }
 
 TestResolveLineCountBz2Accepted := func() {
-	// R14 lists .bz2 as a supported compression suffix, but only .gz/.zst were covered.
+	// .bz2 is a supported compression suffix, but only .gz/.zst were covered.
 	// The builder must strip .bz2 and accept the line-oriented base extension.
 	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.bz2"] }, ["r1.fastq.bz2"])
 	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.bz2"] }, resolved)

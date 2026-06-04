@@ -1,5 +1,5 @@
 /**
- * Direct proof of CID-transparency (R11/R12): a memFormula does NOT participate
+ * Direct proof of CID-transparency: a memFormula does NOT participate
  * in the exec dedup CID.
  *
  * The exec is identical across renders — same software, same arg (including a
