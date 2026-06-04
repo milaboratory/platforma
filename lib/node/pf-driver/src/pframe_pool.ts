@@ -30,7 +30,7 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
 }
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
-  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV15>;
+  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV16>;
   /**
    * WASM-spec frame built from this PFrame's columns. Source of truth
    * for spec-side operations: column discovery, selector resolution,

@@ -4,7 +4,7 @@ import type {
   DataQuery,
   DataQueryBooleanExpression,
 } from "@milaboratories/pl-model-common";
-import type { PTableV10, PTableV11 } from "./table";
+import type { PTableV11 } from "./table";
 import type { PTableId } from "./common";
 
 /**
@@ -31,35 +31,8 @@ export interface UniqueValuesRequestV2 {
 }
 
 /**
- * Read interface exposed by PFrames library. Returns the {@link PTableV10}
- * table view, which provides the `export` method.
- *
- * Spec-side operations (finding columns, listing columns, retrieving
- * column specs, computing axis integrations) are not part of this
- * surface — callers cache column specs themselves or route through
- * WASM-spec. The data-side `createTable` accepts a pre-lowered
- * `DataQuery`; `getUniqueValues` takes pre-resolved indices via
- * {@link UniqueValuesRequestV2}.
- */
-export interface PFrameReadAPIV13 {
-  /** Creates table from a pre-lowered data query. */
-  createTable(tableId: PTableId, dataQuery: DataQuery): PTableV10;
-
-  /** Calculate set of unique values for a specific axis for the filtered set of records. */
-  getUniqueValues(
-    request: UniqueValuesRequestV2,
-    ops?: {
-      signal?: AbortSignal;
-    },
-  ): Promise<UniqueValuesResponse>;
-}
-
-/**
  * Read interface exposed by PFrames library. Returns the {@link PTableV11}
  * table view, whose `export` takes a column-index → header map.
- *
- * Identical to {@link PFrameReadAPIV13} apart from the table view returned by
- * `createTable`.
  *
  * Spec-side operations (finding columns, listing columns, retrieving
  * column specs, computing axis integrations) are not part of this
