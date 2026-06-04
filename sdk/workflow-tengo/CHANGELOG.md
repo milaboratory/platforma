@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.3.1
+
+### Patch Changes
+
+- c9dccff: Bump `@milaboratories/pframes-rs-*` to 1.1.42 and migrate the PFrame driver to the `PTableV11` / `PFrameReadAPIV14` / `PFrameV16` / `PFrameFactoryV7` interface family.
+
+  `exportPTable` now honours `columnIndices`: it builds a unified column-index → header-name map and passes it to `PTableV11.export`, which both selects the columns to export and names them (emitted in ascending index order). The superseded `PTableV10` / `PFrameReadAPIV13` / `PFrameV15` / `PFrameFactoryV6` interfaces are removed.
+
 ## 6.3.0
 
 ### Minor Changes
