@@ -349,8 +349,6 @@ export class AbstractPFrameDriver<
   ): Promise<void> {
     const { path, columnIndices } = options;
 
-    void columnIndices; // TODO
-
     this.logger("info", `[ExportPTable] ENTER (handle = ${handle}, path = ${path})`);
     const startTime = performance.now();
 
@@ -363,9 +361,10 @@ export class AbstractPFrameDriver<
       [signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
-    // Headers mirror the CSV/TSV path (axes first, then data columns): the
-    // label annotation when present, otherwise the spec name.
-    const headers = def.tableSpec.map(columnLabel);
+    const headers: Record<number, string> = {};
+    for (const index of columnIndices) {
+      headers[index] = columnLabel(def.tableSpec[index]);
+    }
 
     return await this.tableConcurrencyLimiter.run(async () => {
       // Cap data rows per xlsx sheet below Excel's hard limit of 1,048,576.

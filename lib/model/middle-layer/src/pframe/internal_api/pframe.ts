@@ -1,19 +1,12 @@
 import type { PFrameFactoryAPIV5 } from "./api_factory";
-import type { PFrameReadAPIV13, PFrameReadAPIV14 } from "./api_read";
+import type { PFrameReadAPIV14 } from "./api_read";
 import type { Logger } from "./common";
 import type { PFrameId } from "./common";
 
 /**
  * Full PFrame surface — factory operations plus data-side reads. Exposes
- * {@link PFrameReadAPIV13}, whose tables provide the `export` method.
- */
-export interface PFrameV15 extends PFrameFactoryAPIV5, PFrameReadAPIV13 {}
-
-/**
- * Full PFrame surface — factory operations plus data-side reads.
- *
- * Identical to {@link PFrameV15} but exposes {@link PFrameReadAPIV14}, whose
- * tables' `export` takes a column-index → header map.
+ * {@link PFrameReadAPIV14}, whose tables' `export` takes a column-index →
+ * header map.
  */
 export interface PFrameV16 extends PFrameFactoryAPIV5, PFrameReadAPIV14 {}
 
@@ -28,31 +21,8 @@ export type PFrameOptionsV2 = {
 
 /**
  * PFrame management functions exposed by the PFrame module. Creates
- * {@link PFrameV15} instances, whose tables provide the `export` method.
- */
-export interface PFrameFactoryV6 {
-  /**
-   * Create a new PFrame instance.
-   * @warning Use concurrency limiting to avoid OOM crashes when multiple instances are simultaneously in use.
-   */
-  createPFrame(options: PFrameOptionsV2): PFrameV15;
-
-  /**
-   * Dump active allocations from all PFrames instances in pprof format.
-   * The result of this function should be saved as `profile.pb.gz`.
-   * Use {@link https://pprof.me/} or {@link https://www.speedscope.app/}
-   * to view the allocation flamechart.
-   * @warning This method will always reject on Windows!
-   */
-  pprofDump: () => Promise<Uint8Array>;
-}
-
-/**
- * PFrame management functions exposed by the PFrame module. Creates
  * {@link PFrameV16} instances, whose tables' `export` takes a
  * column-index → header map.
- *
- * Identical to {@link PFrameFactoryV6} apart from the created PFrame surface.
  */
 export interface PFrameFactoryV7 {
   /**
