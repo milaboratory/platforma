@@ -1,6 +1,6 @@
 // Pure AST constructors for resource-formula expressions (exec.formula).
-// The exec builder resolves these nodes (tags -> files) and the pure exec
-// template evaluates them at run time.
+// The exec builder resolves these nodes (tags -> files) and the ephemeral exec
+// impl evaluates them at run time.
 
 ll := import(":ll")
 text := import("text")
@@ -128,7 +128,7 @@ evaluateResource := func(node, resolver, label) {
 
 // ---- builder-time resolution helpers ---------------------------------------
 
-// extensions lineCount (text row counting) can stream
+// Line-oriented text extensions f.lineCount() supports.
 _LINECOUNT_OK := { "csv": true, "tsv": true, "txt": true, "fastq": true, "fq": true, "fasta": true, "fa": true, "tab": true }
 _COMPRESSION_EXT := { "gz": "gzip", "bz2": "bzip2", "zst": "zstd" }
 
@@ -151,11 +151,9 @@ _baseAndCompression := func(fileName) {
 _assertMetricCompatible := func(metric, fileName) {
 	if metric == "lineCount" {
 		info := _baseAndCompression(fileName)
-		// Case-insensitive extension match so .TXT / .FASTQ are accepted.
-		// Compression suffixes are matched case-insensitively too (in
-		// _baseAndCompression), mirroring the line-counter binary which lowercases
-		// the suffix before decompressing — so "reads.fastq.GZ" is accepted and
-		// counted correctly.
+		// Match the base extension case-insensitively so .TXT / .FASTQ are
+		// accepted (the compression suffix was already stripped case-insensitively
+		// by _baseAndCompression, so "reads.fastq.GZ" counts correctly too).
 		ll.assert(!is_undefined(_LINECOUNT_OK[text.to_lower(info.ext)]),
 			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, info.ext)
 	}
@@ -214,14 +212,13 @@ referencedMetricFiles := func(resolvedNode) {
 	return acc
 }
 
-// applyFormulaFallback resolves the static ram/cpu requests to use when the
-// backend lacks getBlobSize support — formulas cannot be evaluated, so each
-// dimension that HAS a formula needs a { fallback } (else an error), and the
-// fallback applies only when no static .mem()/.cpu() was already set (static
-// wins). Pure (hasBlobSize is decided by the caller), so the !hasBlobSize gate
-// is unit-testable here; the caller asserts `err` is undefined and applies the
-// returned ram/cpu. Returns { ram, cpu, err } (err is a message string or
-// undefined). Field is `err`, not `error` — `error` is a reserved word in Tengo.
+// applyFormulaFallback resolves the static ram/cpu to use when the backend
+// lacks getBlobSize support and formulas cannot be evaluated. Each dimension
+// with a formula needs a { fallback } (else an error); the fallback applies
+// only when no static .mem()/.cpu() was set (static wins). Returns
+// { ram, cpu, err }, err being a message string or undefined — the caller
+// asserts err is undefined, then applies ram/cpu. (Field is `err`, not `error`:
+// `error` is a reserved word in Tengo.)
 applyFormulaFallback := func(memAst, memFallback, cpuAst, cpuFallback, ram, cpu) {
 	res := { ram: ram, cpu: cpu, err: undefined }
 	if !is_undefined(memAst) {
