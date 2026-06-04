@@ -23,6 +23,7 @@ import { NodeTemplateProvider, type TemplateProvider } from "./templates";
 import { run as engineRun } from "./runner";
 import { discoverRunContext } from "./discovery-fs";
 import { STRUCTURE_VERSION } from "./version";
+import { STRUCTURE } from "../structure-definition";
 
 /** Layer-1 helper. */
 export function runRulesAgainst(input: JsonObject, body: () => void): JsonObject {
@@ -58,14 +59,6 @@ export function defaultModulesFor(vars: BlockVars): Module[] {
   return modulesForInit(vars);
 }
 
-let cachedDefaultStructure: Structure | undefined;
-async function defaultStructure(): Promise<Structure> {
-  if (cachedDefaultStructure) return cachedDefaultStructure;
-  const mod = await import("../structure-definition");
-  cachedDefaultStructure = mod.STRUCTURE;
-  return cachedDefaultStructure;
-}
-
 /** Default template provider — reads from the bundled templates tree
  *  next to this file. */
 export function defaultTemplateProvider(): TemplateProvider {
@@ -75,7 +68,7 @@ export function defaultTemplateProvider(): TemplateProvider {
   return new NodeTemplateProvider(root);
 }
 
-export async function simulateInit(input: SimulateInitInput): Promise<SimulatedInit> {
+export function simulateInit(input: SimulateInitInput): SimulatedInit {
   const fs = new MemoryFileSystem();
   const isSdkInternal = input.isSdkInternal ?? false;
   const modules = input.modules ?? defaultModulesFor(input.vars);
@@ -85,9 +78,9 @@ export async function simulateInit(input: SimulateInitInput): Promise<SimulatedI
     isSdkInternal,
     version: STRUCTURE_VERSION,
   });
-  const structure = input.structure ?? (await defaultStructure());
+  const structure = input.structure ?? STRUCTURE;
   const templates = input.templates ?? defaultTemplateProvider();
-  await engineRun(structure, fs, initCtx, {
+  engineRun(structure, fs, initCtx, {
     templates,
     initMode: true,
     registryLookup: input.registryLookup,
@@ -95,6 +88,6 @@ export async function simulateInit(input: SimulateInitInput): Promise<SimulatedI
 
   // Re-discover from the written FS — the returned ctx is what `check`
   // would build, not what `init` assembled.
-  const ctx = await discoverRunContext({ fs, isSdkInternal });
+  const ctx = discoverRunContext({ fs, isSdkInternal });
   return { fs, ctx };
 }

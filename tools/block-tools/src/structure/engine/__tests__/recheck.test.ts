@@ -37,7 +37,7 @@ describe("post-run recheck", () => {
 
     let thrown: unknown;
     try {
-      await run(structure, fs, ctx);
+      run(structure, fs, ctx);
     } catch (e) {
       thrown = e;
     }
@@ -69,7 +69,7 @@ describe("post-run recheck", () => {
       },
       modules: [{ scope: "model", name: "@platforma-open/demo.model", path: "model" }],
     });
-    await expect(run(structure, fs, ctx)).resolves.toBeDefined();
+    expect(run(structure, fs, ctx)).toBeDefined();
   });
 
   test("check mode skips recheck entirely", async () => {
@@ -94,6 +94,6 @@ describe("post-run recheck", () => {
       dryRun: true,
     });
     // dryRun=true: no recheck, no throw, body only runs once.
-    await expect(run(structure, fs, ctx)).resolves.toBeDefined();
+    expect(run(structure, fs, ctx)).toBeDefined();
   });
 });

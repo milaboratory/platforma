@@ -40,8 +40,8 @@ function catalogOf(yamlText: string): Record<string, string> {
 
 describe("version model — init fetch + no-pin-on-refresh", () => {
   test("init writes latest SDK versions; infra floor stays ~-pinned", async () => {
-    const { fs } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
-    const cat = catalogOf(await fs.read("pnpm-workspace.yaml"));
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    const cat = catalogOf(fs.read("pnpm-workspace.yaml"));
 
     // Every SDK family entry resolved to the mocked latest (exact, no modifier).
     for (const name of SDK_CATALOG_PACKAGES) {
@@ -55,25 +55,25 @@ describe("version model — init fetch + no-pin-on-refresh", () => {
   });
 
   test("default refresh touches NO catalog versions (byte-identical)", async () => {
-    const { fs } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
-    const afterInit = await fs.read("pnpm-workspace.yaml");
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    const afterInit = fs.read("pnpm-workspace.yaml");
 
     // A real default refresh — no registryLookup passed, proving refresh
     // never fetches. The onInitOrUpdate bump leaf is excluded from "default".
-    const refreshCtx = await discoverRunContext({ fs, isSdkInternal: false });
-    await engineRun(STRUCTURE, fs, refreshCtx, {
+    const refreshCtx = discoverRunContext({ fs, isSdkInternal: false });
+    engineRun(STRUCTURE, fs, refreshCtx, {
       templates: defaultTemplateProvider(),
-      rediscover: async () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
+      rediscover: () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
     });
 
-    const afterRefresh = await fs.read("pnpm-workspace.yaml");
+    const afterRefresh = fs.read("pnpm-workspace.yaml");
     expect(afterRefresh).toBe(afterInit);
   });
 
   test("init = fixpoint of check: dry-run reports no pnpm-workspace.yaml change", async () => {
-    const { fs, ctx } = await simulateInit({ vars: VARS, registryLookup: mockLookup });
+    const { fs, ctx } = simulateInit({ vars: VARS, registryLookup: mockLookup });
     const checkCtx = { ...ctx, dryRun: true };
-    const result = await engineRun(STRUCTURE, fs, checkCtx, {
+    const result = engineRun(STRUCTURE, fs, checkCtx, {
       templates: defaultTemplateProvider(),
     });
     const workspaceChange = result.changes.find((c) => c.path === "pnpm-workspace.yaml");

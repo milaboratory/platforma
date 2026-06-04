@@ -21,7 +21,7 @@ describe(".structure metadata file", () => {
     const fs = new MemoryFileSystem();
     await writeStructureVersion(fs, 3);
     expect(await readStructureVersion(fs)).toBe(3);
-    const written = await fs.read(".structure");
+    const written = fs.read(".structure");
     expect(JSON.parse(written)).toEqual({ version: 3 });
   });
 

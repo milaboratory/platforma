@@ -18,9 +18,9 @@ import { defaultTemplateProvider, simulateInit } from "../engine/testing";
 const TEMPLATES = defaultTemplateProvider();
 
 async function checkZeroDiff(vars: BlockVars): Promise<void> {
-  const { fs, ctx } = await simulateInit({ vars });
+  const { fs, ctx } = simulateInit({ vars });
   const checkCtx: RunContext = { ...ctx, dryRun: true };
-  const result = await engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
+  const result = engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
   if (result.changes.length > 0) {
     // Surface the first diff for diagnostics.
     const first = result.changes[0]!;

@@ -45,9 +45,9 @@ function joinRel(a: string, b: string): string {
   return a === "" ? b : `${a}/${b}`;
 }
 
-async function readJsonIfExists(fs: FileSystem, rel: string): Promise<PackageJsonLike | undefined> {
+function readJsonIfExists(fs: FileSystem, rel: string): PackageJsonLike | undefined {
   try {
-    return JSON.parse(await fs.read(rel)) as PackageJsonLike;
+    return JSON.parse(fs.read(rel)) as PackageJsonLike;
   } catch {
     return undefined;
   }
@@ -69,10 +69,10 @@ function resolvePackagePath(pattern: string): string {
   return p === "." ? "" : p;
 }
 
-async function enumerateStandalone(fs: FileSystem): Promise<WorkspacePackage[]> {
+function enumerateStandalone(fs: FileSystem): WorkspacePackage[] {
   let wsRaw: string;
   try {
-    wsRaw = await fs.read("pnpm-workspace.yaml");
+    wsRaw = fs.read("pnpm-workspace.yaml");
   } catch {
     throw new StructureCliError(
       `No pnpm-workspace.yaml found. This directory is empty or ` +
@@ -91,11 +91,11 @@ async function enumerateStandalone(fs: FileSystem): Promise<WorkspacePackage[]> 
   const dirs = new Set<string>([""]);
   for (const pat of patterns) {
     const d = resolvePackagePath(pat);
-    if (d === "" || (await fs.exists(d))) dirs.add(d);
+    if (d === "" || fs.exists(d)) dirs.add(d);
   }
   const out: WorkspacePackage[] = [];
   for (const d of dirs) {
-    const pkg = await readJsonIfExists(fs, joinRel(d, "package.json"));
+    const pkg = readJsonIfExists(fs, joinRel(d, "package.json"));
     if (pkg) out.push({ path: d, pkg });
   }
   return out;
@@ -104,21 +104,21 @@ async function enumerateStandalone(fs: FileSystem): Promise<WorkspacePackage[]> 
 /** SDK-internal enumeration: scan the block directory for sub-package
  *  `package.json` files. Depth-limited to two levels (covers `block/`,
  *  `model/`, … and `software/<name>/`), skipping `node_modules`. */
-async function enumerateSdkInternal(fs: FileSystem): Promise<WorkspacePackage[]> {
+function enumerateSdkInternal(fs: FileSystem): WorkspacePackage[] {
   const out: WorkspacePackage[] = [];
   const SKIP = new Set(["node_modules", ".turbo", "dist", ".git", "block-pack"]);
 
-  async function scan(rel: string, depth: number): Promise<void> {
-    const entries = await fs.listDir(rel);
+  function scan(rel: string, depth: number): void {
+    const entries = fs.listDir(rel);
     for (const e of entries) {
       if (!e.isDirectory || SKIP.has(e.name)) continue;
       const childRel = joinRel(rel, e.name);
-      const pkg = await readJsonIfExists(fs, joinRel(childRel, "package.json"));
+      const pkg = readJsonIfExists(fs, joinRel(childRel, "package.json"));
       if (pkg) out.push({ path: childRel, pkg });
-      if (depth < 2) await scan(childRel, depth + 1);
+      if (depth < 2) scan(childRel, depth + 1);
     }
   }
-  await scan("", 1);
+  scan("", 1);
   return out;
 }
 
@@ -147,9 +147,9 @@ export function parseBlockVars(facadeName: string): BlockVars {
   };
 }
 
-async function readVersion(fs: FileSystem): Promise<number> {
+function readVersion(fs: FileSystem): number {
   try {
-    const parsed = JSON.parse(await fs.read(STRUCTURE_META_FILE)) as { version?: number };
+    const parsed = JSON.parse(fs.read(STRUCTURE_META_FILE)) as { version?: number };
     return typeof parsed.version === "number" ? parsed.version : 0;
   } catch {
     return 0;
@@ -171,10 +171,10 @@ export type DiscoverInput = {
  * `DiscoveryError` / `StructureVersionFloorError` on a non-block dir,
  * an unclassified package, or a below-floor version.
  */
-export async function discoverRunContext(input: DiscoverInput): Promise<RunContext> {
+export function discoverRunContext(input: DiscoverInput): RunContext {
   const { fs, isSdkInternal } = input;
 
-  const packages = isSdkInternal ? await enumerateSdkInternal(fs) : await enumerateStandalone(fs);
+  const packages = isSdkInternal ? enumerateSdkInternal(fs) : enumerateStandalone(fs);
 
   if (packages.length === 0) {
     throw new StructureCliError(
@@ -184,7 +184,7 @@ export async function discoverRunContext(input: DiscoverInput): Promise<RunConte
 
   const modules: Module[] = discoverModules(packages);
 
-  const version = await readVersion(fs);
+  const version = readVersion(fs);
   assertVersionAboveFloor(version, STRUCTURE_MIN_SUPPORTED);
 
   // BlockVars from the block-scope module's name (facade). Fall back to

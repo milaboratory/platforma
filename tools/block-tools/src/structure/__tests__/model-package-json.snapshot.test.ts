@@ -53,8 +53,8 @@ describe("model/package.json snapshot", () => {
       orgScope: "test-org",
       shortName: "demo",
     };
-    const { fs } = await simulateInit({ vars });
-    const actual = await fs.read("model/package.json");
+    const { fs } = simulateInit({ vars });
+    const actual = fs.read("model/package.json");
     expect(actual).toBe(EXPECTED_MODEL_PACKAGE_JSON);
   });
 });

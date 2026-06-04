@@ -18,10 +18,10 @@ export const STRUCTURE_META_FILE = ".structure";
 export type StructureMeta = { version: number };
 
 /** Read `.structure`. Missing file or invalid payload → 0. */
-export async function readStructureVersion(fs: FileSystem): Promise<number> {
-  if (!(await fs.exists(STRUCTURE_META_FILE))) return 0;
+export function readStructureVersion(fs: FileSystem): number {
+  if (!fs.exists(STRUCTURE_META_FILE)) return 0;
   try {
-    const raw = await fs.read(STRUCTURE_META_FILE);
+    const raw = fs.read(STRUCTURE_META_FILE);
     const parsed = JSON.parse(raw) as Partial<StructureMeta>;
     if (typeof parsed?.version === "number") return parsed.version;
     return 0;
@@ -53,11 +53,8 @@ export class StructureVersionFloorError extends Error {
   }
 }
 
-export async function writeStructureVersion(
-  fs: FileSystem,
-  version: number = STRUCTURE_VERSION,
-): Promise<void> {
+export function writeStructureVersion(fs: FileSystem, version: number = STRUCTURE_VERSION): void {
   const payload: StructureMeta = { version };
   // Compact, single-line — this is a tiny machine file, no pretty-print.
-  await fs.write(STRUCTURE_META_FILE, JSON.stringify(payload));
+  fs.write(STRUCTURE_META_FILE, JSON.stringify(payload));
 }

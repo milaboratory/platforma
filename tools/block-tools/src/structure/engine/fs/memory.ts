@@ -34,7 +34,7 @@ export class MemoryFileSystem implements FileSystem {
     return out;
   }
 
-  async read(path: string): Promise<string> {
+  read(path: string): string {
     const n = normalise(path);
     const v = this.files.get(n);
     if (v === undefined) throw new Error(`ENOENT: ${path}`);
@@ -42,15 +42,15 @@ export class MemoryFileSystem implements FileSystem {
     return v;
   }
 
-  async write(path: string, content: string): Promise<void> {
+  write(path: string, content: string): void {
     this.files.set(normalise(path), content);
   }
 
-  async writeBinary(path: string, content: Uint8Array): Promise<void> {
+  writeBinary(path: string, content: Uint8Array): void {
     this.files.set(normalise(path), content);
   }
 
-  async exists(path: string): Promise<boolean> {
+  exists(path: string): boolean {
     const n = normalise(path);
     if (this.files.has(n)) return true;
     // Directory if any file is under `n/`.
@@ -61,7 +61,7 @@ export class MemoryFileSystem implements FileSystem {
     return false;
   }
 
-  async list(dir: string): Promise<string[]> {
+  list(dir: string): string[] {
     const n = normalise(dir);
     const prefix = n === "" ? "" : `${n}/`;
     const out: string[] = [];
@@ -71,7 +71,7 @@ export class MemoryFileSystem implements FileSystem {
     return out.sort();
   }
 
-  async listDir(dir: string): Promise<DirEntry[]> {
+  listDir(dir: string): DirEntry[] {
     const n = normalise(dir);
     const prefix = n === "" ? "" : `${n}/`;
     // Map immediate child name → isDirectory (a child is a directory if
@@ -93,7 +93,7 @@ export class MemoryFileSystem implements FileSystem {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async move(from: string, to: string): Promise<void> {
+  move(from: string, to: string): void {
     const fromN = normalise(from);
     const toN = normalise(to);
     const fromPrefix = `${fromN}/`;
@@ -110,7 +110,7 @@ export class MemoryFileSystem implements FileSystem {
     if (moved.length === 0) {
       throw new Error(`move: source missing: ${from}`);
     }
-    if (await this.exists(to)) {
+    if (this.exists(to)) {
       throw new Error(`move: dest exists: ${to}`);
     }
     for (const [src, dst] of moved) {
@@ -119,7 +119,7 @@ export class MemoryFileSystem implements FileSystem {
     }
   }
 
-  async delete(path: string): Promise<void> {
+  delete(path: string): void {
     const n = normalise(path);
     const prefix = `${n}/`;
     this.files.delete(n);

@@ -154,7 +154,7 @@ export async function runInit(init: InitInput): Promise<BlockVars> {
     );
   }
 
-  await engineRun(STRUCTURE, fs, ctx, { templates, initMode: true, registryLookup });
+  engineRun(STRUCTURE, fs, ctx, { templates, initMode: true, registryLookup });
   init.log(
     `Initialised block '${vars.facadeName}'${
       vars.softwarePlatform ? ` (software: ${vars.softwarePlatform})` : " (no software)"

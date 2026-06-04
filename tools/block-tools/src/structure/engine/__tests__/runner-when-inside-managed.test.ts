@@ -69,22 +69,22 @@ function ctxFor() {
 describe("runner: inner when() sees post-structural-pass snapshot", () => {
   test("rename + inner when fire together; deps rewritten in one refresh", async () => {
     const fs = new MemoryFileSystem();
-    await fs.write("test/a.ts", "// legacy");
-    await fs.write(
+    fs.write("test/a.ts", "// legacy");
+    fs.write(
       "block/package.json",
       JSON.stringify({ name: "demo.block", dependencies: { "old-test": "workspace:*" } }, null, 2) +
         "\n",
     );
 
     const structure = migrationStructure();
-    await run(structure, fs, ctxFor());
+    run(structure, fs, ctxFor());
 
     // Rename landed.
-    expect(await fs.exists("test-legacy/a.ts")).toBe(true);
-    expect(await fs.exists("test/a.ts")).toBe(false);
+    expect(fs.exists("test-legacy/a.ts")).toBe(true);
+    expect(fs.exists("test/a.ts")).toBe(false);
 
     // Inner when fired → dep rewritten.
-    const pkgRaw = await fs.read("block/package.json");
+    const pkgRaw = fs.read("block/package.json");
     const pkg = JSON.parse(pkgRaw) as { dependencies: Record<string, string> };
     expect(pkg.dependencies["old-test"]).toBeUndefined();
     expect(pkg.dependencies["new-test"]).toBe("workspace:*");
@@ -92,19 +92,19 @@ describe("runner: inner when() sees post-structural-pass snapshot", () => {
 
   test("second refresh is a no-op (idempotent)", async () => {
     const fs = new MemoryFileSystem();
-    await fs.write("test/a.ts", "// legacy");
-    await fs.write(
+    fs.write("test/a.ts", "// legacy");
+    fs.write(
       "block/package.json",
       JSON.stringify({ name: "demo.block", dependencies: { "old-test": "workspace:*" } }, null, 2) +
         "\n",
     );
 
     const structure = migrationStructure();
-    await run(structure, fs, ctxFor());
-    const snapshot1 = await fs.read("block/package.json");
+    run(structure, fs, ctxFor());
+    const snapshot1 = fs.read("block/package.json");
 
-    const result2 = await run(structure, fs, ctxFor());
-    const snapshot2 = await fs.read("block/package.json");
+    const result2 = run(structure, fs, ctxFor());
+    const snapshot2 = fs.read("block/package.json");
 
     expect(snapshot2).toBe(snapshot1);
     // No managed/structural changes the second time.
@@ -117,16 +117,16 @@ describe("runner: inner when() sees post-structural-pass snapshot", () => {
   test("inner when skips when sibling path absent", async () => {
     // No `test/` → no rename → no `test-legacy/` → inner when skips.
     const fs = new MemoryFileSystem();
-    await fs.write(
+    fs.write(
       "block/package.json",
       JSON.stringify({ name: "demo.block", dependencies: { "old-test": "workspace:*" } }, null, 2) +
         "\n",
     );
 
     const structure = migrationStructure();
-    await run(structure, fs, ctxFor());
+    run(structure, fs, ctxFor());
 
-    const pkg = JSON.parse(await fs.read("block/package.json")) as {
+    const pkg = JSON.parse(fs.read("block/package.json")) as {
       dependencies: Record<string, string>;
     };
     // Original dep survives unchanged.
