@@ -1,5 +1,15 @@
 # @milaboratories/uikit
 
+## 2.15.0
+
+### Minor Changes
+
+- a6de7cb: Fix `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, and `PlDropdownMultiRef`: selected values missing from the options list — typically `PlRef`s whose upstream block was deleted — now render an italic "Value not available" / "Upstream value removed" label instead of leaking the raw value. Multi variants surface missing entries as closeable chips instead of dropping them. All four components accept a `missingValueLabel` prop for custom text.
+
+### Patch Changes
+
+- 09a2985: `PlAlert`: center the `closeable` close button on the first line of text. The X was pinned ~6px too low on single-line alerts; it now aligns with the text on both single-line and multi-line alerts.
+
 ## 2.14.25
 
 ### Patch Changes
