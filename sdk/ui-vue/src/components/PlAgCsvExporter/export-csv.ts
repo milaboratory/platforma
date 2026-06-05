@@ -6,7 +6,7 @@ import type {
   PFrameSpecDriver,
   WritePTableToFsResult,
 } from "@platforma-sdk/model";
-import { getPTableColumnId } from "@platforma-sdk/model";
+import { getPTableColumnId, XLSX_MAX_ROWS_PER_SHEET } from "@platforma-sdk/model";
 import { isNil } from "es-toolkit";
 import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
@@ -88,11 +88,17 @@ export async function exportCsv(
   const baseFileName = nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`;
 
   if (typeof pframe.exportPTable === "function") {
+    const { rows } = await pframe.getShape(nativeOptions.tableHandle);
+    const filters =
+      rows > XLSX_MAX_ROWS_PER_SHEET
+        ? NATIVE_EXPORT_FILTERS.filter(({ name }) => name !== "Excel")
+        : NATIVE_EXPORT_FILTERS;
+
     const { canceled, path } = await dialog.showSaveDialog({
       defaultFileName: `${baseFileName}.csv`,
-      filters: NATIVE_EXPORT_FILTERS,
+      filters,
     });
-    if (canceled || isNil(path) || !matchesFilterExtension(path, NATIVE_EXPORT_FILTERS)) {
+    if (canceled || isNil(path) || !matchesFilterExtension(path, filters)) {
       return undefined;
     }
 
