@@ -48,8 +48,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@milaboratories/pl-middle-layer": ">=1.64.10",
-    "@platforma-sdk/model": ">=1.78.7"
+    "@milaboratories/pl-middle-layer": ">=1.64.11",
+    "@platforma-sdk/model": ">=1.78.9"
   },
   "engines": {
     "node": ">=22.0.0"
