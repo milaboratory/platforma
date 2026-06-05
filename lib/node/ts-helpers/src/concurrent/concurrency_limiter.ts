@@ -30,8 +30,9 @@ export class ConcurrencyLimitingExecutor {
     // A slot freed below may be claimed by a task admitted in the meantime, so re-test
     // the limit after every wake-up before taking the slot — this is what bounds
     // `runningTasks` at `concurrencyLimit`.
-    while (this.runningTasks >= this.concurrencyLimit)
+    while (this.runningTasks >= this.concurrencyLimit) {
       await new Promise<void>((resolve) => this.waiters.push(resolve));
+    }
     this.runningTasks++;
     try {
       signal?.throwIfAborted(); // cancelled while queued: give up the slot at admission
