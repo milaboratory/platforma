@@ -200,6 +200,22 @@ test("already-aborted signal rejects without taking a slot", async () => {
 
   await expect(e.run(async () => 1, ac.signal)).rejects.toBeDefined();
 
-  // Slot was never consumed: a subsequent task runs normally.
+  // It rejected before the queue (no `runningTasks` bump), so the slot is free for the next.
   expect(await e.run(async () => 2)).toBe(2);
+});
+
+test("an already-aborted signal rejects promptly even while the executor is busy", async () => {
+  const e = new ConcurrencyLimitingExecutor(1);
+
+  // Occupy the only slot with a task that stays pending.
+  let releaseBusy: () => void = () => {};
+  const busy = e.run(() => new Promise<void>((res) => (releaseBusy = res)));
+
+  // An already-cancelled request must reject without waiting in line behind `busy`.
+  const ac = new AbortController();
+  ac.abort();
+  await expect(e.run(async () => "ran", ac.signal)).rejects.toBeDefined();
+
+  releaseBusy();
+  await busy;
 });
