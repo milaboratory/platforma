@@ -37,12 +37,9 @@ export class ConcurrencyLimitingExecutor {
       signal?.throwIfAborted(); // cancelled while queued: give up the slot at admission
       if (signal === undefined) return await task();
 
-      let removeAbortListener = () => {};
-      const aborted = new Promise<never>((_, reject) => {
-        const onAbort = () => reject(signal.reason);
-        signal.addEventListener("abort", onAbort, { once: true });
-        removeAbortListener = () => signal.removeEventListener("abort", onAbort);
-      });
+      const { promise: aborted, reject } = Promise.withResolvers<never>();
+      const onAbort = () => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
       try {
         // Race so the slot is released on abort even if `task` ignores its signal and runs
         // on detached. A late settle from the loser is consumed by `Promise.race`'s own
@@ -51,7 +48,7 @@ export class ConcurrencyLimitingExecutor {
       } finally {
         // When `task` wins, `aborted` is left pending forever; drop the listener so it does
         // not retain its closure (and `task`) on a long-lived signal.
-        removeAbortListener();
+        signal.removeEventListener("abort", onAbort);
       }
     } finally {
       this.runningTasks--;
