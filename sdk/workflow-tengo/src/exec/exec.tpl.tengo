@@ -104,6 +104,12 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
+	// Resource-formula path: formula data threads through three exec layers —
+	// exec.builder() resolves the formula and launches any line-counter pre-exec,
+	// THIS pure template forwards the result untouched (evaluating nothing), and the
+	// ephemeral impl awaits the metrics, evaluates, and overrides the quota. The
+	// forwarding below is split deliberately — meta inputs vs. a regular input — to
+	// keep the exec's CID stable; see the line-count-map note for why.
 	metaImplInputs := {
 		quota: is_undefined(self.rawMetaInputs().quota) ? self.rawInputs().quota : self.rawMetaInputs().quota
 	}
