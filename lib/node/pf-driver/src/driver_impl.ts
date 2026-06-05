@@ -287,6 +287,9 @@ export class AbstractPFrameDriver<
       [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
+    // `combinedSignal` is passed twice on purpose: into the native calls for cooperative
+    // cancellation, and into `run` so the concurrency slot is released on abort even if a
+    // native call fails to unwind. Dropping the `run` signal reintroduces the queue wedge.
     return await this.tableConcurrencyLimiter.run(async () => {
       const shape = await pTable.getShape({ signal: combinedSignal });
       const clippedRange = clipRange(options.range, shape);
@@ -340,7 +343,7 @@ export class AbstractPFrameDriver<
       }
 
       return { path: options.path, rowsWritten, bytesWritten };
-    });
+    }, combinedSignal);
   }
 
   public async exportPTable(
@@ -394,7 +397,7 @@ export class AbstractPFrameDriver<
             `duration = ${durationMs}ms`,
         );
       }
-    });
+    }, combinedSignal);
   }
 
   //
@@ -481,7 +484,7 @@ export class AbstractPFrameDriver<
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
-      // TODO: throw error when more then 150k rows is requested
+      // TODO: throw error when more then 200k rows is requested
       // after pf-plots migration to stream API
 
       const data = await pTable.getData([...tableSpec.keys()], {
@@ -496,7 +499,7 @@ export class AbstractPFrameDriver<
         spec: spec,
         data: data[i],
       }));
-    });
+    }, combinedSignal);
   }
 
   public async getUniqueValues(
@@ -559,7 +562,7 @@ export class AbstractPFrameDriver<
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
       return await pFrameData.getUniqueValues(resolvedRequest, { signal: combinedSignal });
-    });
+    }, combinedSignal);
   }
 
   //
@@ -587,7 +590,7 @@ export class AbstractPFrameDriver<
       const overallSize = await tableGuard.resource.cacheSize;
 
       return { shape, overallSize };
-    });
+    }, combinedSignal);
 
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return shape;
@@ -615,7 +618,7 @@ export class AbstractPFrameDriver<
       const overallSize = await tableGuard.resource.cacheSize;
 
       return { data, overallSize };
-    });
+    }, combinedSignal);
 
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return data;
