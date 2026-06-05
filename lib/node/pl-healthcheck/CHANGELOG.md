@@ -1,5 +1,12 @@
 # @milaboratories/pl-healthcheck
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [8cbe874]
+  - @milaboratories/ts-helpers@1.8.3
+
 ## 1.0.0
 
 ### Major Changes
