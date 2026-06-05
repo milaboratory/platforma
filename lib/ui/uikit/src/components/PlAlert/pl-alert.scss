@@ -70,7 +70,9 @@
 
   &__close-btn {
     position: absolute;
-    top: 10px;
+    // Centre the 40px button on the first content row. The row's centre sits at
+    // 24px (12px padding + half the 24px row); top = 24 − 20 (half the button).
+    top: 4px;
     right: 12px;
   }
 }
