@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.3.2
+
+### Patch Changes
+
+- 89f248c: Make UI-tasks work in google batch-only setups
+
 ## 6.3.1
 
 ### Patch Changes
