@@ -287,7 +287,13 @@ export class AbstractPFrameDriver<
       [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
-    return await this.tableConcurrencyLimiter.run(async () => {
+    // `combinedSignal` is passed twice on purpose: into the native calls for cooperative
+    // cancellation, and into `run` so the concurrency slot is released on abort even if a
+    // native call fails to unwind. Dropping the `run` signal reintroduces the queue wedge.
+    // keep()/cache live outside the limiter task: on abort `run` rejects and they are
+    // skipped, so an abandoned (detached) operation never caches its result nor touches
+    // `tableGuard` after the `using` block has already unref'd it.
+    const { result, overallSize } = await this.tableConcurrencyLimiter.run(async () => {
       const shape = await pTable.getShape({ signal: combinedSignal });
       const clippedRange = clipRange(options.range, shape);
       const specs = def.tableSpec;
@@ -325,7 +331,6 @@ export class AbstractPFrameDriver<
       });
 
       const overallSize = await tableGuard.resource.cacheSize;
-      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
 
       // rowsWritten equals the clipped range length — the generator streams the
       // entire effective range without early termination, so this is accurate.
@@ -339,8 +344,11 @@ export class AbstractPFrameDriver<
         );
       }
 
-      return { path: options.path, rowsWritten, bytesWritten };
-    });
+      return { result: { path: options.path, rowsWritten, bytesWritten }, overallSize };
+    }, combinedSignal);
+
+    this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
+    return result;
   }
 
   public async exportPTable(
@@ -367,7 +375,10 @@ export class AbstractPFrameDriver<
       headers[index] = columnLabel(def.tableSpec[index]);
     }
 
-    return await this.tableConcurrencyLimiter.run(async () => {
+    // keep()/cache live outside the limiter task: on abort `run` rejects and they are
+    // skipped, so an abandoned (detached) operation never caches its result nor touches
+    // `tableGuard` after the `using` block has already unref'd it.
+    const overallSize = await this.tableConcurrencyLimiter.run(async () => {
       // Cap data rows per xlsx sheet below Excel's hard limit of 1,048,576.
       if (path.toLowerCase().endsWith(".xlsx")) {
         const shape = await pTable.getShape({ signal: combinedSignal });
@@ -384,7 +395,6 @@ export class AbstractPFrameDriver<
       await pTable.export(path, headers, { signal: combinedSignal });
 
       const overallSize = await tableGuard.resource.cacheSize;
-      this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
 
       if (logPFrames()) {
         const durationMs = Math.round(performance.now() - startTime);
@@ -394,7 +404,11 @@ export class AbstractPFrameDriver<
             `duration = ${durationMs}ms`,
         );
       }
-    });
+
+      return overallSize;
+    }, combinedSignal);
+
+    this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
   }
 
   //
@@ -480,8 +494,11 @@ export class AbstractPFrameDriver<
     const pTable = await pTablePromise;
 
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
-    return await this.frameConcurrencyLimiter.run(async () => {
-      // TODO: throw error when more then 150k rows is requested
+    // keep()/cache live outside the limiter task: on abort `run` rejects and they are
+    // skipped, so an abandoned (detached) operation never caches its result nor touches
+    // `tableGuard` after the `using` block has already unref'd it.
+    const { data, overallSize } = await this.frameConcurrencyLimiter.run(async () => {
+      // TODO: throw error when more then 200k rows is requested
       // after pf-plots migration to stream API
 
       const data = await pTable.getData([...tableSpec.keys()], {
@@ -490,13 +507,14 @@ export class AbstractPFrameDriver<
       });
 
       const overallSize = await tableGuard.resource.cacheSize;
-      this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
+      return { data, overallSize };
+    }, combinedSignal);
 
-      return tableSpec.map((spec, i) => ({
-        spec: spec,
-        data: data[i],
-      }));
-    });
+    this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
+    return tableSpec.map((spec, i) => ({
+      spec: spec,
+      data: data[i],
+    }));
   }
 
   public async getUniqueValues(
@@ -559,7 +577,7 @@ export class AbstractPFrameDriver<
     const combinedSignal = AbortSignal.any([signal, disposeSignal].filter((s) => !!s));
     return await this.frameConcurrencyLimiter.run(async () => {
       return await pFrameData.getUniqueValues(resolvedRequest, { signal: combinedSignal });
-    });
+    }, combinedSignal);
   }
 
   //
@@ -587,7 +605,7 @@ export class AbstractPFrameDriver<
       const overallSize = await tableGuard.resource.cacheSize;
 
       return { shape, overallSize };
-    });
+    }, combinedSignal);
 
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return shape;
@@ -615,7 +633,7 @@ export class AbstractPFrameDriver<
       const overallSize = await tableGuard.resource.cacheSize;
 
       return { data, overallSize };
-    });
+    }, combinedSignal);
 
     this.pTableCachePlain.cache(tableGuard.keep(), overallSize, defDisposeSignal);
     return data;
