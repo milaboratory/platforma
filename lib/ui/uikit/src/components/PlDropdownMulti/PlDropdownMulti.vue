@@ -68,6 +68,11 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
+     * Text shown in a chip when a `modelValue` entry is missing from `options` —
+     * e.g. its upstream source was deleted. Rendered italic in error color.
+     */
+    missingValueLabel?: string;
+    /**
      * If `true`, the dropdown component is marked as required.
      */
     required?: boolean;
@@ -95,6 +100,7 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
+    missingValueLabel: "Value not available",
     required: false,
     disabled: false,
     options: undefined,
@@ -127,9 +133,29 @@ const placeholderRef = computed(() => {
 const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?? []));
 
 const selectedOptionsRef = computed(() => {
+  // While options load (`options === undefined`), hide chips for unresolved values
+  // to avoid a "missing" flash that resolves once options arrive.
+  const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
-    .map((v) => normalizedOptionsRef.value.find((opt) => deepEqual(opt.value, v)))
-    .filter((v) => v !== undefined);
+    .map((v) => {
+      const opt = normalizedOptionsRef.value.find((o) => deepEqual(o.value, v));
+      if (opt) {
+        // Found: render the option's own (normalized) label verbatim — matches
+        // PlDropdown. `opt.label` is always a string (possibly ""), never an object,
+        // so there is no raw-value leak to guard against.
+        return { ...opt, isMissing: false };
+      }
+      if (!optionsLoaded) {
+        return undefined;
+      }
+      // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
+      return {
+        value: v,
+        label: props.missingValueLabel,
+        isMissing: true,
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== undefined);
 });
 
 const filteredOptionsRef = computed(() => {
@@ -292,12 +318,13 @@ watchPostEffect(() => {
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
+              :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
               small
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label || opt.value }}
+              {{ opt.label }}
             </PlChip>
           </div>
 
@@ -331,11 +358,12 @@ watchPostEffect(() => {
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
+              :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label || opt.value }}
+              {{ opt.label }}
             </PlChip>
           </div>
           <DropdownListItem
