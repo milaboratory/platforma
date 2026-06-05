@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 3.0.6
+
+### Patch Changes
+
+- Updated dependencies [8cbe874]
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/pl-config@1.8.2
+  - @milaboratories/pl-healthcheck@1.0.1
+
 ## 3.0.5
 
 ### Patch Changes

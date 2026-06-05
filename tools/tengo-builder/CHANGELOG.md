@@ -1,5 +1,13 @@
 # @platforma-sdk/tengo-builder
 
+## 4.0.7
+
+### Patch Changes
+
+- Updated dependencies [8cbe874]
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/pl-model-backend@1.4.6
+
 ## 4.0.6
 
 ### Patch Changes
