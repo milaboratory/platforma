@@ -7,8 +7,8 @@ import Denque from "denque";
  * `run` settles. At most `concurrencyLimit` slots are ever held.
  *
  * Cancellation (when a task is given a signal) acts on the slot, not on the task body:
- * - a task cancelled before or while queued gives up its slot the moment it is admitted,
- *   without running its body;
+ * - a task already cancelled when `run` is called rejects without taking a turn;
+ * - a task cancelled while queued bails at admission, without running its body;
  * - a task cancelled while running settles `run` and releases the slot immediately, even
  *   if the body ignores the signal and keeps running.
  *
@@ -26,6 +26,7 @@ export class ConcurrencyLimitingExecutor {
   constructor(private readonly concurrencyLimit: number) {}
 
   public async run<T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    signal?.throwIfAborted(); // already cancelled: reject without taking a turn in the queue
     // A slot freed below may be claimed by a task admitted in the meantime, so re-test
     // the limit after every wake-up before taking the slot — this is what bounds
     // `runningTasks` at `concurrencyLimit`.
@@ -33,16 +34,25 @@ export class ConcurrencyLimitingExecutor {
       await new Promise<void>((resolve) => this.waiters.push(resolve));
     this.runningTasks++;
     try {
-      signal?.throwIfAborted(); // cancelled before/while queued: give up the slot at once
+      signal?.throwIfAborted(); // cancelled while queued: give up the slot at admission
       if (signal === undefined) return await task();
 
+      let removeAbortListener = () => {};
       const aborted = new Promise<never>((_, reject) => {
-        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        const onAbort = () => reject(signal.reason);
+        signal.addEventListener("abort", onAbort, { once: true });
+        removeAbortListener = () => signal.removeEventListener("abort", onAbort);
       });
-      // Once `task` wins the race nothing awaits `aborted`; this catch keeps a later abort
-      // from surfacing as an unhandled rejection.
-      aborted.catch(() => {});
-      return await Promise.race([task(), aborted]);
+      try {
+        // Race so the slot is released on abort even if `task` ignores its signal and runs
+        // on detached. A late settle from the loser is consumed by `Promise.race`'s own
+        // reaction, so it never surfaces as an unhandled rejection.
+        return await Promise.race([task(), aborted]);
+      } finally {
+        // When `task` wins, `aborted` is left pending forever; drop the listener so it does
+        // not retain its closure (and `task`) on a long-lived signal.
+        removeAbortListener();
+      }
     } finally {
       this.runningTasks--;
       this.waiters.shift()?.(); // hand the freed slot to the next waiter, if any
