@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.78.7
+
+### Patch Changes
+
+- 60b13d1: Gate the xlsx export option in the UI on table size instead of failing after the dialog.
+
+  `exportCsv` now calls `getShape` before opening the save dialog and drops the Excel filter when the table exceeds the per-sheet row limit, so oversized tables simply never offer xlsx rather than erroring out post-selection. The `pf-driver` rejection is kept as a safety net. The shared `XLSX_MAX_ROWS_PER_SHEET` constant is now exported from `@milaboratories/pl-model-common` so the UI gate and the driver check can't drift.
+
+- Updated dependencies [60b13d1]
+  - @milaboratories/pl-model-common@1.46.0
+  - @milaboratories/pf-spec-driver@1.4.5
+  - @platforma-sdk/model@1.78.7
+  - @milaboratories/uikit@2.14.24
+
 ## 1.78.6
 
 ### Patch Changes
