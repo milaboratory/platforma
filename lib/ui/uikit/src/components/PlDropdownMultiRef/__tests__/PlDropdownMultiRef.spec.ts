@@ -63,4 +63,46 @@ describe("PlDropdownMultiRef", () => {
 
     expect(getOptions().length).toBe(2); // options are not closed after click
   });
+
+  it("renders the ref-specific missingValueLabel default for a stale ref", async () => {
+    const wrapper = mount(PlDropdownMultiRef, {
+      props: {
+        modelValue: [
+          { __isRef: true as const, blockId: "1", name: "Ref to block 1" },
+          { __isRef: true as const, blockId: "deleted", name: "Ref to deleted block" },
+        ],
+        options: [
+          {
+            label: "Ref 1",
+            ref: { __isRef: true as const, blockId: "1", name: "Ref to block 1" },
+          },
+        ],
+      },
+    });
+
+    await flushPromises();
+
+    const missing = wrapper.findAll(".pl-dropdown-multi__chip--missing");
+    expect(missing.length).toBe(1);
+    expect(missing[0].text()).toContain("Upstream value removed");
+  });
+
+  it("forwards a caller-supplied missingValueLabel that overrides the Ref default", async () => {
+    const wrapper = mount(PlDropdownMultiRef, {
+      props: {
+        modelValue: [{ __isRef: true as const, blockId: "deleted", name: "Ref to deleted block" }],
+        missingValueLabel: "Caller override",
+        options: [
+          {
+            label: "Ref 1",
+            ref: { __isRef: true as const, blockId: "1", name: "Ref to block 1" },
+          },
+        ],
+      },
+    });
+    await flushPromises();
+    const missing = wrapper.findAll(".pl-dropdown-multi__chip--missing");
+    expect(missing.length).toBe(1);
+    expect(missing[0].text()).toContain("Caller override");
+  });
 });
