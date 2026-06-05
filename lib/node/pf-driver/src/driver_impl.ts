@@ -34,6 +34,7 @@ import {
   sortPTableDef,
   resolveAnnotationParents,
   PFrameDriverError,
+  XLSX_MAX_ROWS_PER_SHEET,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -369,7 +370,6 @@ export class AbstractPFrameDriver<
     return await this.tableConcurrencyLimiter.run(async () => {
       // Cap data rows per xlsx sheet below Excel's hard limit of 1,048,576.
       if (path.toLowerCase().endsWith(".xlsx")) {
-        const XLSX_MAX_ROWS_PER_SHEET = 1_000_000;
         const shape = await pTable.getShape({ signal: combinedSignal });
         if (shape.rows > XLSX_MAX_ROWS_PER_SHEET) {
           const error = new PFrameDriverError(`exportPTable failed`);

@@ -266,6 +266,13 @@ export interface WritePTableToFsResult {
   bytesWritten: number;
 }
 
+/**
+ * Maximum number of data rows allowed per sheet in an `xlsx` export, kept below
+ * Excel's hard limit of 1,048,576. The driver rejects oversized `xlsx` exports
+ * (see {@link PFrameDriver.exportPTable}); UIs use it to gate the `xlsx` option.
+ */
+export const XLSX_MAX_ROWS_PER_SHEET = 1_000_000;
+
 /** Options for {@link PFrameDriver.exportPTable}. */
 export interface ExportPTableOptions {
   /** Destination file path; its extension selects the output format
