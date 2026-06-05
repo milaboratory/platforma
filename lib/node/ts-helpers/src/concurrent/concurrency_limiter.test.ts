@@ -135,3 +135,87 @@ test.each([{ limit: 1 }, { limit: 2 }, { limit: 4 }])(
     for (let i = 0; i < 3000; ++i) expect(await taskResults[i]).toStrictEqual(i % 14 === 0 ? 0 : i);
   },
 );
+
+test("a cancelled task that never settles does not wedge the single slot", async () => {
+  const e = new ConcurrencyLimitingExecutor(1);
+
+  // Occupy the only slot with a task that ignores its signal and never settles.
+  const ac = new AbortController();
+  const stuck = e.run(() => new Promise<void>(() => {}), ac.signal);
+  stuck.catch(() => {}); // avoid unhandled rejection once aborted
+
+  // A second task must queue behind it.
+  let secondRan = false;
+  const second = e.run(async () => {
+    secondRan = true;
+    return 42;
+  });
+
+  await tp.setImmediate();
+  expect(secondRan).toBe(false); // confirm it is actually blocked
+
+  // Cancelling the stuck task must free the slot so the queued task runs.
+  ac.abort();
+  await expect(stuck).rejects.toBeDefined();
+  expect(await second).toBe(42);
+});
+
+test("a task cancelled while queued bails at admission without losing the permit", async () => {
+  const e = new ConcurrencyLimitingExecutor(1);
+
+  let releaseFirst: () => void = () => {};
+  const first = e.run(() => new Promise<void>((res) => (releaseFirst = res)));
+
+  const ac = new AbortController();
+  let cancelledBodyRan = false;
+  const cancelledWhileQueued = e.run(async () => {
+    cancelledBodyRan = true;
+    return "never";
+  }, ac.signal);
+  cancelledWhileQueued.catch(() => {});
+
+  let thirdRan = false;
+  const third = e.run(async () => {
+    thirdRan = true;
+    return "ok";
+  });
+
+  // Cancelled while still queued behind `first`. It rejects only once admitted (when
+  // `first` releases the slot), without ever running its body; the permit then reaches
+  // the live waiter behind it.
+  ac.abort();
+  releaseFirst();
+  await first;
+
+  await expect(cancelledWhileQueued).rejects.toBeDefined();
+  expect(cancelledBodyRan).toBe(false);
+  expect(await third).toBe("ok");
+  expect(thirdRan).toBe(true);
+});
+
+test("already-aborted signal rejects without taking a slot", async () => {
+  const e = new ConcurrencyLimitingExecutor(1);
+  const ac = new AbortController();
+  ac.abort();
+
+  await expect(e.run(async () => 1, ac.signal)).rejects.toBeDefined();
+
+  // It rejected before the queue (no `runningTasks` bump), so the slot is free for the next.
+  expect(await e.run(async () => 2)).toBe(2);
+});
+
+test("an already-aborted signal rejects promptly even while the executor is busy", async () => {
+  const e = new ConcurrencyLimitingExecutor(1);
+
+  // Occupy the only slot with a task that stays pending.
+  let releaseBusy: () => void = () => {};
+  const busy = e.run(() => new Promise<void>((res) => (releaseBusy = res)));
+
+  // An already-cancelled request must reject without waiting in line behind `busy`.
+  const ac = new AbortController();
+  ac.abort();
+  await expect(e.run(async () => "ran", ac.signal)).rejects.toBeDefined();
+
+  releaseBusy();
+  await busy;
+});
