@@ -19,6 +19,9 @@ maps := import(":maps")
 runcmd := import(":exec.runcmd")
 loadSoftware := import(":exec.load-software")
 execConstants := import(":exec.constants")
+ll := import(":ll")
+text := import("text")
+execFormula := import(":exec.formula")
 
 mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 execImplTpl := assets.importTemplate(":exec.exec-impl")
@@ -82,12 +85,13 @@ inputSchema := {
 	}
 }
 
-// Optional resource-formula meta inputs (attached by the exec builder when
-// memFormula/cpuFormula are used). Forwarded to the ephemeral impl, which awaits
-// + evaluates them. __memFormula__/__cpuFormula__ are JSON resources holding
-// resolved ASTs; __metric_lineCount__ is a map resource (fileName -> content
-// resource with that file's line count). Keys come from execConstants so the
-// attach/forward/read/validate sites share one source of truth.
+// Optional resource-formula inputs (attached by the exec builder when
+// memFormula/cpuFormula are used). They ride the REGULAR input rail, so this
+// pure template's readiness gate deep-waits them and the body (below) evaluates
+// them. __memFormula__/__cpuFormula__ are JSON resources holding resolved ASTs;
+// __metric_lineCount__ is a map resource (fileName -> content resource with that
+// file's line count). Keys come from execConstants so the attach/read/validate
+// sites share one source of truth.
 inputSchema[execConstants.META_INPUT_MEM_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_LINE_COUNT + ",?"] = "any"
@@ -104,38 +108,55 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
-	// Resource-formula path: formula data threads through three exec layers —
-	// exec.builder() resolves the formula and launches any line-counter pre-exec,
-	// THIS pure template forwards the result untouched (evaluating nothing), and the
-	// ephemeral impl awaits the metrics, evaluates, and overrides the quota. The
-	// forwarding below is split deliberately — meta inputs vs. a regular input — to
-	// keep the exec's CID stable; see the line-count-map note for why.
-	metaImplInputs := {
-		quota: is_undefined(self.rawMetaInputs().quota) ? self.rawInputs().quota : self.rawMetaInputs().quota
+	// Resource-formula evaluation happens HERE, in the pure template. The formula
+	// ASTs and the line-count map arrive as REGULAR inputs (see index.lib.tengo),
+	// so this pure template's automatic readiness gate has already deep-waited them
+	// — including the line-count map's per-file content resources — before this
+	// body runs. No awaitState is used (it is ephemeral-only and would panic).
+	quota := maps.clone(inputs.quota)
+
+	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
+	cpuFormula := inputs[execConstants.META_INPUT_CPU_FORMULA]
+	if !is_undefined(memFormula) || !is_undefined(cpuFormula) {
+		fileRefs := inputs.filesToAdd
+		lineCountMap := inputs[execConstants.META_INPUT_LINE_COUNT]
+		resolver := {
+			// size: sum of blob sizes (bytes) of the referenced input files.
+			size: func(files) {
+				total := 0
+				for fn in files {
+					ll.assert(!is_undefined(fileRefs[fn]), "exec.tpl: resource formula references file %q, which is not among the exec's input files", fn)
+					total += ll.getBlobSize(fileRefs[fn].id)
+				}
+				return total
+			},
+			// lineCount: sum of the deep-waited per-file line counts. Each map entry
+			// is a content resource holding a base-10 int (no trailing newline).
+			lineCount: func(files) {
+				ll.assert(!is_undefined(lineCountMap), "exec.tpl: a lineCount formula was evaluated but the __metric_lineCount__ metric map is missing")
+				total := 0
+				for fn in files {
+					// As a regular input, each map entry is deep-waited to a ready
+					// content-resource handle; read its bytes directly.
+					ll.assert(!is_undefined(lineCountMap[fn]), "exec.tpl: lineCount metric map has no entry for %q (the line-counter pre-exec did not produce a count for this file)", fn)
+					data := lineCountMap[fn].getData()
+					n := int(text.trim(string(data), "\n \r\t"))
+					ll.assert(!is_undefined(n), "exec.tpl: lineCount for %q is not a base-10 integer: %q", fn, string(data))
+					total += n
+				}
+				return total
+			}
+		}
+		if !is_undefined(memFormula) {
+			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram")) + "b"
+		}
+		if !is_undefined(cpuFormula) {
+			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
+		}
 	}
 
-	// Forward the resource-formula meta inputs (when present) untouched to the
-	// ephemeral impl. The pure template performs NO evaluation — the impl awaits
-	// the line-count metric map and evaluates the formulas, overriding quota.
-	if !is_undefined(self.rawMetaInputs()[execConstants.META_INPUT_MEM_FORMULA]) {
-		metaImplInputs[execConstants.META_INPUT_MEM_FORMULA] = self.rawMetaInputs()[execConstants.META_INPUT_MEM_FORMULA]
-	}
-	if !is_undefined(self.rawMetaInputs()[execConstants.META_INPUT_CPU_FORMULA]) {
-		metaImplInputs[execConstants.META_INPUT_CPU_FORMULA] = self.rawMetaInputs()[execConstants.META_INPUT_CPU_FORMULA]
-	}
-	pureImplInputs := {
-		mainPlan: plan
-	}
-
-	// The line-count metric map is forwarded as a REGULAR input to the ephemeral
-	// impl (not a meta input) so the impl can `awaitState` its per-file content
-	// resources by name — awaitState navigates regular fields, not service/meta
-	// fields. The ephemeral impl is not deduplicated, so this does not affect the
-	// pure template's CID (the map stays a meta input ON THE PURE TEMPLATE, so
-	// CID-transparency is preserved).
-	if !is_undefined(self.rawMetaInputs()[execConstants.META_INPUT_LINE_COUNT]) {
-		pureImplInputs[execConstants.META_INPUT_LINE_COUNT] = self.rawMetaInputs()[execConstants.META_INPUT_LINE_COUNT]
-	}
+	metaImplInputs := { quota: smart.createJsonResource(quota) }
+	pureImplInputs := { mainPlan: plan }
 
 	if !is_undefined(inputs.runOptions.monetization) {
 		pureImplInputs.mnzPlan = loadSoftware.loadSoftware(mnzSw)
