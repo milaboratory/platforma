@@ -5,8 +5,6 @@
 
 self := import(":tpl.light")
 
-ll := import(":ll")
-text := import("text")
 validation := import(":validation")
 
 smart := import(":smart")
@@ -21,8 +19,6 @@ maps := import(":maps")
 runcmd := import(":exec.runcmd")
 feats := import(":feats")
 R := import(":exec.R")
-execFormula := import(":exec.formula")
-execConstants := import(":exec.constants")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
@@ -43,14 +39,6 @@ EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
 
 // awaits the whole input map to become ready
 self.awaitState("ResourceReady")
-
-// When a line-count metric map is attached (resource-formula evaluation), wait
-// for every per-file count content resource inside it to become ready before
-// the body reads their bytes. Guarded so it's only awaited when present, so
-// formula-free exec runs are unaffected.
-if !is_undefined(self.rawInputs()[execConstants.META_INPUT_LINE_COUNT]) {
-	self.awaitState(execConstants.META_INPUT_LINE_COUNT, { wildcard: "*" }, "ResourceReady")
-}
 
 inputSchema := {
 	filesToAdd: { any: validation.resource() },
@@ -103,15 +91,6 @@ inputSchema := {
 	}
 }
 
-// Optional resource-formula meta inputs. __memFormula__/__cpuFormula__ are
-// resolved ASTs (JSON resources, auto-unmarshaled to tengo maps);
-// __metric_lineCount__ is a map resource (fileName -> content resource with that
-// file's line count, auto-unmarshaled to a tengo map of resource refs). Keys
-// come from execConstants so the attach/forward/read/validate sites share one
-// source of truth.
-inputSchema[execConstants.META_INPUT_MEM_FORMULA + ",?"] = "any"
-inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
-inputSchema[execConstants.META_INPUT_LINE_COUNT + ",?"] = "any"
 self.validateInputs(inputSchema)
 
 self.body(func(inputs) {
@@ -125,54 +104,9 @@ self.body(func(inputs) {
 
 	wdBuilder := workdir.builder()
 
-	// Clone so we don't mutate the shared inputs view; resource-formula
-	// evaluation may override ram/cpu below before quota is consumed.
-	quota := maps.clone(inputs.quota)
-
-	// Resource-formula evaluation. Meta inputs arrive already unmarshaled in the
-	// inputs map (JSON resources -> tengo maps, the map resource -> a tengo map
-	// of fileName -> content resource ref), mirroring how `quota` itself arrives
-	// as `inputs.quota`. We evaluate the resolved ASTs and override the
-	// corresponding quota dimension per-formula.
-	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
-	cpuFormula := inputs[execConstants.META_INPUT_CPU_FORMULA]
-	if !is_undefined(memFormula) || !is_undefined(cpuFormula) {
-		fileRefs := inputs.filesToAdd
-		lineCountMap := inputs[execConstants.META_INPUT_LINE_COUNT]
-		resolver := {
-			// size: sum of blob sizes (bytes) of the referenced input files.
-			size: func(files) {
-				total := 0
-				for fn in files {
-					ll.assert(!is_undefined(fileRefs[fn]), "exec-impl: resource formula references file %q, which is not among the exec's input files", fn)
-					total += ll.getBlobSize(fileRefs[fn].id)
-				}
-				return total
-			},
-			// lineCount: sum of the awaited per-file line counts. Each map entry
-			// is a content resource holding a base-10 int (no trailing newline).
-			lineCount: func(files) {
-				ll.assert(!is_undefined(lineCountMap), "exec-impl: a lineCount formula was evaluated but the __metric_lineCount__ metric map is missing")
-				total := 0
-				for fn in files {
-					// As a regular input, each map entry auto-unmarshals to a
-					// resolved content-resource handle; read its bytes directly.
-					ll.assert(!is_undefined(lineCountMap[fn]), "exec-impl: lineCount metric map has no entry for %q (the line-counter pre-exec did not produce a count for this file)", fn)
-					data := lineCountMap[fn].getData()
-					n := int(text.trim(string(data), "\n \r\t"))
-					ll.assert(!is_undefined(n), "exec-impl: lineCount for %q is not a base-10 integer: %q", fn, string(data))
-					total += n
-				}
-				return total
-			}
-		}
-		if !is_undefined(memFormula) {
-			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram")) + "b"
-		}
-		if !is_undefined(cpuFormula) {
-			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
-		}
-	}
+	// The quota is already fully computed by the pure exec.tpl (resource formulas
+	// are evaluated there, in Option 2). This ephemeral impl just consumes it.
+	quota := inputs.quota
 
 	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
