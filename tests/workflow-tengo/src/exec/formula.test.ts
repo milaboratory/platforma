@@ -358,20 +358,20 @@ for (const tc of rejectCases) {
 }
 
 /**
- * Formula-affects-CID direct proof. Under Option 2 the resolved formula ASTs
- * ride the REGULAR input rail, so they participate in the exec CID. Render the
- * SAME exec twice (identical software/arg/no files), differing ONLY in the
- * memFormula value (2 GiB vs 4 GiB). Because the formula now affects the CID,
- * the two renders get DISTINCT CIDs and allocate independently: the memGib=2
- * render returns 2 GiB and the memGib=4 render returns 4 GiB. (Under the former
- * Option-1 design the formula was a CID-excluded meta input, so the second
- * render deduped to the first and both returned 2 GiB; that CID-transparency is
- * intentionally dropped — see the analysis doc §9.) This harness dedups across
- * renders; formula_cid uses a constant ",cid" arg suffix so the two renders
- * differ ONLY by formula, isolating the formula's effect on the CID.
+ * Formula CID-transparency direct proof. The resolved formula ASTs ride the META
+ * input rail, so they are EXCLUDED from the exec CID. Render the SAME exec twice
+ * (identical software/arg/no files), differing ONLY in the memFormula value
+ * (2 GiB vs 4 GiB). Because the formula does NOT affect the CID, the two renders
+ * share one CID and dedup to a single allocation: the memGib=4 render dedups to
+ * the memGib=2 render, so BOTH read back 2 GiB. (If the formula ever leaked into
+ * the CID — e.g. by riding the regular rail — the two would allocate separately
+ * and diverge to 2 vs 4.) Only computed metric maps ride the regular rail, and
+ * those are file-derived, so the formula itself stays transparent — see the
+ * analysis doc §4. This harness dedups across renders; formula_cid uses a
+ * constant ",cid" arg suffix so the two renders differ ONLY by formula.
  */
 tplTest.concurrent(
-  "formula-affects-cid: changing the memFormula produces a distinct allocation",
+  "formula-cid-transparent: changing the memFormula dedups to one allocation",
   async ({ helper, expect }) => {
     const readRam = async (memGib: number) => {
       const result = await helper.renderTemplate(
@@ -389,14 +389,14 @@ tplTest.concurrent(
     };
 
     const ram2 = await readRam(2); // memGib=2 render allocates 2 GiB
-    const ram4 = await readRam(4); // distinct formula => distinct CID => allocates 4 GiB
+    const ram4 = await readRam(4); // formula is CID-excluded => dedups to the 2 GiB render
     // eslint-disable-next-line no-console
     console.log(
-      `[formula-cid] ram(memGib=2)=${ram2} ram(memGib=4)=${ram4} (distinct => formula affects CID)`,
+      `[formula-cid] ram(memGib=2)=${ram2} ram(memGib=4)=${ram4} (equal => formula is CID-transparent)`,
     );
 
     expect(ram2).eq(2 * GIB);
-    expect(ram4).eq(4 * GIB); // formula now participates in the CID: the second exec does NOT dedup to the first
+    expect(ram4).eq(2 * GIB); // formula is CID-excluded: the second exec dedups to the first
   },
   120000,
 );

@@ -86,12 +86,14 @@ inputSchema := {
 }
 
 // Optional resource-formula inputs (attached by the exec builder when
-// memFormula/cpuFormula are used). They ride the REGULAR input rail, so this
-// pure template's readiness gate deep-waits them and the body (below) evaluates
-// them. __memFormula__/__cpuFormula__ are JSON resources holding resolved ASTs;
-// __metric_lineCount__ is a map resource (fileName -> content resource with that
-// file's line count). Keys come from execConstants so the attach/read/validate
-// sites share one source of truth.
+// memFormula/cpuFormula are used), evaluated by the body below. The formula ASTs
+// __memFormula__/__cpuFormula__ are JSON value resources on the META rail —
+// CID-transparent, yet readable as final in this pure body (same mechanism as
+// `quota`). __metric_lineCount__ is a COMPUTED map resource (fileName -> content
+// resource with that file's line count) on the REGULAR rail, so this pure
+// template's readiness gate deep-waits its per-file entries to final before the
+// body reads them. Keys come from execConstants so the attach/read/validate sites
+// share one source of truth. See analysis doc §4.
 inputSchema[execConstants.META_INPUT_MEM_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_LINE_COUNT + ",?"] = "any"
@@ -109,10 +111,11 @@ self.body(func(inputs) {
 	}
 
 	// Resource-formula evaluation happens HERE, in the pure template. The formula
-	// ASTs and the line-count map arrive as REGULAR inputs (see index.lib.tengo),
-	// so this pure template's automatic readiness gate has already deep-waited them
-	// — including the line-count map's per-file content resources — before this
-	// body runs. No awaitState is used (it is ephemeral-only and would panic).
+	// ASTs arrive as META inputs — value resources, readable as final (like `quota`),
+	// and CID-transparent — while the line-count map, if any, arrives as a REGULAR
+	// input, so this pure template's automatic readiness gate has already deep-waited
+	// its per-file content resources to final before this body runs. No awaitState is
+	// used (it is ephemeral-only and would panic).
 	quota := maps.clone(inputs.quota)
 
 	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]

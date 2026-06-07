@@ -10,12 +10,15 @@
 //      tag collapses to its { default }), and rejects lineCount on a non-text file.
 //   3. referencedMetricFiles() lists the files needing a line-counter pre-exec
 //      (lineCount); size reads the blob size inline, so it needs none.
-//   The resolved AST (and the per-file line-count map, if any) then ride to the
-//   exec as regular inputs (Option 2), so they enter its CID.
+//   The resolved AST rides to the exec as a META input — CID-transparent
+//   (excluded from the exec CID) but readable as final in the pure body — while
+//   the per-file line-count map, if any, rides as a REGULAR input: it holds
+//   computed results that must be deep-waited to final, and being file-derived it
+//   adds no CID differentiation. See analysis doc §4.
 //
-// RUN TIME (in the ephemeral exec impl, once those inputs are ready):
+// RUN TIME (in the pure exec.tpl, once those inputs are ready):
 //   4. evaluate()/evaluateResource() walk the resolved AST against a resolver
-//      the impl supplies — size via ll.getBlobSize, lineCount via the awaited
+//      exec.tpl supplies — size via ll.getBlobSize, lineCount via the deep-waited
 //      count map — reject a top-level comparison/logic op, assert a positive
 //      integer, and override the quota.
 //
