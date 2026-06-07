@@ -479,9 +479,10 @@ builder := func() {
 		 * f.sub that underflows) is rejected at run time — floor it with f.max /
 		 * f.clamp if a metric can be zero.
 		 *
-		 * NOTE: the resolved formula participates in the exec CID. Two execs that
-		 * differ only by their formula get distinct CIDs and allocate separately
-		 * (Option 2; the former CID-transparent dedup is intentionally dropped).
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately.
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number | string } - static RAM used when the
@@ -516,9 +517,10 @@ builder := func() {
 		 * non-positive or non-integer result is rejected at run time — floor it
 		 * with f.max / f.clamp if a metric can be zero.
 		 *
-		 * NOTE: the resolved formula participates in the exec CID. Two execs that
-		 * differ only by their formula get distinct CIDs and allocate separately
-		 * (Option 2; the former CID-transparent dedup is intentionally dropped).
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately.
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number } - static CPU used when the backend
@@ -1224,11 +1226,12 @@ builder := func() {
 			if hasFormula {
 				// Live evaluation needs getBlobSize: the pure exec.tpl reads input-file
 				// sizes (getBlobSize) at run time when it evaluates the formula. The
-				// formula ASTs + line-count map ride the REGULAR input rail (pureExecInputs
-				// below), so they participate in the exec CID — no service-field capability
-				// is required (Option 2; CID-transparency intentionally dropped, see the
-				// analysis doc §9). Missing getBlobSize => take the static fallback path, so
-				// a formula can never break an exec on a backend that cannot evaluate it.
+				// formula ASTs ride the META rail (CID-transparent); only a computed
+				// line-count map, if any, rides the REGULAR rail — it must be deep-waited
+				// to final, and being file-derived it adds no CID differentiation (see the
+				// attach site below and analysis doc §4). Missing getBlobSize => take the
+				// static fallback path, so a formula can never break an exec on a backend
+				// that cannot evaluate it.
 				canEvaluateFormulas := feats.hasBlobSize
 				if !canEvaluateFormulas {
 					// Backend can't evaluate formulas (no getBlobSize). Each formula
@@ -1291,14 +1294,25 @@ builder := func() {
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
-			// Resource-formula inputs ride the REGULAR rail (pureExecInputs) so the pure
-			// exec.tpl's automatic readiness gate deep-waits them — including the
-			// line-count map's per-file content resources — and evaluates the formula
-			// itself. This puts the formula ASTs + metrics in the exec CID (Option 2;
-			// CID-transparency intentionally dropped, see the analysis doc §9). Populated
-			// only on the canEvaluateFormulas path above.
-			if !is_undefined(resolvedMem) { pureExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
-			if !is_undefined(resolvedCpu) { pureExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
+			// Resource-formula input placement (CID-transparent formula; see analysis doc §4):
+			//   - Formula ASTs (__memFormula__/__cpuFormula__) are JSON VALUE resources —
+			//     final on creation — so they ride the META rail (metaExecInputs, like
+			//     `quota`): excluded from the exec CID, yet readable as final in the pure
+			//     exec.tpl body. Changing only the formula does NOT change the CID, so two
+			//     otherwise-identical execs dedup to one allocation (formula CID-transparency).
+			//     On a backend without serviceFields support, render.lib attaches meta inputs
+			//     as regular ones instead — the formula then enters the CID (no transparency)
+			//     but still evaluates correctly. Graceful degradation; hasBlobSize stays the
+			//     only gate (gating on serviceFields would instead disable formulas there).
+			//   - The line-count map (__metric_lineCount__) holds COMPUTED per-file results.
+			//     On a meta (service) field those are only "resolved", not final, and a pure
+			//     template cannot awaitState — so the map MUST ride the REGULAR rail
+			//     (pureExecInputs) to be deep-waited to final before the body reads it. This
+			//     enters the CID, but the counts are file-derived (a deterministic function of
+			//     the already-in-CID input files), so identical inputs still dedup.
+			// Populated only on the canEvaluateFormulas path above.
+			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
+			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
 			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.META_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
