@@ -110,12 +110,10 @@ self.body(func(inputs) {
 		plan = loadSoftware.loadSoftware(software)
 	}
 
-	// Resource-formula evaluation happens HERE, in the pure template. The formula
-	// ASTs arrive as META inputs — value resources, readable as final (like `quota`),
-	// and CID-transparent — while the line-count map, if any, arrives as a REGULAR
-	// input, so this pure template's automatic readiness gate has already deep-waited
-	// its per-file content resources to final before this body runs. No awaitState is
-	// used (it is ephemeral-only and would panic).
+	// Resource-formula evaluation happens HERE, in the pure template. By the time
+	// this body runs, the meta formula ASTs and the regular line-count map (see the
+	// input-schema note above) are resolved and deep-waited, so it reads and
+	// evaluates them directly — no awaitState (ephemeral-only; it would panic here).
 	quota := maps.clone(inputs.quota)
 
 	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
