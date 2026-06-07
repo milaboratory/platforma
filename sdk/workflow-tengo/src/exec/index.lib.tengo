@@ -479,10 +479,9 @@ builder := func() {
 		 * f.sub that underflows) is rejected at run time — floor it with f.max /
 		 * f.clamp if a metric can be zero.
 		 *
-		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
-		 * exec deduplication. Two execs identical except for their formula dedup to
-		 * one run (and one allocation); vary a real input (an arg or file) if you
-		 * need them to allocate separately.
+		 * NOTE: the resolved formula participates in the exec CID. Two execs that
+		 * differ only by their formula get distinct CIDs and allocate separately
+		 * (Option 2; the former CID-transparent dedup is intentionally dropped).
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number | string } - static RAM used when the
@@ -517,10 +516,9 @@ builder := func() {
 		 * non-positive or non-integer result is rejected at run time — floor it
 		 * with f.max / f.clamp if a metric can be zero.
 		 *
-		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
-		 * exec deduplication. Two execs identical except for their formula dedup to
-		 * one run (and one allocation); vary a real input (an arg or file) if you
-		 * need them to allocate separately.
+		 * NOTE: the resolved formula participates in the exec CID. Two execs that
+		 * differ only by their formula get distinct CIDs and allocate separately
+		 * (Option 2; the former CID-transparent dedup is intentionally dropped).
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number } - static CPU used when the backend
@@ -1213,7 +1211,7 @@ builder := func() {
 			// Resolve formulas (tags -> file lists) and apply the
 			// hasBlobSize fallback gate. The static quota below stays populated;
 			// the ephemeral exec impl overrides ram/cpu per-dimension when the
-			// corresponding formula meta input is present. lineCount metrics are
+			// corresponding formula input is present. lineCount metrics are
 			// computed INLINE by running the `line-counter` Go binary via the
 			// builder() factory itself (see _lineCountResource). That is a plain
 			// recursive function call within :exec — no import of :pt or any
@@ -1233,7 +1231,7 @@ builder := func() {
 				// a formula can never break an exec on a backend that cannot evaluate it.
 				canEvaluateFormulas := feats.hasBlobSize
 				if !canEvaluateFormulas {
-					// Backend can't evaluate formulas CID-transparently. Each formula
+					// Backend can't evaluate formulas (no getBlobSize). Each formula
 					// dimension falls back to its { fallback }, or to a static
 					// .mem()/.cpu() if no { fallback } was given; error only when a
 					// dimension has neither. Pure decision, unit-tested in exec.formula
