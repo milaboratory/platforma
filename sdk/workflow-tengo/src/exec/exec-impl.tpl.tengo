@@ -105,7 +105,7 @@ self.body(func(inputs) {
 	wdBuilder := workdir.builder()
 
 	// The quota is already fully computed by the pure exec.tpl (resource formulas
-	// are evaluated there, in Option 2). This ephemeral impl just consumes it.
+	// are evaluated there). This ephemeral impl just consumes it.
 	quota := inputs.quota
 
 	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
