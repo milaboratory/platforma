@@ -400,3 +400,88 @@ tplTest.concurrent(
   },
   120000,
 );
+
+/**
+ * Formula CID-transparency across metric kinds. For each metric, render the SAME
+ * exec twice over the SAME file, varying ONLY the formula's +delta GiB. The
+ * metric reads the same file, so the regular-rail inputs are identical and the
+ * formula AST (meta) is CID-excluded => the delta=2 render dedups to the delta=1
+ * render and both read back metric + 1 GiB. This proves transparency holds even
+ * for lineCount, whose computed (regular-rail) map is file-derived. See §4.
+ */
+const transparencyCases = [
+  { mode: "size", metric: FIXTURE_BYTES, label: "size" },
+  { mode: "lineCount", metric: FIXTURE_NEWLINES * 1024, label: "lineCount" },
+] as const;
+
+for (const tc of transparencyCases) {
+  tplTest.concurrent(
+    `formula-cid-transparent ${tc.label}: changing only the formula delta dedups to one allocation`,
+    async ({ helper, expect, driverKit }) => {
+      const handle = await libraryFileHandle(driverKit);
+      const readRam = async (deltaGib: number) => {
+        const result = await helper.renderTemplate(
+          false,
+          "exec.run.formula_cid_metric",
+          ["limits"],
+          (tx) => ({
+            file: tx.createValue(Pl.JsonObject, JSON.stringify(handle)),
+            mode: tx.createValue(Pl.JsonObject, JSON.stringify(tc.mode)),
+            deltaGib: tx.createValue(Pl.JsonObject, JSON.stringify(deltaGib)),
+          }),
+        );
+        const out = await result
+          .computeOutput("limits", (a) => a?.getDataAsString())
+          .awaitStableValue();
+        return Number(out!.split(",")[0]);
+      };
+      const ram1 = await readRam(1); // metric + 1 GiB
+      const ram2 = await readRam(2); // formula is CID-excluded => dedups to the delta=1 render
+      // eslint-disable-next-line no-console
+      console.log(`[formula-cid ${tc.label}] ram(delta=1)=${ram1} ram(delta=2)=${ram2}`);
+      expect(ram1).eq(tc.metric + 1 * GIB);
+      expect(ram2).eq(tc.metric + 1 * GIB); // deduped: NOT metric + 2 GiB
+    },
+    120000,
+  );
+}
+
+/**
+ * CID boundary: measuring a DIFFERENT file changes the allocation. Both files are
+ * added to every render, so the regular file inputs are identical; only the
+ * formula's lineCount(tag) selects which file's (regular-rail, file-derived)
+ * count enters the CID. Tag "a" (42 newlines) and tag "b" (0 newlines) therefore
+ * produce DISTINCT line-count maps => distinct CIDs => distinct allocations. This
+ * is the intended limit of the hybrid's transparency. See §4.
+ */
+tplTest.concurrent(
+  "formula-cid boundary: measuring a different file changes the allocation",
+  async ({ helper, expect, driverKit }) => {
+    const handleA = await libraryFileHandle(driverKit, FIXTURE_NAME); // 42 newlines
+    const handleB = await libraryFileHandle(driverKit, NO_NEWLINE_FIXTURE_NAME); // 0 newlines
+    const readRam = async (whichTag: "a" | "b") => {
+      const result = await helper.renderTemplate(
+        false,
+        "exec.run.formula_cid_files",
+        ["limits"],
+        (tx) => ({
+          fileA: tx.createValue(Pl.JsonObject, JSON.stringify(handleA)),
+          fileB: tx.createValue(Pl.JsonObject, JSON.stringify(handleB)),
+          whichTag: tx.createValue(Pl.JsonObject, JSON.stringify(whichTag)),
+        }),
+      );
+      const out = await result
+        .computeOutput("limits", (a) => a?.getDataAsString())
+        .awaitStableValue();
+      return Number(out!.split(",")[0]);
+    };
+    const ramA = await readRam("a"); // 512 MiB + 42*1024
+    const ramB = await readRam("b"); // 512 MiB + 0  => distinct CID => distinct allocation
+    // eslint-disable-next-line no-console
+    console.log(`[formula-cid boundary] ram(a)=${ramA} ram(b)=${ramB}`);
+    expect(ramA).eq(512 * MIB + FIXTURE_NEWLINES * 1024);
+    expect(ramB).eq(512 * MIB);
+    expect(ramA).not.eq(ramB); // measuring different files differentiates (intended)
+  },
+  120000,
+);

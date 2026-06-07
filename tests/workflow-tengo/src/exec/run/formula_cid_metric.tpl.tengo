@@ -1,0 +1,51 @@
+/**
+ * Formula CID-transparency across metric kinds. Renders the SAME exec — same
+ * software, same input file (tag "reads"), same constant arg suffix — varying
+ * ONLY the formula's additive delta via inputs.deltaGib. The metric (size or
+ * lineCount, by inputs.mode) reads the same file, so the regular-rail inputs are
+ * byte-identical between renders; the formula AST (which carries the delta) rides
+ * the CID-excluded meta rail. Two renders differing only by delta therefore share
+ * one CID and dedup to a single allocation — the second reads back the FIRST
+ * render's ram. (If the formula leaked into the CID they would allocate
+ * separately.) See analysis doc §4.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	inputFile := file.importFile(inputs.file).file
+	mode := inputs.mode
+	deltaGib := inputs.deltaGib
+
+	memAst := undefined
+	if mode == "size" {
+		memAst = f.add(f.size("reads"), f.gib(deltaGib))
+	} else if mode == "lineCount" {
+		memAst = f.add(f.mul(f.lineCount("reads"), 1024), f.gib(deltaGib))
+	} else {
+		ll.panic("formula_cid_metric: unknown mode %v", mode)
+	}
+
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},cidmetric-" + mode).
+		addFile("input.txt", inputFile, { tag: "reads" }).
+		memFormula(memAst).
+		cpuFormula(f.add(2, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})
