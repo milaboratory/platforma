@@ -1,0 +1,41 @@
+/**
+ * CID boundary: a formula that measures DIFFERENT files gets a DIFFERENT
+ * allocation, even at an otherwise-identical command. Both files are added to
+ * every render (tags "a" and "b"), so the regular file inputs are identical; the
+ * formula's lineCount(inputs.whichTag) selects which file's count drives the
+ * allocation. The computed line-count MAP rides the regular rail (it must be
+ * deep-waited — analysis doc §4), so measuring tag "a" vs "b" produces DISTINCT
+ * line-count maps -> distinct CIDs -> distinct allocations. This pins the one
+ * place the hybrid is intentionally NOT transparent: changing WHICH data a
+ * formula measures is real differentiation, not a formula tweak.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	fileA := file.importFile(inputs.fileA).file
+	fileB := file.importFile(inputs.fileB).file
+
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},cidfiles").
+		addFile("a.txt", fileA, { tag: "a" }).
+		addFile("b.txt", fileB, { tag: "b" }).
+		memFormula(f.add(f.mib(512), f.mul(f.lineCount(inputs.whichTag), 1024))).
+		cpuFormula(f.add(1, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})
