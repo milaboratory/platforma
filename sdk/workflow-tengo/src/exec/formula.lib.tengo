@@ -11,7 +11,7 @@
 //   3. referencedMetricFiles() lists the files needing a line-counter pre-exec
 //      (lineCount); size reads the blob size inline, so it needs none.
 //   The resolved AST (and the per-file line-count map, if any) then ride to the
-//   exec as CID-transparent meta inputs.
+//   exec as regular inputs (Option 2), so they enter its CID.
 //
 // RUN TIME (in the ephemeral exec impl, once those inputs are ready):
 //   4. evaluate()/evaluateResource() walk the resolved AST against a resolver
@@ -255,8 +255,7 @@ referencedMetricFiles := func(resolvedNode) {
 }
 
 // applyFormulaFallback resolves the static ram/cpu to use when the backend
-// cannot evaluate resource formulas at run time (no getBlobSize, or no
-// service-field support so the meta inputs can't ride CID-transparently). A formula
+// cannot evaluate resource formulas at run time (no getBlobSize). A formula
 // dimension needs SOME static value to fall back to: either an explicit
 // { fallback } or a static .mem()/.cpu(). A static request always wins (the
 // formula won't run on this backend) and doubles as the fallback — so the
