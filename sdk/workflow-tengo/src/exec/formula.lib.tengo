@@ -32,6 +32,9 @@
 ll := import(":ll")
 text := import("text")
 slices := import(":slices")
+maps := import(":maps")
+sets := import(":sets")
+units := import(":units")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -45,31 +48,24 @@ slices := import(":slices")
 // Note: if.cond and not.a may be const-wrapped if given a bare int; the
 // evaluator treats any nonzero const as truthy.
 
-GIB := 1073741824
-MIB := 1048576
-KIB := 1024
-GB  := 1000000000
-MB  := 1000000
-KB  := 1000
-
 // Ops _wrap accepts as valid expression nodes. "metricSum" is builder-internal
 // (resolveAst rewrites "metric" -> "metricSum" with concrete files); the DSL
 // never emits it directly.
-_KNOWN_OPS := {
-	"const": true, "metric": true, "metricSum": true,
-	"add": true, "sub": true, "mul": true, "div": true, "divCeil": true,
-	"max": true, "min": true, "clamp": true,
-	"gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true,
-	"if": true
-}
+_KNOWN_OPS := sets.fromSlice([
+	"const", "metric", "metricSum",
+	"add", "sub", "mul", "div", "divCeil",
+	"max", "min", "clamp",
+	"gt", "gte", "lt", "lte", "and", "or", "not",
+	"if"
+])
 
 // Comparison/logic ops. Rejected at the top level of a resource formula
 // (evaluateResource) — they are meaningful only inside f.if(...).
-_BOOL_OPS := { "gt": true, "gte": true, "lt": true, "lte": true, "and": true, "or": true, "not": true }
+_BOOL_OPS := sets.fromSlice(["gt", "gte", "lt", "lte", "and", "or", "not"])
 
 _wrap := func(x) {
 	if is_map(x) && !is_undefined(x.op) {
-		ll.assert(_KNOWN_OPS[x.op] == true, "exec.formula: not a valid expression node (unknown op %v)", x.op)
+		ll.assert(sets.hasElement(_KNOWN_OPS, x.op), "exec.formula: not a valid expression node (unknown op %v)", x.op)
 		return x
 	}
 	ll.assert(is_int(x), "exec.formula: expected an expression node or an integer, got %v", x)
@@ -157,7 +153,7 @@ evaluate = func(node, resolver) {
 // opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu") names
 // the offending dimension.
 evaluateResource := func(node, resolver, label) {
-	ll.assert(is_undefined(_BOOL_OPS[node.op]),
+	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
 		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.if(...).",
 		label, node.op)
 	v := evaluate(node, resolver)
@@ -169,34 +165,27 @@ evaluateResource := func(node, resolver, label) {
 
 // ---- builder-time resolution helpers ---------------------------------------
 
-// Line-oriented text extensions f.lineCount() supports.
-_LINECOUNT_OK := { "csv": true, "tsv": true, "txt": true, "fastq": true, "fq": true, "fasta": true, "fa": true, "tab": true }
-_COMPRESSION_EXT := { "gz": "gzip", "bz2": "bzip2", "zst": "zstd" }
-
-_baseAndCompression := func(fileName) {
-	parts := text.split(fileName, ".")
-	compression := "none"
-	// Compression suffix matched case-insensitively (mirrors the line-counter
-	// binary, which lowercases the suffix before inferring compression).
-	if len(parts) >= 2 {
-		lastLower := text.to_lower(parts[len(parts)-1])
-		if !is_undefined(_COMPRESSION_EXT[lastLower]) {
-			compression = _COMPRESSION_EXT[lastLower]
-			parts = parts[0:len(parts)-1]
-		}
-	}
-	ext := len(parts) >= 2 ? parts[len(parts)-1] : ""
-	return { ext: ext, compression: compression }
-}
+// Line-oriented text extensions f.lineCount() supports, and the compression
+// suffixes it may carry. The line-counter binary infers the codec from the
+// suffix itself, so the builder only needs to recognize and strip it — hence a
+// set, not an ext -> codec map.
+_LINECOUNT_OK := sets.fromSlice(["csv", "tsv", "txt", "fastq", "fq", "fasta", "fa", "tab"])
+_COMPRESSION_EXT := sets.fromSlice(["gz", "bz2", "zst"])
 
 _assertMetricCompatible := func(metric, fileName) {
 	if metric == "lineCount" {
-		info := _baseAndCompression(fileName)
-		// Match the base extension case-insensitively so .TXT / .FASTQ are
-		// accepted (the compression suffix was already stripped case-insensitively
-		// by _baseAndCompression, so "reads.fastq.GZ" counts correctly too).
-		ll.assert(!is_undefined(_LINECOUNT_OK[text.to_lower(info.ext)]),
-			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, info.ext)
+		// Strip a trailing compression suffix (case-insensitively, mirroring the
+		// line-counter binary, which lowercases it before decompressing), then
+		// match the format-bearing extension case-insensitively so .TXT / .FASTQ
+		// and "reads.fastq.GZ" are all accepted. `ext` keeps its original case for
+		// the error message.
+		parts := text.split(fileName, ".")
+		if len(parts) >= 2 && sets.hasElement(_COMPRESSION_EXT, text.to_lower(parts[len(parts)-1])) {
+			parts = parts[0:len(parts)-1]
+		}
+		ext := len(parts) >= 2 ? parts[len(parts)-1] : ""
+		ll.assert(sets.hasElement(_LINECOUNT_OK, text.to_lower(ext)),
+			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, ext)
 	}
 	// size is always compatible
 }
@@ -224,15 +213,11 @@ resolveAst = func(node, tagMap, allFiles) {
 		// placed on the metricSum; it only drives the empty-tag const substitution.
 		return { op: "metricSum", metric: node.metric, files: files }
 	}
-	out := {}
-	for k, v in node {
-		if is_map(v) && !is_undefined(v.op) {
-			out[k] = resolveAst(v, tagMap, allFiles)
-		} else {
-			out[k] = v
-		}
-	}
-	return out
+	// Non-metric node: copy the map, recursing into any child-node field (a map
+	// carrying an `op`) and passing every other field through unchanged.
+	return maps.mapValues(node, func(v) {
+		return is_map(v) && !is_undefined(v.op) ? resolveAst(v, tagMap, allFiles) : v
+	})
 }
 
 referencedMetricFiles := func(resolvedNode) {
@@ -298,12 +283,12 @@ export {
 	size:      func(...args) { return _metric("size", args) },
 	lineCount: func(...args) { return _metric("lineCount", args) },
 
-	gib: func(n) { ll.assert(is_int(n), "exec.formula.gib: n must be an integer"); return { op: "const", value: n * GIB } },
-	mib: func(n) { ll.assert(is_int(n), "exec.formula.mib: n must be an integer"); return { op: "const", value: n * MIB } },
-	kib: func(n) { ll.assert(is_int(n), "exec.formula.kib: n must be an integer"); return { op: "const", value: n * KIB } },
-	gb:  func(n) { ll.assert(is_int(n), "exec.formula.gb: n must be an integer");  return { op: "const", value: n * GB } },
-	mb:  func(n) { ll.assert(is_int(n), "exec.formula.mb: n must be an integer");  return { op: "const", value: n * MB } },
-	kb:  func(n) { ll.assert(is_int(n), "exec.formula.kb: n must be an integer");  return { op: "const", value: n * KB } },
+	gib: func(n) { ll.assert(is_int(n), "exec.formula.gib: n must be an integer"); return { op: "const", value: n * units.GiB } },
+	mib: func(n) { ll.assert(is_int(n), "exec.formula.mib: n must be an integer"); return { op: "const", value: n * units.MiB } },
+	kib: func(n) { ll.assert(is_int(n), "exec.formula.kib: n must be an integer"); return { op: "const", value: n * units.KiB } },
+	gb:  func(n) { ll.assert(is_int(n), "exec.formula.gb: n must be an integer");  return { op: "const", value: n * units.GB } },
+	mb:  func(n) { ll.assert(is_int(n), "exec.formula.mb: n must be an integer");  return { op: "const", value: n * units.MB } },
+	kb:  func(n) { ll.assert(is_int(n), "exec.formula.kb: n must be an integer");  return { op: "const", value: n * units.KB } },
 
 	add:     func(a, b) { return _bin("add", a, b) },
 	sub:     func(a, b) { return _bin("sub", a, b) },
