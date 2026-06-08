@@ -217,6 +217,7 @@ resolveAst = func(node, tagMap, allFiles) {
 			return { op: "const", value: node.default }
 		}
 		for fn in files { _assertMetricCompatible(node.metric, fn) }
+		files = slices.quickSort(files)
 		// A metricSum always has >= 1 file (the empty-tag case became a const
 		// above), and the resolver computes the metric from those files — so a
 		// carried { default } would be dead data. default is intentionally NOT

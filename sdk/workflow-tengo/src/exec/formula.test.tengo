@@ -107,6 +107,17 @@ TestResolveTagsToFiles := func() {
 	test.isEqual(["r1.fastq.gz", "r2.fastq.gz", "ref.fasta"], all.files)
 }
 
+TestResolveSortsFilesForStableBytes := func() {
+	tagMap := { "reads": ["r2.fastq", "r10.fastq", "r1.fastq"] }
+	allFiles := ["z.txt", "a.txt", "m.txt"]
+
+	tagged := f.resolveAst(f.size("reads"), tagMap, allFiles)
+	test.isEqual(["r1.fastq", "r10.fastq", "r2.fastq"], tagged.files)
+
+	untagged := f.resolveAst(f.size(), tagMap, allFiles)
+	test.isEqual(["a.txt", "m.txt", "z.txt"], untagged.files)
+}
+
 TestResolveDefaultSubstitution := func() {
 	resolved := f.resolveAst(f.size("missing", { default: 0 }), {}, [])
 	test.isEqual({ op: "const", value: 0 }, resolved)
@@ -345,4 +356,3 @@ TestResolveLineCountBz2Accepted := func() {
 	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.bz2"] }, ["r1.fastq.bz2"])
 	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.bz2"] }, resolved)
 }
-
