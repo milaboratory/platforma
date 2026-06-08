@@ -477,6 +477,12 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	ll.assert(vt == "Int" || vt == "Long" || vt == "Float" || vt == "Double" || vt == "String",
 		"Unsupported value type: ", vt, spec)
 
+	axisTypes := []
+	for axis in spec.axesSpec {
+		axisTypes = append(axisTypes, axis.type)
+	}
+	typeSpec := { axes: axisTypes, column: vt }
+
     ll.assert(!is_undefined(data) && smart.isResource(data), "data must be a resource, got: %v", data)
 
 	ll.assert(!is_undefined(execBuilder), "execBuilder must be defined")
@@ -515,6 +521,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: 0,
 			parts: { "[]": jdataFile }
 		})
@@ -542,6 +549,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         // write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
 		})
@@ -579,6 +587,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "JsonPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
 		})
@@ -622,6 +631,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         // write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "BinaryPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
 		})
@@ -680,6 +690,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "BinaryPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
 		})
@@ -711,6 +722,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
         // write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "ParquetPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: data.getDataAsJson().partitionKeyLength,
 			parts: parts
 		})
@@ -754,6 +766,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
 			type: "ParquetPartitioned",
+			typeSpec: typeSpec,
 			partitionKeyLength: superPartitionKeyLength + partitionKeyLength,
 			parts: parts
 		})

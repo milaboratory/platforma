@@ -266,6 +266,8 @@ class WriteFrameHappyPathTest(unittest.TestCase):
             with open(datainfo_file, "rb") as f:
                 info = msgspec.json.decode(f.read(), type=DataInfo)
             self.assertEqual(info.partition_key_length, 0)
+            self.assertEqual(info.type_spec.axes, ["Long", "String"])
+            self.assertEqual(info.type_spec.column, "Double")
             self.assertEqual(set(info.parts.keys()), {"[]"})
             part = info.parts["[]"]
             self.assertEqual(part.data, "partition_0.parquet")

@@ -15,6 +15,10 @@ util := import(":pt.util")
 // json schema of .datainfo file
 _DATA_INFO_SCHEMA := {
     `type`: `string,regex=ParquetPartitioned`,
+    `typeSpec`: {
+        `axes`: [`string,regex=Int|Long|String`],
+        `column`: `string,regex=Int|Long|Float|Double|String`
+    },
     `partitionKeyLength`: `number`,
     `parts`: {
         any: {
