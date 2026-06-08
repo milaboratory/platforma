@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.30.1
+
+### Patch Changes
+
+- d314bbb: PFrames update: adopt self-contained datainfo (V6/V17/V8) interfaces and drop the superseded V5/V16/V7 ones.
+
 ## 1.30.0
 
 ### Minor Changes
