@@ -1,0 +1,21 @@
+// Inner template invoked via render.create from wasm.pframes-rs-inner.
+// Calls assets.importWasm("@milaboratories/pframes-rs-wasip2:main") in
+// its body. Identical wasm work to wasm.pframes-rs.tpl.tengo, but reached
+// through a parent template — the test exists to pin down whether the
+// per-render wasm-dep registry the workflow controller hands to
+// plapi.loadWasm propagates through render.create into child templates,
+// or only includes the top-level rendered template's wasm deps.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+json := import("json")
+
+self.defineOutputs(["resultJson"])
+
+self.body(func(_inputs) {
+	api := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
+	respJson := api.frame.buildQuery(
+		string(json.encode({ version: "v1", column: "abundance" }))
+	)
+	return { resultJson: respJson }
+})

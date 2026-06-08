@@ -1,0 +1,24 @@
+// Outer template that renders wasm.pframes-rs-inner-body via render.create
+// and re-exports its resultJson output. The outer template has no direct
+// wasm call — the wasm import lives only inside the inner template's body.
+//
+// Probe template for the wasm-deps-through-nested-rendering bug observed
+// when running rarefaction with a wasm-backed build-query: the wasm
+// declaration tengo-builder emits at the outermost pack level doesn't
+// reach the per-render deps map the workflow controller's plapi.loadWasm
+// consults for child renders, so the inner template's importWasm aborts
+// with "alias is not a wasm dependency of this template" even though the
+// wasm bytes are bundled in the pack.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+innerTpl := assets.importTemplate(":wasm.pframes-rs-inner-body")
+
+self.defineOutputs(["resultJson"])
+
+self.body(func(_inputs) {
+	inner := render.create(innerTpl, {})
+	return { resultJson: inner.output("resultJson") }
+})
