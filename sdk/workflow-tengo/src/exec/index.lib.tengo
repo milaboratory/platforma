@@ -38,6 +38,20 @@ lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.softwar
 _lineCountResource := undefined
 _aggregateLineCountMap := undefined
 
+// _assertValidCpuRequest / _assertValidMemRequest hold the single definition of a
+// valid CPU / RAM request, so .cpu()/.mem() and the memFormula/cpuFormula
+// { fallback } (which substitutes for a static request on backends that cannot
+// evaluate formulas) all enforce the same contract. `ctx` prefixes the message so
+// the error names the offending setter.
+_assertValidCpuRequest := func(amount, ctx) {
+	validation.assertType(amount, "number", ctx + ": amount of cores must be a number")
+	ll.assert(amount > 0, ctx + ": amount of cores should be greater than 0")
+}
+_assertValidMemRequest := func(amount, ctx) {
+	validation.assertType(amount, ["or", "number", "string"], ctx + ": RAM amount should be a number or string")
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": amount in bytes should be at least 16MiB")
+}
+
 /**
  * Creates a new builder for constructing and executing commands.
  *
@@ -428,8 +442,7 @@ builder := func() {
 		 * @param amount: number - number of cores requested for command.
 		 */
 		cpu: func(amount) {
-			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
-			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
+			_assertValidCpuRequest(amount, "exec.builder.cpu")
 			cpuRequest = amount
 
 			return self
@@ -447,8 +460,7 @@ builder := func() {
 		 * @return builder
 		 */
 		mem: func(amount) {
-			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount >= 16 * units.MiB, "exec.builder.mem: amount in bytes should be at least 16MiB")
+			_assertValidMemRequest(amount, "exec.builder.mem")
 			ramRequest = amount
 
 			return self
@@ -482,7 +494,9 @@ builder := func() {
 		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
 		 * exec deduplication. Two execs identical except for their formula dedup to
 		 * one run (and one allocation); vary a real input (an arg or file) if you
-		 * need them to allocate separately.
+		 * need them to allocate separately. (Transparency requires backend
+		 * serviceFields support; on a backend without it the formula instead
+		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number | string } - static RAM used when the
@@ -498,6 +512,7 @@ builder := func() {
 					ll.assert(k == "fallback", "exec.builder.memFormula: unknown option %q (only { fallback } is supported)", k)
 				}
 				if !is_undefined(opts[0].fallback) {
+					_assertValidMemRequest(opts[0].fallback, "exec.builder.memFormula fallback")
 					memFormulaFallback = opts[0].fallback
 				}
 			}
@@ -520,7 +535,9 @@ builder := func() {
 		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
 		 * exec deduplication. Two execs identical except for their formula dedup to
 		 * one run (and one allocation); vary a real input (an arg or file) if you
-		 * need them to allocate separately.
+		 * need them to allocate separately. (Transparency requires backend
+		 * serviceFields support; on a backend without it the formula instead
+		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
 		 *
 		 * @param ast - a formula node produced via exec.formula
 		 * @param opts: { fallback?: number } - static CPU used when the backend
@@ -536,6 +553,7 @@ builder := func() {
 					ll.assert(k == "fallback", "exec.builder.cpuFormula: unknown option %q (only { fallback } is supported)", k)
 				}
 				if !is_undefined(opts[0].fallback) {
+					_assertValidCpuRequest(opts[0].fallback, "exec.builder.cpuFormula fallback")
 					cpuFormulaFallback = opts[0].fallback
 				}
 			}
@@ -1239,7 +1257,10 @@ builder := func() {
 					// .mem()/.cpu() if no { fallback } was given; error only when a
 					// dimension has neither. Pure decision, unit-tested in exec.formula
 					// (applyFormulaFallback).
-					fb := execFormula.applyFormulaFallback(memFormulaAst, memFormulaFallback, cpuFormulaAst, cpuFormulaFallback, ramRequest, cpuRequest)
+					fb := execFormula.applyFormulaFallback({
+						ram: { ast: memFormulaAst, fallback: memFormulaFallback, static: ramRequest },
+						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest }
+					})
 					ll.assert(is_undefined(fb.err), fb.err)
 					ramRequest = fb.ram
 					cpuRequest = fb.cpu
@@ -1313,7 +1334,7 @@ builder := func() {
 			// Populated only on the canEvaluateFormulas path above.
 			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
 			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
-			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.META_INPUT_LINE_COUNT] = lineCountMapResource }
+			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
