@@ -22,21 +22,6 @@ assets := import(":assets")
 maps := import(":maps")
 json := import("json")
 
-// Lazy-init the wasm api so a render that imports this lib but never
-// calls `buildQuery` doesn't pay the Store allocation cost. First call
-// within a render opens one Store + Instance from the per-render wasm
-// cache; subsequent calls in the same render reuse them. Concurrent
-// renders get their own sandboxes (the wasm cache hands out a per-render
-// Acquired reference to the cached Component).
-api := undefined
-
-ensureApi := func() {
-	if is_undefined(api) {
-		api = assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
-	}
-	return api
-}
-
 // Wasm-side serde requires `spec` on every linker/filter step's
 // `ColumnIdAndSpec`, but `BuildQuery::execute()` reads only `columnId` —
 // `spec` content is discarded (see
@@ -96,7 +81,9 @@ buildQuery := func(input) {
 		}
 		payload = maps.merge(input, { path: newPath })
 	}
-	respJson := ensureApi().frame.buildQuery(string(json.encode(payload)))
+
+	wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
+	respJson := wasm.frame.buildQuery(string(json.encode(payload)))
 	return json.decode(respJson)
 }
 
