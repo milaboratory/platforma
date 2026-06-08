@@ -1,5 +1,13 @@
 # @milaboratories/pf-driver
 
+## 1.7.5
+
+### Patch Changes
+
+- d314bbb: PFrames update: adopt self-contained datainfo (V6/V17/V8) interfaces and drop the superseded V5/V16/V7 ones.
+- Updated dependencies [d314bbb]
+  - @milaboratories/pl-model-middle-layer@1.30.1
+
 ## 1.7.4
 
 ### Patch Changes

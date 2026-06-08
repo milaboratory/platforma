@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.3.3
+
+### Patch Changes
+
+- d314bbb: PFrames update: adopt self-contained datainfo (V6/V17/V8) interfaces and drop the superseded V5/V16/V7 ones.
+- Updated dependencies [d314bbb]
+  - @platforma-open/milaboratories.software-ptabler@2.1.1
+
 ## 6.3.2
 
 ### Patch Changes

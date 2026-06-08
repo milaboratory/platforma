@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.monetization-test.workflow
 
+## 1.2.28
+
+### Patch Changes
+
+- Updated dependencies [d314bbb]
+  - @platforma-sdk/workflow-tengo@6.3.3
+
 ## 1.2.27
 
 ### Patch Changes
