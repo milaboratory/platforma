@@ -30,13 +30,12 @@ feats := import(":feats")
 // no cycle, no DI) to compute f.lineCount() metrics inline.
 lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:line-counter")
 
-// Forward declarations. The bodies are assigned after builder() (below) so
-// they can call the builder() factory recursively; declaring the names here
-// lets builder().run() reference them at compile time (Tengo resolves
-// module-level identifiers lexically — a closure cannot see a name declared
-// textually after the enclosing function).
+// Forward declaration. The body is assigned after builder() (below) so it can
+// call the builder() factory recursively; declaring the name here lets
+// builder().run() reference it at compile time (Tengo resolves module-level
+// identifiers lexically — a closure cannot see a name declared textually after
+// the enclosing function).
 _lineCountResource := undefined
-_aggregateLineCountMap := undefined
 
 // _assertValidCpuRequest / _assertValidMemRequest hold the single definition of a
 // valid CPU / RAM request, so .cpu()/.mem() and the memFormula/cpuFormula
@@ -1271,19 +1270,18 @@ builder := func() {
 						existing := is_undefined(tagMap[tag]) ? [] : tagMap[tag]
 						tagMap[tag] = append(existing, fileName)
 					}
-					allFiles := []
-					for fileName, _ in filesToAdd { allFiles = append(allFiles, fileName) }
+					allFiles := maps.getKeys(filesToAdd)
 
 					neededLineCount := {}
 					if !is_undefined(memFormulaAst) {
 						resolvedMem = execFormula.resolveAst(memFormulaAst, tagMap, allFiles)
 						refs := execFormula.referencedMetricFiles(resolvedMem)
-						if !is_undefined(refs.lineCount) { for fn in refs.lineCount { neededLineCount[fn] = true } }
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
 					}
 					if !is_undefined(cpuFormulaAst) {
 						resolvedCpu = execFormula.resolveAst(cpuFormulaAst, tagMap, allFiles)
 						refs := execFormula.referencedMetricFiles(resolvedCpu)
-						if !is_undefined(refs.lineCount) { for fn in refs.lineCount { neededLineCount[fn] = true } }
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
 					}
 
 					if len(neededLineCount) > 0 {
@@ -1291,7 +1289,7 @@ builder := func() {
 						for fn, _ in neededLineCount {
 							perFile[fn] = _lineCountResource(fn, filesToAdd[fn])
 						}
-						lineCountMapResource = _aggregateLineCountMap(perFile)
+						lineCountMapResource = smart.createMapResource(perFile)
 					}
 				}
 			}
@@ -1521,16 +1519,6 @@ _lineCountResource = func(fileName, fileRef) {
 		cpu(1).
 		run()
 	return res.getFileContent(countOut)
-}
-
-// _aggregateLineCountMap collects per-file line-count content references into a
-// single keyed map resource (fileName -> count content ref).
-_aggregateLineCountMap = func(perFile) {
-	b := smart.mapBuilder()
-	for fileName, ref in perFile {
-		b.add(fileName, ref)
-	}
-	return b.build()
 }
 
 export ll.toStrict({
