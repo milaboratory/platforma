@@ -30,7 +30,7 @@ export interface RemoteBlobProvider<TreeEntry extends JsonSerializable> {
 }
 
 export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposable {
-  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV16>;
+  public readonly pFrameDataPromise: Promise<PFrameInternal.PFrameV17>;
   /**
    * WASM-spec frame built from this PFrame's columns. Source of truth
    * for spec-side operations: column discovery, selector resolution,
@@ -120,11 +120,13 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
           .addColumns(
             jsonifiedColumns.map((c) => ({
               id: c.id,
-              typeSpec: {
-                axes: c.spec.axesSpec.map((a) => a.type),
-                columns: [c.spec.valueType],
+              data: {
+                ...c.data,
+                typeSpec: {
+                  axes: c.spec.axesSpec.map((a) => a.type),
+                  column: c.spec.valueType,
+                },
               },
-              data: c.data,
             })),
             { signal: this.disposeSignal },
           )
