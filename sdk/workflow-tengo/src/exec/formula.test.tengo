@@ -59,18 +59,18 @@ _fakeResolver := {
 }
 
 TestFormulaEvaluateArithmetic := func() {
-	test.isEqual(7, f.evaluate(f.add(3, 4), _fakeResolver))
-	test.isEqual(3, f.evaluate(f.div(10, 3), _fakeResolver))      // truncating
-	test.isEqual(4, f.evaluate(f.divCeil(10, 3), _fakeResolver))  // ceiling
-	test.isEqual(20, f.evaluate(f.mul(f.sub(7, 2), 4), _fakeResolver))
+	test.isEqual(7, f._internal.evaluate(f.add(3, 4), _fakeResolver))
+	test.isEqual(3, f._internal.evaluate(f.div(10, 3), _fakeResolver))      // truncating
+	test.isEqual(4, f._internal.evaluate(f.divCeil(10, 3), _fakeResolver))  // ceiling
+	test.isEqual(20, f._internal.evaluate(f.mul(f.sub(7, 2), 4), _fakeResolver))
 }
 
 TestFormulaEvaluateBoundsAndCond := func() {
-	test.isEqual(5, f.evaluate(f.clamp(2, 5, 10), _fakeResolver))   // raised to lo
-	test.isEqual(10, f.evaluate(f.clamp(99, 5, 10), _fakeResolver)) // capped to hi
-	test.isEqual(8, f.evaluate(f.max(8, 3), _fakeResolver))
-	test.isEqual(1, f.evaluate(f["if"](f.gt(5, 2), 1, 0), _fakeResolver))
-	test.isEqual(0, f.evaluate(f["if"](f.lt(5, 2), 1, 0), _fakeResolver))
+	test.isEqual(5, f._internal.evaluate(f.clamp(2, 5, 10), _fakeResolver))   // raised to lo
+	test.isEqual(10, f._internal.evaluate(f.clamp(99, 5, 10), _fakeResolver)) // capped to hi
+	test.isEqual(8, f._internal.evaluate(f.max(8, 3), _fakeResolver))
+	test.isEqual(1, f._internal.evaluate(f["if"](f.gt(5, 2), 1, 0), _fakeResolver))
+	test.isEqual(0, f._internal.evaluate(f["if"](f.lt(5, 2), 1, 0), _fakeResolver))
 }
 
 TestEvaluateResourceAcceptsPositiveInt := func() {
@@ -85,15 +85,15 @@ TestEvaluateResourceAcceptsPositiveInt := func() {
 
 TestFormulaEvaluateMetricSum := func() {
 	node := { op: "metricSum", metric: "size", files: ["a", "b"] }
-	test.isEqual(350, f.evaluate(node, _fakeResolver))
+	test.isEqual(350, f._internal.evaluate(node, _fakeResolver))
 	lc := { op: "metricSum", metric: "lineCount", files: ["a"] }
-	test.isEqual(9, f.evaluate(lc, _fakeResolver))
+	test.isEqual(9, f._internal.evaluate(lc, _fakeResolver))
 }
 
 TestFormulaEvaluateLogic := func() {
-	test.isEqual(3, f.evaluate(f.min(3, 8), _fakeResolver))
-	test.isTrue(f.evaluate(f.and(f.gte(5, 5), f.lte(2, 9)), _fakeResolver))
-	test.isFalse(f.evaluate(f.or(f.gt(1, 2), f.not(f.lt(1, 2))), _fakeResolver))
+	test.isEqual(3, f._internal.evaluate(f.min(3, 8), _fakeResolver))
+	test.isTrue(f._internal.evaluate(f.and(f.gte(5, 5), f.lte(2, 9)), _fakeResolver))
+	test.isFalse(f._internal.evaluate(f.or(f.gt(1, 2), f.not(f.lt(1, 2))), _fakeResolver))
 }
 
 TestResolveTagsToFiles := func() {
@@ -226,7 +226,7 @@ TestResolveDefaultNotCarriedWhenTagHasFiles := func() {
 // !hasBlobSize path is otherwise unreachable from a unit test.
 
 TestFallbackAppliesWhenNoStaticRequest := func() {
-	res := f.applyFormulaFallback(f.size(), "16GiB", f.size(), 8, undefined, undefined)
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "16GiB" }, cpu: { ast: f.size(), fallback: 8 } })
 	test.isEqual("16GiB", res.ram)
 	test.isEqual(8, res.cpu)
 	test.isTrue(is_undefined(res.err))
@@ -234,7 +234,7 @@ TestFallbackAppliesWhenNoStaticRequest := func() {
 
 TestFallbackStaticRequestWins := func() {
 	// A static .mem()/.cpu() already set => the fallback must NOT override it.
-	res := f.applyFormulaFallback(f.size(), "16GiB", f.size(), 8, "64GiB", 16)
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "16GiB", static: "64GiB" }, cpu: { ast: f.size(), fallback: 8, static: 16 } })
 	test.isEqual("64GiB", res.ram)
 	test.isEqual(16, res.cpu)
 	test.isTrue(is_undefined(res.err))
@@ -242,20 +242,20 @@ TestFallbackStaticRequestWins := func() {
 
 TestFallbackMissingMemFallbackErrors := func() {
 	// memFormula present, no fallback, backend can't evaluate => error naming mem.
-	res := f.applyFormulaFallback(f.size(), undefined, undefined, undefined, undefined, undefined)
+	res := f.applyFormulaFallback({ ram: { ast: f.size() }, cpu: {} })
 	test.isTrue(!is_undefined(res.err), "missing memFormula fallback must error")
 	test.isTrue(text.contains(res.err, "memFormula"))
 }
 
 TestFallbackMissingCpuFallbackErrors := func() {
-	res := f.applyFormulaFallback(undefined, undefined, f.size(), undefined, undefined, undefined)
+	res := f.applyFormulaFallback({ ram: {}, cpu: { ast: f.size() } })
 	test.isTrue(!is_undefined(res.err), "missing cpuFormula fallback must error")
 	test.isTrue(text.contains(res.err, "cpuFormula"))
 }
 
 TestFallbackNoFormulasIsPassthrough := func() {
 	// No formulas => ram/cpu pass through untouched, no error.
-	res := f.applyFormulaFallback(undefined, undefined, undefined, undefined, "4GiB", 2)
+	res := f.applyFormulaFallback({ ram: { static: "4GiB" }, cpu: { static: 2 } })
 	test.isEqual("4GiB", res.ram)
 	test.isEqual(2, res.cpu)
 	test.isTrue(is_undefined(res.err))
@@ -263,7 +263,7 @@ TestFallbackNoFormulasIsPassthrough := func() {
 
 TestFallbackOnlyMemFormula := func() {
 	// memFormula with fallback, no cpuFormula => cpu stays whatever was passed.
-	res := f.applyFormulaFallback(f.size(), "2GiB", undefined, undefined, undefined, 4)
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "2GiB" }, cpu: { static: 4 } })
 	test.isEqual("2GiB", res.ram)
 	test.isEqual(4, res.cpu)
 	test.isTrue(is_undefined(res.err))
@@ -274,7 +274,7 @@ TestFallbackStaticServesAsImplicitFallback := func() {
 	// set: the static request doubles as the old-backend fallback, so there is
 	// no error (a required { fallback } that the static value overrides anyway
 	// would be dead config). Errors only when neither static nor fallback exists.
-	res := f.applyFormulaFallback(f.size(), undefined, f.size(), undefined, "64GiB", 16)
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), static: "64GiB" }, cpu: { ast: f.size(), static: 16 } })
 	test.isEqual("64GiB", res.ram)
 	test.isEqual(16, res.cpu)
 	test.isTrue(is_undefined(res.err))
@@ -289,29 +289,29 @@ TestFallbackStaticServesAsImplicitFallback := func() {
 TestFormulaDivCeilExactDivision := func() {
 	// divCeil is (a+b-1)/b; an EXACT division must not round up (off-by-one guard).
 	// The pre-existing suite only covers the inexact case divCeil(10,3)=4.
-	test.isEqual(3, f.evaluate(f.divCeil(9, 3), _fakeResolver))   // exact -> 3, not 4
-	test.isEqual(2, f.evaluate(f.divCeil(6, 3), _fakeResolver))   // exact -> 2
-	test.isEqual(1, f.evaluate(f.divCeil(1, 1), _fakeResolver))   // exact -> 1
-	test.isEqual(0, f.evaluate(f.divCeil(0, 3), _fakeResolver))   // 0 -> 0
-	test.isEqual(4, f.evaluate(f.divCeil(7, 2), _fakeResolver))   // inexact -> 4
+	test.isEqual(3, f._internal.evaluate(f.divCeil(9, 3), _fakeResolver))   // exact -> 3, not 4
+	test.isEqual(2, f._internal.evaluate(f.divCeil(6, 3), _fakeResolver))   // exact -> 2
+	test.isEqual(1, f._internal.evaluate(f.divCeil(1, 1), _fakeResolver))   // exact -> 1
+	test.isEqual(0, f._internal.evaluate(f.divCeil(0, 3), _fakeResolver))   // 0 -> 0
+	test.isEqual(4, f._internal.evaluate(f.divCeil(7, 2), _fakeResolver))   // inexact -> 4
 }
 
 TestFormulaClampValueInRange := func() {
 	// The passthrough branch: a value already within [lo,hi] returns unchanged.
 	// Existing suite covers only the raise-to-lo and cap-to-hi branches.
-	test.isEqual(7, f.evaluate(f.clamp(7, 5, 10), _fakeResolver))    // in range -> unchanged
-	test.isEqual(5, f.evaluate(f.clamp(5, 5, 10), _fakeResolver))    // on lo boundary
-	test.isEqual(10, f.evaluate(f.clamp(10, 5, 10), _fakeResolver))  // on hi boundary
+	test.isEqual(7, f._internal.evaluate(f.clamp(7, 5, 10), _fakeResolver))    // in range -> unchanged
+	test.isEqual(5, f._internal.evaluate(f.clamp(5, 5, 10), _fakeResolver))    // on lo boundary
+	test.isEqual(10, f._internal.evaluate(f.clamp(10, 5, 10), _fakeResolver))  // on hi boundary
 }
 
 TestFormulaIfNotTruthyIntCondition := func() {
 	// formula.lib documents: "the evaluator treats any nonzero const as truthy" for
 	// if.cond / not.a given a bare int. Every existing if/not test feeds a comparison
 	// (already a bool); this pins the documented truthy-int contract.
-	test.isEqual(10, f.evaluate(f["if"](1, 10, 20), _fakeResolver))  // nonzero -> then
-	test.isEqual(20, f.evaluate(f["if"](0, 10, 20), _fakeResolver))  // zero -> else
-	test.isFalse(f.evaluate(f.not(5), _fakeResolver))                // !nonzero -> false
-	test.isTrue(f.evaluate(f.not(0), _fakeResolver))                 // !0 -> true
+	test.isEqual(10, f._internal.evaluate(f["if"](1, 10, 20), _fakeResolver))  // nonzero -> then
+	test.isEqual(20, f._internal.evaluate(f["if"](0, 10, 20), _fakeResolver))  // zero -> else
+	test.isFalse(f._internal.evaluate(f.not(5), _fakeResolver))                // !nonzero -> false
+	test.isTrue(f._internal.evaluate(f.not(0), _fakeResolver))                 // !0 -> true
 }
 
 TestFormulaLogicOpsOfIntsReturnInt := func() {
@@ -322,9 +322,9 @@ TestFormulaLogicOpsOfIntsReturnInt := func() {
 	// structurally at the top level — they belong only inside f.if(...). That
 	// reject is an ll.assert panic (terminal in Tengo, not assertable here); this test
 	// pins the underlying evaluate() operand semantics the guard protects against.
-	test.isTrue(is_int(f.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
-	test.isTrue(is_int(f.evaluate(f.and(2, 3), _fakeResolver)))   // 2 && 3 -> 3 (int)
-	test.isFalse(is_int(f.evaluate(f.gt(5, 2), _fakeResolver)))   // 5 > 2 -> true (bool)
+	test.isTrue(is_int(f._internal.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
+	test.isTrue(is_int(f._internal.evaluate(f.and(2, 3), _fakeResolver)))   // 2 && 3 -> 3 (int)
+	test.isFalse(is_int(f._internal.evaluate(f.gt(5, 2), _fakeResolver)))   // 5 > 2 -> true (bool)
 }
 
 TestReferencedMetricFilesDedupesRepeatedFile := func() {

@@ -31,6 +31,7 @@
 
 ll := import(":ll")
 text := import("text")
+slices := import(":slices")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -240,12 +241,11 @@ referencedMetricFiles := func(resolvedNode) {
 		if n.op == "metricSum" {
 			if n.metric != "size" {
 				existing := is_undefined(acc[n.metric]) ? [] : acc[n.metric]
-				for fn in n.files {
-					seen := false
-					for e in existing { if e == fn { seen = true } }
-					if !seen { existing = append(existing, fn) }
-				}
-				acc[n.metric] = existing
+				for fn in n.files { existing = append(existing, fn) }
+				// slices.unique dedups while preserving first-seen order (a file may be
+				// referenced by more than one metricSum node — e.g. an if cond and a
+				// branch — but needs only one line-counter pre-exec).
+				acc[n.metric] = slices.unique(existing)
 			}
 			return
 		}
@@ -258,30 +258,32 @@ referencedMetricFiles := func(resolvedNode) {
 }
 
 // applyFormulaFallback resolves the static ram/cpu to use when the backend
-// cannot evaluate resource formulas at run time (no getBlobSize). A formula
-// dimension needs SOME static value to fall back to: either an explicit
-// { fallback } or a static .mem()/.cpu(). A static request always wins (the
-// formula won't run on this backend) and doubles as the fallback — so the
-// fallback fills in only when no static request was set, and the sole error
-// case is a formula dimension with NEITHER a static request NOR a { fallback }.
-// Returns { ram, cpu, err }, err being a message string or undefined — the
-// caller asserts err is undefined, then applies ram/cpu. (Field is `err`, not
-// `error`: `error` is a reserved word in Tengo.)
-applyFormulaFallback := func(memAst, memFallback, cpuAst, cpuFallback, ram, cpu) {
-	res := { ram: ram, cpu: cpu, err: undefined }
-	if !is_undefined(memAst) && is_undefined(res.ram) {
-		if is_undefined(memFallback) {
+// cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
+// by dimension — { ram: { ast, fallback, static }, cpu: { ast, fallback, static } }
+// — where `ast` is the formula (if any), `static` the .mem()/.cpu() request (if
+// any), and `fallback` the { fallback } given on the formula. A formula dimension
+// needs SOME static value: a static request always wins (the formula won't run on
+// this backend) and doubles as the fallback, so `fallback` fills in only when no
+// static request was set; the sole error is a formula dimension with NEITHER.
+// Returns { ram, cpu, err } — err a message string or undefined; the caller asserts
+// err is undefined, then applies ram/cpu. (Field is `err`, not `error`: `error` is
+// a reserved word in Tengo.) The ram/cpu values are validated by the builder before
+// they reach here; this only picks among them.
+applyFormulaFallback := func(dims) {
+	res := { ram: dims.ram.static, cpu: dims.cpu.static, err: undefined }
+	if !is_undefined(dims.ram.ast) && is_undefined(res.ram) {
+		if is_undefined(dims.ram.fallback) {
 			res.err = "exec.builder: memFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
 			return res
 		}
-		res.ram = memFallback
+		res.ram = dims.ram.fallback
 	}
-	if !is_undefined(cpuAst) && is_undefined(res.cpu) {
-		if is_undefined(cpuFallback) {
+	if !is_undefined(dims.cpu.ast) && is_undefined(res.cpu) {
+		if is_undefined(dims.cpu.fallback) {
 			res.err = "exec.builder: cpuFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
 			return res
 		}
-		res.cpu = cpuFallback
+		res.cpu = dims.cpu.fallback
 	}
 	return res
 }
@@ -325,9 +327,15 @@ export {
 
 	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
 
-	evaluate:              evaluate,
 	evaluateResource:      evaluateResource,
 	resolveAst:            resolveAst,
 	referencedMetricFiles: referencedMetricFiles,
-	applyFormulaFallback:  applyFormulaFallback
+	applyFormulaFallback:  applyFormulaFallback,
+
+	// _internal: SDK-internal entry points, NOT part of the block-author API.
+	// evaluate is the raw evaluator — it bypasses evaluateResource's positive-integer
+	// and no-top-level-comparison guards (it can return a bool or a non-positive int),
+	// so it must not be used to compute a quota. Exposed only for the unit tests and
+	// evaluateResource's own use; authors use the constructors + evaluateResource.
+	_internal: { evaluate: evaluate }
 }
