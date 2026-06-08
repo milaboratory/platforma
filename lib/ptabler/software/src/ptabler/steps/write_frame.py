@@ -44,6 +44,7 @@ __all__ = [
     "DataInfoAxis",
     "DataInfoColumn",
     "DataInfoPart",
+    "DataInfoTypeSpec",
     "NumberOfBytes",
     "Stats",
     "WriteFrame",
@@ -78,7 +79,13 @@ class DataInfoPart(Struct, rename="camel"):
     stats: Optional[Stats] = None
 
 
+class DataInfoTypeSpec(Struct, rename="camel"):
+    axes: List[AxisType]
+    column: ColumnType
+
+
 class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
+    type_spec: DataInfoTypeSpec
     partition_key_length: int
     parts: Dict[str, DataInfoPart]
 

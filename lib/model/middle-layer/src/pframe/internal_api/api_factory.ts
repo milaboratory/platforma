@@ -59,51 +59,30 @@ export type PColumnValueTypeSpec = {
  *
  * @template Blob - Type parameter representing the storage reference type (could be ResourceInfo, PFrameBlobId, etc.)
  */
-export type DataInfo<Blob> =
-  | JsonDataInfo
-  | JsonPartitionedDataInfo<Blob>
-  | BinaryPartitionedDataInfo<Blob>
-  | ParquetPartitionedDataInfo<ParquetChunk<Blob>>;
-
-/**
- * Self-contained data info: a PColumn data storage format with an embedded
- * {@link PColumnValueTypeSpec}, so the data layer can interpret the values
- * without a separate spec. This is the on-disk `.datainfo` shape and the
- * payload accepted by {@link PFrameFactoryAPIV6.addColumns}.
- *
- * Declared independently of {@link DataInfo} (not as an intersection) so the
- * legacy v1 type can be removed without affecting this one.
- *
- * @template Blob - Type parameter representing the storage reference type (could be ResourceInfo, PFrameBlobId, etc.)
- */
-export type DataInfoV2<Blob> = (
+export type DataInfo<Blob> = (
   | JsonDataInfo
   | JsonPartitionedDataInfo<Blob>
   | BinaryPartitionedDataInfo<Blob>
   | ParquetPartitionedDataInfo<ParquetChunk<Blob>>
 ) & {
-  readonly typeSpec: PColumnValueTypeSpec;
+  /**
+   * Self-contained structural type info. Present in data info produced by the
+   * new converter, absent in data info produced by the old one.
+   */
+  readonly typeSpec?: PColumnValueTypeSpec;
 };
 
 /**
- * Structural type information needed by the data side: axis value
- * types and column value types, in their canonical order. Mirrors
- * the bridge-side `TypeSpec`.
+ * Self-contained data info: {@link DataInfo} with a required
+ * {@link PColumnValueTypeSpec}, so the data layer can interpret the values
+ * without a separate spec. This is the on-disk `.datainfo` shape and the
+ * payload accepted by {@link PFrameFactoryAPIV6.addColumns}.
+ *
+ * @template Blob - Type parameter representing the storage reference type (could be ResourceInfo, PFrameBlobId, etc.)
  */
-export interface ValueTypeSpec {
-  readonly axes: AxisValueType[];
-  readonly columns: ColumnValueType[];
-}
-
-/** Single column entry for {@link PFrameFactoryAPIV5.addColumns}. */
-export interface AddColumnEntry {
-  /** Unique column identifier within the PFrame. */
-  readonly id: PObjectId;
-  /** Structural type info (axes / column value types). */
-  readonly typeSpec: ValueTypeSpec;
-  /** Data info for the column. */
-  readonly data: DataInfo<PFrameBlobId>;
-}
+export type DataInfoV2<Blob> = DataInfo<Blob> & {
+  readonly typeSpec: PColumnValueTypeSpec;
+};
 
 /**
  * Single column entry for {@link PFrameFactoryAPIV6.addColumns}. The structural
@@ -117,32 +96,10 @@ export interface AddColumnEntryV2 {
   readonly data: DataInfoV2<PFrameBlobId>;
 }
 
-/** API for populating a PFrame with columns and a data source. */
-export interface PFrameFactoryAPIV5 extends Disposable {
-  /** Associates data source with this PFrame. */
-  setDataSource(dataSource: PFrameDataSourceV2): void;
-
-  /**
-   * Registers all PColumns at once: specs are recorded and data info
-   * is attached atomically. For parquet data info, schema resolution
-   * via network is performed during this call.
-   */
-  addColumns(
-    columns: AddColumnEntry[],
-    options?: {
-      signal?: AbortSignal;
-    },
-  ): Promise<void>;
-
-  /** Releases all the data previously added to PFrame using methods above,
-   * any interactions with disposed PFrame will result in exception */
-  dispose(): void;
-}
-
 /**
- * API for populating a PFrame with columns and a data source. Unlike
- * {@link PFrameFactoryAPIV5}, each column's structural type info is embedded in
- * its self-contained {@link AddColumnEntryV2.data} instead of a separate field.
+ * API for populating a PFrame with columns and a data source. Each column's
+ * structural type info is embedded in its self-contained
+ * {@link AddColumnEntryV2.data} instead of a separate field.
  */
 export interface PFrameFactoryAPIV6 extends Disposable {
   /** Associates data source with this PFrame. */
