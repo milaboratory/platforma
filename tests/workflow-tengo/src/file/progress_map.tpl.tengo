@@ -1,0 +1,17 @@
+// Test template: imports a file via file.importFile and exposes both the
+// resulting blob and the new 'progress' map field, so the test can walk
+// the map and query each per-step progress sub-resource.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs(["file", "progress"])
+
+self.body(func(inputs) {
+	importResult := file.importFile(inputs.importHandle)
+
+	return {
+		file: file.exportFile(importResult.file),
+		progress: importResult.progress
+	}
+})

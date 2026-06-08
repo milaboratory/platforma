@@ -12,8 +12,25 @@
 ll := import(":ll")
 smart := import(":smart")
 validation := import(":validation")
+feats := import(":feats")
 
 json := import("json")
+
+// _progressField returns the 'progress' map for an import/upload resource.
+//
+// When the backend advertises 'multiStepProgress' (see feats.lib.tengo),
+// the resource exposes the map natively as an output field. Older backends
+// do not populate this field — to keep callers uniform, we synthesize the
+// same shape on the SDK side: a std/map/V1 with a single input entry
+// "01" pointing at the legacy single-step 'handle' resource (which already
+// serves the ProgressAPI). The zero-padded ordinal key matches the
+// backend's convention (see datactl/internal/mainctl/ctl.go createProgressMap).
+_progressField := func(importer, handleField) {
+	if feats.multiStepProgress {
+		return importer.getField("progress")
+	}
+	return smart.mapBuilder().addRef("01", handleField).build()
+}
 
 //
 // Resource types:
@@ -26,9 +43,12 @@ RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
 
 /**
  * Create a task for importing blob from external service by URL
- * Produces 2 fields:
- *  'file' - reference to blob to appear once import gets finished.
- *  'handle' - reference to resource with 'progress' API.
+ * Produces 3 fields:
+ *  'file'     - reference to blob to appear once import gets finished.
+ *  'handle'   - reference to resource with 'progress' API.
+ *  'progress' - reference to a map resource whose entries are per-step
+ *               progress-bearing sub-resources (each queryable via the
+ *               'progress' API).
  */
 createBlobImportExternal := func(settings) {
 	validation.assertType(settings, {
@@ -38,18 +58,23 @@ createBlobImportExternal := func(settings) {
 	})
 
 	importer := smart.structBuilder(RTYPE_BLOB_IMPORT_EXTERNAL, json.encode(settings)).lockAndBuild()
+	handleField := importer.getField("handle")
 
 	return ll.toStrict({
 		file: importer.getField("blob"),
-		handle: importer.getField("handle")
+		handle: handleField,
+		progress: _progressField(importer, handleField)
 	})
 }
 
 /**
  * Create a task for importing blob from one of preconfigured storages.
- * Produces 2 fields:
- *  'file' - reference to blob to appear once import gets finished.
- *  'handle' - reference to resource with 'progress' API.
+ * Produces 3 fields:
+ *  'file'     - reference to blob to appear once import gets finished.
+ *  'handle'   - reference to resource with 'progress' API.
+ *  'progress' - reference to a map resource whose entries are per-step
+ *               progress-bearing sub-resources (each queryable via the
+ *               'progress' API).
  */
 createBlobImportInternal := func(settings) {
 	validation.assertType(settings, {
@@ -60,18 +85,23 @@ createBlobImportInternal := func(settings) {
 	})
 
 	importer := smart.structBuilder(RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
+	handleField := importer.getField("handle")
 
 	return ll.toStrict({
 		file: importer.getField("blob"),
-		handle: importer.getField("handle")
+		handle: handleField,
+		progress: _progressField(importer, handleField)
 	})
 }
 
 /**
  * Create a task for getting a blob directly from the user via 'upload' procedure.
- * Produces 2 fields:
- *  'file' - reference to blob to appear once upload gets finished.
- *  'handle' - reference to resource with 'progress' and 'upload' APIs.
+ * Produces 3 fields:
+ *  'file'     - reference to blob to appear once upload gets finished.
+ *  'handle'   - reference to resource with 'progress' and 'upload' APIs.
+ *  'progress' - reference to a map resource whose entries are per-step
+ *               progress-bearing sub-resources (each queryable via the
+ *               'progress' API).
  */
 createBlobUpload := func(settings) {
 	validation.assertType(settings, {
@@ -82,10 +112,12 @@ createBlobUpload := func(settings) {
 	})
 
 	uploader := smart.structBuilder(RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
+	handleField := uploader.getField("handle")
 
 	return ll.toStrict({
 		file: uploader.getField("blob"),
-		handle: uploader.getField("handle")
+		handle: handleField,
+		progress: _progressField(uploader, handleField)
 	})
 }
 
