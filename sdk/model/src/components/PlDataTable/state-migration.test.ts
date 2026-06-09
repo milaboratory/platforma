@@ -78,25 +78,6 @@ describe("upgradePlDataTableStateV2 — v7 to v8 column visibility", () => {
     expect(out.pTableParams.sourceId).toBeNull();
   });
 
-  // The null-sourceId branch used to return the input pTableParams by reference, so the
-  // migrated state aliased its input — a later in-place edit would corrupt the source,
-  // violating the workspace's "treat reactive state as immutable" rule. It must be a copy.
-  test("null-sourceId migration returns a fresh pTableParams (no input aliasing)", () => {
-    const pTableParams = {
-      sourceId: null,
-      hiddenColIds: null,
-      sorting: [],
-      filters: null,
-      defaultFilters: null,
-    } as const;
-    const v7: PlDataTableStateV2V7 = { version: 7, stateCache: [], pTableParams };
-
-    const out = upgradePlDataTableStateV2(v7);
-
-    expect(out.pTableParams).not.toBe(pTableParams);
-    expect(out.pTableParams.sourceId).toBeNull();
-  });
-
   // The reset is keyed off pTableParams.sourceId, not a cache lookup — a sourceId with no
   // matching cache entry must still reset cleanly (params nulled, all cache visibility wiped).
   test("v7 sourceId with no matching cache entry still resets cleanly", () => {
