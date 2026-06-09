@@ -25,11 +25,15 @@ json := import("json")
  * @param importFileHandle string a string file import handle, in most cases obtained via the
  *                         LS controller in UI
  *
- * @return a structure with two field references
+ * @return a structure with three field references
  *         {
  *             file: field,
- *             handle: field
+ *             handle: field,
+ *             progress: field
  *         }
+ *         'progress' is a map resource whose entries are per-step
+ *         progress-bearing sub-resources (each queryable via the
+ *         'progress' API).
  */
 importFile := func(importFileHandle) {
 	validation.assertType(
