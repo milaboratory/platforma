@@ -11,7 +11,6 @@ import type {
   AxesSpec,
   BuildQueryInput,
   DataQueryBooleanExpression,
-  PColumnInfo,
   PColumnSpec,
   PFrameSpecDriver,
   PTableColumnId,
@@ -27,6 +26,7 @@ import type {
   DeleteColumnResponse,
   EvaluateQueryResponse,
   SpecQuery,
+  PColumnIdAndSpec,
 } from "@milaboratories/pl-model-common";
 import {
   PFrameSpecDriverError,
@@ -71,7 +71,7 @@ export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
     }
   }
 
-  listColumns(handle: SpecFrameHandle): PColumnInfo[] {
+  listColumns(handle: SpecFrameHandle): PColumnIdAndSpec[] {
     const pframe = this.frames.getByKey(handle);
     try {
       if (logPFrames()) {

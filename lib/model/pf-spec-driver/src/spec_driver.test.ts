@@ -211,9 +211,6 @@ describe("SpecDriver", () => {
 
     const ids = columns.map((c) => c.columnId).sort();
     expect(ids).toEqual(["col1", "col2"]);
-    for (const c of columns) {
-      expect(c.hasData).toBe(false);
-    }
   });
 
   test("buildQuery wraps a bare column with no path (no handle needed)", async () => {
