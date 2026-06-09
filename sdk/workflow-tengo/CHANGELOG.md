@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.4.0
+
+### Minor Changes
+
+- d43acf1: Support multi-step progress reports from data controller
+
 ## 6.3.3
 
 ### Patch Changes
