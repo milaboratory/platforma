@@ -730,12 +730,6 @@ export function getColumnIdAndSpec<Data>(column: PColumn<Data>): PColumnIdAndSpe
   };
 }
 
-/** Information returned by {@link PFrame.listColumns} method */
-export interface PColumnInfo extends PColumnIdAndSpec {
-  /** True if data was associated with this PColumn */
-  readonly hasData: boolean;
-}
-
 export interface AxisId {
   /** Type of the axis or column value. For an axis should not use non-key
    * types like float or double. */
