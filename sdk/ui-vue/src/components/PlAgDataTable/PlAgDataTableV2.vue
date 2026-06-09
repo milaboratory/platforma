@@ -238,8 +238,7 @@ function readGridColumnVisibility(api: GridApi<PlAgDataTableV2Row>): ColumnVisib
 // Normalize columnVisibility for comparison: no deviations is equivalent to undefined.
 function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
   const cv = state.columnVisibility;
-  const isEmpty =
-    !cv || ((cv.hiddenColIds?.length ?? 0) === 0 && (cv.shownColIds?.length ?? 0) === 0);
+  const isEmpty = !cv || (cv.hiddenColIds.length === 0 && (cv.shownColIds?.length ?? 0) === 0);
   return { ...state, columnVisibility: isEmpty ? undefined : cv };
 }
 
