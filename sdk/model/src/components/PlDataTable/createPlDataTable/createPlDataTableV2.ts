@@ -1,6 +1,7 @@
 import type {
   AxisId,
   PColumn,
+  PColumnSpec,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
@@ -32,7 +33,8 @@ import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
 import { createPTableDefV2 } from "./createPTableDefV2";
-import { isColumnOptional } from "./utils";
+import { isColumnOptional, resolveColumnHidden } from "./utils";
+import type { Nil } from "@milaboratories/helpers";
 
 /**
  * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
@@ -135,21 +137,15 @@ export function createPlDataTableV2<A, U>(
   const pframeHandle = ctx.createPFrame(fullColumns);
   if (!fullHandle || !pframeHandle) return undefined;
 
-  const hiddenColumns = new Set<PObjectId>(
-    ((): PObjectId[] => {
-      // Inner join works as a filter - all columns must be present
-      if (coreJoinType === "inner") return [];
-
-      const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-      if (hiddenColIds !== null) {
-        return hiddenColIds
-          .filter((s): s is PTableColumnIdColumn => s.type === "column")
-          .map((s) => s.id);
-      }
-
-      return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
-    })(),
-  );
+  const hiddenColumns =
+    // Inner join works as a filter - all columns must be present.
+    coreJoinType === "inner"
+      ? new Set<PObjectId>()
+      : computeHiddenColumnsV2(
+          columns,
+          tableStateNormalized.pTableParams.hiddenColIds,
+          tableStateNormalized.pTableParams.shownColIds,
+        );
 
   // Preserve linker columns
   columns.filter((c) => isLinkerColumn(c.spec)).forEach((c) => hiddenColumns.delete(c.id));
@@ -207,6 +203,49 @@ export function createPlDataTableV2<A, U>(
     visibleTableHandle: visibleHandle,
     defaultFilters,
   } satisfies PlDataTableModel;
+}
+
+/**
+ * Reconcile each column's block default visibility with the user's explicit show/hide
+ * deviations into the set of columns to hide, via the shared {@link resolveColumnHidden}
+ * — the same precedence the V3 model (`computeHiddenColumns`) and the UI (`makeColDef`)
+ * use. This keeps the deprecated V2 path from misreading the stored deviation lists as an
+ * absolute hidden set, which dropped block defaults once any visibility was customised.
+ *
+ * `forcedHidden` is false: V2 has never auto-hidden `visibility: "hidden"` columns, and
+ * the UI filters them out of the grid upstream, so this preserves V2's behaviour and
+ * matches `makeColDef`. The caller then force-keeps sorted, filtered, linker, and core
+ * columns visible.
+ *
+ * Exported for unit testing.
+ */
+export function computeHiddenColumnsV2(
+  columns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
+  hiddenSpecs: Nil | PTableColumnId[],
+  shownSpecs: Nil | PTableColumnId[],
+): Set<PObjectId> {
+  const userHidden = new Set(
+    (hiddenSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  const userShown = new Set(
+    (shownSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  return new Set(
+    columns
+      .filter((c) =>
+        resolveColumnHidden({
+          forcedHidden: false,
+          optional: isColumnOptional(c.spec),
+          userShown: userShown.has(c.id),
+          userHidden: userHidden.has(c.id),
+        }),
+      )
+      .map((c) => c.id),
+  );
 }
 
 function getAllLabelColumns(
