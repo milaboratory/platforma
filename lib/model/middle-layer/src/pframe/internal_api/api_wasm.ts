@@ -4,7 +4,6 @@ import type {
   BuildQueryInput,
   JoinEntry,
   PColumnIdAndSpec,
-  PColumnInfo,
   PColumnSpec,
   PObjectId,
   PTableColumnId,
@@ -220,7 +219,7 @@ export interface PFrameWasmV3 extends Disposable {
   /**
    * Lists all columns currently registered in this PFrame, with their ids and specs.
    */
-  listColumns(): PColumnInfo[];
+  listColumns(): PColumnIdAndSpec[];
 
   /**
    * Discovers columns compatible with a given axes integration. Include and
