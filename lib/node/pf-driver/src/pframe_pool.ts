@@ -38,7 +38,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
    * legacy-query lowering.
    */
   public readonly pFrameSpec: PFrameInternal.PFrameWasmV3;
-  public readonly columnSpecs: Record<PObjectId, PColumnSpec>;
+  public readonly columnSpecs: Readonly<Record<PObjectId, PColumnSpec>>;
   private readonly abortController = new AbortController();
 
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
@@ -53,7 +53,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     columns: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
     const ValueTypes = new Set(Object.values(ValueType));
-    const specColumnsMap: Record<PObjectId, PColumnSpec> = {};
+    const specColumnsMap: Record<PObjectId, PColumnSpec> = Object.create(null);
     for (const c of columns) {
       if (ValueTypes.has(c.spec.valueType)) {
         specColumnsMap[c.id] = resolveAnnotationParents(c.spec);
