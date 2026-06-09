@@ -3,6 +3,7 @@ import type {
   AxesSpec,
   BuildQueryInput,
   JoinEntry,
+  PColumnIdAndSpec,
   PColumnInfo,
   PColumnSpec,
   PObjectId,
@@ -22,6 +23,116 @@ import type {
 } from "./delete_column";
 import type { DiscoverColumnsRequestV2, DiscoverColumnsResponse } from "./discover_columns";
 import type { FindColumnsRequest, FindColumnsResponse } from "./find_columns";
+
+/**
+ * V5 PFrame API factory — pure spec-layer operations plus frame construction.
+ *
+ * Self-contained: does not extend any earlier factory interface. Once this
+ * version is adopted, every earlier `PFrameWasmAPIV*` and per-frame
+ * `PFrameWasmV*` interface is dropped, so this declaration repeats the full
+ * method surface rather than referencing the predecessors.
+ */
+export interface PFrameWasmAPIV5 {
+  /**
+   * Creates a new PFrame from a map of column IDs to column specifications.
+   */
+  createPFrame(spec: Record<string, PColumnSpec>): PFrameWasmV4;
+
+  /**
+   * Expands an {@link AxesSpec} into {@link AxesId}s with parent information
+   * resolved.
+   */
+  expandAxes(spec: AxesSpec): AxesId;
+
+  /**
+   * Collapses {@link AxesId} into {@link AxesSpec}.
+   */
+  collapseAxes(ids: AxesId): AxesSpec;
+
+  /**
+   * Finds the index of an axis matching the given selector.
+   * Returns -1 if no matching axis is found.
+   */
+  findAxis(spec: AxesSpec, selector: SingleAxisSelector): number;
+
+  /**
+   * Finds the flat index of a table column matching the given
+   * selector within a table spec. Returns -1 if not found.
+   */
+  findTableColumn(tableSpec: PTableColumnSpec[], selector: PTableColumnId): number;
+
+  /**
+   * Assembles a {@link SpecQueryJoinEntry} from a terminal column plus an
+   * ordered path of wrapping steps (linker hops, filter joins).
+   *
+   * Right-fold over `path` starting from `Column(column)`: each `linker` step
+   * wraps the current subquery as `linkerJoin`, each `filter` step as
+   * `innerJoin` with the filter column. `qualifications` annotate the
+   * outermost entry only.
+   */
+  buildQuery(input: BuildQueryInput): SpecQueryJoinEntry;
+
+  /**
+   * Upgrades selector-based legacy record filters into index-based data-layer
+   * boolean expressions, resolved against the provided unified table spec
+   * (axes first, then columns).
+   */
+  rewriteLegacyFilters(request: {
+    tableSpec: PTableColumnSpec[];
+    filters: PTableRecordFilter[];
+  }): DataQueryBooleanExpression[];
+}
+
+/**
+ * V4 PFrame interface — per-frame instance operations.
+ *
+ * Self-contained: does not extend any earlier per-frame interface. Once this
+ * version is adopted, every earlier `PFrameWasmV*` interface is dropped, so
+ * this declaration repeats the full method surface rather than referencing
+ * the predecessors.
+ */
+export interface PFrameWasmV4 extends Disposable {
+  /**
+   * Deletes columns from a columns specification.
+   */
+  deleteColumns(request: DeleteColumnFromColumnsRequest): DeleteColumnFromColumnsResponse;
+
+  /**
+   * Returns the id and spec of the single column registered under `columnId`
+   * in this PFrame, or `null` if no such column is registered. Same shape as
+   * the entries of {@link PFrameWasmV4.listColumns}.
+   */
+  getColumn(columnId: PObjectId): PColumnIdAndSpec | null;
+
+  /**
+   * Lists all columns currently registered in this PFrame, with their ids and specs.
+   */
+  listColumns(): PColumnIdAndSpec[];
+
+  /**
+   * Discovers columns compatible with a given axes integration. Include and
+   * exclude filters are applied in order (exclude removes matches from the
+   * include set). Each hit carries its traversal `path`; feed the hit's
+   * column id and `path` into {@link PFrameWasmAPIV5.buildQuery} to
+   * materialize it as a {@link SpecQueryJoinEntry}.
+   */
+  discoverColumns(request: DiscoverColumnsRequestV2): DiscoverColumnsResponse;
+
+  /**
+   * Finds columns in the PFrame matching the given filter criteria.
+   */
+  findColumns(request: FindColumnsRequest): FindColumnsResponse;
+
+  /**
+   * Evaluates a query specification against this PFrame.
+   */
+  evaluateQuery(request: SpecQuery): EvaluateQueryResponse;
+
+  /**
+   * Rewrites a legacy query format (V4) to the current SpecQuery format.
+   */
+  rewriteLegacyQuery(request: LegacyQuery): SpecQuery;
+}
 
 /**
  * V4 PFrame API factory — pure spec-layer operations plus frame construction.

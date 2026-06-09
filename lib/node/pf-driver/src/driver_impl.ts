@@ -458,9 +458,8 @@ export class AbstractPFrameDriver<
     handle: PFrameHandle,
     columnId: PObjectId,
   ): Promise<PColumnSpec | null> {
-    const { pFrameSpec } = this.pFrames.getByKey(handle);
-    const info = pFrameSpec.listColumns().find((c) => c.columnId === columnId);
-    return info?.spec ?? null;
+    const { columnSpecs } = this.pFrames.getByKey(handle);
+    return columnSpecs[columnId] ?? null;
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
@@ -529,26 +528,26 @@ export class AbstractPFrameDriver<
       );
     }
 
-    const { pFrameDataPromise, pFrameSpec, disposeSignal } = this.pFrames.getByKey(handle);
+    const { pFrameDataPromise, columnSpecs, disposeSignal } = this.pFrames.getByKey(handle);
     const pFrameData = await pFrameDataPromise;
 
-    const column = pFrameSpec.listColumns().find((c) => c.columnId === request.columnId);
-    if (!column) {
+    const columnSpec = columnSpecs[request.columnId];
+    if (!columnSpec) {
       const error = new PFrameDriverError(`getUniqueValues failed`);
       error.cause = new Error(`column ${request.columnId} is not registered in the PFrame`);
       throw error;
     }
 
-    const axisIds = expandAxes(column.spec.axesSpec);
+    const axisIds = expandAxes(columnSpec.axesSpec);
     const tableSpec: PTableColumnSpec[] = [
-      ...column.spec.axesSpec.map(
+      ...columnSpec.axesSpec.map(
         (axisSpec, i): PTableColumnSpec => ({
           type: "axis",
           id: axisIds[i],
           spec: axisSpec,
         }),
       ),
-      { type: "column", id: request.columnId, spec: column.spec },
+      { type: "column", id: request.columnId, spec: columnSpec },
     ];
 
     let axisIndex: number | undefined;
