@@ -283,12 +283,14 @@ self.body(func(inputs) {
 			// as the orchestrator's empty-scope fallback), and no partitions
 			// are added.
 			if len(batchFiles) == 0 {
-				batchKeyLength := len(params.batchKeyHeaders)
+				// Full key arity = batch-key axes + any additional axes declared
+				// on the output (settings.axes carries both after decomposition).
+				keyLength := len(output.settings.axes)
 				for column in output.settings.columns {
 					id := pUtil.xsvColumnId(column)
 					result[output.name + "/" + id] = smart.structBuilder(
 						pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
-						json.encode({ partitionKeyLength: batchKeyLength })
+						json.encode({ partitionKeyLength: keyLength })
 					).lockAndBuild()
 				}
 				continue

@@ -10,6 +10,12 @@
  * the shared processColumn result object produced by
  * `pCommon.createProcessColumnResult`.
  *
+ * Output additional axes: both batch output forms accept body-produced axes
+ * beyond the batch keys. ResourceMap declares them via `output.spec.axesSpec`;
+ * Xsv declares them via `settings.axes` (full `{ column, spec }`, same as
+ * standard-mode Xsv) alongside `settings.batchKeyColumns`. The resulting key is
+ * `[isolation..., batchKey..., additional...]`.
+ *
  * See `processColumn` in `:pframes` for the public API docs.
  */
 
@@ -229,14 +235,14 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 				pUtil.validateXsvType(output.xsvType)
 			}
 
-			// batchKeyColumns references existing batch axes; axes defines new
-			// ones — mutually exclusive within one Xsv output.
+			// batchKeyColumns references existing batch axes by name; settings.axes
+			// (optional) declares additional NEW axes the body emits in its output
+			// file, same { column, spec } form as standard-mode Xsv. The final
+			// import axes are batch-key axes followed by the additional axes, so the
+			// output key reads [isolation..., batchKey..., newAxis...].
 			batchKeyColumnsNames := output.settings.batchKeyColumns
 			ll.assert(!is_undefined(batchKeyColumnsNames),
 				"Xsv output %q is missing settings.batchKeyColumns (required in batch mode; list the axis names emitted by the body)",
-				output.name)
-			ll.assert(is_undefined(output.settings.axes),
-				"Xsv output %q cannot set both batchKeyColumns and axes in settings; these are mutually exclusive — keep batchKeyColumns only",
 				output.name)
 
 			batchAxes := slices.map(batchKeyColumnsNames, func(colName) {
@@ -247,12 +253,34 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 				return { column: colName, spec: axSpec }
 			})
 
-			// Replace batchKeyColumns with the built axes and pin
-			// partitionKeyLength=0. pfconv MUST have partitionKeyLength < len(axes);
-			// with 0 it embeds all rows as a single "[]" partition whose JSON maps
-			// axis_value → column_value.
+			additionalAxes := slices.normalize(output.settings.axes)
+
+			// The body emits batch-key axis columns, additional-axis columns, and
+			// value columns into one file; their XSV header names (the `column`
+			// field — not the output `id`) must all be distinct or the xsv import
+			// would read two columns under the same header. Reserve this output's
+			// own batch-key axis headers and value headers, then check each
+			// additional axis header against them and against each other.
+			_outputHeaders := {}
+			for axName in batchKeyColumnsNames {
+				_outputHeaders[axName] = "batch-key axis"
+			}
+			for col in output.settings.columns {
+				_outputHeaders[col.column] = "value column"
+			}
+			for axis in additionalAxes {
+				prior := _outputHeaders[axis.column]
+				ll.assert(is_undefined(prior),
+					"Xsv output %q: additional axis column %q collides with %s of the same name; rename one of them",
+					output.name, axis.column, prior)
+				_outputHeaders[axis.column] = "additional axis"
+			}
+
+			// Pin partitionKeyLength=0: pfconv MUST have partitionKeyLength < len(axes);
+			// with 0 it embeds all rows as a single "[]" partition whose JSON maps the
+			// full (batch-key + additional) axis tuple → column_value.
 			modifiedSettings := maps.merge(output.settings, {
-				axes: batchAxes,
+				axes: batchAxes + additionalAxes,
 				batchKeyColumns: undefined,
 				partitionKeyLength: 0
 			})
