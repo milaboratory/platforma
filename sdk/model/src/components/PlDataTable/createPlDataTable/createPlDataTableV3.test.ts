@@ -68,4 +68,15 @@ describe("computeHiddenColumns", () => {
     const sorting = [{ column: colRef("a") }] as unknown as PTableSorting[];
     expect(hiddenIds(computeHiddenColumns(cols, sorting, null, null, null))).toEqual([]);
   });
+
+  // Preservation (collectPreservedColumnIds) wins over an explicit user hide: a column the
+  // user hid but is now sorted/filtered is force-kept visible so the active sort/filter has
+  // its data. Pins the precedence between resolveColumnHidden and preservation — the grid's
+  // makeColDef does NOT preserve, so the column is in the model's visible table yet hidden in
+  // the grid (intended "sort by hidden column"; see the model/UI divergence note).
+  test("a sorted column the user explicitly hid is still force-kept visible", () => {
+    const cols = [col("a")]; // block default visible
+    const sorting = [{ column: colRef("a") }] as unknown as PTableSorting[];
+    expect(hiddenIds(computeHiddenColumns(cols, sorting, null, [colRef("a")], null))).toEqual([]);
+  });
 });

@@ -283,7 +283,7 @@ function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2Normalize
     ),
     pTableParams:
       state.pTableParams.sourceId === null
-        ? state.pTableParams
+        ? { ...state.pTableParams }
         : { ...state.pTableParams, hiddenColIds: null, shownColIds: null },
   };
 }
