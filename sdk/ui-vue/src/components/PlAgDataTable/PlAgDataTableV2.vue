@@ -133,6 +133,7 @@ gridOptions.value.onGridPreDestroyed = (event) => {
     gridOptions.value.initialState = gridState.value = makePartialState(
       event.api.getState(),
       event.api,
+      gridState.value.columnVisibility,
     );
   }
   gridApi.value = null;
@@ -141,7 +142,7 @@ gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  const partialState = makePartialState(event.state, event.api);
+  const partialState = makePartialState(event.state, event.api, gridState.value.columnVisibility);
   // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
   gridOptions.value.initialState = gridState.value = partialState;
 
@@ -188,12 +189,14 @@ gridOptions.value.initialState = gridState.value;
 // default visibility, derived from the live grid columns (see
 // deriveColumnVisibility) rather than copied from AG Grid's absolute hidden-list.
 // This keeps saved state stable across re-runs when the block changes a column's
-// default visibility (e.g. filter/ranking config changed). deriveColumnVisibility
-// also falls back to the prior state when the grid has no columns yet, so a
-// not-ready grid (pre-columnDefs / teardown) can't wipe saved show/hide.
+// default visibility (e.g. filter/ranking config changed). `prev` is the
+// caller's current persisted columnVisibility: deriveColumnVisibility falls back
+// to it when the grid has no columns yet, so a not-ready grid (pre-columnDefs /
+// teardown) can't wipe saved show/hide.
 function makePartialState(
   state: GridState,
   api: GridApi<PlAgDataTableV2Row>,
+  prev: PlDataTableGridStateCore["columnVisibility"],
 ): PlDataTableGridStateCore {
   return {
     columnOrder: state.columnOrder as
@@ -209,12 +212,7 @@ function makePartialState(
           }[];
         }
       | undefined,
-    // Fall back to the prior persisted deviations when the live grid reports no
-    // columns (mid-mount / teardown), so a not-ready grid can't wipe saved show/hide.
-    columnVisibility: deriveColumnVisibility(
-      readGridColumnVisibility(api),
-      gridState.value.columnVisibility,
-    ),
+    columnVisibility: deriveColumnVisibility(readGridColumnVisibility(api), prev),
   };
 }
 
@@ -251,7 +249,7 @@ watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
-    const selfState = makePartialState(gridApi.getState(), gridApi);
+    const selfState = makePartialState(gridApi.getState(), gridApi, gridState.columnVisibility);
     if (
       !isJsonEqual(gridState, {}) &&
       !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
