@@ -11,6 +11,7 @@ import {
   type PColumn,
   type PColumnSpec,
   type PFrameHandle,
+  type PObjectId,
 } from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
@@ -37,6 +38,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
    * legacy-query lowering.
    */
   public readonly pFrameSpec: PFrameInternal.PFrameWasmV3;
+  public readonly columnSpecs: Readonly<Record<PObjectId, PColumnSpec>>;
   private readonly abortController = new AbortController();
 
   private readonly localBlobs: PoolEntry<PFrameInternal.PFrameBlobId>[] = [];
@@ -51,13 +53,14 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
     columns: PColumn<PFrameInternal.DataInfo<TreeEntry>>[],
   ) {
     const ValueTypes = new Set(Object.values(ValueType));
-    const specColumnsMap: Record<string, PColumnSpec> = {};
+    const specColumnsMap: Record<PObjectId, PColumnSpec> = Object.create(null);
     for (const c of columns) {
       if (ValueTypes.has(c.spec.valueType)) {
         specColumnsMap[c.id] = resolveAnnotationParents(c.spec);
       }
     }
     this.pFrameSpec = createPFrameSpec(specColumnsMap);
+    this.columnSpecs = specColumnsMap;
 
     try {
       const makeLocalBlobId = (blob: TreeEntry): PFrameInternal.PFrameBlobId => {
@@ -131,7 +134,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
             { signal: this.disposeSignal },
           )
           .then(() => pFrameData)
-          .catch((err) => {
+          .catch((err: unknown) => {
             this.dispose();
             pFrameData.dispose();
             const error = new PFrameDriverError("PFrame creation failed asynchronously");

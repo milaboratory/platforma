@@ -6,7 +6,6 @@ import type {
   AxesSpec,
   AxesId,
   PColumnIdAndSpec,
-  PColumnInfo,
   PColumnSpec,
   SingleAxisSelector,
   AxisQualification,
@@ -222,7 +221,7 @@ export interface PFrameSpecDriver {
   createSpecFrame(specs: Record<string, PColumnSpec>): PoolEntry<SpecFrameHandle>;
 
   /** List all columns currently registered in the frame. */
-  listColumns(handle: SpecFrameHandle): PColumnInfo[];
+  listColumns(handle: SpecFrameHandle): PColumnIdAndSpec[];
 
   /** Discover columns compatible with given axes integration. */
   discoverColumns(
