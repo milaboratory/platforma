@@ -31,10 +31,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions } from "./sources/table-source-v2";
-import {
-  computeVisibilityDeviations,
-  type ColumnVisibilityState,
-} from "./sources/column-visibility";
+import { deriveColumnVisibility, type ColumnVisibilityState } from "./sources/column-visibility";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -188,15 +185,16 @@ gridOptions.value.initialState = gridState.value;
 
 // Restore proper types erased by AgGrid.
 // columnVisibility is stored as the user's *deviations* from the block-defined
-// default visibility, computed from the live grid columns (see
-// computeVisibilityDeviations) rather than copied from AG Grid's absolute
-// hidden-list. This keeps saved state stable across re-runs when the block
-// changes a column's default visibility (e.g. filter/ranking config changed).
+// default visibility, derived from the live grid columns (see
+// deriveColumnVisibility) rather than copied from AG Grid's absolute hidden-list.
+// This keeps saved state stable across re-runs when the block changes a column's
+// default visibility (e.g. filter/ranking config changed). deriveColumnVisibility
+// also falls back to the prior state when the grid has no columns yet, so a
+// not-ready grid (pre-columnDefs / teardown) can't wipe saved show/hide.
 function makePartialState(
   state: GridState,
   api: GridApi<PlAgDataTableV2Row>,
 ): PlDataTableGridStateCore {
-  const deviations = computeVisibilityDeviations(readGridColumnVisibility(api));
   return {
     columnOrder: state.columnOrder as
       | {
@@ -211,10 +209,12 @@ function makePartialState(
           }[];
         }
       | undefined,
-    columnVisibility:
-      deviations.hiddenColIds.length === 0 && deviations.shownColIds.length === 0
-        ? undefined
-        : deviations,
+    // Fall back to the prior persisted deviations when the live grid reports no
+    // columns (mid-mount / teardown), so a not-ready grid can't wipe saved show/hide.
+    columnVisibility: deriveColumnVisibility(
+      readGridColumnVisibility(api),
+      gridState.value.columnVisibility,
+    ),
   };
 }
 
