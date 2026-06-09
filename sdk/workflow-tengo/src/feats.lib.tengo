@@ -77,5 +77,10 @@ export ll.toStrict({
 	secretEnvSupport:         _isEnabled("secretEnvSupport"),
 
 	// true when backend supports "ContextDomain" query predicate in block resolver
-	contextDomainQuery:       _isEnabled("contextDomainQuery")
+	contextDomainQuery:       _isEnabled("contextDomainQuery"),
+
+	// true when backend populates the multi-step 'progress' map output field
+	// on Blob* import/upload resources. When false, the SDK synthesizes the
+	// same map shape locally (single entry "01" → handle).
+	multiStepProgress:        _isEnabled("multiStepProgress")
 })
