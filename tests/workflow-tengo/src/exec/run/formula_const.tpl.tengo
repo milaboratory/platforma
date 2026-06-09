@@ -1,0 +1,31 @@
+/**
+ * Isolation probe: a CONSTANT memFormula/cpuFormula with NO addFile and NO
+ * metric (size/lineCount). Exercises only the formula meta-input plumbing
+ * (builder attaches __memFormula__/__cpuFormula__ -> pure template forwards ->
+ * ephemeral impl evaluates + overrides quota). If this hangs, the bug is in the
+ * plumbing itself, independent of files/metrics.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu}").
+		memFormula(f.gib(2)).
+		cpuFormula(f.add(2, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})

@@ -1,0 +1,327 @@
+// exec.formula — compute an exec's RAM/CPU from its input data instead of
+// hardcoding it. A formula is a pure AST of plain maps (see "AST node shapes"
+// below) that flows through two phases across the exec boundary:
+//
+// BUILD TIME (in exec.builder().run(), before the exec exists):
+//   1. The author composes a formula from the exported constructors
+//      (size/lineCount, gib/..., add/mul/clamp/if). Bare ints auto-wrap to const.
+//   2. resolveAst() turns each { op: "metric", tag } into a concrete
+//      { op: "metricSum", files } via the builder's tag -> files map (an empty
+//      tag collapses to its { default }), and rejects lineCount on a non-text file.
+//   3. referencedMetricFiles() lists the files needing a line-counter pre-exec
+//      (lineCount); size reads the blob size inline, so it needs none.
+//   The resolved AST rides to the exec as a META input — CID-transparent
+//   (excluded from the exec CID) but readable as final in the pure body — while
+//   the per-file line-count map, if any, rides as a REGULAR input: it holds
+//   computed results that must be deep-waited to final, and being file-derived it
+//   adds no CID differentiation. See analysis doc §4.
+//
+// RUN TIME (in the pure exec.tpl, once those inputs are ready):
+//   4. evaluate()/evaluateResource() walk the resolved AST against a resolver
+//      exec.tpl supplies — size via ll.getBlobSize, lineCount via the deep-waited
+//      count map — reject a top-level comparison/logic op, assert a positive
+//      integer, and override the quota.
+//
+// FALLBACK: a backend that can't evaluate formulas uses a static value instead
+//   (applyFormulaFallback) — an explicit { fallback } or a static .mem()/.cpu().
+//
+// Pure by design: this file walks data and knows nothing of the backend. That
+// resolver injection (step 4) keeps it import-free — and is why lineCount runs a
+// binary from :exec instead of calling :pt, which would close an import cycle.
+
+ll := import(":ll")
+text := import("text")
+slices := import(":slices")
+maps := import(":maps")
+sets := import(":sets")
+units := import(":units")
+
+// ---- AST node shapes -------------------------------------------------------
+// const:      { op: "const", value: <int> }
+// arithmetic: { op: "add"|"sub"|"mul"|"div"|"divCeil", a: <node>, b: <node> }
+// bounds:     { op: "max"|"min", a, b } | { op: "clamp", value, lo, hi }
+// compare:    { op: "gt"|"gte"|"lt"|"lte", a, b }
+// logic:      { op: "and"|"or", a, b } | { op: "not", a }
+// cond:       { op: "if", cond, then, else }
+// metric:     { op: "metric", metric: "size"|"lineCount", "tag,?": <string>, "default,?": <int> }
+//             (the builder later resolves "metric" -> "metricSum" with concrete files)
+// Note: if.cond and not.a may be const-wrapped if given a bare int; the
+// evaluator treats any nonzero const as truthy.
+
+// Ops _wrap accepts as valid expression nodes. "metricSum" is builder-internal
+// (resolveAst rewrites "metric" -> "metricSum" with concrete files); the DSL
+// never emits it directly.
+_KNOWN_OPS := sets.fromSlice([
+	"const", "metric", "metricSum",
+	"add", "sub", "mul", "div", "divCeil",
+	"max", "min", "clamp",
+	"gt", "gte", "lt", "lte", "and", "or", "not",
+	"if"
+])
+
+// Comparison/logic ops. Rejected at the top level of a resource formula
+// (evaluateResource) — they are meaningful only inside f.if(...).
+_BOOL_OPS := sets.fromSlice(["gt", "gte", "lt", "lte", "and", "or", "not"])
+
+_wrap := func(x) {
+	if is_map(x) && !is_undefined(x.op) {
+		ll.assert(sets.hasElement(_KNOWN_OPS, x.op), "exec.formula: not a valid expression node (unknown op %v)", x.op)
+		return x
+	}
+	ll.assert(is_int(x), "exec.formula: expected an expression node or an integer, got %v", x)
+	return { op: "const", value: x }
+}
+
+_bin := func(op, a, b) { return { op: op, a: _wrap(a), b: _wrap(b) } }
+
+// metric(metricName, args) where args may be: (), ("tag"), ({default:n}), ("tag", {default:n})
+_metric := func(metricName, args) {
+	node := { op: "metric", metric: metricName }
+	for arg in args {
+		if is_string(arg) {
+			ll.assert(is_undefined(node.tag), "exec.formula.%s: tag specified more than once", metricName)
+			node.tag = arg
+		} else if is_map(arg) && !is_undefined(arg.default) {
+			ll.assert(is_undefined(node.default), "exec.formula.%s: default specified more than once", metricName)
+			ll.assert(is_int(arg.default), "exec.formula.%s: default must be an integer", metricName)
+			node.default = arg.default
+		} else {
+			ll.panic("exec.formula.%s: unexpected argument %v", metricName, arg)
+		}
+	}
+	return node
+}
+
+evaluate := undefined
+evaluate = func(node, resolver) {
+	op := node.op
+	if op == "const" { return node.value }
+	if op == "metricSum" {
+		fn := resolver[node.metric]
+		ll.assert(!is_undefined(fn), "exec.formula.evaluate: no resolver for metric %q", node.metric)
+		return fn(node.files)
+	}
+
+	if op == "add" { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
+	if op == "sub" { return evaluate(node.a, resolver) - evaluate(node.b, resolver) }
+	if op == "mul" { return evaluate(node.a, resolver) * evaluate(node.b, resolver) }
+	if op == "div" {
+		b := evaluate(node.b, resolver)
+		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
+		return evaluate(node.a, resolver) / b
+	}
+	if op == "divCeil" {
+		b := evaluate(node.b, resolver)
+		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
+		a := evaluate(node.a, resolver)
+		// ceiling division; assumes a >= 0 (resource metrics — sizes, line counts — are non-negative)
+		return (a + b - 1) / b
+	}
+
+	if op == "max" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a > b ? a : b }
+	if op == "min" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a < b ? a : b }
+	if op == "clamp" {
+		v := evaluate(node.value, resolver)
+		lo := evaluate(node.lo, resolver)
+		hi := evaluate(node.hi, resolver)
+		ll.assert(lo <= hi, "exec.formula.clamp: lo (%v) must be <= hi (%v) — inverted bounds collapse every input to hi", lo, hi)
+		if v < lo { v = lo }
+		if v > hi { v = hi }
+		return v
+	}
+
+	if op == "gt"  { return evaluate(node.a, resolver) > evaluate(node.b, resolver) }
+	if op == "gte" { return evaluate(node.a, resolver) >= evaluate(node.b, resolver) }
+	if op == "lt"  { return evaluate(node.a, resolver) < evaluate(node.b, resolver) }
+	if op == "lte" { return evaluate(node.a, resolver) <= evaluate(node.b, resolver) }
+	if op == "and" { return evaluate(node.a, resolver) && evaluate(node.b, resolver) }
+	if op == "or"  { return evaluate(node.a, resolver) || evaluate(node.b, resolver) }
+	if op == "not" { return !evaluate(node.a, resolver) }
+
+	if op == "if" { return evaluate(node.cond, resolver) ? evaluate(node.then, resolver) : evaluate(node["else"], resolver) }
+
+	ll.panic("exec.formula.evaluate: unknown op %q", op)
+}
+
+// evaluateResource evaluates a formula destined for a resource quota (ram / cpu)
+// and asserts the result is usable: a positive integer. It first rejects a
+// comparison/logic op at the top level — Tengo's && / || return the deciding
+// OPERAND (an int), so a top-level f.and/f.or of ints would otherwise pass the
+// is_int check; comparisons and logic belong only inside f.if(...). The
+// positive-int check then catches a non-positive result (an f.sub that
+// underflows, or a metric that floored to 0) BEFORE it reaches the quota as an
+// opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu") names
+// the offending dimension.
+evaluateResource := func(node, resolver, label) {
+	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
+		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.if(...).",
+		label, node.op)
+	v := evaluate(node, resolver)
+	ll.assert(is_int(v) && v > 0,
+		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.clamp(...).",
+		label, v)
+	return v
+}
+
+// ---- builder-time resolution helpers ---------------------------------------
+
+// Line-oriented text extensions f.lineCount() supports, and the compression
+// suffixes it may carry. The line-counter binary infers the codec from the
+// suffix itself, so the builder only needs to recognize and strip it — hence a
+// set, not an ext -> codec map.
+_LINECOUNT_OK := sets.fromSlice(["csv", "tsv", "txt", "fastq", "fq", "fasta", "fa", "tab"])
+_COMPRESSION_EXT := sets.fromSlice(["gz", "bz2", "zst"])
+
+_assertMetricCompatible := func(metric, fileName) {
+	if metric == "lineCount" {
+		// Strip a trailing compression suffix (case-insensitively, mirroring the
+		// line-counter binary, which lowercases it before decompressing), then
+		// match the format-bearing extension case-insensitively so .TXT / .FASTQ
+		// and "reads.fastq.GZ" are all accepted. `ext` keeps its original case for
+		// the error message.
+		parts := text.split(fileName, ".")
+		if len(parts) >= 2 && sets.hasElement(_COMPRESSION_EXT, text.to_lower(parts[len(parts)-1])) {
+			parts = parts[0:len(parts)-1]
+		}
+		ext := len(parts) >= 2 ? parts[len(parts)-1] : ""
+		ll.assert(sets.hasElement(_LINECOUNT_OK, text.to_lower(ext)),
+			"exec.formula: lineCount is not supported for file %q (extension %q is not a line-oriented text format)", fileName, ext)
+	}
+	// size is always compatible
+}
+
+resolveAst := undefined
+resolveAst = func(node, tagMap, allFiles) {
+	op := node.op
+	if op == "metric" {
+		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
+		if len(files) == 0 {
+			if is_undefined(node.tag) {
+				ll.assert(!is_undefined(node.default),
+					"exec.formula: f.%s() references all input files but the exec has none, and no { default: ... } was given", node.metric)
+			} else {
+				ll.assert(!is_undefined(node.default),
+					"exec.formula: tag %q has no files and no { default: ... } was given", node.tag)
+			}
+			return { op: "const", value: node.default }
+		}
+		for fn in files { _assertMetricCompatible(node.metric, fn) }
+		files = slices.quickSort(files)
+		// A metricSum always has >= 1 file (the empty-tag case became a const
+		// above), and the resolver computes the metric from those files — so a
+		// carried { default } would be dead data. default is intentionally NOT
+		// placed on the metricSum; it only drives the empty-tag const substitution.
+		return { op: "metricSum", metric: node.metric, files: files }
+	}
+	// Non-metric node: copy the map, recursing into any child-node field (a map
+	// carrying an `op`) and passing every other field through unchanged.
+	return maps.mapValues(node, func(v) {
+		return is_map(v) && !is_undefined(v.op) ? resolveAst(v, tagMap, allFiles) : v
+	})
+}
+
+referencedMetricFiles := func(resolvedNode) {
+	acc := {}
+	walk := undefined
+	walk = func(n) {
+		if n.op == "metricSum" {
+			if n.metric != "size" {
+				existing := is_undefined(acc[n.metric]) ? [] : acc[n.metric]
+				for fn in n.files { existing = append(existing, fn) }
+				// slices.unique dedups while preserving first-seen order (a file may be
+				// referenced by more than one metricSum node — e.g. an if cond and a
+				// branch — but needs only one line-counter pre-exec).
+				acc[n.metric] = slices.unique(existing)
+			}
+			return
+		}
+		for k, v in n {
+			if is_map(v) && !is_undefined(v.op) { walk(v) }
+		}
+	}
+	walk(resolvedNode)
+	return acc
+}
+
+// applyFormulaFallback resolves the static ram/cpu to use when the backend
+// cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
+// by dimension — { ram: { ast, fallback, static }, cpu: { ast, fallback, static } }
+// — where `ast` is the formula (if any), `static` the .mem()/.cpu() request (if
+// any), and `fallback` the { fallback } given on the formula. A formula dimension
+// needs SOME static value: a static request always wins (the formula won't run on
+// this backend) and doubles as the fallback, so `fallback` fills in only when no
+// static request was set; the sole error is a formula dimension with NEITHER.
+// Returns { ram, cpu, err } — err a message string or undefined; the caller asserts
+// err is undefined, then applies ram/cpu. (Field is `err`, not `error`: `error` is
+// a reserved word in Tengo.) The ram/cpu values are validated by the builder before
+// they reach here; this only picks among them.
+applyFormulaFallback := func(dims) {
+	res := { ram: dims.ram.static, cpu: dims.cpu.static, err: undefined }
+	if !is_undefined(dims.ram.ast) && is_undefined(res.ram) {
+		if is_undefined(dims.ram.fallback) {
+			res.err = "exec.builder: memFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
+			return res
+		}
+		res.ram = dims.ram.fallback
+	}
+	if !is_undefined(dims.cpu.ast) && is_undefined(res.cpu) {
+		if is_undefined(dims.cpu.fallback) {
+			res.err = "exec.builder: cpuFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
+			return res
+		}
+		res.cpu = dims.cpu.fallback
+	}
+	return res
+}
+
+export {
+	// size: total bytes of the referenced input files (blob size; no pre-exec).
+	// lineCount: total NEWLINE characters across the referenced files — a file
+	//   with N newlines reports N, so a final line without a trailing newline is
+	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
+	//   only for line-oriented text formats (see _LINECOUNT_OK above).
+	size:      func(...args) { return _metric("size", args) },
+	lineCount: func(...args) { return _metric("lineCount", args) },
+
+	gib: func(n) { ll.assert(is_int(n), "exec.formula.gib: n must be an integer"); return { op: "const", value: n * units.GiB } },
+	mib: func(n) { ll.assert(is_int(n), "exec.formula.mib: n must be an integer"); return { op: "const", value: n * units.MiB } },
+	kib: func(n) { ll.assert(is_int(n), "exec.formula.kib: n must be an integer"); return { op: "const", value: n * units.KiB } },
+	gb:  func(n) { ll.assert(is_int(n), "exec.formula.gb: n must be an integer");  return { op: "const", value: n * units.GB } },
+	mb:  func(n) { ll.assert(is_int(n), "exec.formula.mb: n must be an integer");  return { op: "const", value: n * units.MB } },
+	kb:  func(n) { ll.assert(is_int(n), "exec.formula.kb: n must be an integer");  return { op: "const", value: n * units.KB } },
+
+	add:     func(a, b) { return _bin("add", a, b) },
+	sub:     func(a, b) { return _bin("sub", a, b) },
+	mul:     func(a, b) { return _bin("mul", a, b) },
+	div:     func(a, b) { return _bin("div", a, b) },
+	// divCeil(a, b): ceiling of a/b. Assumes a >= 0 and b > 0 — the resource-metric
+	// domain (sizes, line counts, positive constants). A negative a (e.g. an
+	// underflowing f.sub) can be off by one; floor such inputs with f.max first.
+	divCeil: func(a, b) { return _bin("divCeil", a, b) },
+
+	max:   func(a, b) { return _bin("max", a, b) },
+	min:   func(a, b) { return _bin("min", a, b) },
+	clamp: func(value, lo, hi) { return { op: "clamp", value: _wrap(value), lo: _wrap(lo), hi: _wrap(hi) } },
+
+	gt:  func(a, b) { return _bin("gt", a, b) },
+	gte: func(a, b) { return _bin("gte", a, b) },
+	lt:  func(a, b) { return _bin("lt", a, b) },
+	lte: func(a, b) { return _bin("lte", a, b) },
+	and: func(a, b) { return _bin("and", a, b) },
+	or:  func(a, b) { return _bin("or", a, b) },
+	not: func(a) { return { op: "not", a: _wrap(a) } },
+
+	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
+
+	evaluateResource:      evaluateResource,
+	resolveAst:            resolveAst,
+	referencedMetricFiles: referencedMetricFiles,
+	applyFormulaFallback:  applyFormulaFallback,
+
+	// _internal: SDK-internal entry points, NOT part of the block-author API.
+	// evaluate is the raw evaluator — it bypasses evaluateResource's positive-integer
+	// and no-top-level-comparison guards (it can return a bool or a non-positive int),
+	// so it must not be used to compute a quota. Exposed only for the unit tests and
+	// evaluateResource's own use; authors use the constructors + evaluateResource.
+	_internal: { evaluate: evaluate }
+}

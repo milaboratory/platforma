@@ -440,6 +440,13 @@ workflow := func() {
 			steps = append(steps, step)
 		},
 
+		// Test helper: returns the last raw step map (calls step fn with nil ctx).
+		// Only valid for steps that do not use ctx (e.g. read_csv, read_parquet).
+		_testGetLastRawStep: func() {
+			ll.assert(len(steps) > 0, "_testGetLastRawStep: no steps registered")
+			return steps[len(steps)-1](undefined)
+		},
+
 		/**
 		 * Creates a new DataFrame in the workflow by reading from an input source.
 		 * The input can be a resource reference, a string containing file content, or a structured map
@@ -469,6 +476,7 @@ workflow := func() {
 		 *   - `nRows` {int} (optional): Stop reading after this many rows. If not specified, all rows will be read.
 		 *   - `ignoreErrors` {boolean} (optional): Return null if parsing fails due to schema mismatches. Defaults to `false`.
 		 *   - `commentPrefix` {string} (optional): The prefix string used to comment out lines in the CSV file.
+		 *   - `delimiter` {string} (optional): Field delimiter for csv/tsv reads. Overrides the format-derived default (`,` for csv, `\t` for tsv).
 		 * @returns {object} - A DataFrame object representing the loaded data.
 		 * @example
 		 *   // NDJSON from file reference
@@ -513,6 +521,7 @@ workflow := func() {
 			nRowsOpt := undefined
 			ignoreErrorsOpt := undefined
 			commentPrefixOpt := undefined
+			delimiterOpt := undefined
 
 			if is_map(frameInput) && !is_undefined(frameInput.file) {
 				fileRef = frameInput.file
@@ -610,6 +619,15 @@ workflow := func() {
 				commentPrefixOpt = opts.commentPrefix
 			}
 
+			if !is_undefined(opts.delimiter) {
+				if !is_string(opts.delimiter) {
+					ll.panic("'delimiter' option must be a string. Got: %T", opts.delimiter)
+				}
+				ll.assert(finalFormat == "csv" || finalFormat == "tsv",
+					"'delimiter' option applies only to csv/tsv reads, not %q", finalFormat)
+				delimiterOpt = opts.delimiter
+			}
+
 			if !is_undefined(fileRef) {
 				ll.assert(
 					smart.isReference(fileRef),
@@ -681,6 +699,13 @@ workflow := func() {
 
 				if !is_undefined(commentPrefixOpt) {
 					step.commentPrefix = commentPrefixOpt
+				}
+
+				// Explicit delimiter overrides the format-derived default. General
+				// read_csv option — independent of the resource-formula path, which
+				// counts lines via the line-counter binary, not PTabler.
+				if !is_undefined(delimiterOpt) {
+					step.delimiter = delimiterOpt
 				}
 			}
 

@@ -19,8 +19,37 @@ constants := import(":constants")
 canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+execFormula := import(":exec.formula")
 units := import(":units")
 feats := import(":feats")
+
+// line-counter: small Go binary from the software-small-binaries catalogue.
+// CLI: `line-counter --input <file> --output <file>`; writes the exact line
+// count as a base-10 integer with no trailing newline. Run via the exec
+// builder() factory below (recursive function call within :exec — no import,
+// no cycle, no DI) to compute f.lineCount() metrics inline.
+lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:line-counter")
+
+// Forward declaration. The body is assigned after builder() (below) so it can
+// call the builder() factory recursively; declaring the name here lets
+// builder().run() reference it at compile time (Tengo resolves module-level
+// identifiers lexically — a closure cannot see a name declared textually after
+// the enclosing function).
+_lineCountResource := undefined
+
+// _assertValidCpuRequest / _assertValidMemRequest hold the single definition of a
+// valid CPU / RAM request, so .cpu()/.mem() and the memFormula/cpuFormula
+// { fallback } (which substitutes for a static request on backends that cannot
+// evaluate formulas) all enforce the same contract. `ctx` prefixes the message so
+// the error names the offending setter.
+_assertValidCpuRequest := func(amount, ctx) {
+	validation.assertType(amount, "number", ctx + ": amount of cores must be a number")
+	ll.assert(amount > 0, ctx + ": amount of cores should be greater than 0")
+}
+_assertValidMemRequest := func(amount, ctx) {
+	validation.assertType(amount, ["or", "number", "string"], ctx + ": RAM amount should be a number or string")
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": amount in bytes should be at least 16MiB")
+}
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -54,6 +83,13 @@ builder := func() {
 	cpuRequest := undefined
 	ramRequest := undefined
 	gpuMemory := undefined
+
+	// resource-formula builder state (memFormula / cpuFormula / addFile tags)
+	memFormulaAst := undefined
+	memFormulaFallback := undefined
+	cpuFormulaAst := undefined
+	cpuFormulaFallback := undefined
+	fileTags := {}   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 	commandName := ""
 	cache := 0
@@ -405,8 +441,7 @@ builder := func() {
 		 * @param amount: number - number of cores requested for command.
 		 */
 		cpu: func(amount) {
-			validation.assertType(amount, "number", "exec.builder.cpu: amount of cores must be a number")
-			ll.assert(amount > 0, "exec.builder.cpu: amount of cores should be greater than 0")
+			_assertValidCpuRequest(amount, "exec.builder.cpu")
 			cpuRequest = amount
 
 			return self
@@ -424,8 +459,7 @@ builder := func() {
 		 * @return builder
 		 */
 		mem: func(amount) {
-			validation.assertType(amount, ["or", "number", "string"], "exec.builder.mem: RAM amount should be a number or string")
-			ll.assert(is_string(amount) || amount >= 16 * units.MiB, "exec.builder.mem: amount in bytes should be at least 16MiB")
+			_assertValidMemRequest(amount, "exec.builder.mem")
 			ramRequest = amount
 
 			return self
@@ -439,6 +473,89 @@ builder := func() {
 		 */
 		ram: func(amount) {
 			self.mem(amount)
+			return self
+		},
+
+		/**
+		 * Sets a resource formula that computes the RAM request from input file
+		 * metrics (size / line count) at run time on the backend.
+		 *
+		 * Requires a backend with getBlobSize support. On older backends the
+		 * formula is skipped and a static RAM request is used instead: the
+		 * `{ fallback: ... }` value, or — if none is given — a static `.mem()`
+		 * set on the same builder. One of the two must be present (else an error).
+		 *
+		 * The formula must evaluate to a positive integer number of bytes. A
+		 * non-positive or non-integer result (e.g. a top-level comparison, or an
+		 * f.sub that underflows) is rejected at run time — floor it with f.max /
+		 * f.clamp if a metric can be zero.
+		 *
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately. (Transparency requires backend
+		 * serviceFields support; on a backend without it the formula instead
+		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
+		 *
+		 * @param ast - a formula node produced via exec.formula
+		 * @param opts: { fallback?: number | string } - static RAM used when the
+		 *        backend lacks getBlobSize support.
+		 *
+		 * @return builder
+		 */
+		memFormula: func(ast, ...opts) {
+			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.memFormula: expected a formula node from exec.formula")
+			memFormulaAst = ast
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				for k, _ in opts[0] {
+					ll.assert(k == "fallback", "exec.builder.memFormula: unknown option %q (only { fallback } is supported)", k)
+				}
+				if !is_undefined(opts[0].fallback) {
+					_assertValidMemRequest(opts[0].fallback, "exec.builder.memFormula fallback")
+					memFormulaFallback = opts[0].fallback
+				}
+			}
+			return self
+		},
+
+		/**
+		 * Sets a resource formula that computes the CPU request from input file
+		 * metrics (size / line count) at run time on the backend.
+		 *
+		 * Requires a backend with getBlobSize support. On older backends the
+		 * formula is skipped and a static CPU request is used instead: the
+		 * `{ fallback: ... }` value, or — if none is given — a static `.cpu()`
+		 * set on the same builder. One of the two must be present (else an error).
+		 *
+		 * The formula must evaluate to a positive integer number of cores. A
+		 * non-positive or non-integer result is rejected at run time — floor it
+		 * with f.max / f.clamp if a metric can be zero.
+		 *
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately. (Transparency requires backend
+		 * serviceFields support; on a backend without it the formula instead
+		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
+		 *
+		 * @param ast - a formula node produced via exec.formula
+		 * @param opts: { fallback?: number } - static CPU used when the backend
+		 *        lacks getBlobSize support.
+		 *
+		 * @return builder
+		 */
+		cpuFormula: func(ast, ...opts) {
+			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.cpuFormula: expected a formula node from exec.formula")
+			cpuFormulaAst = ast
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				for k, _ in opts[0] {
+					ll.assert(k == "fallback", "exec.builder.cpuFormula: unknown option %q (only { fallback } is supported)", k)
+				}
+				if !is_undefined(opts[0].fallback) {
+					_assertValidCpuRequest(opts[0].fallback, "exec.builder.cpuFormula fallback")
+					cpuFormulaFallback = opts[0].fallback
+				}
+			}
 			return self
 		},
 
@@ -786,8 +903,14 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
-			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
-				sets.add(writableFiles, fileName)
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				if opts[0].writable == true {
+					sets.add(writableFiles, fileName)
+				}
+				if !is_undefined(opts[0].tag) {
+					ll.assert(is_string(opts[0].tag), "exec.builder().addFile: tag must be a string")
+					fileTags[fileName] = opts[0].tag
+				}
 			}
 			monetization.addOptionalArg(mnz, fileName, opts...)
 			return self
@@ -1103,19 +1226,113 @@ builder := func() {
 			if (is_int(ramRequest)) {
 				ramRequest = string(ramRequest) + "b"
 			}
+
+			// Resolve formulas (tags -> file lists) and apply the
+			// hasBlobSize fallback gate. The static quota below stays populated;
+			// the ephemeral exec impl overrides ram/cpu per-dimension when the
+			// corresponding formula input is present. lineCount metrics are
+			// computed INLINE by running the `line-counter` Go binary via the
+			// builder() factory itself (see _lineCountResource). That is a plain
+			// recursive function call within :exec — no import of :pt or any
+			// metrics module — so there is no import cycle.
+			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst)
+			resolvedMem := undefined
+			resolvedCpu := undefined
+			lineCountMapResource := undefined
+
+			if hasFormula {
+				// Live evaluation needs getBlobSize: the pure exec.tpl reads input-file
+				// sizes (getBlobSize) at run time when it evaluates the formula. The
+				// formula ASTs ride the META rail (CID-transparent); only a computed
+				// line-count map, if any, rides the REGULAR rail — it must be deep-waited
+				// to final, and being file-derived it adds no CID differentiation (see the
+				// attach site below and analysis doc §4). Missing getBlobSize => take the
+				// static fallback path, so a formula can never break an exec on a backend
+				// that cannot evaluate it.
+				canEvaluateFormulas := feats.hasBlobSize
+				if !canEvaluateFormulas {
+					// Backend can't evaluate formulas (no getBlobSize). Each formula
+					// dimension falls back to its { fallback }, or to a static
+					// .mem()/.cpu() if no { fallback } was given; error only when a
+					// dimension has neither. Pure decision, unit-tested in exec.formula
+					// (applyFormulaFallback).
+					fb := execFormula.applyFormulaFallback({
+						ram: { ast: memFormulaAst, fallback: memFormulaFallback, static: ramRequest },
+						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest }
+					})
+					ll.assert(is_undefined(fb.err), fb.err)
+					ramRequest = fb.ram
+					cpuRequest = fb.cpu
+					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
+				} else {
+					tagMap := {}
+					for fileName, tag in fileTags {
+						existing := is_undefined(tagMap[tag]) ? [] : tagMap[tag]
+						tagMap[tag] = append(existing, fileName)
+					}
+					allFiles := maps.getKeys(filesToAdd)
+
+					neededLineCount := {}
+					if !is_undefined(memFormulaAst) {
+						resolvedMem = execFormula.resolveAst(memFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedMem)
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+					}
+					if !is_undefined(cpuFormulaAst) {
+						resolvedCpu = execFormula.resolveAst(cpuFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedCpu)
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+					}
+
+					if len(neededLineCount) > 0 {
+						perFile := {}
+						for fn, _ in neededLineCount {
+							perFile[fn] = _lineCountResource(fn, filesToAdd[fn])
+						}
+						lineCountMapResource = smart.createMapResource(perFile)
+					}
+				}
+			}
+
 			quotaData := {
 				queue: queue,
 				cpu: cpuRequest,
 				ram: ramRequest
 			}
 			if !is_undefined(gpuMemory) {
-				ll.assert(!is_undefined(cpuRequest), "exec.builder: cpu() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
-				ll.assert(!is_undefined(ramRequest), "exec.builder: mem() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
+				// A cpuFormula/memFormula satisfies this requirement just like a static
+				// .cpu()/.mem(): it provides an explicit request, computed at run time
+				// (the ephemeral impl overrides the quota before allocation; gpuMemory is
+				// forwarded alongside), and the { fallback } covers no-getBlobSize backends.
+				// Without this, gpuMemory + a formula would wrongly assert on hasBlobSize
+				// backends (where ramRequest/cpuRequest stay undefined) yet pass on older ones.
+				ll.assert(!is_undefined(cpuRequest) || !is_undefined(cpuFormulaAst), "exec.builder: cpu() or cpuFormula() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
+				ll.assert(!is_undefined(ramRequest) || !is_undefined(memFormulaAst), "exec.builder: mem() or memFormula() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
 				quotaData.gpuMemory = gpuMemory
 			}
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
+			// Resource-formula input placement (CID-transparent formula; see analysis doc §4):
+			//   - Formula ASTs (__memFormula__/__cpuFormula__) are JSON VALUE resources —
+			//     final on creation — so they ride the META rail (metaExecInputs, like
+			//     `quota`): excluded from the exec CID, yet readable as final in the pure
+			//     exec.tpl body. Changing only the formula does NOT change the CID, so two
+			//     otherwise-identical execs dedup to one allocation (formula CID-transparency).
+			//     On a backend without serviceFields support, render.lib attaches meta inputs
+			//     as regular ones instead — the formula then enters the CID (no transparency)
+			//     but still evaluates correctly. Graceful degradation; hasBlobSize stays the
+			//     only gate (gating on serviceFields would instead disable formulas there).
+			//   - The line-count map (__metric_lineCount__) holds COMPUTED per-file results.
+			//     On a meta (service) field those are only "resolved", not final, and a pure
+			//     template cannot awaitState — so the map MUST ride the REGULAR rail
+			//     (pureExecInputs) to be deep-waited to final before the body reads it. This
+			//     enters the CID, but the counts are file-derived (a deterministic function of
+			//     the already-in-CID input files), so identical inputs still dedup.
+			// Populated only on the canEvaluateFormulas path above.
+			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
+			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
+			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
 			// to not break a deduplication of exec's
@@ -1283,6 +1500,27 @@ builder := func() {
 	return self
 }
 
+// _lineCountResource runs the line-counter binary on one file and returns a
+// reference to the content resource holding that file's exact line count.
+// Streaming binary => fixed small memory; light queue; 30-day input cache.
+// Defined after builder() so it can call the factory recursively (a plain
+// function call within :exec — no import, no cycle, no DI).
+_lineCountResource = func(fileName, fileRef) {
+	countOut := "linecount.txt"
+	res := builder().
+		software(lineCounterSoft).
+		addFile(fileName, fileRef).
+		arg("--input").arg(fileName).
+		arg("--output").arg(countOut).
+		saveFileContent(countOut).
+		inLightQueue().
+		cacheInputsDays(30).
+		mem("256MiB").
+		cpu(1).
+		run()
+	return res.getFileContent(countOut)
+}
+
 export ll.toStrict({
 	builder: builder,
 
@@ -1290,5 +1528,6 @@ export ll.toStrict({
 	// Gate .gpuMemory() calls in blocks that have a CPU fallback path:
 	//   if exec.hasGpu { builder = builder.gpuMemory("16GiB") }
 	// Calling .gpuMemory() against a backend without GPU produces a permanent error.
-	hasGpu: feats.hasGpu
+	hasGpu: feats.hasGpu,
+	formula: execFormula
 })

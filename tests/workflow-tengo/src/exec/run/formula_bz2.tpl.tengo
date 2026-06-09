@@ -1,0 +1,43 @@
+/**
+ * End-to-end check for bzip2-compressed lineCount input.
+ *
+ * The input is a bzip2 fixture, added under a ".bz2" name. Two things must line
+ * up for the count to be right: the SDK must strip the .bz2 suffix to accept
+ * lineCount (formula.lib compression handling), and the line-counter binary must
+ * DECOMPRESS it before counting (>= 1.1.1; software-small-binaries >= 2.1.1).
+ * Only .gz and .zst were proven end-to-end before — this closes the bzip2 codec
+ * gap (bz2 is an advertised codec: see formula.lib _COMPRESSION_EXT).
+ *
+ * The ",bz2" arg suffix keeps this exec CID-distinct from the other formula
+ * templates (formula meta inputs are CID-transparent).
+ *
+ * memFormula = 512 MiB + lineCount("reads")*1024 ; cpuFormula = 1 + 1 = 2.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+f := exec.formula
+
+self.defineOutputs(["limits"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.body(func(inputs) {
+	inputFile := file.importFile(inputs.file).file
+
+	run := exec.builder().
+		inHeavyQueue().
+		software(sw).
+		argWithVar("{system.ram.bytes},{system.cpu},bz2").
+		addFile("reads.fastq.bz2", inputFile, { tag: "reads" }).
+		memFormula(f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024))).
+		cpuFormula(f.add(1, 1)).
+		saveStdoutContent().
+		run()
+
+	return {
+		limits: run.getStdoutContent()
+	}
+})

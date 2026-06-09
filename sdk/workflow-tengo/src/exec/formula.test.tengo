@@ -1,0 +1,358 @@
+test := import(":test")
+f := import(":exec.formula")
+text := import("text")
+
+TestFormulaConstructors := func() {
+	test.isEqual({ op: "add", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.add(2, 3))
+	test.isEqual({ op: "clamp", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.clamp(1, 2, 3))
+	test.isEqual("divCeil", f.divCeil(10, 3).op)
+}
+
+TestFormulaAutoWrap := func() {
+	node := f.mul(f.size("reads"), 4)
+	test.isEqual("mul", node.op)
+	test.isEqual("metric", node.a.op)
+	test.isEqual({ op: "const", value: 4 }, node.b)
+}
+
+TestFormulaUnits := func() {
+	test.isEqual({ op: "const", value: 16 * 1073741824 }, f.gib(16))
+	test.isEqual({ op: "const", value: 256 * 1048576 }, f.mib(256))
+	test.isEqual({ op: "const", value: 2 * 1000000000 }, f.gb(2))
+}
+
+TestFormulaMetricNodes := func() {
+	test.isEqual({ op: "metric", metric: "size" }, f.size())
+	test.isEqual({ op: "metric", metric: "size", tag: "reads" }, f.size("reads"))
+	test.isEqual({ op: "metric", metric: "size", tag: "ref", default: 0 }, f.size("ref", { default: 0 }))
+	test.isEqual("lineCount", f.lineCount("reads").metric)
+}
+
+TestFormulaConditional := func() {
+	node := f["if"](f.gt(f.size(), 100), f.gib(16), f.gib(8))
+	test.isEqual("if", node.op)
+	test.isEqual("gt", node.cond.op)
+	test.isEqual(16 * 1073741824, node.then.value)
+	test.isEqual(8 * 1073741824, node["else"].value)
+}
+
+TestFormulaLogic := func() {
+	node := f.not(f.lt(1, 2))
+	test.isEqual("not", node.op)
+	test.isEqual("lt", node.a.op)
+}
+
+// fake resolver: size sums a fixed per-file table, lineCount sums another
+_fakeResolver := {
+	size: func(files) {
+		table := { "a": 100, "b": 250 }
+		total := 0
+		for fn in files { total += table[fn] }
+		return total
+	},
+	lineCount: func(files) {
+		table := { "a": 9, "b": 19 }
+		total := 0
+		for fn in files { total += table[fn] }
+		return total
+	}
+}
+
+TestFormulaEvaluateArithmetic := func() {
+	test.isEqual(7, f._internal.evaluate(f.add(3, 4), _fakeResolver))
+	test.isEqual(3, f._internal.evaluate(f.div(10, 3), _fakeResolver))      // truncating
+	test.isEqual(4, f._internal.evaluate(f.divCeil(10, 3), _fakeResolver))  // ceiling
+	test.isEqual(20, f._internal.evaluate(f.mul(f.sub(7, 2), 4), _fakeResolver))
+}
+
+TestFormulaEvaluateBoundsAndCond := func() {
+	test.isEqual(5, f._internal.evaluate(f.clamp(2, 5, 10), _fakeResolver))   // raised to lo
+	test.isEqual(10, f._internal.evaluate(f.clamp(99, 5, 10), _fakeResolver)) // capped to hi
+	test.isEqual(8, f._internal.evaluate(f.max(8, 3), _fakeResolver))
+	test.isEqual(1, f._internal.evaluate(f["if"](f.gt(5, 2), 1, 0), _fakeResolver))
+	test.isEqual(0, f._internal.evaluate(f["if"](f.lt(5, 2), 1, 0), _fakeResolver))
+}
+
+TestEvaluateResourceAcceptsPositiveInt := func() {
+	// evaluateResource returns the evaluated value unchanged for a valid resource
+	// formula (a positive integer). The rejection path (a bool or non-positive
+	// result) goes through ll.assert, which is terminal in Tengo, so it cannot be
+	// exercised from a unit test — only the accepted contract is checked here.
+	test.isEqual(1073741824, f.evaluateResource(f.gib(1), _fakeResolver, "ram"))
+	test.isEqual(3, f.evaluateResource(f.add(2, 1), _fakeResolver, "cpu"))
+	test.isEqual(350, f.evaluateResource({ op: "metricSum", metric: "size", files: ["a", "b"] }, _fakeResolver, "ram"))
+}
+
+TestFormulaEvaluateMetricSum := func() {
+	node := { op: "metricSum", metric: "size", files: ["a", "b"] }
+	test.isEqual(350, f._internal.evaluate(node, _fakeResolver))
+	lc := { op: "metricSum", metric: "lineCount", files: ["a"] }
+	test.isEqual(9, f._internal.evaluate(lc, _fakeResolver))
+}
+
+TestFormulaEvaluateLogic := func() {
+	test.isEqual(3, f._internal.evaluate(f.min(3, 8), _fakeResolver))
+	test.isTrue(f._internal.evaluate(f.and(f.gte(5, 5), f.lte(2, 9)), _fakeResolver))
+	test.isFalse(f._internal.evaluate(f.or(f.gt(1, 2), f.not(f.lt(1, 2))), _fakeResolver))
+}
+
+TestResolveTagsToFiles := func() {
+	tagMap := { "reads": ["r1.fastq.gz", "r2.fastq.gz"], "ref": ["ref.fasta"] }
+	allFiles := ["r1.fastq.gz", "r2.fastq.gz", "ref.fasta"]
+
+	resolved := f.resolveAst(f.size("reads"), tagMap, allFiles)
+	test.isEqual({ op: "metricSum", metric: "size", files: ["r1.fastq.gz", "r2.fastq.gz"] }, resolved)
+
+	all := f.resolveAst(f.size(), tagMap, allFiles)
+	test.isEqual(["r1.fastq.gz", "r2.fastq.gz", "ref.fasta"], all.files)
+}
+
+TestResolveSortsFilesForStableBytes := func() {
+	tagMap := { "reads": ["r2.fastq", "r10.fastq", "r1.fastq"] }
+	allFiles := ["z.txt", "a.txt", "m.txt"]
+
+	tagged := f.resolveAst(f.size("reads"), tagMap, allFiles)
+	test.isEqual(["r1.fastq", "r10.fastq", "r2.fastq"], tagged.files)
+
+	untagged := f.resolveAst(f.size(), tagMap, allFiles)
+	test.isEqual(["a.txt", "m.txt", "z.txt"], untagged.files)
+}
+
+TestResolveDefaultSubstitution := func() {
+	resolved := f.resolveAst(f.size("missing", { default: 0 }), {}, [])
+	test.isEqual({ op: "const", value: 0 }, resolved)
+}
+
+TestReferencedMetricFiles := func() {
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	formula := f.add(f.mul(f.size("reads"), 4), f.lineCount("reads"))
+	resolved := f.resolveAst(formula, tagMap, ["r1.fastq", "r2.fastq"])
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)
+	test.isTrue(is_undefined(refs.size), "size must not require pre-exec")
+}
+
+TestResolveLineCountCompressionAccepted := func() {
+	// .fastq.gz: compression suffix stripped -> ext "fastq" is line-oriented -> accepted, no panic
+	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.gz"] }, ["r1.fastq.gz"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.gz"] }, resolved)
+}
+
+TestResolveLineCountUppercaseExtensionAccepted := func() {
+	// Extension matching is case-insensitive: .FASTQ / .TXT are valid line-oriented
+	// formats (the line-counter binary reads them raw and counts '\n'). A lowercase
+	// compression suffix is still stripped first, so .FASTQ.gz is accepted too.
+	upper := f.resolveAst(f.lineCount("reads"), { "reads": ["READS.FASTQ"] }, ["READS.FASTQ"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["READS.FASTQ"] }, upper)
+
+	upperBase := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.FASTQ.gz"] }, ["reads.FASTQ.gz"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.FASTQ.gz"] }, upperBase)
+}
+
+TestResolveLineCountUppercaseCompressionAccepted := func() {
+	// Compression suffix matching is case-insensitive too: .GZ / .Zst strip just
+	// like .gz / .zst, leaving a line-oriented base extension. The line-counter
+	// binary likewise lowercases the suffix before decompressing, so the count is
+	// correct (small-binaries case-insensitive release).
+	gz := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.fastq.GZ"] }, ["reads.fastq.GZ"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.fastq.GZ"] }, gz)
+
+	zst := f.resolveAst(f.lineCount("reads"), { "reads": ["reads.fasta.Zst"] }, ["reads.fasta.Zst"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["reads.fasta.Zst"] }, zst)
+}
+
+TestResolveRecursesInPlace := func() {
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	// add(mul(size("reads"), 4), lineCount("reads"))
+	resolved := f.resolveAst(f.add(f.mul(f.size("reads"), 4), f.lineCount("reads")), tagMap, allFiles)
+	test.isEqual("add", resolved.op)
+	test.isEqual("metricSum", resolved.a.a.op)   // size("reads") inside mul
+	test.isEqual("size", resolved.a.a.metric)
+	test.isEqual({ op: "const", value: 4 }, resolved.a.b)
+	test.isEqual("metricSum", resolved.b.op)     // lineCount("reads")
+	test.isEqual("lineCount", resolved.b.metric)
+	test.isEqual(["r1.fastq", "r2.fastq"], resolved.b.files)
+}
+
+// Note on panic-path coverage: the formula's rejection contracts (lineCount on
+// an unsupported extension, a tag with no files and no { default }, division by
+// zero, _wrap on a non-node) all go through ll.assert / ll.panic, which are
+// terminal in Tengo (no recover / try-catch — see pframes/table-builder.test.tengo).
+// They cannot be exercised from a unit test and are instead verified by reading.
+// The tests below cover the non-panic behavior those same code paths produce.
+
+TestResolveRecursesIntoClampAndIf := func() {
+	// resolveAst must recurse through the non-binary node shapes — clamp
+	// (value/lo/hi) and if (cond/then/else) — not just the binary a/b shape of
+	// add/mul. It resolves embedded metrics while copying the other fields through.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+
+	resolvedClamp := f.resolveAst(f.clamp(f.size("reads"), f.gib(1), f.gib(4)), tagMap, allFiles)
+	test.isEqual("clamp", resolvedClamp.op)
+	test.isEqual("metricSum", resolvedClamp.value.op)            // size("reads") resolved in `value`
+	test.isEqual(["r1.fastq", "r2.fastq"], resolvedClamp.value.files)
+	test.isEqual(1073741824, resolvedClamp.lo.value)             // 1 GiB lo bound preserved
+	test.isEqual(4 * 1073741824, resolvedClamp.hi.value)         // 4 GiB hi bound preserved
+
+	resolvedIf := f.resolveAst(f["if"](f.gt(f.lineCount("reads"), 100), f.gib(16), f.gib(8)), tagMap, allFiles)
+	test.isEqual("if", resolvedIf.op)
+	test.isEqual("metricSum", resolvedIf.cond.a.op)              // lineCount("reads") inside the gt cond
+	test.isEqual("lineCount", resolvedIf.cond.a.metric)
+	test.isEqual(16 * 1073741824, resolvedIf.then.value)
+	test.isEqual(8 * 1073741824, resolvedIf["else"].value)
+}
+
+TestReferencedMetricFilesTraversesClampAndIf := func() {
+	// lineCount files nested inside clamp / if must still be discovered (they
+	// require a pre-exec); size must still be excluded (computed inline via
+	// getBlobSize, no pre-exec needed). Exercises the walk through both shapes.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	formula := f["if"](
+		f.gt(f.size("reads"), 1000),
+		f.clamp(f.lineCount("reads"), f.mib(512), f.gib(2)),
+		f.gib(1))
+	resolved := f.resolveAst(formula, tagMap, allFiles)
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)        // found inside clamp inside if
+	test.isTrue(is_undefined(refs.size), "size must not require pre-exec")
+}
+
+TestResolveDefaultNotCarriedWhenTagHasFiles := func() {
+	// When a tag HAS files, the metric resolves to metricSum and the { default }
+	// is DROPPED — the resolver computes the metric from the files, so a carried
+	// default would be dead data. default only matters on the empty-tag path
+	// (TestResolveDefaultSubstitution), where it becomes a const instead.
+	tagMap := { "reads": ["r1.fastq"] }
+	resolved := f.resolveAst(f.size("reads", { default: 7 }), tagMap, ["r1.fastq"])
+	test.isEqual({ op: "metricSum", metric: "size", files: ["r1.fastq"] }, resolved)
+}
+
+// ---- applyFormulaFallback (builder-time, !hasBlobSize gate) ----------------
+// The exec builder calls this when the backend lacks getBlobSize support, so a
+// formula cannot be evaluated. Pure (no backend), so both branches — "use the
+// fallback" and "no fallback => error" — are unit-testable here. The live
+// !hasBlobSize path is otherwise unreachable from a unit test.
+
+TestFallbackAppliesWhenNoStaticRequest := func() {
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "16GiB" }, cpu: { ast: f.size(), fallback: 8 } })
+	test.isEqual("16GiB", res.ram)
+	test.isEqual(8, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackStaticRequestWins := func() {
+	// A static .mem()/.cpu() already set => the fallback must NOT override it.
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "16GiB", static: "64GiB" }, cpu: { ast: f.size(), fallback: 8, static: 16 } })
+	test.isEqual("64GiB", res.ram)
+	test.isEqual(16, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackMissingMemFallbackErrors := func() {
+	// memFormula present, no fallback, backend can't evaluate => error naming mem.
+	res := f.applyFormulaFallback({ ram: { ast: f.size() }, cpu: {} })
+	test.isTrue(!is_undefined(res.err), "missing memFormula fallback must error")
+	test.isTrue(text.contains(res.err, "memFormula"))
+}
+
+TestFallbackMissingCpuFallbackErrors := func() {
+	res := f.applyFormulaFallback({ ram: {}, cpu: { ast: f.size() } })
+	test.isTrue(!is_undefined(res.err), "missing cpuFormula fallback must error")
+	test.isTrue(text.contains(res.err, "cpuFormula"))
+}
+
+TestFallbackNoFormulasIsPassthrough := func() {
+	// No formulas => ram/cpu pass through untouched, no error.
+	res := f.applyFormulaFallback({ ram: { static: "4GiB" }, cpu: { static: 2 } })
+	test.isEqual("4GiB", res.ram)
+	test.isEqual(2, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackOnlyMemFormula := func() {
+	// memFormula with fallback, no cpuFormula => cpu stays whatever was passed.
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), fallback: "2GiB" }, cpu: { static: 4 } })
+	test.isEqual("2GiB", res.ram)
+	test.isEqual(4, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackStaticServesAsImplicitFallback := func() {
+	// A formula with NO explicit { fallback } but a static .mem()/.cpu() already
+	// set: the static request doubles as the old-backend fallback, so there is
+	// no error (a required { fallback } that the static value overrides anyway
+	// would be dead config). Errors only when neither static nor fallback exists.
+	res := f.applyFormulaFallback({ ram: { ast: f.size(), static: "64GiB" }, cpu: { ast: f.size(), static: 16 } })
+	test.isEqual("64GiB", res.ram)
+	test.isEqual(16, res.cpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+// ============================================================================
+// Added by deep-dive review (2026-06-03): coverage for documented-but-untested
+// evaluator contracts, a non-binary clamp branch, the referencedMetricFiles
+// dedup loop, .bz2 acceptance, and the and/or-vs-bool result-guard boundary.
+// ============================================================================
+
+TestFormulaDivCeilExactDivision := func() {
+	// divCeil is (a+b-1)/b; an EXACT division must not round up (off-by-one guard).
+	// The pre-existing suite only covers the inexact case divCeil(10,3)=4.
+	test.isEqual(3, f._internal.evaluate(f.divCeil(9, 3), _fakeResolver))   // exact -> 3, not 4
+	test.isEqual(2, f._internal.evaluate(f.divCeil(6, 3), _fakeResolver))   // exact -> 2
+	test.isEqual(1, f._internal.evaluate(f.divCeil(1, 1), _fakeResolver))   // exact -> 1
+	test.isEqual(0, f._internal.evaluate(f.divCeil(0, 3), _fakeResolver))   // 0 -> 0
+	test.isEqual(4, f._internal.evaluate(f.divCeil(7, 2), _fakeResolver))   // inexact -> 4
+}
+
+TestFormulaClampValueInRange := func() {
+	// The passthrough branch: a value already within [lo,hi] returns unchanged.
+	// Existing suite covers only the raise-to-lo and cap-to-hi branches.
+	test.isEqual(7, f._internal.evaluate(f.clamp(7, 5, 10), _fakeResolver))    // in range -> unchanged
+	test.isEqual(5, f._internal.evaluate(f.clamp(5, 5, 10), _fakeResolver))    // on lo boundary
+	test.isEqual(10, f._internal.evaluate(f.clamp(10, 5, 10), _fakeResolver))  // on hi boundary
+}
+
+TestFormulaIfNotTruthyIntCondition := func() {
+	// formula.lib documents: "the evaluator treats any nonzero const as truthy" for
+	// if.cond / not.a given a bare int. Every existing if/not test feeds a comparison
+	// (already a bool); this pins the documented truthy-int contract.
+	test.isEqual(10, f._internal.evaluate(f["if"](1, 10, 20), _fakeResolver))  // nonzero -> then
+	test.isEqual(20, f._internal.evaluate(f["if"](0, 10, 20), _fakeResolver))  // zero -> else
+	test.isFalse(f._internal.evaluate(f.not(5), _fakeResolver))                // !nonzero -> false
+	test.isTrue(f._internal.evaluate(f.not(0), _fakeResolver))                 // !0 -> true
+}
+
+TestFormulaLogicOpsOfIntsReturnInt := func() {
+	// Tengo && / || yield the deciding OPERAND, not a coerced bool, so f.and/f.or of
+	// integer operands evaluate to an INTEGER at the evaluate() level (f.gt/f.lt/f.not
+	// yield a bool). Because that int would otherwise slip past evaluateResource's
+	// `is_int(v) && v > 0` check, evaluateResource now rejects comparison/logic ops
+	// structurally at the top level — they belong only inside f.if(...). That
+	// reject is an ll.assert panic (terminal in Tengo, not assertable here); this test
+	// pins the underlying evaluate() operand semantics the guard protects against.
+	test.isTrue(is_int(f._internal.evaluate(f.or(1, 0), _fakeResolver)))    // 1 || 0 -> 1 (int)
+	test.isTrue(is_int(f._internal.evaluate(f.and(2, 3), _fakeResolver)))   // 2 && 3 -> 3 (int)
+	test.isFalse(is_int(f._internal.evaluate(f.gt(5, 2), _fakeResolver)))   // 5 > 2 -> true (bool)
+}
+
+TestReferencedMetricFilesDedupesRepeatedFile := func() {
+	// referencedMetricFiles must collapse a file referenced by lineCount more than once
+	// (e.g. once in a condition and once in a branch) to a single pre-exec. Existing
+	// tests reference each file exactly once, leaving the dedup loop unexercised.
+	tagMap := { "reads": ["r1.fastq", "r2.fastq"] }
+	allFiles := ["r1.fastq", "r2.fastq"]
+	formula := f.add(f.lineCount("reads"), f.mul(f.lineCount("reads"), 2))
+	resolved := f.resolveAst(formula, tagMap, allFiles)
+	refs := f.referencedMetricFiles(resolved)
+	test.isEqual(["r1.fastq", "r2.fastq"], refs.lineCount)   // each file once, not duplicated
+}
+
+TestResolveLineCountBz2Accepted := func() {
+	// .bz2 is a supported compression suffix, but only .gz/.zst were covered.
+	// The builder must strip .bz2 and accept the line-oriented base extension.
+	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.bz2"] }, ["r1.fastq.bz2"])
+	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.bz2"] }, resolved)
+}
