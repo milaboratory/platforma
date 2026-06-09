@@ -1,5 +1,6 @@
 import type {
   DataInfo,
+  ParquetChunkMetadata,
   PartitionedDataInfoEntries,
   PColumn,
   PColumnLazy,
@@ -543,6 +544,61 @@ export function convertOrParsePColumnData(
   if (acc instanceof TreeNodeAccessor) return parsePColumnData(acc);
 
   throw new Error(`Unexpected input type: ${typeof acc}`);
+}
+
+/**
+ * Returns the total number of rows in a PColumn, or `undefined` when the count
+ * cannot be determined without downloading data blobs.
+ *
+ * Derivable cases:
+ * - Inline values ({@link PColumnValues}): one entry per row.
+ * - Inline `Json` {@link DataInfo}: one entry per row.
+ * - Parquet (`ParquetPartitioned` / `ParquetSuperPartitioned`): summed from
+ *   each chunk's precomputed {@link ParquetChunkMetadata.stats} `numberOfRows`,
+ *   read from the chunk resource metadata without downloading the parquet files.
+ *
+ * Returns `undefined` when:
+ * - the data is `undefined` or still computing / not ready,
+ * - the data is `JsonPartitioned` or `BinaryPartitioned` (per-part row counts
+ *   live inside opaque blobs and are not readable here),
+ * - any parquet chunk is missing `stats.numberOfRows`.
+ *
+ * Note: do not confuse row count with `keyLength` / `partitionKeyLength`, which
+ * are axis-tuple lengths, not row counts.
+ */
+export function getNumberOfRows(data: PColumnDataUniversal | undefined): number | undefined {
+  if (data === undefined) return undefined;
+
+  // Inline explicit values: one entry per row.
+  if (Array.isArray(data)) return data.length;
+
+  const entries = convertOrParsePColumnData(data);
+  if (entries === undefined) return undefined;
+
+  switch (entries.type) {
+    case "Json":
+      // Inline Json: one entry per row.
+      return entries.data.length;
+
+    case "JsonPartitioned":
+    case "BinaryPartitioned":
+      // Per-part row counts live inside opaque blobs; not knowable without download.
+      return undefined;
+
+    case "ParquetPartitioned": {
+      let total = 0;
+      for (const { value } of entries.parts) {
+        // The part accessor points at a ParquetChunk resource whose JSON payload
+        // is ParquetChunkMetadata. Reading it does not download the parquet file
+        // (the file lives in a separate `blob` sub-field of the chunk resource).
+        const rows = value.getDataAsJsonOrUndefined<ParquetChunkMetadata>()?.stats?.numberOfRows;
+        // stats / numberOfRows are Partial: if any chunk lacks it, the total is unknowable.
+        if (typeof rows !== "number") return undefined;
+        total += rows;
+      }
+      return total;
+    }
+  }
 }
 
 export function isPColumnReady(

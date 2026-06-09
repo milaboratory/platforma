@@ -4,6 +4,7 @@ import {
   PluginModel,
   createPlDataTable,
   createPlDataTableStateV2,
+  getNumberOfRows,
   type PlDataTableStateV2,
   type PluginName,
   type InferHrefType,
@@ -140,6 +141,12 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .output("blockSpecFrameTest", (ctx) => {
     ctx.getService("pframeSpec").createSpecFrame({});
     return `blockSpecFrame: created (auto-disposed)`;
+  })
+
+  // Row count of the workflow's parquet column, via getNumberOfRows over the real accessor.
+  .output("parquetRowCount", (ctx) => {
+    const columns = ctx.outputs?.resolve("parquetFrame")?.getPColumns();
+    return columns?.length && getNumberOfRows(columns[0].data);
   })
 
   .outputWithStatus("blockTableTest", (ctx) => {
