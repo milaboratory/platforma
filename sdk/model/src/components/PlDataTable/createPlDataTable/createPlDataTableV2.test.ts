@@ -58,12 +58,13 @@ describe("computeHiddenColumnsV2 (deviation-aware)", () => {
     ]);
   });
 
-  // forcedHidden is intentionally false in V2: a `visibility: "hidden"` column is treated
-  // like any default-visible column and never auto-hidden (V2 has never hidden these, and
-  // the grid filters them upstream). Guards against a regression to forcedHidden:
-  // isColumnHidden.
-  test("a forced-hidden column is not auto-hidden", () => {
-    expect(hiddenIds(computeHiddenColumnsV2([col("forced", "hidden")], null, null))).toEqual([]);
+  // Forced-hidden (`visibility: "hidden"`) columns are dropped from the visible table,
+  // matching V3 and the grid (delegates to computeHiddenColumns). Guards against
+  // regressing V2 back to leaving them in.
+  test("a forced-hidden column is hidden", () => {
+    expect(hiddenIds(computeHiddenColumnsV2([col("forced", "hidden")], null, null))).toEqual([
+      "forced",
+    ]);
   });
 
   // Axis references in the override lists are ignored (only column overrides apply).

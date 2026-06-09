@@ -21,7 +21,7 @@ after which defaults apply correctly.
 Adds `resolveColumnHidden` to the public model API — the shared default-vs-override
 precedence used by the visible table handle and the grid — so this is a `minor` bump.
 
-Also updates the deprecated `createPlDataTableV2` path to read the same deviations (and
-honour `shownColIds`) via `resolveColumnHidden`, so blocks still on it stay consistent
-with the shared grid UI rather than misreading the deviation lists as an absolute hidden
+Also routes the deprecated `createPlDataTableV2` path through the shared
+`computeHiddenColumns`, so the ~29 blocks still on it reconcile the same deviations (and
+honour `shownColIds`) as the grid instead of misreading the lists as an absolute hidden
 set — which over-included columns once visibility was customised.

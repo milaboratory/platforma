@@ -33,7 +33,7 @@ import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
 import { createPTableDefV2 } from "./createPTableDefV2";
-import { isColumnOptional, resolveColumnHidden } from "./utils";
+import { computeHiddenColumns } from "./createPlDataTableV3";
 import type { Nil } from "@milaboratories/helpers";
 
 /**
@@ -206,16 +206,14 @@ export function createPlDataTableV2<A, U>(
 }
 
 /**
- * Reconcile each column's block default visibility with the user's explicit show/hide
- * deviations into the set of columns to hide, via the shared {@link resolveColumnHidden}
- * — the same precedence the V3 model (`computeHiddenColumns`) and the UI (`makeColDef`)
- * use. This keeps the deprecated V2 path from misreading the stored deviation lists as an
- * absolute hidden set, which dropped block defaults once any visibility was customised.
+ * V2's base hide decision: which columns to drop from the visible table, reconciling each
+ * column's block default with the user's show/hide deviations. Delegates to the shared
+ * {@link computeHiddenColumns} so the deprecated V2 path uses the exact same precedence as
+ * the V3 model and the grid's `makeColDef` — one implementation, no drift, and forced-hidden
+ * (`visibility: "hidden"`) columns are dropped here just as they are in V3.
  *
- * `forcedHidden` is false: V2 has never auto-hidden `visibility: "hidden"` columns, and
- * the UI filters them out of the grid upstream, so this preserves V2's behaviour and
- * matches `makeColDef`. The caller then force-keeps sorted, filtered, linker, and core
- * columns visible.
+ * Sort/filter preservation is skipped (both args `null`); the caller then force-keeps
+ * sorted, filtered, linker, and core columns visible on top of this base set.
  *
  * Exported for unit testing.
  */
@@ -224,28 +222,7 @@ export function computeHiddenColumnsV2(
   hiddenSpecs: Nil | PTableColumnId[],
   shownSpecs: Nil | PTableColumnId[],
 ): Set<PObjectId> {
-  const userHidden = new Set(
-    (hiddenSpecs ?? [])
-      .filter((s): s is PTableColumnIdColumn => s.type === "column")
-      .map((s) => s.id),
-  );
-  const userShown = new Set(
-    (shownSpecs ?? [])
-      .filter((s): s is PTableColumnIdColumn => s.type === "column")
-      .map((s) => s.id),
-  );
-  return new Set(
-    columns
-      .filter((c) =>
-        resolveColumnHidden({
-          forcedHidden: false,
-          optional: isColumnOptional(c.spec),
-          userShown: userShown.has(c.id),
-          userHidden: userHidden.has(c.id),
-        }),
-      )
-      .map((c) => c.id),
-  );
+  return computeHiddenColumns(columns, null, null, hiddenSpecs, shownSpecs);
 }
 
 function getAllLabelColumns(
