@@ -40,7 +40,7 @@ EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
 // awaits the whole input map to become ready
 self.awaitState("ResourceReady")
 
-self.validateInputs({
+inputSchema := {
 	filesToAdd: { any: validation.resource() },
 	filesToWrite: { any: validation.resource() },
 	"assets,?": { any: validation.resource() },
@@ -89,7 +89,9 @@ self.validateInputs({
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string"
 	}
-})
+}
+
+self.validateInputs(inputSchema)
 
 self.body(func(inputs) {
 	settings := inputs.settings
@@ -102,7 +104,10 @@ self.body(func(inputs) {
 
 	wdBuilder := workdir.builder()
 
+	// The quota is already fully computed by the pure exec.tpl (resource formulas
+	// are evaluated there). This ephemeral impl just consumes it.
 	quota := inputs.quota
+
 	wdBuilder.inQueue(quota.queue).cpu(quota.cpu).mem(quota.ram)
 
 	// Names whose fill-rule should land 0o600 (writable) instead of the
