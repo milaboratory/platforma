@@ -14,7 +14,6 @@ tplTest.concurrent("software-metadata-loads", async ({ helper, expect }) => {
   const val = (await mainResult.awaitStableValue()) as {
     name: string;
     version: string;
-    blobRef: any;
     descriptor: any;
     execs: string[];
   };
@@ -22,7 +21,6 @@ tplTest.concurrent("software-metadata-loads", async ({ helper, expect }) => {
   expect(val.name).eq("@platforma-sdk/workflow-tengo-tests:assets.software-meta");
   expect(val.version).not.eq("");
   expect(val.execs.length).gt(0);
-  expect(val).toHaveProperty("blobRef");
   expect(val).toHaveProperty("descriptor");
 });
 
@@ -33,14 +31,12 @@ tplTest.concurrent("asset-metadata-loads", async ({ helper, expect }) => {
   const val = (await mainResult.awaitStableValue()) as {
     name: string;
     version: string;
-    blobRef: any;
     descriptor: any;
     execs: string[];
   };
 
   expect(val.name).eq("@platforma-sdk/workflow-tengo-tests:assets.asset-meta");
   expect(val.version).not.eq("");
-  expect(val).toHaveProperty("blobRef");
   expect(val).toHaveProperty("descriptor");
 });
 

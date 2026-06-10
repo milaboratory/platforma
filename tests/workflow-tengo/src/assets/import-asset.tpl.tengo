@@ -11,8 +11,7 @@ self.body(func(inputs) {
 		main: {
 			name: asset.name,
 			version: asset.version,
-			descriptor: ll.fromStrict(asset.descriptor),
-			blobRef: ll.fromStrict(asset.blobRef)
+			descriptor: ll.fromStrict(asset.descriptor)
 		}
 	}
 
