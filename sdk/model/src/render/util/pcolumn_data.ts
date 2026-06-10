@@ -7,6 +7,7 @@ import type {
   PColumnValues,
 } from "@milaboratories/pl-model-common";
 import {
+  assertNever,
   dataInfoToEntries,
   isDataInfo,
   isDataInfoEntries,
@@ -598,6 +599,9 @@ export function getNumberOfRows(data: PColumnDataUniversal | undefined): number 
       }
       return total;
     }
+
+    default:
+      assertNever(entries);
   }
 }
 

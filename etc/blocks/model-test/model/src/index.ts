@@ -146,7 +146,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
   // Row count of the workflow's parquet column, via getNumberOfRows over the real accessor.
   .output("parquetRowCount", (ctx) => {
     const columns = ctx.outputs?.resolve("parquetFrame")?.getPColumns();
-    return columns?.length && getNumberOfRows(columns[0].data);
+    return columns?.length ? getNumberOfRows(columns[0].data) : undefined;
   })
 
   .outputWithStatus("blockTableTest", (ctx) => {
