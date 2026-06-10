@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-spec-driver",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "description": "PSpecDriver implementation: spec-only PFrame operations via WASM",
   "keywords": [],
   "license": "UNLICENSED",
