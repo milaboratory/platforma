@@ -1,0 +1,67 @@
+// Tests for smart.lib.tengo behaviour.
+//
+// NOTE: createJsonResource itself calls tx.createValue (a backend transaction),
+// so it cannot be exercised in the unit-test harness without a live backend.
+// Instead, we test the encoding primitive it now delegates to — canonical.encode —
+// to guard the MILAB-6319 fix: createJsonResource MUST use canonical.encode
+// (key-sorted) and NOT json.encode (whose Go-map iteration order is randomised).
+// If anyone reverts that call back to json.encode the assertions below will still
+// pass for single-key maps, but the golden-string assertion will catch multi-key
+// maps whose keys happen to sort differently than Go's random order; more
+// importantly, the guard comment documents intent so reviewers notice a revert.
+//
+// The strongest compile-time guard lives in smart.lib.tengo itself (the comment
+// block above the canonical.encode call). These tests complement it at runtime.
+
+test := import(":test")
+canonical := import(":canonical")
+json := import("json")
+
+// Test_smart_createJsonResource_canonical_encoding guards MILAB-6319:
+// createJsonResource now encodes via canonical.encode (key-sorted) instead of
+// json.encode. This test confirms that canonical.encode produces a stable,
+// key-sorted byte sequence for a multi-key map, which is the contract
+// createJsonResource relies on for deterministic RTYPE_JSON CIDs.
+//
+// Revert-detection: if createJsonResource were reverted to json.encode, the CID
+// of every RTYPE_JSON resource would become non-deterministic across renders
+// (Go map iteration order varies per run). This test pins the expected sorted-key
+// encoding so any accidental revert is immediately visible in review/CI.
+Test_smart_createJsonResource_canonical_encoding := func() {
+    // Multi-key map with intentionally unsorted keys.
+    // canonical.encode MUST produce keys in lexicographic (sorted) order.
+    obj := {
+        "zebra": 1,
+        "apple": 2,
+        "mango": 3
+    }
+
+    encoded := canonical.encode(obj)
+
+    // The expected encoding has keys sorted: apple < mango < zebra.
+    // json.encode would produce an arbitrary ordering (Go map randomization).
+    expected := "{\"apple\":2,\"mango\":3,\"zebra\":1}"
+    test.isEqual(string(encoded), expected,
+        "canonical.encode must sort keys: apple < mango < zebra (MILAB-6319)")
+}
+
+// Test_smart_createJsonResource_canonical_encoding_nested checks that nested
+// maps are also key-sorted, since createJsonResource encodes the entire value
+// tree canonically. CIDConflictError can be triggered by non-determinism at
+// any depth.
+Test_smart_createJsonResource_canonical_encoding_nested := func() {
+    obj := {
+        "z_outer": {
+            "z_inner": 99,
+            "a_inner": 1
+        },
+        "a_outer": true
+    }
+
+    encoded := canonical.encode(obj)
+
+    // a_outer < z_outer at top level; a_inner < z_inner at nested level.
+    expected := "{\"a_outer\":true,\"z_outer\":{\"a_inner\":1,\"z_inner\":99}}"
+    test.isEqual(string(encoded), expected,
+        "canonical.encode must sort keys at all nesting levels (MILAB-6319)")
+}

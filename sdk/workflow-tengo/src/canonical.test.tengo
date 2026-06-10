@@ -99,3 +99,81 @@ TestRFC8785Example := func() {
     decoded := json.decode(encoded)
     test.isEqual(decoded, obj)
 }
+
+// MILAB-6319 regression tests — establish the baseline that motivates the
+// nested-string fix at pframes/spec.lib.tengo:278.
+//
+// json.encode iterates Go maps via `range` (encode.go:164, 182), which is
+// randomized per the Go language spec. canonical.encode sorts map keys via
+// maps.getKeys (which goes through slices.quickSortInPlace). For inputs that
+// end up embedded as STRING values inside other JSON resources — like the
+// pl7.app/trace annotation — the per-call non-determinism survives pl's
+// outer canonicalization and pollutes downstream CIDs.
+
+TestJsonEncodeIsNonDeterministic := func() {
+    obj := {
+        "a": 1, "b": 2, "c": 3, "d": 4, "e": 5,
+        "f": 6, "g": 7, "h": 8, "i": 9, "j": 10
+    }
+
+    seen := {}
+    for i := 0; i < 200; i++ {
+        seen[json.encode(obj)] = true
+    }
+
+    test.isTrue(len(seen) > 1,
+        "json.encode produced a single ordering across 200 calls; expected randomized iteration")
+}
+
+TestCanonicalEncodeIsDeterministic := func() {
+    obj := {
+        "a": 1, "b": 2, "c": 3, "d": 4, "e": 5,
+        "f": 6, "g": 7, "h": 8, "i": 9, "j": 10
+    }
+    first := canonical.encode(obj)
+
+    for i := 0; i < 200; i++ {
+        test.isEqual(first, canonical.encode(obj))
+    }
+}
+
+TestJsonEncodeIsNonDeterministicNested := func() {
+    obj := {
+        "chains": "IGH",
+        "limitInput": 1000,
+        "params": {
+            "trimming": "none",
+            "barcode": "primer",
+            "library": "imgt",
+            "species": "hsa",
+            "preset": "milab-human"
+        }
+    }
+
+    seen := {}
+    for i := 0; i < 200; i++ {
+        seen[json.encode(obj)] = true
+    }
+
+    test.isTrue(len(seen) > 1,
+        "json.encode produced a single ordering for nested map across 200 calls")
+}
+
+TestCanonicalEncodeIsDeterministicNested := func() {
+    obj := {
+        "chains": "IGH",
+        "limitInput": 1000,
+        "params": {
+            "trimming": "none",
+            "barcode": "primer",
+            "library": "imgt",
+            "species": "hsa",
+            "preset": "milab-human"
+        }
+    }
+    first := canonical.encode(obj)
+
+    for i := 0; i < 200; i++ {
+        test.isEqual(first, canonical.encode(obj))
+    }
+}
