@@ -1,5 +1,12 @@
 # @milaboratories/pf-spec-driver
 
+## 1.4.9
+
+### Patch Changes
+
+- Updated dependencies [f7c21df]
+  - @milaboratories/pl-model-middle-layer@1.30.3
+
 ## 1.4.8
 
 ### Patch Changes
