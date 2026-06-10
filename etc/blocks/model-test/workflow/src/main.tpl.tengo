@@ -48,11 +48,33 @@ wf.body(func(args) {
 		partitionKeyLength: 0
 	})
 
+	// Parquet variant: exercises getNumberOfRows on a real ParquetPartitioned column.
+	pfParquet := xsv.importFile(tsvFile, "tsv", {
+		axes: [{
+			column: "item",
+			spec: {
+				name: "item",
+				type: "String"
+			}
+		}],
+		columns: [{
+			column: "score",
+			id: "score",
+			spec: {
+				name: "mock_score",
+				valueType: "Int"
+			}
+		}],
+		storageFormat: "Parquet",
+		partitionKeyLength: 0
+	})
+
 	return {
 		outputs: {
 			theOutput: args.tagToWorkflow,
 			delayedContent: result.getStdoutContent(),
-			tableFrame: pframes.exportFrame(pf)
+			tableFrame: pframes.exportFrame(pf),
+			parquetFrame: pframes.exportFrame(pfParquet)
 		},
 		exports: {}
 	}
