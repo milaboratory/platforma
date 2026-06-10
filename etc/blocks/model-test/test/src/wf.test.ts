@@ -80,6 +80,13 @@ blockTest(
       stable: true,
     });
 
+    // getNumberOfRows over the real parquet column (TSV has 3 data rows).
+    expect(blockState.outputs?.parquetRowCount).toStrictEqual({
+      ok: true,
+      value: 3,
+      stable: true,
+    });
+
     // Plugin outputs are keyed with a prefix — access via plain record
     const outputs = blockState.outputs as Record<string, unknown> | undefined;
 
