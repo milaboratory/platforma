@@ -81,7 +81,10 @@ export interface LocalBlobProvider<TreeEntry extends JsonSerializable>
   extends PoolLocalBlobProvider<TreeEntry>, AsyncDisposable {}
 
 export interface RemoteBlobProvider<TreeEntry extends JsonSerializable>
-  extends PoolRemoteBlobProvider<TreeEntry>, AsyncDisposable {}
+  extends PoolRemoteBlobProvider<TreeEntry>, AsyncDisposable {
+  getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null>;
+  resetCache(): Promise<void>;
+}
 
 export type AbstractPFrameDriverOps = PTableCachePerFrameOps &
   PTableCachePlainOps & {
@@ -126,6 +129,14 @@ export class AbstractPFrameDriver<
 
   public async pprofDump(): Promise<Uint8Array> {
     return await PFrameFactory.pprofDump();
+  }
+
+  public async getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null> {
+    return await this.remoteBlobProvider.getCacheMetrics();
+  }
+
+  public async resetCache(): Promise<void> {
+    await this.remoteBlobProvider.resetCache();
   }
 
   public constructor({

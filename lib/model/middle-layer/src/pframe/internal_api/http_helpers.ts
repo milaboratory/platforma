@@ -165,14 +165,96 @@ export abstract class BaseObjectStore implements ObjectStore {
   ): Promise<void>;
 }
 
+/** Configuration for {@link HttpHelpers.createCachingObjectStore} */
+export type CacheConfig = {
+  /** Filesystem path where the cache persists its data */
+  cachePath: string;
+  /** Hard total size budget in bytes; the cache self-stabilizes near this size */
+  maxSizeBytes: number;
+  /**
+   * Max share of the budget a single file may occupy (0..1); when a file exceeds it, that
+   * file's oldest ranges are evicted first. Stops one large scan from flushing the working set.
+   */
+  admissionFraction: number;
+  /** Upper bound on previously-evicted (ghost) files remembered to guide readmission; resident files are already byte-bounded */
+  maxFilesTracked: number;
+};
+
+/**
+ * Cumulative cache event counters. Surfaced both as lifetime totals (persisted across restarts)
+ * and as a per-process session view, @see CacheMetrics.
+ */
+export type CacheCounters = {
+  /** Requests fully served from cache */
+  hits: number;
+  /** Requests that fell through to upstream */
+  misses: number;
+  /** Bytes served from cache */
+  bytesServed: number;
+  /** Bytes downloaded from upstream on misses */
+  bytesFetched: number;
+  /** Bytes evicted to keep the cache within its total size budget, @see CacheConfig.maxSizeBytes */
+  bytesEvictedByBudget: number;
+  /** Bytes evicted because a single file exceeded its allowed share of the budget, @see CacheConfig.admissionFraction */
+  bytesEvictedByFileCap: number;
+  /** Files promoted on observed reuse, so they are retained longer than first-time entries */
+  promotions: number;
+  /** Previously evicted files that were re-requested and readmitted */
+  ghostReadmissions: number;
+};
+
+/** Snapshot of cache state and counters, @see CachingObjectStore.getMetrics */
+export type CacheMetrics = {
+  /** Current resident bytes */
+  sizeBytes: number;
+  /** Number of files with resident (cached) bytes */
+  residentFiles: number;
+  /** Number of previously-evicted (ghost) files remembered, <= @see CacheConfig.maxFilesTracked */
+  ghostFiles: number;
+  /** Counters cumulative across all sessions (persisted) */
+  lifetime: CacheCounters;
+  /** The same counters scoped to the current process */
+  session: CacheCounters;
+};
+
+/**
+ * Options for caching object store creation, @see HttpHelpers.createCachingObjectStore.
+ * Standalone (not extending {@link ObjectStoreOptions}): a caching store is a decorator over
+ * `upstream`, so source-store options do not apply to it.
+ */
+export interface CachingObjectStoreOptions {
+  /** Upstream store consulted on cache misses */
+  upstream: ObjectStore;
+  /** Cache configuration */
+  config: CacheConfig;
+  /** Logger instance, no logging is performed when not provided */
+  logger?: Logger;
+}
+
+/**
+ * An {@link ObjectStore} that serves byte ranges from a persistent local cache, fetching misses
+ * from an upstream store. This is the single handle for the cache: pass it as
+ * {@link RequestHandlerOptions.store}, read {@link CachingObjectStore.getMetrics}, and dispose it
+ * to release the cache, @see HttpHelpers.createCachingObjectStore.
+ */
+export interface CachingObjectStore extends ObjectStore, AsyncDisposable {
+  /** Instantaneous cache state plus lifetime/session counters */
+  getMetrics(): CacheMetrics;
+  /** Drop all cached data and zero the counters (test/benchmark use) */
+  reset(): void;
+}
+
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */
 export type ObjectStoreUrl = Branded<string, "PFrameInternal.ObjectStoreUrl">;
 
 /** HTTP(S) request handler creation options */
 export type RequestHandlerOptions = {
-  /** Object store to serve files from, @see HttpHelpers.createFsStore */
+  /**
+   * Object store to serve files from. Compose caching by wrapping the upstream store with
+   * {@link HttpHelpers.createCachingObjectStore} and passing the result here,
+   * @see HttpHelpers.createFsStore
+   */
   store: ObjectStore;
-  /** Here will go caching options... */
 };
 
 /** Server configuration options */
@@ -238,6 +320,13 @@ export interface HttpHelpers {
    * Rejects if the provided path does not exist or is not a directory.
    */
   createFsStore(options: FsStoreOptions): Promise<ObjectStore>;
+
+  /**
+   * Wrap an upstream object store in a persistent byte-range cache backed by SQLite.
+   * The returned store is itself an {@link ObjectStore} (pass it to {@link createRequestHandler})
+   * and additionally exposes metrics and reset. Dispose it to close the cache database.
+   */
+  createCachingObjectStore(options: CachingObjectStoreOptions): Promise<CachingObjectStore>;
 
   /**
    * Create an HTTP request handler for serving files from an object store.
