@@ -74,6 +74,30 @@ test("embedInlineColumnTypeSpecs traverses into nested join entries", ({ expect 
   expect(dataInfo.typeSpec).toEqual({ axes: ["String", "Long"], column: "Int" });
 });
 
+test("embedInlineColumnTypeSpecs traverses outerJoin primary and secondary entries", ({
+  expect,
+}) => {
+  const query: SpecQuery = {
+    type: "outerJoin",
+    primary: { entry: inlineColumnNode(), qualifications: [] },
+    secondary: [{ entry: inlineColumnNode(), qualifications: [] }],
+  };
+
+  const result = embedInlineColumnTypeSpecs(query);
+  if (result.type !== "outerJoin") throw new Error("expected outerJoin");
+
+  // Both traversal paths (primary via traverseEntry, secondary via map) must
+  // reach the inline column and embed its typeSpec.
+  expect(inlineDataInfo(result.primary.entry).typeSpec).toEqual({
+    axes: ["String", "Long"],
+    column: "Int",
+  });
+  expect(inlineDataInfo(result.secondary[0].entry).typeSpec).toEqual({
+    axes: ["String", "Long"],
+    column: "Int",
+  });
+});
+
 test("embedInlineColumnTypeSpecs leaves non-inline nodes unchanged", ({ expect }) => {
   const query: SpecQuery = { type: "column", column: "col1" as PObjectId };
   const result = embedInlineColumnTypeSpecs(query);
