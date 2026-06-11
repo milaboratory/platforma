@@ -12,7 +12,6 @@ self.body(func(inputs) {
 			name: sw.name,
 			version: sw.version,
 			descriptor: ll.fromStrict(sw.descriptor),
-			blobRef: ll.fromStrict(sw.blobRef),
 			execs: ll.getExecutorsList()
 		}
 	}
