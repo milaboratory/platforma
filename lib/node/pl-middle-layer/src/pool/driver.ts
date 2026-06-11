@@ -251,6 +251,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   constructor(
     private readonly pool: RemoteBlobPool,
     private readonly server: PFrameInternal.HttpServer,
+    // TODO: private readonly cache: PFrameInternal.CachingObjectStore,
   ) {}
 
   public static async init(
@@ -260,6 +261,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   ): Promise<RemoteBlobProviderImpl> {
     const pool = new RemoteBlobPool(blobDriver, logger);
     const store = new BlobStore({ remoteBlobProvider: pool, logger });
+    // TODO: const cachingStore = HttpHelpers.createCachingObjectStore({ ... });
 
     const handler = HttpHelpers.createRequestHandler({ store });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
@@ -274,6 +276,14 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
 
   public httpServerInfo(): PFrameInternal.HttpServerInfo {
     return this.server.info;
+  }
+
+  public async getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null> {
+    return null; // TODO: this.cache.getMetrics()
+  }
+
+  public async resetCache(): Promise<void> {
+    // TODO: this.cache.reset()
   }
 
   async [Symbol.asyncDispose](): Promise<void> {

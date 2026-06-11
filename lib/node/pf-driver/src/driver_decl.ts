@@ -19,6 +19,7 @@ import type {
   ExportPTableOptions,
 } from "@milaboratories/pl-model-common";
 import type { PoolEntry } from "@milaboratories/helpers";
+import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 
 export type {
   WritePTableToFsOptions,
@@ -43,6 +44,15 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
    * @warning This method will always reject on Windows!
    */
   pprofDump(): Promise<Uint8Array>;
+
+  /**
+   * Metrics from the byte-range cache backing the parquet object store,
+   * or `null` when no caching layer is configured.
+   */
+  getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null>;
+
+  /** Drop all cached parquet byte ranges; no-op when no caching layer is configured. */
+  resetCache(): Promise<void>;
 
   /** Create a new PFrame */
   createPFrame(def: PFrameDef<PColumn<PColumnData>>): PoolEntry<PFrameHandle>;
