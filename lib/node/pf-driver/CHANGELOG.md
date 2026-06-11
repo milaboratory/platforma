@@ -1,5 +1,14 @@
 # @milaboratories/pf-driver
 
+## 1.7.8
+
+### Patch Changes
+
+- 958289c: Make inline-column data info self-contained: the pf-driver now embeds each inline column's `typeSpec` (`{ axes, column }`) into its `dataInfo` before query lowering, so the data layer no longer relies on the inline column's `spec` field for type information. `ColumnIdAndTypeSpec.spec` is changed to the singular `ColumnTypeSpec` to match the data-layer wire format.
+- Updated dependencies [958289c]
+  - @milaboratories/pl-model-common@1.46.1
+  - @milaboratories/pl-model-middle-layer@1.30.4
+
 ## 1.7.7
 
 ### Patch Changes
