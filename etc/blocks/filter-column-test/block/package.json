@@ -2,18 +2,21 @@
   "name": "@milaboratories/milaboratories.test-filter-column",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "build": "shx rm -rf ./block-pack && block-tools pack"
-  },
   "files": [
     "index.d.ts",
     "index.js"
   ],
+  "scripts": {
+    "build": "shx rm -rf ./block-pack && block-tools pack",
+    "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "do-pack": "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz"
+  },
   "dependencies": {
-    "@platforma-sdk/model": "workspace:*",
-    "@milaboratories/milaboratories.test-filter-column.workflow": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",
-    "@milaboratories/milaboratories.test-filter-column.ui": "workspace:*"
+    "@milaboratories/milaboratories.test-filter-column.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-filter-column.workflow": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@platforma-sdk/block-tools": "workspace:*",

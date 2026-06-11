@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
+    "@inquirer/prompts": "catalog:",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
@@ -64,6 +65,7 @@
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "oclif": "catalog:",
+    "oxfmt": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",
     "typescript": "catalog:",

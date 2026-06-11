@@ -1,0 +1,35 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.json"],
+  "tasks": {
+    "fmt": {
+      "cache": false
+    },
+    "check": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "build": {
+      "dependsOn": ["^build", "check"],
+      "inputs": ["$TURBO_DEFAULT$"],
+      "env": ["PL_PKG_DEV", "PL_DOCKER_REGISTRY_PUSH_TO"],
+      "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"]
+    },
+    "build:dev": {
+      "dependsOn": ["build"],
+      "outputs": ["./dist/**"]
+    },
+    "do-pack": {
+      "dependsOn": ["build"],
+      "outputs": ["package.tgz"]
+    },
+    "test": {
+      "dependsOn": ["build", "check"],
+      "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
+    },
+    "mark-stable": {
+      "passThroughEnv": ["PL_REGISTRY", "AWS_*"],
+      "cache": false
+    }
+  }
+}
