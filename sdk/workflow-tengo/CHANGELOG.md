@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.5.1
+
+### Patch Changes
+
+- 067437a: Do not use 'blobRef' from software info. It never had non-empty value
+
 ## 6.5.0
 
 ### Minor Changes
