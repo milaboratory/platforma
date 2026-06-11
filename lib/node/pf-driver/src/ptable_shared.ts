@@ -1,12 +1,35 @@
 import type {
   DataQuery,
+  JsonDataInfo,
   PFrameHandle,
   PObjectId,
   PTableColumnSpec,
   PTableDef,
   PTableHandle,
+  SpecQuery,
 } from "@milaboratories/pl-model-common";
+import { traverseQuerySpec } from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+
+/**
+ * Make every inline column in a `SpecQuery` self-contained by embedding its
+ * column `typeSpec` (`{ axes, column }`) into `dataInfo`, derived from the
+ * column's `PColumnSpec`.
+ */
+export function embedInlineColumnTypeSpecs(query: SpecQuery): SpecQuery {
+  return traverseQuerySpec(query, {
+    column: (c) => c,
+    node: (node) => {
+      if (node.type !== "inlineColumn") return node;
+      const { axesSpec, valueType } = node.spec.spec;
+      const dataInfo: JsonDataInfo & { typeSpec: PFrameInternal.PColumnValueTypeSpec } = {
+        ...node.dataInfo,
+        typeSpec: { axes: axesSpec.map((a) => a.type), column: valueType },
+      };
+      return { ...node, dataInfo };
+    },
+  });
+}
 
 /**
  * PTable definition stored in the def / table pools. Always
@@ -39,7 +62,9 @@ export function lowerLegacyPTableDef(
     filters: [...legacyDef.partitionFilters, ...legacyDef.filters],
     sorting: legacyDef.sorting,
   };
-  return pFrameSpec.evaluateQuery(pFrameSpec.rewriteLegacyQuery(legacy));
+  return pFrameSpec.evaluateQuery(
+    embedInlineColumnTypeSpecs(pFrameSpec.rewriteLegacyQuery(legacy)),
+  );
 }
 
 /**
