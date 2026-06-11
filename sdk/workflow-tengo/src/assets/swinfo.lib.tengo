@@ -19,7 +19,6 @@ newSoftwareInfo := func(sw) {
 		resource: smart.resource(sw.id),
 		name: sw.name,
 		version: sw.version,
-		blobRef: sw.blobRef,
 		descriptor: ll.toStrict(json.decode(sw.descriptor)) // raw sw.json data with software entrypoint descriptor
 	})
 }

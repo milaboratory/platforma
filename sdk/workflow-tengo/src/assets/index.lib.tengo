@@ -41,7 +41,6 @@ importAsset := func(assetName) {
 		resource: smart.resource(asset.id),
 		name: asset.name,
 		version: asset.version,
-		blobRef: asset.blobRef,
 		descriptor: ll.toStrict(json.decode(asset.descriptor)) // raw sw.json data with asset entrypoint descriptor
 	})
 }
