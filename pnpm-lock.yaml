@@ -25,14 +25,14 @@ catalogs:
       specifier: ^7.0.1
       version: 7.0.1
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.44
-      version: 1.1.44
+      specifier: 1.1.46
+      version: 1.1.46
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.1.44
-      version: 1.1.44
+      specifier: 1.1.46
+      version: 1.1.46
     '@milaboratories/pframes-rs-wasm':
-      specifier: 1.1.44
-      version: 1.1.44
+      specifier: 1.1.46
+      version: 1.1.46
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -2180,7 +2180,7 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.44(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.46(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../common
@@ -2300,10 +2300,10 @@ importers:
         version: link:../../util/helpers
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.44(encoding@0.1.13)
+        version: 1.1.46(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.44(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.46(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -2783,10 +2783,10 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.44(encoding@0.1.13)
+        version: 1.1.46(encoding@0.1.13)
       '@milaboratories/pframes-rs-wasm':
         specifier: 'catalog:'
-        version: 1.1.44(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+        version: 1.1.46(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -3457,7 +3457,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.44
+        version: 1.1.46
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -5369,31 +5369,31 @@ packages:
     resolution: {integrity: sha512-zOkD4aWNbembwI+AsPTz7nmWC1VPA4rwGBc+Nd5jPpKVh7rCtZwQrlOP5mVqRVMKIAjb1nU8kzzCGfqNPqfJjA==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.44':
-    resolution: {integrity: sha512-s3ccom18u336R//OYQOqjlqb9K94nXWO4uiB2q1wJW1Z7WXXWq+naTRlBLaQ84/t/CA6+m+BTTCD6v/GBxMexQ==}
+  '@milaboratories/pframes-rs-node@1.1.46':
+    resolution: {integrity: sha512-TYvlvW3E59LXdfLrkklmJF1Eb29oxIrP6CTbE/RQxHrcBw0kkDUaR+VG2L/b+OQRTORi9YNrqJhWzhJOIrPWFQ==}
 
-  '@milaboratories/pframes-rs-serv@1.1.44':
-    resolution: {integrity: sha512-u18UiJK+KkbfqwuZmDbgSia+/si48l1P+feZcEyl2JgtdHoaTlZaNenjViu0+fX6O3PRRwHndH0GZzq8IEp+bg==}
+  '@milaboratories/pframes-rs-serv@1.1.46':
+    resolution: {integrity: sha512-0ohN+yvePXG4pP6TY9S0N5mrP1WYSjv30iKk1VjlCTW2HqjyMa7MPGsnJaVX3BVUzB7IQJs0BZ5GP3oHsEZm6g==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasip2@1.1.44':
-    resolution: {integrity: sha512-lS8poGIpnGK+w2LKwbmYGuT4khXVK0qeXOQpo9b7wyTgAMJmjFcV/MBlS7ql5cJ/NS86p27cZDBBAlEgfBFWfw==}
+  '@milaboratories/pframes-rs-wasip2@1.1.46':
+    resolution: {integrity: sha512-aKKcPzyud13WmiEV2+2lbT0/qcuPJx/d3yztoXZHU++gwDRu1LXq2c/hjphYMPQ/g2zDXewMtzeBHknypi95UQ==}
 
-  '@milaboratories/pframes-rs-wasm@1.1.44':
-    resolution: {integrity: sha512-F4gk12I6QpseDQNHx66jYPlwL/MMmQ8yUsrEsHjVrDiQvJw5xvkrV26+8uF5foHP++gWoSO2BpOqEJQjHW/I/w==}
+  '@milaboratories/pframes-rs-wasm@1.1.46':
+    resolution: {integrity: sha512-1NJ4PTzTuXUfNCiYCkOvclP34SPTXRVJei5vHmPt4guawX/u8m+zYhyQcnARZoDGMV21VNuxTPAeqRzBPSzr3w==}
     peerDependencies:
       '@bytecodealliance/preview2-shim': 0.17.9
-      '@milaboratories/pl-model-common': 1.46.0
-      '@milaboratories/pl-model-middle-layer': 1.30.0
+      '@milaboratories/pl-model-common': 1.46.1
+      '@milaboratories/pl-model-middle-layer': 1.30.4
 
   '@milaboratories/pl-error-like@1.12.10':
     resolution: {integrity: sha512-iHmnLG5lxJqcymUmEL8onCDGEADk1S/5RNACQ5yfTCNcCkUc+7hYrDHQpFmWXPPGC9sG+NTBxt4wr5m8UsLm2g==}
 
-  '@milaboratories/pl-model-common@1.46.0':
-    resolution: {integrity: sha512-ieKPAQn40j731NuRWv+wRpgs3W0doxtQC3+aQC6dZQIo5kIzYqfZGrVQQUyNwfGbk3T3cCLH8dS8YZcBOEyIBQ==}
+  '@milaboratories/pl-model-common@1.46.1':
+    resolution: {integrity: sha512-ABOz/w7dA4t2zUpZHXI74MTNW6LmPFSLxgfhOPFdO6vodIY8draVN+ag2U21WlYIoSgdJwSXJrXJWdu1cefrIg==}
 
-  '@milaboratories/pl-model-middle-layer@1.30.0':
-    resolution: {integrity: sha512-OmoCfGd1eUySI3ILP6rGfytbBgUOd9Jw3HuCCiLGHbV8qevtiV1DwqohWp36KHGFCfpmtaiQyV2Q3Y5+3bdUJQ==}
+  '@milaboratories/pl-model-middle-layer@1.30.4':
+    resolution: {integrity: sha512-U81Fk33PFBxBDTt8s1Ue31z1yM4Yx8ZOPu0SrANT8oevlIfgDYZHEtPzPfUBprh3Yq4/4VrEqkRpTLbP6I6s4g==}
 
   '@milaboratories/software-pframes-conv@2.2.9':
     resolution: {integrity: sha512-w+GaazDSqEgqYUJ38I5lgOsggyZJpcBVGvDMHIX1pyTdvPjWAOWu3mLkScaYuWeitFfh8aAedf5vrLqXtnX8bw==}
@@ -11737,31 +11737,31 @@ snapshots:
 
   '@milaboratories/helpers@1.14.2': {}
 
-  '@milaboratories/pframes-rs-node@1.1.44(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.1.46(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pframes-rs-serv': 1.1.44
-      '@milaboratories/pl-model-common': 1.46.0
+      '@milaboratories/pframes-rs-serv': 1.1.46
+      '@milaboratories/pl-model-common': 1.46.1
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.44':
+  '@milaboratories/pframes-rs-serv@1.1.46':
     dependencies:
       '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-model-common': 1.46.0
-      '@milaboratories/pl-model-middle-layer': 1.30.0
+      '@milaboratories/pl-model-common': 1.46.1
+      '@milaboratories/pl-model-middle-layer': 1.30.4
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.1.44': {}
+  '@milaboratories/pframes-rs-wasip2@1.1.46': {}
 
-  '@milaboratories/pframes-rs-wasm@1.1.44(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-wasm@1.1.46(@bytecodealliance/preview2-shim@0.17.8)(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@bytecodealliance/preview2-shim': 0.17.8
-      '@milaboratories/pframes-rs-wasip2': 1.1.44
+      '@milaboratories/pframes-rs-wasip2': 1.1.46
       '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
 
@@ -11770,17 +11770,17 @@ snapshots:
       json-stringify-safe: 5.0.1
       zod: 3.25.76
 
-  '@milaboratories/pl-model-common@1.46.0':
+  '@milaboratories/pl-model-common@1.46.1':
     dependencies:
       '@milaboratories/helpers': 1.14.2
       '@milaboratories/pl-error-like': 1.12.10
       canonicalize: 2.1.0
       zod: 3.25.76
 
-  '@milaboratories/pl-model-middle-layer@1.30.0':
+  '@milaboratories/pl-model-middle-layer@1.30.4':
     dependencies:
       '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-model-common': 1.46.0
+      '@milaboratories/pl-model-common': 1.46.1
       es-toolkit: 1.39.10
       utility-types: 3.11.0
       zod: 3.25.76
