@@ -7,13 +7,22 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
   "scripts": {
     "build": "ts-builder build --target block-model && block-tools build-model",
     "check": "ts-builder check --target block-model",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target block-model",
-    "fmt": "ts-builder format"
+    "fmt": "ts-builder format",
+    "watch": "ts-builder build --target block-model --watch"
   },
   "dependencies": {
     "@platforma-sdk/model": "workspace:*",
@@ -24,6 +33,10 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
-    "typescript": "catalog:"
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
   }
 }

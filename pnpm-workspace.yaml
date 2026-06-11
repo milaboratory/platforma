@@ -202,7 +202,7 @@ catalog:
   "rimraf": ^6.0.1
 
   "oxlint": 1.43.0
-  "oxfmt": 0.28.0
+  "oxfmt": 0.35.0
 
   # Net / MCP
 
@@ -217,6 +217,7 @@ catalog:
 
   # Util & other libs
 
+  "@inquirer/prompts": ^7.0.1
   "testcontainers": ^10.18.0
   "utility-types": ^3.11.0
   "denque": ^2.1.0

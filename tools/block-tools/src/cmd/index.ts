@@ -8,8 +8,11 @@ import Cmd5 from "./pack";
 import Cmd6 from "./publish";
 import Cmd7 from "./refresh-registry";
 import Cmd8 from "./restore-overview-from-snapshot";
-import Cmd9 from "./upload-package-v1";
-import Cmd10 from "./update-deps";
+import Cmd9 from "./update-deps";
+import Cmd10 from "./upload-package-v1";
+import Cmd11 from "./structure/check";
+import Cmd12 from "./structure/init";
+import Cmd13 from "./structure/refresh";
 
 export const COMMANDS = {
   "build-meta": Cmd0,
@@ -20,6 +23,9 @@ export const COMMANDS = {
   publish: Cmd6,
   "refresh-registry": Cmd7,
   "restore-overview-from-snapshot": Cmd8,
-  "upload-package-v1": Cmd9,
-  "update-deps": Cmd10,
+  "update-deps": Cmd9,
+  "upload-package-v1": Cmd10,
+  "structure:check": Cmd11,
+  "structure:init": Cmd12,
+  "structure:refresh": Cmd13,
 };

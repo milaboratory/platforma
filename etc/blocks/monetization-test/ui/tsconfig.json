@@ -1,8 +1,4 @@
 {
   "extends": "@milaboratories/ts-configs/block/ui",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "include": ["src/**/*"]
 }
