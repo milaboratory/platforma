@@ -241,7 +241,7 @@ export interface CachingObjectStore extends ObjectStore, AsyncDisposable {
   /** Instantaneous cache state plus lifetime/session counters */
   getMetrics(): CacheMetrics;
   /** Drop all cached data and zero the counters (test/benchmark use) */
-  reset(): void;
+  reset(): Promise<void>;
 }
 
 /** Object store base URL in format accepted by Apache DataFusion and DuckDB */

@@ -288,6 +288,7 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
+    // TODO: await this.cache[Symbol.asyncDispose]();
     await this.pool[Symbol.asyncDispose]();
   }
 }
