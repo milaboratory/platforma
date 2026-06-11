@@ -116,6 +116,12 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<FileName> {
     return this.server.info;
   }
 
+  public async getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null> {
+    return null;
+  }
+
+  public async resetCache(): Promise<void> {}
+
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
     await this.pool[Symbol.asyncDispose]();
