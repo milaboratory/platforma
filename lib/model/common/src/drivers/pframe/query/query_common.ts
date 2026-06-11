@@ -17,6 +17,18 @@ export type TypeSpec = {
   columns: ColumnValueType[];
 };
 
+/**
+ * Structural type information for a single column: the axis value types (in
+ * order) and the single column value type. Mirrors the self-contained
+ * `typeSpec` shape carried by the data layer (`{ axes, column }`).
+ */
+export type ColumnTypeSpec = {
+  /** List of axis value types defining the dimensions of the data */
+  axes: AxisValueType[];
+  /** The single column value type */
+  column: ColumnValueType;
+};
+
 // ============ Operand Types ============
 
 /**

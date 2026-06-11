@@ -30,7 +30,7 @@ import type {
   QuerySparseToDenseColumn,
   QuerySymmetricJoin,
   QueryTransformColumns,
-  TypeSpec,
+  ColumnTypeSpec,
 } from "./query_common";
 
 /**
@@ -42,8 +42,8 @@ import type {
 type ColumnIdAndTypeSpec = {
   /** Unique identifier of the column */
   id: PObjectId;
-  /** Type specification defining axes and column types */
-  spec: TypeSpec;
+  /** Type specification defining the axes and the single column value type */
+  spec: ColumnTypeSpec;
 };
 
 /**
