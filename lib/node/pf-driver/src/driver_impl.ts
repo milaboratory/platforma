@@ -65,6 +65,7 @@ import {
 } from "./pframe_pool";
 import { PTableDefPool } from "./ptable_def_pool";
 import { PTablePool } from "./ptable_pool";
+import { embedInlineColumnTypeSpecs } from "./ptable_shared";
 import {
   PTableCachePerFrame,
   PTableCachePerFrameOpsDefaults,
@@ -239,7 +240,9 @@ export class AbstractPFrameDriver<
     using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
     const pFrameSpec = this.pFrames.getByKey(pFrameGuard.key).pFrameSpec;
     const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
-    const { tableSpec, dataQuery } = pFrameSpec.evaluateQuery(sortedQuery);
+    const { tableSpec, dataQuery } = pFrameSpec.evaluateQuery(
+      embedInlineColumnTypeSpecs(sortedQuery),
+    );
 
     using pTableGuard = new PoolEntryGuard(
       this.pTableDefs.acquire({
