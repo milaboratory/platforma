@@ -233,10 +233,44 @@ groupColumnData := func(data, isolationIndices, batchKeyIndices, batchKeyLength,
 	return groups
 }
 
+/**
+ * Maps an Xsv output `storageFormat` to the PColumn data resource types used to
+ * wrap batch results: `partitioned` for a single scope / empty output,
+ * `superPartitioned` for multi-scope (isolation) collection.
+ *
+ * Mirrors the storageFormat branching in `:pframes.process-pcolumn-data` so the
+ * batch path honors `storageFormat` (Json/Binary/Parquet) instead of assuming
+ * Json. The per-scope `xsv.importFile` produces a `<format>Partitioned`; the
+ * super-partition wrapper must use the matching `<format>SuperPartitioned`.
+ *
+ * @param storageFormat  "Json" | "Binary" | "Parquet"
+ * @returns { partitioned, superPartitioned } resource type descriptors
+ */
+xsvDataResTypes := func(storageFormat) {
+	if storageFormat == "Binary" {
+		return {
+			partitioned: pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED,
+			superPartitioned: pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+		}
+	} else if storageFormat == "Json" {
+		return {
+			partitioned: pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+			superPartitioned: pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
+		}
+	} else if storageFormat == "Parquet" {
+		return {
+			partitioned: pConstants.RTYPE_P_COLUMN_DATA_PARQUET_PARTITIONED,
+			superPartitioned: pConstants.RTYPE_P_COLUMN_DATA_PARQUET_SUPER_PARTITIONED
+		}
+	}
+	ll.panic("Unknown storageFormat for batch Xsv output: %v (expected \"Json\", \"Binary\", or \"Parquet\")", storageFormat)
+}
+
 export ll.toStrict({
 	resolveData: resolveData,
 	classifyPColumnData: classifyPColumnData,
 	recordsInGroup: recordsInGroup,
 	forEachOutputField: forEachOutputField,
-	groupColumnData: groupColumnData
+	groupColumnData: groupColumnData,
+	xsvDataResTypes: xsvDataResTypes
 })

@@ -1,0 +1,58 @@
+// proc_batch_body_extra_axis — body template exercising additional axes on a
+// batch-mode Xsv output. Receives batch TSV content as __value__ (string) with
+// columns "key" (batch-key axis) + "heavyChain" (value). It splits every
+// sequence into two halves and emits one output row per half, introducing a new
+// "half" axis column (Long) that the body — not the input — produces. The Xsv
+// output declares "half" via settings.axes alongside batchKeyColumns: ["key"].
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+text := import("text")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchContent := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(batchContent) {
+		ll.panic("expected string batch content, got: %v", batchContent)
+	}
+
+	lines := text.split(batchContent, "\n")
+	for len(lines) > 0 && lines[len(lines) - 1] == "" {
+		lines = lines[:len(lines) - 1]
+	}
+
+	// Input header is "key\theavyChain"; output adds the new "half" axis column.
+	outLines := ["key\thalf\theavyChain"]
+	for i := 1; i < len(lines); i++ {
+		fields := text.split(lines[i], "\t")
+		key := fields[0]
+		seq := fields[1]
+		mid := len(seq) / 2
+		outLines = append(outLines, key + "\t0\t" + seq[:mid])
+		outLines = append(outLines, key + "\t1\t" + seq[mid:])
+	}
+	outContent := text.join(outLines, "\n") + "\n"
+
+	// hello-world is an identity run; the transformed file is written directly.
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(hwSoftware).
+		arg("a").
+		writeFile("batch.tsv", outContent).
+		saveFile("batch.tsv").
+		run()
+
+	return {
+		tsv: run.getFile("batch.tsv")
+	}
+})

@@ -5,6 +5,7 @@ import { getLongTestTimeout } from "@milaboratories/test-helpers";
 import { vi } from "vitest";
 import {
   createJsonData,
+  expectPanic,
   jsonParams,
   readJsonPartition,
   runBatch,
@@ -204,5 +205,96 @@ eTplTest.concurrent(
       const content = JSON.parse(Buffer.from(blob.content).toString());
       expect(Object.keys(content).length).toEqual(6);
     }
+  },
+);
+
+// Parquet storage + isolation exercises the storageFormat branching for the
+// super-partition wrapper (PColumnData/super/ParquetPartitioned). Before the
+// storageFormat fix the orchestrator hardcoded the Json super-partition type, so
+// a Parquet output with isolation produced a corrupt Json-wrapped resource.
+eTplTest.concurrent(
+  "batch mode: storageFormat=Parquet with isolation (super-partitioned)",
+  async ({ helper, expect, stHelper }) => {
+    const recs: Record<string, string> = {};
+    for (const sample of ["A", "B"]) {
+      for (let i = 0; i < 4; i++) recs[`["${sample}","k${i}"]`] = `${sample}${i}`;
+    }
+
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        primaryEntries: [{ spec: twoAxisSpec, dataInputName: "data", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [{ type: "Xsv", name: "tsv", xsvType: "parquet", settings: parquetXsvSettings }],
+        batch: { size: 2, keyColumns: ["key"], format: "parquet", passContent: false },
+      }),
+      data: createJsonData(tx, 2, recs),
+    }));
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    // Super-partitioned by sampleId, and the storage type must be Parquet (not Json).
+    expect(hcData.resourceType.name).toContain("Parquet");
+    expect(Object.keys(hcData.inputs).sort()).toEqual(['["A"]', '["B"]']);
+  },
+);
+
+// storageFormat now defaults to "Parquet" (omitted in settings).
+const xsvSettingsNoStorageFormat = {
+  batchKeyColumns: ["key"],
+  columns: [
+    { column: "heavyChain", id: "heavyChain", spec: { valueType: "String", name: "heavyChain" } },
+  ],
+} as const;
+
+eTplTest.concurrent(
+  "batch mode: storageFormat defaults to Parquet when omitted",
+  async ({ helper, expect, stHelper }) => {
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [
+          { type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsNoStorageFormat },
+        ],
+        batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+      }),
+      data: createJsonData(tx, 1, { '["k1"]': "EVQL", '["k2"]': "QVQL" }),
+    }));
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    expect(hcData.resourceType.name).toContain("Parquet");
+  },
+);
+
+// An unknown storageFormat must be rejected up front.
+const xsvSettingsBadStorageFormat = {
+  batchKeyColumns: ["key"],
+  columns: [
+    { column: "heavyChain", id: "heavyChain", spec: { valueType: "String", name: "heavyChain" } },
+  ],
+  storageFormat: "Avro",
+} as const;
+
+eTplTest.concurrent(
+  "batch mode: invalid storageFormat is rejected",
+  async ({ helper, expect, stHelper }) => {
+    await expectPanic(
+      helper,
+      stHelper,
+      expect,
+      (tx) => ({
+        params: jsonParams(tx, {
+          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data", header: "heavyChain" }],
+          primaryJoin: "full",
+          outputs: [
+            { type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBadStorageFormat },
+          ],
+          batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
+        }),
+        data: createJsonData(tx, 1, { '["k1"]': "EVQL", '["k2"]': "QVQL" }),
+      }),
+      /invalid storageFormat/,
+    );
   },
 );
