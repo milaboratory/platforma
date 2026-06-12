@@ -18,6 +18,7 @@ import {
   PlTemplateOverrideV1,
   PlTemplateSoftwareV1,
   PlTemplateV1,
+  PlWasmV1,
 } from "@milaboratories/pl-model-backend";
 import type {
   CompiledTemplateV3,
@@ -27,6 +28,7 @@ import type {
   TemplateLibDataV3,
   TemplateSoftwareData,
   TemplateSoftwareDataV3,
+  TemplateWasmDataV3,
 } from "@milaboratories/pl-model-backend";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { BlockPackSpecPrepared } from "../../model";
@@ -147,6 +149,16 @@ function hashSoftwareV3(sw: TemplateSoftwareDataV3): string {
     .update(sw.name)
     .update(sw.version)
     .update(sw.sourceHash)
+    .digest("hex");
+}
+
+function hashWasmV3(wasm: TemplateWasmDataV3): string {
+  return createHash("sha256")
+    .update(PlWasmV1.type.name)
+    .update(PlWasmV1.type.version)
+    .update(wasm.name)
+    .update(wasm.version)
+    .update(wasm.sourceHash)
     .digest("hex");
 }
 
@@ -316,6 +328,25 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
     return hash;
   }
 
+  function processWasm(wasm: TemplateWasmDataV3): string {
+    const hash = hashWasmV3(wasm);
+    if (!seen.has(hash)) {
+      seen.add(hash);
+      nodes.push({
+        hash,
+        create: (tx) =>
+          tx.createValue(
+            PlWasmV1.type,
+            JSON.stringify(
+              PlWasmV1.fromV3Data(wasm, getSourceCode(wasm.name, sources, wasm.sourceHash)).data,
+            ),
+          ),
+        childHashes: [],
+      });
+    }
+    return hash;
+  }
+
   function processTemplate(tpl: TemplateDataV3): string {
     // Process children first (bottom-up)
     const childHashes: string[] = [];
@@ -340,6 +371,11 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
       const h = processTemplate(sub);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.tplPrefix}/${tplId}`, hash: h });
+    }
+    for (const [wasmId, wasm] of Object.entries(tpl.wasm ?? {})) {
+      const h = processWasm(wasm);
+      childHashes.push(h);
+      children.push({ fieldName: `${PlTemplateV1.wasmPrefix}/${wasmId}`, hash: h });
     }
 
     // Compose hash from own content + child hash strings (NOT child content).
