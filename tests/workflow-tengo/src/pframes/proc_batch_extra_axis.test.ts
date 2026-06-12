@@ -136,3 +136,51 @@ eTplTest.concurrent(
     );
   },
 );
+
+// Additional axes via the passContent=false route: the body receives a Blob
+// batch file (pt-sliced from a saved frame, not in-memory line slicing) and
+// appends a constant "tag" axis via pt. Verifies the slice → body → concat →
+// import pipeline still produces correct 2-component keys [key, tag].
+const xsvSettingsTagAxis = {
+  batchKeyColumns: ["key"],
+  axes: [{ column: "tag", spec: { name: "tag", type: "String" } }],
+  columns: [
+    { column: "heavyChain", id: "heavyChain", spec: { valueType: "String", name: "heavyChain" } },
+  ],
+  storageFormat: "Json",
+} as const;
+
+eTplTest.concurrent(
+  "batch mode: additional axis via passContent=false (pt-slicing path)",
+  async ({ helper, expect, stHelper }) => {
+    // 3 records, batch size 2 → 2 batches, so the per-scope concat path is hit.
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "extraAxisBlob",
+        primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsTagAxis }],
+        batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: false },
+      }),
+      data1: createJsonData(tx, 1, { '["k1"]': "EVQL", '["k2"]': "QVQL", '["k3"]': "DIQM" }),
+    }));
+
+    expect(theResult.resourceType.name).toEqual("PFrame");
+
+    const hcSpecRes = theResult.inputs["tsv.heavyChain.spec"];
+    assertJson(hcSpecRes);
+    const hcSpec = hcSpecRes.content as PColumnSpec;
+    expect(hcSpec.axesSpec).toHaveLength(2);
+    expect(hcSpec.axesSpec[0]).toMatchObject({ name: "key", type: "String" });
+    expect(hcSpec.axesSpec[1]).toMatchObject({ name: "tag", type: "String" });
+
+    const hcData = theResult.inputs["tsv.heavyChain.data"];
+    assertResource(hcData);
+    const content = readJsonPartition(hcData);
+    expect(content).toMatchObject({
+      '["k1","a"]': "EVQL",
+      '["k2","a"]': "QVQL",
+      '["k3","a"]': "DIQM",
+    });
+  },
+);
