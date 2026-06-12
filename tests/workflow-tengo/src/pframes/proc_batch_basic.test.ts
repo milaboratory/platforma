@@ -117,6 +117,10 @@ eTplTest.concurrent(
     const hcData = theResult.inputs["tsv.heavyChain.data"];
     assertResource(hcData);
     expect(hcData.resourceType.name).toEqual("PColumnData/JsonPartitioned");
+    // Well-formed empty column: zero parts (no partition input fields). The
+    // resource carries only partitionKeyLength in its data; parts are input
+    // fields, so an empty column simply has none.
+    expect(Object.keys(hcData.inputs).length).toEqual(0);
   },
 );
 
