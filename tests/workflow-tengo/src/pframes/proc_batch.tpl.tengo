@@ -11,6 +11,8 @@ bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
 bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
 bodyTplResourceMap := assets.importTemplate(":pframes.proc_batch_body_resource_map")
 bodyTplNdjson := assets.importTemplate(":pframes.proc_batch_body_ndjson")
+bodyTplExtraAxis := assets.importTemplate(":pframes.proc_batch_body_extra_axis")
+bodyTplExtraAxisBlob := assets.importTemplate(":pframes.proc_batch_body_extra_axis_blob")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -21,13 +23,19 @@ self.body(func(inputs) {
 	// Select body template:
 	// - params.bodyMode == "resourceMap" → body returns a ResourceMap keyed by batch key
 	// - params.bodyMode == "ndjson"      → body parses NDJSON content via pt, writes parquet
-	// - params.batch.passContent=false   → body treats __value__ as a Blob file ref
-	// - default                          → body reads __value__ as a content string
+	// - params.bodyMode == "extraAxis"     → body emits a new "half" axis column (passContent=true)
+	// - params.bodyMode == "extraAxisBlob" → body appends a "tag" axis via pt (passContent=false)
+	// - params.batch.passContent=false     → body treats __value__ as a Blob file ref
+	// - default                            → body reads __value__ as a content string
 	bodyTpl := bodyTplContent
 	if params.bodyMode == "resourceMap" {
 		bodyTpl = bodyTplResourceMap
 	} else if params.bodyMode == "ndjson" {
 		bodyTpl = bodyTplNdjson
+	} else if params.bodyMode == "extraAxis" {
+		bodyTpl = bodyTplExtraAxis
+	} else if params.bodyMode == "extraAxisBlob" {
+		bodyTpl = bodyTplExtraAxisBlob
 	} else if !is_undefined(params.batch.passContent) && !params.batch.passContent {
 		bodyTpl = bodyTplBlob
 	}

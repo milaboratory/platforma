@@ -230,11 +230,15 @@ self.body(func(inputs) {
 				})
 			)
 		} else if output.type == "Xsv" {
+			// The body's per-scope file embeds the full (batch-key + additional)
+			// axis tuple as in-jdata keys; the inner key length equals the number
+			// of declared import axes, not just the batch keys. The super-partition
+			// resource type must match the import's storageFormat (Json/Binary/Parquet).
 			outputMaps[key] = smart.structBuilder(
-				pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
+				batchHelpers.xsvDataResTypes(output.settings.storageFormat).superPartitioned,
 				json.encode({
 					superPartitionKeyLength: isolationKeyLength,
-					partitionKeyLength: batchKeyLength
+					partitionKeyLength: len(output.settings.axes)
 				})
 			)
 		}
@@ -429,9 +433,11 @@ self.body(func(inputs) {
 				json.encode({ keyLength: batchKeyLength + output.keyLength })
 			).lockAndBuild()
 		} else if output.type == "Xsv" {
+			// Empty column still declares the full (batch-key + additional) key arity,
+			// in the output's declared storageFormat.
 			result[key] = smart.structBuilder(
-				pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
-				json.encode({ partitionKeyLength: batchKeyLength })
+				batchHelpers.xsvDataResTypes(output.settings.storageFormat).partitioned,
+				json.encode({ partitionKeyLength: len(output.settings.axes) })
 			).lockAndBuild()
 		}
 	})

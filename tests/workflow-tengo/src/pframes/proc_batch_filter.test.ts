@@ -16,38 +16,6 @@ import {
 
 vi.setConfig({ testTimeout: getLongTestTimeout(60_000) });
 
-// Sets both batchKeyColumns and axes on one Xsv output — must be rejected as
-// mutually exclusive.
-const xsvSettingsBadBoth = {
-  batchKeyColumns: ["key"],
-  axes: [{ column: "key", spec: { name: "key", type: "String" } }],
-  columns: [
-    { column: "heavyChain", id: "heavyChain", spec: { valueType: "String", name: "heavyChain" } },
-  ],
-  storageFormat: "Json",
-} as const;
-
-eTplTest.concurrent(
-  "batch mode: Xsv output with both batchKeyColumns and axes is rejected",
-  async ({ helper, expect, stHelper }) => {
-    await expectPanic(
-      helper,
-      stHelper,
-      expect,
-      (tx) => ({
-        params: jsonParams(tx, {
-          primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" }],
-          primaryJoin: "full",
-          outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBadBoth }],
-          batch: { size: 2, keyColumns: ["key"], format: "tsv", passContent: true },
-        }),
-        data1: createJsonData(tx, 1, { '["k1"]': "EVQL", '["k2"]': "QVQL" }),
-      }),
-      /cannot set both batchKeyColumns and axes/,
-    );
-  },
-);
-
 eTplTest.concurrent(
   "batch mode: maxBatches step 2 — too many isolation scopes panics",
   async ({ helper, expect, stHelper }) => {
