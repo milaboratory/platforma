@@ -276,13 +276,26 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 				_outputHeaders[axis.column] = "additional axis"
 			}
 
+			// Resolve the storage format explicitly so the per-scope xsv import and
+			// the super-partition wrappers (orchestrator/split) agree on the resource
+			// type. Default to "Parquet" — columnar storage scales linearly, whereas
+			// Json single-partition import is O(n²) in pfconv for large outputs.
+			storageFormat := output.settings.storageFormat
+			if is_undefined(storageFormat) {
+				storageFormat = "Parquet"
+			}
+			ll.assert(storageFormat == "Json" || storageFormat == "Binary" || storageFormat == "Parquet",
+				"Xsv output %q has invalid storageFormat %q; expected \"Json\", \"Binary\", or \"Parquet\"",
+				output.name, storageFormat)
+
 			// Pin partitionKeyLength=0: pfconv MUST have partitionKeyLength < len(axes);
-			// with 0 it embeds all rows as a single "[]" partition whose JSON maps the
-			// full (batch-key + additional) axis tuple → column_value.
+			// with 0 it embeds all rows as a single "[]" partition keyed by the full
+			// (batch-key + additional) axis tuple → column_value.
 			modifiedSettings := maps.merge(output.settings, {
 				axes: batchAxes + additionalAxes,
 				batchKeyColumns: undefined,
-				partitionKeyLength: 0
+				partitionKeyLength: 0,
+				storageFormat: storageFormat
 			})
 			decomposition := pUtil.decomposePfconvImportCfg(modifiedSettings, {
 				additionalAxesSpec: iterationAxesSpec
