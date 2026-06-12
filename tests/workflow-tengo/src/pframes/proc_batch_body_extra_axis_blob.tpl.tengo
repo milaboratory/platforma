@@ -1,0 +1,29 @@
+// proc_batch_body_extra_axis_blob — passContent=false counterpart of
+// proc_batch_body_extra_axis. Receives __value__ as a Blob batch file (not a
+// string), so it can't transform in Tengo; instead it uses pt to append a
+// constant additional-axis column ("tag"). This exercises the passContent=false
+// route (pt slice of a saved Blob → body → concat → import) with additional axes,
+// verifying the pipeline still emits correct 2-component keys.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchFile := inputs[pConstants.VALUE_FIELD_NAME]
+
+	// Batch file columns: "key" (batch-key axis) + "heavyChain" (value).
+	// Append a constant "tag" column — the body-produced additional axis.
+	wf := pt.workflow()
+	df := wf.frame(batchFile, { xsvType: "tsv" })
+	df.withColumns(pt.lit("a").alias("tag")).save("out.tsv", { format: "tsv" })
+	res := wf.run()
+
+	return {
+		tsv: res.getFile("out.tsv")
+	}
+})
