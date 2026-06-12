@@ -255,25 +255,38 @@ processColumnBatch := func(input, bodyTpl, outputs, opts) {
 
 			additionalAxes := slices.normalize(output.settings.axes)
 
-			// The body emits batch-key axis columns, additional-axis columns, and
-			// value columns into one file; their XSV header names (the `column`
-			// field — not the output `id`) must all be distinct or the xsv import
-			// would read two columns under the same header. Reserve this output's
-			// own batch-key axis headers and value headers, then check each
-			// additional axis header against them and against each other.
+			// Two distinct namespaces must each stay collision-free:
+			//   - `column`    — the XSV header pfconv reads (batch-key axes,
+			//                   additional axes, and value columns share one file).
+			//   - `spec.name` — the axis identifier in the output axesSpec
+			//                   ([isolation…, batchKey…, additional…]); a duplicate
+			//                   name would give the PColumn two axes with the same id.
+			// Batch-key axes use their axis name for both. Seed each namespace with
+			// the pre-existing entries, then check every additional axis.
 			_outputHeaders := {}
+			_axisNames := {}
+			for axSpec in isolationAxesSpec {
+				_axisNames[axSpec.name] = "isolation axis"
+			}
 			for axName in batchKeyColumnsNames {
 				_outputHeaders[axName] = "batch-key axis"
+				_axisNames[axName] = "batch-key axis"
 			}
 			for col in output.settings.columns {
 				_outputHeaders[col.column] = "value column"
 			}
 			for axis in additionalAxes {
-				prior := _outputHeaders[axis.column]
-				ll.assert(is_undefined(prior),
+				priorHeader := _outputHeaders[axis.column]
+				ll.assert(is_undefined(priorHeader),
 					"Xsv output %q: additional axis column %q collides with %s of the same name; rename one of them",
-					output.name, axis.column, prior)
+					output.name, axis.column, priorHeader)
 				_outputHeaders[axis.column] = "additional axis"
+
+				priorName := _axisNames[axis.spec.name]
+				ll.assert(is_undefined(priorName),
+					"Xsv output %q: additional axis %q has spec.name %q colliding with %s; give every axis a unique name",
+					output.name, axis.column, axis.spec.name, priorName)
+				_axisNames[axis.spec.name] = "additional axis"
 			}
 
 			// Resolve the storage format explicitly so the per-scope xsv import and
