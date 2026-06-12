@@ -150,3 +150,38 @@ for (const fixture of FIXTURES) {
     expect(JSON.parse(JSON.stringify(tengoOutput))).toEqual(JSON.parse(JSON.stringify(wasmOutput)));
   });
 }
+
+// Cross-check the wasm-backed `:pframes.build-query-wasm` lib against the
+// same SpecDriver. Same fixtures, different SDK lib — proves the wasm
+// wrapper produces an identical SpecQueryJoinEntry shape, including the
+// synthetic placeholder spec stamped on path steps that omit it.
+for (const fixture of FIXTURES) {
+  eTplTest.concurrent(
+    `buildQuery (wasm lib): ${fixture.name}`,
+    async ({ helper, expect, stHelper }) => {
+      const result = await helper.renderTemplate(
+        true,
+        "pframes.build-query-wasm",
+        ["result"],
+        (tx) => ({
+          params: tx.createValue(Pl.JsonObject, JSON.stringify(fixture.input)),
+        }),
+      );
+
+      const r = stHelper.tree(result.resultEntry);
+      const finalResult = await awaitStableState(r, TIMEOUT);
+      assertResource(finalResult);
+
+      const wasmLibNode = finalResult.inputs["result"];
+      assertJson(wasmLibNode);
+      const wasmLibOutput = wasmLibNode.content;
+
+      await using driver = new SpecDriver();
+      const driverOutput = driver.buildQuery(fixture.input);
+
+      expect(JSON.parse(JSON.stringify(wasmLibOutput))).toEqual(
+        JSON.parse(JSON.stringify(driverOutput)),
+      );
+    },
+  );
+}

@@ -1,0 +1,92 @@
+/**
+ * Wasm-backed counterpart to `:pframes.build-query`. Routes through
+ * `assets.importWasm` so the SpecQueryJoinEntry tree is built by the
+ * rust source-of-truth in
+ * pframes-rs/packages/spec/src/requests/build_query/{logic,request}.rs.
+ *
+ * Public API mirrors `:pframes.build-query` exactly:
+ *   `buildQuery(input) -> map`
+ *
+ * Why a separate file rather than swapping the impl behind the same path:
+ * importing `assets.importWasm("@milaboratories/pframes-rs-wasip2:main")`
+ * from a library transitively pulled in by `workflow/index.lib.tengo` would
+ * bundle the wasm component bytes into every block's `.plj.gz`. That
+ * cascades into the platform-side template-cache deduplication path
+ * (cached vs legacy upload produce different content hashes when wasm
+ * assets are present in the pack). Keep the wasm-backed entry point in
+ * its own library; callers opt in explicitly.
+ */
+
+ll := import(":ll")
+assets := import(":assets")
+maps := import(":maps")
+json := import("json")
+
+// Wasm-side serde requires `spec` on every linker/filter step's
+// `ColumnIdAndSpec`, but `BuildQuery::execute()` reads only `columnId` —
+// `spec` content is discarded (see
+// pframes-rs/packages/spec/src/requests/build_query/logic.rs:39,42). The
+// pure-Tengo `:pframes.build-query` impl tolerates steps with just
+// `columnId`; preserve that here by stamping a synthetic placeholder on
+// missing specs before serialising.
+placeholderSpec := {
+	kind: "PColumn",
+	name: "_buildQuery_unused",
+	valueType: "Int",
+	axesSpec: [{ name: "_buildQuery_unused", type: "Int" }]
+}
+
+normaliseStep := func(step) {
+	if step.type == "linker" && !is_undefined(step.linker) && is_undefined(step.linker.spec) {
+		return maps.merge(step, {
+			linker: maps.merge(step.linker, { spec: placeholderSpec })
+		})
+	}
+	if step.type == "filter" && !is_undefined(step.filter) && is_undefined(step.filter.spec) {
+		return maps.merge(step, {
+			filter: maps.merge(step.filter, { spec: placeholderSpec })
+		})
+	}
+	return step
+}
+
+/**
+ * Assembles a SpecQueryJoinEntry from a BuildQueryInput-shaped map.
+ * Input schema mirrors `pframes-rs::BuildQueryInput`:
+ *   - version: "v1" — required.
+ *   - column: string — terminal column id.
+ *   - path?: step entries; path[0] is outermost. Each step is
+ *     {type: "linker", linker: {columnId, spec?, ...}} or
+ *     {type: "filter", filter: {columnId, spec?, ...}}.
+ *   - qualifications?: AxisQualification list attached to the outermost
+ *     emitted entry.
+ *
+ * The `spec` field on step `linker`/`filter` is optional: if omitted,
+ * the SDK stamps a placeholder so the wasm-side serde accepts the
+ * payload. `spec` content has no effect on the result tree — only
+ * `columnId` is read.
+ *
+ * Returns a Tengo map matching the SpecQueryJoinEntry JSON shape.
+ *
+ * @param input: map - BuildQueryInput-shaped value.
+ * @return entry: map - decoded SpecQueryJoinEntry.
+ */
+buildQuery := func(input) {
+	ll.assert(ll.isMap(input), "buildQuery: input must be a map, got %v", input)
+	payload := input
+	if !is_undefined(input.path) && len(input.path) > 0 {
+		newPath := []
+		for step in input.path {
+			newPath = append(newPath, normaliseStep(step))
+		}
+		payload = maps.merge(input, { path: newPath })
+	}
+
+	wasm := assets.importWasm("@milaboratories/pframes-rs-wasip2:main")["milaboratories:pframes/spec"]
+	respJson := wasm.frame.buildQuery(string(json.encode(payload)))
+	return json.decode(respJson)
+}
+
+export ll.toStrict({
+	buildQuery: buildQuery
+})
