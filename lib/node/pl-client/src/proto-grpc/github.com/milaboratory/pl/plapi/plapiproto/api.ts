@@ -540,6 +540,12 @@ export interface TxAPI_ClientMessage {
          */
         revokeAccess: AuthAPI_RevokeAccess_Request; // revoke access to a resource within transaction
     } | {
+        oneofKind: "listGrants";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants = 412
+         */
+        listGrants: AuthAPI_ListGrants_Request; // list grants on a resource within transaction
+    } | {
         oneofKind: undefined;
     };
 }
@@ -928,6 +934,12 @@ export interface TxAPI_ServerMessage {
          * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.RevokeAccess.Response revoke_access = 411
          */
         revokeAccess: AuthAPI_RevokeAccess_Response;
+    } | {
+        oneofKind: "listGrants";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants = 412
+         */
+        listGrants: AuthAPI_ListGrants_TxResponse;
     } | {
         oneofKind: undefined;
     };
@@ -3992,6 +4004,15 @@ export interface AuthAPI_ListGrants_Response {
     grant?: AuthAPI_Grant; // one per stream message
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse
+ */
+export interface AuthAPI_ListGrants_TxResponse {
+    /**
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.AuthAPI.Grant grants = 1
+     */
+    grants: AuthAPI_Grant[]; // all grants for the resource in a single transactional response
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.Grant
  */
 export interface AuthAPI_Grant {
@@ -4189,6 +4210,41 @@ export interface AuthAPI_ListUserResources_SharedResource {
     permissions?: AuthAPI_Grant_Permissions;
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.User
+ */
+export interface AuthAPI_User {
+    /**
+     * login is the stable identifier of the user — the grant target and the
+     * GetUserRoot key. Further fields (e.g. first name, last name, email) may
+     * be added later without breaking compatibility.
+     *
+     * @generated from protobuf field: string login = 1
+     */
+    login: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
+ */
+export interface AuthAPI_ListUsers {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Request
+ */
+export interface AuthAPI_ListUsers_Request {
+}
+/**
+ * Lists users known to the server. A user becomes known on first login;
+ * provisioned users who have never logged in do not appear.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Response
+ */
+export interface AuthAPI_ListUsers_Response {
+    /**
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.AuthAPI.User users = 1
+     */
+    users: AuthAPI_User[];
+}
+/**
  * @generated from protobuf enum MiLaboratories.PL.API.AuthAPI.Role
  */
 export enum AuthAPI_Role {
@@ -4362,6 +4418,72 @@ export interface MaintenanceAPI_License_Response {
     responseBody: Uint8Array;
 }
 /**
+ * CommandAPI groups all message types used by the command-bus RPCs
+ * (Query and Mutation). The proto contract is frozen; future commands
+ * are added by registering new handler names on the server — no proto
+ * changes are needed.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.CommandAPI
+ */
+export interface CommandAPI {
+}
+/**
+ * Command carries a named command with an optional JSON payload.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.CommandAPI.Command
+ */
+export interface CommandAPI_Command {
+    /**
+     * name identifies the registered handler (e.g. "users.list").
+     * Must be non-empty.
+     *
+     * @generated from protobuf field: string name = 1
+     */
+    name: string;
+    /**
+     * payload is an opaque JSON object passed verbatim to the handler.
+     * May be empty when a command takes no arguments.
+     *
+     * @generated from protobuf field: bytes payload = 2
+     */
+    payload: Uint8Array;
+}
+/**
+ * CmdError is a structured application-level error returned inside
+ * CommandResult. It is separate from gRPC status codes, which are
+ * reserved for transport-level failures.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.CommandAPI.CmdError
+ */
+export interface CommandAPI_CmdError {
+    /**
+     * @generated from protobuf field: string message = 1
+     */
+    message: string;
+    /**
+     * @generated from protobuf field: string code = 2
+     */
+    code: string;
+}
+/**
+ * CommandResult carries the JSON response from a handler and any
+ * application-level errors it produced.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.CommandAPI.CommandResult
+ */
+export interface CommandAPI_CommandResult {
+    /**
+     * data is the JSON-encoded result. Empty when errors is non-empty.
+     *
+     * @generated from protobuf field: bytes data = 1
+     */
+    data: Uint8Array;
+    /**
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.CommandAPI.CmdError errors = 2
+     */
+    errors: CommandAPI_CmdError[];
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.Util
  */
 export interface Util {
@@ -4474,7 +4596,8 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 351, name: "controller_features_clear", kind: "message", oneof: "request", T: () => ControllerAPI_ClearFeatures_Request },
             { no: 400, name: "set_default_color", kind: "message", oneof: "request", T: () => TxAPI_SetDefaultColor_Request },
             { no: 410, name: "grant_access", kind: "message", oneof: "request", T: () => AuthAPI_GrantAccess_Request },
-            { no: 411, name: "revoke_access", kind: "message", oneof: "request", T: () => AuthAPI_RevokeAccess_Request }
+            { no: 411, name: "revoke_access", kind: "message", oneof: "request", T: () => AuthAPI_RevokeAccess_Request },
+            { no: 412, name: "list_grants", kind: "message", oneof: "request", T: () => AuthAPI_ListGrants_Request }
         ]);
     }
     create(value?: PartialMessage<TxAPI_ClientMessage>): TxAPI_ClientMessage {
@@ -4859,6 +4982,12 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         revokeAccess: AuthAPI_RevokeAccess_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).revokeAccess)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants */ 412:
+                    message.request = {
+                        oneofKind: "listGrants",
+                        listGrants: AuthAPI_ListGrants_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).listGrants)
+                    };
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -5057,6 +5186,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.AuthAPI.RevokeAccess.Request revoke_access = 411; */
         if (message.request.oneofKind === "revokeAccess")
             AuthAPI_RevokeAccess_Request.internalBinaryWrite(message.request.revokeAccess, writer.tag(411, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants = 412; */
+        if (message.request.oneofKind === "listGrants")
+            AuthAPI_ListGrants_Request.internalBinaryWrite(message.request.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -5134,6 +5266,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 400, name: "set_default_color", kind: "message", oneof: "response", T: () => TxAPI_SetDefaultColor_Response },
             { no: 410, name: "grant_access", kind: "message", oneof: "response", T: () => AuthAPI_GrantAccess_Response },
             { no: 411, name: "revoke_access", kind: "message", oneof: "response", T: () => AuthAPI_RevokeAccess_Response },
+            { no: 412, name: "list_grants", kind: "message", oneof: "response", T: () => AuthAPI_ListGrants_TxResponse },
             { no: 3, name: "error", kind: "message", T: () => Status }
         ]);
     }
@@ -5522,6 +5655,12 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         revokeAccess: AuthAPI_RevokeAccess_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).revokeAccess)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants */ 412:
+                    message.response = {
+                        oneofKind: "listGrants",
+                        listGrants: AuthAPI_ListGrants_TxResponse.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).listGrants)
+                    };
+                    break;
                 case /* google.rpc.Status error */ 3:
                     message.error = Status.internalBinaryRead(reader, reader.uint32(), options, message.error);
                     break;
@@ -5729,6 +5868,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.AuthAPI.RevokeAccess.Response revoke_access = 411; */
         if (message.response.oneofKind === "revokeAccess")
             AuthAPI_RevokeAccess_Response.internalBinaryWrite(message.response.revokeAccess, writer.tag(411, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants = 412; */
+        if (message.response.oneofKind === "listGrants")
+            AuthAPI_ListGrants_TxResponse.internalBinaryWrite(message.response.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -19063,6 +19205,53 @@ class AuthAPI_ListGrants_Response$Type extends MessageType<AuthAPI_ListGrants_Re
  */
 export const AuthAPI_ListGrants_Response = new AuthAPI_ListGrants_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListGrants_TxResponse$Type extends MessageType<AuthAPI_ListGrants_TxResponse> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse", [
+            { no: 1, name: "grants", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => AuthAPI_Grant }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListGrants_TxResponse>): AuthAPI_ListGrants_TxResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.grants = [];
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListGrants_TxResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListGrants_TxResponse): AuthAPI_ListGrants_TxResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated MiLaboratories.PL.API.AuthAPI.Grant grants */ 1:
+                    message.grants.push(AuthAPI_Grant.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListGrants_TxResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated MiLaboratories.PL.API.AuthAPI.Grant grants = 1; */
+        for (let i = 0; i < message.grants.length; i++)
+            AuthAPI_Grant.internalBinaryWrite(message.grants[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse
+ */
+export const AuthAPI_ListGrants_TxResponse = new AuthAPI_ListGrants_TxResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_Grant$Type extends MessageType<AuthAPI_Grant> {
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.Grant", [
@@ -19775,6 +19964,176 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
  */
 export const AuthAPI_ListUserResources_SharedResource = new AuthAPI_ListUserResources_SharedResource$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.User", [
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_User>): AuthAPI_User {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.login = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_User>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_User): AuthAPI_User {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string login */ 1:
+                    message.login = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_User, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string login = 1; */
+        if (message.login !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.login);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.User
+ */
+export const AuthAPI_User = new AuthAPI_User$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers$Type extends MessageType<AuthAPI_ListUsers> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers>): AuthAPI_ListUsers {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers): AuthAPI_ListUsers {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
+ */
+export const AuthAPI_ListUsers = new AuthAPI_ListUsers$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers_Request$Type extends MessageType<AuthAPI_ListUsers_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers.Request", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers_Request>): AuthAPI_ListUsers_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers_Request): AuthAPI_ListUsers_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Request
+ */
+export const AuthAPI_ListUsers_Request = new AuthAPI_ListUsers_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers_Response$Type extends MessageType<AuthAPI_ListUsers_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers.Response", [
+            { no: 1, name: "users", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => AuthAPI_User }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers_Response>): AuthAPI_ListUsers_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.users = [];
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers_Response): AuthAPI_ListUsers_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated MiLaboratories.PL.API.AuthAPI.User users */ 1:
+                    message.users.push(AuthAPI_User.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated MiLaboratories.PL.API.AuthAPI.User users = 1; */
+        for (let i = 0; i < message.users.length; i++)
+            AuthAPI_User.internalBinaryWrite(message.users[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Response
+ */
+export const AuthAPI_ListUsers_Response = new AuthAPI_ListUsers_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class MiscAPI$Type extends MessageType<MiscAPI> {
     constructor() {
         super("MiLaboratories.PL.API.MiscAPI", []);
@@ -20292,6 +20651,209 @@ class MaintenanceAPI_License_Response$Type extends MessageType<MaintenanceAPI_Li
  */
 export const MaintenanceAPI_License_Response = new MaintenanceAPI_License_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class CommandAPI$Type extends MessageType<CommandAPI> {
+    constructor() {
+        super("MiLaboratories.PL.API.CommandAPI", []);
+    }
+    create(value?: PartialMessage<CommandAPI>): CommandAPI {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<CommandAPI>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CommandAPI): CommandAPI {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: CommandAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.CommandAPI
+ */
+export const CommandAPI = new CommandAPI$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class CommandAPI_Command$Type extends MessageType<CommandAPI_Command> {
+    constructor() {
+        super("MiLaboratories.PL.API.CommandAPI.Command", [
+            { no: 1, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "payload", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<CommandAPI_Command>): CommandAPI_Command {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.name = "";
+        message.payload = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<CommandAPI_Command>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CommandAPI_Command): CommandAPI_Command {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string name */ 1:
+                    message.name = reader.string();
+                    break;
+                case /* bytes payload */ 2:
+                    message.payload = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: CommandAPI_Command, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string name = 1; */
+        if (message.name !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.name);
+        /* bytes payload = 2; */
+        if (message.payload.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.payload);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.CommandAPI.Command
+ */
+export const CommandAPI_Command = new CommandAPI_Command$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class CommandAPI_CmdError$Type extends MessageType<CommandAPI_CmdError> {
+    constructor() {
+        super("MiLaboratories.PL.API.CommandAPI.CmdError", [
+            { no: 1, name: "message", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "code", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<CommandAPI_CmdError>): CommandAPI_CmdError {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.message = "";
+        message.code = "";
+        if (value !== undefined)
+            reflectionMergePartial<CommandAPI_CmdError>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CommandAPI_CmdError): CommandAPI_CmdError {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string message */ 1:
+                    message.message = reader.string();
+                    break;
+                case /* string code */ 2:
+                    message.code = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: CommandAPI_CmdError, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string message = 1; */
+        if (message.message !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.message);
+        /* string code = 2; */
+        if (message.code !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.code);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.CommandAPI.CmdError
+ */
+export const CommandAPI_CmdError = new CommandAPI_CmdError$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class CommandAPI_CommandResult$Type extends MessageType<CommandAPI_CommandResult> {
+    constructor() {
+        super("MiLaboratories.PL.API.CommandAPI.CommandResult", [
+            { no: 1, name: "data", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "errors", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => CommandAPI_CmdError }
+        ]);
+    }
+    create(value?: PartialMessage<CommandAPI_CommandResult>): CommandAPI_CommandResult {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.data = new Uint8Array(0);
+        message.errors = [];
+        if (value !== undefined)
+            reflectionMergePartial<CommandAPI_CommandResult>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CommandAPI_CommandResult): CommandAPI_CommandResult {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* bytes data */ 1:
+                    message.data = reader.bytes();
+                    break;
+                case /* repeated MiLaboratories.PL.API.CommandAPI.CmdError errors */ 2:
+                    message.errors.push(CommandAPI_CmdError.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: CommandAPI_CommandResult, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* bytes data = 1; */
+        if (message.data.length)
+            writer.tag(1, WireType.LengthDelimited).bytes(message.data);
+        /* repeated MiLaboratories.PL.API.CommandAPI.CmdError errors = 2; */
+        for (let i = 0; i < message.errors.length; i++)
+            CommandAPI_CmdError.internalBinaryWrite(message.errors[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.CommandAPI.CommandResult
+ */
+export const CommandAPI_CommandResult = new CommandAPI_CommandResult$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class Util$Type extends MessageType<Util> {
     constructor() {
         super("MiLaboratories.PL.API.Util", []);
@@ -20405,7 +20967,10 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "MintSignature", options: { "google.api.http": { post: "/v1/auth/mint-signature", body: "*" } }, I: AuthAPI_MintSignature_Request, O: AuthAPI_MintSignature_Response },
     { name: "GetUserRoot", options: { "google.api.http": { post: "/v1/auth/user-root", body: "*" } }, I: AuthAPI_GetUserRoot_Request, O: AuthAPI_GetUserRoot_Response },
     { name: "ListUserResources", serverStreaming: true, options: {}, I: AuthAPI_ListUserResources_Request, O: AuthAPI_ListUserResources_Response },
+    { name: "ListUsers", options: {}, I: AuthAPI_ListUsers_Request, O: AuthAPI_ListUsers_Response },
     { name: "ListResourceTypes", options: { "google.api.http": { get: "/v1/resource-types" } }, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
     { name: "Ping", options: { "google.api.http": { get: "/v1/ping" } }, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
-    { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }
+    { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response },
+    { name: "Query", options: { "google.api.http": { post: "/v1/command/query", body: "*" } }, I: CommandAPI_Command, O: CommandAPI_CommandResult },
+    { name: "Mutation", options: { "google.api.http": { post: "/v1/command/mutation", body: "*" } }, I: CommandAPI_Command, O: CommandAPI_CommandResult }
 ]);

@@ -4,2239 +4,2390 @@
  */
 
 export interface paths {
-  "/v1/auth/grant-access": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/grant-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_GrantAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_GrantAccess"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/jwt-token": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/jwt-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Deprecated: Use Login for session creation and role transitions,
+         *      and RefreshToken for token renewal. Backends implementing this API always return
+         *      codes.Unimplemented. Kept here so clients can still call old backends.
+         */
+        post: operations["Platform_GetJWTToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Deprecated: Use Login for session creation and role transitions,
-     *      and RefreshToken for token renewal. Backends implementing this API always return
-     *      codes.Unimplemented. Kept here so clients can still call old backends.
-     */
-    post: operations["Platform_GetJWTToken"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Login authenticates with the given credentials and returns a new Platforma JWT.
+         *      Every Login call creates a new session. Use RefreshToken to renew an existing one.
+         *      This method is public: no Authorization header is required.
+         */
+        post: operations["Platform_Login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description Login authenticates with the given credentials and returns a new Platforma JWT.
-     *      Every Login call creates a new session. Use RefreshToken to renew an existing one.
-     *      This method is public: no Authorization header is required.
-     */
-    post: operations["Platform_Login"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/methods": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Authentication */
+        get: operations["Platform_AuthMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Authentication */
-    get: operations["Platform_AuthMethods"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/mint-signature": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/mint-signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description MintSignature creates a resource signature bound to a target session.
+         *      Controllers use it during workflow bootstrap to pre-sign resources
+         *      so the workflow can access them under its own isolated session.
+         */
+        post: operations["Platform_MintSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description MintSignature creates a resource signature bound to a target session.
-     *      Controllers use it during workflow bootstrap to pre-sign resources
-     *      so the workflow can access them under its own isolated session.
-     */
-    post: operations["Platform_MintSignature"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description RefreshToken accepts a valid Platforma JWT and re-issues it with the same
+         *      session ID and role. Only the token expiration may be changed.
+         *      Workflow-scoped tokens cannot be refreshed; call Login instead.
+         *      This method is public: no Authorization header is required.
+         */
+        post: operations["Platform_RefreshToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description RefreshToken accepts a valid Platforma JWT and re-issues it with the same
-     *      session ID and role. Only the token expiration may be changed.
-     *      Workflow-scoped tokens cannot be refreshed; call Login instead.
-     *      This method is public: no Authorization header is required.
-     */
-    post: operations["Platform_RefreshToken"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/revoke-access": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/revoke-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_RevokeAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_RevokeAccess"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/session-info": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/session-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_GetSessionInfo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_GetSessionInfo"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/sso/begin-login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/sso/begin-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description BeginSSOLogin returns a fresh one-time nonce that the desktop must place
+         *      into the OIDC auth-request before redirecting to the IdP. Used by the SSO
+         *      login flow. This method is public: no Authorization header is required.
+         */
+        post: operations["Platform_BeginSSOLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description BeginSSOLogin returns a fresh one-time nonce that the desktop must place
-     *      into the OIDC auth-request before redirecting to the IdP. Used by the SSO
-     *      login flow. This method is public: no Authorization header is required.
-     */
-    post: operations["Platform_BeginSSOLogin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/auth/user-root": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/auth/user-root": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_GetUserRoot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_GetUserRoot"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/aliases-and-urls": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/command/mutation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Mutation dispatches a named write command. The server opens a write
+         *      transaction, runs the registered handler, and commits on success.
+         *      The dispatcher enforces per-command role requirements before running.
+         */
+        post: operations["Platform_Mutation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_WriteControllerAliasesAndUrls"];
-    delete: operations["Platform_RemoveControllerAliasesAndUrls"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/attach-subscription": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/command/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Command bus (admin panel and future extension points)
+         *
+         *      Query dispatches a named read-only command. The server opens a read
+         *      transaction, runs the registered handler, and returns a JSON result.
+         *      The dispatcher enforces per-command role requirements before running.
+         */
+        post: operations["Platform_Query"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerAttachSubscription"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/create": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/aliases-and-urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_WriteControllerAliasesAndUrls"];
+        delete: operations["Platform_RemoveControllerAliasesAndUrls"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerCreate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/deregister": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/attach-subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerAttachSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerDeregister"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/exists": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerExists"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/features": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/deregister": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerDeregister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerSetFeatures"];
-    delete: operations["Platform_ControllerClearFeatures"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/get": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/exists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerExists"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerGet"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/notifications": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerSetFeatures"];
+        delete: operations["Platform_ControllerClearFeatures"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_GetControllerNotifications"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/register": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerGet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description Controllers */
-    post: operations["Platform_ControllerRegister"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/update": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_GetControllerNotifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ControllerUpdate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/controller/url": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Controllers */
+        post: operations["Platform_ControllerRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_GetControllerUrl"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/license": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ControllerUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get: operations["Platform_License"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/locks/lease/create": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/controller/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_GetControllerUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
-     *      Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
-     *      To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
-     */
-    post: operations["Platform_LeaseResource"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/locks/lease/release": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Platform_License"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_ReleaseLease"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/locks/lease/update": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/locks/lease/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description LeaseResource creates a lease for a resource. A lease is a temporary lock that needs periodic renewal to stay valid.
+         *      Leases are a separate mechanism from locks: leases are focused on 'clients', while locks are focused on 'resources'.
+         *      To keep the lease active, the client needs the lease ID that is generated when a lease is created and used for lease updates.
+         */
+        post: operations["Platform_LeaseResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_UpdateLease"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/locks/lock/create": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/locks/lease/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_ReleaseLease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * @description LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
-     *        - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
-     *        - list resource's fields, take fields with names set in request
-     *        - get resolved values of listed fields (IDs of 'ON' resources).
-     *        - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
-     *
-     *      Lock logic constraints:
-     *        - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
-     *          succeeds, while the other fails with an error (no long waiting)
-     *        - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
-     *          the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
-     *        - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
-     *          being lockable. An attempt to lock a resource that has not become original will fail.
-     *        - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
-     */
-    post: operations["Platform_LockFieldValues"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/notifications/get": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/locks/lease/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_UpdateLease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_NotificationsGet"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/ping": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/locks/lock/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description LockFieldValues gets the resource and obtains a lock on all resolved values of listed fields:
+         *        - get the resource that will take the lock ('FOR' resource) (lock cannot be obtained 'FOR' or 'ON' deleted resource)
+         *        - list resource's fields, take fields with names set in request
+         *        - get resolved values of listed fields (IDs of 'ON' resources).
+         *        - acquire lock on all 'ON' resources, marking 'FOR' resource as an owner.
+         *
+         *      Lock logic constraints:
+         *        - Locking is optimistic: if two processes try to obtain a lock on the same resource, one of them
+         *          succeeds, while the other fails with an error (no long waiting)
+         *        - Only resolved reference can be locked: to obtain a lock for a particular field's value, the backend needs to know
+         *          the resource ID this field points to. Unless all listed field references are resolved to a final ID, the lock will fail.
+         *        - Only an original resource can be locked: if a resource is 'pure' (supports deduplication), it has to pass deduplication before
+         *          being lockable. An attempt to lock a resource that has not become original will fail.
+         *        - Locking is a one-way operation: it cannot be 'released' or 'revoked'.
+         */
+        post: operations["Platform_LockFieldValues"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Various service requests */
-    get: operations["Platform_Ping"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/resource-types": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/notifications/get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_NotificationsGet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** @description Other stuff */
-    get: operations["Platform_ListResourceTypes"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/subscription/attach-filter": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Various service requests */
+        get: operations["Platform_Ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** @description Subscriptions */
-    post: operations["Platform_SubscriptionAttachFilter"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/subscription/detach-filter": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/resource-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Other stuff */
+        get: operations["Platform_ListResourceTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_SubscriptionDetachFilter"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/tx-sync": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/v1/subscription/attach-filter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Subscriptions */
+        post: operations["Platform_SubscriptionAttachFilter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post: operations["Platform_TxSync"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/v1/subscription/detach-filter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_SubscriptionDetachFilter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tx-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Platform_TxSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    AuthAPI_BeginSSOLogin_PublicPKCE: {
-      nonce: string;
-      /** Format: date-time */
-      expiresAt: string;
-    };
-    AuthAPI_BeginSSOLogin_Request: Record<string, never>;
-    AuthAPI_BeginSSOLogin_Response: {
-      publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
-    };
-    AuthAPI_GetJWTToken_Request: {
-      expiration: string;
-      /** Format: enum */
-      requestedRole: number;
-    };
-    AuthAPI_GetJWTToken_Response: {
-      token: string;
-      /**
-       * Format: bytes
-       * @description Session info fields
-       */
-      sessionId: string;
-      /** Format: enum */
-      role: number;
-    };
-    AuthAPI_GetSessionInfo_Request: Record<string, never>;
-    AuthAPI_GetSessionInfo_Response: {
-      /** Format: bytes */
-      sessionId: string;
-      /** Format: enum */
-      role: number;
-    };
-    AuthAPI_GetUserRoot_Request: {
-      login: string;
-      createIfNotExists: boolean;
-    };
-    AuthAPI_GetUserRoot_Response: {
-      userRoot: components["schemas"]["AuthAPI_UserRoot"];
-    };
-    AuthAPI_GrantAccess_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      targetUser: string;
-      permissions: components["schemas"]["AuthAPI_Grant_Permissions"];
-      /** Format: enum */
-      grantType: number;
-    };
-    AuthAPI_GrantAccess_Response: Record<string, never>;
-    /** @description Permissions describes access level for a grant. */
-    AuthAPI_Grant_Permissions: {
-      writable: boolean;
-    };
-    AuthAPI_ListMethods_BasicAuthMethod: Record<string, never>;
-    AuthAPI_ListMethods_MethodInfo: {
-      /**
-       * @description id is the stable, machine-readable identifier of the login method
-       *      instance. Unique across the entire server.
-       */
-      id: string;
-      /** @description description is the human-readable label in case we'd like to render it in UI. */
-      description: string;
-      basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
-      token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
-      sso: components["schemas"]["AuthAPI_ListMethods_SSOAuthMethod"];
-    };
-    AuthAPI_ListMethods_Response: {
-      methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
-    };
-    /**
-     * @description SSOAuthMethod advertises an external IdP-based login flow. The desktop
-     *      app uses the contents to drive the PKCE exchange locally, then hands the
-     *      resulting IdP token-response back via Login.SSOCredentials.
-     */
-    AuthAPI_ListMethods_SSOAuthMethod: {
-      issuer: string;
-      clientId: string;
-      scopes: string;
-      resource: string;
-      prompt: string;
-      redirectPorts: number[];
-      subjectTokenSource: string;
-      userIdClaim: string;
-      groupsClaim: string;
-      /** Format: enum */
-      flowType: number;
-    };
-    AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
-    AuthAPI_Login_BasicCredentials: {
-      login: string;
-      password: string;
-    };
-    AuthAPI_Login_Request: {
-      basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
-      token: components["schemas"]["AuthAPI_Login_TokenCredentials"];
-      sso: components["schemas"]["AuthAPI_Login_SSOCredentials"];
-      expiration: string;
-      /** Format: enum */
-      requestedRole: number;
-    };
-    AuthAPI_Login_Response: {
-      token: string;
-      /** Format: bytes */
-      sessionId: string;
-      /** Format: enum */
-      role: number;
-    };
-    /**
-     * @description SSOCredentials carries the raw JSON body returned by the IdP's /token
-     *      endpoint after the desktop completes a PKCE exchange.
-     */
-    AuthAPI_Login_SSOCredentials: {
-      /** Format: bytes */
-      tokenResponse: string;
-    };
-    /**
-     * @description TokenCredentials accepts any opaque bearer-style string: a controller
-     *      pre-shared secret, an existing Platforma JWT, or a future OIDC id-token.
-     */
-    AuthAPI_Login_TokenCredentials: {
-      /** Format: bytes */
-      token: string;
-    };
-    AuthAPI_MintSignature_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      targetSid: string;
-      color: components["schemas"]["Color"];
-    };
-    AuthAPI_MintSignature_Response: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-    };
-    AuthAPI_RefreshToken_Request: {
-      token: string;
-      expiration: string;
-    };
-    AuthAPI_RefreshToken_Response: {
-      token: string;
-      /** Format: bytes */
-      sessionId: string;
-      /** Format: enum */
-      role: number;
-    };
-    AuthAPI_RevokeAccess_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      targetUser: string;
-    };
-    AuthAPI_RevokeAccess_Response: Record<string, never>;
-    AuthAPI_UserRoot: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-    };
-    Color: {
-      root: string;
-      /** Format: uint32 */
-      permissions: number;
-    };
-    Controller: {
-      type: string;
-      id: string;
-      subscriptionID: string;
-    };
-    ControllerAPI_AttachSubscription_Request: {
-      controllerId: string;
-      subscriptionId: string;
-    };
-    ControllerAPI_AttachSubscription_Response: Record<string, never>;
-    ControllerAPI_ClearFeatures_Request: {
-      controllerType: string;
-    };
-    ControllerAPI_ClearFeatures_Response: Record<string, never>;
-    ControllerAPI_Create_Request: {
-      id: string;
-      controllerType: string;
-    };
-    ControllerAPI_Create_Response: {
-      controllerId: string;
-    };
-    ControllerAPI_Deregister_Request: {
-      controllerType: string;
-    };
-    ControllerAPI_Deregister_Response: Record<string, never>;
-    ControllerAPI_Exists_Request: {
-      controllerType: string;
-    };
-    ControllerAPI_Exists_Response: {
-      exists: boolean;
-    };
-    ControllerAPI_GetNotifications_Request: {
-      controllerType: string;
-      /** Format: uint32 */
-      maxNotifications: number;
-    };
-    ControllerAPI_GetNotifications_Response: {
-      notifications: components["schemas"]["Notification"][];
-    };
-    ControllerAPI_GetUrl_Request: {
-      controllerAlias: string;
-      resourceId: string;
-    };
-    ControllerAPI_GetUrl_Response: {
-      controllerUrl: string;
-    };
-    ControllerAPI_Get_Request: {
-      controllerType: string;
-    };
-    ControllerAPI_Get_Response: {
-      controller: components["schemas"]["Controller"];
-    };
-    ControllerAPI_Register_Request: {
-      controllerType: string;
-      filters: {
-        [key: string]: components["schemas"]["NotificationFilter"];
-      };
-      resourceSchemas: components["schemas"]["ResourceSchema"][];
-    };
-    ControllerAPI_Register_Response: {
-      controllerId: string;
-      subscriptionId: string;
-    };
-    ControllerAPI_RemoveAliasesAndUrls_Request: {
-      controllerType: string;
-    };
-    ControllerAPI_RemoveAliasesAndUrls_Response: Record<string, never>;
-    ControllerAPI_SetFeatures_Request: {
-      features: components["schemas"]["ResourceAPIFeature"][];
-    };
-    ControllerAPI_SetFeatures_Response: Record<string, never>;
-    ControllerAPI_Update_Request: {
-      controllerType: string;
-      filters: {
-        [key: string]: components["schemas"]["NotificationFilter"];
-      };
-      resourceSchemas: components["schemas"]["ResourceSchema"][];
-    };
-    ControllerAPI_Update_Response: Record<string, never>;
-    ControllerAPI_WriteAliasesAndUrls_Request: {
-      controllerType: string;
-      aliasesToUrls: {
-        [key: string]: string;
-      };
-    };
-    ControllerAPI_WriteAliasesAndUrls_Response: Record<string, never>;
-    Field: {
-      /** @description field ID is always combination of parent resource ID and field name */
-      id: components["schemas"]["FieldRef"];
-      /** Format: enum */
-      type: number;
-      features: components["schemas"]["Resource_Features"];
-      /**
-       * @description _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
-       *      If a field refers to another field, it will get
-       *      a value only when this chain of references ends up with a direct resource
-       *      reference. At that moment, all fields in the chain will get their values
-       *      resolved and will start to refer to the same resource directly.
-       */
-      value: string;
-      /**
-       * Format: bytes
-       * @description Signature for value resource ID, inheriting the parent resource's color.
-       *      Populated server-side when the parent resource has a known color in the current TX.
-       */
-      valueSignature: string;
-      /**
-       * Format: enum
-       * @description Whether the value is empty, assigned, or finally resolved.
-       */
-      valueStatus: number;
-      /** @description If the value is in its final state (ready, duplicate or error) */
-      valueIsFinal: boolean;
-      /**
-       * @description Error resource ID, if any.
-       *      Is intended to report problems _from_ the platform to the client.
-       */
-      error: string;
-      /**
-       * Format: bytes
-       * @description Signature for error resource ID, inheriting the parent resource's color.
-       */
-      errorSignature: string;
-    };
-    FieldRef: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      fieldName: string;
-    };
-    FieldSchema: {
-      /** Format: enum */
-      type: number;
-      name: string;
-    };
-    /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
-    GoogleProtobufAny: {
-      /** @description The type of the serialized message. */
-      "@type": string;
-    } & {
-      [key: string]: unknown;
-    };
-    LocksAPI_Lease_Create_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      timeout: string;
-      name: string;
-    };
-    LocksAPI_Lease_Create_Response: {
-      /** Format: bytes */
-      leaseId: string;
-    };
-    LocksAPI_Lease_Release_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      /** Format: bytes */
-      leaseId: string;
-    };
-    LocksAPI_Lease_Release_Response: Record<string, never>;
-    LocksAPI_Lease_Update_Request: {
-      resourceId: string;
-      /** Format: bytes */
-      resourceSignature: string;
-      /** Format: bytes */
-      leaseId: string;
-      timeout: string;
-      name: string;
-    };
-    LocksAPI_Lease_Update_Response: Record<string, never>;
-    LocksAPI_LockFieldValues_Create_Request: {
-      resourceId: string;
-      lockReferencesOf: string[];
-      comment: string;
-    };
-    LocksAPI_LockFieldValues_Create_Response: {
-      /**
-       * @description true when lock was acquired (new, or already owned by the owner)
-       *      Client MUST pay attention to this flag, as it shows if lock was successful.
-       */
-      acquired: boolean;
-      /**
-       * @description Info about why lock was not acquired.
-       *      Limited number of conflicts is reported: i.e. if lock operation failed for 20 fields, only first 10 are listed here.
-       *      The number '10' is not a fixed contract for external clients. It is just 'somehow truncated'.
-       */
-      conflictingLocks: components["schemas"]["LocksAPI_LockFieldValues_Create_Response_LockInfo"][];
-      conflictsListTruncated: boolean;
-    };
-    LocksAPI_LockFieldValues_Create_Response_LockInfo: {
-      targetId: string;
-      fieldName: string;
-      lockedBy: string;
-      /** Format: date-time */
-      lockedAt: string;
-      comment: string;
-    };
-    MaintenanceAPI_License_Response: {
-      /** Format: int32 */
-      status: number;
-      isOk: boolean;
-      /**
-       * Format: bytes
-       * @description Raw response body as it was received from the license server.
-       */
-      responseBody: string;
-    };
-    MaintenanceAPI_Ping_Response: {
-      coreVersion: string;
-      coreFullVersion: string;
-      /** Format: enum */
-      compression: number;
-      /**
-       * @description instanceID is a unique ID that changes when we reset DB state.
-       *      If we reset a state and a database, but the address of the backend is still the same,
-       *      without instanceID we are not sure if it's the same state or not,
-       *      and UI can't detect it and clear its state (e.g. caches of drivers).
-       */
-      instanceId: string;
-      platform: string;
-      os: string;
-      arch: string;
-      /**
-       * @description Opt-in capabilities advertised by this server instance, used by
-       *      clients to pick between fast and fallback code paths without waiting
-       *      for a failed RPC.
-       *
-       *      Each entry is an opaque token "<feature>:<version>" (e.g.
-       *      "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
-       *      The field is unset on servers predating this mechanism, which the
-       *      client treats as "no optional capabilities advertised".
-       *
-       *      All list see pl/platform/api/plapiserver/server_capabilities.go
-       */
-      capabilities: string[];
-    };
-    MiscAPI_ListResourceTypes_Response: {
-      types: components["schemas"]["ResourceType"][];
-    };
-    Notification: {
-      subscriptionId: string;
-      eventId: string;
-      resourceId: string;
-      resourceType: components["schemas"]["ResourceType"];
-      events: components["schemas"]["Notification_Events"];
-      fieldChanges: {
-        [key: string]: components["schemas"]["Notification_FieldChange"];
-      };
-      payload: components["schemas"]["NotificationFilter_Payload"];
-      filterName: string;
-      txSpan: components["schemas"]["SpanInfo"];
-    };
-    NotificationAPI_Get_Request: {
-      subscription: string;
-      /** Format: uint32 */
-      maxNotifications: number;
-    };
-    NotificationAPI_Get_Response: {
-      notifications: components["schemas"]["Notification"][];
-    };
-    NotificationFilter: {
-      resourceType: components["schemas"]["ResourceType"];
-      resourceId: string;
-      eventFilter: components["schemas"]["NotificationFilter_EventFilter"];
-      payload: components["schemas"]["NotificationFilter_Payload"];
-    };
-    NotificationFilter_EventFilter: {
-      all: boolean;
-      resourceCreated: boolean;
-      resourceDeleted: boolean;
-      resourceReady: boolean;
-      resourceRecovered: boolean;
-      resourceDuplicate: boolean;
-      resourceError: boolean;
-      /** @description Field events */
-      inputsLocked: boolean;
-      outputsLocked: boolean;
-      fieldCreated: boolean;
-      fieldGotError: boolean;
-      inputSet: boolean;
-      allInputsSet: boolean;
-      outputSet: boolean;
-      allOutputsSet: boolean;
-      genericOtwSet: boolean;
-      dynamicChanged: boolean;
-    };
-    NotificationFilter_Payload: {
-      values: {
-        [key: string]: string;
-      };
-    };
-    Notification_Events: {
-      resourceCreated: boolean;
-      resourceDeleted: boolean;
-      resourceReady: boolean;
-      resourceDuplicate: boolean;
-      resourceError: boolean;
-      inputsLocked: boolean;
-      outputsLocked: boolean;
-      fieldCreated: boolean;
-      fieldGotError: boolean;
-      inputSet: boolean;
-      allInputsSet: boolean;
-      outputSet: boolean;
-      allOutputsSet: boolean;
-      genericOtwSet: boolean;
-      dynamicChanged: boolean;
-      resourceRecovered: boolean;
-    };
-    Notification_FieldChange: {
-      old: components["schemas"]["Field"];
-      new: components["schemas"]["Field"];
-    };
-    ResourceAPIFeature: {
-      controllerType: string;
-      featureName: string;
-      resourceType: components["schemas"]["ResourceType"];
-      endpoint: string;
-    };
-    ResourceSchema: {
-      type: components["schemas"]["ResourceType"];
-      fields: components["schemas"]["FieldSchema"][];
-      /** @description Access restriction flags for non-controller roles */
-      accessFlags: components["schemas"]["ResourceSchema_AccessFlags"];
-      freeInputs: boolean;
-      freeOutputs: boolean;
-    };
-    ResourceSchema_AccessFlags: {
-      /**
-       * @description Deny-list approach: default = allowed (true)
-       *      Controllers set these to false to restrict non-controller roles (role='u', role='w')
-       */
-      createResource: boolean;
-      /** @description IMPORTANT: read_fields=false with write_fields=true is a forbidden combination */
-      readFields: boolean;
-      writeFields: boolean;
-      /** @description IMPORTANT: read_kv=false with write_kv=true is a forbidden combination */
-      readKv: boolean;
-      writeKv: boolean;
-      /**
-       * @description Per-field-type overrides (map: field_type → bool)
-       *      When defined for a field type, overrides resource-level flags
-       */
-      readByFieldType: {
-        [key: string]: boolean;
-      };
-      writeByFieldType: {
-        [key: string]: boolean;
-      };
-    };
-    ResourceType: {
-      name: string;
-      version: string;
-    };
-    Resource_Features: {
-      ephemeral: boolean;
-    };
-    SpanInfo: {
-      path: string;
-      carrier: {
-        [key: string]: string;
-      };
-    };
-    /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
-    Status: {
-      /**
-       * Format: int32
-       * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
-       */
-      code: number;
-      /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
-      message: string;
-      /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
-      details: components["schemas"]["GoogleProtobufAny"][];
-    };
-    SubscriptionAPI_AttachFilter_Request: {
-      subscriptionId: string;
-      filterName: string;
-      filterId: string;
-    };
-    SubscriptionAPI_AttachFilter_Response: Record<string, never>;
-    SubscriptionAPI_DetachFilter_Request: {
-      subscriptionId: string;
-      filterName: string;
-    };
-    SubscriptionAPI_DetachFilter_Response: Record<string, never>;
-    TxAPI_Sync_Request: {
-      txId: string;
-    };
-    TxAPI_Sync_Response: Record<string, never>;
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    schemas: {
+        AuthAPI_BeginSSOLogin_PublicPKCE: {
+            nonce: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        AuthAPI_BeginSSOLogin_Request: Record<string, never>;
+        AuthAPI_BeginSSOLogin_Response: {
+            publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
+        };
+        AuthAPI_GetJWTToken_Request: {
+            expiration: string;
+            /** Format: enum */
+            requestedRole: number;
+        };
+        AuthAPI_GetJWTToken_Response: {
+            token: string;
+            /**
+             * Format: bytes
+             * @description Session info fields
+             */
+            sessionId: string;
+            /** Format: enum */
+            role: number;
+        };
+        AuthAPI_GetSessionInfo_Request: Record<string, never>;
+        AuthAPI_GetSessionInfo_Response: {
+            /** Format: bytes */
+            sessionId: string;
+            /** Format: enum */
+            role: number;
+        };
+        AuthAPI_GetUserRoot_Request: {
+            login: string;
+            createIfNotExists: boolean;
+        };
+        AuthAPI_GetUserRoot_Response: {
+            userRoot: components["schemas"]["AuthAPI_UserRoot"];
+        };
+        AuthAPI_GrantAccess_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            targetUser: string;
+            permissions: components["schemas"]["AuthAPI_Grant_Permissions"];
+            /** Format: enum */
+            grantType: number;
+        };
+        AuthAPI_GrantAccess_Response: Record<string, never>;
+        /** @description Permissions describes access level for a grant. */
+        AuthAPI_Grant_Permissions: {
+            writable: boolean;
+        };
+        AuthAPI_ListMethods_BasicAuthMethod: Record<string, never>;
+        AuthAPI_ListMethods_MethodInfo: {
+            /**
+             * @description id is the stable, machine-readable identifier of the login method
+             *      instance. Unique across the entire server.
+             */
+            id: string;
+            /** @description description is the human-readable label in case we'd like to render it in UI. */
+            description: string;
+            basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
+            token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
+            sso: components["schemas"]["AuthAPI_ListMethods_SSOAuthMethod"];
+        };
+        AuthAPI_ListMethods_Response: {
+            methods: components["schemas"]["AuthAPI_ListMethods_MethodInfo"][];
+        };
+        /**
+         * @description SSOAuthMethod advertises an external IdP-based login flow. The desktop
+         *      app uses the contents to drive the PKCE exchange locally, then hands the
+         *      resulting IdP token-response back via Login.SSOCredentials.
+         */
+        AuthAPI_ListMethods_SSOAuthMethod: {
+            issuer: string;
+            clientId: string;
+            scopes: string;
+            resource: string;
+            prompt: string;
+            redirectPorts: number[];
+            subjectTokenSource: string;
+            userIdClaim: string;
+            groupsClaim: string;
+            /** Format: enum */
+            flowType: number;
+        };
+        AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
+        AuthAPI_Login_BasicCredentials: {
+            login: string;
+            password: string;
+        };
+        AuthAPI_Login_Request: {
+            basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
+            token: components["schemas"]["AuthAPI_Login_TokenCredentials"];
+            sso: components["schemas"]["AuthAPI_Login_SSOCredentials"];
+            expiration: string;
+            /** Format: enum */
+            requestedRole: number;
+        };
+        AuthAPI_Login_Response: {
+            token: string;
+            /** Format: bytes */
+            sessionId: string;
+            /** Format: enum */
+            role: number;
+        };
+        /**
+         * @description SSOCredentials carries the raw JSON body returned by the IdP's /token
+         *      endpoint after the desktop completes a PKCE exchange.
+         */
+        AuthAPI_Login_SSOCredentials: {
+            /** Format: bytes */
+            tokenResponse: string;
+        };
+        /**
+         * @description TokenCredentials accepts any opaque bearer-style string: a controller
+         *      pre-shared secret, an existing Platforma JWT, or a future OIDC id-token.
+         */
+        AuthAPI_Login_TokenCredentials: {
+            /** Format: bytes */
+            token: string;
+        };
+        AuthAPI_MintSignature_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            targetSid: string;
+            color: components["schemas"]["Color"];
+        };
+        AuthAPI_MintSignature_Response: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+        };
+        AuthAPI_RefreshToken_Request: {
+            token: string;
+            expiration: string;
+        };
+        AuthAPI_RefreshToken_Response: {
+            token: string;
+            /** Format: bytes */
+            sessionId: string;
+            /** Format: enum */
+            role: number;
+        };
+        AuthAPI_RevokeAccess_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            targetUser: string;
+        };
+        AuthAPI_RevokeAccess_Response: Record<string, never>;
+        AuthAPI_UserRoot: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+        };
+        Color: {
+            root: string;
+            /** Format: uint32 */
+            permissions: number;
+        };
+        /**
+         * @description CmdError is a structured application-level error returned inside
+         *      CommandResult. It is separate from gRPC status codes, which are
+         *      reserved for transport-level failures.
+         */
+        CommandAPI_CmdError: {
+            message: string;
+            code: string;
+        };
+        /** @description Command carries a named command with an optional JSON payload. */
+        CommandAPI_Command: {
+            /**
+             * @description name identifies the registered handler (e.g. "users.list").
+             *      Must be non-empty.
+             */
+            name: string;
+            /**
+             * Format: bytes
+             * @description payload is an opaque JSON object passed verbatim to the handler.
+             *      May be empty when a command takes no arguments.
+             */
+            payload: string;
+        };
+        /**
+         * @description CommandResult carries the JSON response from a handler and any
+         *      application-level errors it produced.
+         */
+        CommandAPI_CommandResult: {
+            /**
+             * Format: bytes
+             * @description data is the JSON-encoded result. Empty when errors is non-empty.
+             */
+            data: string;
+            errors: components["schemas"]["CommandAPI_CmdError"][];
+        };
+        Controller: {
+            type: string;
+            id: string;
+            subscriptionID: string;
+        };
+        ControllerAPI_AttachSubscription_Request: {
+            controllerId: string;
+            subscriptionId: string;
+        };
+        ControllerAPI_AttachSubscription_Response: Record<string, never>;
+        ControllerAPI_ClearFeatures_Request: {
+            controllerType: string;
+        };
+        ControllerAPI_ClearFeatures_Response: Record<string, never>;
+        ControllerAPI_Create_Request: {
+            id: string;
+            controllerType: string;
+        };
+        ControllerAPI_Create_Response: {
+            controllerId: string;
+        };
+        ControllerAPI_Deregister_Request: {
+            controllerType: string;
+        };
+        ControllerAPI_Deregister_Response: Record<string, never>;
+        ControllerAPI_Exists_Request: {
+            controllerType: string;
+        };
+        ControllerAPI_Exists_Response: {
+            exists: boolean;
+        };
+        ControllerAPI_GetNotifications_Request: {
+            controllerType: string;
+            /** Format: uint32 */
+            maxNotifications: number;
+        };
+        ControllerAPI_GetNotifications_Response: {
+            notifications: components["schemas"]["Notification"][];
+        };
+        ControllerAPI_GetUrl_Request: {
+            controllerAlias: string;
+            resourceId: string;
+        };
+        ControllerAPI_GetUrl_Response: {
+            controllerUrl: string;
+        };
+        ControllerAPI_Get_Request: {
+            controllerType: string;
+        };
+        ControllerAPI_Get_Response: {
+            controller: components["schemas"]["Controller"];
+        };
+        ControllerAPI_Register_Request: {
+            controllerType: string;
+            filters: {
+                [key: string]: components["schemas"]["NotificationFilter"];
+            };
+            resourceSchemas: components["schemas"]["ResourceSchema"][];
+        };
+        ControllerAPI_Register_Response: {
+            controllerId: string;
+            subscriptionId: string;
+        };
+        ControllerAPI_RemoveAliasesAndUrls_Request: {
+            controllerType: string;
+        };
+        ControllerAPI_RemoveAliasesAndUrls_Response: Record<string, never>;
+        ControllerAPI_SetFeatures_Request: {
+            features: components["schemas"]["ResourceAPIFeature"][];
+        };
+        ControllerAPI_SetFeatures_Response: Record<string, never>;
+        ControllerAPI_Update_Request: {
+            controllerType: string;
+            filters: {
+                [key: string]: components["schemas"]["NotificationFilter"];
+            };
+            resourceSchemas: components["schemas"]["ResourceSchema"][];
+        };
+        ControllerAPI_Update_Response: Record<string, never>;
+        ControllerAPI_WriteAliasesAndUrls_Request: {
+            controllerType: string;
+            aliasesToUrls: {
+                [key: string]: string;
+            };
+        };
+        ControllerAPI_WriteAliasesAndUrls_Response: Record<string, never>;
+        Field: {
+            /** @description field ID is always combination of parent resource ID and field name */
+            id: components["schemas"]["FieldRef"];
+            /** Format: enum */
+            type: number;
+            features: components["schemas"]["Resource_Features"];
+            /**
+             * @description _resolved_ value of a field or _assigned_ if the field was assigned to a resource.
+             *      If a field refers to another field, it will get
+             *      a value only when this chain of references ends up with a direct resource
+             *      reference. At that moment, all fields in the chain will get their values
+             *      resolved and will start to refer to the same resource directly.
+             */
+            value: string;
+            /**
+             * Format: bytes
+             * @description Signature for value resource ID, inheriting the parent resource's color.
+             *      Populated server-side when the parent resource has a known color in the current TX.
+             */
+            valueSignature: string;
+            /**
+             * Format: enum
+             * @description Whether the value is empty, assigned, or finally resolved.
+             */
+            valueStatus: number;
+            /** @description If the value is in its final state (ready, duplicate or error) */
+            valueIsFinal: boolean;
+            /**
+             * @description Error resource ID, if any.
+             *      Is intended to report problems _from_ the platform to the client.
+             */
+            error: string;
+            /**
+             * Format: bytes
+             * @description Signature for error resource ID, inheriting the parent resource's color.
+             */
+            errorSignature: string;
+        };
+        FieldRef: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            fieldName: string;
+        };
+        FieldSchema: {
+            /** Format: enum */
+            type: number;
+            name: string;
+        };
+        /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
+        GoogleProtobufAny: {
+            /** @description The type of the serialized message. */
+            "@type": string;
+        } & {
+            [key: string]: unknown;
+        };
+        LocksAPI_Lease_Create_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            timeout: string;
+            name: string;
+        };
+        LocksAPI_Lease_Create_Response: {
+            /** Format: bytes */
+            leaseId: string;
+        };
+        LocksAPI_Lease_Release_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            /** Format: bytes */
+            leaseId: string;
+        };
+        LocksAPI_Lease_Release_Response: Record<string, never>;
+        LocksAPI_Lease_Update_Request: {
+            resourceId: string;
+            /** Format: bytes */
+            resourceSignature: string;
+            /** Format: bytes */
+            leaseId: string;
+            timeout: string;
+            name: string;
+        };
+        LocksAPI_Lease_Update_Response: Record<string, never>;
+        LocksAPI_LockFieldValues_Create_Request: {
+            resourceId: string;
+            lockReferencesOf: string[];
+            comment: string;
+        };
+        LocksAPI_LockFieldValues_Create_Response: {
+            /**
+             * @description true when lock was acquired (new, or already owned by the owner)
+             *      Client MUST pay attention to this flag, as it shows if lock was successful.
+             */
+            acquired: boolean;
+            /**
+             * @description Info about why lock was not acquired.
+             *      Limited number of conflicts is reported: i.e. if lock operation failed for 20 fields, only first 10 are listed here.
+             *      The number '10' is not a fixed contract for external clients. It is just 'somehow truncated'.
+             */
+            conflictingLocks: components["schemas"]["LocksAPI_LockFieldValues_Create_Response_LockInfo"][];
+            conflictsListTruncated: boolean;
+        };
+        LocksAPI_LockFieldValues_Create_Response_LockInfo: {
+            targetId: string;
+            fieldName: string;
+            lockedBy: string;
+            /** Format: date-time */
+            lockedAt: string;
+            comment: string;
+        };
+        MaintenanceAPI_License_Response: {
+            /** Format: int32 */
+            status: number;
+            isOk: boolean;
+            /**
+             * Format: bytes
+             * @description Raw response body as it was received from the license server.
+             */
+            responseBody: string;
+        };
+        MaintenanceAPI_Ping_Response: {
+            coreVersion: string;
+            coreFullVersion: string;
+            /** Format: enum */
+            compression: number;
+            /**
+             * @description instanceID is a unique ID that changes when we reset DB state.
+             *      If we reset a state and a database, but the address of the backend is still the same,
+             *      without instanceID we are not sure if it's the same state or not,
+             *      and UI can't detect it and clear its state (e.g. caches of drivers).
+             */
+            instanceId: string;
+            platform: string;
+            os: string;
+            arch: string;
+            /**
+             * @description Opt-in capabilities advertised by this server instance. Two
+             *      client-side usage modes share this same wire field, decided
+             *      per-token by the client:
+             *        - Optimization hint. Client picks between a fast path and a
+             *          fallback without probing by trial-and-error; missing tokens
+             *          just cause the fallback to run (e.g. "treeFilter:v2").
+             *        - Install-time gate. Client refuses to install a block whose
+             *          manifest declares a required capability the server doesn't
+             *          advertise; missing tokens fail closed (e.g. "wasm:v1").
+             *
+             *      Each entry is an opaque token "<feature>:<version>" (e.g.
+             *      "treeFilter:v2"). The field is unset on servers predating this
+             *      mechanism, which the client treats as "no optional capabilities
+             *      advertised" — fallback for hints, fail-closed for gates.
+             *
+             *      All list see pl/platform/api/plapiserver/server_capabilities.go
+             */
+            capabilities: string[];
+        };
+        MiscAPI_ListResourceTypes_Response: {
+            types: components["schemas"]["ResourceType"][];
+        };
+        Notification: {
+            subscriptionId: string;
+            eventId: string;
+            resourceId: string;
+            resourceType: components["schemas"]["ResourceType"];
+            events: components["schemas"]["Notification_Events"];
+            fieldChanges: {
+                [key: string]: components["schemas"]["Notification_FieldChange"];
+            };
+            payload: components["schemas"]["NotificationFilter_Payload"];
+            filterName: string;
+            txSpan: components["schemas"]["SpanInfo"];
+        };
+        NotificationAPI_Get_Request: {
+            subscription: string;
+            /** Format: uint32 */
+            maxNotifications: number;
+        };
+        NotificationAPI_Get_Response: {
+            notifications: components["schemas"]["Notification"][];
+        };
+        NotificationFilter: {
+            resourceType: components["schemas"]["ResourceType"];
+            resourceId: string;
+            eventFilter: components["schemas"]["NotificationFilter_EventFilter"];
+            payload: components["schemas"]["NotificationFilter_Payload"];
+        };
+        NotificationFilter_EventFilter: {
+            all: boolean;
+            resourceCreated: boolean;
+            resourceDeleted: boolean;
+            resourceReady: boolean;
+            resourceRecovered: boolean;
+            resourceDuplicate: boolean;
+            resourceError: boolean;
+            /** @description Field events */
+            inputsLocked: boolean;
+            outputsLocked: boolean;
+            fieldCreated: boolean;
+            fieldGotError: boolean;
+            inputSet: boolean;
+            allInputsSet: boolean;
+            outputSet: boolean;
+            allOutputsSet: boolean;
+            genericOtwSet: boolean;
+            dynamicChanged: boolean;
+        };
+        NotificationFilter_Payload: {
+            values: {
+                [key: string]: string;
+            };
+        };
+        Notification_Events: {
+            resourceCreated: boolean;
+            resourceDeleted: boolean;
+            resourceReady: boolean;
+            resourceDuplicate: boolean;
+            resourceError: boolean;
+            inputsLocked: boolean;
+            outputsLocked: boolean;
+            fieldCreated: boolean;
+            fieldGotError: boolean;
+            inputSet: boolean;
+            allInputsSet: boolean;
+            outputSet: boolean;
+            allOutputsSet: boolean;
+            genericOtwSet: boolean;
+            dynamicChanged: boolean;
+            resourceRecovered: boolean;
+        };
+        Notification_FieldChange: {
+            old: components["schemas"]["Field"];
+            new: components["schemas"]["Field"];
+        };
+        ResourceAPIFeature: {
+            controllerType: string;
+            featureName: string;
+            resourceType: components["schemas"]["ResourceType"];
+            endpoint: string;
+        };
+        ResourceSchema: {
+            type: components["schemas"]["ResourceType"];
+            fields: components["schemas"]["FieldSchema"][];
+            /** @description Access restriction flags for non-controller roles */
+            accessFlags: components["schemas"]["ResourceSchema_AccessFlags"];
+            freeInputs: boolean;
+            freeOutputs: boolean;
+        };
+        ResourceSchema_AccessFlags: {
+            /**
+             * @description Deny-list approach: default = allowed (true)
+             *      Controllers set these to false to restrict non-controller roles (role='u', role='w')
+             */
+            createResource: boolean;
+            /** @description IMPORTANT: read_fields=false with write_fields=true is a forbidden combination */
+            readFields: boolean;
+            writeFields: boolean;
+            /** @description IMPORTANT: read_kv=false with write_kv=true is a forbidden combination */
+            readKv: boolean;
+            writeKv: boolean;
+            /**
+             * @description Per-field-type overrides (map: field_type → bool)
+             *      When defined for a field type, overrides resource-level flags
+             */
+            readByFieldType: {
+                [key: string]: boolean;
+            };
+            writeByFieldType: {
+                [key: string]: boolean;
+            };
+        };
+        ResourceType: {
+            name: string;
+            version: string;
+        };
+        Resource_Features: {
+            ephemeral: boolean;
+        };
+        SpanInfo: {
+            path: string;
+            carrier: {
+                [key: string]: string;
+            };
+        };
+        /** @description The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). */
+        Status: {
+            /**
+             * Format: int32
+             * @description The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+             */
+            code: number;
+            /** @description A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client. */
+            message: string;
+            /** @description A list of messages that carry the error details.  There is a common set of message types for APIs to use. */
+            details: components["schemas"]["GoogleProtobufAny"][];
+        };
+        SubscriptionAPI_AttachFilter_Request: {
+            subscriptionId: string;
+            filterName: string;
+            filterId: string;
+        };
+        SubscriptionAPI_AttachFilter_Response: Record<string, never>;
+        SubscriptionAPI_DetachFilter_Request: {
+            subscriptionId: string;
+            filterName: string;
+        };
+        SubscriptionAPI_DetachFilter_Response: Record<string, never>;
+        TxAPI_Sync_Request: {
+            txId: string;
+        };
+        TxAPI_Sync_Response: Record<string, never>;
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  Platform_GrantAccess: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_GrantAccess_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_GrantAccess_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_GetJWTToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_GetJWTToken_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_GetJWTToken_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_Login: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_Login_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_Login_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_AuthMethods: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_ListMethods_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_MintSignature: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_MintSignature_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_MintSignature_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_RefreshToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_RefreshToken_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_RefreshToken_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_RevokeAccess: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_RevokeAccess_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_RevokeAccess_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_GetSessionInfo: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_BeginSSOLogin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_GetUserRoot: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AuthAPI_GetUserRoot_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthAPI_GetUserRoot_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_WriteControllerAliasesAndUrls: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_RemoveControllerAliasesAndUrls: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerAttachSubscription: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerCreate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Create_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Create_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerDeregister: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Deregister_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Deregister_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerExists: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Exists_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Exists_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerSetFeatures: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_SetFeatures_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_SetFeatures_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerClearFeatures: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerGet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Get_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Get_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_GetControllerNotifications: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_GetNotifications_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_GetNotifications_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerRegister: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Register_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Register_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ControllerUpdate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_Update_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_Update_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_GetControllerUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ControllerAPI_GetUrl_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ControllerAPI_GetUrl_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_License: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MaintenanceAPI_License_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_LeaseResource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LocksAPI_Lease_Create_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LocksAPI_Lease_Create_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ReleaseLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LocksAPI_Lease_Release_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LocksAPI_Lease_Release_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_UpdateLease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LocksAPI_Lease_Update_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LocksAPI_Lease_Update_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_LockFieldValues: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_NotificationsGet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["NotificationAPI_Get_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotificationAPI_Get_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_Ping: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MaintenanceAPI_Ping_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_ListResourceTypes: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MiscAPI_ListResourceTypes_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_SubscriptionAttachFilter: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_SubscriptionDetachFilter: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
-  Platform_TxSync: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TxAPI_Sync_Request"];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TxAPI_Sync_Response"];
-        };
-      };
-      /** @description Default error response */
-      default: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Status"];
-        };
-      };
-    };
-  };
+    Platform_GrantAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_GrantAccess_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_GrantAccess_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_GetJWTToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_GetJWTToken_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_GetJWTToken_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_Login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_Login_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_Login_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_AuthMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_ListMethods_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_MintSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_MintSignature_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_MintSignature_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_RefreshToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_RefreshToken_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_RefreshToken_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_RevokeAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_RevokeAccess_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_RevokeAccess_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_GetSessionInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_GetSessionInfo_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_BeginSSOLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_BeginSSOLogin_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_GetUserRoot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthAPI_GetUserRoot_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthAPI_GetUserRoot_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_Mutation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommandAPI_Command"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandAPI_CommandResult"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_Query: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommandAPI_Command"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandAPI_CommandResult"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_WriteControllerAliasesAndUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_WriteAliasesAndUrls_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_RemoveControllerAliasesAndUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_RemoveAliasesAndUrls_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerAttachSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_AttachSubscription_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Create_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Create_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerDeregister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Deregister_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Deregister_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerExists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Exists_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Exists_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerSetFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_SetFeatures_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_SetFeatures_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerClearFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_ClearFeatures_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Get_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Get_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_GetControllerNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_GetNotifications_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_GetNotifications_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerRegister: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Register_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Register_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ControllerUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_Update_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_Update_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_GetControllerUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControllerAPI_GetUrl_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControllerAPI_GetUrl_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_License: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceAPI_License_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_LeaseResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocksAPI_Lease_Create_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocksAPI_Lease_Create_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ReleaseLease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocksAPI_Lease_Release_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocksAPI_Lease_Release_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_UpdateLease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocksAPI_Lease_Update_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocksAPI_Lease_Update_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_LockFieldValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocksAPI_LockFieldValues_Create_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_NotificationsGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationAPI_Get_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationAPI_Get_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_Ping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaintenanceAPI_Ping_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_ListResourceTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiscAPI_ListResourceTypes_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_SubscriptionAttachFilter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionAPI_AttachFilter_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_SubscriptionDetachFilter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionAPI_DetachFilter_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
+    Platform_TxSync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TxAPI_Sync_Request"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TxAPI_Sync_Response"];
+                };
+            };
+            /** @description Default error response */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Status"];
+                };
+            };
+        };
+    };
 }
