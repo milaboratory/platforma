@@ -4,12 +4,16 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { Platform } from "./api";
+import type { CommandAPI_CommandResult } from "./api";
+import type { CommandAPI_Command } from "./api";
 import type { MaintenanceAPI_License_Response } from "./api";
 import type { MaintenanceAPI_License_Request } from "./api";
 import type { MaintenanceAPI_Ping_Response } from "./api";
 import type { MaintenanceAPI_Ping_Request } from "./api";
 import type { MiscAPI_ListResourceTypes_Response } from "./api";
 import type { MiscAPI_ListResourceTypes_Request } from "./api";
+import type { AuthAPI_ListUsers_Response } from "./api";
+import type { AuthAPI_ListUsers_Request } from "./api";
 import type { AuthAPI_ListUserResources_Response } from "./api";
 import type { AuthAPI_ListUserResources_Request } from "./api";
 import type { AuthAPI_GetUserRoot_Response } from "./api";
@@ -285,6 +289,10 @@ export interface IPlatformClient {
      */
     listUserResources(input: AuthAPI_ListUserResources_Request, options?: RpcOptions): ServerStreamingCall<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response>;
     /**
+     * @generated from protobuf rpc: ListUsers
+     */
+    listUsers(input: AuthAPI_ListUsers_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>;
+    /**
      *
      * Other stuff
      *
@@ -304,6 +312,25 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>;
+    /**
+     *
+     * Command bus (admin panel and future extension points)
+     *
+     * Query dispatches a named read-only command. The server opens a read
+     * transaction, runs the registered handler, and returns a JSON result.
+     * The dispatcher enforces per-command role requirements before running.
+     *
+     * @generated from protobuf rpc: Query
+     */
+    query(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult>;
+    /**
+     * Mutation dispatches a named write command. The server opens a write
+     * transaction, runs the registered handler, and commits on success.
+     * The dispatcher enforces per-command role requirements before running.
+     *
+     * @generated from protobuf rpc: Mutation
+     */
+    mutation(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult>;
 }
 /**
  * @generated from protobuf service MiLaboratories.PL.API.Platform
@@ -614,6 +641,13 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         return stackIntercept<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response>("serverStreaming", this._transport, method, opt, input);
     }
     /**
+     * @generated from protobuf rpc: ListUsers
+     */
+    listUsers(input: AuthAPI_ListUsers_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response> {
+        const method = this.methods[34], opt = this._transport.mergeOptions(options);
+        return stackIntercept<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
      *
      * Other stuff
      *
@@ -621,7 +655,7 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: ListResourceTypes
      */
     listResourceTypes(input: MiscAPI_ListResourceTypes_Request, options?: RpcOptions): UnaryCall<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response> {
-        const method = this.methods[34], opt = this._transport.mergeOptions(options);
+        const method = this.methods[35], opt = this._transport.mergeOptions(options);
         return stackIntercept<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -632,14 +666,39 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
-        const method = this.methods[35], opt = this._transport.mergeOptions(options);
+        const method = this.methods[36], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
-        const method = this.methods[36], opt = this._transport.mergeOptions(options);
+        const method = this.methods[37], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
+     *
+     * Command bus (admin panel and future extension points)
+     *
+     * Query dispatches a named read-only command. The server opens a read
+     * transaction, runs the registered handler, and returns a JSON result.
+     * The dispatcher enforces per-command role requirements before running.
+     *
+     * @generated from protobuf rpc: Query
+     */
+    query(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult> {
+        const method = this.methods[38], opt = this._transport.mergeOptions(options);
+        return stackIntercept<CommandAPI_Command, CommandAPI_CommandResult>("unary", this._transport, method, opt, input);
+    }
+    /**
+     * Mutation dispatches a named write command. The server opens a write
+     * transaction, runs the registered handler, and commits on success.
+     * The dispatcher enforces per-command role requirements before running.
+     *
+     * @generated from protobuf rpc: Mutation
+     */
+    mutation(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult> {
+        const method = this.methods[39], opt = this._transport.mergeOptions(options);
+        return stackIntercept<CommandAPI_Command, CommandAPI_CommandResult>("unary", this._transport, method, opt, input);
     }
 }
