@@ -279,6 +279,11 @@ service Platform {
   //
   // Command bus
   //
+  // TRACKING: These RPCs were hand-written because PL-0 is not yet merged
+  // upstream in github.com/milaboratory/pl. Once PL-0 lands on pl/main,
+  // re-run `pnpm update-proto` (sync-proto.sh) to pull the canonical proto
+  // and verify this hand-written version byte-matches it — guards against
+  // silent divergence of the frozen contract.
   rpc Query(CommandAPI.Command) returns (CommandAPI.CommandResult) {
     option (google.api.http) = {
       post: "/v1/command/query"
