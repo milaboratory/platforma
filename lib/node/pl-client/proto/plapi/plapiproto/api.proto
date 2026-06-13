@@ -275,6 +275,22 @@ service Platform {
   rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {
     option (google.api.http) = {get: "/v1/license"};
   }
+
+  //
+  // Command bus
+  //
+  rpc Query(CommandAPI.Command) returns (CommandAPI.CommandResult) {
+    option (google.api.http) = {
+      post: "/v1/command/query"
+      body: "*"
+    };
+  }
+  rpc Mutation(CommandAPI.Command) returns (CommandAPI.CommandResult) {
+    option (google.api.http) = {
+      post: "/v1/command/mutation"
+      body: "*"
+    };
+  }
 }
 
 // Platform transactions at the API level are implemented as bidirectional
@@ -2023,4 +2039,30 @@ message MaintenanceAPI {
 
 message Util {
   message Deprecated {}
+}
+
+// Command bus — two standalone RPCs (Query / Mutation) that carry
+// arbitrary named commands as JSON payloads.  The proto contract is
+// frozen: new features register new command names server-side only.
+message CommandAPI {
+  // Command carries the name of a registered handler and an optional
+  // JSON-encoded argument payload.
+  message Command {
+    string name    = 1; // required, non-empty
+    bytes  payload = 2; // JSON args, may be omitted
+  }
+
+  // CmdError is a structured error returned inside a CommandResult.
+  message CmdError {
+    string message = 1;
+    string code    = 2;
+  }
+
+  // CommandResult is the response envelope for both Query and Mutation.
+  // On success data contains a JSON-encoded result; errors is empty.
+  // On failure data may be absent and errors carries one or more entries.
+  message CommandResult {
+    bytes              data   = 1; // JSON result
+    repeated CmdError  errors = 2;
+  }
 }
