@@ -4,8 +4,6 @@
 import type { RpcTransport } from "@protobuf-ts/runtime-rpc";
 import type { ServiceInfo } from "@protobuf-ts/runtime-rpc";
 import { Platform } from "./api";
-import type { CommandAPI_CommandResult } from "./api";
-import type { CommandAPI_Command } from "./api";
 import type { MaintenanceAPI_License_Response } from "./api";
 import type { MaintenanceAPI_License_Request } from "./api";
 import type { MaintenanceAPI_Ping_Response } from "./api";
@@ -306,18 +304,6 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>;
-    /**
-     *
-     * Command bus
-     *
-     *
-     * @generated from protobuf rpc: Query
-     */
-    query(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult>;
-    /**
-     * @generated from protobuf rpc: Mutation
-     */
-    mutation(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult>;
 }
 /**
  * @generated from protobuf service MiLaboratories.PL.API.Platform
@@ -655,23 +641,5 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
         const method = this.methods[36], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
-    }
-    /**
-     *
-     * Command bus
-     *
-     *
-     * @generated from protobuf rpc: Query
-     */
-    query(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult> {
-        const method = this.methods[37], opt = this._transport.mergeOptions(options);
-        return stackIntercept<CommandAPI_Command, CommandAPI_CommandResult>("unary", this._transport, method, opt, input);
-    }
-    /**
-     * @generated from protobuf rpc: Mutation
-     */
-    mutation(input: CommandAPI_Command, options?: RpcOptions): UnaryCall<CommandAPI_Command, CommandAPI_CommandResult> {
-        const method = this.methods[38], opt = this._transport.mergeOptions(options);
-        return stackIntercept<CommandAPI_Command, CommandAPI_CommandResult>("unary", this._transport, method, opt, input);
     }
 }
