@@ -193,46 +193,37 @@ export function registerInnerWhenHandler(h: InnerWhenHandler): void {
 }
 
 /**
- * Conditionally run `body`. Two dispatch modes by active state:
- *  - inside `defineStructure(...)` → push a `WhenFrame` into the tree;
- *    trigger fires later at runner time per `FlatItem`.
- *  - inside a `managed(...)` body → evaluate `trigger` immediately
- *    against the runner-supplied `TriggerContext`; run/skip `body`
- *    synchronously.
+ * Conditionally run `body`, with an optional `elseBody`. One `when` symbol for
+ * both layers — `dispatchWhen` picks the timing:
+ *  - inside `defineStructure(...)` → register a `WhenFrame`; its trigger fires
+ *    later, per module, at runner time.
+ *  - inside a `managed(...)` body → evaluate the trigger against the live block
+ *    now and run/skip synchronously.
  *
- * One `when` symbol for both layers — same user contract, dispatch
- * picks the matching execution timing.
+ * `else` is just the negated trigger dispatched the same way, so exactly one
+ * branch applies (in either layer).
  */
 export function when(trigger: TriggerFn, body: () => void, elseBody?: () => void): void {
+  dispatchWhen(trigger, body);
+  if (elseBody) dispatchWhen((tctx) => !trigger(tctx), elseBody);
+}
+
+/** Single-branch dispatch shared by both `when` branches. In a managed body the
+ *  handler runs `body` iff its trigger holds and returns whether a managed-body
+ *  context existed; no context — and not tree-build either — means `when()` was
+ *  called outside both layers, a misuse. */
+function dispatchWhen(trigger: TriggerFn, body: () => void): void {
   if (activeTree) {
     pushWhenFrame(trigger, body);
-    // The `else` branch is a sibling frame guarded by the negated trigger, so
-    // exactly one of the two runs for any given module. Use it to declare two
-    // mutually-exclusive end states for one path (e.g. the canonical tsconfig
-    // with vs without node ambient types).
-    if (elseBody) pushWhenFrame((tctx) => !trigger(tctx), elseBody);
     return;
   }
-  // Managed-body layer: the handler evaluates the trigger against the live
-  // block right now and runs the matching branch in place. Its boolean reports
-  // whether an active managed-body context existed: it returns `false` ONLY at
-  // its no-context early-exit, BEFORE running anything — so `handled === false`
-  // means neither layer applied (a misuse) and `body` did not run, hence we
-  // throw. When `handled` is true the `if` branch already ran; dispatch the
-  // `else` branch the same way (negated trigger) — each branch runs only if its
-  // trigger holds, so exactly one fires.
-  const handler = innerWhenHandler;
-  if (handler) {
-    const handled = handler(trigger, body);
-    if (handled) {
-      if (elseBody) handler((tctx) => !trigger(tctx), elseBody);
-      return;
-    }
+  const handled = innerWhenHandler?.(trigger, body) ?? false;
+  if (!handled) {
+    throw new Error(
+      "when() called outside defineStructure() and outside any managed(...) body. " +
+        "Place this call inside one of the two.",
+    );
   }
-  throw new Error(
-    "when() called outside defineStructure() and outside any managed(...) body. " +
-      "Place this call inside one of the two.",
-  );
 }
 
 function pushWhenFrame(trigger: TriggerFn, body: () => void): void {
