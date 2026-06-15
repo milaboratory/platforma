@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-builder",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "TS build tool for the milaboratories packages",
   "bin": {
     "ts-builder": "./bin/ts-builder.js"
