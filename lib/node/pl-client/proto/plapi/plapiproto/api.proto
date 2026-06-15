@@ -259,6 +259,8 @@ service Platform {
   }
   rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
 
+  rpc ListUsers(AuthAPI.ListUsers.Request) returns (AuthAPI.ListUsers.Response) {}
+
   //
   // Other stuff
   //
@@ -274,6 +276,28 @@ service Platform {
   }
   rpc License(MaintenanceAPI.License.Request) returns (MaintenanceAPI.License.Response) {
     option (google.api.http) = {get: "/v1/license"};
+  }
+
+  //
+  // Command bus (admin panel and future extension points)
+  //
+  // Query dispatches a named read-only command. The server opens a read
+  // transaction, runs the registered handler, and returns a JSON result.
+  // The dispatcher enforces per-command role requirements before running.
+  rpc Query(CommandAPI.Command) returns (CommandAPI.CommandResult) {
+    option (google.api.http) = {
+      post: "/v1/command/query"
+      body: "*"
+    };
+  }
+  // Mutation dispatches a named write command. The server opens a write
+  // transaction, runs the registered handler, and commits on success.
+  // The dispatcher enforces per-command role requirements before running.
+  rpc Mutation(CommandAPI.Command) returns (CommandAPI.CommandResult) {
+    option (google.api.http) = {
+      post: "/v1/command/mutation"
+      body: "*"
+    };
   }
 }
 
@@ -483,6 +507,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Request grant_access = 410; // grant access to a resource within transaction
       AuthAPI.RevokeAccess.Request revoke_access = 411; // revoke access to a resource within transaction
+      AuthAPI.ListGrants.Request list_grants = 412; // list grants on a resource within transaction
     }
   }
 
@@ -585,6 +610,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Response grant_access = 410;
       AuthAPI.RevokeAccess.Response revoke_access = 411;
+      AuthAPI.ListGrants.TxResponse list_grants = 412;
     }
 
     google.rpc.Status error = 3;
@@ -1866,6 +1892,10 @@ message AuthAPI {
     message Response {
       Grant grant = 1; // one per stream message
     }
+
+    message TxResponse {
+      repeated Grant grants = 1; // all grants for the resource in a single transactional response
+    }
   }
 
   message Grant {
@@ -1948,6 +1978,23 @@ message AuthAPI {
       Grant.Permissions permissions = 4;
     }
   }
+
+  message User {
+    // login is the stable identifier of the user — the grant target and the
+    // GetUserRoot key. Further fields (e.g. first name, last name, email) may
+    // be added later without breaking compatibility.
+    string login = 1;
+  }
+
+  message ListUsers {
+    message Request {}
+
+    // Lists users known to the server. A user becomes known on first login;
+    // provisioned users who have never logged in do not appear.
+    message Response {
+      repeated User users = 1;
+    }
+  }
 }
 
 message MiscAPI {
@@ -2018,6 +2065,38 @@ message MaintenanceAPI {
       // Raw response body as it was received from the license server.
       bytes response_body = 3;
     }
+  }
+}
+
+// CommandAPI groups all message types used by the command-bus RPCs
+// (Query and Mutation). The proto contract is frozen; future commands
+// are added by registering new handler names on the server — no proto
+// changes are needed.
+message CommandAPI {
+  // Command carries a named command with an optional JSON payload.
+  message Command {
+    // name identifies the registered handler (e.g. "users.list").
+    // Must be non-empty.
+    string name = 1;
+    // payload is an opaque JSON object passed verbatim to the handler.
+    // May be empty when a command takes no arguments.
+    bytes payload = 2;
+  }
+
+  // CmdError is a structured application-level error returned inside
+  // CommandResult. It is separate from gRPC status codes, which are
+  // reserved for transport-level failures.
+  message CmdError {
+    string message = 1;
+    string code    = 2;
+  }
+
+  // CommandResult carries the JSON response from a handler and any
+  // application-level errors it produced.
+  message CommandResult {
+    // data is the JSON-encoded result. Empty when errors is non-empty.
+    bytes data = 1;
+    repeated CmdError errors = 2;
   }
 }
 
