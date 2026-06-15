@@ -2,47 +2,23 @@
 // `src/index.ts` seed is dropped by `init` and never touched again
 // (block author owns it).
 
-import {
-  scope,
-  fixed,
-  managed,
-  seed,
-  file,
-  generate,
-  when,
-  whenFilesExist,
-  ensureField,
-  removeField,
-  pruneKeysMatching,
-} from "../engine/api";
+import { scope, fixed, managed, seed, file, generate, when, whenFilesExist } from "../engine/api";
 import { getActiveRunContext } from "../engine/builders";
 import { modelPackageJsonInitial, modelPackageJsonRules } from "./model-package-json";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function modelRules(): void {
   scope("model", () => {
-    // tsconfig is managed (not fixed) so node ambient types can be provided
-    // CONDITIONALLY. The body still enforces the canonical shape —
-    // `{extends, include}` with NO stray keys — and, ONLY when the model
-    // carries co-located unit tests (`src/**/*.test.ts`), adds
-    // `compilerOptions.types: ["node"]` so those tests type-check: provide
-    // node types, do NOT exclude the tests. A test-less model is
-    // canonicalised to bare `{extends, include}`
-    // and stays a refresh fixpoint. The matching `@types/node` devDep is
-    // wired by the package.json rule under the same predicate.
-    managed("tsconfig.json", file("model/tsconfig.json"), () => {
-      ensureField("extends", "@milaboratories/ts-configs/block/model");
-      // Canonical default carries no compilerOptions; drop any legacy block's
-      // before (conditionally) re-adding only `types`.
-      removeField("compilerOptions");
-      when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
-        ensureField("compilerOptions.types", ["node"]);
-      });
-      ensureField("include", ["src/**/*"]);
-      // Strip anything else a legacy tsconfig carried (files, references, a
-      // different extends layout) — keep only the canonical keys.
-      pruneKeysMatching((k) => k !== "extends" && k !== "include" && k !== "compilerOptions");
-    });
+    // Two static end states by co-located-test presence: a test-bearing model
+    // gets node ambient types (`.node.json`) so the tests type-check —
+    // `@types/node` is wired alongside by the package.json rule; a test-less
+    // model stays bare. `fixed` (engine-owned, whole-file overwrite) not
+    // `managed`, so refresh is idempotent by construction — no key-order drift.
+    when(
+      whenFilesExist(COLOCATED_TEST_GLOB),
+      () => fixed("tsconfig.json", file("model/tsconfig.node.json")),
+      () => fixed("tsconfig.json", file("model/tsconfig.json")),
+    );
     fixed(".oxlintrc.json", file("model/.oxlintrc.json"));
     fixed(".oxfmtrc.json", file("model/.oxfmtrc.json"));
 

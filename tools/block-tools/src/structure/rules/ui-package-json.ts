@@ -80,6 +80,13 @@ export function uiPackageJsonRules(): void {
     vitest: "catalog:",
   });
 
+  // `vue-tsc` is owned by `ts-builder` (which runs it internally for
+  // `--target block-ui`), so the ui must NOT declare its own. A direct
+  // `vue-tsc` dep is the vestigial vite/vue-tsc-era artefact: it resolves
+  // independently of the version ts-builder pins, which is how a block ended
+  // up type-checking under a different vue-tsc than the toolchain intends.
+  removeDep("vue-tsc");
+
   // The ui builds with `--target block-ui` (types: []), so by default it
   // carries no browser/vitest/node ambient types — only the `typescript`
   // peer for IDE type resolution. Drop any stray `@types/node` a legacy

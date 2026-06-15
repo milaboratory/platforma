@@ -193,34 +193,49 @@ export function registerInnerWhenHandler(h: InnerWhenHandler): void {
 }
 
 /**
- * Conditionally run `body`. Two dispatch modes by active state:
- *  - inside `defineStructure(...)` → push a `WhenFrame` into the tree;
- *    trigger fires later at runner time per `FlatItem`.
- *  - inside a `managed(...)` body → evaluate `trigger` immediately
- *    against the runner-supplied `TriggerContext`; run/skip `body`
- *    synchronously.
+ * Conditionally run `body`, with an optional `elseBody`. One `when` symbol for
+ * both layers — `dispatchWhen` picks the timing:
+ *  - inside `defineStructure(...)` → register a `WhenFrame`; its trigger fires
+ *    later, per module, at runner time.
+ *  - inside a `managed(...)` body → evaluate the trigger against the live block
+ *    now and run/skip synchronously.
  *
- * One `when` symbol for both layers — same user contract, dispatch
- * picks the matching execution timing.
+ * `else` is just the negated trigger dispatched the same way, so exactly one
+ * branch applies (in either layer).
  */
-export function when(trigger: TriggerFn, body: () => void): void {
+export function when(trigger: TriggerFn, body: () => void, elseBody?: () => void): void {
+  dispatchWhen(trigger, body);
+  if (elseBody) dispatchWhen((tctx) => !trigger(tctx), elseBody);
+}
+
+/** Single-branch dispatch shared by both `when` branches. In a managed body the
+ *  handler runs `body` iff its trigger holds and returns whether a managed-body
+ *  context existed; no context — and not tree-build either — means `when()` was
+ *  called outside both layers, a misuse. */
+function dispatchWhen(trigger: TriggerFn, body: () => void): void {
   if (activeTree) {
-    const t = activeTree;
-    const frame: WhenFrame = { kind: "when", trigger, children: [] };
-    t.stack[t.stack.length - 1]!.push(frame);
-    t.stack.push(frame.children);
-    try {
-      body();
-    } finally {
-      t.stack.pop();
-    }
+    pushWhenFrame(trigger, body);
     return;
   }
-  if (innerWhenHandler && innerWhenHandler(trigger, body)) return;
-  throw new Error(
-    "when() called outside defineStructure() and outside any managed(...) body. " +
-      "Place this call inside one of the two.",
-  );
+  const handled = innerWhenHandler?.(trigger, body) ?? false;
+  if (!handled) {
+    throw new Error(
+      "when() called outside defineStructure() and outside any managed(...) body. " +
+        "Place this call inside one of the two.",
+    );
+  }
+}
+
+function pushWhenFrame(trigger: TriggerFn, body: () => void): void {
+  const t = activeTree!;
+  const frame: WhenFrame = { kind: "when", trigger, children: [] };
+  t.stack[t.stack.length - 1]!.push(frame);
+  t.stack.push(frame.children);
+  try {
+    body();
+  } finally {
+    t.stack.pop();
+  }
 }
 
 /** Trigger factory: true when at least one file in the leaf's module
