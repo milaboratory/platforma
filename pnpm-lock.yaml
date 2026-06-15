@@ -307,7 +307,7 @@ catalogs:
       specifier: 3.5.24
       version: 3.5.24
     vue-tsc:
-      specifier: ^3.2.6
+      specifier: 3.2.6
       version: 3.2.6
     winston:
       specifier: ^3.17.0
