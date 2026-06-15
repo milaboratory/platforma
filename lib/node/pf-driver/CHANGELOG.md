@@ -1,5 +1,13 @@
 # @milaboratories/pf-driver
 
+## 1.7.10
+
+### Patch Changes
+
+- 508fdcb: Adopt PFrames 1.1.46: bump `@milaboratories/pframes-rs-{node,wasip2,wasm}` to 1.1.46 and migrate the pf-driver to the new internal interfaces (`PFrameFactoryV9` / `PFrameV18` / `PTableV12`). `PTable.export` now takes `headers` as an ordered `[unifiedColumnIndex, headerName][]` list inside `ops` instead of a `Record<number, string>` map. The superseded `PFrameFactoryV8`, `PFrameV17`, `PTableV11`, and `PFrameReadAPIV14` interfaces are removed.
+- Updated dependencies [508fdcb]
+  - @milaboratories/pl-model-middle-layer@1.30.6
+
 ## 1.7.9
 
 ### Patch Changes
