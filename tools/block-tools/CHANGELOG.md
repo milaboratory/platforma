@@ -1,5 +1,18 @@
 # @platforma-sdk/block-tools
 
+## 2.10.17
+
+### Patch Changes
+
+- 7ac2f79: structure: declare the block tsconfig as a `fixed` file with two static end states (with / without node ambient types), chosen by a `when`/else on co-located-test presence, instead of an imperative `managed` body. This fixes a first-pass `RecheckError` (non-idempotent rule set) on test-bearing blocks migrating off a legacy tsconfig, and adds an optional `else` branch to `when`. Also drops the vestigial `vue-tsc` devDep from the migrated ui (ts-builder owns vue-tsc).
+  - @milaboratories/pl-model-backend@1.4.7
+  - @milaboratories/pl-model-common@1.46.1
+  - @milaboratories/pl-model-middle-layer@1.30.6
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/ts-helpers-oclif@1.1.42
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+
 ## 2.10.16
 
 ### Patch Changes
