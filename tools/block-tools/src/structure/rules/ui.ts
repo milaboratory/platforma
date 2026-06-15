@@ -20,17 +20,11 @@ import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function uiRules(): void {
   scope("ui", () => {
-    // The canonical ui tsconfig is fully engine-owned, so it is `fixed` (not
-    // `managed`): no field-level reconciliation, just declare the end state and
-    // overwrite. It has exactly two end states, selected by whether the ui
-    // carries co-located unit tests (`src/**/*.test.ts`):
-    //   - with tests  -> `{extends, compilerOptions: {types: ["node"]}, include}`
-    //     so tests importing `node:*` type-check under vue-tsc (provide node
-    //     types, do NOT exclude the tests). `@types/node` is wired by the
-    //     package.json rule under the same predicate.
-    //   - without     -> bare `{extends, include}`.
-    // Each is a static template, so refresh is idempotent by construction
-    // (no insertion-order side effects to flip the post-run recheck).
+    // Two static end states by co-located-test presence: a test-bearing ui gets
+    // node ambient types (`.node.json`) so tests' `node:*` imports type-check
+    // under vue-tsc — `@types/node` is wired alongside by the package.json rule;
+    // a test-less ui stays bare. `fixed` (engine-owned, whole-file overwrite)
+    // not `managed`, so refresh is idempotent by construction — no key-order drift.
     when(
       whenFilesExist(COLOCATED_TEST_GLOB),
       () => fixed("tsconfig.json", file("ui/tsconfig.node.json")),

@@ -222,6 +222,36 @@ describe("when() — inner-mode dispatch inside managed bodies", () => {
     ).toThrow(/outside defineStructure.*outside any managed/);
   });
 
+  test("else branch: predicate=true runs body, skips else", () => {
+    const out = withManagedBody(
+      {} as JsonObject,
+      () => {
+        when(
+          ({ pathExists }) => pathExists("tests/"),
+          () => ensureField("branch", "if"),
+          () => ensureField("branch", "else"),
+        );
+      },
+      { triggerContext: makeTctx({ paths: new Set(["tests/"]) }) },
+    );
+    expect(out.branch).toBe("if");
+  });
+
+  test("else branch: predicate=false runs else, skips body", () => {
+    const out = withManagedBody(
+      {} as JsonObject,
+      () => {
+        when(
+          ({ pathExists }) => pathExists("tests/"),
+          () => ensureField("branch", "if"),
+          () => ensureField("branch", "else"),
+        );
+      },
+      { triggerContext: makeTctx({ paths: new Set() }) },
+    );
+    expect(out.branch).toBe("else");
+  });
+
   test("idempotent — double-run yields the same parsed state", () => {
     const body = () => {
       ensureField("type", "module");

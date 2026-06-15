@@ -9,16 +9,11 @@ import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function modelRules(): void {
   scope("model", () => {
-    // The canonical model tsconfig is fully engine-owned, so it is `fixed`
-    // (not `managed`): declare the end state and overwrite, no field-level
-    // reconciliation. It has exactly two end states, selected by whether the
-    // model carries co-located unit tests (`src/**/*.test.ts`):
-    //   - with tests  -> `{extends, compilerOptions: {types: ["node"]}, include}`
-    //     so those tests type-check (provide node types, do NOT exclude them).
-    //     `@types/node` is wired by the package.json rule under the same
-    //     predicate.
-    //   - without     -> bare `{extends, include}`.
-    // Each is a static template, so refresh is idempotent by construction.
+    // Two static end states by co-located-test presence: a test-bearing model
+    // gets node ambient types (`.node.json`) so the tests type-check —
+    // `@types/node` is wired alongside by the package.json rule; a test-less
+    // model stays bare. `fixed` (engine-owned, whole-file overwrite) not
+    // `managed`, so refresh is idempotent by construction — no key-order drift.
     when(
       whenFilesExist(COLOCATED_TEST_GLOB),
       () => fixed("tsconfig.json", file("model/tsconfig.node.json")),
