@@ -384,10 +384,10 @@ export class AbstractPFrameDriver<
       [signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
-    const headers: Record<number, string> = {};
-    for (const index of columnIndices) {
-      headers[index] = columnLabel(def.tableSpec[index]);
-    }
+    const headers: [number, string][] = columnIndices.map((index): [number, string] => [
+      index,
+      columnLabel(def.tableSpec[index]),
+    ]);
 
     // keep()/cache live outside the limiter task: on abort `run` rejects and they are
     // skipped, so an abandoned (detached) operation never caches its result nor touches
@@ -406,7 +406,7 @@ export class AbstractPFrameDriver<
         }
       }
 
-      await pTable.export(path, headers, { signal: combinedSignal });
+      await pTable.export(path, { headers, signal: combinedSignal });
 
       const overallSize = await tableGuard.resource.cacheSize;
 
