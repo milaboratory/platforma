@@ -1,0 +1,7 @@
+{
+  "extends": "@milaboratories/ts-configs/block/model",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}
