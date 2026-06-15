@@ -203,24 +203,38 @@ export function registerInnerWhenHandler(h: InnerWhenHandler): void {
  * One `when` symbol for both layers — same user contract, dispatch
  * picks the matching execution timing.
  */
-export function when(trigger: TriggerFn, body: () => void): void {
+export function when(trigger: TriggerFn, body: () => void, elseBody?: () => void): void {
   if (activeTree) {
-    const t = activeTree;
-    const frame: WhenFrame = { kind: "when", trigger, children: [] };
-    t.stack[t.stack.length - 1]!.push(frame);
-    t.stack.push(frame.children);
-    try {
-      body();
-    } finally {
-      t.stack.pop();
-    }
+    pushWhenFrame(trigger, body);
+    // The `else` branch is a sibling frame guarded by the negated trigger, so
+    // exactly one of the two runs for any given module. Use it to declare two
+    // mutually-exclusive end states for one path (e.g. the canonical tsconfig
+    // with vs without node ambient types).
+    if (elseBody) pushWhenFrame((tctx) => !trigger(tctx), elseBody);
     return;
   }
-  if (innerWhenHandler && innerWhenHandler(trigger, body)) return;
+  if (innerWhenHandler && innerWhenHandler(trigger, body)) {
+    // Managed-body layer: the handler evaluates the trigger immediately. Run
+    // `elseBody` under the negated trigger so it fires iff `body` did not.
+    if (elseBody) innerWhenHandler((tctx) => !trigger(tctx), elseBody);
+    return;
+  }
   throw new Error(
     "when() called outside defineStructure() and outside any managed(...) body. " +
       "Place this call inside one of the two.",
   );
+}
+
+function pushWhenFrame(trigger: TriggerFn, body: () => void): void {
+  const t = activeTree!;
+  const frame: WhenFrame = { kind: "when", trigger, children: [] };
+  t.stack[t.stack.length - 1]!.push(frame);
+  t.stack.push(frame.children);
+  try {
+    body();
+  } finally {
+    t.stack.pop();
+  }
 }
 
 /** Trigger factory: true when at least one file in the leaf's module
