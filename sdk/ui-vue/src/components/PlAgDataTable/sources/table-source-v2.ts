@@ -21,6 +21,7 @@ import {
   isLinkerColumn as isLinkerColumnSpec,
   isColumnHidden,
   isColumnOptional,
+  resolveColumnHidden,
   matchAxisId,
   readAnnotation,
   readAnnotationJson,
@@ -90,6 +91,7 @@ export async function calculateGridOptions({
   visibleTableHandle,
   dataRenderedTracker,
   hiddenColIds,
+  shownColIds,
   cellButtonAxisParams,
 }: {
   sheets: PlDataTableSheet[];
@@ -98,7 +100,10 @@ export async function calculateGridOptions({
   fullTableHandle: PTableHandle;
   visibleTableHandle: PTableHandle;
   dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
+  /** User's explicit hide overrides (vs block default visibility). */
   hiddenColIds?: PlTableColumnIdJson[];
+  /** User's explicit show overrides (vs block default visibility). */
+  shownColIds?: PlTableColumnIdJson[];
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
 }): Promise<
   Pick<ManagedGridOptions<PlAgDataTableV2Row>, "columnDefs" | "serverSideDatasource"> & {
@@ -129,13 +134,15 @@ export async function calculateGridOptions({
     tableSpecs,
   );
 
-  // default hidden columns derived from Optional annotation when no saved state
-  const resolvedHiddenColIds = hiddenColIds ?? computeDefaultHiddenColIds(fields, tableSpecs);
+  // Build lookup sets once (rather than Array.includes per column), mirroring the
+  // Set-based reconciliation in the model's computeHiddenColumns.
+  const hiddenColIdSet = new Set(hiddenColIds ?? []);
+  const shownColIdSet = new Set(shownColIds ?? []);
 
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
     ...fields.map((field) =>
-      makeColDef(field, tableSpecs[field], resolvedHiddenColIds, cellButtonAxisParams),
+      makeColDef(field, tableSpecs[field], hiddenColIdSet, shownColIdSet, cellButtonAxisParams),
     ),
   ];
 
@@ -232,7 +239,8 @@ export type PlAgCellButtonAxisParams = {
 export function makeColDef(
   iCol: number,
   spec: PTableColumnSpec,
-  hiddenColIds: PlTableColumnIdJson[] | undefined,
+  hiddenColIds: ReadonlySet<PlTableColumnIdJson>,
+  shownColIds: ReadonlySet<PlTableColumnIdJson>,
   cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
   const colId = canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
@@ -258,7 +266,16 @@ export function makeColDef(
     headerName,
     lockPosition:
       spec.type === "axis" || (isLabelColumnSpec(spec.spec) && spec.spec.axesSpec.length === 1),
-    hide: hiddenColIds !== undefined && hiddenColIds.includes(colId),
+    // Visibility = block default reconciled with the user's explicit overrides via the
+    // shared resolveColumnHidden (same precedence as the model's computeHiddenColumns).
+    // forcedHidden is false here: hidden columns are filtered out upstream by
+    // selectDisplayableIndices, and axes carry no table/visibility default.
+    hide: resolveColumnHidden({
+      forcedHidden: false,
+      optional: spec.type === "column" && isColumnOptional(spec.spec),
+      userShown: shownColIds.has(colId),
+      userHidden: hiddenColIds.has(colId),
+    }),
     valueFormatter: columnRenderingSpec.valueFormatter,
     headerComponent: PlAgColumnHeader,
     cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
@@ -400,19 +417,6 @@ function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColum
     return isNaN(prior) ? 0 : prior;
   };
   return [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
-}
-
-/** Default hidden col ids built from columns marked with the Optional annotation. */
-function computeDefaultHiddenColIds(
-  fields: number[],
-  tableSpecs: PTableColumnSpec[],
-): PlTableColumnIdJson[] {
-  return fields.reduce<PlTableColumnIdJson[]>((acc, field) => {
-    const spec = tableSpecs[field];
-    return spec.type === "column" && isColumnOptional(spec.spec)
-      ? [...acc, canonicalizeJson<PTableColumnId>(getPTableColumnId(spec))]
-      : acc;
-  }, []);
 }
 
 /** Extract axis indices and specs from the visible table (always present as part of join). */

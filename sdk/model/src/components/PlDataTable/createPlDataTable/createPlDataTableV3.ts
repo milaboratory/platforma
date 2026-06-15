@@ -28,6 +28,7 @@ import {
   evaluateRules,
   isColumnHidden,
   isColumnOptional,
+  resolveColumnHidden,
   withHidenAxesAnnotations,
   withLabelAnnotations,
   withTableVisualAnnotations,
@@ -186,11 +187,13 @@ export function createPlDataTableV3<A, U>(
   ]);
 
   const hiddenSpecs = state.pTableParams.hiddenColIds;
+  const shownSpecs = state.pTableParams.shownColIds;
   const hiddenColumnIds = computeHiddenColumns(
     [...annotated.direct, ...annotated.linked].map((v) => v.column),
     sorting,
     filters,
     hiddenSpecs,
+    shownSpecs,
   );
 
   const visible = buildVisibleColumns(annotated, hiddenColumnIds);
@@ -446,21 +449,42 @@ function buildSecondaryGroups(
   ];
 }
 
-/** Determine which columns should be hidden based on state or optional-column defaults. */
-function computeHiddenColumns(
+/** Determine which columns should be hidden, reconciling block defaults with the
+ * user's explicit show/hide overrides. Sorted/filtered columns are force-kept visible.
+ *
+ * Exported for unit testing. */
+export function computeHiddenColumns(
   columns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
   sorting: Nil | PTableSorting[],
   filters: Nil | PlDataTableFilters,
   hiddenSpecs: Nil | PTableColumnId[],
+  shownSpecs: Nil | PTableColumnId[],
 ): Set<PObjectId> {
-  const alwaysHidden = columns.filter((c) => isColumnHidden(c.spec)).map((c) => c.id);
-  const optionalHidden = !isNil(hiddenSpecs)
-    ? hiddenSpecs.filter((s): s is PTableColumnIdColumn => s.type === "column").map((s) => s.id)
-    : columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
-  const initial = [...alwaysHidden, ...optionalHidden];
+  const userHidden = new Set(
+    (hiddenSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  const userShown = new Set(
+    (shownSpecs ?? [])
+      .filter((s): s is PTableColumnIdColumn => s.type === "column")
+      .map((s) => s.id),
+  );
+  // Reconcile each column's block default with the user's explicit overrides via the
+  // shared resolveColumnHidden, so the model and UI (makeColDef) can never diverge.
+  const hidden = columns
+    .filter((c) =>
+      resolveColumnHidden({
+        forcedHidden: isColumnHidden(c.spec),
+        optional: isColumnOptional(c.spec),
+        userShown: userShown.has(c.id),
+        userHidden: userHidden.has(c.id),
+      }),
+    )
+    .map((c) => c.id);
   const preserved = collectPreservedColumnIds(sorting, filters);
 
-  return new Set(initial.filter((id) => !preserved.has(id)));
+  return new Set(hidden.filter((id) => !preserved.has(id)));
 }
 
 /** Collect IDs of columns that must remain visible (sorted, filtered). */

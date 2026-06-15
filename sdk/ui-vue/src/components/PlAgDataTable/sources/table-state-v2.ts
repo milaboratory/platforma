@@ -237,6 +237,7 @@ function createPTableParams(
   return {
     sourceId: state.sourceId,
     hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
+    shownColIds: getShownColIds(state.gridState.columnVisibility),
     sorting: convertAgSortingToPTableSorting(state.gridState.sort),
     filters,
     defaultFilters,
@@ -428,6 +429,12 @@ function getHiddenColIds(
   state: PlDataTableGridStateCore["columnVisibility"],
 ): PTableColumnId[] | null {
   return state?.hiddenColIds?.map((json) => parseJson<PTableColumnId>(json)) ?? null;
+}
+
+function getShownColIds(
+  state: PlDataTableGridStateCore["columnVisibility"],
+): PTableColumnId[] | null {
+  return state?.shownColIds?.map((json) => parseJson<PTableColumnId>(json)) ?? null;
 }
 
 function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {

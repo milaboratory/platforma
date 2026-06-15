@@ -1,6 +1,7 @@
 import type {
   AxisId,
   PColumn,
+  PColumnSpec,
   PObjectId,
   PTableColumnId,
   PTableColumnIdAxis,
@@ -32,7 +33,8 @@ import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
 import { isEmpty } from "es-toolkit/compat";
 import { createPTableDefV2 } from "./createPTableDefV2";
-import { isColumnOptional } from "./utils";
+import { computeHiddenColumns } from "./createPlDataTableV3";
+import type { Nil } from "@milaboratories/helpers";
 
 /**
  * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
@@ -135,21 +137,15 @@ export function createPlDataTableV2<A, U>(
   const pframeHandle = ctx.createPFrame(fullColumns);
   if (!fullHandle || !pframeHandle) return undefined;
 
-  const hiddenColumns = new Set<PObjectId>(
-    ((): PObjectId[] => {
-      // Inner join works as a filter - all columns must be present
-      if (coreJoinType === "inner") return [];
-
-      const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
-      if (hiddenColIds !== null) {
-        return hiddenColIds
-          .filter((s): s is PTableColumnIdColumn => s.type === "column")
-          .map((s) => s.id);
-      }
-
-      return columns.filter((c) => isColumnOptional(c.spec)).map((c) => c.id);
-    })(),
-  );
+  const hiddenColumns =
+    // Inner join works as a filter - all columns must be present.
+    coreJoinType === "inner"
+      ? new Set<PObjectId>()
+      : computeHiddenColumnsV2(
+          columns,
+          tableStateNormalized.pTableParams.hiddenColIds,
+          tableStateNormalized.pTableParams.shownColIds,
+        );
 
   // Preserve linker columns
   columns.filter((c) => isLinkerColumn(c.spec)).forEach((c) => hiddenColumns.delete(c.id));
@@ -207,6 +203,26 @@ export function createPlDataTableV2<A, U>(
     visibleTableHandle: visibleHandle,
     defaultFilters,
   } satisfies PlDataTableModel;
+}
+
+/**
+ * V2's base hide decision: which columns to drop from the visible table, reconciling each
+ * column's block default with the user's show/hide deviations. Delegates to the shared
+ * {@link computeHiddenColumns} so the deprecated V2 path uses the exact same precedence as
+ * the V3 model and the grid's `makeColDef` — one implementation, no drift, and forced-hidden
+ * (`visibility: "hidden"`) columns are dropped here just as they are in V3.
+ *
+ * Sort/filter preservation is skipped (both args `null`); the caller then force-keeps
+ * sorted, filtered, linker, and core columns visible on top of this base set.
+ *
+ * Exported for unit testing.
+ */
+export function computeHiddenColumnsV2(
+  columns: { readonly id: PObjectId; readonly spec: PColumnSpec }[],
+  hiddenSpecs: Nil | PTableColumnId[],
+  shownSpecs: Nil | PTableColumnId[],
+): Set<PObjectId> {
+  return computeHiddenColumns(columns, null, null, hiddenSpecs, shownSpecs);
 }
 
 function getAllLabelColumns(
