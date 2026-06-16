@@ -2569,6 +2569,9 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.2.2
       openapi-fetch:
         specifier: 'catalog:'
         version: 0.15.0

@@ -25,6 +25,7 @@ import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.c
 import { DownloadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client";
 import type { DownloadApiPaths, DownloadRestClientType } from "../proto-rest";
 import { type GetContentOptions } from "@milaboratories/pl-model-common";
+import { DownloadUrlCache } from "./download_url_cache";
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -37,6 +38,9 @@ export class ClientDownload {
 
   /** Concurrency limiter for local file reads - limit to 32 parallel reads */
   private readonly localFileReadLimiter = new ConcurrencyLimitingExecutor(32);
+
+  /** Caches presigned download URLs by resource id until they (almost) expire. */
+  private readonly urlCache: DownloadUrlCache;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
@@ -59,6 +63,7 @@ export class ClientDownload {
     });
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
     this.localStorageIdsToRoot = newLocalStorageIdsToRoot(localProjections);
+    this.urlCache = new DownloadUrlCache(logger);
   }
 
   close() {}
@@ -135,18 +140,22 @@ export class ClientDownload {
     options?: RpcOptions,
     signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
+    const cached = this.urlCache.get(id);
+    if (cached !== undefined) return cached;
+
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
     const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
+    let response: DownloadAPI_GetDownloadURL_Response;
     if (client instanceof DownloadClient) {
-      return await client.getDownloadURL(
+      response = await client.getDownloadURL(
         { resourceId: globalId, resourceSignature: signature, isInternalUse: false },
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
-      return (
+      response = (
         await client.POST("/v1/get-download-url", {
           body: {
             resourceId: globalId.toString(),
@@ -157,6 +166,9 @@ export class ClientDownload {
         })
       ).data!;
     }
+
+    this.urlCache.set(id, response);
+    return response;
   }
 }
 
