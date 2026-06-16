@@ -117,6 +117,7 @@ export {
   ensureWorkspaceModulePaths,
   ensureCatalogVersion,
   pinCatalogTo,
+  pinCatalogToDependencyOf,
   ensureCatalogLatest,
   ensureCatalogAbsent,
   // Lines managed builders
