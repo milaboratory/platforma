@@ -11,8 +11,12 @@ import { NodeTemplateProvider } from "../engine/templates";
 import { run as engineRun, type Change } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
 import { STRUCTURE } from "../structure-definition";
-import { matchesBumpPattern, buildRegistryLookupForNames } from "../engine/registry-client";
-import { SDK_CATALOG_PACKAGES } from "../rules/root-pnpm-workspace";
+import {
+  matchesBumpPattern,
+  buildRegistryLookupForNames,
+  buildDerivedPinLookupForPins,
+} from "../engine/registry-client";
+import { SDK_CATALOG_PACKAGES, DERIVED_CATALOG_PINS } from "../rules/root-pnpm-workspace";
 
 export type StructureMode = "check" | "refresh";
 
@@ -60,10 +64,16 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
   });
 
   const registryLookup = input.updateDepsOnly ? await buildRegistryLookup() : undefined;
+  // Derived catalog pins (e.g. vue ← ui-vue's declared dep) resolve on the
+  // same prefetch budget as the SDK latest bump; absent on a default refresh.
+  const derivedPinLookup = input.updateDepsOnly
+    ? await buildDerivedPinLookupForPins(DERIVED_CATALOG_PINS)
+    : undefined;
 
   const result = engineRun(STRUCTURE, fs, ctx, {
     templates,
     registryLookup,
+    derivedPinLookup,
     // Fresh re-discovery for the post-run recheck (default refresh only)
     // — re-reads the just-written tree so a rename that shifted the
     // module map is observed.

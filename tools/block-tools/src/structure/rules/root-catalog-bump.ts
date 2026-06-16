@@ -26,12 +26,14 @@ import {
   generate,
   ensureCatalogLatest,
   ensureCatalogVersion,
+  pinCatalogToDependencyOf,
 } from "../engine/api";
 import { getActiveRunContext } from "../engine/builders";
 import {
   rootPnpmWorkspaceInitial,
   SDK_CATALOG_PACKAGES,
   INFRA_CATALOG_FLOOR,
+  DERIVED_CATALOG_PINS,
   RUNENV_PYTHON,
   RUNENV_PYTHON_VERSION,
 } from "./root-pnpm-workspace";
@@ -57,8 +59,17 @@ export function rootCatalogBumpRules(): void {
               // block's missing standard keys + overwrites the init
               // placeholder).
               for (const name of SDK_CATALOG_PACKAGES) ensureCatalogLatest(name);
+              // Derived catalog pins → the EXACT version their source package
+              // declares (e.g. `vue` from `@platforma-sdk/ui-vue`). OVERWRITES
+              // (seeds when absent, tightens a loose on-disk entry). Resolved
+              // by the prefetched `derivedPinLookup`; a no-op when absent
+              // (default refresh passes none). Must run AFTER ensureCatalogLatest
+              // — the source package's own version is bumped there first.
+              for (const pin of DERIVED_CATALOG_PINS) {
+                pinCatalogToDependencyOf(pin.entry, { of: pin.of, ofVersion: pin.ofVersion });
+              }
               // Curated infra floor → fixed version, ADD-IF-ABSENT (seeds
-              // shx/turbo/vitest/vue/changesets when missing; never touches a
+              // shx/turbo/vitest/changesets when missing; never touches a
               // version the block already pins).
               for (const [name, version] of Object.entries(INFRA_CATALOG_FLOOR)) {
                 ensureCatalogVersion(name, version);

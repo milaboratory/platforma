@@ -15,6 +15,8 @@ import {
   ensureDep,
   ensureDevDep,
   ensureDevDeps,
+  removeDep,
+  removeField,
   ensurePeerDeps,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
@@ -49,8 +51,6 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
       watch: "ts-builder build --target block-model --watch",
       build: "ts-builder build --target block-model && block-tools build-model",
       check: "ts-builder check --target block-model",
-      // No `test`: the vitest `test` script is wired by the body rule ONLY
-      // when co-located test files exist (a freshly-init'd model has none).
     },
     dependencies: {
       "@platforma-sdk/model": "sdk:",
@@ -59,7 +59,6 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
       "@milaboratories/ts-builder": "sdk:",
       "@milaboratories/ts-configs": "sdk:",
       "@platforma-sdk/block-tools": "sdk:",
-      vitest: "catalog:",
     },
     peerDependencies: {
       "@types/node": "*",
@@ -94,7 +93,6 @@ export function modelPackageJsonRules(): void {
     "@milaboratories/ts-builder": "sdk:",
     "@milaboratories/ts-configs": "sdk:",
     "@platforma-sdk/block-tools": "sdk:",
-    vitest: "catalog:",
   });
 
   ensurePeerDeps({
@@ -102,18 +100,30 @@ export function modelPackageJsonRules(): void {
     typescript: "*",
   });
 
-  // The vitest `test` script + node ambient types are wired ONLY when the
-  // model carries co-located unit tests (`src/**/*.test.ts`). A test-less
-  // model gets neither — turbo simply has no `test` task for it, and the
-  // scope stays a refresh fixpoint. When tests ARE present, `@types/node`
-  // is promoted from peer to a devDep (the single-section invariant drops
-  // the peer) so the tests' `node:*` imports resolve under the
-  // `types: ["node"]` that model/tsconfig adds under the same predicate.
-  // Runs AFTER ensurePeerDeps so the promotion is not reverted.
-  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
-    ensureScript("test", "vitest run --passWithNoTests");
-    ensureDevDep("@types/node", "*");
-  });
+  // The vitest `test` script, the `vitest` devDep, and node ambient types are
+  // wired ONLY when the model carries co-located unit tests (`src/**/*.test.ts`).
+  // A test-less model gets none — turbo simply has no `test` task for it, and
+  // the scope stays a refresh fixpoint. When tests ARE present, `@types/node`
+  // is promoted from peer to a devDep (the single-section invariant drops the
+  // peer) so the tests' `node:*` imports resolve under the `types: ["node"]`
+  // that model/tsconfig adds under the same predicate. Runs AFTER ensurePeerDeps
+  // so the promotion is not reverted.
+  when(
+    whenFilesExist(COLOCATED_TEST_GLOB),
+    () => {
+      ensureScript("test", "vitest run --passWithNoTests");
+      ensureDevDep("vitest", "catalog:");
+      ensureDevDep("@types/node", "*");
+    },
+    () => removeDep("vitest"),
+  );
+
+  // vite/tsup-era artefacts: the canonical model builds via ts-builder, so the
+  // legacy `tsup`/`vite` devDeps and the top-level `tsup` bundler config block
+  // are dropped.
+  removeDep("tsup");
+  removeDep("vite");
+  removeField("tsup");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
