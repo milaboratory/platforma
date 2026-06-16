@@ -97,6 +97,12 @@ buildExportSelectors := func(rawColumns, opts) {
 		columnSelectors = append(columnSelectors, pt.axis(ua.spec).alias(ua.label))
 	}
 	for column in rawColumns {
+		// keys-only columns contribute their axes (collected above) to the
+		// output key space but emit no value column — skip the value selector
+		// and its label (no header required for them).
+		if column.keysOnly {
+			continue
+		}
 		label := columnLabel(column)
 		registerLabel(label, column.spec.name)
 		columnSelectors = append(columnSelectors, pt.col(column.frameKey).alias(label))
