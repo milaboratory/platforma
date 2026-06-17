@@ -12,7 +12,7 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import type { LocalStorageProjection } from "@milaboratories/pl-drivers";
 import path from "node:path";
-import { PFrameDriverOpsDefaults, type PFrameDriverOps } from "../pool";
+import { PFrameDriverOpsDefaults, type PFrameDriverOps, type ParquetCacheOps } from "../pool";
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -47,6 +47,13 @@ export type DriverKitOpsPaths = {
 
   /** Path to the directory where pframes will spill temporary files and store materialized views */
   readonly pframesSpillPath: string;
+
+  /**
+   * Path to the directory backing the persistent parquet blob cache. Unlike
+   * {@link pframesSpillPath} this directory is NOT emptied on startup - the cache
+   * (and its lifetime counters) is meant to survive restarts.
+   */
+  readonly parquetCachePath: string;
 };
 
 /** Options required to initialize full set of middle layer driver kit */
@@ -127,6 +134,13 @@ export type DriverKitOpsSettings = {
 
   /** Settings related to the PFrame driver */
   readonly pFrameDriverOps: PFrameDriverOps;
+
+  /**
+   * Tuning for the persistent parquet blob cache. Its directory is
+   * {@link DriverKitOpsPaths.parquetCachePath}; this carries only the
+   * size/eviction knobs.
+   */
+  readonly parquetCacheOps: ParquetCacheOps;
 };
 
 export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
@@ -141,6 +155,7 @@ export const DefaultDriverKitOpsSettings: Pick<
   | "uploadDriverOps"
   | "logStreamDriverOps"
   | "pFrameDriverOps"
+  | "parquetCacheOps"
 > = {
   logger: new ConsoleLoggerAdapter(),
   blobDriverOps: {
@@ -169,19 +184,29 @@ export const DefaultDriverKitOpsSettings: Pick<
     stopPollingDelay: 1000,
   },
   pFrameDriverOps: PFrameDriverOpsDefaults,
+  parquetCacheOps: {
+    maxSizeBytes: 8 * 1024 * 1024 * 1024, // 8 GB
+    admissionFraction: 0.2, // a single file may occupy at most 20% of the budget
+    maxFilesTracked: 50_000, // ghost (previously-evicted) files remembered to guide readmission
+  },
 };
 
 export function DefaultDriverKitOpsPaths(
   workDir: string,
 ): Pick<
   DriverKitOpsPaths,
-  "blobDownloadPath" | "blobDownloadRangesCachePath" | "downloadBlobToURLPath" | "pframesSpillPath"
+  | "blobDownloadPath"
+  | "blobDownloadRangesCachePath"
+  | "downloadBlobToURLPath"
+  | "pframesSpillPath"
+  | "parquetCachePath"
 > {
   return {
     blobDownloadPath: path.join(workDir, "download"),
     blobDownloadRangesCachePath: path.join(workDir, "downloadRangesCache"),
     downloadBlobToURLPath: path.join(workDir, "downloadToURL"),
     pframesSpillPath: path.join(workDir, "pframes"),
+    parquetCachePath: path.join(workDir, "parquetCache"),
   };
 }
 
