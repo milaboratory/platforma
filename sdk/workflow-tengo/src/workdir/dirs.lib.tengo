@@ -1,0 +1,28 @@
+/**
+ * Helpers for collecting the directories that must be created inside a workdir.
+ */
+
+ll := import(":ll")
+sets := import(":sets")
+path := import(":path")
+
+/**
+ * Adds `dir` and every intermediate parent directory to `set`.
+ *
+ * path.getBasenameDirs returns all nested parent paths of `dir`
+ * (e.g. "a/b/c" => ["a", "a/b", "a/b/c"]; "embeddings" => ["embeddings"]).
+ * The spread is required: sets.add is variadic, so without it the whole
+ * slice would be stored as a single key and serialize to a literal
+ * directory name like ["embeddings"].
+ *
+ * @param set: set<string> - the directory set to extend.
+ * @param dir: string - the directory path to register.
+ * @return set<string> - `set` with `dir` and all of its parents added.
+ */
+addNestedDirs := func(set, dir) {
+	return sets.add(set, path.getBasenameDirs(dir)...)
+}
+
+export ll.toStrict({
+	addNestedDirs: addNestedDirs
+})
