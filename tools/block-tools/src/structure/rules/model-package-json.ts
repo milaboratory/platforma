@@ -27,6 +27,7 @@ import {
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -128,20 +129,15 @@ export function modelPackageJsonRules(): void {
       ),
   );
 
-  // vite/tsup-era artefacts: the canonical model builds via ts-builder, so the
-  // legacy `tsup`/`vite` devDeps and the top-level `tsup` bundler config block
-  // are dropped.
-  removeDep("tsup");
-  removeDep("vite");
-  // `vite-plugin-dts` (vite-era .d.ts emit) is superseded by ts-builder; shed
-  // the leftover dep — paired with its catalog removal in root-pnpm-workspace.
-  removeDep("vite-plugin-dts");
+  // Shed retired toolchain deps (tsup, vite, vite-plugin-dts, eslint-config) —
+  // ts-builder + rolldown own the build; oxlint replaces eslint. Single source
+  // of truth in shared/retired-deps; catalog entries drop in lockstep via
+  // rootPnpmWorkspaceRules.
+  removeRetiredToolchainDeps();
+  // The top-level `tsup` CONFIG block (a package.json field, not a dep) and the
+  // eslint `lint` script go too — neither is a dependency.
   removeField("tsup");
-
-  // eslint → ts-builder/oxlint: linting runs inside `ts-builder check`, so the
-  // standalone `lint` script and the eslint config dep are legacy leftovers.
   removeScript("lint");
-  removeDep("@platforma-sdk/eslint-config");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

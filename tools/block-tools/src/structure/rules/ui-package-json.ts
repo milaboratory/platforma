@@ -26,6 +26,7 @@ import {
 import { scopeDepMap } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -78,29 +79,17 @@ export function uiPackageJsonRules(): void {
     "@milaboratories/ts-configs": "sdk:",
   });
 
-  // `vue-tsc` is owned by `ts-builder` (which runs it internally for
-  // `--target block-ui`), so the ui must NOT declare its own. A direct
-  // `vue-tsc` dep is the vestigial vite/vue-tsc-era artefact: it resolves
-  // independently of the version ts-builder pins, which is how a block ended
-  // up type-checking under a different vue-tsc than the toolchain intends.
-  removeDep("vue-tsc");
-
-  // vite-era artefacts: the canonical ui builds + dev-serves via ts-builder,
-  // so a legacy `vite` dep and the `preview` (vite preview) script are dropped.
-  removeDep("vite");
+  // Shed retired toolchain deps — vue-tsc, vite, @vitejs/plugin-vue,
+  // vite-plugin-dts, eslint-config — all owned/replaced by ts-builder + oxlint.
+  // (vue-tsc in particular MUST go: a direct dep resolves a different version
+  // than ts-builder pins, clashing types in main.ts.) Single source of truth in
+  // shared/retired-deps; their catalog entries drop in lockstep via
+  // rootPnpmWorkspaceRules.
+  removeRetiredToolchainDeps();
+  // The vite-era `preview` and eslint `lint` SCRIPTS go too — scripts, not
+  // deps, so dropped here directly.
   removeScript("preview");
-  // `@vitejs/plugin-vue` + `vite-plugin-dts` are vite-build-era plugins now
-  // owned by ts-builder (it bundles the vue plugin internally). Shed the
-  // leftover direct deps — paired with their catalog removal in
-  // root-pnpm-workspace, so a migrated block sheds both the dep and the (now
-  // dangling) `catalog:` reference.
-  removeDep("@vitejs/plugin-vue");
-  removeDep("vite-plugin-dts");
-
-  // eslint → ts-builder/oxlint: linting runs inside `ts-builder check`, so the
-  // standalone `lint` script and the eslint config dep are legacy leftovers.
   removeScript("lint");
-  removeDep("@platforma-sdk/eslint-config");
 
   // `@types/node` is declared as a peer by default — mirrors the model scope
   // (the block author resolves it from the workspace root). The ui builds with
