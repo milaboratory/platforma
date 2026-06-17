@@ -35,8 +35,7 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
       watch: "turbo watch build",
       changeset: "changeset",
       "version-packages": "changeset version",
-      // Deprecated in favour of `upgrade-sdk` (the full refresh → install →
-      // refresh → format flow); kept for compatibility, removed eventually.
+      // Deprecated alias of `upgrade-sdk`; kept for compatibility.
       "update-sdk": "block-tools structure refresh --update-deps-only",
       "upgrade-sdk":
         "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm i && pnpm fmt",
@@ -77,9 +76,8 @@ export function rootPackageJsonRules(): void {
   ensureScript("watch", "turbo watch build");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
-  // Deprecated in favour of `upgrade-sdk`; kept for compatibility, removed
-  // eventually. Drop the pre-rename `update` script so a refreshed block
-  // converges on the new name.
+  // `update-sdk` is a deprecated alias of `upgrade-sdk`, kept for compatibility;
+  // `update` is the pre-rename name — drop it so refreshed blocks converge.
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
   removeScript("update");
   // Full SDK-upgrade flow: bump catalog (deps-only) → install → re-apply

@@ -129,13 +129,7 @@ export function modelPackageJsonRules(): void {
       ),
   );
 
-  // Shed retired toolchain deps (tsup, vite, vite-plugin-dts, eslint-config) —
-  // ts-builder + rolldown own the build; oxlint replaces eslint. Single source
-  // of truth in shared/retired-deps; catalog entries drop in lockstep via
-  // rootPnpmWorkspaceRules.
   removeRetiredToolchainDeps();
-  // The top-level `tsup` CONFIG block (a package.json field, not a dep) and the
-  // eslint `lint` script go too — neither is a dependency.
   removeField("tsup");
   removeScript("lint");
 

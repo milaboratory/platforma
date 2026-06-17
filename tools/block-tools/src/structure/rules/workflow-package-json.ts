@@ -56,11 +56,10 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
 export function workflowPackageJsonRules(): void {
   ensureField("type", "module");
 
-  // No `fmt`: the workflow is Tengo, not TS. Build + check go through
-  // pl-tengo. shx powers the cross-platform build clean-up.
+  // No `fmt` script: the workflow is Tengo, not TS — build + check run via
+  // pl-tengo; `format` runs the emacs-batch Tengo formatter (no-op when absent).
   ensureScript("build", "shx rm -rf dist && pl-tengo build");
   ensureScript("check", "pl-tengo check");
-  // Tengo source formatter (emacs batch); no-op notice when emacs is absent.
   ensureScript("format", "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'");
   // The vitest `test` script AND the `vitest` devDep are wired ONLY when the
   // workflow carries co-located integration tests (`src/**/*.test.ts`, incl.
@@ -99,10 +98,8 @@ export function workflowPackageJsonRules(): void {
     shx: "catalog:",
   });
 
-  // Shed any retired toolchain dep — a no-op for a canonical Tengo workflow
-  // (it carries none), but applied uniformly across every package.json scope so
-  // no scope can be left holding a dangling `catalog:` reference to a key the
-  // catalog rule dropped. Single source of truth in shared/retired-deps.
+  // No-op for a canonical Tengo workflow; called uniformly across every scope
+  // for safety.
   removeRetiredToolchainDeps();
 
   enforceAlphabeticalOrder("dependencies");

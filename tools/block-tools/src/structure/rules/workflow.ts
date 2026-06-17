@@ -52,8 +52,8 @@ export function workflowRules(): void {
     );
     // No workflow facade (index.js / index.d.ts): the block loader resolves the
     // workflow via the `block:` components dist path (workflow/dist/.../main.plj.gz),
-    // never the JS facade. It was orphaned in production — dropped. Actively
-    // removed so existing blocks that carry it get cleaned (idempotent on absence).
+    // never the JS facade. Removed so blocks that carry one get cleaned
+    // (idempotent on absence).
     remove("index.js");
     remove("index.d.ts");
 

@@ -79,15 +79,7 @@ export function uiPackageJsonRules(): void {
     "@milaboratories/ts-configs": "sdk:",
   });
 
-  // Shed retired toolchain deps — vue-tsc, vite, @vitejs/plugin-vue,
-  // vite-plugin-dts, eslint-config — all owned/replaced by ts-builder + oxlint.
-  // (vue-tsc in particular MUST go: a direct dep resolves a different version
-  // than ts-builder pins, clashing types in main.ts.) Single source of truth in
-  // shared/retired-deps; their catalog entries drop in lockstep via
-  // rootPnpmWorkspaceRules.
   removeRetiredToolchainDeps();
-  // The vite-era `preview` and eslint `lint` SCRIPTS go too — scripts, not
-  // deps, so dropped here directly.
   removeScript("preview");
   removeScript("lint");
 
