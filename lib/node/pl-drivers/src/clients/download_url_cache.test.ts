@@ -1,4 +1,4 @@
-import { test, expect, describe } from "vitest";
+import { test, expect, describe, vi, afterEach } from "vitest";
 import { downloadUrlCacheTtlMs, extractUrlExpiryMs } from "./download_url_cache";
 
 // 2026-06-16T12:00:00Z, expressed timezone-independently.
@@ -45,19 +45,24 @@ describe("extractUrlExpiryMs", () => {
 });
 
 describe("downloadUrlCacheTtlMs", () => {
+  // downloadUrlCacheTtlMs reads Date.now(); pin it so the TTL math is deterministic.
+  afterEach(() => vi.useRealTimers());
+
   test("subtracts the 30s safety margin from the encoded expiry", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(SIGNED_AT); // now = signing time -> raw remaining 3600s, minus 30s margin.
     const url = "https://x/key?X-Amz-Date=20260616T120000Z&X-Amz-Expires=3600&X-Amz-Signature=x";
-    // now = signing time -> raw remaining 3600s, minus 30s margin.
-    expect(downloadUrlCacheTtlMs(url, SIGNED_AT)).toBe(3600_000 - 30_000);
+    expect(downloadUrlCacheTtlMs(url)).toBe(3600_000 - 30_000);
   });
 
   test("returns non-positive when within the safety margin of expiry", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(SIGNED_AT + 50_000); // 10s of life left -> after a 30s margin, not worth caching.
     const url = "https://x/key?X-Amz-Date=20260616T120000Z&X-Amz-Expires=60&X-Amz-Signature=x";
-    // 10s of life left -> after a 30s margin the entry is not worth caching.
-    expect(downloadUrlCacheTtlMs(url, SIGNED_AT + 50_000)).toBeLessThanOrEqual(0);
+    expect(downloadUrlCacheTtlMs(url)).toBeLessThanOrEqual(0);
   });
 
   test("falls back to a positive default TTL for URLs without encoded expiry", () => {
-    expect(downloadUrlCacheTtlMs("storage://main/path", SIGNED_AT)).toBeGreaterThan(0);
+    expect(downloadUrlCacheTtlMs("storage://main/path")).toBeGreaterThan(0);
   });
 });

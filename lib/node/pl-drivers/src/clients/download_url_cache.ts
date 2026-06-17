@@ -69,15 +69,15 @@ function parseCompactIso8601Utc(value: string): number | undefined {
 }
 
 /**
- * Computes the cache TTL (ms from `nowMs`) for a download URL, with the safety
+ * Computes the cache TTL (ms from now) for a download URL, with the safety
  * margin already subtracted. Returns a non-positive number when the URL is
  * already within the margin of expiring - the caller should then skip caching.
  */
-export function downloadUrlCacheTtlMs(url: string, nowMs: number): number {
+export function downloadUrlCacheTtlMs(url: string): number {
   const expiry = extractUrlExpiryMs(url);
   if (expiry === null) return 0;
   if (expiry === undefined) return NO_EXPIRY_DEFAULT_TTL_MS;
-  return expiry - nowMs - SAFETY_MARGIN_MS;
+  return expiry - Date.now() - SAFETY_MARGIN_MS;
 }
 
 /**
@@ -107,7 +107,7 @@ export class DownloadUrlCache {
   }
 
   set(key: SignedResourceId, value: DownloadAPI_GetDownloadURL_Response): void {
-    const ttl = downloadUrlCacheTtlMs(value.downloadUrl, Date.now());
+    const ttl = downloadUrlCacheTtlMs(value.downloadUrl);
     if (ttl <= 0) return; // Cache miss.
     this.cache.set(key, value, { ttl });
   }
