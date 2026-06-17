@@ -110,10 +110,7 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
-  // Retired toolchain catalog entries: drop the orphaned keys. Driven by the
-  // single `RETIRED_TOOLCHAIN_DEPS` source of truth — the per-package side
-  // (`removeRetiredToolchainDeps`) sheds the matching `<dep>: "catalog:"`
-  // references from every scope, so neither side can drift from the other and
-  // leave a dangling catalog reference.
+  // Catalog side of the retired-dep cleanup — the per-package side sheds the
+  // matching `catalog:` references.
   for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);
 }

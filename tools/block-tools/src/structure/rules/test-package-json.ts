@@ -24,9 +24,7 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
     type: "module",
     scripts: {
       fmt: "ts-builder format",
-      // Full check — type-check + lint (oxlint) + fmt-check (oxfmt) — same as
-      // model/ui, so test sources are gated identically. Slots into the turbo
-      // `check` task.
+      // `ts-builder check` runs type-check + lint (oxlint) + fmt-check (oxfmt).
       check: "ts-builder check --target block-test",
       test: "vitest run --passWithNoTests",
     },
@@ -45,19 +43,13 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
 
-  // The test scope is formatted + lint/fmt-checked like model/ui: `fmt` runs
-  // the oxlint/oxfmt fixer, `check` the type-check + lint + fmt-check.
   ensureScript("fmt", "ts-builder format");
-  // Full check — type-check + lint (oxlint) + fmt-check (oxfmt) — same as
-  // model/ui, so test sources are gated identically; slots into the turbo
-  // `check` task.
+  // `ts-builder check` runs type-check + lint (oxlint) + fmt-check (oxfmt).
   ensureScript("check", "ts-builder check --target block-test");
   ensureScript("test", "vitest run --passWithNoTests");
-  // eslint → ts-builder/oxlint: the legacy `lint` script is an author leftover
-  // (linting now runs inside `ts-builder check`). Drop it and its config dep.
+  // Linting runs inside `ts-builder check` — no separate `lint` script.
   removeScript("lint");
 
-  // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({
     "@platforma-sdk/test": "sdk:",
     "@milaboratories/ts-builder": "sdk:",
@@ -66,15 +58,11 @@ export function testPackageJsonRules(): void {
   });
 
   // The test tsconfig (@milaboratories/ts-configs/block/test) supplies the
-  // ambient types; only the `typescript` peer is needed. Drop any stray
-  // `@types/node` peer a legacy block declares.
+  // ambient types, so only the `typescript` peer is needed — no `@types/node`.
   ensurePeerDeps({
     typescript: "*",
   });
   removeDep("@types/node");
-  // Shed retired toolchain deps (eslint-config among them) — single source of
-  // truth in shared/retired-deps; their catalog entries drop in lockstep via
-  // rootPnpmWorkspaceRules.
   removeRetiredToolchainDeps();
 
   enforceAlphabeticalOrder("dependencies");
