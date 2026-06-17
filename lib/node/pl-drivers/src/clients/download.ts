@@ -106,7 +106,9 @@ export class ClientDownload {
     const cached = this.urlCache.get(info.id);
     if (cached !== undefined) {
       try {
-        return await attempt(cached);
+        const result = await attempt(cached);
+        this.logger.info(`cached download URL for blob ${stringifyWithResourceId(info)} accepted`);
+        return result;
       } catch (error) {
         if (!isDownloadNetworkError400(error)) throw error;
         this.urlCache.delete(info.id);

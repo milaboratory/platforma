@@ -34,9 +34,9 @@ describe("extractUrlExpiryMs", () => {
     expect(extractUrlExpiryMs("https://example.com/file?foo=bar")).toBeUndefined();
   });
 
-  test("malformed date yields no expiry", () => {
+  test("malformed presign params yield null (present but invalid - do not cache)", () => {
     const url = "https://x/key?X-Amz-Date=not-a-date&X-Amz-Expires=3600&X-Amz-Signature=x";
-    expect(extractUrlExpiryMs(url)).toBeUndefined();
+    expect(extractUrlExpiryMs(url)).toBeNull();
   });
 
   test("non-URL input yields no expiry", () => {
