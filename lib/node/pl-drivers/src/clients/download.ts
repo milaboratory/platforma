@@ -20,6 +20,7 @@ import { Readable } from "node:stream";
 import type { Dispatcher } from "undici";
 import type { LocalStorageProjection } from "../drivers/types";
 import { type ContentHandler, RemoteFileDownloader } from "../helpers/download";
+import { isDownloadNetworkError400 } from "../helpers/download_errors";
 import { validateAbsolute } from "../helpers/validate";
 import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol";
 import { DownloadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client";
@@ -80,24 +81,45 @@ export class ClientDownload {
     ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
-    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
+    const attempt = async ({
+      downloadUrl,
+      headers,
+    }: DownloadAPI_GetDownloadURL_Response): Promise<T> => {
+      const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
+      this.logger.info(
+        `blob ${stringifyWithResourceId(info)} download started, ` +
+          `url: ${downloadUrl}, ` +
+          `range: ${JSON.stringify(ops.range ?? null)}`,
+      );
 
-    const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-    this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download started, ` +
-        `url: ${downloadUrl}, ` +
-        `range: ${JSON.stringify(ops.range ?? null)}`,
-    );
+      const timer = PerfTimer.start();
+      const result = isLocal(downloadUrl)
+        ? await this.withLocalFileContent(downloadUrl, ops, handler)
+        : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
 
-    const timer = PerfTimer.start();
-    const result = isLocal(downloadUrl)
-      ? await this.withLocalFileContent(downloadUrl, ops, handler)
-      : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+      this.logger.info(
+        `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
+      );
+      return result;
+    };
 
-    this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
-    );
-    return result;
+    const cached = this.urlCache.get(info.id);
+    if (cached !== undefined) {
+      try {
+        return await attempt(cached);
+      } catch (error) {
+        if (!isDownloadNetworkError400(error)) throw error;
+        this.urlCache.delete(info.id);
+        this.logger.info(
+          `cached download URL for blob ${stringifyWithResourceId(info)} rejected ` +
+            `(status ${error.statusCode}), re-fetching`,
+        );
+      }
+    }
+
+    const fresh = await this.grpcGetDownloadUrl(info, options, ops.signal);
+    this.urlCache.set(info.id, fresh);
+    return await attempt(fresh);
   }
 
   async withLocalFileContent<T>(
@@ -140,22 +162,18 @@ export class ClientDownload {
     options?: RpcOptions,
     signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
-    const cached = this.urlCache.get(id);
-    if (cached !== undefined) return cached;
-
     const withAbort = options ?? {};
     withAbort.abort = signal;
 
     const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
-    let response: DownloadAPI_GetDownloadURL_Response;
     if (client instanceof DownloadClient) {
-      response = await client.getDownloadURL(
+      return await client.getDownloadURL(
         { resourceId: globalId, resourceSignature: signature, isInternalUse: false },
         addRTypeToMetadata(type, withAbort),
       ).response;
     } else {
-      response = (
+      return (
         await client.POST("/v1/get-download-url", {
           body: {
             resourceId: globalId.toString(),
@@ -166,9 +184,6 @@ export class ClientDownload {
         })
       ).data!;
     }
-
-    this.urlCache.set(id, response);
-    return response;
   }
 }
 
