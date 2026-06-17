@@ -68,13 +68,20 @@ export function workflowPackageJsonRules(): void {
   // the standalone workflow/tsconfig with `types: []` — they pull their types
   // from `@platforma-sdk/test` — so no node-types wiring is needed here,
   // unlike model/ui.)
+  //
+  // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
+  // wiring under the monorepo's shared infrastructure — see model-package-json.
   when(
-    whenFilesExist(COLOCATED_TEST_GLOB),
-    () => {
-      ensureScript("test", "vitest run --passWithNoTests");
-      ensureDevDeps({ vitest: "catalog:" });
-    },
-    () => removeDep("vitest"),
+    ({ ctx }) => !ctx.isSdkInternal,
+    () =>
+      when(
+        whenFilesExist(COLOCATED_TEST_GLOB),
+        () => {
+          ensureScript("test", "vitest run --passWithNoTests");
+          ensureDevDeps({ vitest: "catalog:" });
+        },
+        () => removeDep("vitest"),
+      ),
   );
 
   ensureDep("@platforma-sdk/workflow-tengo", "sdk:");
