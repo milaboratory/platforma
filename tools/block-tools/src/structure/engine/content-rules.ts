@@ -83,6 +83,9 @@ type YamlState = {
   triggerContext?: TriggerContext;
   /** Synchronous accessor for prefetched npm latest versions. */
   getLatestVersion?: (packageName: string) => string | undefined;
+  /** Synchronous accessor for prefetched derived catalog pins
+   *  (`catalogEntry → exact version`); see `pinCatalogToDependencyOf`. */
+  getDerivedDependencyPin?: (catalogEntry: string) => string | undefined;
 };
 
 type LinesState = {
@@ -177,6 +180,9 @@ export type WithManagedYamlOpts = WithManagedOpts & {
   /** Sync accessor for prefetched latest versions. Required for
    *  `ensureCatalogLatest` to take effect. */
   getLatestVersion?: (packageName: string) => string | undefined;
+  /** Sync accessor for prefetched derived catalog pins. Required for
+   *  `pinCatalogToDependencyOf` to take effect. */
+  getDerivedDependencyPin?: (catalogEntry: string) => string | undefined;
 };
 
 /** Engine-internal: run `body` with `doc` as the active YAML state (for
@@ -193,6 +199,7 @@ export function withManagedYaml(
     ctx: opts.ctx,
     triggerContext: opts.triggerContext,
     getLatestVersion: opts.getLatestVersion,
+    getDerivedDependencyPin: opts.getDerivedDependencyPin,
   };
   try {
     body();
@@ -577,6 +584,28 @@ export function ensureCatalogLatest(name: string): void {
   if (latest === undefined) return;
   if (readCatalogString(state, name) === latest) return;
   state.doc.setIn(["catalog", name], latest);
+}
+
+/** Pin `catalog.<catalogEntry>` to the EXACT version that package `opts.of`
+ *  declares for `catalogEntry` in its own manifest (read at npm latest, or at
+ *  `opts.ofVersion` if given). The value is resolved by the runner's
+ *  prefetched `getDerivedDependencyPin` accessor (the caller pre-resolves and
+ *  validates — exact-version-only — at prefetch time; no network here).
+ *  OVERWRITES like `pinCatalogTo` (not add-if-absent): a pre-existing loose
+ *  entry (`vue: ^3.5.24`) is tightened to the exact derived version. No-op
+ *  when no derived-pin lookup is available — default refresh/check pass none,
+ *  leaving the entry exactly as the lockfile has it; the resolution leaves
+ *  live in the `onInitOrUpdate` frame. */
+export function pinCatalogToDependencyOf(
+  catalogEntry: string,
+  _opts: { of: string; ofVersion?: string },
+): void {
+  const state = requireYaml("pinCatalogToDependencyOf");
+  if (!state.getDerivedDependencyPin) return;
+  const version = state.getDerivedDependencyPin(catalogEntry);
+  if (version === undefined) return;
+  if (readCatalogString(state, catalogEntry) === version) return;
+  state.doc.setIn(["catalog", catalogEntry], version);
 }
 
 /** Remove `catalog.<name>` if present; no-op when absent. */

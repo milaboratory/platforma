@@ -16,6 +16,7 @@ import {
   ensurePeerDeps,
   ensureWorkspaceScopeDeps,
   removeDep,
+  removeScript,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   when,
@@ -38,8 +39,6 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
       watch: "ts-builder build --target block-ui --watch",
       build: "ts-builder build --target block-ui",
       check: "ts-builder check --target block-ui",
-      // No `test`: the vitest `test` script is wired by the body rule ONLY
-      // when co-located test files exist (a freshly-init'd ui has none).
     },
     dependencies: {
       "@platforma-sdk/ui-vue": "sdk:",
@@ -51,7 +50,6 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
       "@milaboratories/ts-configs": "sdk:",
-      vitest: "catalog:",
     },
     peerDependencies: {
       typescript: "*",
@@ -77,7 +75,6 @@ export function uiPackageJsonRules(): void {
   ensureDevDeps({
     "@milaboratories/ts-builder": "sdk:",
     "@milaboratories/ts-configs": "sdk:",
-    vitest: "catalog:",
   });
 
   // `vue-tsc` is owned by `ts-builder` (which runs it internally for
@@ -86,6 +83,11 @@ export function uiPackageJsonRules(): void {
   // independently of the version ts-builder pins, which is how a block ended
   // up type-checking under a different vue-tsc than the toolchain intends.
   removeDep("vue-tsc");
+
+  // vite-era artefacts: the canonical ui builds + dev-serves via ts-builder,
+  // so a legacy `vite` dep and the `preview` (vite preview) script are dropped.
+  removeDep("vite");
+  removeScript("preview");
 
   // The ui builds with `--target block-ui` (types: []), so by default it
   // carries no browser/vitest/node ambient types — only the `typescript`
@@ -97,15 +99,27 @@ export function uiPackageJsonRules(): void {
   removeDep("@types/node");
 
   // ...but a ui WITH co-located unit tests (`src/**/*.test.ts`) needs the
-  // vitest `test` script AND node ambient types: re-add `@types/node` as a
-  // devDep so `types: ["node"]` in ui/tsconfig (wired under the same
-  // predicate) resolves the tests' `node:*` imports. A test-less ui keeps
-  // the lean default (no test script, no @types/node) and stays a fixpoint.
-  // Runs AFTER removeDep so the dev dep is not stripped.
-  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
-    ensureScript("test", "vitest run --passWithNoTests");
-    ensureDevDep("@types/node", "*");
-  });
+  // vitest `test` script, the `vitest` devDep, AND node ambient types: re-add
+  // `@types/node` as a devDep so `types: ["node"]` in ui/tsconfig (wired under
+  // the same predicate) resolves the tests' `node:*` imports. A test-less ui
+  // keeps the lean default (no test script, no vitest, no @types/node) and
+  // stays a fixpoint. Runs AFTER removeDep so the dev deps are not stripped.
+  //
+  // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
+  // wiring under the monorepo's shared infrastructure — see model-package-json.
+  when(
+    ({ ctx }) => !ctx.isSdkInternal,
+    () =>
+      when(
+        whenFilesExist(COLOCATED_TEST_GLOB),
+        () => {
+          ensureScript("test", "vitest run --passWithNoTests");
+          ensureDevDep("vitest", "catalog:");
+          ensureDevDep("@types/node", "*");
+        },
+        () => removeDep("vitest"),
+      ),
+  );
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

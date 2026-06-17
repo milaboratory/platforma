@@ -8,6 +8,7 @@ import {
   ensureScript,
   ensureDep,
   ensureDevDeps,
+  removeDep,
   ensureWorkspaceScopeDeps,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
@@ -44,7 +45,8 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
     devDependencies: {
       "@platforma-sdk/tengo-builder": "sdk:",
       "@platforma-sdk/test": "sdk:",
-      vitest: "catalog:",
+      // `vitest` is NOT seeded here — it's wired by the body rule only when the
+      // workflow carries co-located tests (a freshly-init'd workflow has none).
       shx: "catalog:",
     },
   };
@@ -59,15 +61,28 @@ export function workflowPackageJsonRules(): void {
   ensureScript("check", "pl-tengo check");
   // Tengo source formatter (emacs batch); no-op notice when emacs is absent.
   ensureScript("format", "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'");
-  // The vitest `test` script is wired ONLY when the workflow carries
-  // co-located integration tests (`src/**/*.test.ts`, incl. `src/test/`).
-  // A test-less workflow gets no `test` task and stays a refresh fixpoint.
-  // (Workflow tests type-check via the standalone workflow/tsconfig with
-  // `types: []` — they pull their types from `@platforma-sdk/test` — so no
-  // node-types wiring is needed here, unlike model/ui.)
-  when(whenFilesExist(COLOCATED_TEST_GLOB), () => {
-    ensureScript("test", "vitest run --passWithNoTests");
-  });
+  // The vitest `test` script AND the `vitest` devDep are wired ONLY when the
+  // workflow carries co-located integration tests (`src/**/*.test.ts`, incl.
+  // `src/test/`). A test-less workflow gets neither — no `test` task, no
+  // vitest dep — and stays a refresh fixpoint. (Workflow tests type-check via
+  // the standalone workflow/tsconfig with `types: []` — they pull their types
+  // from `@platforma-sdk/test` — so no node-types wiring is needed here,
+  // unlike model/ui.)
+  //
+  // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
+  // wiring under the monorepo's shared infrastructure — see model-package-json.
+  when(
+    ({ ctx }) => !ctx.isSdkInternal,
+    () =>
+      when(
+        whenFilesExist(COLOCATED_TEST_GLOB),
+        () => {
+          ensureScript("test", "vitest run --passWithNoTests");
+          ensureDevDeps({ vitest: "catalog:" });
+        },
+        () => removeDep("vitest"),
+      ),
+  );
 
   ensureDep("@platforma-sdk/workflow-tengo", "sdk:");
 
@@ -80,7 +95,6 @@ export function workflowPackageJsonRules(): void {
   ensureDevDeps({
     "@platforma-sdk/tengo-builder": "sdk:",
     "@platforma-sdk/test": "sdk:",
-    vitest: "catalog:",
     shx: "catalog:",
   });
 
