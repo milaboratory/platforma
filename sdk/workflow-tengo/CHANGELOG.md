@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.6.1
+
+### Patch Changes
+
+- cb68219: Fix workdir/exec builder `mkDir` creating a literal `["name"]` directory instead of `name`
+
 ## 6.6.0
 
 ### Minor Changes
