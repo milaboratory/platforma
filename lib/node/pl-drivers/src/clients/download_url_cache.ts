@@ -110,4 +110,8 @@ export class DownloadUrlCache {
     if (ttl <= 0) return; // Cache miss.
     this.cache.set(key, value, { ttl });
   }
+
+  delete(key: SignedResourceId): void {
+    this.cache.delete(key);
+  }
 }
