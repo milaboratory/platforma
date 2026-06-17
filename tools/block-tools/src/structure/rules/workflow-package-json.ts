@@ -19,6 +19,7 @@ import {
 import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -97,6 +98,12 @@ export function workflowPackageJsonRules(): void {
     "@platforma-sdk/test": "sdk:",
     shx: "catalog:",
   });
+
+  // Shed any retired toolchain dep — a no-op for a canonical Tengo workflow
+  // (it carries none), but applied uniformly across every package.json scope so
+  // no scope can be left holding a dangling `catalog:` reference to a key the
+  // catalog rule dropped. Single source of truth in shared/retired-deps.
+  removeRetiredToolchainDeps();
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

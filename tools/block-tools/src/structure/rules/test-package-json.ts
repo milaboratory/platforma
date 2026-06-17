@@ -13,6 +13,7 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -71,8 +72,10 @@ export function testPackageJsonRules(): void {
     typescript: "*",
   });
   removeDep("@types/node");
-  // eslint is retired across the toolchain — drop the legacy config dep.
-  removeDep("@platforma-sdk/eslint-config");
+  // Shed retired toolchain deps (eslint-config among them) — single source of
+  // truth in shared/retired-deps; their catalog entries drop in lockstep via
+  // rootPnpmWorkspaceRules.
+  removeRetiredToolchainDeps();
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

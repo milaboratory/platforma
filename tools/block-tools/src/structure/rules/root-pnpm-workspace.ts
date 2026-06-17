@@ -20,6 +20,7 @@
 
 import { ensureWorkspaceModulePaths, ensureCatalogAbsent, type RunContext } from "../engine/api";
 import { matchesBumpPattern, type DerivedCatalogPin } from "../engine/registry-client";
+import { RETIRED_TOOLCHAIN_DEPS } from "./shared/retired-deps";
 
 /** SDK packages that live in the catalog (membership only — no versions).
  *  Init fetches npm latest for each; refresh leaves them as the lockfile has
@@ -109,18 +110,10 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
-  // vite/tsup/vue-tsc-era catalog entries: the canonical toolchain (ts-builder
-  // owns vue-tsc; ts-builder + rolldown replace vite/tsup) does not use them.
-  // Drop the orphaned catalog keys — paired with the per-package `removeDep`
-  // so a migrated block sheds both the dep and its catalog entry.
-  ensureCatalogAbsent("vite");
-  ensureCatalogAbsent("tsup");
-  ensureCatalogAbsent("vue-tsc");
-  // `@vitejs/plugin-vue` + `vite-plugin-dts` are vite-build-era plugins now
-  // encapsulated by ts-builder; drop their orphaned catalog keys too.
-  ensureCatalogAbsent("@vitejs/plugin-vue");
-  ensureCatalogAbsent("vite-plugin-dts");
-  // eslint → oxlint (run via ts-builder check): the shared eslint config is no
-  // longer referenced by any scope; drop its catalog key.
-  ensureCatalogAbsent("@platforma-sdk/eslint-config");
+  // Retired toolchain catalog entries: drop the orphaned keys. Driven by the
+  // single `RETIRED_TOOLCHAIN_DEPS` source of truth — the per-package side
+  // (`removeRetiredToolchainDeps`) sheds the matching `<dep>: "catalog:"`
+  // references from every scope, so neither side can drift from the other and
+  // leave a dangling catalog reference.
+  for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);
 }
