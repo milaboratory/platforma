@@ -16,6 +16,7 @@ import {
   ensureDevDep,
   ensureDevDeps,
   removeDep,
+  removeScript,
   removeField,
   ensurePeerDeps,
   enforceAlphabeticalOrder,
@@ -132,7 +133,15 @@ export function modelPackageJsonRules(): void {
   // are dropped.
   removeDep("tsup");
   removeDep("vite");
+  // `vite-plugin-dts` (vite-era .d.ts emit) is superseded by ts-builder; shed
+  // the leftover dep — paired with its catalog removal in root-pnpm-workspace.
+  removeDep("vite-plugin-dts");
   removeField("tsup");
+
+  // eslint → ts-builder/oxlint: linting runs inside `ts-builder check`, so the
+  // standalone `lint` script and the eslint config dep are legacy leftovers.
+  removeScript("lint");
+  removeDep("@platforma-sdk/eslint-config");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

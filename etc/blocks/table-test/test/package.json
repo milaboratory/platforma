@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run --passWithNoTests",
-    "check": "ts-builder type-check --target block-test",
+    "check": "ts-builder check --target block-test",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target block-test",
