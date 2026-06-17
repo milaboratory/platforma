@@ -1,5 +1,23 @@
 # @platforma-sdk/block-tools
 
+## 2.10.18
+
+### Patch Changes
+
+- 20a96b5: structure: several block-compat improvements distributed to every migrated block.
+
+  - **Derive the catalog `vue` pin from `@platforma-sdk/ui-vue`** via a new `pinCatalogToDependencyOf` builder: it reads the exact `vue` version ui-vue declares (at npm-latest, or a given `ofVersion`) and OVERWRITES the block's catalog entry, so a loose `vue: ^3.5.x` is tightened to match the SDK. This prevents the two-vue-instance mismatch that broke `AppV3`/`SdkPluginV3` typing. Replaces the add-if-absent `vue` floor (which never tightened a pre-existing loose pin).
+  - **Conditional `vitest`**: the `vitest` devDep (model/ui/workflow) and the workflow `vitest.config.mts` are now wired only when a package carries co-located tests (added when present, removed when absent), matching the existing conditional `test` script.
+  - **Cruft cleanup**: drop vite/tsup/vue-tsc-era artefacts — catalog entries (`vite`, `tsup`, `vue-tsc`), the ui `vite` dep + `preview` script, and the model `tsup`/`vite` deps + top-level `tsup` config block.
+  - **`update` script**: add a second `pnpm i` after the structural refresh so a first migration installs the newly-added devDeps (ts-builder/oxlint/oxfmt) before `pnpm fmt`.
+  - @milaboratories/pl-model-backend@1.4.7
+  - @milaboratories/pl-model-common@1.46.1
+  - @milaboratories/pl-model-middle-layer@1.30.6
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/ts-helpers-oclif@1.1.42
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+
 ## 2.10.17
 
 ### Patch Changes
