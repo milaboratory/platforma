@@ -104,14 +104,21 @@ export function uiPackageJsonRules(): void {
   // the same predicate) resolves the tests' `node:*` imports. A test-less ui
   // keeps the lean default (no test script, no vitest, no @types/node) and
   // stays a fixpoint. Runs AFTER removeDep so the dev deps are not stripped.
+  //
+  // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
+  // wiring under the monorepo's shared infrastructure — see model-package-json.
   when(
-    whenFilesExist(COLOCATED_TEST_GLOB),
-    () => {
-      ensureScript("test", "vitest run --passWithNoTests");
-      ensureDevDep("vitest", "catalog:");
-      ensureDevDep("@types/node", "*");
-    },
-    () => removeDep("vitest"),
+    ({ ctx }) => !ctx.isSdkInternal,
+    () =>
+      when(
+        whenFilesExist(COLOCATED_TEST_GLOB),
+        () => {
+          ensureScript("test", "vitest run --passWithNoTests");
+          ensureDevDep("vitest", "catalog:");
+          ensureDevDep("@types/node", "*");
+        },
+        () => removeDep("vitest"),
+      ),
   );
 
   enforceAlphabeticalOrder("dependencies");

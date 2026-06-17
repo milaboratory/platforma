@@ -108,14 +108,23 @@ export function modelPackageJsonRules(): void {
   // peer) so the tests' `node:*` imports resolve under the `types: ["node"]`
   // that model/tsconfig adds under the same predicate. Runs AFTER ensurePeerDeps
   // so the promotion is not reverted.
+  //
+  // Skipped entirely for sdk-internal (in-monorepo) blocks: those live inside
+  // the platforma monorepo's own test infrastructure (build-configs, shared
+  // catalog, coverage providers) and own their test wiring — the structurer
+  // must not impose or strip standalone-block test conventions on them.
   when(
-    whenFilesExist(COLOCATED_TEST_GLOB),
-    () => {
-      ensureScript("test", "vitest run --passWithNoTests");
-      ensureDevDep("vitest", "catalog:");
-      ensureDevDep("@types/node", "*");
-    },
-    () => removeDep("vitest"),
+    ({ ctx }) => !ctx.isSdkInternal,
+    () =>
+      when(
+        whenFilesExist(COLOCATED_TEST_GLOB),
+        () => {
+          ensureScript("test", "vitest run --passWithNoTests");
+          ensureDevDep("vitest", "catalog:");
+          ensureDevDep("@types/node", "*");
+        },
+        () => removeDep("vitest"),
+      ),
   );
 
   // vite/tsup-era artefacts: the canonical model builds via ts-builder, so the

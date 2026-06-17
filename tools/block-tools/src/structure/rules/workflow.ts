@@ -31,10 +31,19 @@ export function workflowRules(): void {
     // (`src/**/*.test.ts`, incl. `src/test/`) — paired with the conditional
     // `vitest` devDep + `test` script in workflow-package-json. scaffold (not
     // fixed): author-tunable when present; a test-less workflow gets none.
+    //
+    // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their
+    // test config under the monorepo's shared infrastructure (e.g. a bespoke
+    // `vitest run --coverage` + `createVitestConfig`), which the structurer
+    // must neither scaffold nor remove. See workflow-package-json.
     when(
-      whenFilesExist(COLOCATED_TEST_GLOB),
-      () => scaffold("vitest.config.mts", file("workflow/vitest.config.mts")),
-      () => remove("vitest.config.mts"),
+      ({ ctx }) => !ctx.isSdkInternal,
+      () =>
+        when(
+          whenFilesExist(COLOCATED_TEST_GLOB),
+          () => scaffold("vitest.config.mts", file("workflow/vitest.config.mts")),
+          () => remove("vitest.config.mts"),
+        ),
     );
     // No workflow facade (index.js / index.d.ts): the block loader resolves the
     // workflow via the `block:` components dist path (workflow/dist/.../main.plj.gz),
