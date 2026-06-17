@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/test",
-  "version": "1.79.7",
+  "version": "1.79.8",
   "description": "Typescript Block Test Helpers",
   "license": "UNLICENSED",
   "files": [

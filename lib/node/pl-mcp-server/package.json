@@ -48,7 +48,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@milaboratories/pl-middle-layer": ">=1.64.25",
+    "@milaboratories/pl-middle-layer": ">=1.64.26",
     "@platforma-sdk/model": ">=1.79.6"
   },
   "engines": {
