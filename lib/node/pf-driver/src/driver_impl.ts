@@ -523,9 +523,6 @@ export class AbstractPFrameDriver<
       return { data, overallSize };
     }, combinedSignal);
 
-    const cacheMetrics = await this.getCacheMetrics();
-    this.logger("info", `Parquet cache metrics: ${JSON.stringify(cacheMetrics)}`);
-
     this.pTableCachePerFrame.cache(tableGuard.keep(), overallSize);
     return tableSpec.map((spec, i) => ({
       spec: spec,
