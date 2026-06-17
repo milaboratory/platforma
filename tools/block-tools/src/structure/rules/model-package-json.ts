@@ -16,6 +16,7 @@ import {
   ensureDevDep,
   ensureDevDeps,
   removeDep,
+  removeScript,
   removeField,
   ensurePeerDeps,
   enforceAlphabeticalOrder,
@@ -26,6 +27,7 @@ import {
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -127,12 +129,9 @@ export function modelPackageJsonRules(): void {
       ),
   );
 
-  // vite/tsup-era artefacts: the canonical model builds via ts-builder, so the
-  // legacy `tsup`/`vite` devDeps and the top-level `tsup` bundler config block
-  // are dropped.
-  removeDep("tsup");
-  removeDep("vite");
+  removeRetiredToolchainDeps();
   removeField("tsup");
+  removeScript("lint");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

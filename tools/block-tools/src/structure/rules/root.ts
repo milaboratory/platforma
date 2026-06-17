@@ -14,7 +14,6 @@ export function rootRules(): void {
     when(
       ({ ctx }) => !ctx.isSdkInternal,
       () => {
-        // see templates/static/root/turbo.json — verbatim canonical content.
         fixed("turbo.json", file("root/turbo.json"));
         fixed(".vscode/settings.json", file("root/.vscode/settings.json"));
 

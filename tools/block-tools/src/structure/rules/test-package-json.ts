@@ -7,11 +7,13 @@ import {
   ensureDevDeps,
   ensurePeerDeps,
   removeDep,
+  removeScript,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
@@ -21,9 +23,9 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
     private: true,
     type: "module",
     scripts: {
-      // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
-      // config). Slots into the turbo `check` task.
-      check: "ts-builder type-check --target block-test",
+      fmt: "ts-builder format",
+      // `ts-builder check` runs type-check + lint (oxlint) + fmt-check (oxfmt).
+      check: "ts-builder check --target block-test",
       test: "vitest run --passWithNoTests",
     },
     peerDependencies: {
@@ -41,12 +43,13 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
 
-  // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
-  // config); slots into the turbo `check` task.
-  ensureScript("check", "ts-builder type-check --target block-test");
+  ensureScript("fmt", "ts-builder format");
+  // `ts-builder check` runs type-check + lint (oxlint) + fmt-check (oxfmt).
+  ensureScript("check", "ts-builder check --target block-test");
   ensureScript("test", "vitest run --passWithNoTests");
+  // Linting runs inside `ts-builder check` — no separate `lint` script.
+  removeScript("lint");
 
-  // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({
     "@platforma-sdk/test": "sdk:",
     "@milaboratories/ts-builder": "sdk:",
@@ -55,12 +58,12 @@ export function testPackageJsonRules(): void {
   });
 
   // The test tsconfig (@milaboratories/ts-configs/block/test) supplies the
-  // ambient types; only the `typescript` peer is needed. Drop any stray
-  // `@types/node` peer a legacy block declares.
+  // ambient types, so only the `typescript` peer is needed — no `@types/node`.
   ensurePeerDeps({
     typescript: "*",
   });
   removeDep("@types/node");
+  removeRetiredToolchainDeps();
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

@@ -23,40 +23,39 @@ export function testFrameworkMigration(): void {
 // Unconditional legacy-cleanup rules. Each is a no-op on an
 // already-canonical block (remove on an absent path, removeScript /
 // removeDep on an absent key) and idempotent, so they sit at top level
-// with no `when` gate. The trailing comment on each line names the real
-// block(s) that carry the artefact being cleaned.
+// with no `when` gate.
 //
 // Root-scope cleanup is skipped for `--sdk-internal` blocks (no root
 // module in that mode), so it never touches in-monorepo blocks.
 export function legacyCleanup(): void {
-  // eslint → oxlint: the canonical layout ships `.oxlintrc.json` /
-  // `.oxfmtrc.json`; flat eslint configs are retired.
+  // Retired per-scope config files: flat eslint configs and vite-era build /
+  // split-tsconfig files, replaced by the oxlint/oxfmt + ts-builder layout.
   scope("model", () => {
-    remove("eslint.config.mjs"); // samples-and-data, mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities
-    remove("vite.config.mts"); // samples-and-data (vite build → ts-builder)
+    remove("eslint.config.mjs");
+    remove("vite.config.mts");
   });
   scope("ui", () => {
-    remove("eslint.config.mjs"); // samples-and-data, mixcr-clonotyping, clonotype-clustering, antibody-sequence-liabilities
-    remove("vite.config.ts"); // samples-and-data (vite build → ts-builder)
-    remove("tsconfig.app.json"); // samples-and-data (vite-era split tsconfig)
-    remove("tsconfig.node.json"); // samples-and-data (vite-era split tsconfig)
+    remove("eslint.config.mjs");
+    remove("vite.config.ts");
+    remove("tsconfig.app.json");
+    remove("tsconfig.node.json");
   });
   scope("test", () => {
-    remove("eslint.config.mjs"); // all 5 experiment blocks
+    remove("eslint.config.mjs");
   });
 
   // Root-scope cleanup. The second `managed("package.json")` body composes
   // after rootRules.
   scope("root", () => {
-    remove(".prettierrc"); // samples-and-data, sequence-properties (prettier → oxfmt)
+    remove(".prettierrc");
     managed(
       "package.json",
       generate(() => rootPackageJsonInitial(getActiveRunContext())),
       () => {
-        // `pretty` (prettier) is superseded by the canonical `fmt` (oxfmt);
-        // the standalone deps-updater was merged into block-tools.
-        removeScript("pretty"); // samples-and-data
-        removeDep("@platforma-sdk/blocks-deps-updater"); // samples-and-data
+        // `pretty` (prettier) is superseded by `fmt` (oxfmt); the standalone
+        // deps-updater is now part of block-tools.
+        removeScript("pretty");
+        removeDep("@platforma-sdk/blocks-deps-updater");
       },
     );
   });

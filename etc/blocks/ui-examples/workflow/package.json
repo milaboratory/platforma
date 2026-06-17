@@ -17,7 +17,6 @@
     "@platforma-sdk/test": "workspace:*",
     "shx": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }
