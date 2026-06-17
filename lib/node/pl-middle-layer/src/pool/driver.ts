@@ -88,7 +88,7 @@ class LocalBlobProviderImpl
       resolveBlobContent: async (blobId: PFrameInternal.PFrameBlobId) => {
         const computable = this.getByKey(blobId);
         const blob = await computable.awaitStableValue(signal);
-        return await this.blobDriver.getContent(blob.handle, { signal });
+        return await this.blobDriver.getContentDirect(blob.handle, { signal });
       },
     };
   }

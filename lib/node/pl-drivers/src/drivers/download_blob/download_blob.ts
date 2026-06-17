@@ -322,9 +322,38 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
       }
     }
 
+    return await this.getContentImpl({ handle, options });
+  }
+
+  /**
+   * Same as {@link getContent}, but bypasses the ranges cache entirely (no read, no write).
+   * For local handles this is identical to {@link getContent}, since local content never
+   * uses the ranges cache.
+   */
+  public async getContentDirect(
+    handle: LocalBlobHandle | RemoteBlobHandle,
+    options?: GetContentOptions,
+  ): Promise<Uint8Array> {
+    return await this.getContentImpl({
+      handle,
+      options: options ?? {},
+      bypassRangesCache: true,
+    });
+  }
+
+  private async getContentImpl({
+    handle,
+    options,
+    bypassRangesCache = false,
+  }: {
+    handle: LocalBlobHandle | RemoteBlobHandle;
+    options: GetContentOptions;
+    bypassRangesCache?: boolean;
+  }): Promise<Uint8Array> {
     const request = () =>
       this.withContent(handle, {
         ...options,
+        bypassRangesCache,
         handler: async (content) => {
           const chunks: Uint8Array[] = [];
           for await (const chunk of content) {
@@ -350,9 +379,10 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     handle: LocalBlobHandle | RemoteBlobHandle,
     options: GetContentOptions & {
       handler: ContentHandler<T>;
+      bypassRangesCache?: boolean;
     },
   ): Promise<T> {
-    const { range, signal, handler } = options;
+    const { range, signal, handler, bypassRangesCache } = options;
 
     if (isLocalBlobHandle(handle)) {
       return await withFileContent({ path: this.getLocalPath(handle), range, signal, handler });
@@ -362,7 +392,9 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
       const result = parseRemoteHandle(handle, this.signer);
 
       const key = blobKey(result.info.id);
-      const filePath = await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
+      const filePath = bypassRangesCache
+        ? undefined
+        : await this.rangesCache.get(key, range ?? { from: 0, to: result.size });
       signal?.throwIfAborted();
 
       if (filePath) return await withFileContent({ path: filePath, range, signal, handler });
@@ -372,6 +404,8 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
         { signal },
         options,
         async (content, size) => {
+          if (bypassRangesCache) return await handler(content, size);
+
           const [handlerStream, cacheStream] = content.tee();
 
           const handlerPromise = handler(handlerStream, size);
