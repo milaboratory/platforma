@@ -1,0 +1,26 @@
+test := import(":test")
+sets := import(":sets")
+dirs := import(":workdir.dirs")
+
+TestAddNestedDirs_single := func() {
+	test.isEqual(
+		["embeddings"],
+		sets.toSlice(dirs.addNestedDirs({}, "embeddings"))
+	)
+}
+
+TestAddNestedDirs_nested := func() {
+	test.isEqual(
+		["a", "a/b", "a/b/c"],
+		sets.toSlice(dirs.addNestedDirs({}, "a/b/c"))
+	)
+}
+
+TestAddNestedDirs_accumulatesAndDedupesParents := func() {
+	set := dirs.addNestedDirs({}, "a/b")
+	set = dirs.addNestedDirs(set, "a/c")
+	test.isEqual(
+		["a", "a/b", "a/c"],
+		sets.toSlice(set)
+	)
+}

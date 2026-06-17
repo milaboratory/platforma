@@ -16,6 +16,7 @@ oop := import(":oop")
 sets := import(":sets")
 slices := import(":slices")
 path := import(":path")
+workdirDirs := import(":workdir.dirs")
 render := import(":render")
 maps := import(":maps")
 
@@ -327,7 +328,7 @@ _fill := func() {
 		 * @param dir: string - the path of the directory.
 		 */
 		mkDir: func(dir) {
-			sets.add(dirs, path.getBasenameDirs(dir))
+			dirs = workdirDirs.addNestedDirs(dirs, dir)
 			return self
 		},
 
