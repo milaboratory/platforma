@@ -328,6 +328,7 @@ _fill := func() {
 		 * @param dir: string - the path of the directory.
 		 */
 		mkDir: func(dir) {
+			validation.assertType(dir, "string")
 			dirs = workdirDirs.addNestedDirs(dirs, dir)
 			return self
 		},
