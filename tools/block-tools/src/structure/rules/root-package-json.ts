@@ -38,7 +38,7 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
       // refresh → format flow); kept for compatibility.
       "update-sdk": "block-tools structure refresh --update-deps-only",
       update:
-        "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm fmt",
+        "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm i && pnpm fmt",
     },
     peerDependencies: {
       oxlint: "*",
@@ -79,12 +79,14 @@ export function rootPackageJsonRules(): void {
   // Deprecated in favour of `update`; kept for compatibility.
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
   // Full SDK-update flow: bump catalog (deps-only) → install → re-apply
-  // structure against the freshly-pulled deps → format the result, wrapped
-  // as one script. `pnpm fmt` (turbo run fmt) leaves the tree oxfmt-clean
-  // after the structural rewrite so a follow-up `pnpm check` passes.
+  // structure against the freshly-pulled deps → install AGAIN (the structural
+  // pass can add new devDeps — e.g. ts-builder/oxlint/oxfmt on a first
+  // migration — that `pnpm fmt` then needs on PATH) → format. Wrapped as one
+  // script. `pnpm fmt` (turbo run fmt) leaves the tree oxfmt-clean after the
+  // structural rewrite so a follow-up `pnpm check` passes.
   ensureScript(
     "update",
-    "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm fmt",
+    "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm i && pnpm fmt",
   );
 
   ensureDevDeps({

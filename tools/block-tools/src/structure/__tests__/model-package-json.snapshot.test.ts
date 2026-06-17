@@ -34,8 +34,7 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
   "devDependencies": {
     "@milaboratories/ts-builder": "catalog:",
     "@milaboratories/ts-configs": "catalog:",
-    "@platforma-sdk/block-tools": "catalog:",
-    "vitest": "catalog:"
+    "@platforma-sdk/block-tools": "catalog:"
   },
   "peerDependencies": {
     "@types/node": "*",

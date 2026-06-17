@@ -12,6 +12,15 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 export interface RegistryClient {
   getLatestVersion(packageName: string): Promise<string>;
+  /** Read the version `packageName@version` declares for `depName` in its
+   *  published manifest. `version` may be "latest" (resolved via the
+   *  dist-tags). Looks in `dependencies` first, then `peerDependencies`.
+   *  Returns `undefined` when the dep is declared in neither section. */
+  getDeclaredDependency(
+    packageName: string,
+    version: string,
+    depName: string,
+  ): Promise<string | undefined>;
 }
 
 const RETRY_COUNT = 2;
@@ -60,6 +69,14 @@ async function fetchWithRetry(url: string): Promise<Response> {
   }
 }
 
+/** Shape of the per-version manifest doc fetched from
+ *  `https://registry.npmjs.org/<pkg>/<version>` (only the dep sections are
+ *  read). */
+type PackageManifest = {
+  dependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+};
+
 /** Live npm registry client. Hits the network on each call. */
 export function createRealRegistryClient(): RegistryClient {
   return {
@@ -74,11 +91,33 @@ export function createRealRegistryClient(): RegistryClient {
       }
       return latest;
     },
+    async getDeclaredDependency(
+      packageName: string,
+      version: string,
+      depName: string,
+    ): Promise<string | undefined> {
+      const res = await fetchWithRetry(`https://registry.npmjs.org/${packageName}/${version}`);
+      const manifest = (await res.json()) as PackageManifest;
+      return manifest.dependencies?.[depName] ?? manifest.peerDependencies?.[depName];
+    },
   };
 }
 
-/** In-memory client backed by a fixed `name → version` map. */
-export function createMockRegistryClient(versions: Record<string, string>): RegistryClient {
+/** In-memory client backed by a fixed `name → version` map. The optional
+ *  `manifests` map (`pkg@version` → declared deps) backs
+ *  `getDeclaredDependency`; "latest" keys resolve via the `versions` map. */
+export function createMockRegistryClient(
+  versions: Record<string, string>,
+  manifests: Record<string, Record<string, string>> = {},
+): RegistryClient {
+  function resolveVersion(packageName: string, version: string): string {
+    if (version !== "latest") return version;
+    const v = versions[packageName];
+    if (v === undefined) {
+      throw new Error(`mock registry: no version configured for '${packageName}'`);
+    }
+    return v;
+  }
   return {
     async getLatestVersion(packageName: string): Promise<string> {
       const v = versions[packageName];
@@ -86,6 +125,18 @@ export function createMockRegistryClient(versions: Record<string, string>): Regi
         throw new Error(`mock registry: no version configured for '${packageName}'`);
       }
       return v;
+    },
+    async getDeclaredDependency(
+      packageName: string,
+      version: string,
+      depName: string,
+    ): Promise<string | undefined> {
+      const resolved = resolveVersion(packageName, version);
+      const deps = manifests[`${packageName}@${resolved}`];
+      if (deps === undefined) {
+        throw new Error(`mock registry: no manifest configured for '${packageName}@${resolved}'`);
+      }
+      return deps[depName];
     },
   };
 }
@@ -137,4 +188,67 @@ export async function buildRegistryLookupForNames(
   if (names.length === 0) return () => undefined;
   const resolved = await prefetchLatestVersions(client, names);
   return makeSyncLookup(resolved);
+}
+
+/** A catalog entry whose version is DERIVED from the version another
+ *  package declares for it. `entry` is the catalog key (== the dep name in
+ *  the source manifest); `of` is the package whose manifest is read; the
+ *  optional `ofVersion` pins which release of `of` to read (default: npm
+ *  latest, the same release the catalog bump pins `of` to). Consumed by
+ *  `pinCatalogToDependencyOf`. */
+export type DerivedCatalogPin = {
+  entry: string;
+  of: string;
+  ofVersion?: string;
+};
+
+/** True iff `version` is a bare exact `x.y.z(-prerelease)?` — no range
+ *  modifier (`^`, `~`, `>=`, `*`, `||`, ` - `, `x`, workspace:, etc.). */
+function isExactVersion(version: string): boolean {
+  return /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version);
+}
+
+/** Prefetch every derived pin and build the sync lookup the runner passes
+ *  to `pinCatalogToDependencyOf` (`entry → exact version`). Reads
+ *  `pin.of`'s manifest (at `pin.ofVersion`, default npm latest) and the
+ *  version it declares for `pin.entry`. Policy (b): THROWS at prefetch time
+ *  if the source declares the dep as a non-exact (ranged) version or does
+ *  not declare it at all — a derived pin must resolve to an exact version
+ *  or it is a configuration error. Empty list → a lookup that resolves
+ *  nothing (no network). A registry failure REJECTS. `client` defaults to
+ *  the live npm client; tests inject a mock. */
+export async function buildDerivedPinLookupForPins(
+  pins: readonly DerivedCatalogPin[],
+  client: RegistryClient = createRealRegistryClient(),
+): Promise<(entry: string) => string | undefined> {
+  if (pins.length === 0) return () => undefined;
+  const entries = await Promise.all(
+    pins.map(async (pin) => {
+      const declared = await client.getDeclaredDependency(
+        pin.of,
+        pin.ofVersion ?? "latest",
+        pin.entry,
+      );
+      if (declared === undefined) {
+        throw new Error(
+          `derived catalog pin '${pin.entry}': package '${pin.of}'` +
+            `${pin.ofVersion ? `@${pin.ofVersion}` : " (latest)"} declares no ` +
+            `dependency '${pin.entry}'. A derived pin requires the source to ` +
+            `declare the dep as an exact version.`,
+        );
+      }
+      if (!isExactVersion(declared)) {
+        throw new Error(
+          `derived catalog pin '${pin.entry}': package '${pin.of}'` +
+            `${pin.ofVersion ? `@${pin.ofVersion}` : " (latest)"} declares ` +
+            `'${pin.entry}: ${declared}', which is not an exact version. ` +
+            `A derived pin requires an exact ('x.y.z') source dependency so ` +
+            `the catalog can pin to it precisely.`,
+        );
+      }
+      return [pin.entry, declared] as const;
+    }),
+  );
+  const resolved = new Map(entries);
+  return (entry) => resolved.get(entry);
 }

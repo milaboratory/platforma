@@ -18,8 +18,8 @@
 // npm-latest for the SDK families) lives in the separate `onInitOrUpdate`
 // frame (`rootCatalogBumpRules`), which fires on init + update-deps only.
 
-import { ensureWorkspaceModulePaths, type RunContext } from "../engine/api";
-import { matchesBumpPattern } from "../engine/registry-client";
+import { ensureWorkspaceModulePaths, ensureCatalogAbsent, type RunContext } from "../engine/api";
+import { matchesBumpPattern, type DerivedCatalogPin } from "../engine/registry-client";
 
 /** SDK packages that live in the catalog (membership only — no versions).
  *  Init fetches npm latest for each; refresh leaves them as the lockfile has
@@ -62,13 +62,22 @@ export const INFRA_CATALOG_FLOOR: Record<string, string> = {
   shx: "~0.4.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
-  // The seeded ui depends on `vue` (catalog:). `@platforma-sdk/ui-vue` pins
-  // vue as an EXACT regular dependency (not a peer), so the block must pin the
-  // SAME exact version — a floated `~` lets the ui resolve a newer 3.5.x than
-  // ui-vue's, yielding two vue instances and a SdkPluginV3-vs-Plugin type
-  // clash in `main.ts`. Keep this in lockstep with ui-vue's vue pin.
-  vue: "3.5.24",
 };
+
+/** Catalog entries whose exact version is DERIVED from the version another
+ *  package declares for them (see `pinCatalogToDependencyOf`). Resolved on
+ *  init + update-deps and OVERWRITES the on-disk entry.
+ *
+ *  `vue`: the seeded ui depends on `vue` (catalog:). `@platforma-sdk/ui-vue`
+ *  pins vue as an EXACT regular dependency (not a peer), so the block must
+ *  pin the SAME exact version — a floated `~` lets the ui resolve a newer
+ *  3.5.x than ui-vue's, yielding two vue instances and a SdkPluginV3-vs-Plugin
+ *  type clash in `main.ts`. Deriving the pin from ui-vue's declared dep keeps
+ *  the block in lockstep with whatever vue ui-vue's npm-latest pins, with no
+ *  hand-maintained version here. */
+export const DERIVED_CATALOG_PINS: readonly DerivedCatalogPin[] = [
+  { entry: "vue", of: "@platforma-sdk/ui-vue" },
+];
 
 /** Catalog name of the python runenv. Added to a block's catalog only when
  *  the block carries a software module. Pinned to an EXACT version — updating
@@ -100,4 +109,11 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
+  // vite/tsup/vue-tsc-era catalog entries: the canonical toolchain (ts-builder
+  // owns vue-tsc; ts-builder + rolldown replace vite/tsup) does not use them.
+  // Drop the orphaned catalog keys — paired with the per-package `removeDep`
+  // so a migrated block sheds both the dep and its catalog entry.
+  ensureCatalogAbsent("vite");
+  ensureCatalogAbsent("tsup");
+  ensureCatalogAbsent("vue-tsc");
 }

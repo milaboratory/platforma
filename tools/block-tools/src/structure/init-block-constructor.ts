@@ -14,8 +14,12 @@ import { run as engineRun } from "./engine/runner";
 import { createRunContext, modulesForInit } from "./engine/ctx";
 import { STRUCTURE } from "./structure-definition";
 import { STRUCTURE_VERSION } from "./engine/version";
-import { matchesBumpPattern, buildRegistryLookupForNames } from "./engine/registry-client";
-import { SDK_CATALOG_PACKAGES } from "./rules/root-pnpm-workspace";
+import {
+  matchesBumpPattern,
+  buildRegistryLookupForNames,
+  buildDerivedPinLookupForPins,
+} from "./engine/registry-client";
+import { SDK_CATALOG_PACKAGES, DERIVED_CATALOG_PINS } from "./rules/root-pnpm-workspace";
 import type { BlockVars } from "./engine/api";
 
 /** Platform choices `init` can scaffold a software module for. Python is
@@ -145,8 +149,12 @@ export async function runInit(init: InitInput): Promise<BlockVars> {
   // aborts init rather than silently shipping an unresolved placeholder.
   const sdkNames = SDK_CATALOG_PACKAGES.filter(matchesBumpPattern);
   let registryLookup: (name: string) => string | undefined;
+  let derivedPinLookup: (entry: string) => string | undefined;
   try {
     registryLookup = await buildRegistryLookupForNames(sdkNames);
+    // Derived catalog pins (e.g. vue ← ui-vue's declared dep) are resolved on
+    // init too, so a freshly-scaffolded block pins vue exactly from the start.
+    derivedPinLookup = await buildDerivedPinLookupForPins(DERIVED_CATALOG_PINS);
   } catch (err) {
     throw new Error(
       `init requires network access to resolve SDK catalog versions from npm, ` +
@@ -154,7 +162,12 @@ export async function runInit(init: InitInput): Promise<BlockVars> {
     );
   }
 
-  engineRun(STRUCTURE, fs, ctx, { templates, initMode: true, registryLookup });
+  engineRun(STRUCTURE, fs, ctx, {
+    templates,
+    initMode: true,
+    registryLookup,
+    derivedPinLookup,
+  });
   init.log(
     `Initialised block '${vars.facadeName}'${
       vars.softwarePlatform ? ` (software: ${vars.softwarePlatform})` : " (no software)"

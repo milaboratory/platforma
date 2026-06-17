@@ -83,6 +83,12 @@ export type RunOptions = {
    *  and passes the resulting sync map here; unit tests pass a mock.
    *  Absent → `ensureCatalogLatest` is a no-op (default refresh). */
   registryLookup?: (packageName: string) => string | undefined;
+  /** Sync accessor for prefetched derived catalog pins
+   *  (`catalogEntry → exact version`), consumed by `pinCatalogToDependencyOf`
+   *  inside `onInitOrUpdate` managed bodies. The CLI / init constructor
+   *  prefetches + validates these before the run (network). Absent →
+   *  `pinCatalogToDependencyOf` is a no-op (default refresh). */
+  derivedPinLookup?: (catalogEntry: string) => string | undefined;
 };
 
 export class RecheckError extends Error {
@@ -189,6 +195,7 @@ function runManagedBody(
   body: ManagedBody,
   tctx: TriggerContext,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
+  derivedPinLookup: ((catalogEntry: string) => string | undefined) | undefined,
 ): string {
   const base = path.split("/").pop() ?? path;
   if (path.endsWith(".json")) {
@@ -203,7 +210,11 @@ function runManagedBody(
   }
   if (path.endsWith(".yaml") || path.endsWith(".yml")) {
     const doc = parseYaml(raw);
-    withManagedYaml(doc, body, { triggerContext: tctx, getLatestVersion: registryLookup });
+    withManagedYaml(doc, body, {
+      triggerContext: tctx,
+      getLatestVersion: registryLookup,
+      getDerivedDependencyPin: derivedPinLookup,
+    });
     return stringifyYaml(doc);
   }
   if (base === ".gitignore" || base.endsWith(".gitignore")) {
@@ -371,6 +382,7 @@ function applyManaged(
   tctx: TriggerContext,
   templates: TemplateProvider | undefined,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
+  derivedPinLookup: ((catalogEntry: string) => string | undefined) | undefined,
   isSdkInternal: boolean,
 ): Change | undefined {
   if (item.leaf.kind !== "managed") return undefined;
@@ -388,7 +400,7 @@ function applyManaged(
     beforeRaw = fs.read(path);
   }
 
-  const after = runManagedBody(path, beforeRaw, leaf.body, tctx, registryLookup);
+  const after = runManagedBody(path, beforeRaw, leaf.body, tctx, registryLookup, derivedPinLookup);
 
   if (created) {
     if (!dryRun) fs.write(path, after);
@@ -419,6 +431,7 @@ function executePass(
   templates: TemplateProvider | undefined,
   initMode: boolean,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
+  derivedPinLookup: ((catalogEntry: string) => string | undefined) | undefined,
 ): Change[] {
   const items = filterByMode(flat, currentMode(ctx, initMode));
   const changes: Change[] = [];
@@ -448,6 +461,7 @@ function executePass(
       tctx2,
       templates,
       registryLookup,
+      derivedPinLookup,
       ctx.isSdkInternal,
     );
     if (change) changes.push(change);
@@ -478,6 +492,7 @@ export function run(
       opts.templates,
       initMode,
       opts.registryLookup,
+      opts.derivedPinLookup,
     );
 
     const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
@@ -499,6 +514,7 @@ export function run(
         opts.templates,
         false,
         opts.registryLookup,
+        opts.derivedPinLookup,
       );
       // Ignore .structure self-write (already up to date after
       // writeStructureVersion above).
