@@ -11,6 +11,12 @@ export function testRules(): void {
     // lets the check pass on a test-less block while `include` still
     // type-checks real tests once present.
     fixed("tsconfig.json", file("test/tsconfig.json"));
+    // The test scope is lint + fmt-checked alongside type-check (the `check`
+    // script runs `ts-builder check --target block-test`, paired with the
+    // `fmt` script). Ship its block-local oxlint/oxfmt config, same as model/ui
+    // — extends ts-builder's `oxlint-test.json`.
+    fixed(".oxlintrc.json", file("test/.oxlintrc.json"));
+    fixed(".oxfmtrc.json", file("test/.oxfmtrc.json"));
     // scaffold (not fixed): integration tests legitimately tune timeout /
     // retry per block. Write the canonical default if absent; never
     // overwrite an author's config.

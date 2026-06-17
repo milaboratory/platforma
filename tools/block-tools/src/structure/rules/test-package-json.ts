@@ -7,6 +7,7 @@ import {
   ensureDevDeps,
   ensurePeerDeps,
   removeDep,
+  removeScript,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   type RunContext,
@@ -21,9 +22,11 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
     private: true,
     type: "module",
     scripts: {
-      // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
-      // config). Slots into the turbo `check` task.
-      check: "ts-builder type-check --target block-test",
+      fmt: "ts-builder format",
+      // Full check — type-check + lint (oxlint) + fmt-check (oxfmt) — same as
+      // model/ui, so test sources are gated identically. Slots into the turbo
+      // `check` task.
+      check: "ts-builder check --target block-test",
       test: "vitest run --passWithNoTests",
     },
     peerDependencies: {
@@ -41,10 +44,17 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 export function testPackageJsonRules(): void {
   ensureField("type", "module");
 
-  // Type-only check (no oxlint/oxfmt — the test scope ships no lint/fmt
-  // config); slots into the turbo `check` task.
-  ensureScript("check", "ts-builder type-check --target block-test");
+  // The test scope is formatted + lint/fmt-checked like model/ui: `fmt` runs
+  // the oxlint/oxfmt fixer, `check` the type-check + lint + fmt-check.
+  ensureScript("fmt", "ts-builder format");
+  // Full check — type-check + lint (oxlint) + fmt-check (oxfmt) — same as
+  // model/ui, so test sources are gated identically; slots into the turbo
+  // `check` task.
+  ensureScript("check", "ts-builder check --target block-test");
   ensureScript("test", "vitest run --passWithNoTests");
+  // eslint → ts-builder/oxlint: the legacy `lint` script is an author leftover
+  // (linting now runs inside `ts-builder check`). Drop it and its config dep.
+  removeScript("lint");
 
   // @platforma-sdk/test is a test-time dep → devDependencies (matches prod).
   ensureDevDeps({
@@ -61,6 +71,8 @@ export function testPackageJsonRules(): void {
     typescript: "*",
   });
   removeDep("@types/node");
+  // eslint is retired across the toolchain — drop the legacy config dep.
+  removeDep("@platforma-sdk/eslint-config");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

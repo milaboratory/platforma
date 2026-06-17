@@ -52,6 +52,7 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
       "@milaboratories/ts-configs": "sdk:",
     },
     peerDependencies: {
+      "@types/node": "*",
       typescript: "*",
     },
   };
@@ -88,22 +89,34 @@ export function uiPackageJsonRules(): void {
   // so a legacy `vite` dep and the `preview` (vite preview) script are dropped.
   removeDep("vite");
   removeScript("preview");
+  // `@vitejs/plugin-vue` + `vite-plugin-dts` are vite-build-era plugins now
+  // owned by ts-builder (it bundles the vue plugin internally). Shed the
+  // leftover direct deps — paired with their catalog removal in
+  // root-pnpm-workspace, so a migrated block sheds both the dep and the (now
+  // dangling) `catalog:` reference.
+  removeDep("@vitejs/plugin-vue");
+  removeDep("vite-plugin-dts");
 
-  // The ui builds with `--target block-ui` (types: []), so by default it
-  // carries no browser/vitest/node ambient types — only the `typescript`
-  // peer for IDE type resolution. Drop any stray `@types/node` a legacy
-  // block declares...
+  // eslint → ts-builder/oxlint: linting runs inside `ts-builder check`, so the
+  // standalone `lint` script and the eslint config dep are legacy leftovers.
+  removeScript("lint");
+  removeDep("@platforma-sdk/eslint-config");
+
+  // `@types/node` is declared as a peer by default — mirrors the model scope
+  // (the block author resolves it from the workspace root). The ui builds with
+  // `--target block-ui` (types: []), so it pulls no node ambient types into the
+  // build; the peer only satisfies IDE / type resolution, alongside `typescript`.
   ensurePeerDeps({
+    "@types/node": "*",
     typescript: "*",
   });
-  removeDep("@types/node");
 
-  // ...but a ui WITH co-located unit tests (`src/**/*.test.ts`) needs the
-  // vitest `test` script, the `vitest` devDep, AND node ambient types: re-add
-  // `@types/node` as a devDep so `types: ["node"]` in ui/tsconfig (wired under
-  // the same predicate) resolves the tests' `node:*` imports. A test-less ui
-  // keeps the lean default (no test script, no vitest, no @types/node) and
-  // stays a fixpoint. Runs AFTER removeDep so the dev deps are not stripped.
+  // A ui WITH co-located unit tests (`src/**/*.test.ts`) needs the vitest
+  // `test` script, the `vitest` devDep, AND node ambient types promoted from
+  // peer to a devDep (the single-section invariant drops the peer) so that
+  // `types: ["node"]` in ui/tsconfig — wired under the same predicate —
+  // resolves the tests' `node:*` imports. A test-less ui keeps `@types/node`
+  // as a peer and carries no vitest, staying a refresh fixpoint.
   //
   // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
   // wiring under the monorepo's shared infrastructure — see model-package-json.

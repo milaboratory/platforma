@@ -116,4 +116,11 @@ export function rootPnpmWorkspaceRules(): void {
   ensureCatalogAbsent("vite");
   ensureCatalogAbsent("tsup");
   ensureCatalogAbsent("vue-tsc");
+  // `@vitejs/plugin-vue` + `vite-plugin-dts` are vite-build-era plugins now
+  // encapsulated by ts-builder; drop their orphaned catalog keys too.
+  ensureCatalogAbsent("@vitejs/plugin-vue");
+  ensureCatalogAbsent("vite-plugin-dts");
+  // eslint → oxlint (run via ts-builder check): the shared eslint config is no
+  // longer referenced by any scope; drop its catalog key.
+  ensureCatalogAbsent("@platforma-sdk/eslint-config");
 }
