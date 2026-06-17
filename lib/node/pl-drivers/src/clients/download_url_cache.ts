@@ -31,7 +31,7 @@ const DEFAULT_MAX_ENTRIES = 4096;
  * = Zulu/UTC; verified against pl `util/storage/v4sign/presigner.go`) and the
  * lifetime as integer seconds.
  */
-function extractUrlExpiryMs(url: string): number | null | undefined {
+export function extractUrlExpiryMs(url: string): number | null | undefined {
   let query: URLSearchParams;
   try {
     query = new URL(url).searchParams;
@@ -73,7 +73,7 @@ function parseCompactIso8601Utc(value: string): number | undefined {
  * margin already subtracted. Returns a non-positive number when the URL is
  * already within the margin of expiring - the caller should then skip caching.
  */
-function downloadUrlCacheTtlMs(url: string, nowMs: number): number {
+export function downloadUrlCacheTtlMs(url: string, nowMs: number): number {
   const expiry = extractUrlExpiryMs(url);
   if (expiry === null) return 0;
   if (expiry === undefined) return NO_EXPIRY_DEFAULT_TTL_MS;
