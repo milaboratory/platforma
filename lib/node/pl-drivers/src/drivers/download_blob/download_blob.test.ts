@@ -227,8 +227,52 @@ test("should get undefined when releasing a blob from a small cache and the blob
   });
 });
 
+test("getContentDirect returns the same content but bypasses the ranges cache", async () => {
+  await TestHelpers.withTempRoot(async (client) => {
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-download-direct-"));
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-download-ranges-"));
+
+    const driver = await genDriver(client, dir, rangesCacheDir, genSigner());
+    const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
+
+    // On-demand (remote) handle - this is the path that uses the ranges cache.
+    const c = driver.getOnDemandBlob(downloadable);
+    const blob = await c.getValue();
+    expect(blob).toBeDefined();
+    expect(blob.size).toEqual(3);
+
+    const baseline = await dirSizeBytes(rangesCacheDir);
+
+    // Direct reads return the correct bytes (full + range) ...
+    expect((await driver.getContentDirect(blob.handle))?.toString()).toBe("42\n");
+    expect(
+      (await driver.getContentDirect(blob.handle, { range: { from: 0, to: 2 } }))?.toString(),
+    ).toBe("42");
+
+    // ... and leave the ranges cache untouched (cache writes are fire-and-forget, so settle first).
+    await scheduler.wait(100);
+    expect(await dirSizeBytes(rangesCacheDir)).toBe(baseline);
+
+    // A normal cached read of the same handle DOES populate the ranges cache.
+    expect((await driver.getContent(blob.handle))?.toString()).toBe("42\n");
+    await scheduler.wait(100);
+    expect(await dirSizeBytes(rangesCacheDir)).toBeGreaterThan(baseline);
+  });
+});
+
 function genSigner() {
   return new HmacSha256Signer(HmacSha256Signer.generateSecret());
+}
+
+/** Total bytes of all files under `dir` (recursive), for asserting cache population. */
+async function dirSizeBytes(dir: string): Promise<number> {
+  let total = 0;
+  for (const entry of await fsp.readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) total += await dirSizeBytes(full);
+    else if (entry.isFile()) total += (await fsp.stat(full)).size;
+  }
+  return total;
 }
 
 async function genDriver(
