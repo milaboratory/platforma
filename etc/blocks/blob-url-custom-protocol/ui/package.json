@@ -28,6 +28,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@types/node": "*",
     "typescript": "*"
   }
 }

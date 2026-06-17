@@ -8,6 +8,7 @@ import {
   ensureScript,
   ensureDevDeps,
   ensurePeerDeps,
+  removeScript,
   removeField,
   pruneKeysMatching,
   enforceAlphabeticalOrder,
@@ -34,10 +35,9 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
       watch: "turbo watch build",
       changeset: "changeset",
       "version-packages": "changeset version",
-      // Deprecated in favour of `update` (the full refresh → install →
-      // refresh → format flow); kept for compatibility.
+      // Deprecated alias of `upgrade-sdk`; kept for compatibility.
       "update-sdk": "block-tools structure refresh --update-deps-only",
-      update:
+      "upgrade-sdk":
         "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm i && pnpm fmt",
     },
     peerDependencies: {
@@ -76,16 +76,18 @@ export function rootPackageJsonRules(): void {
   ensureScript("watch", "turbo watch build");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
-  // Deprecated in favour of `update`; kept for compatibility.
+  // `update-sdk` is a deprecated alias of `upgrade-sdk`, kept for compatibility;
+  // `update` is the pre-rename name — drop it so refreshed blocks converge.
   ensureScript("update-sdk", "block-tools structure refresh --update-deps-only");
-  // Full SDK-update flow: bump catalog (deps-only) → install → re-apply
+  removeScript("update");
+  // Full SDK-upgrade flow: bump catalog (deps-only) → install → re-apply
   // structure against the freshly-pulled deps → install AGAIN (the structural
   // pass can add new devDeps — e.g. ts-builder/oxlint/oxfmt on a first
   // migration — that `pnpm fmt` then needs on PATH) → format. Wrapped as one
   // script. `pnpm fmt` (turbo run fmt) leaves the tree oxfmt-clean after the
   // structural rewrite so a follow-up `pnpm check` passes.
   ensureScript(
-    "update",
+    "upgrade-sdk",
     "block-tools structure refresh --update-deps-only && pnpm i && block-tools structure refresh && pnpm i && pnpm fmt",
   );
 

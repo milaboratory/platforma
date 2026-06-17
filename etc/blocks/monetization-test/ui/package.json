@@ -25,6 +25,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "@types/node": "*",
     "typescript": "*"
   }
 }

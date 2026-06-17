@@ -20,6 +20,7 @@
 
 import { ensureWorkspaceModulePaths, ensureCatalogAbsent, type RunContext } from "../engine/api";
 import { matchesBumpPattern, type DerivedCatalogPin } from "../engine/registry-client";
+import { RETIRED_TOOLCHAIN_DEPS } from "./shared/retired-deps";
 
 /** SDK packages that live in the catalog (membership only — no versions).
  *  Init fetches npm latest for each; refresh leaves them as the lockfile has
@@ -109,11 +110,7 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
-  // vite/tsup/vue-tsc-era catalog entries: the canonical toolchain (ts-builder
-  // owns vue-tsc; ts-builder + rolldown replace vite/tsup) does not use them.
-  // Drop the orphaned catalog keys — paired with the per-package `removeDep`
-  // so a migrated block sheds both the dep and its catalog entry.
-  ensureCatalogAbsent("vite");
-  ensureCatalogAbsent("tsup");
-  ensureCatalogAbsent("vue-tsc");
+  // Catalog side of the retired-dep cleanup — the per-package side sheds the
+  // matching `catalog:` references.
+  for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);
 }

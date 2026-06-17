@@ -21,16 +21,15 @@ import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
 export function workflowRules(): void {
   scope("workflow", () => {
-    // tsconfig for the TypeScript vitest integration tests under src/test
-    // (e.g. mixcr's workflow/src/test/columns.test.ts). types:[] keeps the
-    // isomorphic workflow free of ambient Node/DOM types.
-    fixed("tsconfig.json", file("workflow/tsconfig.json"));
     // Tengo source formatter (emacs batch); the `format` script invokes it.
     fixed("format.el", file("workflow/format.el"));
-    // vitest config only when the workflow carries co-located tests
-    // (`src/**/*.test.ts`, incl. `src/test/`) — paired with the conditional
-    // `vitest` devDep + `test` script in workflow-package-json. scaffold (not
-    // fixed): author-tunable when present; a test-less workflow gets none.
+    // The TS-test tsconfig + vitest config exist ONLY when the workflow carries
+    // co-located tests (`src/**/*.test.ts`, incl. `src/test/` — e.g. mixcr's
+    // workflow/src/test/columns.test.ts). They pair with the conditional
+    // `vitest` devDep + `test` script in workflow-package-json. tsconfig is
+    // `fixed` (structural: types:[] keeps the isomorphic workflow free of
+    // ambient Node/DOM types); vitest.config is `scaffold` (author-tunable once
+    // present). A test-less workflow gets neither and stays a refresh fixpoint.
     //
     // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their
     // test config under the monorepo's shared infrastructure (e.g. a bespoke
@@ -41,14 +40,20 @@ export function workflowRules(): void {
       () =>
         when(
           whenFilesExist(COLOCATED_TEST_GLOB),
-          () => scaffold("vitest.config.mts", file("workflow/vitest.config.mts")),
-          () => remove("vitest.config.mts"),
+          () => {
+            fixed("tsconfig.json", file("workflow/tsconfig.json"));
+            scaffold("vitest.config.mts", file("workflow/vitest.config.mts"));
+          },
+          () => {
+            remove("tsconfig.json");
+            remove("vitest.config.mts");
+          },
         ),
     );
     // No workflow facade (index.js / index.d.ts): the block loader resolves the
     // workflow via the `block:` components dist path (workflow/dist/.../main.plj.gz),
-    // never the JS facade. It was orphaned in production — dropped. Actively
-    // removed so existing blocks that carry it get cleaned (idempotent on absence).
+    // never the JS facade. Removed so blocks that carry one get cleaned
+    // (idempotent on absence).
     remove("index.js");
     remove("index.d.ts");
 
