@@ -22,7 +22,7 @@ To change what "canonical" means, edit `rules/`; the engine is block-agnostic.
 - Fixpoint: `refresh` on an already-canonical block makes zero changes. Every rule must converge.
 - Generators emit oxfmt-clean output (the `enforce*` calls mirror oxfmt's order), so build→check passes with no prior `fmt`.
 - sdk-internal blocks (`etc/blocks/*`) skip root-scope and standalone test wiring — the monorepo owns that infra; the structurer must neither impose nor strip it.
-- Every execution-level lambda receives `ctx` by argument (trigger predicates get the richer `TriggerContext`; `generate`/`tpl`/`managed` bodies get `RunContext`); none reaches for it ambiently. `getActiveRunContext()`/`blockVars()` are engine-internal plumbing, not the rule-author surface.
+- Rule code never reaches for `ctx` ambiently — `getActiveRunContext()`/`blockVars()` are engine-internal plumbing. A lambda that needs block identity takes `ctx` by argument (triggers get the richer `TriggerContext`, the rest `RunContext`); a `managed` body that doesn't take it relies on the builders it calls, which resolve `ctx` themselves.
 
 ## Gotchas
 
