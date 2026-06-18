@@ -15,12 +15,14 @@ To change what "canonical" means, edit `rules/`; the engine is block-agnostic.
 
 - Each `rules/*` file pairs a generator (init: full initial content) with a body (refresh: drift-correcting assertions). Read as "what the file should be" + "how to nudge an existing file there", not as sequential logic.
 - The primitive choice IS the design: `fixed` (overwrite verbatim, engine-owned), `managed` (reconcile named fields, author keeps the rest), `scaffold` (write-once default, author may tune), `seed` (written once at init, author owns forever), `remove` (one-way). Wrong primitive is the main design error — `fixed` on an author-tunable file clobbers their work; `seed` on engine-owned content lets drift accumulate.
+- Two layers. Calls inside `defineStructure` (`scope`/`fixed`/`managed`/`seed`/`when`-framing) run once at tree-build time to DECLARE the tree — there is no block and no `ctx` yet. The lambdas the engine runs later, per block — trigger predicates, `generate`/`tpl` producers, and `managed` bodies — are the EXECUTION layer, where per-block values are computed.
 
 ## Invariants
 
 - Fixpoint: `refresh` on an already-canonical block makes zero changes. Every rule must converge.
 - Generators emit oxfmt-clean output (the `enforce*` calls mirror oxfmt's order), so build→check passes with no prior `fmt`.
 - sdk-internal blocks (`etc/blocks/*`) skip root-scope and standalone test wiring — the monorepo owns that infra; the structurer must neither impose nor strip it.
+- Every execution-level lambda receives `ctx` by argument (trigger predicates get the richer `TriggerContext`; `generate`/`tpl`/`managed` bodies get `RunContext`); none reaches for it ambiently. `getActiveRunContext()`/`blockVars()` are engine-internal plumbing, not the rule-author surface.
 
 ## Gotchas
 

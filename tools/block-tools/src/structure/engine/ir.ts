@@ -52,8 +52,11 @@ export type ContentForm =
   // only `seed` / `scaffold` consume it (via fs.writeBinary).
   | { kind: "binary"; path: string };
 
-/** Builder-body for a `managed` file (the content-rules lambda). */
-export type ManagedBody = () => void;
+/** Builder-body for a `managed` file (the content-rules lambda). Receives the
+ *  active `RunContext` — the same object triggers see as `tctx.ctx` and that
+ *  `generate`/`tpl` lambdas receive — so the body reads block identity via its
+ *  argument rather than the module-global `getActiveRunContext()`. */
+export type ManagedBody = (ctx: RunContext) => void;
 
 // --- Leaf primitives ---
 

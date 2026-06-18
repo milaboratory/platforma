@@ -20,8 +20,8 @@ export function blockRules(): void {
     managed(
       "package.json",
       generate((ctx) => blockPackageJsonInitial(ctx)),
-      () => {
-        blockPackageJsonRules();
+      (ctx) => {
+        blockPackageJsonRules(ctx);
       },
     );
   });
