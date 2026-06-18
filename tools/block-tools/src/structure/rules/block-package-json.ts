@@ -12,7 +12,6 @@ import {
   enforceFieldOrder,
   type RunContext,
 } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { findModules, scopeDepMap } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
@@ -111,7 +110,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
   };
 }
 
-export function blockPackageJsonRules(): void {
+export function blockPackageJsonRules(ctx: RunContext): void {
   // type:"module" intentionally omitted: the facade's index.js is the
   // CommonJS dev-block descriptor (module.exports / __dirname); ESM would
   // break it. The facade has no TS sources to compile.
@@ -146,7 +145,7 @@ export function blockPackageJsonRules(): void {
   // it in sync on refresh. `block.meta` is deliberately NOT touched here: it
   // is an author-owned seed (set once in the init package.json), so refresh
   // must never overwrite the author's title / description / logo.
-  ensureField("block.components", blockComponents(getActiveRunContext()));
+  ensureField("block.components", blockComponents(ctx));
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");
