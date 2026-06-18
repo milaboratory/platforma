@@ -53,7 +53,7 @@ export function rootCatalogBumpRules(): void {
           // generator.
           managed(
             "pnpm-workspace.yaml",
-            generate(() => rootPnpmWorkspaceInitial(getActiveRunContext())),
+            generate((ctx) => rootPnpmWorkspaceInitial(ctx)),
             () => {
               // SDK families → npm latest, ADD-IF-ABSENT (seeds a migrated
               // block's missing standard keys + overwrites the init

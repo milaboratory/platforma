@@ -3,7 +3,6 @@
 // (block author owns it).
 
 import { scope, fixed, managed, seed, file, generate, when, whenFilesExist } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { modelPackageJsonInitial, modelPackageJsonRules } from "./model-package-json";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
@@ -32,7 +31,7 @@ export function modelRules(): void {
 
     managed(
       "package.json",
-      generate(() => modelPackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => modelPackageJsonInitial(ctx)),
       () => {
         modelPackageJsonRules();
       },

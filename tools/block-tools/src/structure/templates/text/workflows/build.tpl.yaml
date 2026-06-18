@@ -1,0 +1,67 @@
+name: Build, Test and Release Platforma Block
+on:
+  merge_group:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - 'main'
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch: {}
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+  run:
+    needs:
+      - init
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
+    with:
+      app-name: '${appName}'
+      app-name-slug: '${appNameSlug}'
+      node-version: '20.x'
+      build-script-name: 'build'
+      pnpm-recursive-build: false
+
+      test: true
+      test-script-name: 'test'
+      pnpm-recursive-tests: false
+      team-id: 'ciplopen'
+
+      publish-to-public: 'true'
+      package-path: 'block'
+      create-tag: 'true'
+
+      npmrc-config: |
+        {
+          "registries": {
+            "https://registry.npmjs.org/": {
+              "scopes": ["milaboratories", "platforma-sdk", "platforma-open"],
+              "tokenVar": "NPMJS_TOKEN"
+            }
+          }
+        }
+    secrets:
+      env: |
+        { "PL_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
+          "MI_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
+          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
+          "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
+          "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
+
+          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
+          "AWS_CI_TURBOREPO_S3_BUCKET": ${{ toJSON(secrets.AWS_CI_TURBOREPO_S3_BUCKET) }},
+          "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL": ${{ toJSON(secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL) }},
+          "QUAY_USERNAME": ${{ toJSON(secrets.QUAY_USERNAME) }},
+          "QUAY_ROBOT_TOKEN": ${{ toJSON(secrets.QUAY_ROBOT_TOKEN) }} }
+
+      SLACK_CHANNEL: ${{ secrets.SLACK_BLOCKS_CI_CHANNEL }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      GH_ZEN_APP_ID: ${{ secrets.GH_ZEN_APP_ID }}
+      GH_ZEN_APP_PRIVATE_KEY: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
