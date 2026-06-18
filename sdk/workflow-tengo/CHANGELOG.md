@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.6.2
+
+### Patch Changes
+
+- 4df307e: PFrames bump
+
 ## 6.6.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.11.37",
+  "version": "1.11.38",
   "type": "module",
   "scripts": {
     "dev": "ts-builder serve --target block-ui",

@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.29
+
+### Patch Changes
+
+- ae79571: Add `DownloadDriver.getContentDirect(handle, options?)` — same result as `getContent`, but it never reads from or writes to the ranges cache (a fresh read straight from storage that does not populate the cache). For local handles it is identical to `getContent`, since local content never uses the ranges cache.
+
+  The PFrames data-source blob reader (`pl-middle-layer` pool driver) now uses `getContentDirect`, since PFrames manages its own caching and should not populate the ranges cache.
+
+- 2019cf9: Wire the persistent parquet blob cache into the PFrames remote blob provider, bumping `@milaboratories/pframes-rs-*` to 1.1.48 (which ships the caching runtime). Downloaded parquet byte ranges are now served from a local cache that survives restarts, backed by a new `parquetCachePath` (default `<workDir>/parquetCache`, not emptied on startup). Cache tuning is exposed via `parquetCacheOps` (defaults: 8 GiB budget, 0.2 single-file admission fraction, 50k tracked files), and `getCacheMetrics()` / `resetCache()` now report real data instead of `null` / no-op.
+- Updated dependencies [ae79571]
+- Updated dependencies [b4098f0]
+- Updated dependencies [4df307e]
+  - @milaboratories/pl-drivers@1.16.0
+  - @milaboratories/pf-spec-driver@1.4.13
+  - @milaboratories/pf-driver@1.7.11
+  - @platforma-sdk/workflow-tengo@6.6.2
+  - @platforma-sdk/model@1.79.6
+
 ## 1.64.28
 
 ### Patch Changes
