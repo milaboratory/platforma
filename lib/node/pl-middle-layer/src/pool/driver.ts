@@ -88,7 +88,7 @@ class LocalBlobProviderImpl
       resolveBlobContent: async (blobId: PFrameInternal.PFrameBlobId) => {
         const computable = this.getByKey(blobId);
         const blob = await computable.awaitStableValue(signal);
-        return await this.blobDriver.getContent(blob.handle, { signal });
+        return await this.blobDriver.getContentDirect(blob.handle, { signal });
       },
     };
   }
@@ -251,23 +251,28 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   constructor(
     private readonly pool: RemoteBlobPool,
     private readonly server: PFrameInternal.HttpServer,
-    // TODO: private readonly cache: PFrameInternal.CachingObjectStore,
+    private readonly cache: PFrameInternal.CachingObjectStore,
   ) {}
 
   public static async init(
     blobDriver: DownloadDriver,
     logger: PFrameInternal.Logger,
     serverOptions: Omit<PFrameInternal.HttpServerOptions, "handler">,
+    cacheConfig: PFrameInternal.CacheConfig,
   ): Promise<RemoteBlobProviderImpl> {
     const pool = new RemoteBlobPool(blobDriver, logger);
     const store = new BlobStore({ remoteBlobProvider: pool, logger });
-    // TODO: const cachingStore = HttpHelpers.createCachingObjectStore({ ... });
+    const cachingStore = await HttpHelpers.createCachingObjectStore({
+      upstream: store,
+      config: cacheConfig,
+      logger,
+    });
 
-    const handler = HttpHelpers.createRequestHandler({ store });
+    const handler = HttpHelpers.createRequestHandler({ store: cachingStore });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });
     logger("info", `PFrames HTTP server started on ${server.info.url}`);
 
-    return new RemoteBlobProviderImpl(pool, server);
+    return new RemoteBlobProviderImpl(pool, server, cachingStore);
   }
 
   public acquire(params: BlobResourceRef): PoolEntry<PFrameInternal.PFrameBlobId> {
@@ -279,16 +284,16 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   }
 
   public async getCacheMetrics(): Promise<PFrameInternal.CacheMetrics | null> {
-    return null; // TODO: this.cache.getMetrics()
+    return this.cache.getMetrics();
   }
 
   public async resetCache(): Promise<void> {
-    // TODO: this.cache.reset()
+    await this.cache.reset();
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
     await this.server.stop();
-    // TODO: await this.cache[Symbol.asyncDispose]();
+    await this.cache[Symbol.asyncDispose]();
     await this.pool[Symbol.asyncDispose]();
   }
 }
@@ -307,20 +312,32 @@ export const PFrameDriverOpsDefaults: PFrameDriverOps = {
   parquetServerPort: 0, // 0 means that some unused port will be assigned by the OS
 };
 
+/**
+ * Tuning for the persistent parquet blob cache, minus its filesystem path (which
+ * is supplied separately - see {@link createPFrameDriver}'s `cachePath`). Carries
+ * only the size/eviction knobs of {@link PFrameInternal.CacheConfig}.
+ */
+export type ParquetCacheOps = Omit<PFrameInternal.CacheConfig, "cachePath">;
+
 export async function createPFrameDriver(params: {
   blobDriver: DownloadDriver;
   logger: MiLogger;
   spillPath: string;
+  cachePath: string;
   options: PFrameDriverOps;
+  cacheOps: ParquetCacheOps;
 }): Promise<InternalPFrameDriver> {
   const resolvedSpillPath = path.resolve(params.spillPath);
   await emptyDir(resolvedSpillPath);
 
   const logger: PFrameInternal.Logger = (level, message) => params.logger[level](message);
   const localBlobProvider = new LocalBlobProviderImpl(params.blobDriver, logger);
-  const remoteBlobProvider = await RemoteBlobProviderImpl.init(params.blobDriver, logger, {
-    port: params.options.parquetServerPort,
-  });
+  const remoteBlobProvider = await RemoteBlobProviderImpl.init(
+    params.blobDriver,
+    logger,
+    { port: params.options.parquetServerPort },
+    { cachePath: path.resolve(params.cachePath), ...params.cacheOps },
+  );
 
   const resolveDataInfo = (spec: PColumnSpec, data: PColumnDataUniversal<PlTreeNodeAccessor>) => {
     if (isPlTreeNodeAccessor(data)) {
