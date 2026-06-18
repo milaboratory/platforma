@@ -1,5 +1,11 @@
 # @milaboratories/pf-driver
 
+## 1.7.11
+
+### Patch Changes
+
+- 4df307e: PFrames bump
+
 ## 1.7.10
 
 ### Patch Changes

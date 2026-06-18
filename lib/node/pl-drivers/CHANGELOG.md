@@ -1,5 +1,19 @@
 # @milaboratories/pl-drivers
 
+## 1.16.0
+
+### Minor Changes
+
+- ae79571: Add `DownloadDriver.getContentDirect(handle, options?)` — same result as `getContent`, but it never reads from or writes to the ranges cache (a fresh read straight from storage that does not populate the cache). For local handles it is identical to `getContent`, since local content never uses the ranges cache.
+
+  The PFrames data-source blob reader (`pl-middle-layer` pool driver) now uses `getContentDirect`, since PFrames manages its own caching and should not populate the ranges cache.
+
+### Patch Changes
+
+- b4098f0: Cache presigned download URLs by signed resource id, avoiding a `GetDownloadURL` round-trip per blob read. Each cache entry's TTL is derived from the expiry encoded in the URL (`X-Amz-*` for S3 / FS-remote, `X-Goog-*` for GCS), minus a 30s safety margin for clock skew; URLs without an encoded expiry (local `storage://`) get a bounded default TTL.
+
+  If a cached URL is nonetheless rejected by storage with a 4xx (e.g. an expired signature when clock skew exceeds the safety margin), the entry is evicted and the download is retried once with a freshly fetched URL, instead of failing until the cache entry's TTL lapses.
+
 ## 1.15.6
 
 ### Patch Changes
