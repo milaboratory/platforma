@@ -12,7 +12,6 @@
 //    keys/paths). Each line is a one-way decision: every block converges.
 
 import { scope, remove, managed, generate, removeScript, removeDep } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { rootPackageJsonInitial } from "./root-package-json";
 
 export function testFrameworkMigration(): void {
@@ -50,7 +49,7 @@ export function legacyCleanup(): void {
     remove(".prettierrc");
     managed(
       "package.json",
-      generate(() => rootPackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => rootPackageJsonInitial(ctx)),
       () => {
         // `pretty` (prettier) is superseded by `fmt` (oxfmt); the standalone
         // deps-updater is now part of block-tools.

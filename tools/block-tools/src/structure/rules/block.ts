@@ -2,7 +2,6 @@
 // Workspace-scope deps in the body resolve from ctx.modules.
 
 import { scope, fixed, managed, seed, file, binaryFile, generate } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { blockPackageJsonInitial, blockPackageJsonRules } from "./block-package-json";
 
 export function blockRules(): void {
@@ -20,9 +19,9 @@ export function blockRules(): void {
 
     managed(
       "package.json",
-      generate(() => blockPackageJsonInitial(getActiveRunContext())),
-      () => {
-        blockPackageJsonRules();
+      generate((ctx) => blockPackageJsonInitial(ctx)),
+      (ctx) => {
+        blockPackageJsonRules(ctx);
       },
     );
   });

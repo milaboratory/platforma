@@ -196,7 +196,15 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
       `Could not find a 'block' (or root-as-block) package to derive BlockVars from.`,
     );
   }
-  const blockVars = parseBlockVars(blockMod.name);
+  // This structurer names the block package `<facade>.block`
+  // (block-package-json.ts). The root package carries no `name`, so DISCOVERY
+  // derives BlockVars from the block module — whose `.block` suffix would
+  // otherwise leak into `shortName` on refresh/check (but not init, which is
+  // fed the facade directly). Strip it so `shortName` is the real short name
+  // everywhere. No-op for legacy blocks whose block package IS the bare facade
+  // and for the root-as-block fallback.
+  const facadeName = blockMod.name.replace(/\.block$/, "");
+  const blockVars = parseBlockVars(facadeName);
 
   return createRunContext({
     isSdkInternal,

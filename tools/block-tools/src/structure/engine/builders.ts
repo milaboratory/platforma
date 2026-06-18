@@ -327,18 +327,19 @@ export function text(value: string): ContentForm {
 }
 
 /** Content form: a text template (the structurer's `text/` templates) with
- *  `${var}` placeholders substituted from `vars`. */
+ *  `${var}` placeholders substituted from `vars`. When `vars` is a function it
+ *  receives the active {@link RunContext} at resolve time. */
 export function tpl(
   path: string,
-  vars: Record<string, string> | (() => Record<string, string>),
+  vars: Record<string, string> | ((ctx: RunContext) => Record<string, string>),
 ): ContentForm {
   return { kind: "tpl", path, vars };
 }
 
-/** Content form: content computed at run time. The return value is serialised
- *  as JSON / YAML by the target file's extension, or used verbatim if it is
- *  already a string. */
-export function generate(fn: () => unknown): ContentForm {
+/** Content form: content computed at run time from the active
+ *  {@link RunContext}. The return value is serialised as JSON / YAML by the
+ *  target file's extension, or used verbatim if it is already a string. */
+export function generate(fn: (ctx: RunContext) => unknown): ContentForm {
   return { kind: "generate", fn };
 }
 
