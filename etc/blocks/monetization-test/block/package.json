@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.4.60",
+  "version": "1.4.61",
   "files": [
     "index.d.ts",
     "index.js"
