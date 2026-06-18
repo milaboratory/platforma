@@ -28,7 +28,6 @@ import {
   ensureCatalogVersion,
   pinCatalogToDependencyOf,
 } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import {
   rootPnpmWorkspaceInitial,
   SDK_CATALOG_PACKAGES,
@@ -53,8 +52,8 @@ export function rootCatalogBumpRules(): void {
           // generator.
           managed(
             "pnpm-workspace.yaml",
-            generate(() => rootPnpmWorkspaceInitial(getActiveRunContext())),
-            () => {
+            generate((ctx) => rootPnpmWorkspaceInitial(ctx)),
+            (ctx) => {
               // SDK families → npm latest, ADD-IF-ABSENT (seeds a migrated
               // block's missing standard keys + overwrites the init
               // placeholder).
@@ -76,7 +75,7 @@ export function rootCatalogBumpRules(): void {
               }
               // The python runenv pin is relevant only to software-bearing
               // blocks; seed it add-if-absent when one is present.
-              if (getActiveRunContext().modules.some((m) => m.scope === "software")) {
+              if (ctx.modules.some((m) => m.scope === "software")) {
                 ensureCatalogVersion(RUNENV_PYTHON, RUNENV_PYTHON_VERSION);
               }
             },

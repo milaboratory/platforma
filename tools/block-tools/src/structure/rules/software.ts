@@ -6,7 +6,6 @@
 // `init` and never touched again — the block author owns them.
 
 import { scope, managed, seed, generate, text } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { softwarePackageJsonInitial, softwarePackageJsonRules } from "./software-package-json";
 
 const MAIN_PY_SEED = `import sys
@@ -24,7 +23,7 @@ export function softwareRules(): void {
 
     managed(
       "package.json",
-      generate(() => softwarePackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => softwarePackageJsonInitial(ctx)),
       () => {
         softwarePackageJsonRules();
       },

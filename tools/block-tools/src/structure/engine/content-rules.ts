@@ -13,7 +13,7 @@
 
 import { registerInnerWhenHandler, tryGetActiveRunContext } from "./builders";
 import type { RunContext, Scope } from "./api";
-import type { TriggerContext, TriggerFn } from "./ir";
+import type { ManagedBody, TriggerContext, TriggerFn } from "./ir";
 import {
   deleteAtPath,
   getAtPath,
@@ -163,13 +163,13 @@ export type WithManagedOpts = {
  *  the runner calls this for managed `.json` files. */
 export function withManagedBody(
   obj: JsonObject,
-  body: () => void,
+  body: ManagedBody,
   opts: WithManagedOpts = {},
 ): JsonObject {
   if (active) throw new Error("Nested managed(...) body — engine bug.");
   active = { kind: "json", obj, ctx: opts.ctx, triggerContext: opts.triggerContext };
   try {
-    body();
+    body((opts.ctx ?? opts.triggerContext?.ctx) as RunContext);
     return obj;
   } finally {
     active = undefined;
@@ -189,7 +189,7 @@ export type WithManagedYamlOpts = WithManagedOpts & {
  *  `pnpm-workspace.yaml`); returns the mutated document. Exported for tests. */
 export function withManagedYaml(
   doc: YamlDocument,
-  body: () => void,
+  body: ManagedBody,
   opts: WithManagedYamlOpts = {},
 ): YamlDocument {
   if (active) throw new Error("Nested managed(...) body — engine bug.");
@@ -202,7 +202,7 @@ export function withManagedYaml(
     getDerivedDependencyPin: opts.getDerivedDependencyPin,
   };
   try {
-    body();
+    body((opts.ctx ?? opts.triggerContext?.ctx) as RunContext);
     return doc;
   } finally {
     active = undefined;
@@ -213,7 +213,7 @@ export function withManagedYaml(
  *  (for `.gitignore`); returns the mutated lines. Exported for tests. */
 export function withManagedLines(
   lines: string[],
-  body: () => void,
+  body: ManagedBody,
   opts: WithManagedOpts = {},
 ): string[] {
   if (active) throw new Error("Nested managed(...) body — engine bug.");
@@ -224,7 +224,7 @@ export function withManagedLines(
     triggerContext: opts.triggerContext,
   };
   try {
-    body();
+    body((opts.ctx ?? opts.triggerContext?.ctx) as RunContext);
     return lines;
   } finally {
     active = undefined;

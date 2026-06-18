@@ -13,9 +13,7 @@ import {
   remove,
   when,
   whenFilesExist,
-  blockVars,
 } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { workflowPackageJsonInitial, workflowPackageJsonRules } from "./workflow-package-json";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
@@ -59,14 +57,14 @@ export function workflowRules(): void {
 
     seed(
       "src/main.tpl.tengo",
-      tpl("workflow/src/main.tpl.tengo", () => ({
-        shortName: blockVars().shortName,
+      tpl("workflow/src/main.tpl.tengo", (ctx) => ({
+        shortName: ctx.blockVars.shortName,
       })),
     );
 
     managed(
       "package.json",
-      generate(() => workflowPackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => workflowPackageJsonInitial(ctx)),
       () => {
         workflowPackageJsonRules();
       },

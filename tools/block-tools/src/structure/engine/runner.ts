@@ -110,7 +110,7 @@ function resolveContent(
   form: ContentForm,
   filePath: string,
   templates: TemplateProvider | undefined,
-  isSdkInternal: boolean,
+  ctx: RunContext,
 ): string {
   switch (form.kind) {
     case "text":
@@ -132,15 +132,15 @@ function resolveContent(
         );
       }
       const raw = templates.textRead(form.path);
-      const vars = typeof form.vars === "function" ? form.vars() : form.vars;
+      const vars = typeof form.vars === "function" ? form.vars(ctx) : form.vars;
       return substituteVars(raw, vars);
     }
     case "generate": {
-      const value = form.fn();
+      const value = form.fn(ctx);
       if (filePath.endsWith(".json")) {
         // Resolve `sdk:` sentinels in the generated dep sections so the
         // initial content matches what the body rules re-assert.
-        resolveSdkSentinelsInJson(value, isSdkInternal);
+        resolveSdkSentinelsInJson(value, ctx.isSdkInternal);
         // package.json stays fully expanded (oxfmt's package.json shape);
         // every other .json collapses to oxfmt's generic-file shape.
         return stringifyJson(value, { collapse: !filePath.endsWith("package.json") });
@@ -170,7 +170,7 @@ function writeLeafContent(
   resolvedPath: string,
   form: ContentForm,
   templates: TemplateProvider | undefined,
-  isSdkInternal: boolean,
+  ctx: RunContext,
 ): void {
   if (form.kind === "binary") {
     if (!templates) {
@@ -182,7 +182,7 @@ function writeLeafContent(
     fs.writeBinary(resolvedPath, templates.staticReadBinary(form.path));
     return;
   }
-  fs.write(resolvedPath, resolveContent(form, resolvedPath, templates, isSdkInternal));
+  fs.write(resolvedPath, resolveContent(form, resolvedPath, templates, ctx));
 }
 
 /** Dispatch managed-body parse → mutate → serialize by file extension /
@@ -292,11 +292,11 @@ function applyStructural(
   dryRun: boolean,
   templates: TemplateProvider | undefined,
   initMode: boolean,
-  isSdkInternal: boolean,
+  ctx: RunContext,
 ): Change | undefined {
   const leaf = item.leaf;
   if (leaf.kind === "fixed") {
-    const desired = resolveContent(leaf.content, item.resolvedPath, templates, isSdkInternal);
+    const desired = resolveContent(leaf.content, item.resolvedPath, templates, ctx);
     const exists = fs.exists(item.resolvedPath);
     if (!exists) {
       if (!dryRun) fs.write(item.resolvedPath, desired);
@@ -320,7 +320,7 @@ function applyStructural(
   if (leaf.kind === "scaffold") {
     if (fs.exists(item.resolvedPath)) return undefined;
     if (!dryRun) {
-      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, ctx);
     }
     return {
       scope: item.scope,
@@ -338,7 +338,7 @@ function applyStructural(
     if (!initMode) return undefined;
     if (fs.exists(item.resolvedPath)) return undefined;
     if (!dryRun) {
-      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, isSdkInternal);
+      writeLeafContent(fs, item.resolvedPath, leaf.initial, templates, ctx);
     }
     return {
       scope: item.scope,
@@ -383,7 +383,7 @@ function applyManaged(
   templates: TemplateProvider | undefined,
   registryLookup: ((packageName: string) => string | undefined) | undefined,
   derivedPinLookup: ((catalogEntry: string) => string | undefined) | undefined,
-  isSdkInternal: boolean,
+  ctx: RunContext,
 ): Change | undefined {
   if (item.leaf.kind !== "managed") return undefined;
   const leaf = item.leaf;
@@ -394,7 +394,7 @@ function applyManaged(
   let created = false;
 
   if (!exists) {
-    beforeRaw = resolveContent(leaf.initial, path, templates, isSdkInternal);
+    beforeRaw = resolveContent(leaf.initial, path, templates, ctx);
     created = true;
   } else {
     beforeRaw = fs.read(path);
@@ -443,7 +443,7 @@ function executePass(
     if (item.leaf.kind === "managed") continue;
     const tctx1 = buildTriggerCtx(snap1, ctx, item.modulePath);
     if (!passesTriggers(item, tctx1)) continue;
-    const change = applyStructural(item, fs, dryRun, templates, initMode, ctx.isSdkInternal);
+    const change = applyStructural(item, fs, dryRun, templates, initMode, ctx);
     if (change) changes.push(change);
   }
 
@@ -462,7 +462,7 @@ function executePass(
       templates,
       registryLookup,
       derivedPinLookup,
-      ctx.isSdkInternal,
+      ctx,
     );
     if (change) changes.push(change);
   }
