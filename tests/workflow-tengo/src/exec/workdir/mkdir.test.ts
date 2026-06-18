@@ -10,12 +10,7 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "exec.builder.mkDir creates real nested directories (MILAB-6460)",
   async ({ helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      "exec.workdir.mkdir",
-      ["dirs"],
-      () => ({}),
-    );
+    const result = await helper.renderTemplate(false, "exec.workdir.mkdir", ["dirs"], () => ({}));
 
     const listing = await result
       .computeOutput("dirs", (a) => a?.getDataAsString())
