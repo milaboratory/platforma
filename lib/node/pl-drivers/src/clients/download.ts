@@ -20,11 +20,13 @@ import { Readable } from "node:stream";
 import type { Dispatcher } from "undici";
 import type { LocalStorageProjection } from "../drivers/types";
 import { type ContentHandler, RemoteFileDownloader } from "../helpers/download";
+import { isDownloadNetworkError400 } from "../helpers/download_errors";
 import { validateAbsolute } from "../helpers/validate";
 import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol";
 import { DownloadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client";
 import type { DownloadApiPaths, DownloadRestClientType } from "../proto-rest";
 import { type GetContentOptions } from "@milaboratories/pl-model-common";
+import { DownloadUrlCache } from "./download_url_cache";
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -37,6 +39,9 @@ export class ClientDownload {
 
   /** Concurrency limiter for local file reads - limit to 32 parallel reads */
   private readonly localFileReadLimiter = new ConcurrencyLimitingExecutor(32);
+
+  /** Caches presigned download URLs by resource id until they (almost) expire. */
+  private readonly urlCache: DownloadUrlCache;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
@@ -59,6 +64,7 @@ export class ClientDownload {
     });
     this.remoteFileDownloader = new RemoteFileDownloader(httpClient);
     this.localStorageIdsToRoot = newLocalStorageIdsToRoot(localProjections);
+    this.urlCache = new DownloadUrlCache(logger);
   }
 
   close() {}
@@ -75,24 +81,45 @@ export class ClientDownload {
     ops: GetContentOptions,
     handler: ContentHandler<T>,
   ): Promise<T> {
-    const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, ops.signal);
+    const attempt = async ({
+      downloadUrl,
+      headers,
+    }: DownloadAPI_GetDownloadURL_Response): Promise<T> => {
+      const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
+      this.logger.info(
+        `blob ${stringifyWithResourceId(info)} download started, ` +
+          `url: ${downloadUrl}, ` +
+          `range: ${JSON.stringify(ops.range ?? null)}`,
+      );
 
-    const remoteHeaders = Object.fromEntries(headers.map(({ name, value }) => [name, value]));
-    this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download started, ` +
-        `url: ${downloadUrl}, ` +
-        `range: ${JSON.stringify(ops.range ?? null)}`,
-    );
+      const timer = PerfTimer.start();
+      const result = isLocal(downloadUrl)
+        ? await this.withLocalFileContent(downloadUrl, ops, handler)
+        : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
 
-    const timer = PerfTimer.start();
-    const result = isLocal(downloadUrl)
-      ? await this.withLocalFileContent(downloadUrl, ops, handler)
-      : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+      this.logger.info(
+        `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
+      );
+      return result;
+    };
 
-    this.logger.info(
-      `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
-    );
-    return result;
+    const cached = this.urlCache.get(info.id);
+    if (cached !== undefined) {
+      try {
+        return await attempt(cached);
+      } catch (error) {
+        if (!isDownloadNetworkError400(error)) throw error;
+        this.urlCache.delete(info.id);
+        this.logger.info(
+          `cached download URL for blob ${stringifyWithResourceId(info)} rejected ` +
+            `(status ${error.statusCode}), re-fetching`,
+        );
+      }
+    }
+
+    const fresh = await this.grpcGetDownloadUrl(info, options, ops.signal);
+    this.urlCache.set(info.id, fresh);
+    return await attempt(fresh);
   }
 
   async withLocalFileContent<T>(

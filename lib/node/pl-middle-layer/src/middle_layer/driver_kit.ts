@@ -118,7 +118,9 @@ export async function initDriverKit(
     blobDriver,
     logger: ops.logger,
     spillPath: ops.pframesSpillPath,
+    cachePath: ops.parquetCachePath,
     options: ops.pFrameDriverOps,
+    cacheOps: ops.parquetCacheOps,
   });
 
   const frontendDownloadDriver = new DownloadUrlDriver(

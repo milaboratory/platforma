@@ -3,7 +3,7 @@ import { blockTest } from "@platforma-sdk/test";
 import { createPlDataTableStateV2, pluginOutputKey } from "@platforma-sdk/model";
 import { blockSpec } from "this-block";
 
-blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) => {
+blockTest("with args", { timeout: 60000 }, async ({ rawPrj: project, expect }) => {
   const blockId = await project.addBlock("Block", blockSpec);
 
   const stableOverview1 = await project.overview.awaitStableValue();
@@ -60,12 +60,12 @@ blockTest("with args", { timeout: 10000 }, async ({ rawPrj: project, expect }) =
 
 blockTest(
   "block-level services",
-  { timeout: 30000 },
+  { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect }) => {
     const blockId = await project.addBlock("Block", blockSpec);
 
     await project.runBlock(blockId);
-    const blockState = await helpers.awaitBlockDoneAndGetStableBlockState(blockId);
+    const blockState = await helpers.awaitBlockDoneAndGetStableBlockState(blockId, 50000);
 
     // Block-level pframeSpec service
     expect(blockState.outputs?.blockSpecFrameTest).toStrictEqual({

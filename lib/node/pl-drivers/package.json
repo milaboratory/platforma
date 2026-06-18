@@ -41,6 +41,7 @@
     "@protobuf-ts/runtime-rpc": "catalog:",
     "decompress": "catalog:",
     "denque": "catalog:",
+    "lru-cache": "catalog:",
     "openapi-fetch": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
