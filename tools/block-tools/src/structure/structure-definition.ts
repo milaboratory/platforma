@@ -5,6 +5,7 @@
 
 import { defineStructure } from "./engine/api";
 import { rootRules } from "./rules/root";
+import { rootCiRules } from "./rules/root-ci";
 import { blockRules } from "./rules/block";
 import { modelRules } from "./rules/model";
 import { uiRules } from "./rules/ui";
@@ -16,6 +17,7 @@ import { rootCatalogBumpRules } from "./rules/root-catalog-bump";
 
 export const STRUCTURE = defineStructure(() => {
   rootRules();
+  rootCiRules();
   blockRules();
   modelRules();
   uiRules();

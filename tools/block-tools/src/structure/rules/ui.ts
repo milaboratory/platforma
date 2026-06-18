@@ -10,11 +10,9 @@ import {
   file,
   tpl,
   generate,
-  blockVars,
   when,
   whenFilesExist,
 } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { uiPackageJsonInitial, uiPackageJsonRules } from "./ui-package-json";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
@@ -45,16 +43,16 @@ export function uiRules(): void {
     seed("src/main.ts", file("ui/src/main.ts"));
     seed(
       "src/app.ts",
-      tpl("ui/src/app.tpl.ts", () => ({ modelPkg: `${blockVars().facadeName}.model` })),
+      tpl("ui/src/app.tpl.ts", (ctx) => ({ modelPkg: `${ctx.blockVars.facadeName}.model` })),
     );
     seed(
       "src/MainPage.vue",
-      tpl("ui/src/MainPage.tpl.vue", () => ({ shortName: blockVars().shortName })),
+      tpl("ui/src/MainPage.tpl.vue", (ctx) => ({ shortName: ctx.blockVars.shortName })),
     );
 
     managed(
       "package.json",
-      generate(() => uiPackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => uiPackageJsonInitial(ctx)),
       () => {
         uiPackageJsonRules();
       },

@@ -1,7 +1,6 @@
 // Test-scope rules.
 
 import { scope, fixed, managed, scaffold, seed, file, text, generate } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { testPackageJsonInitial, testPackageJsonRules } from "./test-package-json";
 
 export function testRules(): void {
@@ -35,7 +34,7 @@ export function testRules(): void {
 
     managed(
       "package.json",
-      generate(() => testPackageJsonInitial(getActiveRunContext())),
+      generate((ctx) => testPackageJsonInitial(ctx)),
       () => {
         testPackageJsonRules();
       },

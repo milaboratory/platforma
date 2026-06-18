@@ -37,14 +37,16 @@ export type TriggerContext = {
 export type TriggerFn = (tctx: TriggerContext) => boolean;
 
 /** Content forms — what to write into a file when creating it.
- *  `tpl.vars` may be a record or a thunk returning a record; the latter
- *  lets rule authors call `blockVars()` lazily at resolve time. */
-export type TplVarsLike = Record<string, string> | (() => Record<string, string>);
+ *  `tpl.vars` and `generate.fn` may be functions; when they are, the
+ *  resolver calls them with the active `RunContext` (the same object
+ *  triggers see as `tctx.ctx`), so lambdas read block identity via their
+ *  argument rather than the module-global `getActiveRunContext()`. */
+export type TplVarsLike = Record<string, string> | ((ctx: RunContext) => Record<string, string>);
 export type ContentForm =
   | { kind: "file"; path: string }
   | { kind: "text"; value: string }
   | { kind: "tpl"; path: string; vars: TplVarsLike }
-  | { kind: "generate"; fn: () => unknown }
+  | { kind: "generate"; fn: (ctx: RunContext) => unknown }
   // A binary static asset (e.g. a logo PNG) copied verbatim from the
   // template tree. Carried as raw bytes, never decoded to a string —
   // only `seed` / `scaffold` consume it (via fs.writeBinary).

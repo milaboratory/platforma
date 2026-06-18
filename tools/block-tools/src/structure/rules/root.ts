@@ -4,7 +4,6 @@
 // `when(({ ctx }) => !ctx.isSdkInternal, ...)` wrapper.
 
 import { scope, when, fixed, managed, file, generate } from "../engine/api";
-import { getActiveRunContext } from "../engine/builders";
 import { rootPackageJsonInitial, rootPackageJsonRules } from "./root-package-json";
 import { rootPnpmWorkspaceInitial, rootPnpmWorkspaceRules } from "./root-pnpm-workspace";
 import { rootGitignoreRules } from "./root-gitignore";
@@ -19,7 +18,7 @@ export function rootRules(): void {
 
         managed(
           "package.json",
-          generate(() => rootPackageJsonInitial(getActiveRunContext())),
+          generate((ctx) => rootPackageJsonInitial(ctx)),
           () => {
             rootPackageJsonRules();
           },
@@ -27,7 +26,7 @@ export function rootRules(): void {
 
         managed(
           "pnpm-workspace.yaml",
-          generate(() => rootPnpmWorkspaceInitial(getActiveRunContext())),
+          generate((ctx) => rootPnpmWorkspaceInitial(ctx)),
           () => {
             rootPnpmWorkspaceRules();
           },
