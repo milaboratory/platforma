@@ -1,5 +1,25 @@
 # @platforma-sdk/block-tools
 
+## 2.11.0
+
+### Minor Changes
+
+- 10944e8: structurer: manage the block CI workflows (`.github/workflows/build.yaml` and
+  `mark-stable.yaml`) as engine-owned (`fixed`) scaffold files, generated from
+  the block's short name. Brings the shared-CI pin (`@v4`) and job wiring under
+  central management so `refresh` keeps every block's workflow in sync; the only
+  per-block bits are derived (`app-name`, `app-name-slug`), with `team-id` and
+  the `test` toggle as shared constants. Standalone blocks only — `--sdk-internal`
+  blocks are unaffected.
+
+### Patch Changes
+
+- cf7b5c4: structurer: `managed(path, initial, body)` bodies now receive the active
+  `RunContext` as an argument (`(ctx) => …`), matching `generate`/`tpl`/`when`.
+  Rule code no longer reaches for the module-global `getActiveRunContext()` —
+  every execution-level lambda gets `ctx` by argument. Internal refactor; no
+  change to generated block output.
+
 ## 2.10.19
 
 ### Patch Changes
