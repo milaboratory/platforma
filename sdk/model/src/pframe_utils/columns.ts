@@ -1,4 +1,10 @@
-import type { PColumn, PColumnSpec, PColumnLazy, PFrameDef } from "@milaboratories/pl-model-common";
+import type {
+  PColumn,
+  PColumnSpec,
+  PColumnLazy,
+  PFrameDef,
+  PObjectId,
+} from "@milaboratories/pl-model-common";
 import {
   getNormalizedAxesList,
   getAxisId,
@@ -11,6 +17,8 @@ import type { AxesVault } from "./axes";
 import { enrichCompatible, getAvailableWithLinkersAxes } from "./axes";
 import type { RenderCtxBase, PColumnDataUniversal } from "../render";
 import { PColumnCollection } from "../render";
+import { ColumnCollectionBuilder } from "../columns";
+import { collectCtxColumnSnapshotProviders } from "../columns/ctx_column_sources";
 
 export function getAllRelatedColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
@@ -137,8 +145,42 @@ export function getRelatedColumns<A, U>(
 
   const compatible = [...compatibleWithoutLabels, ...compatibleLabels];
 
+  // Drop result-pool columns that share an axis with the block but cannot join it.
+  const integrableIds = discoverIntegrableColumnIds(ctx, rootColumns);
+  const rootIds = new Set(rootColumns.map((c) => c.id));
+  const connected = compatible.filter(
+    (c) => rootIds.has(c.id) || isLinkerColumn(c.spec) || (integrableIds?.has(c.id) ?? true),
+  );
+
   // additional columns are duplicates with extra fields in domains for compatibility if there are ones with partial match
-  const extendedColumns = enrichCompatible(blockAxes, compatible);
+  const extendedColumns = enrichCompatible(blockAxes, connected);
 
   return extendedColumns;
+}
+
+/** Column ids that discovery confirms integrate with the block, or `undefined` when it can't decide. */
+function discoverIntegrableColumnIds<A, U>(
+  ctx: RenderCtxBase<A, U>,
+  rootColumns: PColumn<PColumnDataUniversal>[],
+): Set<PObjectId> | undefined {
+  const anchorSpecs = Array.from(
+    new Map(rootColumns.map((c) => [canonicalizeJson(c.spec), c.spec])).values(),
+  );
+  if (anchorSpecs.length === 0) return undefined;
+
+  try {
+    const collection = new ColumnCollectionBuilder()
+      .addSources(collectCtxColumnSnapshotProviders(ctx))
+      .build({
+        allowPartialColumnList: true,
+        anchors: Object.fromEntries(anchorSpecs.map((spec, i) => [`anchor_${i}`, spec])),
+      });
+    try {
+      return new Set(collection.findColumns({ mode: "enrichment" }).map((m) => m.column.id));
+    } finally {
+      collection.dispose();
+    }
+  } catch {
+    return undefined;
+  }
 }
