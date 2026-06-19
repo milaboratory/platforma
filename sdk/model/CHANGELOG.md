@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.79.14
+
+### Patch Changes
+
+- 22830cc: Fix "axes sets are disjoint" errors in graph PFrames. `getRelatedColumns` now gates its candidate columns through the spec-driver discover engine, dropping result-pool columns that share only a low-cardinality context axis (e.g. `pl7.app/sampleId`) with the block but are otherwise a disconnected column universe.
+
 ## 1.79.6
 
 ### Patch Changes
