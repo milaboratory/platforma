@@ -77,3 +77,27 @@ export interface BlobDriver {
    */
   getContent(handle: LocalBlobHandle | RemoteBlobHandle, range?: RangeBytes): Promise<Uint8Array>;
 }
+
+/**
+ * Operational metrics of the blob download driver.
+ */
+export type BlobDriverMetrics = {
+  /** Downloads that bypassed the ranges (sparse) cache. Counted when issued, so failed downloads still count. */
+  uncachedRequests: number;
+  /** Bytes actually streamed off the wire on the uncached path. */
+  uncachedRequestBytes: number;
+  /** Currently active remote downloads. */
+  downloadsInFlight: number;
+  /** Sum of known sizes of active downloads — progress-bar denominator. */
+  inFlightBytesTotal: number;
+  /** Sum of bytes received so far across active downloads — progress-bar numerator. */
+  inFlightBytesReceived: number;
+  /** Cached presigned URL was used and the download started successfully (one gRPC sign call avoided). */
+  presignedUrlCacheHits: number;
+  /** No cached presigned URL; a fresh one was fetched. */
+  presignedUrlCacheMisses: number;
+  /** Cached presigned URL was rejected (HTTP 400) and re-fetched — signals the TTL safety margin is too loose. */
+  presignedUrlStaleHits: number;
+  /** Total latency of presigned-URL fetch calls (misses + stale hits); divide by their count for the mean cost a hit avoids. */
+  presignedUrlRequestSumLatencyMs: number;
+};
