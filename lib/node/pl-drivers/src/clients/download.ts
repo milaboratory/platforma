@@ -25,8 +25,11 @@ import { validateAbsolute } from "../helpers/validate";
 import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol";
 import { DownloadClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client";
 import type { DownloadApiPaths, DownloadRestClientType } from "../proto-rest";
-import { type GetContentOptions } from "@milaboratories/pl-model-common";
+import { type GetContentOptions, type BlobDriverMetrics } from "@milaboratories/pl-model-common";
 import { DownloadUrlCache } from "./download_url_cache";
+
+/** Subset of {@link BlobDriverMetrics} owned by the download client (presigned cache + in-flight downloads). */
+type ClientDownloadMetrics = Omit<BlobDriverMetrics, "uncachedRequests" | "uncachedRequestBytes">;
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -42,6 +45,13 @@ export class ClientDownload {
 
   /** Caches presigned download URLs by resource id until they (almost) expire. */
   private readonly urlCache: DownloadUrlCache;
+
+  /** Active remote downloads; in-flight gauges are summed over this set on read. */
+  private readonly inFlight = new Set<{ size: number; received: number }>();
+  private presignedUrlCacheHits = 0;
+  private presignedUrlCacheMisses = 0;
+  private presignedUrlStaleHits = 0;
+  private presignedUrlRequestSumLatencyMs = 0;
 
   constructor(
     wireClientProviderFactory: WireClientProviderFactory,
@@ -95,7 +105,7 @@ export class ClientDownload {
       const timer = PerfTimer.start();
       const result = isLocal(downloadUrl)
         ? await this.withLocalFileContent(downloadUrl, ops, handler)
-        : await this.remoteFileDownloader.withContent(downloadUrl, remoteHeaders, ops, handler);
+        : await this.withTrackedRemoteContent(downloadUrl, remoteHeaders, ops, handler);
 
       this.logger.info(
         `blob ${stringifyWithResourceId(info)} download finished, ` + `took: ${timer.elapsed()}`,
@@ -106,20 +116,78 @@ export class ClientDownload {
     const cached = this.urlCache.get(info.id);
     if (cached !== undefined) {
       try {
-        return await attempt(cached);
+        const result = await attempt(cached);
+        this.presignedUrlCacheHits++;
+        return result;
       } catch (error) {
         if (!isDownloadNetworkError400(error)) throw error;
         this.urlCache.delete(info.id);
+        this.presignedUrlStaleHits++;
         this.logger.info(
           `cached download URL for blob ${stringifyWithResourceId(info)} rejected ` +
             `(status ${error.statusCode}), re-fetching`,
         );
       }
+    } else {
+      this.presignedUrlCacheMisses++;
     }
 
+    const urlFetchStartMs = performance.now();
     const fresh = await this.grpcGetDownloadUrl(info, options, ops.signal);
+    this.presignedUrlRequestSumLatencyMs += performance.now() - urlFetchStartMs;
     this.urlCache.set(info.id, fresh);
     return await attempt(fresh);
+  }
+
+  /** Download-client-owned slice of {@link BlobDriverMetrics}: presigned-URL cache + in-flight downloads. */
+  metrics(): ClientDownloadMetrics {
+    let inFlightBytesTotal = 0;
+    let inFlightBytesReceived = 0;
+    for (const rec of this.inFlight) {
+      inFlightBytesTotal += rec.size;
+      inFlightBytesReceived += rec.received;
+    }
+    return {
+      downloadsInFlight: this.inFlight.size,
+      inFlightBytesTotal,
+      inFlightBytesReceived,
+      presignedUrlCacheHits: this.presignedUrlCacheHits,
+      presignedUrlCacheMisses: this.presignedUrlCacheMisses,
+      presignedUrlStaleHits: this.presignedUrlStaleHits,
+      presignedUrlRequestSumLatencyMs: this.presignedUrlRequestSumLatencyMs,
+    };
+  }
+
+  /** Wraps a remote download so it appears in the in-flight gauges and its received bytes are counted live. */
+  private async withTrackedRemoteContent<T>(
+    url: string,
+    headers: Record<string, string>,
+    ops: GetContentOptions,
+    handler: ContentHandler<T>,
+  ): Promise<T> {
+    const rec = { size: 0, received: 0 };
+    this.inFlight.add(rec);
+    try {
+      return await this.remoteFileDownloader.withContent(
+        url,
+        headers,
+        ops,
+        async (content, size) => {
+          rec.size = size;
+          const counted = content.pipeThrough(
+            new TransformStream<Uint8Array, Uint8Array>({
+              transform: (chunk, controller) => {
+                rec.received += chunk.byteLength;
+                controller.enqueue(chunk);
+              },
+            }),
+          );
+          return await handler(counted, size);
+        },
+      );
+    } finally {
+      this.inFlight.delete(rec);
+    }
   }
 
   async withLocalFileContent<T>(
