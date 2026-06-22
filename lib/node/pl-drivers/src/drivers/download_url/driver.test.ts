@@ -1,5 +1,6 @@
 import { TestHelpers } from "@milaboratories/pl-client";
-import { ConsoleLoggerAdapter, HmacSha256Signer } from "@milaboratories/ts-helpers";
+import { HmacSha256Signer } from "@milaboratories/ts-helpers";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 import * as os from "node:os";
 import { text } from "node:stream/consumers";
 import { Readable } from "node:stream";
@@ -10,9 +11,13 @@ import { DownloadUrlDriver } from "./driver";
 import { test, expect } from "vitest";
 import { TestTags } from "@milaboratories/build-configs";
 
+// ponytail: noop logger prevents background TaskProcessor workers from triggering
+// vitest's onUserConsoleLog RPC after test ends, which causes EnvironmentTeardownError
+const noopLogger: MiLogger = { info: () => {}, warn: () => {}, error: () => {} };
+
 test("should download a tar archive and extracts its content and then deleted", async () => {
   await TestHelpers.withTempRoot(async (client) => {
-    const logger = new ConsoleLoggerAdapter();
+    const logger = noopLogger;
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test1-"));
     const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
 
@@ -51,7 +56,7 @@ test(
   { tag: [TestTags.Flaky] },
   async () => {
     await TestHelpers.withTempRoot(async (client) => {
-      const logger = new ConsoleLoggerAdapter();
+      const logger = noopLogger;
       const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test1-"));
       const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
 
@@ -78,7 +83,7 @@ test(
 
 test("should abort a downloading process when we reset a state of a computable", async () => {
   await TestHelpers.withTempRoot(async (client) => {
-    const logger = new ConsoleLoggerAdapter();
+    const logger = noopLogger;
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test2-"));
     const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir, genSigner());
 
