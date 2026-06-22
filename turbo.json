@@ -49,6 +49,8 @@
         "PL_TEST_PASSWORD",
         "PL_TEST_USER",
         "PL_TEST_PROXY",
+        "PL_TEST_ADMIN_USER",
+        "PL_TEST_ADMIN_PASSWORD",
         "PL_TEST_STORAGE_ID",
         "PL_TEST_USE_DOCKER",
         "DEBUG",
