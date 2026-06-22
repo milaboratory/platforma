@@ -1,5 +1,15 @@
 # @milaboratories/pl-drivers
 
+## 1.16.1
+
+### Patch Changes
+
+- 2760ae1: Add `BlobDriverMetrics` and `DownloadDriver.getMetrics()`: uncached (sparse-cache-bypass) request volume, live in-flight download gauges, and presigned-URL cache efficiency (hits / misses / stale hits / fetch latency).
+- Updated dependencies [2760ae1]
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/pl-client@3.11.5
+  - @milaboratories/pl-tree@1.12.13
+
 ## 1.16.0
 
 ### Minor Changes

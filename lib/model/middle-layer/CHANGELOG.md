@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.30.7
+
+### Patch Changes
+
+- b863d05: Add `bytesMissed` to cache counters: bytes requested by clients that were not cached, for measuring read-ahead amplification against `bytesFetched`.
+- Updated dependencies [2760ae1]
+  - @milaboratories/pl-model-common@1.46.2
+
 ## 1.30.6
 
 ### Patch Changes
