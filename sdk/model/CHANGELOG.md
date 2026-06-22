@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.79.15
+
+### Patch Changes
+
+- 1d11fb7: Make the plugin↔block handshake symbol (`CREATE_PLUGIN_MODEL`) a global registry symbol (`Symbol.for`) instead of a unique `Symbol(...)`, so it stays identical across multiple copies of `@platforma-sdk/model` in one process. Fixes `instance[CREATE_PLUGIN_MODEL] is not a function` when a block registers a plugin defined in a separate package (e.g. `@milaboratories/graph-maker`) — the plugin instance and the consuming block could otherwise resolve different module copies (bundled vs externalized in `block-tools build-model`, pnpm peer-hash duplicates) and the handshake would miss.
+- Updated dependencies [2760ae1]
+- Updated dependencies [b863d05]
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/pl-model-middle-layer@1.30.7
+  - @milaboratories/ptabler-expression-js@1.2.31
+
 ## 1.79.14
 
 ### Patch Changes
