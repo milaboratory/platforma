@@ -9,6 +9,7 @@ import {
 import type {
   AnyLogHandle,
   BlobDriver,
+  BlobDriverMetrics,
   ContentHandler,
   GetContentOptions,
   LocalBlobHandle,
@@ -100,6 +101,10 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
   private idToProgressLog: Map<string, LastLinesGetter> = new Map();
 
   private readonly saveDir: string;
+
+  /** Downloads that bypassed the ranges cache; counted when issued. */
+  private uncachedRequests = 0;
+  private uncachedRequestBytes = 0;
 
   constructor(
     private readonly logger: MiLogger,
@@ -341,6 +346,18 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
     });
   }
 
+  /**
+   * Operational metrics for a monitoring panel. Serv cache metrics are reported separately
+   * (different owner) — the panel composes both.
+   */
+  public getMetrics(): BlobDriverMetrics {
+    return {
+      uncachedRequests: this.uncachedRequests,
+      uncachedRequestBytes: this.uncachedRequestBytes,
+      ...this.clientDownload.metrics(),
+    };
+  }
+
   private async getContentImpl({
     handle,
     options,
@@ -399,12 +416,24 @@ export class DownloadDriver implements BlobDriver, AsyncDisposable {
 
       if (filePath) return await withFileContent({ path: filePath, range, signal, handler });
 
+      if (bypassRangesCache) this.uncachedRequests++;
+
       return await this.clientDownload.withBlobContent(
         result.info,
         { signal },
         options,
         async (content, size) => {
-          if (bypassRangesCache) return await handler(content, size);
+          if (bypassRangesCache) {
+            const counted = content.pipeThrough(
+              new TransformStream<Uint8Array, Uint8Array>({
+                transform: (chunk, controller) => {
+                  this.uncachedRequestBytes += chunk.byteLength;
+                  controller.enqueue(chunk);
+                },
+              }),
+            );
+            return await handler(counted, size);
+          }
 
           const [handlerStream, cacheStream] = content.tee();
 
