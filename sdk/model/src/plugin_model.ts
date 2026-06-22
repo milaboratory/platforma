@@ -47,8 +47,9 @@ type PluginOutputFns<
   [K in keyof Outputs]: PluginOutputFn<Data, Params, ModelServices, UiServices, Outputs[K]>;
 };
 
-/** Symbol for internal plugin model creation — not accessible to external consumers */
-export const CREATE_PLUGIN_MODEL = Symbol("createPluginModel");
+/** Internal plugin↔block handshake. `Symbol.for` (not `Symbol`) so it stays
+ * identical across multiple `@platforma-sdk/model` copies in one process. */
+export const CREATE_PLUGIN_MODEL = Symbol.for("@platforma-sdk/model:createPluginModel");
 
 /** Sentinel for PluginInstance without transferAt — no transfer possible. */
 const NO_TRANSFER_VERSION = "";
