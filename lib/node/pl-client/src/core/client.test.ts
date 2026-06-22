@@ -1,4 +1,4 @@
-import { getTestClient, getTestClientConf } from "../test/test_config";
+import { getTestAdminClient, getTestAdminClientConf } from "../test/test_config";
 import { PlClient } from "./client";
 import { PlDriver, PlDriverDefinition } from "./driver";
 import { Dispatcher, request } from "undici";
@@ -6,12 +6,12 @@ import { GrpcClientProviderFactory } from "./grpc";
 import { test, expect } from "vitest";
 
 test("test client init", async () => {
-  await getTestClient(undefined);
+  await getTestAdminClient(undefined);
 });
 
 test("test client alternative root init", async () => {
   const aRootName = "test_root";
-  const { conf, auth } = await getTestClientConf();
+  const { conf, auth } = await getTestAdminClientConf();
   await PlClient.init({ ...conf, alternativeRoot: aRootName }, auth);
   const clientB = await PlClient.init(conf, auth);
   const result = await clientB.deleteAlternativeRoot(aRootName);
@@ -19,7 +19,7 @@ test("test client alternative root init", async () => {
 });
 
 test("test client init 2", async () => {
-  await getTestClient();
+  await getTestAdminClient();
 });
 
 interface SimpleDriver extends PlDriver {
@@ -46,7 +46,7 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
 };
 
 test("test driver", async () => {
-  const client = await getTestClient();
+  const client = await getTestAdminClient();
   const drv = client.getDriver(SimpleDriverDefinition);
   expect(await drv.ping()).toEqual("pong");
 });

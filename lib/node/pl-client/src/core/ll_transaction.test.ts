@@ -1,4 +1,4 @@
-import { getTestLLClient } from "../test/test_config";
+import { getTestLLClient, getTestAdminLLClient } from "../test/test_config";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { createLocalResourceId } from "./types";
 import { test, expect } from "vitest";
@@ -79,7 +79,7 @@ test("check timeout error type (passive)", async () => {
 });
 
 test("check timeout error type (active)", async () => {
-  const client = await getTestLLClient();
+  const client = await getTestAdminLLClient();
   const tx = client.createTx(true, { timeout: 500 });
 
   try {
@@ -143,7 +143,7 @@ test("check timeout error type (active)", async () => {
 });
 
 test("check is abort error (active)", async () => {
-  const client = await getTestLLClient();
+  const client = await getTestAdminLLClient();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
   try {

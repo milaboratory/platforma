@@ -19,6 +19,8 @@ export interface TestConfig {
   test_proxy?: string;
   test_user?: string;
   test_password?: string;
+  test_admin_user?: string;
+  test_admin_password?: string;
 }
 
 const CONFIG_FILE = "test_config.json";
@@ -43,6 +45,11 @@ export function getTestConfig(): TestConfig {
   if (process.env.PL_TEST_PASSWORD !== undefined) conf.test_password = process.env.PL_TEST_PASSWORD;
 
   if (process.env.PL_TEST_PROXY !== undefined) conf.test_proxy = process.env.PL_TEST_PROXY;
+
+  if (process.env.PL_TEST_ADMIN_USER !== undefined) conf.test_admin_user = process.env.PL_TEST_ADMIN_USER;
+
+  if (process.env.PL_TEST_ADMIN_PASSWORD !== undefined)
+    conf.test_admin_password = process.env.PL_TEST_ADMIN_PASSWORD;
 
   if (conf.address === undefined)
     throw new Error(
@@ -155,6 +162,70 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
 export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {}) {
   const { conf, auth } = await getTestClientConf();
   return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
+}
+
+export async function getTestAdminClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
+  const tConf = getTestConfig();
+
+  if (tConf.test_admin_user === undefined || tConf.test_admin_password === undefined)
+    throw new Error(
+      `No admin auth found in config (${CONFIG_FILE}) or env vars: PL_TEST_ADMIN_USER, PL_TEST_ADMIN_PASSWORD`,
+    );
+
+  const plConf = plAddressToTestConfig(tConf.address);
+  const uClient = await UnauthenticatedPlClient.build(plConf);
+  const authInformation = await uClient.login(tConf.test_admin_user, tConf.test_admin_password);
+
+  return {
+    conf: plConf,
+    auth: {
+      authInformation,
+      onUpdate: () => {},
+      onAuthError: () => {},
+      onUpdateError: () => {},
+    },
+  };
+}
+
+export async function getTestAdminLLClient(confOverrides: Partial<PlClientConfig> = {}) {
+  const { conf, auth } = await getTestAdminClientConf();
+  return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
+}
+
+export async function getTestAdminClient(
+  alternativeRoot?: string,
+  confOverrides: Partial<PlClientConfig> = {},
+) {
+  const { conf, auth } = await getTestAdminClientConf();
+  if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
+    throw new Error("test pl address configured with alternative root");
+  return await PlClient.init({ ...conf, ...confOverrides, alternativeRoot }, auth);
+}
+
+export async function withAdminTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T | void> {
+  const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
+  let altRootId: OptionalResourceId = NullResourceId;
+  try {
+    const client = await getTestAdminClient(alternativeRoot);
+    altRootId = client.clientRoot;
+    try {
+      const value = await body(client);
+      const rawClient = await getTestAdminClient();
+      try {
+        await rawClient.deleteAlternativeRoot(alternativeRoot);
+      } catch (cleanupErr: any) {
+        console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+      } finally {
+        await rawClient.close();
+      }
+      return value;
+    } finally {
+      await client.close();
+    }
+  } catch (err: any) {
+    console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
+    throw err;
+  }
 }
 
 export async function getTestClient(

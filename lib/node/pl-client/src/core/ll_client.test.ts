@@ -3,6 +3,8 @@ import {
   getTestConfig,
   plAddressToTestConfig,
   getTestLLClient,
+  getTestAdminLLClient,
+  getTestAdminClient,
   getTestClientConf,
 } from "../test/test_config";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
@@ -144,7 +146,12 @@ test("test https call via proxy", async () => {
 });
 
 test("list user resources returns user root", async () => {
-  const client = await getTestLLClient();
+  // PlClient.init() creates the user root via the legacy path (requires admin role).
+  // After that, listUserResources returns it.
+  const plClient = await getTestAdminClient();
+  await plClient.close();
+
+  const client = await getTestAdminLLClient();
   const responses = await client.listUserResources({ limit: 1 });
 
   // First message is always the user root.
