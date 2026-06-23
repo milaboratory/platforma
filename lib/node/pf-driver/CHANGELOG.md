@@ -1,5 +1,13 @@
 # @milaboratories/pf-driver
 
+## 1.7.13
+
+### Patch Changes
+
+- 3a4036d: Bump `@milaboratories/pframes-rs-*` to 1.1.52, which now populates `bytesMissed` in the serv cache counters. Make `bytesMissed` required on `CacheCounters` accordingly.
+- Updated dependencies [3a4036d]
+  - @milaboratories/pl-model-middle-layer@1.30.8
+
 ## 1.7.12
 
 ### Patch Changes

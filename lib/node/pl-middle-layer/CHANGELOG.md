@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.35
+
+### Patch Changes
+
+- c73159f: Fix type error in PFrames driver
+- 3a4036d: Bump `@milaboratories/pframes-rs-*` to 1.1.52, which now populates `bytesMissed` in the serv cache counters. Make `bytesMissed` required on `CacheCounters` accordingly.
+- Updated dependencies [907f87c]
+- Updated dependencies [3a4036d]
+  - @platforma-sdk/workflow-tengo@6.6.4
+  - @milaboratories/pl-model-middle-layer@1.30.8
+  - @milaboratories/pf-spec-driver@1.4.15
+  - @milaboratories/pf-driver@1.7.13
+  - @platforma-sdk/model@1.79.17
+  - @platforma-sdk/block-tools@2.11.2
+
 ## 1.64.34
 
 ### Patch Changes
