@@ -285,7 +285,6 @@ self.body(func(inputs) {
 		axisLabel: axisLabel,
 		columnLabel: columnLabel
 	})
-	sortSelectors := selectors.sortSelectors
 	columnSelectors := selectors.columnSelectors
 
 	wf := pt.workflow()
@@ -293,8 +292,8 @@ self.body(func(inputs) {
 	if !is_undefined(inputs.mem) { wf.mem(inputs.mem) }
 	if !is_undefined(inputs.cacheInputs) { wf.cacheInputs(inputs.cacheInputs) }
 
+	// read_frame output is already sorted by axes (PFrame PTable contract).
 	wf.frame(frameInput).
-		sort(sortSelectors).
 		select(columnSelectors...).
 		save(resultFile)
 
