@@ -11,16 +11,16 @@ self := import(":tpl.light")
 self.defineOutputs(["result"])
 
 self.body(func(inputs) {
-    pf := inputs.pf
-    xsvType := inputs.xsvType
-    params := inputs.params
+	pf := inputs.pf
+	xsvType := inputs.xsvType
+	params := inputs.params
 
-    queue := inputs.queue
-    cpu := inputs.cpu
-    mem := inputs.mem
-    inputCache := inputs.inputCache
-    
-    resultFile := "result." + xsvType
+	queue := inputs.queue
+	cpu := inputs.cpu
+	mem := inputs.mem
+	inputCache := inputs.inputCache
+
+	resultFile := "result." + xsvType
 
 	columnEntries := []
 	rawColumns := []
@@ -58,7 +58,6 @@ self.body(func(inputs) {
 		axisLabel: getLabel,
 		columnLabel: func(c) { return getLabel(c.spec) }
 	})
-	sortSelectors := selectors.sortSelectors
 	columnSelectors := selectors.columnSelectors
 
 	wf := pt.workflow()
@@ -82,14 +81,14 @@ self.body(func(inputs) {
 	if !is_undefined(inputCache) {
 		wf.cacheInputs(inputCache)
 	}
+	// read_frame output is already sorted by axes (PFrame PTable contract).
 	wf.frame(frameInput).
-		sort(sortSelectors).
 		select(numericSelector, stringSelector).
 		select(columnSelectors...).
 		save(resultFile)
 
 	result := wf.run()
-    return {
-        result: result.getFile(resultFile)
-    }
+	return {
+		result: result.getFile(resultFile)
+	}
 })
