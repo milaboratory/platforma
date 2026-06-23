@@ -13,7 +13,9 @@ env:
 
 jobs:
   test:
-    runs-on: dev-pl-sdk
+    # hz self-hosted DinD runner — this job runs pl-compose (docker compose up a
+    # Platforma backend), so it needs a real Docker daemon.
+    runs-on: hz-ubuntu-dind
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -32,7 +34,15 @@ jobs:
           npmjs-token: ${{ secrets.NPMJS_TOKEN }}
           github-token: ${{ steps.app-token.outputs.token }}
           aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
-          turbo-s3-bucket: ${{ secrets.AWS_CI_TURBOREPO_S3_BUCKET }}
+          # Caches → RGW: turbo to ci-turbo-cache, pnpm to ci-actions-cache (both
+          # use-fallback → GitHub). Shared org secrets/vars (selected to platforma).
+          turbo-s3-bucket: ${{ vars.HZ_CI_TURBO_S3_BUCKET }}
+          turbo-s3-endpoint: https://${{ vars.HZ_CI_TURBO_S3_ENDPOINT }}
+          turbo-s3-region: ${{ vars.HZ_CI_TURBO_S3_REGION }}
+          turbo-s3-access-key: ${{ secrets.HZ_CI_TURBO_S3_ACCESS_KEY }}
+          turbo-s3-secret-key: ${{ secrets.HZ_CI_TURBO_S3_SECRET_KEY }}
+          cache-s3-access-key: ${{ secrets.HZ_CI_CACHE_S3_ACCESS_KEY }}
+          cache-s3-secret-key: ${{ secrets.HZ_CI_CACHE_S3_SECRET_KEY }}
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
