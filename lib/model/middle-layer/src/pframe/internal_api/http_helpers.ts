@@ -193,9 +193,9 @@ export type CacheCounters = {
   bytesServed: number;
   /**
    * Bytes requested by clients that were not cached; compare with {@link bytesFetched} for read-ahead
-   * amplification. Optional until producers (serv) emit it; treat absent as not-yet-reported.
+   * amplification.
    */
-  bytesMissed?: number;
+  bytesMissed: number;
   /** Bytes downloaded from upstream on misses, including read-ahead and read-behind */
   bytesFetched: number;
   /** Bytes evicted to keep the cache within its total size budget, @see CacheConfig.maxSizeBytes */
