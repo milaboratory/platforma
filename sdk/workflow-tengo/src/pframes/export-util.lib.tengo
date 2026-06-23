@@ -1,6 +1,6 @@
 /**
 * Shared helpers for templates that export a list of resolved PColumns to a
-* flat table via pt (sort + axes + value columns + save).
+* flat table via pt (axes + value columns + save).
 *
 * Consumers: `:pframes.xsv-export-pframe`, `:pframes.build-table`.
 */
