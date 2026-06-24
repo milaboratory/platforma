@@ -1,5 +1,8 @@
-// Workspace-package classification — covers all 7 detection rules
-// plus the block-scope override and the unclassified-error path.
+// Workspace-package classification — covers the detection rules plus the
+// block-scope override and the unclassified-error path. Block-scope detection
+// (the top-level `block` field) is exercised in detail in
+// ../__tests__/facade-end-state.test.ts; here we just pin that a `block` field
+// classifies as `block` and that a block-tools-ish package without one does not.
 
 import { describe, test, expect } from "vitest";
 import { classifyOne, discoverModules, DiscoveryError, type WorkspacePackage } from "../discovery";
@@ -14,7 +17,7 @@ describe("discovery — single-package classification", () => {
       name: "x.software",
       "block-software": {},
     });
-    expect(classifyOne(wp, new Set())).toBe("software");
+    expect(classifyOne(wp)).toBe("software");
   });
 
   test("rule 1 alt: software via package-builder + runenv dep", () => {
@@ -25,67 +28,64 @@ describe("discovery — single-package classification", () => {
         "@platforma-open/runenv-python-3": "catalog:",
       },
     });
-    expect(classifyOne(wp, new Set())).toBe("software");
+    expect(classifyOne(wp)).toBe("software");
   });
 
-  test("rule 2: workflow via workflow-tengo dep", () => {
+  test("workflow via workflow-tengo dep", () => {
     const wp = pkg("workflow", {
       name: "x.workflow",
       dependencies: { "@platforma-sdk/workflow-tengo": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("workflow");
+    expect(classifyOne(wp)).toBe("workflow");
   });
 
-  test("rule 3: ui via ui-vue dep and no main", () => {
+  test("ui via ui-vue dep and no main", () => {
     const wp = pkg("ui", {
       name: "x.ui",
       dependencies: { "@platforma-sdk/ui-vue": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("ui");
+    expect(classifyOne(wp)).toBe("ui");
   });
 
-  test("rule 4: block via block-tools + sibling model/ui/workflow", () => {
-    const siblings = new Set(["x.model", "x.ui", "x.workflow"]);
+  test("block via the top-level `block` field", () => {
     const wp = pkg("block", {
       name: "x.block",
-      dependencies: {
-        "@platforma-sdk/block-tools": "catalog:",
-        "x.model": "workspace:*",
-        "x.ui": "workspace:*",
-      },
+      block: { components: {}, meta: {} },
     });
-    expect(classifyOne(wp, siblings)).toBe("block");
+    expect(classifyOne(wp)).toBe("block");
   });
 
-  test("rule 4 fallback: files=[index.d.ts,index.js] + block-tools", () => {
+  test("a block-tools-ish package WITHOUT a `block` field is not classified `block`", () => {
+    // The removed rule-4 shape (block-tools dep, legacy facade `files`) no longer
+    // detects block-scope — only the top-level `block` field does.
     const wp = pkg("block", {
       name: "x.block",
       files: ["index.d.ts", "index.js"],
       dependencies: { "@platforma-sdk/block-tools": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("block");
+    expect(classifyOne(wp)).toBeUndefined();
   });
 
-  test("rule 5: model via model dep + main", () => {
+  test("model via model dep + main", () => {
     const wp = pkg("model", {
       name: "x.model",
       main: "dist/index.js",
       dependencies: { "@platforma-sdk/model": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("model");
+    expect(classifyOne(wp)).toBe("model");
   });
 
-  test("rule 6: test via @platforma-sdk/test dep", () => {
+  test("test via @platforma-sdk/test dep", () => {
     const wp = pkg("test", {
       name: "x.test",
       devDependencies: { "@platforma-sdk/test": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("test");
+    expect(classifyOne(wp)).toBe("test");
   });
 
-  test("rule 7: root as catch-all", () => {
+  test("root as catch-all", () => {
     const wp = pkg("", { name: "x" });
-    expect(classifyOne(wp, new Set())).toBe("root");
+    expect(classifyOne(wp)).toBe("root");
   });
 
   test("override: block-scope wins over detection", () => {
@@ -94,7 +94,7 @@ describe("discovery — single-package classification", () => {
       "block-scope": "software",
       dependencies: { "@platforma-sdk/workflow-tengo": "catalog:" },
     });
-    expect(classifyOne(wp, new Set())).toBe("software");
+    expect(classifyOne(wp)).toBe("software");
   });
 
   test("override: bad value throws DiscoveryError", () => {
@@ -102,7 +102,7 @@ describe("discovery — single-package classification", () => {
       name: "x",
       "block-scope": "nope",
     });
-    expect(() => classifyOne(wp, new Set())).toThrow(DiscoveryError);
+    expect(() => classifyOne(wp)).toThrow(DiscoveryError);
   });
 
   test("unclassified non-root throws DiscoveryError", () => {
@@ -134,6 +134,7 @@ describe("discovery — full workspace", () => {
       }),
       pkg("block", {
         name: "x.block",
+        block: { components: {}, meta: {} },
         dependencies: {
           "@platforma-sdk/block-tools": "catalog:",
           "x.model": "workspace:*",
