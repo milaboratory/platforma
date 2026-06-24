@@ -1,13 +1,19 @@
 import path from "node:path";
 import { tryLoadFile } from "../util";
 import type { BlockPackDescriptionAbsolute } from "./model";
-import { resolveBlockPackDescription } from "./model";
+import {
+  resolveBlockPackDescription,
+  resolveManifestBlockComponents,
+  resolveManifestBlockPackMeta,
+} from "./model";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import fsp from "node:fs/promises";
 import type { BlockPackDescriptionRaw, BlockPackId } from "@milaboratories/pl-model-middle-layer";
 import {
   BlockPackDescriptionFromPackageJsonRaw,
+  BlockPackManifest,
+  BlockPackManifestFile,
   SemVer,
 } from "@milaboratories/pl-model-middle-layer";
 
@@ -88,4 +94,31 @@ export async function loadPackDescription(
 ): Promise<BlockPackDescriptionAbsolute> {
   const descriptionRaw = await loadPackDescriptionRaw(moduleRoot);
   return await resolveBlockPackDescription(descriptionRaw, moduleRoot);
+}
+
+/** Folder name (under a consumed package root) holding the v2 block-pack artifacts. */
+export const BlockPackFolderName = "block-pack";
+
+/**
+ * Loads a block-pack description from a block-pack directory's `manifest.json`,
+ * resolving every relative entry against that directory to an absolute
+ * filesystem path. Takes the pack directory directly (the `from-pack-v2`
+ * pointer's `pack` field) — the structurer owns the layout, so this does not
+ * re-derive `<root>/block-pack`. Counterpart to `loadPackDescription`, which
+ * reads the authoring `block` field from `package.json` and resolves against
+ * source. Used only by the `from-pack-v2` loader.
+ */
+export async function loadPackDescriptionFromManifest(
+  blockPackDir: string,
+): Promise<BlockPackDescriptionAbsolute> {
+  const manifestPath = path.resolve(blockPackDir, BlockPackManifestFile);
+  const raw = JSON.parse(await fsp.readFile(manifestPath, { encoding: "utf-8" })) as unknown;
+  const manifest = BlockPackManifest.parse(raw);
+  const components = resolveManifestBlockComponents(manifest.description.components, blockPackDir);
+  const meta = await resolveManifestBlockPackMeta(manifest.description.meta, blockPackDir);
+  return {
+    ...manifest.description,
+    components,
+    meta,
+  };
 }

@@ -348,6 +348,15 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
   }
 
   function processTemplate(tpl: TemplateDataV3): string {
+    // Defensive: a template can carry no embedded version at runtime even
+    // though the type says `string` — the compiler writes `packageJson.version`
+    // unchecked (tengo-builder main.ts), so a template built from a package with
+    // no `version` field yields undefined. No block in this monorepo triggers it
+    // (all are versioned), but identity is fully covered by name + sourceHash, so
+    // the placeholder is safe for both the cache key and the backend resource's
+    // required Version field.
+    const version = tpl.version ?? "0.0.0";
+
     // Process children first (bottom-up)
     const childHashes: string[] = [];
     const children: { fieldName: string; hash: string }[] = [];
@@ -385,7 +394,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
       .update(PlTemplateV1.type.version)
       .update(tpl.hashOverride ?? "no-override")
       .update(tpl.name)
-      .update(tpl.version)
+      .update(version)
       .update(tpl.sourceHash);
     for (const child of children) {
       h.update("child:" + child.fieldName + ":" + child.hash);
@@ -400,7 +409,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
         const sourceCode = getSourceCode(tpl.name, sources, tpl.sourceHash);
         const tplRef = tx.createStruct(
           PlTemplateV1.type,
-          JSON.stringify(PlTemplateV1.fromV3Data(tpl, sourceCode).data),
+          JSON.stringify(PlTemplateV1.fromV3Data({ ...tpl, version }, sourceCode).data),
         );
         for (const child of children) {
           const fld = field(tplRef, child.fieldName);

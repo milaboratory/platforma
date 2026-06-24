@@ -63,6 +63,8 @@ export class BlockUpdateWatcher extends PollComputablePool<
         return `dev_1_${req.currentSpec.folder}_${req.currentSpec.mtime}`;
       case "dev-v2":
         return `dev_2_${req.currentSpec.folder}_${req.currentSpec.mtime}`;
+      case "from-pack-v2":
+        return `from_pack_v2_${req.currentSpec.packUrl}_${req.currentSpec.mtime}`;
       case "from-registry-v2":
         return `from_registry_v2_${canonicalize(req)!}`;
       default:
@@ -96,6 +98,14 @@ export class BlockUpdateWatcher extends PollComputablePool<
             this.logger.warn(err);
             return { suggestions: [] };
           }
+        }
+
+        case "from-pack-v2": {
+          // Update-checking for npm-consumed blocks is out of scope for the
+          // initial from-pack-v2 plumbing (a consumed package ships no
+          // authoring source to diff against). Deferred to a later step;
+          // surface no update suggestions for now.
+          return { suggestions: [] };
         }
 
         case "from-registry-v2": {

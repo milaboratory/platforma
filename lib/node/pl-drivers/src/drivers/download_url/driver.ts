@@ -12,6 +12,7 @@ import { stringifyWithResourceId } from "@milaboratories/pl-client";
 import type { BlockUIURL, FrontendDriver } from "@milaboratories/pl-model-common";
 import { isBlockUIURL } from "@milaboratories/pl-model-common";
 import { getPathForBlockUIURL } from "../urls/url";
+import type { DownloadSource } from "./task";
 import { DownloadByUrlTask, rmRFDir, URLAborted } from "./task";
 
 export interface DownloadUrlSyncReader {
@@ -50,7 +51,7 @@ export type DownloadUrlDriverOps = {
 export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver {
   private readonly downloadHelper: RemoteFileDownloader;
 
-  private urlToDownload: Map<string, DownloadByUrlTask> = new Map();
+  private taskByKey: Map<string, DownloadByUrlTask> = new Map();
   private downloadQueue: TaskProcessor;
 
   /** Writes and removes files to a hard drive and holds a counter for every
@@ -83,13 +84,39 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
   getUrl(url: URL, ctx?: ComputableCtx): Computable<UrlResult | undefined> | UrlResult | undefined {
     // wrap result as computable, if we were not given an existing computable context
     if (ctx === undefined) return Computable.make((c) => this.getUrl(url, c));
+    return this.getResult({ type: "url", url }, url.toString(), ctx);
+  }
 
+  /** Use to get a path result inside a computable context */
+  getLocalTgz(path: string, mtime: string, ctx: ComputableCtx): UrlResult | undefined;
+
+  /** Returns a Computable that do the work */
+  getLocalTgz(path: string, mtime: string): Computable<UrlResult | undefined>;
+
+  /** Mirror of {@link getUrl} for a local `.tgz` archive: lazily unpacks it
+   * into the recycled cache (so a live UI keeps the folder pinned) and returns
+   * a custom-protocol URL. Keyed on `path + ":" + mtime`, so the unpacked UI is
+   * re-derived when the source block changes. */
+  getLocalTgz(
+    path: string,
+    mtime: string,
+    ctx?: ComputableCtx,
+  ): Computable<UrlResult | undefined> | UrlResult | undefined {
+    if (ctx === undefined) return Computable.make((c) => this.getLocalTgz(path, mtime, c));
+    return this.getResult({ type: "local-tgz", path, mtime }, `${path}:${mtime}`, ctx);
+  }
+
+  private getResult(
+    source: DownloadSource,
+    key: string,
+    ctx: ComputableCtx,
+  ): UrlResult | undefined {
     const callerId = randomUUID();
 
     // read as ~ golang's defer
-    ctx.addOnDestroy(() => this.releasePath(url, callerId));
+    ctx.addOnDestroy(() => this.releaseByKey(key, callerId));
 
-    const result = this.getUrlNoCtx(url, ctx.watcher, callerId);
+    const result = this.getResultNoCtx(source, key, ctx.watcher, callerId);
     if (result?.url === undefined)
       ctx.markUnstable(
         `a path to the downloaded and untared archive might be undefined. The current result: ${result}`,
@@ -98,16 +125,15 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     return result;
   }
 
-  getUrlNoCtx(url: URL, w: Watcher, callerId: string) {
-    const key = url.toString();
-    const task = this.urlToDownload.get(key);
+  private getResultNoCtx(source: DownloadSource, key: string, w: Watcher, callerId: string) {
+    const task = this.taskByKey.get(key);
 
     if (task !== undefined) {
       task.attach(w, callerId);
       return task.getUrl();
     }
 
-    const newTask = this.setNewTask(w, url, callerId);
+    const newTask = this.setNewTask(w, source, key, callerId);
     this.downloadQueue.push({
       fn: async () => this.downloadUrl(newTask, callerId),
       recoverableErrorPredicate: (e) => !(e instanceof URLAborted) && !isDownloadNetworkError400(e),
@@ -133,9 +159,8 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
 
   /** Removes a directory and aborts a downloading task when all callers
    * are not interested in it. */
-  async releasePath(url: URL, callerId: string): Promise<void> {
-    const key = url.toString();
-    const task = this.urlToDownload.get(key);
+  async releaseByKey(key: string, callerId: string): Promise<void> {
+    const task = this.taskByKey.get(key);
     if (task == undefined) return;
 
     if (this.cache.existsFile(task.path)) {
@@ -169,7 +194,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     this.downloadQueue.stop();
 
     await Promise.all(
-      Array.from(this.urlToDownload.entries()).map(async ([, task]) => {
+      Array.from(this.taskByKey.entries()).map(async ([, task]) => {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
@@ -181,28 +206,31 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     );
   }
 
-  private setNewTask(w: Watcher, url: URL, callerId: string) {
+  private setNewTask(w: Watcher, source: DownloadSource, key: string, callerId: string) {
     const result = new DownloadByUrlTask(
       this.logger,
-      this.getFilePath(url),
-      url,
+      this.getExtractionPath(key),
+      source,
+      key,
       this.signer,
       this.saveDir,
     );
     result.attach(w, callerId);
-    this.urlToDownload.set(url.toString(), result);
+    this.taskByKey.set(key, result);
 
     return result;
   }
 
   private removeTask(task: DownloadByUrlTask, reason: string) {
     task.abort(reason);
-    task.change.markChanged(`task for url ${task.url} removed: ${reason}`);
-    this.urlToDownload.delete(task.url.toString());
+    task.change.markChanged(`task for ${task.key} removed: ${reason}`);
+    this.taskByKey.delete(task.key);
   }
 
-  private getFilePath(url: URL): string {
-    const sha256 = createHash("sha256").update(url.toString()).digest("hex");
+  /** Directory an archive (url or local file) is extracted into; keyed by a
+   * hash of the task key so the same source maps to a stable on-disk path. */
+  private getExtractionPath(key: string): string {
+    const sha256 = createHash("sha256").update(key).digest("hex");
     return path.join(this.saveDir, sha256);
   }
 }
