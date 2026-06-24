@@ -442,3 +442,82 @@ export class PlTreeNodeAccessor {
     return new PlTreeEntry(this.accessorData, this.resource.id);
   }
 }
+
+/** Reactive provider for the current root SET of a multi-root tree. Mirrors {@link PlTreeEntry}:
+ * reading it inside a Computable tracks the root set as a dependency, so the Computable
+ * recomputes when discovered roots appear or disappear. */
+export class PlTreeRootsEntry implements AccessorProvider<PlTreeRootsAccessor> {
+  private readonly __pl_tree_type_marker__ = "PlTreeRootsEntry";
+
+  constructor(private readonly accessorData: TreeAccessorData) {}
+
+  public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeRootsAccessor {
+    return new PlTreeRootsAccessor(this.accessorData, this.accessorData.treeProvider(), {
+      ctx,
+      guard,
+    });
+  }
+
+  public toJSON(): string {
+    return "[ROOTS-ENTRY]";
+  }
+
+  public toString(): string {
+    return "[ROOTS-ENTRY]";
+  }
+}
+
+export function isPlTreeRootsEntry(obj: unknown): obj is PlTreeRootsEntry {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as any)["__pl_tree_type_marker__"] === "PlTreeRootsEntry"
+  );
+}
+
+/** Accessor over the current roots of a multi-root tree. Reading any of its methods tracks
+ * the root set as a dependency (via {@link PlTreeState.getRoots}). */
+export class PlTreeRootsAccessor {
+  private readonly __pl_tree_type_marker__ = "PlTreeRootsAccessor";
+
+  constructor(
+    private readonly accessorData: TreeAccessorData,
+    private readonly tree: PlTreeState,
+    private readonly instanceData: TreeAccessorInstanceData,
+  ) {}
+
+  /** Current root ids. */
+  public rootIds(): SignedResourceId[] {
+    this.instanceData.guard();
+    return this.tree.getRoots(this.instanceData.ctx.watcher);
+  }
+
+  /** Current roots as node accessors, ready to traverse. */
+  public nodes(ops: ResourceTraversalOps = {}): PlTreeNodeAccessor[] {
+    this.instanceData.guard();
+
+    // mirror PlTreeEntryAccessor.node(): attach polling hooks on first node acquisition
+    if (this.accessorData.hooks !== undefined)
+      this.instanceData.ctx.attacheHooks(this.accessorData.hooks);
+
+    return this.tree
+      .getRoots(this.instanceData.ctx.watcher)
+      .map((rid) => getResourceFromTree(this.accessorData, this.tree, this.instanceData, rid, ops));
+  }
+
+  /** Current roots as entries, for persisting per-root sub-Computables. */
+  public entries(): PlTreeEntry[] {
+    this.instanceData.guard();
+    return this.tree
+      .getRoots(this.instanceData.ctx.watcher)
+      .map((rid) => new PlTreeEntry(this.accessorData, rid));
+  }
+}
+
+export function isPlTreeRootsAccessor(obj: unknown): obj is PlTreeRootsAccessor {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    (obj as any)["__pl_tree_type_marker__"] === "PlTreeRootsAccessor"
+  );
+}
