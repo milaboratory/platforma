@@ -30,8 +30,9 @@ export type SSOAuthMethod = {
   groupsClaim: string;
   flowType: SSOFlowType;
   /** OIDC `access_type` auth-request param ("online" | "offline"). Google-specific:
-   * "offline" makes Google issue a refresh token; other IdPs ignore it. May be empty. */
-  accessType: string;
+   * "offline" makes Google issue a refresh token; other IdPs ignore it. Absent when
+   * the server does not set it — never send an empty string to the IdP. */
+  accessType?: string;
 };
 
 /** Server-issued material returned by {@link UnauthenticatedPlClient.beginSSOLogin}.
@@ -112,7 +113,7 @@ export class UnauthenticatedPlClient {
         subjectTokenSource: sso.subjectTokenSource,
         userIdClaim: sso.userIdClaim,
         groupsClaim: sso.groupsClaim,
-        accessType: sso.accessType,
+        accessType: sso.accessType || undefined,
         flowType: "public_pkce",
       };
     }
