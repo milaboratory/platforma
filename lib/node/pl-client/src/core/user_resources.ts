@@ -172,6 +172,34 @@ export class UserResources {
     return await this.getDataLibrariesViaLegacy();
   }
 
+  /**
+   * Discovers shared resources of a given type granted to the user, as signed resource ids.
+   *
+   * The public, type-filtered form of {@link getDataLibrariesViaList}: it polls the
+   * `ListUserResources` gRPC stream and returns every `sharedResource` entry whose
+   * `resourceType.name` matches `resourceTypeName`. Matching is by name only — the
+   * version is ignored (permissive, survives schema bumps).
+   *
+   * gRPC-only: `ListUserResources` throws on a REST-connected client
+   * ({@link LLPlClient.listUserResources}), so callers on REST get a thrown error.
+   */
+  async listSharedResourcesByType(
+    resourceTypeName: string,
+    opts: { login?: string } = {},
+  ): Promise<SignedResourceId[]> {
+    const responses = await this.ll.listUserResources({ login: opts.login });
+
+    const result: SignedResourceId[] = [];
+    for (const msg of responses) {
+      if (msg.entry.oneofKind !== "sharedResource") continue;
+      const sr = msg.entry.sharedResource;
+      if (!sr.resourceType) continue;
+      if (sr.resourceType.name !== resourceTypeName) continue;
+      result.push(createSignedResourceId(sr.resourceId, toResourceSignature(sr.resourceSignature)));
+    }
+    return result;
+  }
+
   private async getUserRootViaRpc(opts: {
     login?: string;
     createIfNotExists: true;

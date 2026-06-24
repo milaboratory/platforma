@@ -34,7 +34,10 @@ import type {
   ResourceAPI_Tree_Filter,
   ResourceAPI_Tree_SeedResource,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import {
+  TxAPI_Open_Request_WritableTx,
+  AuthAPI_GrantAccess_GrantType,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
 import {
@@ -154,6 +157,19 @@ export interface ResourceIdWithSignature {
   resourceId: bigint;
   resourceSignature: ResourceSignature;
 }
+
+/** Access level handed to a grant recipient (see {@link PlTransaction.grantAccess}). */
+export interface GrantPermissions {
+  /** Write access = ability to modify the resource subtree + re-share it. */
+  writable: boolean;
+}
+
+/**
+ * Distinguishes a regular user-to-user grant from a system-level public grant.
+ * Re-export of the wire enum so callers need not reach into the generated proto.
+ */
+export const GrantType = AuthAPI_GrantAccess_GrantType;
+export type GrantType = AuthAPI_GrantAccess_GrantType;
 
 const emptySignature = toResourceSignature(new Uint8Array(0));
 
@@ -813,6 +829,33 @@ export class PlTransaction {
       resourceSetError: {
         ...this.toSignedResourceId(rId),
         ...this.toSignedErrorRef(ref),
+      },
+    });
+  }
+
+  /**
+   * Grant another user access to a resource (and its subtree). Used by the
+   * project-sharing donor flow to hand a recipient the shared envelope.
+   *
+   * `grantType` defaults to a regular user-to-user grant
+   * ({@link GrantType.GENERAL}); pass {@link GrantType.MAKE_RESOURCE_PUBLIC}
+   * to make the resource public to everyone (requires backend `publicGrants:v1`
+   * and a role allowed to grant to everyone — `target` is ignored / rewritten
+   * to the everyone-user by the backend).
+   */
+  public grantAccess(
+    rId: AnyResourceRef,
+    target: string,
+    permissions: GrantPermissions,
+    grantType: GrantType = AuthAPI_GrantAccess_GrantType.GENERAL,
+  ): void {
+    this.sendVoidAsync({
+      oneofKind: "grantAccess",
+      grantAccess: {
+        ...this.toSignedResourceId(rId),
+        targetUser: target,
+        permissions,
+        grantType,
       },
     });
   }

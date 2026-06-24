@@ -1,8 +1,9 @@
 import { PollingComputableHooks } from "@milaboratories/computable";
-import { PlTreeEntry } from "./accessors";
+import { PlTreeEntry, PlTreeRootsEntry } from "./accessors";
 import type {
   FinalResourceDataPredicate,
   PlClient,
+  ResourceType,
   SignedResourceId,
   TxOps,
 } from "@milaboratories/pl-client";
@@ -13,12 +14,12 @@ import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
 import * as tp from "node:timers/promises";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 
 /** Hard floor between consecutive tree-refresh calls.
  * Applies even when {@link scheduleOnNextState} has woken the loop early,
  * preventing tight polling loops during rapid state transitions. */
 const MIN_POLLING_INTERVAL_MS = 100;
-import type { MiLogger } from "@milaboratories/ts-helpers";
 
 type StatLoggingMode = "cumulative" | "per-request";
 
@@ -50,6 +51,32 @@ export type SynchronizedTreeOps = {
   traversalMode?: TraversalMode;
 };
 
+/** An explicit resource to serve as a tree root. Several explicit seeds may be passed. */
+export type ExplicitRootSeed = { kind: "resource"; root: SignedResourceId };
+
+/** Discovers, as roots, every resource of this type shared with the current user.
+ *  Matched against SharedResource.resourceType by NAME (version optional/ignored). The
+ *  discovered set is DYNAMIC — roots appear/disappear as grants are added/revoked/expire. */
+export type SharedTypeSeed = { kind: "shared"; resourceType: ResourceType };
+
+export type TreeSeed = ExplicitRootSeed | SharedTypeSeed;
+
+/** Normalizes the {@link SynchronizedTreeState.init} seed argument — a bare
+ * {@link SignedResourceId}, a single {@link TreeSeed}, or an array — to `TreeSeed[]`, so
+ * every existing single-root caller is unchanged. */
+function normalizeSeeds(seeds: SignedResourceId | TreeSeed | TreeSeed[]): TreeSeed[] {
+  if (Array.isArray(seeds)) return seeds;
+  if (typeof seeds === "object" && seeds !== null && "kind" in seeds) return [seeds];
+  // bare SignedResourceId
+  return [{ kind: "resource", root: seeds }];
+}
+
+/** How often, in main-loop iterations, a tree with shared-type seeds re-polls
+ * ListUserResources to reconcile its discovered roots. 1 = every iteration. A small N keeps
+ * the latency of noticing a new/removed share low while sparing the (potentially expensive)
+ * discovery poll on most refreshes. */
+const DISCOVERY_EVERY_N_REFRESHES = 1;
+
 type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
@@ -67,9 +94,16 @@ export class SynchronizedTreeState {
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
 
+  /** Explicit-resource seeds: fixed roots, present from construction. */
+  private readonly explicitRoots: SignedResourceId[];
+  /** Shared-type seeds (discovered roots), if any. */
+  private readonly sharedSeeds: SharedTypeSeed[];
+  /** Roots discovered for shared-type seeds on the last discovery poll. */
+  private discoveredRoots: SignedResourceId[] = [];
+
   private constructor(
     private readonly pl: PlClient,
-    private readonly root: SignedResourceId,
+    seeds: TreeSeed[],
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger,
   ) {
@@ -90,7 +124,13 @@ export class SynchronizedTreeState {
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
-    this.state = new PlTreeState(root, this.finalPredicate);
+
+    this.explicitRoots = seeds
+      .filter((s): s is ExplicitRootSeed => s.kind === "resource")
+      .map((s) => s.root);
+    this.sharedSeeds = seeds.filter((s): s is SharedTypeSeed => s.kind === "shared");
+
+    this.state = new PlTreeState(this.currentRootSet(), this.finalPredicate);
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
@@ -99,15 +139,44 @@ export class SynchronizedTreeState {
     );
   }
 
+  /** The current protected root set: explicit roots plus the latest discovered roots. */
+  private currentRootSet(): Set<SignedResourceId> {
+    return new Set([...this.explicitRoots, ...this.discoveredRoots]);
+  }
+
+  /** Resolves the single root for the backward-compatible single-root accessors, throwing
+   * if the tree does not have exactly one root (guards legacy callers against multi-root). */
+  private soleRoot(): SignedResourceId {
+    const roots = this.currentRootSet();
+    if (roots.size !== 1)
+      throw new Error(
+        `single-root accessor used on a tree with ${roots.size} roots; use rootsEntry() instead`,
+      );
+    return roots.values().next().value!;
+  }
+
   /** @deprecated use "entry" instead */
-  public accessor(rid: SignedResourceId = this.root): PlTreeEntry {
+  public accessor(rid?: SignedResourceId): PlTreeEntry {
     if (this.terminated) throw new Error("tree synchronization is terminated");
     return this.entry(rid);
   }
 
-  public entry(rid: SignedResourceId = this.root): PlTreeEntry {
+  /** Backward-compatible single-root entry. With no `rid` it returns the sole root's entry
+   * and THROWS if the tree has zero or more than one root. An explicit `rid` addresses any
+   * resource in the heap, as today. */
+  public entry(rid?: SignedResourceId): PlTreeEntry {
     if (this.terminated) throw new Error("tree synchronization is terminated");
-    return new PlTreeEntry({ treeProvider: () => this.state, hooks: this.hooks }, rid);
+    return new PlTreeEntry(
+      { treeProvider: () => this.state, hooks: this.hooks },
+      rid ?? this.soleRoot(),
+    );
+  }
+
+  /** Reactive provider for the current root SET. Reading it inside a Computable tracks the
+   * set as a dependency, so the Computable recomputes when discovered roots appear/disappear. */
+  public rootsEntry(): PlTreeRootsEntry {
+    if (this.terminated) throw new Error("tree synchronization is terminated");
+    return new PlTreeRootsEntry({ treeProvider: () => this.state, hooks: this.hooks });
   }
 
   /** Can be used to externally kick off the synchronization polling loop, and
@@ -157,6 +226,12 @@ export class SynchronizedTreeState {
       fieldFilter: this.fieldFilter,
       traverseStopRules: this.traverseStopRules,
     });
+    // A shared-type-seed tree with no currently-discovered roots is legitimately empty:
+    // there is nothing to traverse, and tx.resourceTree([]) would throw "at least one seed
+    // must be provided". Skip the backend load and leave the (empty) state as-is — discovery
+    // adds roots later via setRoots(), which schedules the next refresh. Explicit-root trees
+    // never hit this (their root set is non-empty by construction).
+    if (request.seedResources.length === 0 && request.finalResources.size === 0) return;
     const data = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
@@ -174,6 +249,27 @@ export class SynchronizedTreeState {
     this.state.updateFromResourceData(data, true);
   }
 
+  /** Discovery sync for shared-type seeds: re-polls `ListUserResources` (gRPC-only) and
+   * reconciles the discovered root set against the heap. A longer poll result adds roots; a
+   * shorter one removes them (grant revoked/expired) — the removed roots' subtrees cascade
+   * to collection via the ordinary refcount GC ({@link PlTreeState.setRoots}). No-op when the
+   * tree has no shared-type seeds, or silently no-op on a REST client where `ListUserResources`
+   * is unavailable. */
+  private async discover(): Promise<void> {
+    if (this.terminated) throw new Error("tree synchronization is terminated");
+    if (this.sharedSeeds.length === 0) return;
+
+    const discovered = new Set<SignedResourceId>();
+    for (const seed of this.sharedSeeds) {
+      // match by name only (permissive; ignores version, so it survives schema bumps)
+      const ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name);
+      for (const id of ids) discovered.add(id);
+    }
+
+    this.discoveredRoots = [...discovered];
+    this.state.setRoots(this.currentRootSet());
+  }
+
   /** If true this tree state is permanently terminaed. */
   private terminated = false;
 
@@ -182,6 +278,9 @@ export class SynchronizedTreeState {
     let stat = this.logStat ? initialTreeLoadingStat() : undefined;
 
     let lastUpdate = Date.now();
+
+    // counts refresh iterations to pace the discovery poll for shared-type seeds.
+    let iteration = 0;
 
     while (true) {
       if (!this.keepRunning || this.terminated) break;
@@ -198,6 +297,13 @@ export class SynchronizedTreeState {
       try {
         // resetting stats if we were asked to collect non-cumulative stats
         if (this.logStat === "per-request") stat = initialTreeLoadingStat();
+
+        // discovery sync for shared-type seeds: reconcile the discovered root set before
+        // refreshing, so newly discovered roots are materialized in this same iteration.
+        if (this.sharedSeeds.length > 0 && iteration % DISCOVERY_EVERY_N_REFRESHES === 0) {
+          await this.discover();
+        }
+        iteration++;
 
         // actual tree synchronization
         await this.refresh(stat);
@@ -229,8 +335,8 @@ export class SynchronizedTreeState {
 
           // marking everybody who used previous state as changed
           this.state.invalidateTree("stat update error");
-          // creating new tree
-          this.state = new PlTreeState(this.root, this.finalPredicate);
+          // creating new tree with the full current root set (re-discovered on next iteration)
+          this.state = new PlTreeState(this.currentRootSet(), this.finalPredicate);
 
           // scheduling state update without delay
           continue;
@@ -315,19 +421,28 @@ export class SynchronizedTreeState {
     await this.currentLoop;
   }
 
+  /**
+   * Initializes a synchronized tree from one or more seeds.
+   *
+   * @param seeds a bare {@link SignedResourceId} (the original single-root contract), a
+   *   single {@link TreeSeed}, or an array of seeds. Bare ids and explicit-resource seeds
+   *   become roots immediately; shared-type seeds discover their roots via `ListUserResources`.
+   */
   public static async init(
     pl: PlClient,
-    root: SignedResourceId,
+    seeds: SignedResourceId | TreeSeed | TreeSeed[],
     ops: SynchronizedTreeOps,
     logger?: MiLogger,
   ) {
-    const tree = new SynchronizedTreeState(pl, root, ops, logger);
+    const tree = new SynchronizedTreeState(pl, normalizeSeeds(seeds), ops, logger);
 
     const stat = ops.logStat ? initialTreeLoadingStat() : undefined;
 
     let ok = false;
 
     try {
+      // resolve shared-type seeds before the first refresh so discovered roots load now
+      await tree.discover();
       await tree.refresh(stat, {
         timeout: ops.initialTreeLoadingTimeout,
       });

@@ -389,16 +389,38 @@ export class PlTreeState {
   /** resource heap */
   private resources: Map<SignedResourceId, PlTreeResource> = new Map();
   private readonly resourcesAdded = new ChangeSource();
+  /** Marked when the root set changes (roots discovered or removed), so multi-root
+   * accessors that read the set recompute. */
+  private readonly rootsChanged = new ChangeSource();
   /** Resets to false if any invalid state transitions are registered,
    * after that tree will produce errors for any read or write operations */
   private _isValid: boolean = true;
   private invalidationMessage?: string;
 
+  /** The set of roots — resources protected from GC. Originally a single `root`,
+   * generalized to a set so several explicit roots and dynamically-discovered shared
+   * roots can coexist in one heap. Mutated through {@link setRoots}. */
+  public readonly roots: Set<SignedResourceId>;
+
   constructor(
-    /** This will be the only resource not deleted during GC round */
-    public readonly root: SignedResourceId,
+    /** Resources protected from GC. Accepts a single id (single-root, the original
+     * contract) or a set of ids (multi-root). */
+    roots: SignedResourceId | Set<SignedResourceId>,
     public readonly isFinalPredicate: FinalResourceDataPredicate,
-  ) {}
+  ) {
+    this.roots = roots instanceof Set ? new Set(roots) : new Set([roots]);
+  }
+
+  /** Backward-compatible single-root accessor. Returns the sole root and THROWS if the
+   * tree has zero or more than one root, so a multi-root tree can never be read as if it
+   * had one. Mirrors the {@link entry} guard. */
+  public get root(): SignedResourceId {
+    if (this.roots.size !== 1)
+      throw new Error(
+        `single-root accessor used on a tree with ${this.roots.size} roots; use the multi-root API`,
+      );
+    return this.roots.values().next().value!;
+  }
 
   public forEachResource(cb: (res: ResourceDataWithFinalState) => void): void {
     this.resources.forEach((v) => cb(v));
@@ -406,6 +428,14 @@ export class PlTreeState {
 
   private checkValid() {
     if (!this._isValid) throw new Error(this.invalidationMessage ?? "tree is in invalid state");
+  }
+
+  /** Reactive read of the current root set. Attaches the watcher to {@link rootsChanged}
+   * so a Computable recomputes when discovered roots appear or disappear. */
+  public getRoots(watcher: Watcher): SignedResourceId[] {
+    this.checkValid();
+    this.rootsChanged.attachWatcher(watcher);
+    return [...this.roots];
   }
 
   public get(watcher: Watcher, rid: SignedResourceId): PlTreeResource {
@@ -739,6 +769,24 @@ export class PlTreeState {
     }
 
     // recursively applying refCount decrements / doing garbage collection
+    this.collectGarbage(decrementRefs);
+
+    // checking for orphans (maybe removed in the future)
+    if (!allowOrphanInputs) {
+      for (const rd of resourceData) {
+        if (!this.resources.has(rd.id)) {
+          this.invalidateTree();
+          throw new TreeStateUpdateError(`orphan input resource ${rd.id}`);
+        }
+      }
+    }
+  }
+
+  /** Runs the refcount-decrement garbage-collection cascade over the given worklist.
+   * A resource reaching refCount 0 that is not a root is removed, and its outgoing
+   * references are decremented in turn, until the worklist drains. Factored out of
+   * {@link updateFromResourceData} so {@link setRoots} can reuse the same cascade. */
+  private collectGarbage(decrementRefs: SignedResourceId[]) {
     let currentRefs = decrementRefs;
     while (currentRefs.length > 0) {
       const nextRefs: SignedResourceId[] = [];
@@ -751,7 +799,7 @@ export class PlTreeState {
         res.refCount--;
 
         // garbage collection
-        if (res.refCount === 0 && res.id !== this.root) {
+        if (res.refCount === 0 && !this.roots.has(res.id)) {
           // removing fields
           res.fieldsMap.forEach((field) => {
             if (isNotNullSignedResourceId(field.value)) nextRefs.push(field.value);
@@ -769,15 +817,55 @@ export class PlTreeState {
       }
       currentRefs = nextRefs;
     }
+  }
 
-    // checking for orphans (maybe removed in the future)
-    if (!allowOrphanInputs) {
-      for (const rd of resourceData) {
-        if (!this.resources.has(rd.id)) {
-          this.invalidateTree();
-          throw new TreeStateUpdateError(`orphan input resource ${rd.id}`);
-        }
-      }
+  /** Replaces the current root set with `newRoots`.
+   *
+   * Roots that leave the set lose their GC protection: each removed root present in the
+   * heap is collected directly (a root sits at refCount 0, so it is never enqueued by an
+   * ordinary decrement), and its subtree cascades to collection through the existing
+   * refcount GC — the standard removal mechanic, applied to a root. Roots newly added to
+   * the set are protected immediately; their resources arrive on the next refresh poll. */
+  public setRoots(newRoots: Set<SignedResourceId>) {
+    this.checkValid();
+
+    const removed: SignedResourceId[] = [];
+    for (const rid of this.roots) if (!newRoots.has(rid)) removed.push(rid);
+    let added = false;
+    for (const rid of newRoots) if (!this.roots.has(rid)) added = true;
+    if (removed.length === 0 && !added) return; // no change
+
+    // commit the new protected set before collecting, so a removed root is no longer
+    // protected while its subtree cascades.
+    this.roots.clear();
+    for (const rid of newRoots) this.roots.add(rid);
+
+    this.rootsChanged.markChanged("root set changed");
+
+    for (const rid of removed) {
+      const res = this.resources.get(rid);
+      if (res === undefined) continue; // root not yet materialized in the heap
+
+      // if the (former) root is still referenced by another resource, dropping protection
+      // is enough — ordinary refcounting keeps it alive and will collect it later.
+      if (res.refCount > 0) continue;
+
+      // collect the (now-unprotected) root itself and seed the cascade with the refs it holds
+      const seed: SignedResourceId[] = [];
+      res.fieldsMap.forEach((field) => {
+        if (isNotNullSignedResourceId(field.value)) seed.push(field.value);
+        if (isNotNullSignedResourceId(field.error)) seed.push(field.error);
+        field.change.markChanged(
+          `field ${field.name} removed after root ${resourceIdToString(res.id)} left the root set`,
+        );
+      });
+      if (isNotNullSignedResourceId(res.error)) seed.push(res.error);
+      res.resourceRemoved.markChanged(
+        `resource removed after leaving the root set: ${resourceIdToString(res.id)}`,
+      );
+      this.resources.delete(rid);
+
+      this.collectGarbage(seed);
     }
   }
 
@@ -795,6 +883,7 @@ export class PlTreeState {
   public invalidateTree(msg?: string) {
     this._isValid = false;
     this.invalidationMessage = msg;
+    this.rootsChanged.markChanged("tree invalidated");
     this.resources.forEach((res) => {
       res.markAllChanged();
     });
