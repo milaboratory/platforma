@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer",
-  "version": "1.2.64",
+  "version": "1.2.65",
   "files": [
     "index.d.ts",
     "index.js"
