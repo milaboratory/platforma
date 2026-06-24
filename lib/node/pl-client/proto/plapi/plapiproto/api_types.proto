@@ -155,22 +155,26 @@ message ResourceSchema {
   repeated FieldSchema fields = 2;
 
   message AccessFlags {
-    // Deny-list approach: default = allowed (true)
-    // Controllers set these to false to restrict non-controller roles (role='u', role='w')
+    // Allow-list approach: default = forbidden (false)
+    // Controllers set this to true allow non-controller roles (role='u', role='w')
     optional bool create_resource = 1; // default: true (creation allowed)
 
     // IMPORTANT: read_fields=false with write_fields=true is a forbidden combination
-    optional bool read_fields = 2; // default: true (reads allowed)
-    optional bool write_fields = 3; // default: true (writes allowed)
+    optional bool read_fields = 2; // default: false (reads denied)
+    optional bool write_fields = 3; // default: false (writes denied)
 
     // IMPORTANT: read_kv=false with write_kv=true is a forbidden combination
-    optional bool read_kv = 4; // if unset, falls back to read_fields
-    optional bool write_kv = 5; // if unset, falls back to write_fields
+    optional bool read_kv = 4; // default: false (KV reads denied)
+    optional bool write_kv = 5; // default: false (KV writes denied)
 
     // Per-field-type overrides (map: field_type → bool)
     // When defined for a field type, overrides resource-level flags
     map<uint32, bool> read_by_field_type = 6;
     map<uint32, bool> write_by_field_type = 7;
+
+    // Allows non-controller roles (role='u', role='w') to set error on the resource,
+    // marking it as failed and dropping it from recovery/deduplication indicies.
+    optional bool set_error = 8; // default: true (allowed)
   }
 
   // Access restriction flags for non-controller roles

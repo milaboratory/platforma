@@ -649,7 +649,7 @@ export class LLPlClient implements WireClientProviderFactory {
   /** Request a one-time PKCE nonce + its expiry from the backend. The desktop is
    * expected to place the nonce verbatim into the OIDC auth-request before
    * redirecting to the IdP; the backend enforces the expiry on {@link loginSSO}. */
-  public async beginSSOLogin(): Promise<{ nonce: string; expiresAt: Date }> {
+  public async beginSSOLogin(): Promise<{ nonce: string; expiresAt: Date; clientSecret?: string }> {
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {
       const resp = (await cl.beginSSOLogin({}).response).flow;
@@ -660,6 +660,7 @@ export class LLPlClient implements WireClientProviderFactory {
       return {
         nonce: resp.publicPkce.nonce,
         expiresAt: Timestamp.toDate(exp),
+        clientSecret: resp.publicPkce.clientSecret,
       };
     } else {
       const wsResponse = notEmpty(
@@ -667,7 +668,11 @@ export class LLPlClient implements WireClientProviderFactory {
         "REST: empty response for beginSSOLogin request",
       );
       const pkce = notEmpty(wsResponse.publicPkce, "REST: missing publicPkce in beginSSOLogin");
-      return { nonce: pkce.nonce, expiresAt: new Date(pkce.expiresAt) };
+      return {
+        nonce: pkce.nonce,
+        expiresAt: new Date(pkce.expiresAt),
+        clientSecret: pkce.clientSecret,
+      };
     }
   }
 

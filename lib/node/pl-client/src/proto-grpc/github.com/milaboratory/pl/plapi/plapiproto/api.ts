@@ -540,6 +540,12 @@ export interface TxAPI_ClientMessage {
          */
         revokeAccess: AuthAPI_RevokeAccess_Request; // revoke access to a resource within transaction
     } | {
+        oneofKind: "listGrants";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants = 412
+         */
+        listGrants: AuthAPI_ListGrants_Request; // list grants on a resource within transaction
+    } | {
         oneofKind: undefined;
     };
 }
@@ -928,6 +934,12 @@ export interface TxAPI_ServerMessage {
          * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.RevokeAccess.Response revoke_access = 411
          */
         revokeAccess: AuthAPI_RevokeAccess_Response;
+    } | {
+        oneofKind: "listGrants";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants = 412
+         */
+        listGrants: AuthAPI_ListGrants_TxResponse;
     } | {
         oneofKind: undefined;
     };
@@ -3992,6 +4004,15 @@ export interface AuthAPI_ListGrants_Response {
     grant?: AuthAPI_Grant; // one per stream message
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse
+ */
+export interface AuthAPI_ListGrants_TxResponse {
+    /**
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.AuthAPI.Grant grants = 1
+     */
+    grants: AuthAPI_Grant[]; // all grants for the resource in a single transactional response
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.Grant
  */
 export interface AuthAPI_Grant {
@@ -4187,6 +4208,41 @@ export interface AuthAPI_ListUserResources_SharedResource {
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4
      */
     permissions?: AuthAPI_Grant_Permissions;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.User
+ */
+export interface AuthAPI_User {
+    /**
+     * login is the stable identifier of the user — the grant target and the
+     * GetUserRoot key. Further fields (e.g. first name, last name, email) may
+     * be added later without breaking compatibility.
+     *
+     * @generated from protobuf field: string login = 1
+     */
+    login: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
+ */
+export interface AuthAPI_ListUsers {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Request
+ */
+export interface AuthAPI_ListUsers_Request {
+}
+/**
+ * Lists users known to the server. A user becomes known on first login;
+ * provisioned users who have never logged in do not appear.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Response
+ */
+export interface AuthAPI_ListUsers_Response {
+    /**
+     * @generated from protobuf field: repeated MiLaboratories.PL.API.AuthAPI.User users = 1
+     */
+    users: AuthAPI_User[];
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.AuthAPI.Role
@@ -4474,7 +4530,8 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 351, name: "controller_features_clear", kind: "message", oneof: "request", T: () => ControllerAPI_ClearFeatures_Request },
             { no: 400, name: "set_default_color", kind: "message", oneof: "request", T: () => TxAPI_SetDefaultColor_Request },
             { no: 410, name: "grant_access", kind: "message", oneof: "request", T: () => AuthAPI_GrantAccess_Request },
-            { no: 411, name: "revoke_access", kind: "message", oneof: "request", T: () => AuthAPI_RevokeAccess_Request }
+            { no: 411, name: "revoke_access", kind: "message", oneof: "request", T: () => AuthAPI_RevokeAccess_Request },
+            { no: 412, name: "list_grants", kind: "message", oneof: "request", T: () => AuthAPI_ListGrants_Request }
         ]);
     }
     create(value?: PartialMessage<TxAPI_ClientMessage>): TxAPI_ClientMessage {
@@ -4859,6 +4916,12 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         revokeAccess: AuthAPI_RevokeAccess_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).revokeAccess)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants */ 412:
+                    message.request = {
+                        oneofKind: "listGrants",
+                        listGrants: AuthAPI_ListGrants_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).listGrants)
+                    };
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -5057,6 +5120,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.AuthAPI.RevokeAccess.Request revoke_access = 411; */
         if (message.request.oneofKind === "revokeAccess")
             AuthAPI_RevokeAccess_Request.internalBinaryWrite(message.request.revokeAccess, writer.tag(411, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants = 412; */
+        if (message.request.oneofKind === "listGrants")
+            AuthAPI_ListGrants_Request.internalBinaryWrite(message.request.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -5134,6 +5200,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 400, name: "set_default_color", kind: "message", oneof: "response", T: () => TxAPI_SetDefaultColor_Response },
             { no: 410, name: "grant_access", kind: "message", oneof: "response", T: () => AuthAPI_GrantAccess_Response },
             { no: 411, name: "revoke_access", kind: "message", oneof: "response", T: () => AuthAPI_RevokeAccess_Response },
+            { no: 412, name: "list_grants", kind: "message", oneof: "response", T: () => AuthAPI_ListGrants_TxResponse },
             { no: 3, name: "error", kind: "message", T: () => Status }
         ]);
     }
@@ -5522,6 +5589,12 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         revokeAccess: AuthAPI_RevokeAccess_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).revokeAccess)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants */ 412:
+                    message.response = {
+                        oneofKind: "listGrants",
+                        listGrants: AuthAPI_ListGrants_TxResponse.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).listGrants)
+                    };
+                    break;
                 case /* google.rpc.Status error */ 3:
                     message.error = Status.internalBinaryRead(reader, reader.uint32(), options, message.error);
                     break;
@@ -5729,6 +5802,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.AuthAPI.RevokeAccess.Response revoke_access = 411; */
         if (message.response.oneofKind === "revokeAccess")
             AuthAPI_RevokeAccess_Response.internalBinaryWrite(message.response.revokeAccess, writer.tag(411, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants = 412; */
+        if (message.response.oneofKind === "listGrants")
+            AuthAPI_ListGrants_TxResponse.internalBinaryWrite(message.response.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -19063,6 +19139,53 @@ class AuthAPI_ListGrants_Response$Type extends MessageType<AuthAPI_ListGrants_Re
  */
 export const AuthAPI_ListGrants_Response = new AuthAPI_ListGrants_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListGrants_TxResponse$Type extends MessageType<AuthAPI_ListGrants_TxResponse> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse", [
+            { no: 1, name: "grants", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => AuthAPI_Grant }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListGrants_TxResponse>): AuthAPI_ListGrants_TxResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.grants = [];
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListGrants_TxResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListGrants_TxResponse): AuthAPI_ListGrants_TxResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated MiLaboratories.PL.API.AuthAPI.Grant grants */ 1:
+                    message.grants.push(AuthAPI_Grant.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListGrants_TxResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated MiLaboratories.PL.API.AuthAPI.Grant grants = 1; */
+        for (let i = 0; i < message.grants.length; i++)
+            AuthAPI_Grant.internalBinaryWrite(message.grants[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse
+ */
+export const AuthAPI_ListGrants_TxResponse = new AuthAPI_ListGrants_TxResponse$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_Grant$Type extends MessageType<AuthAPI_Grant> {
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.Grant", [
@@ -19775,6 +19898,176 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
  */
 export const AuthAPI_ListUserResources_SharedResource = new AuthAPI_ListUserResources_SharedResource$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.User", [
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_User>): AuthAPI_User {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.login = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_User>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_User): AuthAPI_User {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string login */ 1:
+                    message.login = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_User, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string login = 1; */
+        if (message.login !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.login);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.User
+ */
+export const AuthAPI_User = new AuthAPI_User$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers$Type extends MessageType<AuthAPI_ListUsers> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers>): AuthAPI_ListUsers {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers): AuthAPI_ListUsers {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
+ */
+export const AuthAPI_ListUsers = new AuthAPI_ListUsers$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers_Request$Type extends MessageType<AuthAPI_ListUsers_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers.Request", []);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers_Request>): AuthAPI_ListUsers_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers_Request): AuthAPI_ListUsers_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Request
+ */
+export const AuthAPI_ListUsers_Request = new AuthAPI_ListUsers_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUsers_Response$Type extends MessageType<AuthAPI_ListUsers_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUsers.Response", [
+            { no: 1, name: "users", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => AuthAPI_User }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUsers_Response>): AuthAPI_ListUsers_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.users = [];
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUsers_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUsers_Response): AuthAPI_ListUsers_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated MiLaboratories.PL.API.AuthAPI.User users */ 1:
+                    message.users.push(AuthAPI_User.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUsers_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated MiLaboratories.PL.API.AuthAPI.User users = 1; */
+        for (let i = 0; i < message.users.length; i++)
+            AuthAPI_User.internalBinaryWrite(message.users[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers.Response
+ */
+export const AuthAPI_ListUsers_Response = new AuthAPI_ListUsers_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class MiscAPI$Type extends MessageType<MiscAPI> {
     constructor() {
         super("MiLaboratories.PL.API.MiscAPI", []);
@@ -20405,6 +20698,7 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "MintSignature", options: { "google.api.http": { post: "/v1/auth/mint-signature", body: "*" } }, I: AuthAPI_MintSignature_Request, O: AuthAPI_MintSignature_Response },
     { name: "GetUserRoot", options: { "google.api.http": { post: "/v1/auth/user-root", body: "*" } }, I: AuthAPI_GetUserRoot_Request, O: AuthAPI_GetUserRoot_Response },
     { name: "ListUserResources", serverStreaming: true, options: {}, I: AuthAPI_ListUserResources_Request, O: AuthAPI_ListUserResources_Response },
+    { name: "ListUsers", options: {}, I: AuthAPI_ListUsers_Request, O: AuthAPI_ListUsers_Response },
     { name: "ListResourceTypes", options: { "google.api.http": { get: "/v1/resource-types" } }, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
     { name: "Ping", options: { "google.api.http": { get: "/v1/ping" } }, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
     { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }

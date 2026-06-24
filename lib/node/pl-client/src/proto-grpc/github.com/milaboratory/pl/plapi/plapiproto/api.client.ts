@@ -10,6 +10,8 @@ import type { MaintenanceAPI_Ping_Response } from "./api";
 import type { MaintenanceAPI_Ping_Request } from "./api";
 import type { MiscAPI_ListResourceTypes_Response } from "./api";
 import type { MiscAPI_ListResourceTypes_Request } from "./api";
+import type { AuthAPI_ListUsers_Response } from "./api";
+import type { AuthAPI_ListUsers_Request } from "./api";
 import type { AuthAPI_ListUserResources_Response } from "./api";
 import type { AuthAPI_ListUserResources_Request } from "./api";
 import type { AuthAPI_GetUserRoot_Response } from "./api";
@@ -284,6 +286,10 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: ListUserResources
      */
     listUserResources(input: AuthAPI_ListUserResources_Request, options?: RpcOptions): ServerStreamingCall<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response>;
+    /**
+     * @generated from protobuf rpc: ListUsers
+     */
+    listUsers(input: AuthAPI_ListUsers_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>;
     /**
      *
      * Other stuff
@@ -614,6 +620,13 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         return stackIntercept<AuthAPI_ListUserResources_Request, AuthAPI_ListUserResources_Response>("serverStreaming", this._transport, method, opt, input);
     }
     /**
+     * @generated from protobuf rpc: ListUsers
+     */
+    listUsers(input: AuthAPI_ListUsers_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response> {
+        const method = this.methods[34], opt = this._transport.mergeOptions(options);
+        return stackIntercept<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
      *
      * Other stuff
      *
@@ -621,7 +634,7 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: ListResourceTypes
      */
     listResourceTypes(input: MiscAPI_ListResourceTypes_Request, options?: RpcOptions): UnaryCall<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response> {
-        const method = this.methods[34], opt = this._transport.mergeOptions(options);
+        const method = this.methods[35], opt = this._transport.mergeOptions(options);
         return stackIntercept<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -632,14 +645,14 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
-        const method = this.methods[35], opt = this._transport.mergeOptions(options);
+        const method = this.methods[36], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
-        const method = this.methods[36], opt = this._transport.mergeOptions(options);
+        const method = this.methods[37], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
     }
 }

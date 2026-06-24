@@ -29,6 +29,9 @@ export type SSOAuthMethod = {
   userIdClaim: string;
   groupsClaim: string;
   flowType: SSOFlowType;
+  /** OIDC `access_type` auth-request param ("online" | "offline"). Google-specific:
+   * "offline" makes Google issue a refresh token; other IdPs ignore it. May be empty. */
+  accessType: string;
 };
 
 /** Server-issued material returned by {@link UnauthenticatedPlClient.beginSSOLogin}.
@@ -37,6 +40,11 @@ export type SSOLoginAttempt = {
   flow: "public_pkce";
   nonce: string;
   expiresAt: Date;
+  /** Confidential-client secret for the IdP token exchange; absent for public clients.
+   * Google's OIDC has no public-client mode — it requires a client_secret at the token
+   * endpoint even with PKCE — so for Google the backend forwards its secret here and the
+   * desktop exchanges the code as a confidential client. */
+  clientSecret?: string;
 };
 
 /** Primarily used for initial authentication (login) */
@@ -104,6 +112,7 @@ export class UnauthenticatedPlClient {
         subjectTokenSource: sso.subjectTokenSource,
         userIdClaim: sso.userIdClaim,
         groupsClaim: sso.groupsClaim,
+        accessType: sso.accessType,
         flowType: "public_pkce",
       };
     }
@@ -149,8 +158,13 @@ export class UnauthenticatedPlClient {
   /** Request fresh server-issued login material. v1 only emits the public-PKCE flow;
    * desktop MUST place the returned `nonce` verbatim into the OIDC auth-request. */
   public async beginSSOLogin(): Promise<SSOLoginAttempt> {
-    const { nonce, expiresAt } = await this.ll.beginSSOLogin();
-    return { flow: "public_pkce", nonce, expiresAt };
+    const attempt = await this.ll.beginSSOLogin();
+    return {
+      flow: "public_pkce",
+      nonce: attempt.nonce,
+      expiresAt: attempt.expiresAt,
+      clientSecret: attempt.clientSecret,
+    };
   }
 
   /** Forward the verbatim IdP `/token` response body and receive a Platforma JWT. */

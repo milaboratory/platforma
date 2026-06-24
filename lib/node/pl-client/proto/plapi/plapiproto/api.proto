@@ -259,6 +259,8 @@ service Platform {
   }
   rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
 
+  rpc ListUsers(AuthAPI.ListUsers.Request) returns (AuthAPI.ListUsers.Response) {}
+
   //
   // Other stuff
   //
@@ -483,6 +485,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Request grant_access = 410; // grant access to a resource within transaction
       AuthAPI.RevokeAccess.Request revoke_access = 411; // revoke access to a resource within transaction
+      AuthAPI.ListGrants.Request list_grants = 412; // list grants on a resource within transaction
     }
   }
 
@@ -585,6 +588,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Response grant_access = 410;
       AuthAPI.RevokeAccess.Response revoke_access = 411;
+      AuthAPI.ListGrants.TxResponse list_grants = 412;
     }
 
     google.rpc.Status error = 3;
@@ -1866,6 +1870,10 @@ message AuthAPI {
     message Response {
       Grant grant = 1; // one per stream message
     }
+
+    message TxResponse {
+      repeated Grant grants = 1; // all grants for the resource in a single transactional response
+    }
   }
 
   message Grant {
@@ -1946,6 +1954,23 @@ message AuthAPI {
       bytes resource_signature = 2;
       Base.ResourceType resource_type = 3;
       Grant.Permissions permissions = 4;
+    }
+  }
+
+  message User {
+    // login is the stable identifier of the user — the grant target and the
+    // GetUserRoot key. Further fields (e.g. first name, last name, email) may
+    // be added later without breaking compatibility.
+    string login = 1;
+  }
+
+  message ListUsers {
+    message Request {}
+
+    // Lists users known to the server. A user becomes known on first login;
+    // provisioned users who have never logged in do not appear.
+    message Response {
+      repeated User users = 1;
     }
   }
 }
