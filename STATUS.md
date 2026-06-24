@@ -1,22 +1,48 @@
 # Software Build — Implementation Status
 
 **State:** not started. 4 repos. Within each repo, ordered as individually-testable
-increments, riskier first. Each entry links the most detailed spec atom; `— verified`
-marks facts checked against the code/infra repos.
+increments, riskier first. Each entry links the most detailed spec atom.
 
-Spec front doors: [design-and-scope][ds] · [implementor-reference][ir] ·
-[infrastructure-changes][ic].
+Spec front doors:
+
+- [design-and-scope][ds]
+- [implementor-reference][ir]
+- [infrastructure-changes][ic]
 
 **Cross-repo ordering.** `pl` and `infrastructure` are independent — start early. The
 platforma remote-binary steps are unit-testable against a throwaway S3 (minio); the
 real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is last.
 
+## infrastructure (`milaboratory/infrastructure`, Terraform; downstream ops)
+
+- [ ] S3 bucket `milab-midev-registry` (acct 934, `terraform/miresearch`) + cross-account CI:
+      bucket policy **and** 511-role grant (role: likely `…-github-oidc-role-pl-registry`;
+      confirm with infra). [ic] §2–3
+- [ ] BunnyCDN zone `bin-dev.pl-open.science` + dedicated 934 GET/LIST IAM user. [ic] §2
+- [ ] Dev docker ECR cross-account push (two accounts): repo policy on `pl-containers`
+      (934, `terraform/miresearch/.../ecr-public-pl-containers`) + `ecr-public` login
+      grant on the 511 `monorepo-simple` / `blocks` roles
+      (`terraform/mik8s-github/oidc-roles/*`). Written + `terraform validate`d, pending
+      `plan`/review. [ic] §1
+- [ ] Confirm dev SSO role carries `ecr-public` push + `s3:PutObject` to the bucket. [ic] §4
+
+Deferred / non-blocking:
+
+- Bucket lifecycle-expiry for dev-hash GC — mechanism open ([Q-0013]); bucket grows
+  unbounded without it. [ic] §2
+- GA edge for the dev bucket — optional/later, out of scope. [ic] §5
+
+## pl
+
+- [ ] Add `midev` to `defaultRegistries()` (`controllers/packagectl/pkg/cfg/soft_ctl.go`)
+      → `bin-dev.pl-open.science`. [A-0024]
+
 ## platforma
 
 - [ ] `package-builder` (pl-pkg) oclif → commander — riskiest, touches the live tool;
-      pl-pkg tests pass. [A-0025] — verified oclif
+      pl-pkg tests pass. [A-0025]
 - [ ] `block-tools` oclif → commander — new `software build` lands here.
-      [A-0018] [A-0025] — verified oclif
+      [A-0018] [A-0025]
 - [ ] Extract package-builder's build engine into a library (bin-only; `Core` not exported).
       [A-0023]
 - [ ] Content-addressable dev naming: append `-<hash>` at `artifactVersion()`. [A-0014]
@@ -41,23 +67,6 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
 - [ ] Retarget monorepo blocks `etc/blocks/*`: `pl-pkg build` → `block-tools software build`,
       flag-gated. [A-0033]
 - [ ] Retire `pl-pkg` build surface ~1–2 wks after confirmation (do last). [A-0033]
-
-## pl
-
-- [ ] Add `midev` to `defaultRegistries()` (`controllers/packagectl/pkg/cfg/soft_ctl.go`)
-      → `bin-dev.pl-open.science`. [A-0024] — verified
-
-## infrastructure (`milaboratory/infrastructure`, Terraform; downstream ops)
-
-- [ ] S3 bucket `milab-midev-registry` (acct 934, `terraform/miresearch`) + cross-account CI:
-      bucket policy **and** 511-role grant (exact 511 role [TBD]). [ic] §2–3 — verified repo
-- [ ] BunnyCDN zone `bin-dev.pl-open.science` + dedicated 934 GET/LIST IAM user. [ic] §2
-- [ ] Bucket lifecycle/expiry (dev-hash GC) — mechanism deferred ([Q-0013]). [ic] §2
-- [ ] ECR repo cross-account push policy naming the 511 CI role (no 511-role edit). [ic] §1
-      — verified repo
-- [ ] Confirm dev SSO role carries `ecr-public` push + `s3:PutObject` to the bucket. [ic] §4
-
-GA edge for the dev bucket is optional/later — out of scope ([ic] §5).
 
 ## blocks (`blocks/*`)
 
