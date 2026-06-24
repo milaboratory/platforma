@@ -9,6 +9,7 @@
     "./block/model": "./src/blocks/tsconfig.model.json",
     "./block/ui": "./src/blocks/tsconfig.ui.json",
     "./block/test": "./src/blocks/tsconfig.test.json",
+    "./block/facade": "./src/blocks/tsconfig.facade.json",
     "./*": "./src/*"
   },
   "scripts": {
