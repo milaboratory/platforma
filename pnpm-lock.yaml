@@ -49,8 +49,8 @@ catalogs:
       specifier: ^4.0.37
       version: 4.0.37
     '@platforma-open/milaboratories.runenv-python-3':
-      specifier: 1.10.5
-      version: 1.10.5
+      specifier: 1.10.6
+      version: 1.10.6
     '@platforma-open/milaboratories.software-conda-empty':
       specifier: ^1.0.1
       version: 1.0.1
@@ -3138,7 +3138,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.10.5
+        version: 1.10.6
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
@@ -3147,7 +3147,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.10.5
+        version: 1.10.6
       '@platforma-sdk/package-builder':
         specifier: 'workspace:'
         version: link:../../tools/package-builder
@@ -4159,7 +4159,7 @@ importers:
         version: link:../ts-configs
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.10.5
+        version: 1.10.6
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.3(vitest@4.1.3)
@@ -5921,11 +5921,11 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.1.0':
     resolution: {integrity: sha512-Z9OIHbWfq0OsTUvmJIK6HBm8qLIli5xxHlGsiNx012YU69snwgi2edioMjUQ1vr5eWPA/9+Xs8Ih9z+aWbmUpQ==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.19':
-    resolution: {integrity: sha512-8cqWtBASMmq9lAxD9Mz8PNiki8xYR/h7huW5+pGj07q8r+cxeCGuqP1T+sFgzU4aZ9Cr+xxIqQ2w8DiSWpox9A==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.20':
+    resolution: {integrity: sha512-A2+SYW2loIWrf33zbRjWimjsLx5scEOTL2VnTxlBQmuSWyxR1jjm711yaS+F76WoAMTBpaLbmwgO1WUP2cVAvg==}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.10.5':
-    resolution: {integrity: sha512-Wd/LLjQ4XJI8LGxRj9eqKHhQQui4iAUXQI+BdWXHLqFEECUsuGpqXj27xOrojpsnzg9H0j9/QBUmApCMoZa32A==}
+  '@platforma-open/milaboratories.runenv-python-3@1.10.6':
+    resolution: {integrity: sha512-cAGuQ49mcagJsOPRb3EalJq8B5ADBeITrkCrnpattC7U2SjM+PkR60eqtt41CneaQZNP4DHjSGVNA8sKHSn+CA==}
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
@@ -12287,11 +12287,11 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.1.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.19': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.20': {}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.10.5':
+  '@platforma-open/milaboratories.runenv-python-3@1.10.6':
     dependencies:
-      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.19
+      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.20
       '@platforma-open/milaboratories.runenv-python-3.12.10-atls': 1.2.7
       '@platforma-open/milaboratories.runenv-python-3.12.10-clustering': 0.1.1
       '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad': 1.1.5
