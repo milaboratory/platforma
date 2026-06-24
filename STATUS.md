@@ -1,10 +1,10 @@
 # Software Build — Implementation Status
 
-**State:** infrastructure underway (PR
+**State:** infrastructure §1–§4 done — all in PR
 [milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
-— ECR docker + midev S3); pl / platforma / blocks not started. 4 repos. Within each repo,
-ordered as individually-testable increments, riskier first. Each entry links the most
-detailed spec atom.
+(pending merge + apply; §4 needs no change); pl / platforma / blocks not started. 4 repos.
+Within each repo, ordered as individually-testable increments, riskier first. Each entry
+links the most detailed spec atom.
 
 Spec front doors:
 
@@ -29,7 +29,9 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
       (`terraform/mik8s-github/oidc-roles/*`). PR
       [milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
       — 934 `plan` clean, 511 stacks `validate`d (need main-account `plan` before apply). [ic] §1
-- [ ] Confirm dev SSO role carries `ecr-public` push + `s3:PutObject` to the bucket. [ic] §4
+- [x] Dev SSO push access — confirmed: 934 devs use the **PowerUser** permission set
+      (`PowerUserAccess` = allow-all except iam/org/account), covering `ecr-public` push +
+      `s3:PutObject`. No change (permission sets live in Identity Center, not this repo). [ic] §4
 
 Manual (not Terraform), post-apply:
 
