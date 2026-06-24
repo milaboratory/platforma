@@ -12,7 +12,7 @@
     "build": {
       "dependsOn": ["^build", "check"],
       "inputs": ["$TURBO_DEFAULT$"],
-      "env": ["PL_PKG_DEV", "PL_DOCKER_REGISTRY_PUSH_TO"],
+      "env": ["PL_PKG_DEV", "PL_DOCKER_*"],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"]
     },
     "build:dev": {
