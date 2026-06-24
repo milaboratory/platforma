@@ -1,7 +1,10 @@
 # Software Build — Implementation Status
 
-**State:** not started. 4 repos. Within each repo, ordered as individually-testable
-increments, riskier first. Each entry links the most detailed spec atom.
+**State:** infrastructure underway (PRs
+[#281](https://github.com/milaboratory/infrastructure/pull/281),
+[#282](https://github.com/milaboratory/infrastructure/pull/282)); pl / platforma / blocks
+not started. 4 repos. Within each repo, ordered as individually-testable increments,
+riskier first. Each entry links the most detailed spec atom.
 
 Spec front doors:
 
@@ -15,10 +18,12 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
 
 ## infrastructure (`milaboratory/infrastructure`, Terraform; downstream ops)
 
-- [ ] S3 bucket `milab-midev-registry` (acct 934, `terraform/miresearch`) + cross-account CI:
-      bucket policy **and** 511-role grant (role: likely `…-github-oidc-role-pl-registry`;
-      confirm with infra). [ic] §2–3
-- [ ] BunnyCDN zone `bin-dev.pl-open.science` + dedicated 934 GET/LIST IAM user. [ic] §2
+- [x] S3 bucket `milab-midev-registry` (acct 934, private, AES256, 7-day GC) + BunnyCDN
+      edge-read IAM user. PR
+      [milaboratory/infrastructure#282](https://github.com/milaboratory/infrastructure/pull/282)
+      — `plan` clean. [ic] §2
+- [ ] Cross-account CI push to the bucket: 934 bucket policy + 511-role `s3:PutObject`
+      (role TBD, likely `…-github-oidc-role-pl-registry`). [ic] §3
 - [x] Dev docker ECR cross-account push (two accounts): repo policy on `pl-containers`
       (934, `terraform/miresearch/.../ecr-public-pl-containers`) + `ecr-public` login
       grant on the 511 `monorepo-simple` / `blocks` roles
@@ -27,10 +32,13 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
       — 934 `plan` clean, 511 stacks `validate`d (need main-account `plan` before apply). [ic] §1
 - [ ] Confirm dev SSO role carries `ecr-public` push + `s3:PutObject` to the bucket. [ic] §4
 
+Manual (not Terraform), post-apply:
+
+- BunnyCDN pull zone `bin-dev.pl-open.science` → bucket, using an access key created by
+  hand for the `milab-midev-registry-cdn` user. [ic] §2
+
 Deferred / non-blocking:
 
-- Bucket lifecycle-expiry for dev-hash GC — mechanism open ([Q-0013]); bucket grows
-  unbounded without it. [ic] §2
 - GA edge for the dev bucket — optional/later, out of scope. [ic] §5
 
 ## pl
@@ -81,7 +89,6 @@ arch redesign, slim-facade work, dev-bucket GA edge.
 [ds]: ../../docs/text/work/projects/testing-framework/software-build/design-and-scope.md
 [ir]: ../../docs/text/work/projects/testing-framework/software-build/implementor-reference.md
 [ic]: ../../docs/text/work/projects/testing-framework/software-build/infrastructure-changes.md
-[Q-0013]: ../../docs/text/work/projects/testing-framework/software-build/work/STATUS.md
 [A-0011]: ../../docs/text/work/projects/testing-framework/software-build/work/atoms/A-0011-developer-interface.md
 [A-0012]: ../../docs/text/work/projects/testing-framework/software-build/work/atoms/A-0012-channels-and-registry-model.md
 [A-0013]: ../../docs/text/work/projects/testing-framework/software-build/work/atoms/A-0013-build-flow-envelope.md
