@@ -1703,8 +1703,9 @@ message AuthAPI {
       string user_id_claim = 8;
       string groups_claim = 9;
       FlowType flow_type = 10;
+      optional string access_type = 11; // "online" | "offline"; Google-specific (offline → refresh token)
 
-      // next free: 11;
+      // next free: 12;
     }
 
     message MethodInfo {
@@ -1739,6 +1740,15 @@ message AuthAPI {
     message PublicPKCE {
       string nonce = 1; // server-issued one-time value
       google.protobuf.Timestamp expires_at = 2; // after this, nonce is no longer valid (when enforced)
+      // Confidential-client secret for the IdP token exchange; absent for public clients.
+      // Rationale: Google's OIDC does not support public clients — it requires a
+      // client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+      // gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+      // leaving the server. So the backend holds the secret and forwards it here to the
+      // desktop, which performs the token exchange as a confidential client.
+      optional string client_secret = 3;
+
+      // next free: 4;
     }
 
     message Response {
