@@ -1,10 +1,10 @@
 # Software Build — Implementation Status
 
-**State:** infrastructure underway (PRs
-[#281](https://github.com/milaboratory/infrastructure/pull/281),
-[#282](https://github.com/milaboratory/infrastructure/pull/282)); pl / platforma / blocks
-not started. 4 repos. Within each repo, ordered as individually-testable increments,
-riskier first. Each entry links the most detailed spec atom.
+**State:** infrastructure underway (PR
+[milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
+— ECR docker + midev S3); pl / platforma / blocks not started. 4 repos. Within each repo,
+ordered as individually-testable increments, riskier first. Each entry links the most
+detailed spec atom.
 
 Spec front doors:
 
@@ -19,11 +19,10 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
 ## infrastructure (`milaboratory/infrastructure`, Terraform; downstream ops)
 
 - [x] S3 bucket `milab-midev-registry` (acct 934, private, AES256, 7-day GC) + BunnyCDN
-      edge-read IAM user. PR
-      [milaboratory/infrastructure#282](https://github.com/milaboratory/infrastructure/pull/282)
-      — `plan` clean. [ic] §2
-- [ ] Cross-account CI push to the bucket: 934 bucket policy + 511-role `s3:PutObject`
-      (role TBD, likely `…-github-oidc-role-pl-registry`). [ic] §3
+      edge-read IAM user. PR #281 — `plan` clean. [ic] §2
+- [x] Cross-account CI push to the bucket: 934 bucket policy + matching grant on the 511
+      `monorepo-simple` / `blocks` roles (`s3:ListBucket` + `s3:PutObject`). PR #281 —
+      `plan` clean, 511 stacks `validate`d. [ic] §3
 - [x] Dev docker ECR cross-account push (two accounts): repo policy on `pl-containers`
       (934, `terraform/miresearch/.../ecr-public-pl-containers`) + `ecr-public` login
       grant on the 511 `monorepo-simple` / `blocks` roles
