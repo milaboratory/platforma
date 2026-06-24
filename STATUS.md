@@ -19,11 +19,12 @@ real end-to-end check needs `pl` + `infrastructure` done. `blocks` rollout is la
       bucket policy **and** 511-role grant (role: likely `…-github-oidc-role-pl-registry`;
       confirm with infra). [ic] §2–3
 - [ ] BunnyCDN zone `bin-dev.pl-open.science` + dedicated 934 GET/LIST IAM user. [ic] §2
-- [ ] Dev docker ECR cross-account push (two accounts): repo policy on `pl-containers`
+- [x] Dev docker ECR cross-account push (two accounts): repo policy on `pl-containers`
       (934, `terraform/miresearch/.../ecr-public-pl-containers`) + `ecr-public` login
       grant on the 511 `monorepo-simple` / `blocks` roles
-      (`terraform/mik8s-github/oidc-roles/*`). Written + `terraform validate`d, pending
-      `plan`/review. [ic] §1
+      (`terraform/mik8s-github/oidc-roles/*`). PR
+      [milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
+      — 934 `plan` clean, 511 stacks `validate`d (need main-account `plan` before apply). [ic] §1
 - [ ] Confirm dev SSO role carries `ecr-public` push + `s3:PutObject` to the bucket. [ic] §4
 
 Deferred / non-blocking:
