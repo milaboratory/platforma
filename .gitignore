@@ -34,7 +34,3 @@ work/
 __pycache__/
 .ruff_cache
 tests/mcp-server/.test_auth.json
-
-# Claude local settings
-CLAUDE.local.ms
-settings.local.json
