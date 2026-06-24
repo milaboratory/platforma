@@ -1,14 +1,14 @@
-import { blockSpec as downloadBlobURLSpec } from "@milaboratories/milaboratories.test-blob-url-custom-protocol";
+import { BlockPointer as downloadBlobURLSpec } from "@milaboratories/milaboratories.test-blob-url-custom-protocol";
 import type { platforma as downloadBlobURLModel } from "@milaboratories/milaboratories.test-blob-url-custom-protocol.model";
-import { blockSpec as downloadFileSpec } from "@milaboratories/milaboratories.test-download-file";
+import { BlockPointer as downloadFileSpec } from "@milaboratories/milaboratories.test-download-file";
 import type { platforma as downloadFileModel } from "@milaboratories/milaboratories.test-download-file.model";
-import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
-import { blockSpec as readLogsSpec } from "@milaboratories/milaboratories.test-read-logs";
+import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer as readLogsSpec } from "@milaboratories/milaboratories.test-read-logs";
 import type { platforma as readLogsModel } from "@milaboratories/milaboratories.test-read-logs.model";
-import { blockSpec as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers-v3";
-import { blockSpec as uploadFileSpec } from "@milaboratories/milaboratories.test-upload-file";
+import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers-v3";
+import { BlockPointer as uploadFileSpec } from "@milaboratories/milaboratories.test-upload-file";
 import type { platforma as uploadFileModel } from "@milaboratories/milaboratories.test-upload-file.model";
-import { blockSpec as transferFilesSpec } from "@milaboratories/milaboratories.transfer-files";
+import { BlockPointer as transferFilesSpec } from "@milaboratories/milaboratories.transfer-files";
 import type { platforma as transferFilesModel } from "@milaboratories/milaboratories.transfer-files.model";
 import { DisconnectedError } from "@milaboratories/pl-client";
 import {
@@ -27,6 +27,7 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
 import { isObject } from "@milaboratories/ts-helpers";
@@ -227,7 +228,7 @@ test("v3: simple project manipulations test", { timeout: 40000 }, async ({ expec
     expect(block1StableFrontend.url).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
     const block2StableFrontend = await prj.getBlockFrontend(block2Id).awaitStableValue();
-    expect(block2StableFrontend.url).toMatch(/enter-numbers/);
+    expect(block2StableFrontend.url).toMatch(/^block-ui:\/\//);
     expect(block2StableFrontend.sdkVersion).toBeDefined();
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend.url).toBeDefined();
@@ -645,7 +646,15 @@ test("v3: block update test", async ({ expect }) => {
     const tmpDevBlockFolder = path.resolve(workFolder, "dev");
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
 
-    const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+    // Build a dev-v2 pointer from the from-pack-v2 BlockPointer's `rootUrl` (the facade
+    // root is exactly the dev block folder) so the block-pack update watcher
+    // (dev-folder) drives updatedBlockPack; dev-v2 `folder` is a path, so convert the
+    // file: URL at this edge.
+    const enterNumberDevSpec = {
+      type: "dev-v2" as const,
+      folder: fileURLToPath(enterNumberSpec.rootUrl),
+    };
+    const block1Id = await prj.addBlock("Block 1", enterNumberDevSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
