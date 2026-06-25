@@ -246,20 +246,14 @@ export class UserResources {
   }
 
   /**
-   * Lists the logins of users known to the server, for the recipient picker.
-   *
-   * STUB: the backend ListUsers RPC exists, but its generated proto bindings are not yet
-   * vendored in pl-client (regenerating pulls unrelated proto drift — must be a deliberate
-   * `update-proto` step; see implementation-plan.md M2 debt). Returns [] until then, so the
-   * recipient picker degrades to the paste-an-ID flow rather than offering autocomplete.
-   *
-   * Once the proto is regenerated, restore the real implementation:
-   *   const users = await this.ll.listUsers();
-   *   return users.map((user) => ({ login: user.login }));
+   * Lists the logins of users known to the server, for the recipient picker. A user becomes
+   * known on first login; provisioned users who have never logged in do not appear. gRPC-only
+   * (the underlying {@link LLPlClient.listUsers} has no REST binding) — throws on a
+   * REST-connected client, so callers gate on the `userListing:v1` capability.
    */
-  // eslint-disable-next-line @typescript-eslint/require-await
   async listUsers(): Promise<UserEntry[]> {
-    return [{ login: "astaroverov" }, { login: "project-sync-01" }, { login: "project-sync-02" }];
+    const users = await this.ll.listUsers();
+    return users.map((user) => ({ login: user.login }));
   }
 
   private async getUserRootViaRpc(opts: {
