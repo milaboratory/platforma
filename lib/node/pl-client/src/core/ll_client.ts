@@ -926,6 +926,54 @@ export class LLPlClient implements WireClientProviderFactory {
     return responses;
   }
 
+  /** Returns the authenticated caller's session id and effective role.
+   *  Models the {@link getUserRoot} wrapper: gRPC unary with a REST fallback. */
+  public async getSessionInfo(): Promise<grpcTypes.AuthAPI_GetSessionInfo_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (await cl.getSessionInfo({})).response;
+    } else {
+      const resp = notEmpty(
+        (await cl.POST("/v1/auth/session-info", { body: {} })).data,
+        "REST: empty response for getSessionInfo request",
+      );
+      return {
+        sessionId: Uint8Array.from(Buffer.from(resp.sessionId, "base64")),
+        role: resp.role as AuthAPI_Role,
+      };
+    }
+  }
+
+  /** Enumerates the grants of a single resource — the donor-side "who did I
+   *  share with" view. The backend gates this at routing: the request must
+   *  carry a signed, writable resource handle, so only the resource's owner can
+   *  call it. gRPC-only (server-streaming, no REST binding). Recipients of an
+   *  everyone-grant surface with {@link grpcTypes.AuthAPI_Grant.user} equal to
+   *  the {@link EveryoneUser} sentinel; the caller maps that to "*". */
+  public async listGrants(
+    resourceId: bigint,
+    resourceSignature: Uint8Array,
+  ): Promise<grpcTypes.AuthAPI_Grant[]> {
+    const cl = this.clientProvider.get();
+
+    if (!(cl instanceof GrpcPlApiClient)) {
+      throw new Error("ListGrants requires gRPC wire protocol; REST is not supported");
+    }
+
+    const call = cl.listGrants({ resourceId, resourceSignature });
+    const grants: grpcTypes.AuthAPI_Grant[] = [];
+    for await (const msg of call.responses) {
+      if (msg.grant) grants.push(msg.grant);
+    }
+    return grants;
+  }
+
+  // NOTE: ListUsers (recipient picker) is intentionally NOT wired here yet. The vendored
+  // generated proto bindings predate the backend's ListUsers RPC, and regenerating them
+  // (`pnpm run update-proto`) also pulls ~1400 lines of unrelated proto drift from backend
+  // main — that must be sequenced as a deliberate, standalone step. Until then the public
+  // UserResources.listUsers() is a stub (returns []). See implementation-plan.md (M2 debt).
+
   public async txSync(txId: bigint): Promise<void> {
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {

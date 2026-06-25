@@ -2,6 +2,7 @@ import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol 
 import type { PlCallOps } from "./ll_client";
 import { LLPlClient } from "./ll_client";
 import { PlTransaction, TxCommitConflict } from "./transaction";
+import type { Role } from "./transaction";
 import type { OptionalSignedResourceId, SignedResourceId } from "./types";
 import {
   ensureSignedResourceIdNotNull,
@@ -79,6 +80,11 @@ export class PlClient {
   private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
 
   private _userResources?: UserResources;
+
+  /** Cached effective role of the authenticated session, fetched once during
+   *  init via the GetSessionInfo RPC. `null` for an anonymous (no-auth)
+   *  connection — mirrors {@link authUser}. Read through {@link currentUserRole}. */
+  private _currentUserRole: Role | null = null;
 
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
@@ -232,6 +238,21 @@ export class PlClient {
     return this._ll!.hasCapability(capability);
   }
 
+  /** Effective role of the authenticated session, resolved once during init via
+   *  the GetSessionInfo RPC and cached. `null` for an anonymous (no-auth)
+   *  connection, or when the backend predates GetSessionInfo. Mirrors
+   *  {@link authUser}'s null contract. */
+  public get currentUserRole(): Role | null {
+    this.checkInitialized();
+    return this._currentUserRole;
+  }
+
+  /** Login of the authenticated user, or `null` for an anonymous connection. */
+  public get authUser(): string | null {
+    this.checkInitialized();
+    return this.userResources.authUser;
+  }
+
   /**
    * True if the backend honors per-file `permissions` on workdir fill rules
    * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
@@ -275,6 +296,18 @@ export class PlClient {
     }
 
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
+
+    // Resolve the caller's role once, alongside the user root. Skipped for an
+    // anonymous connection (no authenticated user, hence no role); on a backend
+    // that predates GetSessionInfo the call throws and the role stays null —
+    // sharing-with-everybody simply never offers, matching the no-auth case.
+    if (this.userResources.authUser !== null) {
+      try {
+        this._currentUserRole = (await this._ll.getSessionInfo()).role;
+      } catch {
+        this._currentUserRole = null;
+      }
+    }
 
     if (this.conf.alternativeRoot === undefined) {
       this._clientRoot = userRoot;

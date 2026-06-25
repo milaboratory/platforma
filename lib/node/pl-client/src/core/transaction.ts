@@ -37,6 +37,7 @@ import type {
 import {
   TxAPI_Open_Request_WritableTx,
   AuthAPI_GrantAccess_GrantType,
+  AuthAPI_Role,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
@@ -170,6 +171,25 @@ export interface GrantPermissions {
  */
 export const GrantType = AuthAPI_GrantAccess_GrantType;
 export type GrantType = AuthAPI_GrantAccess_GrantType;
+
+/**
+ * Effective role of an authenticated session (controller / workflow / user / admin).
+ * Re-export of the wire enum so callers need not reach into the generated proto.
+ * Returned by {@link LLPlClient.getSessionInfo} and surfaced as
+ * {@link PlClient.currentUserRole}.
+ */
+export const Role = AuthAPI_Role;
+export type Role = AuthAPI_Role;
+
+/**
+ * Sentinel login standing for "all users on the server". A public
+ * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant is recorded against this login,
+ * and recipients of an everyone-grant surface in `ListGrants` with this value —
+ * callers map it to "*". Mirror of `EveryoneUser` in
+ * `pl/platform/model/user.go`.
+ */
+export const EveryoneUser =
+  "everyone-Po9ahwahxai7Aejingaiyiequuecu3ei4moaNge4xahTh0Co7XeeLeiph6ahy3As";
 
 const emptySignature = toResourceSignature(new Uint8Array(0));
 

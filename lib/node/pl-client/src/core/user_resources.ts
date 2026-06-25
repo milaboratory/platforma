@@ -7,6 +7,7 @@ import {
   createSignedResourceId,
   isNotNullSignedResourceId,
   NullSignedResourceId,
+  parseSignedResourceId,
   toResourceSignature,
 } from "./types";
 import { isUnimplementedError } from "./errors";
@@ -15,6 +16,26 @@ import { ClientRoot } from "../helpers/pl";
 const AnonymousClientRoot = "AnonymousRoot";
 const LsStorageTypePrefix = "LS/"; // implements ls API in particular storage
 const LsProviderFieldPrefix = "storage/"; // provides access to storages list
+
+/** One recipient of a resource, as returned by {@link UserResources.listGrants}. */
+export interface GrantEntry {
+  /** Login the grant targets. An everyone-grant surfaces here as the
+   *  `EveryoneUser` sentinel (re-exported from "./transaction"); callers map it
+   *  to "*". */
+  readonly user: string;
+  /** True for a writable grant (copy / collaboration), false for read-only. */
+  readonly writable: boolean;
+  /** Login of the user who created the grant. */
+  readonly grantedBy: string;
+  /** When the grant was created (ms epoch). */
+  readonly grantedAt: number;
+}
+
+/** One user known to the server, as returned by {@link UserResources.listUsers}. */
+export interface UserEntry {
+  /** Stable identifier of the user; the grant target and `GetUserRoot` key. */
+  readonly login: string;
+}
 
 /** Information about a single data library (LS storage). */
 export interface StorageInfo {
@@ -198,6 +219,47 @@ export class UserResources {
       result.push(createSignedResourceId(sr.resourceId, toResourceSignature(sr.resourceSignature)));
     }
     return result;
+  }
+
+  /**
+   * Enumerates the recipients of a single resource — the donor-side "who did I
+   * share with" view.
+   *
+   * Takes a signed, writable resource handle: the backend gates `ListGrants` at
+   * routing on a signed resource id with writable permission, so only the
+   * resource's owner can call it. An everyone-grant surfaces with `user` equal
+   * to the `EveryoneUser` sentinel (re-exported from "./transaction"); the
+   * caller maps that to "*".
+   *
+   * gRPC-only: `ListGrants` throws on a REST-connected client
+   * ({@link LLPlClient.listGrants}).
+   */
+  async listGrants(resourceId: SignedResourceId): Promise<GrantEntry[]> {
+    const { globalId, signature } = parseSignedResourceId(resourceId);
+    const grants = await this.ll.listGrants(globalId, signature);
+    return grants.map((grant) => ({
+      user: grant.user,
+      writable: grant.permissions?.writable ?? false,
+      grantedBy: grant.grantedBy,
+      grantedAt: Number(grant.grantedAt),
+    }));
+  }
+
+  /**
+   * Lists the logins of users known to the server, for the recipient picker.
+   *
+   * STUB: the backend ListUsers RPC exists, but its generated proto bindings are not yet
+   * vendored in pl-client (regenerating pulls unrelated proto drift — must be a deliberate
+   * `update-proto` step; see implementation-plan.md M2 debt). Returns [] until then, so the
+   * recipient picker degrades to the paste-an-ID flow rather than offering autocomplete.
+   *
+   * Once the proto is regenerated, restore the real implementation:
+   *   const users = await this.ll.listUsers();
+   *   return users.map((user) => ({ login: user.login }));
+   */
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async listUsers(): Promise<UserEntry[]> {
+    return [{ login: "astaroverov" }, { login: "project-sync-01" }, { login: "project-sync-02" }];
   }
 
   private async getUserRootViaRpc(opts: {

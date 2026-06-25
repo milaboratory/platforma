@@ -72,10 +72,18 @@ function normalizeSeeds(seeds: SignedResourceId | TreeSeed | TreeSeed[]): TreeSe
 }
 
 /** How often, in main-loop iterations, a tree with shared-type seeds re-polls
- * ListUserResources to reconcile its discovered roots. 1 = every iteration. A small N keeps
- * the latency of noticing a new/removed share low while sparing the (potentially expensive)
- * discovery poll on most refreshes. */
-const DISCOVERY_EVERY_N_REFRESHES = 1;
+ * ListUserResources to reconcile its discovered roots. 1 would mean every iteration.
+ *
+ * Discovery (a full ListUserResources stream) is far heavier than an ordinary incremental
+ * refresh, so it must NOT run on every fast refresh tick. The refresh cadence is the tree's
+ * `pollingInterval` floored by {@link MIN_POLLING_INTERVAL_MS} (~200ms-1s in practice — the
+ * shared-seed discovery tree runs at the 200ms default). At N = 15 discovery fires roughly
+ * every 15 × 200ms ≈ 3s, decoupling it from the fast refresh loop while keeping the latency
+ * of noticing a new/removed share to a few seconds — acceptable for a human-driven share flow.
+ *
+ * Only trees with shared-type seeds gate on this; {@link discover} is a no-op for single-root
+ * and explicit-seed trees (empty `sharedSeeds`), so the value never affects them. */
+const DISCOVERY_EVERY_N_REFRESHES = 15;
 
 type ScheduledRefresh = {
   resolve: () => void;
