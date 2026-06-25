@@ -32,7 +32,7 @@
     "@types/archiver": "^6.0.3",
     "@types/node": "catalog:",
     "archiver": "^7.0.1",
-    "commander": "^14.0.0",
+    "commander": "catalog:",
     "undici": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",

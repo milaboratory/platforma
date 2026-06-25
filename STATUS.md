@@ -55,8 +55,9 @@ Deferred / non-blocking:
 - [x] `package-builder` (pl-pkg) oclif → commander — riskiest, touches the live tool;
       pl-pkg tests pass. Per-command files kept (logic verbatim); full command
       surface preserved. [A-0025]
-- [ ] `block-tools` oclif → commander — new `software build` lands here.
-      [A-0018] [A-0025]
+- [x] `block-tools` oclif → commander — framework swap only (full 13-command
+      surface preserved, per-command files kept, library exports untouched).
+      New `software build` still to land here (separate item). [A-0018] [A-0025]
 - [ ] Extract package-builder's build engine into a library (bin-only; `Core` not exported).
       [A-0023]
 - [ ] Content-addressable dev naming: append `-<hash>` at `artifactVersion()`. [A-0014]

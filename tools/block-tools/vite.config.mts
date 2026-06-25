@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        cli: resolve("src", "cmd", "index.ts"),
+        cli: resolve("src", "cli.ts"),
         index: resolve("src", "lib.ts"),
       },
       formats: ["es", "cjs"],

@@ -199,7 +199,6 @@ export function urlJoin(url: string, appendPath: string): string {
   return u.toString();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function wrapErr(e: any, msg: string): any {
   if (!(e instanceof Error)) {
     return e;
@@ -220,7 +219,6 @@ export function wrapErr(e: any, msg: string): any {
  * @param input: any
  * @returns number - '1' or '0'
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toInt(input: any): number {
   return input ? 1 : 0;
 }
