@@ -1,4 +1,7 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
+import path from "node:path";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
+import { runRefresh } from "./structure/refresh";
 
 /**
  * Deprecated. Phase-2 forwarding alias (spec.md § "Coexistence And
@@ -7,19 +10,26 @@ import { Command } from "@oclif/core";
  * semantics. Prints a deprecation warning; will be removed once the
  * structurer path has been live without surprises.
  */
-export default class UpdateDeps extends Command {
-  static override description =
-    "[DEPRECATED] Use `block-tools structure refresh --update-deps-only`. This alias delegates to it.";
+export function updateDepsCommand(packageRoot: string): Command {
+  const cmd = new Command("update-deps").description(
+    "[DEPRECATED] Use `block-tools structure refresh --update-deps-only`. This alias delegates to it.",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
-
-  public async run(): Promise<void> {
-    this.warn(
+  cmd.action(async () => {
+    const logger = new ConsoleLoggerAdapter();
+    logger.warn(
       "`block-tools update-deps` is deprecated and will be removed in a future release. " +
         "Use `block-tools structure refresh --update-deps-only` instead. Delegating now.",
     );
-    // oclif resolves commands by their internal colon-form id, even
-    // though the user-facing form uses the configured " " topic separator.
-    await this.config.runCommand("structure:refresh", ["--update-deps-only"]);
-  }
+    const templatesRoot = path.join(packageRoot, "src", "structure", "templates");
+    await runRefresh({
+      paths: ["."],
+      isSdkInternal: false,
+      updateDepsOnly: true,
+      templatesRoot,
+      logger,
+    });
+  });
+
+  return cmd;
 }

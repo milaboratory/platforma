@@ -193,6 +193,8 @@ catalog:
 
   "oclif": ^4.16.2
 
+  "commander": ^15.0.0
+
   "turbo": 2.5.3
 
   "husky": ^9.1.7
