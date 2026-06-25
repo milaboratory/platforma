@@ -968,11 +968,18 @@ export class LLPlClient implements WireClientProviderFactory {
     return grants;
   }
 
-  // NOTE: ListUsers (recipient picker) is intentionally NOT wired here yet. The vendored
-  // generated proto bindings predate the backend's ListUsers RPC, and regenerating them
-  // (`pnpm run update-proto`) also pulls ~1400 lines of unrelated proto drift from backend
-  // main — that must be sequenced as a deliberate, standalone step. Until then the public
-  // UserResources.listUsers() is a stub (returns []). See implementation-plan.md (M2 debt).
+  /** Lists the users known to the server — the recipient picker's source. A user
+   *  becomes known on first login; provisioned users who have never logged in do not
+   *  appear. gRPC-only (unary, no REST binding), mirroring {@link listGrants}. */
+  public async listUsers(): Promise<grpcTypes.AuthAPI_User[]> {
+    const cl = this.clientProvider.get();
+
+    if (!(cl instanceof GrpcPlApiClient)) {
+      throw new Error("ListUsers requires gRPC wire protocol; REST is not supported");
+    }
+
+    return (await cl.listUsers({})).response.users;
+  }
 
   public async txSync(txId: bigint): Promise<void> {
     const cl = this.clientProvider.get();
