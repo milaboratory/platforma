@@ -33,7 +33,7 @@ export function buildProgram(packageRoot: string = process.cwd()): Command {
   program.addCommand(restoreOverviewFromSnapshotCommand());
   program.addCommand(uploadPackageV1Command());
 
-  // `structure` topic (oclif `structure:check|init|refresh`).
+  // `structure` subcommands: check | init | refresh.
   const structure = new Command("structure").description(
     "Manage block scaffolding against the canonical structure (check / init / refresh)",
   );

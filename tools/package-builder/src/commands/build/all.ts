@@ -2,9 +2,8 @@ import { Command } from "commander";
 import * as cmdOpts from "../../cmd-opts";
 import { util, envs, defaults, createBuilder } from "@platforma-sdk/package-builder-lib";
 
-// Registered twice, matching the original oclif `build` (alias) + `build:all`:
-// as the top-level `build` command and as the `build all` subcommand. Both run
-// the same build-all action with the same flags.
+// Registered twice: as the top-level `build` command and as the `build all`
+// subcommand. Both run the same build-all action with the same flags.
 export function buildAllCommand(name = "build"): Command {
   const cmd = new Command(name).description(
     "Build all targets (entrypoint descriptors, binary pacakges and so on)",
