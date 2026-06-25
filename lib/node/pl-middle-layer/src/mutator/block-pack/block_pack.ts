@@ -6,7 +6,6 @@ import type { Signer } from "@milaboratories/ts-helpers";
 import { assertNever } from "@milaboratories/ts-helpers";
 import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
@@ -21,7 +20,7 @@ import {
 } from "@platforma-sdk/block-tools";
 import type { BlockPackInfo } from "../../model/block_pack";
 import { resolveDevPacket } from "../../dev_env";
-import { getDevV2PacketMtime } from "../../block_registry";
+import { getDevV2PacketMtime, getFromPackV2Mtime } from "../../block_registry";
 import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
@@ -57,23 +56,6 @@ function parseStringConfig(configContent: string): BlockConfigContainer {
 
 function parseBufferConfig(buffer: ArrayBuffer): BlockConfigContainer {
   return parseStringConfig(Buffer.from(buffer).toString("utf8"));
-}
-
-/** Mtime for a `from-pack-v2` locator with no explicit mtime: prefer the
- * manifest `timestamp`, else stat the `ui.tgz` archive. Feeds the local-tgz
- * frontend cache key so the unpacked UI is re-derived when the block changes. */
-async function getFromPackV2Mtime(packDir: string, uiTgzPath: string): Promise<string> {
-  try {
-    const manifestPath = path.join(packDir, "manifest.json");
-    const raw = JSON.parse(await fs.promises.readFile(manifestPath, { encoding: "utf-8" })) as {
-      timestamp?: unknown;
-    };
-    if (typeof raw.timestamp === "number") return String(raw.timestamp);
-  } catch {
-    // fall through to stat
-  }
-  const stat = await fs.promises.stat(uiTgzPath, { bigint: true });
-  return stat.mtimeNs.toString();
 }
 
 export class BlockPackPreparer {

@@ -27,7 +27,7 @@ import fs from "node:fs";
 import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { test } from "vitest";
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
 import { isObject } from "@milaboratories/ts-helpers";
@@ -664,6 +664,48 @@ test("v3: block update test", async ({ expect }) => {
       path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
       " ",
     );
+
+    // await update watcher
+    await prj.overview.refreshState();
+    const overview1 = await prj.overview.awaitStableValue();
+    expect(overview1.blocks[0].updatedBlockPack).toBeDefined();
+
+    await prj.updateBlockPack(block1Id, overview1.blocks[0].updatedBlockPack!);
+
+    const overview2 = await prj.overview.awaitStableValue();
+    expect(overview2.blocks[0].currentBlockPack).toStrictEqual(
+      overview1.blocks[0].updatedBlockPack,
+    );
+    expect(overview2.blocks[0].updatedBlockPack).toBeUndefined();
+  });
+});
+
+test("v3: from-pack-v2 block update test", async ({ expect }) => {
+  await withMl(async (ml, workFolder) => {
+    const prj1Id = await ml.createProject({ label: "Project 1" });
+    await ml.openProject(prj1Id);
+    const prj = ml.getOpenedProject(prj1Id);
+
+    // Copy the block-pack into a temp dir so we can simulate a rebuild (advancing
+    // the manifest timestamp) without mutating the shared etc/blocks fixture.
+    const srcPackDir = fileURLToPath(enterNumberSpec.packUrl);
+    const tmpPackDir = path.resolve(workFolder, "block-pack");
+    await fsp.cp(srcPackDir, tmpPackDir, { recursive: true });
+
+    const fromPackSpec = {
+      type: "from-pack-v2" as const,
+      packUrl: pathToFileURL(tmpPackDir).href,
+    };
+    const block1Id = await prj.addBlock("Block 1", fromPackSpec);
+
+    const overview0 = await prj.overview.awaitStableValue();
+    expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
+
+    // simulate a pack rebuild: advance the manifest timestamp
+    const manifestPath = path.join(tmpPackDir, "manifest.json");
+    const manifest = JSON.parse(await fsp.readFile(manifestPath, "utf-8")) as { timestamp: number };
+    manifest.timestamp = manifest.timestamp + 1000;
+    await fsp.writeFile(manifestPath, JSON.stringify(manifest));
 
     // await update watcher
     await prj.overview.refreshState();
