@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "ts-builder build --target block-facade && block-tools pack",
-    "prepublishOnly": "block-tools publish -r s3://platforma-open-blocks --registry-serve-url https://cdn.platforma.bio/blocks",
+    "prepublishOnly": "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1 --registry-serve-url https://block.registry.platforma.bio/releases",
     "do-pack": "pnpm pack && shx mv *.tgz package.tgz",
     "check": "ts-builder type-check --target block-facade"
   },
