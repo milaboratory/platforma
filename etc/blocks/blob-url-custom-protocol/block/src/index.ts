@@ -28,7 +28,15 @@ export type BlockHref    = BlockContract["href"];
 // sits one dir under the package root (dist/index.js, or src/index.ts in dev),
 // so the root is two URL segments up. The structurer owns this layout —
 // consumers read these URLs, they never reconstruct <root>/block-pack.
-const dirUrl  = import.meta.url.slice(0, import.meta.url.lastIndexOf("/"));
+//
+// TypeScript ships `ImportMeta.url` only in the `dom`/`webworker` libs; the
+// facade tsconfig is lib-minimal (no `dom`, no `@types/node`) by design. We
+// type the one ESM-standard member we use with a local cast rather than a
+// `declare global` — a global augmentation would leak into the published
+// `dist/index.d.ts` and clash with `@types/node`'s `ImportMeta` in full-Node
+// consumers (test packages, the Middle Layer).
+const selfUrl = (import.meta as ImportMeta & { url: string }).url;
+const dirUrl  = selfUrl.slice(0, selfUrl.lastIndexOf("/"));
 const rootUrl = dirUrl.slice(0, dirUrl.lastIndexOf("/"));
 
 export const BlockPointer = {
