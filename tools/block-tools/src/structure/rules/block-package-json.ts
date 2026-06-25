@@ -19,28 +19,27 @@ import {
 import { findModules, scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
-/** Per-org publish coordinates: the S3 upload bucket and the CDN serve URL the
- *  facade's `prepublishOnly` script passes to `block-tools publish`.
- *
- *  Both URLs are PLACEHOLDERS — replace with the real S3 bucket and CDN serve
- *  URL before publishing for real. Safe meanwhile: the script never runs for the
- *  never-published `etc/blocks` test blocks. Extend the map per new org. */
+/** Per-org publish coordinates: the S3 upload bucket and the public registry
+ *  serve URL the facade's `prepublishOnly` script passes to `block-tools
+ *  publish`. One block-registry bucket serves both orgs; only the public read
+ *  hostname differs by org. Safe for the never-published `etc/blocks` test
+ *  blocks — the script never runs for them. Extend the map per new org. */
 const ORG_PUBLISH_TARGETS: Record<string, { s3: string; serveUrl: string }> = {
   "@platforma-open": {
-    s3: "s3://platforma-open-blocks",
-    serveUrl: "https://cdn.platforma.bio/blocks",
+    s3: "s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1",
+    serveUrl: "https://blocks.pl-open.science",
   },
   "@milaboratories": {
-    s3: "s3://platforma-open-blocks",
-    serveUrl: "https://cdn.platforma.bio/blocks",
+    s3: "s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1",
+    serveUrl: "https://block.registry.platforma.bio/releases",
   },
 };
 
 /** Fallback for an org not in the table — keeps the generated script valid
  *  (and inert until published) rather than throwing during a refresh. */
 const FALLBACK_PUBLISH_TARGET = {
-  s3: "s3://platforma-open-blocks",
-  serveUrl: "https://cdn.platforma.bio/blocks",
+  s3: "s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1",
+  serveUrl: "https://blocks.pl-open.science",
 };
 
 function prepublishScript(npmOrg: string): string {
