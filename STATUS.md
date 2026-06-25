@@ -2,7 +2,9 @@
 
 **State:** infrastructure §1–§4 done — all in PR
 [milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
-(pending merge + apply; §4 needs no change); pl / platforma / blocks not started. 4 repos.
+(pending merge + apply; §4 needs no change); pl done — PR
+[milaboratory/pl#2004](https://github.com/milaboratory/pl/pull/2004) (pending merge);
+platforma / blocks not started. 4 repos.
 Within each repo, ordered as individually-testable increments, riskier first. Each entry
 links the most detailed spec atom.
 
@@ -44,8 +46,8 @@ Deferred / non-blocking:
 
 ## pl
 
-- [ ] Add `midev` to `defaultRegistries()` (`controllers/packagectl/pkg/cfg/soft_ctl.go`)
-      → `bin-dev.pl-open.science`. [A-0024]
+- [x] Add `midev` to `defaultRegistries()` (`controllers/packagectl/pkg/cfg/soft_ctl.go`)
+      → `bin-dev.pl-open.science`. PR [milaboratory/pl#2004](https://github.com/milaboratory/pl/pull/2004). [A-0024]
 
 ## platforma
 
