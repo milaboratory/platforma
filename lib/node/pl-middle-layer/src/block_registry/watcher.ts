@@ -101,10 +101,8 @@ export class BlockUpdateWatcher extends PollComputablePool<
         }
 
         case "from-pack-v2": {
-          // Update-checking for npm-consumed blocks is out of scope for the
-          // initial from-pack-v2 plumbing (a consumed package ships no
-          // authoring source to diff against). Deferred to a later step;
-          // surface no update suggestions for now.
+          // No update suggestions: a consumed npm package ships no authoring
+          // source to diff against.
           return { suggestions: [] };
         }
 

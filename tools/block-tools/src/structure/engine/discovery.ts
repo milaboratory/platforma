@@ -89,11 +89,9 @@ export function classifyOne(wp: WorkspacePackage): Scope | undefined {
   if (isRoot(wp.path)) return "root";
 
   // block (facade) — a top-level `block` field is the unambiguous facade
-  // marker: no non-facade workspace package carries one, and the single
-  // rule covers both the legacy shim shape and the migrated slim facade.
-  // MUST precede the model rule (rule 5): a migrated facade carries
-  // `@platforma-sdk/model` as a devDep plus `main`, which would otherwise
-  // match model. The `block-scope` override below stays the last-resort escape.
+  // marker; no non-facade workspace package carries one. MUST precede the model
+  // rule: a migrated facade carries `@platforma-sdk/model` as a devDep plus
+  // `main`, which would otherwise match model.
   if (wp.pkg.block !== undefined) return "block";
 
   const deps = depKeys(wp.pkg);

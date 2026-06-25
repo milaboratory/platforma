@@ -277,10 +277,9 @@ export class BlockPackPreparer {
           description.components.workflow.main.file,
         );
         // UI ships as ui.tgz inside block-pack/; its absolute path is carried
-        // in the ui folder slot (see resolveManifestBlockComponents). The
-        // tarball is unpacked lazily at serve-time by the download driver
-        // (local-tgz frontend), not eagerly here — so it inherits the
-        // driver's usage-tracking and space recycling.
+        // in the ui folder slot. The tarball is unpacked lazily at serve-time by
+        // the download driver (local-tgz frontend), not eagerly here — so it
+        // inherits the driver's usage-tracking and space recycling.
         const uiTgzPath = description.components.ui.folder;
         const source = { ...spec };
         let mtime = spec.mtime;

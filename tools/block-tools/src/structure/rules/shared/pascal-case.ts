@@ -4,7 +4,6 @@
 //   test-sum-numbers-v3  → TestSumNumbersV3
 //   mixcr-clonotyping-2  → MixcrClonotyping2
 //   samples-and-data     → SamplesAndData
-// Used at the `tpl` call site (block.ts), not stored as a BlockVars field.
 export function pascalCase(s: string): string {
   const joined = s
     .split(/[^A-Za-z0-9]+/)

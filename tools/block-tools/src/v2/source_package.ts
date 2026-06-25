@@ -103,10 +103,10 @@ export const BlockPackFolderName = "block-pack";
  * Loads a block-pack description from a block-pack directory's `manifest.json`,
  * resolving every relative entry against that directory to an absolute
  * filesystem path. Takes the pack directory directly (the `from-pack-v2`
- * pointer's `pack` field) — the structurer owns the layout, so this does not
+ * pointer's `packUrl`) — the structurer owns the layout, so this does not
  * re-derive `<root>/block-pack`. Counterpart to `loadPackDescription`, which
  * reads the authoring `block` field from `package.json` and resolves against
- * source. Used only by the `from-pack-v2` loader.
+ * source.
  */
 export async function loadPackDescriptionFromManifest(
   blockPackDir: string,
