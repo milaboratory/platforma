@@ -4328,9 +4328,9 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:*
         version: link:../../lib/node/ts-helpers
-      '@oclif/core':
+      commander:
         specifier: 'catalog:'
-        version: 4.0.37
+        version: 15.0.0
       winston:
         specifier: 'catalog:'
         version: 3.17.0
@@ -4338,9 +4338,6 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
-      '@milaboratories/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../ts-builder
