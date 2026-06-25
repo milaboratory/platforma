@@ -957,14 +957,20 @@ export interface components {
       os: string;
       arch: string;
       /**
-       * @description Opt-in capabilities advertised by this server instance, used by
-       *      clients to pick between fast and fallback code paths without waiting
-       *      for a failed RPC.
+       * @description Opt-in capabilities advertised by this server instance. Two
+       *      client-side usage modes share this same wire field, decided
+       *      per-token by the client:
+       *        - Optimization hint. Client picks between a fast path and a
+       *          fallback without probing by trial-and-error; missing tokens
+       *          just cause the fallback to run (e.g. "treeFilter:v2").
+       *        - Install-time gate. Client refuses to install a block whose
+       *          manifest declares a required capability the server doesn't
+       *          advertise; missing tokens fail closed (e.g. "wasm:v1").
        *
        *      Each entry is an opaque token "<feature>:<version>" (e.g.
-       *      "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
-       *      The field is unset on servers predating this mechanism, which the
-       *      client treats as "no optional capabilities advertised".
+       *      "treeFilter:v2"). The field is unset on servers predating this
+       *      mechanism, which the client treats as "no optional capabilities
+       *      advertised" — fallback for hints, fail-closed for gates.
        *
        *      All list see pl/platform/api/plapiserver/server_capabilities.go
        */
@@ -1083,6 +1089,13 @@ export interface components {
       writeByFieldType: {
         [key: string]: boolean;
       };
+      /**
+       * @description SetError is a control-flow channel and is allowed by default even when
+       *      every other access bit is denied: a failing step on a closely-guarded
+       *      resource must surface to its caller. Controllers may opt out by
+       *      setting this to false.
+       */
+      setError: boolean;
     };
     ResourceType: {
       name: string;
