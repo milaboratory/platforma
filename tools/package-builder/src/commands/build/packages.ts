@@ -1,30 +1,30 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 
-export default class Packages extends Command {
-  static override description =
-    "Pack software into platforma package (.tgz archive for binary registry)";
+export function buildPackagesCommand(): Command {
+  const cmd = new Command("packages").description(
+    "Pack software into platforma package (.tgz archive for binary registry)",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.BuildOptions(),
+    cmdOpts.PlatformOptions(),
+    cmdOpts.DockerOptions(),
+    cmdOpts.CondaOptions(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.BuildFlags,
-    ...cmdOpts.PlatformFlags,
-    ...cmdOpts.DockerFlags,
-    ...cmdOpts.CondaFlags,
+    cmdOpts.VersionOption(),
+    cmdOpts.ArchiveOption(),
+    cmdOpts.ContentRootOption(),
+    cmdOpts.PackageIDOption(),
+    cmdOpts.DirHashOption(),
+  );
 
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.ContentRootFlag,
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.DirHashFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Packages);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     const core = new Core(logger, { packageRoot: flags["package-root"] });
@@ -50,5 +50,7 @@ export default class Packages extends Command {
     core.buildSwJsonFiles({
       packageIds: flags["package-id"] ? flags["package-id"] : undefined,
     });
-  }
+  });
+
+  return cmd;
 }

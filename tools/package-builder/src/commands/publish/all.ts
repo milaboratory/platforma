@@ -1,30 +1,31 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 import * as envs from "../../core/envs";
 
-export default class PublishAll extends Command {
-  static override description = "publish entrypoint descriptors AND software package archive";
+export function publishAllCommand(): Command {
+  const cmd = new Command("all").description(
+    "publish entrypoint descriptors AND software package archive",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
+    cmdOpts.PlatformOptions(),
+    cmdOpts.VersionOption(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
-    ...cmdOpts.PlatformFlags,
-    ...cmdOpts.VersionFlag,
+    cmdOpts.ArchiveOption(),
+    cmdOpts.StorageURLOption(),
+    [cmdOpts.DockerPushToOption()],
 
-    ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.StorageURLFlag,
-    ["docker-push-to"]: cmdOpts.DockerFlags["docker-push-to"],
+    cmdOpts.PackageIDOption(),
+    cmdOpts.FailExistingPackagesOption(),
+  );
 
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.FailExistingPackagesFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(PublishAll);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     const core = new Core(logger, { packageRoot: flags["package-root"] });
@@ -47,5 +48,7 @@ export default class PublishAll extends Command {
       pushTo: flags["docker-push-to"],
       strictPlatformMatching: envs.isCI(),
     });
-  }
+  });
+
+  return cmd;
 }

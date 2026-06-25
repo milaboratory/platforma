@@ -4120,9 +4120,6 @@ importers:
       '@milaboratories/resolve-helper':
         specifier: workspace:*
         version: link:../../lib/node/resolve-helper
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.0.37
       '@types/archiver':
         specifier: ^6.0.3
         version: 6.0.3
@@ -4132,6 +4129,9 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      commander:
+        specifier: ^14.0.0
+        version: 14.0.3
       undici:
         specifier: 'catalog:'
         version: 7.16.0
@@ -4148,9 +4148,6 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
-      '@milaboratories/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../ts-builder

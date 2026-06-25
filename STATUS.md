@@ -4,7 +4,8 @@
 [milaboratory/infrastructure#281](https://github.com/milaboratory/infrastructure/pull/281)
 (pending merge + apply; §4 needs no change); pl done — PR
 [milaboratory/pl#2004](https://github.com/milaboratory/pl/pull/2004) (pending merge);
-platforma / blocks not started. 4 repos.
+platforma in progress (package-builder oclif→commander done, this branch); blocks
+not started. 4 repos.
 Within each repo, ordered as individually-testable increments, riskier first. Each entry
 links the most detailed spec atom.
 
@@ -51,8 +52,9 @@ Deferred / non-blocking:
 
 ## platforma
 
-- [ ] `package-builder` (pl-pkg) oclif → commander — riskiest, touches the live tool;
-      pl-pkg tests pass. [A-0025]
+- [x] `package-builder` (pl-pkg) oclif → commander — riskiest, touches the live tool;
+      pl-pkg tests pass. Per-command files kept (logic verbatim); full command
+      surface preserved. [A-0025]
 - [ ] `block-tools` oclif → commander — new `software build` lands here.
       [A-0018] [A-0025]
 - [ ] Extract package-builder's build engine into a library (bin-only; `Core` not exported).
