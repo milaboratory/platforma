@@ -12,7 +12,6 @@ packages:
   - lib/model/backend
 
   - lib/node/ts-helpers
-  - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
   - lib/node/pl-http
   - lib/node/pl-errors
@@ -44,7 +43,6 @@ packages:
   - lib/strings
 
   - tools/tengo-builder
-  - tools/oclif-index
   - tools/block-tools
   - tools/ts-configs
   - tools/build-configs
@@ -192,8 +190,6 @@ catalog:
 
   "@changesets/cli": ^2.29.5
 
-  "oclif": ^4.16.2
-
   "commander": ^15.0.0
 
   "turbo": 2.5.3
@@ -252,8 +248,6 @@ catalog:
   "@types/archiver": ^6.0.3
 
   "yaml": ^2.8.0
-
-  "@oclif/core": ^4.0.37
 
   "winston": ^3.17.0
 
