@@ -1,7 +1,4 @@
-/**
- * Enhanced command line argument parser for OCLIF commands
- * Handles both known and unknown flags
- */
+/** Argument parser that separates known flags from unknown ones (forwarded to the backend). */
 
 export interface ParsedArgs {
   instanceName: string;

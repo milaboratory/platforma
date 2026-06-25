@@ -1,4 +1,4 @@
-import { Command, Args } from "@oclif/core";
+import { Command } from "commander";
 import path from "node:path";
 import type * as types from "../../../templates/types";
 import Core from "../../../core";
@@ -7,39 +7,36 @@ import * as util from "../../../util";
 import state from "../../../state";
 import { ArgParser } from "./arg-parser";
 
-export default class Docker extends Command {
-  static override description = "Run Platforma Backend service as docker container on current host";
+const optionGroups = (): Parameters<typeof cmdOpts.argDefs> => [
+  cmdOpts.GlobalOptions(),
+  cmdOpts.AddressesOptions(),
+  cmdOpts.ImageOptions(),
+  cmdOpts.VersionOptions(),
+  cmdOpts.ArchOptions(),
+  cmdOpts.AuthOptions(),
+  cmdOpts.LicenseOptions(),
+  cmdOpts.MountOptions(),
+  cmdOpts.StorageOptions(),
+  cmdOpts.StoragePrimaryURLOptions(),
+  cmdOpts.StorageWorkPathOptions(),
+  cmdOpts.StorageLibraryURLOptions(),
+];
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+export default function svcCreateDockerCommand(): Command {
+  const cmd = new Command("docker")
+    .description("Run Platforma Backend service as docker container on current host")
+    .allowUnknownOption()
+    .allowExcessArguments();
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
+  // Unknown flags are forwarded to the backend, so parse the raw token list
+  // ourselves instead of letting commander reject them.
+  cmd.argument("[args...]", "instance name followed by optional backend flags");
 
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.ImageFlag,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.ArchFlag,
+  cmd.action(async () => {
+    const args = cmd.args;
+    const parser = new ArgParser(cmdOpts.argDefs(...optionGroups()));
+    const parsed = parser.parse(args);
 
-    ...cmdOpts.AuthFlags,
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.MountFlag,
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
-  };
-
-  static override args = {
-    name: Args.string({ required: true }),
-  };
-
-  public async run(): Promise<void> {
-    // Use custom parser instead of OCLIF parse
-    const parser = new ArgParser(Docker.flags);
-    const parsed = parser.parse(this.argv);
-
-    // Validate required flags
     const errors = parser.validateRequired(parsed.knownFlags);
     if (errors.length > 0) {
       throw new Error(`Validation errors:\n${errors.join("\n")}`);
@@ -52,7 +49,6 @@ export default class Docker extends Command {
       backendCommands.push(`--log-level=${flags["log-level"]}`);
     }
 
-    // Set default values for flags that weren't specified
     if (!flags["log-level"]) flags["log-level"] = "info";
     if (!flags["grpc-port"]) flags["grpc-port"] = 6345;
     if (!flags["grpc-listen"]) flags["grpc-listen"] = "127.0.0.1:6345";
@@ -112,9 +108,10 @@ export default class Docker extends Command {
 
     logger.info(`Instance '${instanceName}' was created. To start it run 'up' command`);
 
-    // Log unknown flags that will be passed to backend
     if (backendCommands.length > 0) {
       logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(" ")}`);
     }
-  }
+  });
+
+  return cmd;
 }
