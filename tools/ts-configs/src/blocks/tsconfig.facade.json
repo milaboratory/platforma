@@ -7,7 +7,7 @@
     "noEmit": false,
     "outDir": "dist",
     "lib": ["ES2022"],
-    "types": ["node"]
+    "types": []
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "dist-types", "node_modules"]
