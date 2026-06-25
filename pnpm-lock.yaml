@@ -4264,16 +4264,13 @@ importers:
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
-      '@oclif/core':
+      commander:
         specifier: 'catalog:'
-        version: 4.0.37
+        version: 15.0.0
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../build-configs
-      '@milaboratories/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../ts-builder
