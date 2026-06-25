@@ -58,8 +58,10 @@ Deferred / non-blocking:
 - [x] `block-tools` oclif → commander — framework swap only (full 13-command
       surface preserved, per-command files kept, library exports untouched).
       New `software build` still to land here (separate item). [A-0018] [A-0025]
-- [ ] Extract package-builder's build engine into a library (bin-only; `Core` not exported).
-      [A-0023]
+- [x] Extract package-builder's build engine into a library — new
+      `@platforma-sdk/package-builder-lib` (`lib/node/`); `pl-pkg` stays bin-only and
+      depends on it. `Core` not exported; public surface is `createBuilder()`/`Builder`.
+      pl-pkg + engine tests pass; CLI surface unchanged. [A-0023]
 - [ ] Content-addressable dev naming: append `-<hash>` at `artifactVersion()`. [A-0014]
 - [ ] Dev binary archive build+upload (dev builds no archive today). [A-0022]
 - [ ] Descriptor-last write: `.sw.json` only after build (+push) succeeds. [A-0013]

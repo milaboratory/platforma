@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import * as cmdOpts from "../../core/cmd-opts";
-import * as util from "../../core/util";
-import { Core } from "../../core/core";
+import * as cmdOpts from "../../cmd-opts";
+import { util, createBuilder } from "@platforma-sdk/package-builder-lib";
 
 export function publishPackagesCommand(): Command {
   const cmd = new Command("packages").description(
@@ -27,8 +26,8 @@ export function publishPackagesCommand(): Command {
     const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
-    const core = new Core(logger, { packageRoot: flags["package-root"] });
-    core.pkgInfo.version = flags.version;
+    const core = createBuilder(logger, { packageRoot: flags["package-root"] });
+    core.version = flags.version;
     core.targetPlatform = flags.platform as util.PlatformType;
     core.allPlatforms = flags["all-platforms"];
 

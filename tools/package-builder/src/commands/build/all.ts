@@ -1,9 +1,6 @@
 import { Command } from "commander";
-import * as cmdOpts from "../../core/cmd-opts";
-import * as util from "../../core/util";
-import { Core } from "../../core/core";
-import * as envs from "../../core/envs";
-import * as defaults from "../../defaults";
+import * as cmdOpts from "../../cmd-opts";
+import { util, envs, defaults, createBuilder } from "@platforma-sdk/package-builder-lib";
 
 // Registered twice, matching the original oclif `build` (alias) + `build:all`:
 // as the top-level `build` command and as the `build all` subcommand. Both run
@@ -37,10 +34,10 @@ export function buildAllCommand(name = "build"): Command {
     const logger = util.createLogger(flags["log-level"]);
 
     try {
-      const core = new Core(logger, { packageRoot: flags["package-root"] });
+      const core = createBuilder(logger, { packageRoot: flags["package-root"] });
 
       core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
-      core.pkgInfo.version = flags.version;
+      core.version = flags.version;
       core.targetPlatform = flags.platform as util.PlatformType;
       core.allPlatforms = flags["all-platforms"];
       core.fullDirHash = flags["full-dir-hash"];
@@ -94,7 +91,7 @@ export function buildAllCommand(name = "build"): Command {
       // 'build:dev-remote' sets) flips it. Private packages never push by
       // default — the dev ECR is public.
       const autopush = cmdOpts.shouldDoAction(
-        envs.isCI() && !core.pkgInfo.isPrivate,
+        envs.isCI() && !core.isPrivate,
         flags["docker-autopush"],
         flags["docker-no-autopush"],
       );

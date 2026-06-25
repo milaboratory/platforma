@@ -31,6 +31,7 @@ packages:
   - lib/node/pl-mcp-server
   - lib/node/pl-deployments
   - lib/node/pl-config
+  - lib/node/package-builder-lib
 
   - lib/ptabler/js
   - lib/ptabler/schema
@@ -245,6 +246,10 @@ catalog:
   "es-toolkit": ^1.39.10
 
   "zod": ~3.25.76
+
+  "archiver": ^7.0.1
+
+  "@types/archiver": ^6.0.3
 
   "yaml": ^2.8.0
 

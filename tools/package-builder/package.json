@@ -10,8 +10,7 @@
   "files": [
     "bin/run.cmd",
     "bin/run.mjs",
-    "dist",
-    "assets"
+    "dist"
   ],
   "type": "module",
   "scripts": {
@@ -26,24 +25,15 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "catalog:",
-    "@aws-sdk/lib-storage": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:*",
-    "@types/archiver": "^6.0.3",
-    "@types/node": "catalog:",
-    "archiver": "^7.0.1",
+    "@platforma-sdk/package-builder-lib": "workspace:*",
     "commander": "catalog:",
-    "undici": "catalog:",
-    "winston": "catalog:",
-    "yaml": "catalog:",
-    "zod": "4.1.12"
+    "winston": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-    "@types/archiver": "^6.0.3",
+    "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

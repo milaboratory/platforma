@@ -75,6 +75,9 @@ catalogs:
     '@rollup/plugin-node-resolve':
       specifier: ^16.0.1
       version: 16.0.1
+    '@types/archiver':
+      specifier: ^6.0.3
+      version: 6.0.3
     '@types/d3-array':
       specifier: ^3.2.1
       version: 3.2.1
@@ -144,6 +147,9 @@ catalogs:
     ag-grid-vue3:
       specifier: ~34.1.2
       version: 34.1.2
+    archiver:
+      specifier: ^7.0.1
+      version: 7.0.1
     canonicalize:
       specifier: ~2.1.0
       version: 2.1.0
@@ -2335,6 +2341,64 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  lib/node/package-builder-lib:
+    dependencies:
+      '@aws-sdk/client-s3':
+        specifier: 'catalog:'
+        version: 3.859.0
+      '@aws-sdk/lib-storage':
+        specifier: 'catalog:'
+        version: 3.859.0(@aws-sdk/client-s3@3.859.0)
+      '@milaboratories/resolve-helper':
+        specifier: workspace:*
+        version: link:../resolve-helper
+      archiver:
+        specifier: 'catalog:'
+        version: 7.0.1
+      undici:
+        specifier: 'catalog:'
+        version: 7.16.0
+      winston:
+        specifier: 'catalog:'
+        version: 3.17.0
+      yaml:
+        specifier: 'catalog:'
+        version: 2.8.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../tools/ts-configs
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.10.6
+      '@types/archiver':
+        specifier: 'catalog:'
+        version: 6.0.3
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.2
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.1.3(vitest@4.1.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+
   lib/node/pf-driver:
     dependencies:
       '@milaboratories/helpers':
@@ -4102,39 +4166,15 @@ importers:
 
   tools/package-builder:
     dependencies:
-      '@aws-sdk/client-s3':
-        specifier: 'catalog:'
-        version: 3.859.0
-      '@aws-sdk/lib-storage':
-        specifier: 'catalog:'
-        version: 3.859.0(@aws-sdk/client-s3@3.859.0)
-      '@milaboratories/resolve-helper':
+      '@platforma-sdk/package-builder-lib':
         specifier: workspace:*
-        version: link:../../lib/node/resolve-helper
-      '@types/archiver':
-        specifier: ^6.0.3
-        version: 6.0.3
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.5.2
-      archiver:
-        specifier: ^7.0.1
-        version: 7.0.1
+        version: link:../../lib/node/package-builder-lib
       commander:
         specifier: 'catalog:'
         version: 15.0.0
-      undici:
-        specifier: 'catalog:'
-        version: 7.16.0
       winston:
         specifier: 'catalog:'
         version: 3.17.0
-      yaml:
-        specifier: 'catalog:'
-        version: 2.8.0
-      zod:
-        specifier: 4.1.12
-        version: 4.1.12
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4145,9 +4185,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../ts-configs
-      '@platforma-open/milaboratories.runenv-python-3':
+      '@types/node':
         specifier: 'catalog:'
-        version: 1.10.6
+        version: 24.5.2
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.3(vitest@4.1.3)
@@ -9582,9 +9622,6 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.1.12:
-    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
-
 snapshots:
 
   '@ast-grep/napi-darwin-arm64@0.36.3':
@@ -11484,7 +11521,7 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.8
       estree-walker: 2.0.2
-      picomatch: 4.0.3
+      picomatch: 4.0.4
     optionalDependencies:
       rollup: 4.60.1
 
@@ -15264,5 +15301,3 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
-
-  zod@4.1.12: {}

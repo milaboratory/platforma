@@ -43,6 +43,14 @@ export class Core {
     this.fullDirHash = false;
   }
 
+  public set version(v: string | undefined) {
+    this.pkgInfo.version = v;
+  }
+
+  public get isPrivate(): boolean {
+    return this.pkgInfo.isPrivate;
+  }
+
   public binArchivePath(
     artifact: artifacts.withId<artifacts.anyArtifactType>,
     os: util.OSType,
