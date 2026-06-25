@@ -291,6 +291,55 @@ TestFallbackStaticServesAsImplicitFallback := func() {
 	test.isTrue(is_undefined(res.err))
 }
 
+// ---- applyFormulaFallback: gpu dimension ----------------------------------
+// The gpu dimension mirrors ram/cpu but is OPTIONAL in `dims` (omitted when no
+// .gpuMemory()/gpuFormula is in play). res.gpu is then undefined and the caller
+// leaves the quota's gpuMemory unset.
+
+TestFallbackGpuOmittedYieldsUndefined := func() {
+	// No gpu key in dims => res.gpu undefined, no error (the common no-GPU case).
+	res := f.applyFormulaFallback({ ram: { static: "4GiB" }, cpu: { static: 2 } })
+	test.isTrue(is_undefined(res.gpu))
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackGpuFormulaAppliesFallback := func() {
+	// gpuFormula present with a { fallback } VRAM string => res.gpu is the fallback.
+	res := f.applyFormulaFallback({
+		ram: { ast: f.size(), fallback: "16GiB" },
+		cpu: { ast: f.size(), fallback: 8 },
+		gpu: { ast: f.size(), fallback: "24GiB" }
+	})
+	test.isEqual("24GiB", res.gpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackGpuStaticWins := func() {
+	// A static .gpuMemory() already set => the { fallback } must NOT override it.
+	res := f.applyFormulaFallback({
+		ram: { static: "4GiB" },
+		cpu: { static: 2 },
+		gpu: { ast: f.size(), fallback: "24GiB", static: "16GiB" }
+	})
+	test.isEqual("16GiB", res.gpu)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestFallbackMissingGpuFallbackErrors := func() {
+	// gpuFormula present, no fallback, no static .gpuMemory() => error naming gpuFormula.
+	res := f.applyFormulaFallback({ ram: { static: "4GiB" }, cpu: { static: 2 }, gpu: { ast: f.size() } })
+	test.isTrue(!is_undefined(res.err), "missing gpuFormula fallback must error")
+	test.isTrue(text.contains(res.err, "gpuFormula"))
+}
+
+TestFallbackGpuStaticServesAsImplicitFallback := func() {
+	// gpuFormula with NO explicit { fallback } but a static .gpuMemory() set: the
+	// static VRAM request doubles as the old-backend fallback, so no error.
+	res := f.applyFormulaFallback({ ram: { static: "4GiB" }, cpu: { static: 2 }, gpu: { ast: f.size(), static: "16GiB" } })
+	test.isEqual("16GiB", res.gpu)
+	test.isTrue(is_undefined(res.err))
+}
+
 // ============================================================================
 // Added by deep-dive review (2026-06-03): coverage for documented-but-untested
 // evaluator contracts, a non-binary clamp branch, the referencedMetricFiles

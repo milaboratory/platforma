@@ -50,6 +50,13 @@ _assertValidMemRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": RAM amount should be a number or string")
 	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": amount in bytes should be at least 16MiB")
 }
+// _assertValidGpuRequest holds the single definition of a valid GPU VRAM request,
+// shared by .gpuMemory() and the gpuFormula { fallback } (which substitutes for a
+// static request on backends that cannot evaluate formulas). A VRAM request is a
+// size string like "16GiB" — same shape the quota's gpuMemory field carries.
+_assertValidGpuRequest := func(amount, ctx) {
+	validation.assertType(amount, "string", ctx + ": GPU memory must be a size string like '16GiB'")
+}
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -89,6 +96,8 @@ builder := func() {
 	memFormulaFallback := undefined
 	cpuFormulaAst := undefined
 	cpuFormulaFallback := undefined
+	gpuFormulaAst := undefined
+	gpuFormulaFallback := undefined
 	fileTags := {}   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 	commandName := ""
@@ -572,8 +581,55 @@ builder := func() {
 			if len(args) == 0 {
 				gpuMemory = "1GiB"
 			} else {
-				validation.assertType(args[0], "string", "exec.builder.gpuMemory: argument must be a size string like '16GiB'")
+				_assertValidGpuRequest(args[0], "exec.builder.gpuMemory")
 				gpuMemory = args[0]
+			}
+			return self
+		},
+
+		/**
+		 * Sets a resource formula that computes the GPU VRAM request from input
+		 * file metrics (size / line count) at run time on the backend. Setting a
+		 * GPU formula also requests a GPU device (just like a static .gpuMemory()):
+		 * the formula's result is the minimum VRAM the selected device must have.
+		 *
+		 * Requires a backend with getBlobSize support. On older backends the
+		 * formula is skipped and a static VRAM request is used instead: the
+		 * `{ fallback: ... }` value, or — if none is given — a static `.gpuMemory()`
+		 * set on the same builder. One of the two must be present (else an error).
+		 *
+		 * Like .gpuMemory(), gpuFormula() requires an explicit CPU and RAM request
+		 * (static or formula) on the same builder — GPU nodes vary in CPU/RAM
+		 * capacity and cost, so the allocation must be pinned down.
+		 *
+		 * The formula must evaluate to a positive integer number of VRAM bytes. A
+		 * non-positive or non-integer result is rejected at run time — floor it with
+		 * f.max / f.clamp if a metric can be zero.
+		 *
+		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
+		 * exec deduplication. Two execs identical except for their formula dedup to
+		 * one run (and one allocation); vary a real input (an arg or file) if you
+		 * need them to allocate separately. (Transparency requires backend
+		 * serviceFields support; on a backend without it the formula instead
+		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
+		 *
+		 * @param ast - a formula node produced via exec.formula
+		 * @param opts: { fallback?: string } - static VRAM size string (e.g.
+		 *        "16GiB") used when the backend lacks getBlobSize support.
+		 *
+		 * @return builder
+		 */
+		gpuFormula: func(ast, ...opts) {
+			ll.assert(is_map(ast) && !is_undefined(ast.op), "exec.builder.gpuFormula: expected a formula node from exec.formula")
+			gpuFormulaAst = ast
+			if len(opts) > 0 && ll.isMap(opts[0]) {
+				for k, _ in opts[0] {
+					ll.assert(k == "fallback", "exec.builder.gpuFormula: unknown option %q (only { fallback } is supported)", k)
+				}
+				if !is_undefined(opts[0].fallback) {
+					_assertValidGpuRequest(opts[0].fallback, "exec.builder.gpuFormula fallback")
+					gpuFormulaFallback = opts[0].fallback
+				}
 			}
 			return self
 		},
@@ -1235,9 +1291,10 @@ builder := func() {
 			// builder() factory itself (see _lineCountResource). That is a plain
 			// recursive function call within :exec — no import of :pt or any
 			// metrics module — so there is no import cycle.
-			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst)
+			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst) || !is_undefined(gpuFormulaAst)
 			resolvedMem := undefined
 			resolvedCpu := undefined
+			resolvedGpu := undefined
 			lineCountMapResource := undefined
 
 			if hasFormula {
@@ -1258,11 +1315,13 @@ builder := func() {
 					// (applyFormulaFallback).
 					fb := execFormula.applyFormulaFallback({
 						ram: { ast: memFormulaAst, fallback: memFormulaFallback, static: ramRequest },
-						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest }
+						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest },
+						gpu: { ast: gpuFormulaAst, fallback: gpuFormulaFallback, static: gpuMemory }
 					})
 					ll.assert(is_undefined(fb.err), fb.err)
 					ramRequest = fb.ram
 					cpuRequest = fb.cpu
+					gpuMemory = fb.gpu
 					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
 				} else {
 					tagMap := {}
@@ -1283,6 +1342,11 @@ builder := func() {
 						refs := execFormula.referencedMetricFiles(resolvedCpu)
 						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
 					}
+					if !is_undefined(gpuFormulaAst) {
+						resolvedGpu = execFormula.resolveAst(gpuFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedGpu)
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+					}
 
 					if len(neededLineCount) > 0 {
 						perFile := {}
@@ -1299,22 +1363,30 @@ builder := func() {
 				cpu: cpuRequest,
 				ram: ramRequest
 			}
-			if !is_undefined(gpuMemory) {
+			// A GPU is requested by a static .gpuMemory() OR a gpuFormula() (the
+			// formula computes the minimum VRAM at run time, just as a static request
+			// pins it). Either way the device requirement and the CPU/RAM-must-be-set
+			// rule apply.
+			if !is_undefined(gpuMemory) || !is_undefined(gpuFormulaAst) {
 				// A cpuFormula/memFormula satisfies this requirement just like a static
 				// .cpu()/.mem(): it provides an explicit request, computed at run time
 				// (the ephemeral impl overrides the quota before allocation; gpuMemory is
 				// forwarded alongside), and the { fallback } covers no-getBlobSize backends.
 				// Without this, gpuMemory + a formula would wrongly assert on hasBlobSize
 				// backends (where ramRequest/cpuRequest stay undefined) yet pass on older ones.
-				ll.assert(!is_undefined(cpuRequest) || !is_undefined(cpuFormulaAst), "exec.builder: cpu() or cpuFormula() is required when gpuMemory() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
-				ll.assert(!is_undefined(ramRequest) || !is_undefined(memFormulaAst), "exec.builder: mem() or memFormula() is required when gpuMemory() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
-				quotaData.gpuMemory = gpuMemory
+				ll.assert(!is_undefined(cpuRequest) || !is_undefined(cpuFormulaAst), "exec.builder: cpu() or cpuFormula() is required when gpuMemory()/gpuFormula() is set. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
+				ll.assert(!is_undefined(ramRequest) || !is_undefined(memFormulaAst), "exec.builder: mem() or memFormula() is required when gpuMemory()/gpuFormula() is set. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
+				// Static VRAM goes into the quota now. With a gpuFormula on a backend
+				// that can evaluate it, gpuMemory stays undefined here and the pure
+				// exec.tpl writes quota.gpuMemory from the formula result; on a
+				// no-getBlobSize backend gpuMemory already holds the resolved fallback.
+				if !is_undefined(gpuMemory) { quotaData.gpuMemory = gpuMemory }
 			}
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
 			// Resource-formula input placement (CID-transparent formula; see analysis doc §4):
-			//   - Formula ASTs (__memFormula__/__cpuFormula__) are JSON VALUE resources —
+			//   - Formula ASTs (__memFormula__/__cpuFormula__/__gpuFormula__) are JSON VALUE resources —
 			//     final on creation — so they ride the META rail (metaExecInputs, like
 			//     `quota`): excluded from the exec CID, yet readable as final in the pure
 			//     exec.tpl body. Changing only the formula does NOT change the CID, so two
@@ -1332,6 +1404,7 @@ builder := func() {
 			// Populated only on the canEvaluateFormulas path above.
 			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
 			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
+			if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
 			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled
