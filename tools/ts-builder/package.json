@@ -25,7 +25,7 @@
   "dependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
-    "commander": "^12.0.0",
+    "commander": "catalog:",
     "jsonc-parser": "catalog:",
     "oxfmt": "0.35.0",
     "oxlint": "1.63.0",

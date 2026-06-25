@@ -5,7 +5,6 @@ import type { Hash } from "node:crypto";
 import { createHash } from "node:crypto";
 import winston from "winston";
 import type { z } from "zod/v4";
-import { Errors as OclifErrors } from "@oclif/core";
 import * as envs from "./envs";
 
 export const packageJsonName = "package.json";
@@ -200,7 +199,6 @@ export function urlJoin(url: string, appendPath: string): string {
   return u.toString();
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function wrapErr(e: any, msg: string): any {
   if (!(e instanceof Error)) {
     return e;
@@ -221,7 +219,6 @@ export function wrapErr(e: any, msg: string): any {
  * @param input: any
  * @returns number - '1' or '0'
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toInt(input: any): number {
   return input ? 1 : 0;
 }
@@ -379,6 +376,15 @@ export const formatZodIssues = (
   return _errors.join("\n");
 };
 
-export function CLIError(msg: string | Error): OclifErrors.CLIError {
-  return new OclifErrors.CLIError(msg);
+// User-facing CLI error. The top-level handler (bin/run.mjs) prints its
+// message without a stack trace and exits non-zero.
+export class CLIErrorClass extends Error {
+  constructor(msg: string | Error) {
+    super(typeof msg === "string" ? msg : msg.message);
+    this.name = "CLIError";
+  }
+}
+
+export function CLIError(msg: string | Error): CLIErrorClass {
+  return new CLIErrorClass(msg);
 }

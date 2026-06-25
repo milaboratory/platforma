@@ -1,22 +1,20 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import { createLogger } from "../../compiler/util";
 import { dumpSoftware } from "../../shared/dump";
 import { stdout } from "node:process";
 import * as opts from "../../shared/basecmd";
 
-export default class DumpSoftware extends Command {
-  static override description =
-    "parse sources in current package and dump all software descriptors used by templates";
+export default function dumpSoftwareCommand(): Command {
+  const cmd = new Command("software").description(
+    "parse sources in current package and dump all software descriptors used by templates",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  opts.addOptions(cmd, opts.GlobalOptions());
 
-  static override flags = {
-    ...opts.GlobalFlags,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(DumpSoftware);
-    const logger = createLogger(flags["log-level"]);
+  cmd.action(async (o) => {
+    const logger = createLogger(o.logLevel as string);
     dumpSoftware(logger, stdout);
-  }
+  });
+
+  return cmd;
 }

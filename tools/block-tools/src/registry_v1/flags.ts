@@ -1,4 +1,4 @@
-import { Flags } from "@oclif/core";
+import { Option } from "commander";
 import path from "node:path";
 
 export interface TargetFile {
@@ -16,9 +16,9 @@ function parseTargetFile(arg: string): TargetFile {
   }
 }
 
-export const targetFile = Flags.custom<TargetFile>({
-  summary: "target files to upload",
-  helpValue: "file_path | package_name=file_path",
-  // eslint-disable-next-line @typescript-eslint/require-await -- oclif requires async but parsing is sync
-  parse: async (arg) => parseTargetFile(arg),
-});
+// Repeatable `file_path | package_name=file_path` option.
+export function targetFileOption(flags: string, summary: string): Option {
+  return new Option(flags, summary)
+    .argParser((arg: string, prev?: TargetFile[]) => [...(prev ?? []), parseTargetFile(arg)])
+    .default([] as TargetFile[]);
+}
