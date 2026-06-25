@@ -12,7 +12,7 @@ export function buildProgram(): Command {
   program.name("pl-pkg").description("MiLaboratories Platforma Package builder");
 
   // `build` is runnable (= build all) and the parent topic for its subcommands.
-  // `build all` is registered as an explicit alias of `build` (oclif build:all).
+  // `build all` is registered as an explicit alias of `build`.
   const build = buildAllCommand("build");
   build.addCommand(buildAllCommand("all"));
   build.addCommand(buildDockerCommand());

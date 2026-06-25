@@ -16,7 +16,7 @@ function parseTargetFile(arg: string): TargetFile {
   }
 }
 
-// Repeatable `file_path | package_name=file_path` option (oclif `multiple`).
+// Repeatable `file_path | package_name=file_path` option.
 export function targetFileOption(flags: string, summary: string): Option {
   return new Option(flags, summary)
     .argParser((arg: string, prev?: TargetFile[]) => [...(prev ?? []), parseTargetFile(arg)])

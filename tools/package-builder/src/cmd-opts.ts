@@ -14,8 +14,7 @@ export function addOptions(cmd: Command, ...optionGroups: Option[][]): Command {
 }
 
 /**
- * Flag bag in the original (oclif) shape, so command bodies keep referencing
- * flags by their CLI names (`flags["package-id"]`, `flags.dev`, ...) unchanged.
+ * Flag bag keyed by CLI flag name (`flags["package-id"]`, `flags.dev`, ...).
  * `toFlags` is the only adapter between commander's camelCased option values
  * and that shape — it is pure parsing glue; command logic is untouched.
  */
@@ -71,7 +70,7 @@ export function toFlags(o: AnyOptions): Flags {
   };
 }
 
-// Collector for repeatable options (oclif `multiple: true` equivalent).
+// Collector for repeatable options.
 // No default value: absent -> undefined, present -> string[]. This preserves
 // the `flags["package-id"] ? ... : undefined` checks in the command bodies
 // (an empty `[]` would be truthy and change behavior).
@@ -116,9 +115,9 @@ export const CondaOptions = (): Option[] => [
 ];
 
 // ponytail: commander treats a boolean .env() var as true whenever it is
-// *defined* (even "0"/""), unlike oclif which parsed the value. All callers
-// set these to "1" to enable and unset to disable, so behavior is unchanged;
-// revisit only if a "PL_DOCKER_*=0 means off" convention ever appears.
+// *defined* (even "0"/""), it does not parse the value. All callers set these
+// to "1" to enable and unset to disable, so this is fine; revisit only if a
+// "PL_DOCKER_*=0 means off" convention ever appears.
 export const DockerOptions = (): Option[] => [
   new Option(
     "--docker-registry <registry>",

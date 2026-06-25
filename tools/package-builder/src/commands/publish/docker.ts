@@ -16,7 +16,7 @@ export function publishDockerCommand(): Command {
 
     cmdOpts.FailExistingPackagesOption(),
   );
-  cmd.allowExcessArguments(); // oclif `static strict = false`
+  cmd.allowExcessArguments(); // tolerate extra positional args
 
   cmd.action(async (opts: cmdOpts.AnyOptions) => {
     const flags = cmdOpts.toFlags(opts);
