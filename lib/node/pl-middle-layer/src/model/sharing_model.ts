@@ -71,6 +71,7 @@ export interface EnvelopeData {
   sender: string; // donor login (informational; backend granted_by is authoritative)
   message?: string; // optional message shown with the pending share
   projectLabels: Record<string, string>; // labels of contained projects, keyed by project field uuid; carried so the pending-share UI renders without traversing into the projects
+  sourceProjectIds?: string[]; // persistable ids of the donor's source projects this share was built from; used to find and supersede a prior share of the same project. Optional: envelopes created before this field shipped omit it.
 }
 
 /** Dynamic field on SharingState, one per handled share, keyed by shareId. */

@@ -21,21 +21,10 @@ import {
 /** Field name carrying a project snapshot inside a {@link SharedEnvelopeResourceType}. */
 export const envelopeProjectField = (uuid: string) => `project/${uuid}`;
 const EnvelopeProjectFieldPrefix = "project/";
-const AcceptanceFieldPrefix = "acceptance/";
 
 /** True for an envelope field that carries a project snapshot. */
 export function isEnvelopeProjectField(name: string): boolean {
   return name.startsWith(EnvelopeProjectFieldPrefix);
-}
-
-/** True for an envelope field that carries a recipient's acceptance record. */
-export function isAcceptanceField(name: string): boolean {
-  return name.startsWith(AcceptanceFieldPrefix);
-}
-
-/** Extracts the recipient login from an `acceptance/{login}` field name. */
-export function acceptanceLoginFromField(name: string): string {
-  return name.slice(AcceptanceFieldPrefix.length);
 }
 
 //
@@ -64,6 +53,9 @@ export async function buildShareEnvelope(
     /** Existing shareId for a replace; a fresh one is minted when omitted. */
     shareId?: ShareId;
     sharedAt?: number;
+    /** Persistable ids of the source projects, recorded so a later share can find and
+     *  supersede a prior share of the same project. */
+    sourceProjectIds: string[];
   },
 ): Promise<{ envelope: ResourceRef; data: EnvelopeData }> {
   const shareId = params.shareId ?? newShareId();
@@ -89,6 +81,7 @@ export async function buildShareEnvelope(
     sender: params.sender,
     ...(params.message !== undefined ? { message: params.message } : {}),
     projectLabels,
+    sourceProjectIds: params.sourceProjectIds,
   };
 
   // Immutable data set once at creation, never altered.
