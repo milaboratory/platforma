@@ -880,6 +880,22 @@ export class PlTransaction {
     });
   }
 
+  /**
+   * Revoke a single user's grant on a resource — the inverse of {@link grantAccess}.
+   * Used by the sharing donor flow to pull one recipient out of a multi-recipient
+   * envelope without tearing the whole share down. A no-op on the backend if the user
+   * has no grant.
+   */
+  public revokeAccess(rId: AnyResourceRef, target: string): void {
+    this.sendVoidAsync({
+      oneofKind: "revokeAccess",
+      revokeAccess: {
+        ...this.toSignedResourceId(rId),
+        targetUser: target,
+      },
+    });
+  }
+
   //
   // Fields
   //

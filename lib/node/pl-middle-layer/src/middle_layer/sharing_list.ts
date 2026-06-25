@@ -126,16 +126,20 @@ export function createOutgoingSharesComputable(
     },
     {
       // Enrich the full recipient list per envelope via ListGrants (async). An everyone-grant
-      // surfaces with the EveryoneUser sentinel, mapped to "*".
+      // surfaces with the EveryoneUser sentinel, mapped to "*". The donor's own grant on their
+      // envelope is dropped — it's their own share, showing their login as a "recipient" is noise.
       postprocessValue: async (
         drafts: OutgoingShareDraft[] | undefined,
       ): Promise<OutgoingShare[] | undefined> => {
         if (drafts === undefined) return undefined;
+        const self = pl.userResources.authUser;
         return await Promise.all(
           drafts.map(async ({ envelopeRid, ...share }): Promise<OutgoingShare> => {
             const grants = await pl.userResources.listGrants(envelopeRid);
             const everyone = grants.some((g) => g.user === EveryoneUser);
-            const recipients = everyone ? ["*"] : grants.map((g) => g.user);
+            const recipients = everyone
+              ? ["*"]
+              : grants.map((g) => g.user).filter((u) => u !== self);
             return { ...share, recipients };
           }),
         );
