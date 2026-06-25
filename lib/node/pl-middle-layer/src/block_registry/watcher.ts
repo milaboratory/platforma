@@ -12,8 +12,12 @@ import {
   StableChannel,
 } from "@milaboratories/pl-model-middle-layer";
 import type { Dispatcher } from "undici";
-import { getDevV1PacketMtime, getDevV2PacketMtime } from "./registry";
-import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
+import { getDevV1PacketMtime, getDevV2PacketMtime, getFromPackV2Mtime } from "./registry";
+import {
+  loadPackDescriptionFromManifest,
+  tryLoadPackDescription,
+} from "@platforma-sdk/block-tools";
+import { fileURLToPath } from "node:url";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { V2RegistryProvider } from "./registry-v2-provider";
 import * as semver from "semver";
@@ -101,9 +105,20 @@ export class BlockUpdateWatcher extends PollComputablePool<
         }
 
         case "from-pack-v2": {
-          // No update suggestions: a consumed npm package ships no authoring
-          // source to diff against.
-          return { suggestions: [] };
+          try {
+            // Match block_pack.ts prepare exactly: convert the file: URL at this
+            // edge, load the same description, feed the same inputs to the shared
+            // mtime helper — so the recomputed value is byte-identical to what
+            // prepare baked into cSpec.mtime.
+            const packDir = fileURLToPath(cSpec.packUrl);
+            const description = await loadPackDescriptionFromManifest(packDir);
+            const mtime = await getFromPackV2Mtime(packDir, description.components.ui.folder);
+            if (mtime === cSpec.mtime) return { suggestions: [] };
+            else return { mainSuggestion: { ...cSpec, mtime }, suggestions: [] };
+          } catch (err: unknown) {
+            this.logger.warn(err);
+            return { suggestions: [] };
+          }
         }
 
         case "from-registry-v2": {
