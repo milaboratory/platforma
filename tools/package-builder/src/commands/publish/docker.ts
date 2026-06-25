@@ -1,29 +1,27 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 import * as envs from "../../core/envs";
 
-export default class Docker extends Command {
-  static override description = "publish docker image to its registry";
+export function publishDockerCommand(): Command {
+  const cmd = new Command("docker").description("publish docker image to its registry");
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
+    cmdOpts.PackageIDOption(),
+    cmdOpts.VersionOption(),
+    [cmdOpts.DockerPushToOption()],
 
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.VersionFlag,
-    ["docker-push-to"]: cmdOpts.DockerFlags["docker-push-to"],
+    cmdOpts.FailExistingPackagesOption(),
+  );
+  cmd.allowExcessArguments(); // oclif `static strict = false`
 
-    ...cmdOpts.FailExistingPackagesFlag,
-  };
-
-  static strict: boolean = false;
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Docker);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     const core = new Core(logger, { packageRoot: flags["package-root"] });
@@ -34,5 +32,7 @@ export default class Docker extends Command {
       pushTo: flags["docker-push-to"],
       strictPlatformMatching: envs.isCI(),
     });
-  }
+  });
+
+  return cmd;
 }

@@ -1,27 +1,28 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../core/cmd-opts";
 import * as util from "../core/util";
 import { Core } from "../core/core";
 import * as envs from "../core/envs";
 
-export default class Prepublish extends Command {
-  static override description = "build *.sw.json files and do other preparations for publishing";
+export function prepublishCommand(): Command {
+  const cmd = new Command("prepublish").description(
+    "build *.sw.json files and do other preparations for publishing",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
+    cmdOpts.DirHashOption(),
+    cmdOpts.VersionOption(),
 
-    ...cmdOpts.DirHashFlag,
-    ...cmdOpts.VersionFlag,
+    cmdOpts.StorageURLOption(),
+    cmdOpts.FailExistingPackagesOption(),
+  );
 
-    ...cmdOpts.StorageURLFlag,
-    ...cmdOpts.FailExistingPackagesFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Prepublish);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     const core = new Core(logger, { packageRoot: flags["package-root"] });
@@ -42,5 +43,7 @@ export default class Prepublish extends Command {
     });
 
     core.publishDockerImages({ strictPlatformMatching: envs.isCI() });
-  }
+  });
+
+  return cmd;
 }

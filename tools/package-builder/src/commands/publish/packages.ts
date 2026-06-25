@@ -1,30 +1,30 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 
-export default class Packages extends Command {
-  static override description = "publish software package archive to its registry";
+export function publishPackagesCommand(): Command {
+  const cmd = new Command("packages").description(
+    "publish software package archive to its registry",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
+    cmdOpts.PlatformOptions(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
-    ...cmdOpts.PlatformFlags,
+    cmdOpts.PackageIDOption(),
+    cmdOpts.VersionOption(),
 
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.VersionFlag,
+    cmdOpts.ArchiveOption(),
+    cmdOpts.StorageURLOption(),
+    cmdOpts.FailExistingPackagesOption(),
+  );
+  cmd.allowExcessArguments(); // oclif `static strict = false`
 
-    ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.StorageURLFlag,
-    ...cmdOpts.FailExistingPackagesFlag,
-  };
-
-  static strict: boolean = false;
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Packages);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     const core = new Core(logger, { packageRoot: flags["package-root"] });
@@ -41,5 +41,7 @@ export default class Packages extends Command {
       failExisting: flags["fail-existing-packages"],
       forceReupload: flags.force,
     });
-  }
+  });
+
+  return cmd;
 }

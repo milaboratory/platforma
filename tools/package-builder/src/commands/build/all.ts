@@ -1,36 +1,39 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import * as cmdOpts from "../../core/cmd-opts";
 import * as util from "../../core/util";
 import { Core } from "../../core/core";
 import * as envs from "../../core/envs";
 import * as defaults from "../../defaults";
 
-export default class BuildAll extends Command {
-  static override description =
-    "Build all targets (entrypoint descriptors, binary pacakges and so on)";
+// Registered twice, matching the original oclif `build` (alias) + `build:all`:
+// as the top-level `build` command and as the `build all` subcommand. Both run
+// the same build-all action with the same flags.
+export function buildAllCommand(name = "build"): Command {
+  const cmd = new Command(name).description(
+    "Build all targets (entrypoint descriptors, binary pacakges and so on)",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
+    cmdOpts.BuildOptions(),
+    cmdOpts.PlatformOptions(),
+    cmdOpts.VersionOption(),
+    cmdOpts.DockerOptions(),
+    cmdOpts.CondaOptions(),
 
-    ...cmdOpts.BuildFlags,
-    ...cmdOpts.PlatformFlags,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.DockerFlags,
-    ...cmdOpts.CondaFlags,
+    cmdOpts.EntrypointNameOption(),
+    cmdOpts.PackageIDOption(),
+    cmdOpts.DirHashOption(),
 
-    ...cmdOpts.EntrypointNameFlag,
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.DirHashFlag,
+    cmdOpts.ArchiveOption(),
+    cmdOpts.ContentRootOption(),
+  );
 
-    ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.ContentRootFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(BuildAll);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     try {
@@ -126,5 +129,7 @@ export default class BuildAll extends Command {
 
       throw e;
     }
-  }
+  });
+
+  return cmd;
 }
