@@ -1,29 +1,22 @@
-import { Command, Args } from "@oclif/core";
+import { Command } from "commander";
 import Core from "../../core";
 import * as cmdOpts from "../../cmd-opts";
 import * as util from "../../util";
 import state from "../../state";
 
-export default class Down extends Command {
-  static override description = "List available instances";
+export default function svcDownCommand(): Command {
+  const cmd = new Command("down").description("List available instances");
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmd.argument("[name]", "instance name (defaults to the selected instance)");
+  cmdOpts.addOptions(cmd, cmdOpts.GlobalOptions());
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-  };
-
-  static args = {
-    name: Args.string({ required: false }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags, args } = await this.parse(Down);
+  cmd.action(async (nameArg: string | undefined, o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
 
-    const name = args.name ?? state.currentInstanceName;
+    const name = nameArg ?? state.currentInstanceName;
 
     if (!name) {
       logger.info(`no pl service instance selected. No service was stopped`);
@@ -31,5 +24,7 @@ export default class Down extends Command {
     }
 
     core.stopInstance(state.getInstanceInfo(name));
-  }
+  });
+
+  return cmd;
 }

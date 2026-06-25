@@ -1,32 +1,21 @@
-import { Command, Flags } from "@oclif/core";
+import { Command } from "commander";
 import { loadPackDescription } from "../v2/source_package";
 import path from "node:path";
 import { buildBlockPackDist } from "../v2/build_dist";
 
-export default class PackBlock extends Command {
-  static description =
+export function packCommand(): Command {
+  const cmd = new Command("pack").description(
     "Builds block pack and outputs a block pack manifest consolidating all " +
-    "references assets into a single folder";
+      "references assets into a single folder",
+  );
 
-  static flags = {
-    modulePath: Flags.string({
-      char: "i",
-      summary: "input module path",
-      helpValue: "<path>",
-      default: ".",
-    }),
+  cmd.option("-i, --modulePath <path>", "input module path", ".");
+  cmd.option("-o, --destinationPath <path>", "output folder", "./block-pack");
 
-    destinationPath: Flags.string({
-      char: "o",
-      summary: "output folder",
-      helpValue: "<path>",
-      default: "./block-pack",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(PackBlock);
+  cmd.action(async (flags) => {
     const description = await loadPackDescription(path.resolve(flags.modulePath));
     await buildBlockPackDist(description, path.resolve(flags.destinationPath));
-  }
+  });
+
+  return cmd;
 }

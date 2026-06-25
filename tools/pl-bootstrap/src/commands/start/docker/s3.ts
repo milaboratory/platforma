@@ -1,36 +1,34 @@
 import path from "node:path";
 
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import Core from "../../../core";
 import * as cmdOpts from "../../../cmd-opts";
 import * as util from "../../../util";
 import type * as types from "../../../templates/types";
 import state from "../../../state";
 
-export default class S3 extends Command {
-  static override description = "Run platforma backend service with 'S3' primary storage type";
+export default function startDockerS3Command(): Command {
+  const cmd = new Command("s3").description(
+    "Run platforma backend service with 'S3' primary storage type",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.AddressesOptions(),
+    cmdOpts.S3AddressesOptions(),
+    cmdOpts.ImageOptions(),
+    cmdOpts.VersionOptions(),
+    cmdOpts.ArchOptions(),
+    cmdOpts.AuthOptions(),
+    cmdOpts.LicenseOptions(),
+    cmdOpts.MountOptions(),
+    cmdOpts.StorageOptions(),
+    cmdOpts.MinioPresignHostOptions(),
+  );
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.S3AddressesFlags,
-    ...cmdOpts.ImageFlag,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.ArchFlag,
-
-    ...cmdOpts.AuthFlags,
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.MountFlag,
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.MinioPresignHostFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(S3);
+  cmd.action(async (o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
@@ -84,5 +82,7 @@ export default class S3 extends Command {
     });
 
     core.switchInstance(instance);
-  }
+  });
+
+  return cmd;
 }

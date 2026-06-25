@@ -1,43 +1,42 @@
-import { Command } from "@oclif/core";
-import * as cmdOpts from "../../core/cmd-opts";
-import * as util from "../../core/util";
-import { Core } from "../../core/core";
-import * as envs from "../../core/envs";
-import * as defaults from "../../defaults";
+import { Command } from "commander";
+import * as cmdOpts from "../../cmd-opts";
+import { util, envs, defaults, createBuilder } from "@platforma-sdk/package-builder-lib";
 
-export default class BuildAll extends Command {
-  static override description =
-    "Build all targets (entrypoint descriptors, binary pacakges and so on)";
+// Registered twice: as the top-level `build` command and as the `build all`
+// subcommand. Both run the same build-all action with the same flags.
+export function buildAllCommand(name = "build"): Command {
+  const cmd = new Command(name).description(
+    "Build all targets (entrypoint descriptors, binary pacakges and so on)",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.ForceOption(),
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.ForceFlag,
+    cmdOpts.BuildOptions(),
+    cmdOpts.PlatformOptions(),
+    cmdOpts.VersionOption(),
+    cmdOpts.DockerOptions(),
+    cmdOpts.CondaOptions(),
 
-    ...cmdOpts.BuildFlags,
-    ...cmdOpts.PlatformFlags,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.DockerFlags,
-    ...cmdOpts.CondaFlags,
+    cmdOpts.EntrypointNameOption(),
+    cmdOpts.PackageIDOption(),
+    cmdOpts.DirHashOption(),
 
-    ...cmdOpts.EntrypointNameFlag,
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.DirHashFlag,
+    cmdOpts.ArchiveOption(),
+    cmdOpts.ContentRootOption(),
+  );
 
-    ...cmdOpts.ArchiveFlag,
-    ...cmdOpts.ContentRootFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(BuildAll);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
     try {
-      const core = new Core(logger, { packageRoot: flags["package-root"] });
+      const core = createBuilder(logger, { packageRoot: flags["package-root"] });
 
       core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
-      core.pkgInfo.version = flags.version;
+      core.version = flags.version;
       core.targetPlatform = flags.platform as util.PlatformType;
       core.allPlatforms = flags["all-platforms"];
       core.fullDirHash = flags["full-dir-hash"];
@@ -91,7 +90,7 @@ export default class BuildAll extends Command {
       // 'build:dev-remote' sets) flips it. Private packages never push by
       // default — the dev ECR is public.
       const autopush = cmdOpts.shouldDoAction(
-        envs.isCI() && !core.pkgInfo.isPrivate,
+        envs.isCI() && !core.isPrivate,
         flags["docker-autopush"],
         flags["docker-no-autopush"],
       );
@@ -126,5 +125,7 @@ export default class BuildAll extends Command {
 
       throw e;
     }
-  }
+  });
+
+  return cmd;
 }

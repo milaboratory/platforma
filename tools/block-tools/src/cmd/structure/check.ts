@@ -1,51 +1,42 @@
-import { Command, Flags } from "@oclif/core";
+import { Command } from "commander";
 import path from "node:path";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { runStructureForPath, formatChanges } from "../../structure/cli/run-structure";
 
-export default class StructureCheck extends Command {
-  static override description =
-    "Check block(s) against the canonical structure (read-only). Exits non-zero if any diff would land — used as the CI gate.";
-
-  static override examples = [
-    "<%= config.bin %> <%= command.id %> ./my-block",
-    "<%= config.bin %> <%= command.id %> --sdk-internal etc/blocks/*",
-  ];
+export function structureCheckCommand(packageRoot: string): Command {
+  const cmd = new Command("check").description(
+    "Check block(s) against the canonical structure (read-only). Exits non-zero if any diff would land — used as the CI gate.",
+  );
 
   // Variadic positional block paths (shell-expanded globs).
-  static override strict = false;
+  cmd.argument("[paths...]", "block path(s); defaults to the current directory");
+  cmd.option("--sdk-internal", "block(s) live inside the SDK monorepo; skip root-scope rules");
 
-  static override flags = {
-    "sdk-internal": Flags.boolean({
-      description: "block(s) live inside the SDK monorepo; skip root-scope rules",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { argv, flags } = await this.parse(StructureCheck);
-    const paths = (argv as string[]).length > 0 ? (argv as string[]) : ["."];
-    const templatesRoot = path.join(this.config.root, "src", "structure", "templates");
+  cmd.action(async (argv: string[], flags) => {
+    const logger = new ConsoleLoggerAdapter();
+    const paths = argv.length > 0 ? argv : ["."];
+    const templatesRoot = path.join(packageRoot, "src", "structure", "templates");
 
     let anyChanged = false;
     for (const p of paths) {
       const res = await runStructureForPath({
         blockPath: p,
-        isSdkInternal: flags["sdk-internal"],
+        isSdkInternal: Boolean(flags.sdkInternal),
         updateDepsOnly: false,
         mode: "check",
         templatesRoot,
-        log: (m) => this.log(m),
+        log: (m) => logger.info(m),
       });
-      this.log(formatChanges(p, res.changes));
+      logger.info(formatChanges(p, res.changes));
       if (res.changes.length > 0) anyChanged = true;
     }
 
     if (anyChanged) {
-      this.error(
+      throw new Error(
         "Structure check failed: one or more blocks are out of date. Run `structure refresh`.",
-        {
-          exit: 1,
-        },
       );
     }
-  }
+  });
+
+  return cmd;
 }

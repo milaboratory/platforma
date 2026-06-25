@@ -50,7 +50,6 @@ async function newS3(
     await objectExists(client, bucket, "/");
   } catch (error) {
     throw util.CLIError(
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       `credentials given to package builder do not have access to S3 bucket '${bucket}': ${error}`,
     );
   }
