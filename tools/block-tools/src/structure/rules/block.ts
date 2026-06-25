@@ -21,9 +21,8 @@ import { pascalCase } from "./shared/pascal-case";
 
 export function blockRules(): void {
   scope("block", () => {
-    // Legacy shim cleanup: the pre-facade boilerplate entry files. `remove`
-    // is idempotent (absent file → no-op), so this is safe on already-migrated
-    // and brand-new blocks alike.
+    // `remove` is idempotent (absent file → no-op), so this is safe on a block
+    // that has no such entry files.
     remove("index.js");
     remove("index.d.ts");
 
@@ -31,7 +30,7 @@ export function blockRules(): void {
     // (model import path + `<PascalName>` aliases) → text-templated. `AGENTS.ts`
     // is engine-owned and identical for every block → static. The two `*-extra`
     // files are author scaffolds (`scaffold`: create-if-missing on every refresh,
-    // never overwritten) so a migrating legacy block gets them on first refresh.
+    // never overwritten).
     fixed(
       "src/index.ts",
       tpl("block/src/index.tpl.ts", (ctx) => ({

@@ -22,10 +22,9 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 /** Per-org publish coordinates: the S3 upload bucket and the CDN serve URL the
  *  facade's `prepublishOnly` script passes to `block-tools publish`.
  *
- *  OPEN AT IMPLEMENTATION TIME — both URLs are PLACEHOLDERS. Replace with the
- *  real S3 upload bucket and CDN serve URL before the first real pilot publish.
- *  The script is inert for the never-published `etc/blocks` test blocks, so
- *  placeholders are safe until then. Extend the map when a new org publishes. */
+ *  Both URLs are PLACEHOLDERS — replace with the real S3 bucket and CDN serve
+ *  URL before publishing for real. Safe meanwhile: the script never runs for the
+ *  never-published `etc/blocks` test blocks. Extend the map per new org. */
 const ORG_PUBLISH_TARGETS: Record<string, { s3: string; serveUrl: string }> = {
   "@platforma-open": {
     s3: "s3://platforma-open-blocks",
@@ -194,14 +193,12 @@ export function blockPackageJsonRules(ctx: RunContext): void {
 
   const scripts = blockScripts(v.npmOrg);
   for (const [name, command] of Object.entries(scripts)) ensureScript(name, command);
-  // Legacy script from the pre-facade boilerplate — gone in the slim facade.
   removeScript("mark-stable");
 
   // Slim invariant: the facade carries ZERO runtime dependencies. The siblings
-  // are workspace build-time devDeps (the single-section invariant moves any
-  // that a legacy block had under `dependencies`), and the SDK build/publish
-  // deps are devDeps too — so `dependencies` ends empty. Software/test are
-  // excluded (the workflow owns software; a test→facade dep would be a cycle).
+  // and the SDK build/publish deps are all devDeps, so `dependencies` ends
+  // empty. Software/test are excluded (the workflow owns software; a
+  // test→facade dep would be a cycle).
   ensureWorkspaceScopeDevDeps("model");
   ensureWorkspaceScopeDevDeps("ui");
   ensureWorkspaceScopeDevDeps("workflow");

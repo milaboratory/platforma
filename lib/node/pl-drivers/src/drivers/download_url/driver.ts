@@ -87,10 +87,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader, FrontendDriver 
     return this.getResult({ type: "url", url }, url.toString(), ctx);
   }
 
-  /** Use to get a path result inside a computable context */
   getLocalTgz(path: string, mtime: string, ctx: ComputableCtx): UrlResult | undefined;
-
-  /** Returns a Computable that do the work */
   getLocalTgz(path: string, mtime: string): Computable<UrlResult | undefined>;
 
   /** Mirror of {@link getUrl} for a local `.tgz` archive: lazily unpacks it

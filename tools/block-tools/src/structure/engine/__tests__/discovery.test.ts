@@ -1,8 +1,5 @@
 // Workspace-package classification — covers the detection rules plus the
-// block-scope override and the unclassified-error path. Block-scope detection
-// (the top-level `block` field) is exercised in detail in
-// ../__tests__/facade-end-state.test.ts; here we just pin that a `block` field
-// classifies as `block` and that a block-tools-ish package without one does not.
+// block-scope override and the unclassified-error path.
 
 import { describe, test, expect } from "vitest";
 import { classifyOne, discoverModules, DiscoveryError, type WorkspacePackage } from "../discovery";
@@ -56,8 +53,6 @@ describe("discovery — single-package classification", () => {
   });
 
   test("a block-tools-ish package WITHOUT a `block` field is not classified `block`", () => {
-    // The removed rule-4 shape (block-tools dep, legacy facade `files`) no longer
-    // detects block-scope — only the top-level `block` field does.
     const wp = pkg("block", {
       name: "x.block",
       files: ["index.d.ts", "index.js"],
