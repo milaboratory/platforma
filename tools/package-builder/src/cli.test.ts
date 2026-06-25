@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Command } from "commander";
 import { buildProgram } from "./cli";
-import * as cmdOpts from "./core/cmd-opts";
+import * as cmdOpts from "./cmd-opts";
 
 function subcommand(cmd: Command, name: string): Command {
   const c = cmd.commands.find((x) => x.name() === name);

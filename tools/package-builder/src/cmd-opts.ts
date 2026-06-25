@@ -1,6 +1,5 @@
 import { Command, Option, type OptionValues } from "commander";
-import * as util from "./util";
-import * as envs from "./envs";
+import { util, envs } from "@platforma-sdk/package-builder-lib";
 
 // Parsed option bag handed to command handlers (commander camelCases flag names:
 // --package-id -> packageId, --docker-build -> dockerBuild, etc.).

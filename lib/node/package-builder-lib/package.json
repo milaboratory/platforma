@@ -1,20 +1,27 @@
 {
-  "name": "@platforma-sdk/package-builder",
-  "version": "3.13.0",
-  "description": "MiLaboratories Platforma Package builder",
+  "name": "@platforma-sdk/package-builder-lib",
+  "version": "1.0.0",
+  "description": "MiLaboratories Platforma Package builder engine (library)",
   "keywords": [],
   "license": "UNLICENSED",
-  "bin": {
-    "pl-pkg": "./bin/run.mjs"
-  },
   "files": [
-    "bin/run.cmd",
-    "bin/run.mjs",
-    "dist"
+    "./dist/**/*",
+    "./src/**/*",
+    "./assets"
   ],
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "node --run fmt && ts-builder build --target node",
+    "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
@@ -25,14 +32,21 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@platforma-sdk/package-builder-lib": "workspace:*",
-    "commander": "catalog:",
-    "winston": "catalog:"
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/lib-storage": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:*",
+    "archiver": "catalog:",
+    "undici": "catalog:",
+    "winston": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+    "@types/archiver": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",

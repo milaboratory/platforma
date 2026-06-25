@@ -1,8 +1,6 @@
 import { Command } from "commander";
-import * as cmdOpts from "../../core/cmd-opts";
-import * as util from "../../core/util";
-import { Core } from "../../core/core";
-import * as envs from "../../core/envs";
+import * as cmdOpts from "../../cmd-opts";
+import { util, envs, createBuilder } from "@platforma-sdk/package-builder-lib";
 
 export function buildDockerCommand(): Command {
   const cmd = new Command("docker").description("build docker images");
@@ -20,10 +18,10 @@ export function buildDockerCommand(): Command {
     const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
-    const core = new Core(logger, { packageRoot: flags["package-root"] });
+    const core = createBuilder(logger, { packageRoot: flags["package-root"] });
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
 
-    core.pkgInfo.version = flags.version;
+    core.version = flags.version;
 
     core.buildDockerImages({
       ids: flags["package-id"],
@@ -31,11 +29,11 @@ export function buildDockerCommand(): Command {
     });
 
     const autopush = cmdOpts.shouldDoAction(
-      envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
+      envs.isCI() && !core.isPrivate, // do not push docker images of private packages
       flags["docker-autopush"],
       flags["docker-no-autopush"],
     );
-    if (autopush && !core.pkgInfo.isPrivate) {
+    if (autopush && !core.isPrivate) {
       core.publishDockerImages({
         ids: flags["package-id"],
         strictPlatformMatching: envs.isCI(),
