@@ -2,6 +2,7 @@ import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import type { Filter, PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import {
+  EveryoneUser,
   resourceIdToString,
   resourceType,
   resourceTypesEqual,
@@ -9,8 +10,14 @@ import {
 } from "@milaboratories/pl-client";
 import { Computable } from "@milaboratories/computable";
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import type { EnvelopeAcceptance, EnvelopeData, EnvelopeMode } from "../model/sharing_model";
+import type {
+  EnvelopeAcceptance,
+  EnvelopeData,
+  EnvelopeMode,
+  ShareId,
+} from "../model/sharing_model";
 import {
+  asShareId,
   SharedEnvelopeResourceType,
   SharingOutboxResourceType,
   SharingStateResourceType,
@@ -20,14 +27,13 @@ const AcceptanceFieldPrefix = "acceptance/";
 
 /** Donor-facing view of one outgoing share. */
 export interface OutgoingShare {
-  shareId: string; // stable logical identity of the share, preserved across replaces
+  shareId: ShareId; // stable logical identity of the share, preserved across replaces
   sharedAt: number; // this instance's creation time (ms epoch)
   expiresAt?: number; // EnvelopeData.expiresAt; null maps to undefined = never expires
   mode: EnvelopeMode;
   message?: string;
   projectLabels: string[]; // label values from EnvelopeData.projectLabels (values only)
-  /** Recipient logins. Currently surfaced from the acceptance records (responders); a full
-   * recipient list needs a ListGrants pl-client wrapper (M2). */
+  /** Full recipient logins, from `ListGrants` on the envelope; `["*"]` for everyone-shares. */
   recipients: string[];
   /** Per recipient who has responded: their decision and when, from acceptance/{login}. */
   responses: Record<string, { action: "accepted" | "rejected"; timestamp: number }>;
@@ -35,7 +41,7 @@ export interface OutgoingShare {
 
 /** Acceptor-facing view of one pending share. */
 export interface PendingShare {
-  shareId: string;
+  shareId: ShareId;
   sender: string; // EnvelopeData.sender, display only
   message?: string;
   mode: EnvelopeMode; // v1 renders only "copy" entries
@@ -62,53 +68,80 @@ const SharingOutboxFieldFilter: Filter = treeFilter.or(
   treeFilter.resourceTypeEq(SharedEnvelopeResourceType.name),
 );
 
+/** Intermediate of an outgoing share before its full recipient list is fetched: everything the
+ *  tree carries synchronously, plus the envelope's signed id for the async `ListGrants` enrich. */
+type OutgoingShareDraft = Omit<OutgoingShare, "recipients"> & { envelopeRid: SignedResourceId };
+
 /**
  * Reactive view of the donor's own outbox. Reads each live envelope's immutable
- * {@link EnvelopeData} plus the per-recipient `acceptance/{login}` records.
+ * {@link EnvelopeData} plus the per-recipient `acceptance/{login}` records from the tree, then
+ * enriches each share's full recipient list via `ListGrants` on the envelope (`["*"]` for an
+ * everyone-share). `ListGrants` is gated backend-side to the envelope owner (the donor), which is
+ * exactly who reads this view.
  *
  * API-level only in M1 (no UI).
  */
 export function createOutgoingSharesComputable(
+  pl: PlClient,
   tree: SynchronizedTreeState,
 ): Computable<OutgoingShare[] | undefined> {
-  return Computable.make((ctx) => {
-    const node = ctx.accessor(tree.entry()).node();
-    if (node === undefined) return undefined;
+  return Computable.make(
+    (ctx) => {
+      const node = ctx.accessor(tree.entry()).node();
+      if (node === undefined) return undefined;
 
-    const result: OutgoingShare[] = [];
-    // Outbox fields are keyed by shareId; each value is a SharedEnvelope.
-    for (const fieldName of node.listDynamicFields()) {
-      const envelope = node.traverse(fieldName);
-      if (envelope === undefined) continue;
-      if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
+      const drafts: OutgoingShareDraft[] = [];
+      // Outbox fields are keyed by shareId; each value is a SharedEnvelope.
+      for (const fieldName of node.listDynamicFields()) {
+        const envelope = node.traverse(fieldName);
+        if (envelope === undefined) continue;
+        if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
 
-      const data = envelope.getDataAsJson<EnvelopeData>();
-      if (data === undefined) continue;
+        const data = envelope.getDataAsJson<EnvelopeData>();
+        if (data === undefined) continue;
 
-      const responses: OutgoingShare["responses"] = {};
-      for (const f of envelope.listDynamicFields()) {
-        if (!f.startsWith(AcceptanceFieldPrefix)) continue;
-        const login = f.slice(AcceptanceFieldPrefix.length);
-        const acc = envelope.traverse(f);
-        const accData = acc?.getDataAsJson<EnvelopeAcceptance>();
-        if (accData === undefined) continue;
-        responses[login] = { action: accData.action, timestamp: accData.timestamp };
+        const responses: OutgoingShare["responses"] = {};
+        for (const f of envelope.listDynamicFields()) {
+          if (!f.startsWith(AcceptanceFieldPrefix)) continue;
+          const login = f.slice(AcceptanceFieldPrefix.length);
+          const acc = envelope.traverse(f);
+          const accData = acc?.getDataAsJson<EnvelopeAcceptance>();
+          if (accData === undefined) continue;
+          responses[login] = { action: accData.action, timestamp: accData.timestamp };
+        }
+
+        drafts.push({
+          shareId: data.shareId,
+          sharedAt: data.sharedAt,
+          ...(data.expiresAt !== null ? { expiresAt: data.expiresAt } : {}),
+          mode: data.mode,
+          ...(data.message !== undefined ? { message: data.message } : {}),
+          projectLabels: Object.values(data.projectLabels),
+          responses,
+          envelopeRid: envelope.id,
+        });
       }
-
-      result.push({
-        shareId: data.shareId,
-        sharedAt: data.sharedAt,
-        ...(data.expiresAt !== null ? { expiresAt: data.expiresAt } : {}),
-        mode: data.mode,
-        ...(data.message !== undefined ? { message: data.message } : {}),
-        projectLabels: Object.values(data.projectLabels),
-        recipients: Object.keys(responses),
-        responses,
-      });
-    }
-    result.sort((a, b) => b.sharedAt - a.sharedAt);
-    return result;
-  });
+      drafts.sort((a, b) => b.sharedAt - a.sharedAt);
+      return drafts;
+    },
+    {
+      // Enrich the full recipient list per envelope via ListGrants (async). An everyone-grant
+      // surfaces with the EveryoneUser sentinel, mapped to "*".
+      postprocessValue: async (
+        drafts: OutgoingShareDraft[] | undefined,
+      ): Promise<OutgoingShare[] | undefined> => {
+        if (drafts === undefined) return undefined;
+        return await Promise.all(
+          drafts.map(async ({ envelopeRid, ...share }): Promise<OutgoingShare> => {
+            const grants = await pl.userResources.listGrants(envelopeRid);
+            const everyone = grants.some((g) => g.user === EveryoneUser);
+            const recipients = everyone ? ["*"] : grants.map((g) => g.user);
+            return { ...share, recipients };
+          }),
+        );
+      },
+    },
+  );
 }
 
 /**
@@ -130,7 +163,7 @@ export async function createOutgoingShares(
     },
     env.logger,
   );
-  return { computable: createOutgoingSharesComputable(tree), tree };
+  return { computable: createOutgoingSharesComputable(pl, tree), tree };
 }
 
 const DecisionFieldPrefix = "decision/";
@@ -174,24 +207,62 @@ export async function createPendingSharesTree(
   );
 }
 
+/** A live envelope discovered in the acceptor's shared-resource tree: its signed resource id and
+ *  decoded {@link EnvelopeData}. The accept/reject flow keys these by `data.shareId`. */
+export type LiveEnvelope = { rid: SignedResourceId; data: EnvelopeData };
+
+/**
+ * Builds a Computable yielding the acceptor's currently-live envelopes, read from the
+ * shared-resource discovery tree the ML already maintains — the single discovery mechanism.
+ * Accept/reject `.getValue()` this instead of re-streaming `ListUserResources`, so there is no
+ * second discovery path. The envelope's signed `rid` (from the tree node) is what the write tx
+ * needs; `copyEnvelopeProjectsIntoList` reads the project snapshots itself inside the tx.
+ *
+ * Returns `undefined` while the tree is still empty/unresolved (mirrors the other tree-backed
+ * computables here). Yields a flat list; the caller dedups by `shareId` — at most one live
+ * envelope per shareId is expected (the donor keeps one), and a replace tears the old one down.
+ */
+export function createLiveEnvelopesComputable(
+  sharedTree: SynchronizedTreeState,
+): Computable<LiveEnvelope[] | undefined> {
+  return Computable.make((ctx) => {
+    const roots = ctx.accessor(sharedTree.rootsEntry()).nodes();
+    const result: LiveEnvelope[] = [];
+    for (const envelope of roots) {
+      if (envelope === undefined) continue;
+      if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
+      const data = envelope.getDataAsJson<EnvelopeData>();
+      if (data === undefined) continue;
+      result.push({ rid: envelope.id, data });
+    }
+    return result;
+  });
+}
+
 /**
  * Builds the {@link PendingShare} computable over the shared-resource discovery tree, filtered
  * against the set of already-handled shareIds (those with a decision/{shareId} in the acceptor's
  * SharingState). Both trees feed one Computable so it recomputes when either changes.
+ *
+ * `currentUserLogin` (when known) suppresses the user's own shares: a share-with-everybody grants
+ * the everyone-user, so the donor discovers their own envelope as a pending share. There is no
+ * scenario where a user accepts their own share, so they are dropped from the pending view.
  */
 export function createPendingSharesComputable(
   sharedTree: SynchronizedTreeState,
   sharingStateTree: SynchronizedTreeState,
+  currentUserLogin: string | null,
 ): Computable<PendingShare[] | undefined> {
   return Computable.make((ctx) => {
     const roots = ctx.accessor(sharedTree.rootsEntry()).nodes();
 
     // Set of shareIds already handled (accepted or rejected) — dedup discovery on the logical share.
     const stateNode = ctx.accessor(sharingStateTree.entry()).node();
-    const handled = new Set<string>();
+    const handled = new Set<ShareId>();
     if (stateNode !== undefined)
       for (const f of stateNode.listDynamicFields())
-        if (f.startsWith(DecisionFieldPrefix)) handled.add(f.slice(DecisionFieldPrefix.length));
+        if (f.startsWith(DecisionFieldPrefix))
+          handled.add(asShareId(f.slice(DecisionFieldPrefix.length)));
 
     const result: PendingShare[] = [];
     for (const envelope of roots) {
@@ -200,6 +271,7 @@ export function createPendingSharesComputable(
       const data = envelope.getDataAsJson<EnvelopeData>();
       if (data === undefined) continue;
       if (handled.has(data.shareId)) continue; // already accepted or rejected
+      if (currentUserLogin !== null && data.sender === currentUserLogin) continue; // own share
 
       result.push({
         shareId: data.shareId,

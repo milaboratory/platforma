@@ -8,17 +8,34 @@ import type {
   EnvelopeData,
   EnvelopeAcceptance,
   EnvelopeMode,
+  ShareId,
   SharingDecision,
 } from "../model/sharing_model";
-import { SharedEnvelopeResourceType, acceptanceField, decisionField } from "../model/sharing_model";
+import {
+  SharedEnvelopeResourceType,
+  acceptanceField,
+  decisionField,
+  newShareId,
+} from "../model/sharing_model";
 
 /** Field name carrying a project snapshot inside a {@link SharedEnvelopeResourceType}. */
 export const envelopeProjectField = (uuid: string) => `project/${uuid}`;
 const EnvelopeProjectFieldPrefix = "project/";
+const AcceptanceFieldPrefix = "acceptance/";
 
 /** True for an envelope field that carries a project snapshot. */
 export function isEnvelopeProjectField(name: string): boolean {
   return name.startsWith(EnvelopeProjectFieldPrefix);
+}
+
+/** True for an envelope field that carries a recipient's acceptance record. */
+export function isAcceptanceField(name: string): boolean {
+  return name.startsWith(AcceptanceFieldPrefix);
+}
+
+/** Extracts the recipient login from an `acceptance/{login}` field name. */
+export function acceptanceLoginFromField(name: string): string {
+  return name.slice(AcceptanceFieldPrefix.length);
 }
 
 //
@@ -44,12 +61,12 @@ export async function buildShareEnvelope(
     message?: string;
     /** ms epoch; sharedAt + ttl for a targeted share, null for share-with-everybody. */
     expiresAt: number | null;
-    /** Existing shareId for a replace; a fresh UUID is minted when omitted. */
-    shareId?: string;
+    /** Existing shareId for a replace; a fresh one is minted when omitted. */
+    shareId?: ShareId;
     sharedAt?: number;
   },
 ): Promise<{ envelope: ResourceRef; data: EnvelopeData }> {
-  const shareId = params.shareId ?? randomUUID();
+  const shareId = params.shareId ?? newShareId();
   const sharedAt = params.sharedAt ?? Date.now();
 
   // Snapshot each source project by reference and collect labels for the pending-share UI.
@@ -118,7 +135,7 @@ export function writeEnvelopeAcceptance(
 export function writeSharingDecision(
   tx: PlTransaction,
   stateRid: SignedResourceId,
-  shareId: string,
+  shareId: ShareId,
   decision: SharingDecision,
 ): void {
   const value = tx.createJsonValue(decision);
@@ -126,14 +143,14 @@ export function writeSharingDecision(
 }
 
 /**
- * Adopts every project snapshot inside an envelope into the acceptor's project list — the
+ * Copies every project snapshot inside an envelope into the acceptor's own project list — the
  * cross-color attach the delivered backend changes legalize. Mirrors
  * {@link duplicateProject}'s `rename` contract, but resolves the source against the envelope
  * tree (not the acceptor's own list), so the wrapper cannot be reused.
  *
  * @returns ids of the projects created in the acceptor's list.
  */
-export async function adoptEnvelopeProjects(
+export async function copyEnvelopeProjectsIntoList(
   tx: PlTransaction,
   envelopeRid: SignedResourceId,
   projectListRid: SignedResourceId,
@@ -172,7 +189,7 @@ export async function adoptEnvelopeProjects(
   return created;
 }
 
-/** String-form ids of the projects created by {@link adoptEnvelopeProjects}. */
+/** String-form ids of the projects created by {@link copyEnvelopeProjectsIntoList}. */
 export function resourceIdsToStrings(ids: SignedResourceId[]): string[] {
   return ids.map((id) => resourceIdToString(id));
 }

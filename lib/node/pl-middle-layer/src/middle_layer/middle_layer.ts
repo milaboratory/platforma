@@ -1,6 +1,14 @@
-import type { PlClient, SignedResourceId, ResourceRef } from "@milaboratories/pl-client";
+import type {
+  PlClient,
+  PlTransaction,
+  SignedResourceId,
+  ResourceRef,
+  Role,
+} from "@milaboratories/pl-client";
 import {
+  EveryoneUser,
   field,
+  GrantType,
   isNotNullSignedResourceId,
   isNullSignedResourceId,
   resourceIdToString,
@@ -12,23 +20,29 @@ import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import {
-  SharedEnvelopeResourceType,
+  canGrantToEveryone,
+  decodeEnvelopeData,
   SharingOutboxField,
   SharingOutboxResourceType,
   SharingStateField,
   SharingStateResourceType,
+  type EnvelopeAcceptance,
   type EnvelopeData,
+  type ShareId,
   type ShareProjectsOptions,
 } from "../model/sharing_model";
 import {
-  adoptEnvelopeProjects,
+  acceptanceLoginFromField,
   buildShareEnvelope,
+  copyEnvelopeProjectsIntoList,
+  isAcceptanceField,
   resourceIdsToStrings,
   writeEnvelopeAcceptance,
   writeSharingDecision,
 } from "../mutator/sharing";
-import type { OutgoingShare, PendingShare } from "./sharing_list";
+import type { LiveEnvelope, OutgoingShare, PendingShare } from "./sharing_list";
 import {
+  createLiveEnvelopesComputable,
   createOutgoingShares,
   createPendingSharesComputable,
   createPendingSharesTree,
@@ -125,6 +139,10 @@ export class MiddleLayer {
     /** Envelopes granted to this user, not yet accepted or rejected. Fed by the
      *  shared-resource discovery tree. */
     public pendingShares: Computable<PendingShare[] | undefined>,
+    /** Internal: the acceptor's currently-live envelopes, read from the same shared-resource
+     *  discovery tree as {@link pendingShares}. The single source the accept/reject flow resolves
+     *  live envelopes from — no second discovery path. */
+    private readonly liveEnvelopes: Computable<LiveEnvelope[] | undefined>,
   ) {
     this.pl = this.env.pl;
     this.startEnvelopeCleanup();
@@ -165,6 +183,29 @@ export class MiddleLayer {
    */
   public get sharingSupported(): boolean {
     return this.serverCapabilities.includes("crossTreeRefs:v1");
+  }
+
+  /**
+   * Role of the authenticated user, from the `GetSessionInfo` RPC surfaced through the
+   * pl-client. `null` in no-auth mode (when {@link currentUserLogin} is null).
+   */
+  public get currentUserRole(): Role | null {
+    return this.pl.currentUserRole;
+  }
+
+  /**
+   * Whether the UI offers share-with-everybody. Computed in the middle layer, mirroring
+   * the backend's make-public rule — no role policy lives in the UI:
+   *   serverCapabilities.has("publicGrants:v1") && canGrantToEveryone(currentUserRole)
+   * Rebinds to a per-user backend capability if the backend later exposes one (the
+   * admins-only restriction / the future multitenant permission model). Not a security
+   * boundary: a crafted call still hits the backend's role + permission-ceiling gate.
+   */
+  public get canShareWithEveryone(): boolean {
+    return (
+      this.serverCapabilities.includes("publicGrants:v1") &&
+      canGrantToEveryone(this.currentUserRole)
+    );
   }
 
   /** Adds a runtime capability to the middle layer. */
@@ -327,15 +368,21 @@ export class MiddleLayer {
   }
 
   //
-  // Project Sharing (M1 — targeted Copy & Share)
+  // Project Sharing (Copy & Share)
   //
 
   /**
-   * Shares the given projects with named recipients (Copy & Share). Snapshots the projects,
-   * creates one envelope, and grants it to each recipient — all in one atomic write
-   * transaction, so a failed grant rolls the whole thing back and the outbox is left as it was.
+   * Shares the given projects (Copy & Share). Snapshots the projects, creates one envelope, and
+   * grants it — all in one atomic write transaction, so a failed grant rolls the whole thing back
+   * and the outbox is left as it was.
    *
-   * v1 always passes `mode: "copy"`; the share-with-everybody variant lands in M2.
+   * Two variants (see {@link ShareProjectsOptions}):
+   * - `{ recipients }` — one writable grant per named recipient; the envelope expires after the
+   *   default TTL (`sharedAt + envelopeTtlMs`).
+   * - `{ everyone: true }` — one make-public grant (backend rewrites the target to the
+   *   everyone-user); the envelope's `expiresAt` is `null`, so it never expires.
+   *
+   * v1 always passes `mode: "copy"`.
    */
   public async shareProjects(
     projectIds: ProjectId[],
@@ -343,24 +390,31 @@ export class MiddleLayer {
   ): Promise<void> {
     if (projectIds.length === 0) throw new Error("shareProjects: no projects given");
 
+    const everyone = "everyone" in options;
     const sourceRids = await Promise.all(projectIds.map((id) => this.resolveProjectId(id)));
     const sender = this.currentUserLogin ?? "";
-    const expiresAt = Date.now() + this.env.ops.envelopeTtlMs;
+    // Targeted share: sharedAt + ttl. Share-with-everybody: never expires (null).
+    const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
 
     await this.pl.withWriteTx("MLShareProjects", async (tx) => {
       const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sourceRids, {
         mode: options.mode,
         sender,
         message: options.message,
-        // Targeted share: sharedAt + ttl. (Share-with-everybody — null expiry — is M2.)
         expiresAt,
       });
 
-      // Grant in the same transaction, one per recipient (writable: the cross-color accept rule
-      // demands a writable grant on the envelope). Atomic with the create.
+      // Grant in the same transaction (writable: the cross-color accept rule demands a writable
+      // grant on the envelope). Atomic with the create.
       const envelopeGid = await envelope.globalId;
-      for (const recipient of options.recipients) {
-        tx.grantAccess(envelopeGid, recipient, { writable: true });
+      if (everyone) {
+        // One everyone-grant: empty/ignored target, MAKE_RESOURCE_PUBLIC. The backend rewrites
+        // the target to the everyone-user; gated by role + permission ceiling.
+        tx.grantAccess(envelopeGid, "", { writable: true }, GrantType.MAKE_RESOURCE_PUBLIC);
+      } else {
+        for (const recipient of options.recipients) {
+          tx.grantAccess(envelopeGid, recipient, { writable: true });
+        }
       }
 
       await tx.commit();
@@ -370,29 +424,134 @@ export class MiddleLayer {
   }
 
   /**
-   * Resolves currently-shared envelopes (granted to this user) to their resource ids, keyed by
-   * the envelope's logical `shareId`. Reads each envelope's immutable {@link EnvelopeData}.
-   *
-   * gRPC-only (via `ListUserResources`); returns an empty map on a REST-connected client.
+   * Replaces an existing share: mints a new envelope instance under the same `shareId` with the
+   * updated project snapshots and a fresh `sharedAt`, copies the recipients' acceptance records
+   * forward (so the donor's "who responded" view survives the replace), re-issues the grant (same
+   * recipients/mode — an everyone-grant if the original was everyone), and tears down the old
+   * envelope — all in one transaction. Recipients who already accepted or rejected this `shareId`
+   * are not re-prompted; recipients who have not yet decided see the updated content.
    */
-  private async resolveLiveEnvelopes(): Promise<
-    Map<string, { rid: SignedResourceId; data: EnvelopeData }>
-  > {
-    const envelopeRids = await this.pl.userResources.listSharedResourcesByType(
-      SharedEnvelopeResourceType.name,
-    );
-    const result = new Map<string, { rid: SignedResourceId; data: EnvelopeData }>();
-    if (envelopeRids.length === 0) return result;
+  public async replaceShare(shareId: ShareId, projectIds: ProjectId[]): Promise<void> {
+    if (projectIds.length === 0) throw new Error("replaceShare: no projects given");
 
-    await this.pl.withReadTx("MLResolveEnvelopes", async (tx) => {
-      for (const rid of envelopeRids) {
-        const rd = await tx.getResourceData(rid, false);
-        if (rd.data === undefined) continue;
-        const data = JSON.parse(Buffer.from(rd.data).toString("utf-8")) as EnvelopeData;
-        result.set(data.shareId, { rid, data });
+    const sourceRids = await Promise.all(projectIds.map((id) => this.resolveProjectId(id)));
+    const sender = this.currentUserLogin ?? "";
+
+    await this.pl.withWriteTx("MLReplaceShare", async (tx) => {
+      // Resolve the existing live envelope for this shareId from the donor's own outbox.
+      const old = await this.resolveOutboxEnvelope(tx, shareId);
+      if (old === undefined)
+        throw new Error(`replaceShare: no live share with id ${shareId} in the outbox.`);
+
+      // The grant target set is preserved: everyone-share keeps the null expiry + everyone-grant.
+      const everyone = old.data.expiresAt === null;
+      const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
+
+      // Mint the new instance under the SAME shareId, with a new sharedAt and updated snapshots.
+      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sourceRids, {
+        mode: old.data.mode,
+        sender,
+        ...(old.data.message !== undefined ? { message: old.data.message } : {}),
+        expiresAt,
+        shareId,
+        sharedAt: Date.now(),
+      });
+
+      // The new envelope's signed id, needed both to copy acceptance records onto it and to grant.
+      const envelopeGid = await envelope.globalId;
+
+      // Copy the recipients' acceptance records forward onto the new envelope instance.
+      const oldData = await tx.getResourceData(old.rid, true);
+      for (const f of oldData.fields) {
+        if (!isAcceptanceField(f.name)) continue;
+        if (isNullSignedResourceId(f.value)) continue;
+        const accData = await tx.getResourceData(f.value, false);
+        if (accData.data === undefined) continue;
+        const acc = JSON.parse(Buffer.from(accData.data).toString("utf-8")) as EnvelopeAcceptance;
+        writeEnvelopeAcceptance(
+          tx,
+          envelopeGid,
+          acceptanceLoginFromField(f.name),
+          acc.action,
+          acc.timestamp,
+        );
       }
+
+      // Re-issue the grant — same shape as the original (everyone-grant or per-recipient).
+      if (everyone) {
+        tx.grantAccess(envelopeGid, "", { writable: true }, GrantType.MAKE_RESOURCE_PUBLIC);
+      } else {
+        const grants = await this.pl.userResources.listGrants(old.rid);
+        for (const g of grants) {
+          if (g.user === EveryoneUser) continue;
+          tx.grantAccess(envelopeGid, g.user, { writable: g.writable });
+        }
+      }
+
+      // Remove the old envelope field from the outbox (backend auto-revokes its grants).
+      tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
+
+      await tx.commit();
     });
-    return result;
+
+    await this.sharingOutboxTree.refreshState();
+  }
+
+  /**
+   * Revokes and deletes an outgoing share for all recipients: detaches and deletes the envelope;
+   * the backend auto-revokes all of its grants via `RevokeAllByResource`. Already-accepted copies
+   * are unaffected (ref-counting keeps the adopted resources alive).
+   */
+  public async revokeShare(shareId: ShareId): Promise<void> {
+    await this.pl.withWriteTx("MLRevokeShare", async (tx) => {
+      const target = await this.resolveOutboxEnvelope(tx, shareId);
+      if (target === undefined)
+        throw new Error(`revokeShare: no live share with id ${shareId} in the outbox.`);
+      tx.removeField(field(this.sharingOutboxResourceId, target.fieldName));
+      await tx.commit();
+    });
+
+    await this.sharingOutboxTree.refreshState();
+  }
+
+  /**
+   * Resolves a live envelope from the donor's own outbox by its logical `shareId`, returning the
+   * outbox field name (for detach), the signed envelope id, and its decoded {@link EnvelopeData}.
+   * The outbox is keyed by `{shareId}` directly, but a replaced/legacy share may have drifted, so
+   * we match on the decoded `shareId` rather than the field name alone.
+   */
+  private async resolveOutboxEnvelope(
+    tx: PlTransaction,
+    shareId: ShareId,
+  ): Promise<{ fieldName: string; rid: SignedResourceId; data: EnvelopeData } | undefined> {
+    const outboxData = await tx.getResourceData(this.sharingOutboxResourceId, true);
+    for (const f of outboxData.fields) {
+      if (isNullSignedResourceId(f.value)) continue;
+      const rd = await tx.getResourceData(f.value, false);
+      if (rd.data === undefined) continue;
+      const data = decodeEnvelopeData(rd.data);
+      if (data.shareId === shareId) return { fieldName: f.name, rid: f.value, data };
+    }
+    return undefined;
+  }
+
+  /**
+   * Resolves currently-shared envelopes (granted to this user) to their resource ids, keyed by
+   * the envelope's logical `shareId`.
+   *
+   * Reads the {@link liveEnvelopes} Computable — the same shared-resource discovery tree that
+   * feeds {@link pendingShares}. This is the single discovery mechanism: there is no separate
+   * `ListUserResources` re-stream on every accept/reject. `refreshState()` is awaited first so a
+   * just-granted envelope is observed (the tree's discovery poll may otherwise lag a freshly
+   * landed grant). The tree is gRPC-only, so this is empty on a REST-connected client.
+   */
+  private async resolveLiveEnvelopes(): Promise<Map<ShareId, LiveEnvelope>> {
+    await this.pendingSharesTree.refreshState();
+    const live = (await this.liveEnvelopes.getValue()) ?? [];
+    // Dedup by logical shareId (last writer wins — at most one live envelope per shareId).
+    const map = new Map<ShareId, LiveEnvelope>();
+    for (const e of live) map.set(e.data.shareId, e);
+    return map;
   }
 
   /**
@@ -405,14 +564,14 @@ export class MiddleLayer {
    * the source lives in the envelope tree, so accept calls the low-level mutator directly.
    */
   public async acceptShare(
-    shareIds: string[],
+    shareIds: ShareId[],
     rename?: (previousLabel: string, existingLabels: string[]) => string,
-  ): Promise<{ accepted: ProjectId[]; failed: { shareId: string; error: string }[] }> {
+  ): Promise<{ accepted: ProjectId[]; failed: { shareId: ShareId; error: string }[] }> {
     const live = await this.resolveLiveEnvelopes();
     const login = this.currentUserLogin;
 
     const accepted: ProjectId[] = [];
-    const failed: { shareId: string; error: string }[] = [];
+    const failed: { shareId: ShareId; error: string }[] = [];
 
     for (const shareId of shareIds) {
       const envelope = live.get(shareId);
@@ -423,7 +582,7 @@ export class MiddleLayer {
       try {
         const now = Date.now();
         const createdRids = await this.pl.withWriteTx("MLAcceptShare", async (tx) => {
-          const created = await adoptEnvelopeProjects(
+          const created = await copyEnvelopeProjectsIntoList(
             tx,
             envelope.rid,
             this.projectListResourceId,
@@ -460,7 +619,7 @@ export class MiddleLayer {
   }
 
   /** Records rejection of a pending share; it never surfaces again. */
-  public async rejectShare(shareId: string): Promise<void> {
+  public async rejectShare(shareId: ShareId): Promise<void> {
     const live = await this.resolveLiveEnvelopes();
     const envelope = live.get(shareId);
     const login = this.currentUserLogin;
@@ -513,7 +672,7 @@ export class MiddleLayer {
           if (isNullSignedResourceId(f.value)) continue;
           const rd = await tx.getResourceData(f.value, false);
           if (rd.data === undefined) continue;
-          const envData = JSON.parse(Buffer.from(rd.data).toString("utf-8")) as EnvelopeData;
+          const envData = decodeEnvelopeData(rd.data);
           if (envData.expiresAt === null) continue; // never expires
           if (envData.expiresAt <= now) toDelete.push({ fieldName: f.name });
         }
@@ -657,8 +816,8 @@ export class MiddleLayer {
 
         return {
           projects: projectsR.existing ?? (await projectsR.ref!.globalId),
-          sharingOutbox: outboxR.existing ?? (await outboxR.ref!.globalId),
           sharingState: stateR.existing ?? (await stateR.ref!.globalId),
+          sharingOutbox: outboxR.existing ?? (await outboxR.ref!.globalId),
         };
       },
     );
@@ -727,7 +886,12 @@ export class MiddleLayer {
     const outgoingTC = await createOutgoingShares(pl, sharingOutbox, env);
     const sharingStateTree = await createSharingStateTree(pl, sharingState, env);
     const pendingSharesTree = await createPendingSharesTree(pl, env);
-    const pendingShares = createPendingSharesComputable(pendingSharesTree, sharingStateTree);
+    const pendingShares = createPendingSharesComputable(
+      pendingSharesTree,
+      sharingStateTree,
+      pl.userResources.authUser,
+    );
+    const liveEnvelopes = createLiveEnvelopesComputable(pendingSharesTree);
 
     return new MiddleLayer(
       env,
@@ -745,6 +909,7 @@ export class MiddleLayer {
       projectListTC.computable,
       outgoingTC.computable,
       pendingShares,
+      liveEnvelopes,
     );
   }
 }

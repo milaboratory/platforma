@@ -1,4 +1,27 @@
-import type { ResourceType } from "@milaboratories/pl-client";
+import type { ResourceType, Role } from "@milaboratories/pl-client";
+import { Role as RoleEnum } from "@milaboratories/pl-client";
+import type { Branded } from "@milaboratories/pl-model-common";
+import { randomUUID } from "node:crypto";
+
+/**
+ * Logical identity of a share, stable across replaces. A donor-generated UUID string,
+ * branded so it cannot be silently confused with a project id, a login, or a raw field
+ * name. Minted once with {@link newShareId}; every other site receives it (from decoded
+ * {@link EnvelopeData} or by parsing a `decision/{shareId}` field name) and threads it
+ * through unchanged.
+ */
+export type ShareId = Branded<string, "ShareId">;
+
+/** Mints a fresh {@link ShareId}. The single place a share's logical identity is created. */
+export function newShareId(): ShareId {
+  return randomUUID() as ShareId;
+}
+
+/** Brands a string already known to be a share id (e.g. parsed from a `decision/{shareId}`
+ *  field name) as a {@link ShareId}, without minting a new one. */
+export function asShareId(id: string): ShareId {
+  return id as ShareId;
+}
 
 //
 // Pl Model — Project Sharing
@@ -19,10 +42,29 @@ export const SharingStateResourceType: ResourceType = { name: "SharingState", ve
 
 export type EnvelopeMode = "copy" | "read-only" | "collaboration";
 
+/**
+ * Whether a role may make a resource public (grant to everyone). Mirrors the backend's
+ * authorization rule `util/misecurity/role.go` `CanGrantToEveryone` — true for controller,
+ * admin, and user; false for workflow and unspecified. The middle layer carries no policy
+ * beyond mirroring the backend: a crafted call still hits the backend's role + permission-ceiling
+ * gate. `null` (no-auth mode) returns false. Rebinds to a per-user backend capability if the
+ * backend later exposes one (the admins-only restriction / future multitenant model).
+ */
+export function canGrantToEveryone(role: Role | null): boolean {
+  switch (role) {
+    case RoleEnum.CONTROLLER:
+    case RoleEnum.ADMIN:
+    case RoleEnum.USER:
+      return true;
+    default:
+      return false;
+  }
+}
+
 /** Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated. */
 export interface EnvelopeData {
   schemaVersion: 1;
-  shareId: string; // donor-generated UUID; logical share identity, stable across replaces
+  shareId: ShareId; // donor-generated UUID; logical share identity, stable across replaces
   sharedAt: number; // ms epoch; this instance's creation time — distinguishes instances of one shareId
   expiresAt: number | null; // ms epoch; sharedAt + ttl (default 14 days) for a targeted share; null for share-with-everybody (never expires)
   mode: EnvelopeMode; // what the acceptor's app should do with the contents
@@ -32,7 +74,7 @@ export interface EnvelopeData {
 }
 
 /** Dynamic field on SharingState, one per handled share, keyed by shareId. */
-export const decisionField = (shareId: string) => `decision/${shareId}`;
+export const decisionField = (shareId: ShareId) => `decision/${shareId}`;
 
 export interface SharingDecision {
   decision: "accepted" | "rejected";
@@ -56,14 +98,31 @@ export interface EnvelopeAcceptance {
 }
 
 /**
- * Options for {@link MiddleLayer.shareProjects}. M1 ships only the targeted-recipients
- * variant; the share-with-everybody variant lands in M2.
+ * Single owner of the raw-data → {@link EnvelopeData} decode. The envelope's immutable `data`
+ * blob is UTF-8 JSON set once at createEphemeral; every site that reads it from a raw resource
+ * `data` byte buffer (the basic-resource read path) goes through here. The reactive tree-node
+ * path uses `node.getDataAsJson<EnvelopeData>()`, which decodes the same JSON.
+ */
+export function decodeEnvelopeData(data: Uint8Array): EnvelopeData {
+  return JSON.parse(Buffer.from(data).toString("utf-8")) as EnvelopeData;
+}
+
+/**
+ * Options for {@link MiddleLayer.shareProjects}.
  *
  * Recipients XOR everyone — two clean variants, not one struct with mutually exclusive
- * optional fields.
+ * optional fields. The everyone variant issues a single make-public grant (the envelope's
+ * `expiresAt` is set to `null`, so it never expires); the recipients variant grants each
+ * named recipient and the envelope expires after the default TTL.
  */
-export type ShareProjectsOptions = {
-  recipients: string[]; // recipient logins
-  message?: string; // optional message shown with the pending share
-  mode: EnvelopeMode; // v1 UI always sends "copy"
-};
+export type ShareProjectsOptions =
+  | {
+      recipients: string[]; // recipient logins
+      message?: string; // optional message shown with the pending share
+      mode: EnvelopeMode; // v1 UI always sends "copy"
+    }
+  | {
+      everyone: true; // share with all users on the server
+      message?: string;
+      mode: EnvelopeMode;
+    };
