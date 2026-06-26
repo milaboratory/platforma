@@ -23,7 +23,6 @@ export class Core {
   private _renderer: SwJsonRenderer | undefined;
 
   public readonly pkgInfo: PackageInfo;
-  public buildMode: util.BuildMode;
   public targetPlatform: util.PlatformType | undefined;
   public allPlatforms: boolean = false;
   public fullDirHash: boolean;
@@ -38,9 +37,15 @@ export class Core {
     this.logger = logger;
     this.pkgInfo = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
 
-    this.buildMode = "release";
-
     this.fullDirHash = false;
+  }
+
+  public get buildMode(): util.BuildMode {
+    return this.pkgInfo.buildMode;
+  }
+
+  public set buildMode(mode: util.BuildMode) {
+    this.pkgInfo.buildMode = mode;
   }
 
   public set version(v: string | undefined) {
