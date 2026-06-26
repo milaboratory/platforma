@@ -51,7 +51,11 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
   const hash = hasher ? hasher : createHash("sha256");
   const folder = path.join(rootDir, subdir ?? ".");
 
-  const info = fs.readdirSync(folder, { withFileTypes: true });
+  // Sort by name (code-unit order, not locale-dependent) so the hash is independent of the
+  // filesystem's enumeration order — readdir order is not guaranteed and varies across hosts.
+  const info = fs
+    .readdirSync(folder, { withFileTypes: true })
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   for (const item of info) {
     const relPath = path.join(subdir ?? ".", item.name);

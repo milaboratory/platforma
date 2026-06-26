@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import * as fs from "node:fs";
+import { createHash } from "node:crypto";
 import type winston from "winston";
 import { z } from "zod/v4";
 
@@ -84,6 +85,9 @@ export class PackageInfo {
 
   private readonly pkgJson: packageJson;
   private _versionOverride: string | undefined;
+
+  /** Kept in sync with `Core.buildMode`; gates content-addressable dev naming. */
+  public buildMode: util.BuildMode = "release";
 
   constructor(
     private logger: winston.Logger,
@@ -500,6 +504,19 @@ export class PackageInfo {
   }
 
   public artifactVersion(artifact: artifacts.anyArtifactType): string {
+    const base = this.baseArtifactVersion(artifact);
+
+    if (this.buildMode !== "release" && artifact.type !== "docker") {
+      const hash = this.devContentHash(artifact);
+      if (hash) {
+        return `${base}-${hash}`;
+      }
+    }
+
+    return base;
+  }
+
+  private baseArtifactVersion(artifact: artifacts.anyArtifactType): string {
     if (this._versionOverride) {
       return this._versionOverride;
     }
@@ -513,6 +530,39 @@ export class PackageInfo {
     }
 
     return this.pkgJson.version;
+  }
+
+  /**
+   * Short content hash of the artifact's content root(s), used as the dev version suffix.
+   */
+  private devContentHash(artifact: artifacts.anyArtifactType): string | undefined {
+    const withId = artifact as artifacts.withId<artifacts.anyArtifactType>;
+    const hasher = createHash("sha256");
+    let hashedAny = false;
+
+    let platforms: util.PlatformType[];
+    try {
+      // Sort so the order roots are fed to the hasher does not depend on package.json key order.
+      platforms = [...this.artifactPlatforms(withId)].sort();
+    } catch {
+      return undefined; // no content roots at all — leave the version without a suffix
+    }
+
+    for (const platform of platforms) {
+      let root: string;
+      try {
+        root = this.artifactContentRoot(withId, platform);
+      } catch {
+        continue; // platform without a defined/present root — skip
+      }
+      if (!fs.existsSync(root)) {
+        continue;
+      }
+      util.hashDirSync(root, hasher);
+      hashedAny = true;
+    }
+
+    return hashedAny ? hasher.digest("hex").slice(0, 12) : undefined;
   }
 
   public artifactRegistrySettings(artifact: artifacts.anyArtifactType): artifacts.registry {
