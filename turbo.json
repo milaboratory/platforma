@@ -60,8 +60,7 @@
         "PL_DOCKER_NO_BUILD",
         "PL_DOCKER_AUTOPUSH",
         "PL_DOCKER_NO_AUTOPUSH",
-        "PL_DOCKER_REGISTRY",
-        "PL_PKG_DEV"
+        "PL_DOCKER_REGISTRY"
       ]
     },
     "test": {
