@@ -8,6 +8,13 @@
 export const BIN_REGISTRY_NAME = "platforma-open";
 export const BIN_REGISTRY_DOWNLOAD_URL = "https://bin.pl-open.science/";
 
+// Dev channel binary registry name embedded in dev descriptors. Built-in default `midev`
+// (open, zero-config dev area). Flips to `dev` when PL_DEV_BINARY_UPLOAD_URL routes uploads
+// to a developer's own endpoint. No URL default is committed — the dev endpoint is supplied
+// per-run via PL_DEV_BINARY_UPLOAD_URL.
+export const DEV_BIN_REGISTRY_NAME = "midev";
+export const DEV_BIN_REGISTRY_NAME_OVERRIDDEN = "dev";
+
 // Python
 export const PYTHON_TOOLSET = "pip";
 export const PYTHON_REQUIREMENTS_FILE = "requirements.txt";

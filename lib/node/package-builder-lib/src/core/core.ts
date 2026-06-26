@@ -244,6 +244,32 @@ export class Core {
     }
   }
 
+  // Build-against-existing (A-0016): write artifact-info pointing at the already-published,
+  // version-derived artifact WITHOUT building or uploading, so a subsequent buildSwJsonFiles
+  // renders a registry descriptor for it. Must run in "release" buildMode (version-derived
+  // naming, no content hash). Binary family only — docker is not referenced this way.
+  public writePublishedArtifactInfo(options?: { ids?: string[] }) {
+    for (const [id, artifact] of this.buildablePackages) {
+      if (options?.ids && !options.ids.includes(id)) continue;
+
+      // The renderer reads cross-platform artifacts with an undefined platform and
+      // per-platform ones with the current platform (see renderBinaryInfo); mirror that.
+      const platform = artifacts.isCrossPlatform(artifact.type)
+        ? undefined
+        : util.currentPlatform();
+      const registry = this.pkgInfo.artifactRegistrySettings(artifact);
+
+      writeBuiltArtifactInfo(this.pkgInfo.artifactInfoLocation(id, "archive", platform), {
+        type: artifact.type,
+        platform: platform ?? util.currentPlatform(),
+        registryURL: registry.downloadURL,
+        registryName: registry.name,
+        remoteArtifactLocation: this.pkgInfo.artifactArchiveAddressPattern(artifact),
+        uploadPath: this.pkgInfo.artifactArchiveFullName(artifact, util.currentPlatform()),
+      });
+    }
+  }
+
   public async buildSoftwareArchives(options?: {
     ids?: string[];
     forceBuild?: boolean;
@@ -349,7 +375,7 @@ export class Core {
       }
     }
 
-    if (util.isDevLocalMode(this.buildMode)) {
+    if (!util.producesRegistryDescriptor(this.buildMode)) {
       this.logger.info(
         `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
       );

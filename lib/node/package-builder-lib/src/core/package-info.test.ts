@@ -1,7 +1,8 @@
 import { PackageInfo } from "./package-info";
 import * as testArtifacts from "./schemas/test-artifacts";
-import { createLogger } from "./util";
-import { test, expect } from "vitest";
+import { createLogger, isDevMode, producesRegistryDescriptor } from "./util";
+import * as envs from "./envs";
+import { test, expect, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -123,4 +124,57 @@ test("content-addressable dev naming appends a content hash", () => {
 
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(root2, { recursive: true, force: true });
+});
+
+test("build-mode predicates split channel from descriptor shape", () => {
+  expect(isDevMode("dev-local")).toBe(true);
+  expect(isDevMode("dev-remote")).toBe(true);
+  expect(isDevMode("release")).toBe(false);
+
+  // dev-local is the only same-host mode: it does NOT build an archive / registry descriptor.
+  expect(producesRegistryDescriptor("dev-local")).toBe(false);
+  expect(producesRegistryDescriptor("dev-remote")).toBe(true);
+  expect(producesRegistryDescriptor("release")).toBe(true);
+});
+
+const devUploadEnv = envs.PL_DEV_BINARY_UPLOAD_URL;
+const releaseUploadEnv = envs.PL_RELEASE_BINARY_UPLOAD_URL;
+afterEach(() => {
+  delete process.env[devUploadEnv];
+  delete process.env[releaseUploadEnv];
+});
+
+test("dev channel flips the embedded binary registry name to midev/dev", () => {
+  const l = createLogger("error");
+  const i = new PackageInfo(l, { pkgJsonData: testArtifacts.SingleBinaryackageJson });
+  const binary = i.getArtifact(testArtifacts.EPNameBinary, "binary");
+
+  // Release: keeps the artifact's resolved registry name (default platforma-open here).
+  const releaseName = i.artifactRegistrySettings(binary).name;
+  expect(releaseName).toEqual("platforma-open");
+
+  // Dev, built-in default: name flips to midev, no upload URL forced.
+  i.buildMode = "dev-remote";
+  expect(i.artifactRegistrySettings(binary).name).toEqual("midev");
+
+  // Dev with an explicit endpoint: name flips to dev and the upload URL routes there.
+  process.env[devUploadEnv] = "s3://my-bucket/dev?region=eu-central-1";
+  const dev = i.artifactRegistrySettings(binary);
+  expect(dev.name).toEqual("dev");
+  expect(dev.storageURL).toEqual("s3://my-bucket/dev?region=eu-central-1");
+
+  // dev-local channel behaves the same for naming.
+  i.buildMode = "dev-local";
+  expect(i.artifactRegistrySettings(binary).name).toEqual("dev");
+});
+
+test("release honors PL_RELEASE_BINARY_UPLOAD_URL without renaming", () => {
+  const l = createLogger("error");
+  const i = new PackageInfo(l, { pkgJsonData: testArtifacts.SingleBinaryackageJson });
+  const binary = i.getArtifact(testArtifacts.EPNameBinary, "binary");
+
+  process.env[releaseUploadEnv] = "s3://release-bucket/pub?region=eu-central-1";
+  const rel = i.artifactRegistrySettings(binary);
+  expect(rel.name).toEqual("platforma-open");
+  expect(rel.storageURL).toEqual("s3://release-bucket/pub?region=eu-central-1");
 });

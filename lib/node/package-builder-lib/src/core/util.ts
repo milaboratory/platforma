@@ -299,11 +299,27 @@ export function currentPlatform(): PlatformType {
 export const AllSoftwareSources = ["archive", "docker"] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
-export type BuildMode = "dev-local" | "release";
+// Two orthogonal axes are folded into one enum: the channel (dev vs release — drives
+// content-addressable naming, isDev, and which registry the artifact lands in) and the
+// descriptor shape (same-host `local` descriptor vs registry-pointing `binary`/`docker`).
+// - dev-local : dev channel, same-host    (content-addressed name, isDev, local descriptor, no archive)
+// - dev-remote: dev channel, pushed        (content-addressed name, isDev, registry descriptor, archive built+uploaded)
+// - release   : release channel, pushed    (version-derived name, registry descriptor)
+export type BuildMode = "dev-local" | "dev-remote" | "release";
 
-/** True for dev-local build mode. */
+/** True for dev-local build mode (same-host, files referenced in place). */
 export function isDevLocalMode(mode: BuildMode): mode is "dev-local" {
   return mode === "dev-local";
+}
+
+/** Channel predicate: dev builds get content-addressable naming and the `isDev` marker. */
+export function isDevMode(mode: BuildMode): mode is "dev-local" | "dev-remote" {
+  return mode === "dev-local" || mode === "dev-remote";
+}
+
+/** Descriptor-shape predicate: these modes build an archive and emit a registry-pointing descriptor. */
+export function producesRegistryDescriptor(mode: BuildMode): mode is "dev-remote" | "release" {
+  return mode === "dev-remote" || mode === "release";
 }
 
 export type artifactID = {

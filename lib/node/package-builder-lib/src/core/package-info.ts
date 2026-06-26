@@ -506,7 +506,7 @@ export class PackageInfo {
   public artifactVersion(artifact: artifacts.anyArtifactType): string {
     const base = this.baseArtifactVersion(artifact);
 
-    if (this.buildMode !== "release" && artifact.type !== "docker") {
+    if (util.isDevMode(this.buildMode) && artifact.type !== "docker") {
       const hash = this.devContentHash(artifact);
       if (hash) {
         return `${base}-${hash}`;
@@ -607,6 +607,27 @@ export class PackageInfo {
     const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`];
     if (downloadFrom) {
       result.downloadURL = downloadFrom;
+    }
+
+    // Channel binary-upload overrides (A-0012/A-0029). On the dev channel the embedded binary
+    // registry name is the built-in `midev`, flipping to `dev` (and routing uploads to the
+    // developer's own endpoint) when PL_DEV_BINARY_UPLOAD_URL is set. Release may override its
+    // upload endpoint via PL_RELEASE_BINARY_UPLOAD_URL without renaming the registry. This
+    // replaces the artifact's declared registry name only for the channel; a referenced runenv
+    // is resolved separately (resolver.ts) and keeps its own published registry.
+    if (util.isDevMode(this.buildMode)) {
+      const devUpload = process.env[envs.PL_DEV_BINARY_UPLOAD_URL];
+      result.name = devUpload
+        ? defaults.DEV_BIN_REGISTRY_NAME_OVERRIDDEN
+        : defaults.DEV_BIN_REGISTRY_NAME;
+      if (devUpload) {
+        result.storageURL = devUpload;
+      }
+    } else {
+      const releaseUpload = process.env[envs.PL_RELEASE_BINARY_UPLOAD_URL];
+      if (releaseUpload) {
+        result.storageURL = releaseUpload;
+      }
     }
 
     if (result.downloadURL) {
