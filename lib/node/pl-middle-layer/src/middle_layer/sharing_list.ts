@@ -276,6 +276,7 @@ export function createPendingSharesComputable(
       if (data === undefined) continue;
       if (handled.has(data.shareId)) continue; // already accepted or rejected
       if (currentUserLogin !== null && data.sender === currentUserLogin) continue; // own share
+      if (data.expiresAt !== null && data.expiresAt <= Date.now()) continue;
 
       result.push({
         shareId: data.shareId,
