@@ -19,7 +19,6 @@ maps := import(":maps")
 runcmd := import(":exec.runcmd")
 feats := import(":feats")
 R := import(":exec.R")
-execConstants := import(":exec.constants")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
@@ -142,22 +141,8 @@ self.body(func(inputs) {
 	// it has acquired the storage quota required for workdir creation,
 	// which is a prerequisite for the computation itself.
 
-	// Imageless commands (bare shell commands, binary-only software, run-envs without a
-	// docker image) cannot run on the k8s/batch runners: those execute every command as a
-	// container and require a docker image (the k8s driver hard-fails with "docker is not
-	// set"). Route such commands to the always-available local executor by running them on
-	// the ui-tasks queue, which is forced to the local executor by default
-	// (uiQueueForceLocalExecutor). This keeps the compute allocation and the run command on
-	// the same (local) runner. Commands WITH a docker image keep their requested queue, so
-	// real workloads still run on the k8s runner.
-	execQueue := runOptions.queue
-	dockerImageTag := inputs.mainPlan.options.dockerImageTag
-	if is_undefined(dockerImageTag) || dockerImageTag == "" {
-		execQueue = execConstants.UI_TASKS_QUEUE
-	}
-
 	computeRequest := {
-		queue: execQueue,
+		queue: runOptions.queue,
 		cpu: quota.cpu,
 		ram: quota.ram
 	}
@@ -187,7 +172,7 @@ self.body(func(inputs) {
 	}
 
 	mainRunBuilder := runcmd.builder(wdBefore, mainPlanPreBuilder.state()).
-		inQueue(execQueue).
+		inQueue(runOptions.queue).
 		allocation(computeAllocationRef)
 
 	if !is_undefined(runOptions.name) && runOptions.name != "" {
