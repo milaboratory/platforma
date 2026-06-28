@@ -125,6 +125,46 @@ describe("facade: slim `package.json` end-state", () => {
   });
 });
 
+describe("facade: `prepublishOnly` publish target branches on isSdkInternal", () => {
+  const AUX_DEV =
+    "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1 --registry-serve-url https://aux-blocks.pl-open.science";
+
+  test("in-SDK blocks publish to the aux/dev registry, regardless of org", () => {
+    // `@milaboratories` would route to production via ORG_PUBLISH_TARGETS — the
+    // isSdkInternal branch must override that and send it to aux/dev.
+    const vars: BlockVars = {
+      facadeName: "@milaboratories/test-org.demo",
+      baseName: "test-org.demo",
+      npmOrg: "@milaboratories",
+      orgScope: "test-org",
+      shortName: "demo",
+    };
+    const { fs } = simulateInit({ vars, isSdkInternal: true });
+    const p = JSON.parse(fs.read("block/package.json"));
+    expect(p.scripts.prepublishOnly).toBe(AUX_DEV);
+  });
+
+  test("standalone blocks publish to their per-org production target", () => {
+    const open = simulateInit({ vars: VARS });
+    expect(JSON.parse(open.fs.read("block/package.json")).scripts.prepublishOnly).toBe(
+      "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1 --registry-serve-url https://blocks.pl-open.science",
+    );
+
+    const milab = simulateInit({
+      vars: {
+        facadeName: "@milaboratories/test-org.demo",
+        baseName: "test-org.demo",
+        npmOrg: "@milaboratories",
+        orgScope: "test-org",
+        shortName: "demo",
+      },
+    });
+    expect(JSON.parse(milab.fs.read("block/package.json")).scripts.prepublishOnly).toBe(
+      "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1 --registry-serve-url https://block.registry.platforma.bio/releases",
+    );
+  });
+});
+
 describe("facade: sibling package privacy", () => {
   test("model / ui / workflow / test are `private` with no `version`", () => {
     const { fs } = simulateInit({ vars: VARS });
