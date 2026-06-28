@@ -42,8 +42,19 @@ const FALLBACK_PUBLISH_TARGET = {
   serveUrl: "https://blocks.pl-open.science",
 };
 
-function prepublishScript(npmOrg: string): string {
-  const t = ORG_PUBLISH_TARGETS[npmOrg] ?? FALLBACK_PUBLISH_TARGET;
+/** Where the in-SDK blocks (`etc/blocks/*`) publish: the aux/dev registry, not
+ *  production `pub/releases/`. These are the monorepo's test/example blocks, so
+ *  one target regardless of org — their `@milaboratories` scope must NOT route
+ *  them to the real catalog alongside standalone blocks. */
+const SDK_INTERNAL_PUBLISH_TARGET = {
+  s3: "s3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1",
+  serveUrl: "https://aux-blocks.pl-open.science",
+};
+
+function prepublishScript(npmOrg: string, isSdkInternal: boolean): string {
+  const t = isSdkInternal
+    ? SDK_INTERNAL_PUBLISH_TARGET
+    : (ORG_PUBLISH_TARGETS[npmOrg] ?? FALLBACK_PUBLISH_TARGET);
   return `block-tools publish -r ${t.s3} --registry-serve-url ${t.serveUrl}`;
 }
 
@@ -63,13 +74,13 @@ export function blockComponents(ctx: RunContext): Record<string, string> {
 
 /** The slim facade's canonical scripts (build / check / prepublishOnly /
  *  do-pack). Shared by the initial generator and the body rule so they cannot
- *  drift apart. `prepublishOnly` depends on the block's org for its publish
- *  coordinates. */
-function blockScripts(npmOrg: string): Record<string, string> {
+ *  drift apart. `prepublishOnly` routes by block kind: in-SDK blocks publish to
+ *  the aux/dev registry, standalone blocks to their per-org production target. */
+function blockScripts(npmOrg: string, isSdkInternal: boolean): Record<string, string> {
   return {
     build: "ts-builder build --target block-facade && block-tools pack",
     check: "ts-builder type-check --target block-facade",
-    prepublishOnly: prepublishScript(npmOrg),
+    prepublishOnly: prepublishScript(npmOrg, isSdkInternal),
     "do-pack": "pnpm pack && shx mv *.tgz package.tgz",
   };
 }
@@ -172,7 +183,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
     module: "./dist/index.js",
     types: "./dist/index.d.ts",
     exports: FACADE_EXPORTS,
-    scripts: blockScripts(v.npmOrg),
+    scripts: blockScripts(v.npmOrg, ctx.isSdkInternal),
     // Slim invariant: zero runtime deps reach the consumer.
     dependencies: {},
     devDependencies: devDeps,
@@ -190,7 +201,7 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   ensureField("types", "./dist/index.d.ts");
   ensureField("exports", FACADE_EXPORTS);
 
-  const scripts = blockScripts(v.npmOrg);
+  const scripts = blockScripts(v.npmOrg, ctx.isSdkInternal);
   for (const [name, command] of Object.entries(scripts)) ensureScript(name, command);
   removeScript("mark-stable");
 
