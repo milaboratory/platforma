@@ -155,16 +155,6 @@ self.body(func(inputs) {
 
 	mainPlanPreBuilder := runcmd.createRunCommandPlan(inputs.mainPlan)
 
-	// EXPERIMENT (MILAB-5933): imageless commands (bare shell commands, run-envs/software
-	// without a docker image) can't run on the k8s runner, which requires a docker image per
-	// command (DriverByRType[executor] is global -> K8s on this deploy, the driver hard-fails
-	// with "docker is not set"). Give them a default base image so the suite can run on k8s.
-	// This validates the "default image" path; the real fix (per-command local fallback or a
-	// configurable default image) belongs in the backend.
-	if is_undefined(inputs.mainPlan.options.dockerImageTag) || inputs.mainPlan.options.dockerImageTag == "" {
-		mainPlanPreBuilder.dockerImageTag("public.ecr.aws/docker/library/ubuntu:22.04")
-	}
-
 	mnz := runOptions.monetization
 	if !is_undefined(mnz) {
 		result := monetization.run(mnz, wdBefore, inputs.mnzPlan, runOptions.queue, computeAllocationRef)
