@@ -9,6 +9,7 @@ import {
 } from "@milaboratories/pl-model-middle-layer";
 import { storageByUrl } from "../io/storage";
 import { BlockRegistryV2 } from "../v2/registry/registry";
+import { buildPublishedCoords, writePublishedCoords } from "../v2/resolve_to_registry";
 import path from "node:path";
 
 function simpleDeepMerge<T extends Record<string, unknown>>(
@@ -43,6 +44,14 @@ export function publishCommand(): Command {
   cmd.addOption(
     new Option("-r, --registry <address>", "full address of the registry")
       .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.addOption(
+    new Option(
+      "--registry-serve-url <url>",
+      "CDN serve URL written into block-pack/published.json (npm-consumed blocks)",
+    )
+      .env("PL_REGISTRY_SERVE_URL")
       .makeOptionMandatory(),
   );
   cmd.option("-m, --manifest <path>", "manifest file path", `./block-pack/${ManifestFileName}`);
@@ -89,6 +98,17 @@ export function publishCommand(): Command {
       logger.info(`Adding package to ${StableChannel} channel...`);
       await registry.addPackageToChannel(manifest.description.id, StableChannel);
     }
+
+    // Write registry coordinates next to the manifest so npm consumers can
+    // resolve the published block via `resolveToRegistry`. Written before
+    // returning so `npm publish`'s tarball generation (after prepublishOnly)
+    // picks it up.
+    const coords = buildPublishedCoords({
+      registryUrl: flags.registryServeUrl,
+      id: manifest.description.id,
+    });
+    await writePublishedCoords(manifestRoot, coords);
+    logger.info(`Wrote published coordinates to ${path.resolve(manifestRoot, "published.json")}`);
 
     if (flags.refresh) await registry.updateIfNeeded();
   });

@@ -46,7 +46,7 @@ export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unkn
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.software`,
-    version: "1.0.0",
+    private: true,
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],
@@ -65,6 +65,11 @@ export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unkn
 }
 
 export function softwarePackageJsonRules(): void {
+  // Controlled sibling — workspace-only, never npm-published. (Software still
+  // publishes runenv artifacts via `pl-pkg`, which is unaffected by `private`.)
+  // The `version` is kept (changesets-owned) so the packed template carries it.
+  ensureField("private", true);
+
   ensureField("type", "module");
   ensureField("files", ["./dist/**/*"]);
 

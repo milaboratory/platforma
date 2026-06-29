@@ -25,7 +25,7 @@ program
 program
   .option(
     "--target <target>",
-    "Project target type (node|browser|browser-lib|block-model|block-ui|block-test)",
+    "Project target type (node|browser|browser-lib|block-model|block-facade|block-ui|block-test)",
   )
   .option("--build-config <path>", "Path to build config file")
   .option("--serve-config <path>", "Path to serve config file")

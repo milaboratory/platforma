@@ -19,6 +19,31 @@ export const BlockPackDevV2 = z.object({
 });
 export type BlockPackDevV2 = z.infer<typeof BlockPackDevV2>;
 
+/** Block pack consumed from an npm-installed package's `block-pack/` folder
+ * (manifest + ui.tgz). Emitted by the facade's engine-generated BlockPointer.
+ * Self-describes its pack location (`packUrl`, `rootUrl`) rather than carrying
+ * `dev-v2`'s `folder`. */
+export const BlockPackFromPackV2 = z.object({
+  type: z.literal("from-pack-v2"),
+  /** `file:` URL of the block-pack directory itself — it directly contains
+   * `manifest.json`, `ui.tgz`, `model.json`, `published.json`, … This is a URL,
+   * NOT a filesystem path: the facade emits a lossless OS-agnostic locator and
+   * stays dependency-free; each consumer converts at its own edge with
+   * `fileURLToPath` (in Node). Consumers MUST read artifacts from here and MUST
+   * NOT reconstruct `<root>/block-pack`: the pointer travels with the block at
+   * its build-time SDK version, and a consumer at a different version cannot
+   * know a layout the structurer may relocate. `type` versions the within-pack
+   * format — if that changes, the discriminator bumps (`from-pack-v3`). */
+  packUrl: z.string(),
+  /** `file:` URL of the facade/package root — the parent that holds the pack
+   * directory plus root-level siblings (e.g. `package.json`). A URL, not a path
+   * (convert with `fileURLToPath` at the edge). Always emitted when built from a
+   * block; optional because a future bare block-pack may ship with no root. */
+  rootUrl: z.string().optional(),
+  mtime: z.string().optional(),
+});
+export type BlockPackFromPackV2 = z.infer<typeof BlockPackFromPackV2>;
+
 /**
  * Block pack from registry with version 2 layout, to be loaded directly
  * from the client.
@@ -46,6 +71,7 @@ export type BlockPackFromRegistryV2 = z.infer<typeof BlockPackFromRegistryV2>;
 export const BlockPackSpec = z.discriminatedUnion("type", [
   BlockPackDevV1,
   BlockPackDevV2,
+  BlockPackFromPackV2,
   BlockPackFromRegistryV1,
   BlockPackFromRegistryV2,
 ]);
