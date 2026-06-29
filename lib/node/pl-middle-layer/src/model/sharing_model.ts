@@ -124,6 +124,12 @@ export type ShareProjectsOptions =
     }
   | {
       everyone: true; // share with all users on the server
+      /**
+       * When true and an everyone-share of the same project already exists, refresh it under its
+       * stable shareId (recipients who already accepted or rejected are not re-prompted) instead of
+       * minting a new share. No-op when no prior everyone-share of the project exists.
+       */
+      replace?: boolean;
       message?: string;
       mode: EnvelopeMode;
     };
