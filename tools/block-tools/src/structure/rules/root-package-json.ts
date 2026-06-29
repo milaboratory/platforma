@@ -17,7 +17,43 @@ import {
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
-export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown> {
+// The dev-build entry points. `block-tools software build` reads the target from three env knobs;
+// each script fixes one cell of the channel × variant × location grid (plus build-against-existing
+// and a release build). When the marker is off, a single `build:dev` is emitted instead.
+const DEV_BINARY_LOCAL_SELECTOR =
+  "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local";
+
+function devBuildScripts(softwareBuild: boolean): Record<string, string> {
+  if (!softwareBuild) {
+    return { "build:dev": "env PL_PKG_DEV=local turbo run build" };
+  }
+  return {
+    "build:dev-docker-local":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=docker PL_BUILD_LOCATION=local turbo run build",
+    "build:dev-binary-local": `${DEV_BINARY_LOCAL_SELECTOR} turbo run build`,
+    "build:dev-docker-remote":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=docker PL_BUILD_LOCATION=remote turbo run build",
+    "build:dev-binary-remote":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=remote turbo run build",
+    "build:dev-binary-ssh":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=ssh turbo run build",
+    "build:dev-binary-existing":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
+    "build:release": "env PL_BUILD_CHANNEL=release PL_BUILD_LOCATION=remote turbo run build",
+  };
+}
+
+// `test` / `test:dry-run` run the build-then-test DAG in the dev-binary-local target; the live
+// backend's env reaches the integration tests via the turbo `test` task's passThroughEnv.
+function testScripts(softwareBuild: boolean): Record<string, string> {
+  const selector = softwareBuild ? DEV_BINARY_LOCAL_SELECTOR : "env PL_PKG_DEV=local";
+  return {
+    test: `${selector} turbo run test --concurrency 1`,
+    "test:dry-run": `${selector} turbo run test --dry-run=json`,
+  };
+}
+
+export function rootPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   // No `name`: the root is never published. Body rules re-assert
   // (removeField("name")) as a drift-corrector.
   return {
@@ -27,9 +63,8 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
       fmt: "turbo run fmt",
       check: "turbo run check",
       build: "turbo run build",
-      "build:dev": "env PL_PKG_DEV=local turbo run build",
-      test: "env PL_PKG_DEV=local turbo run test --concurrency 1",
-      "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
+      ...devBuildScripts(ctx.softwareBuild),
+      ...testScripts(ctx.softwareBuild),
       "mark-stable": "turbo run mark-stable",
       "do-pack": "turbo run do-pack",
       watch: "turbo watch build",
@@ -55,22 +90,26 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
   };
 }
 
-export function rootPackageJsonRules(): void {
+export function rootPackageJsonRules(ctx: RunContext): void {
   ensureField("packageManager", "pnpm@9.12.0");
 
   // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");
 
-  // Canonical lifecycle script set. `test` / `test:dry-run` carry the
-  // PL_PKG_DEV wrapper; the live backend's env reaches the integration
-  // tests via the turbo `test` task's passThroughEnv (no --env-mode=loose
-  // needed).
+  // Canonical lifecycle script set. The live backend's env reaches the
+  // integration tests via the turbo `test` task's passThroughEnv (no
+  // --env-mode=loose needed).
   ensureScript("fmt", "turbo run fmt");
   ensureScript("check", "turbo run check");
   ensureScript("build", "turbo run build");
-  ensureScript("build:dev", "env PL_PKG_DEV=local turbo run build");
-  ensureScript("test", "env PL_PKG_DEV=local turbo run test --concurrency 1");
-  ensureScript("test:dry-run", "env PL_PKG_DEV=local turbo run test --dry-run=json");
+  for (const [name, command] of Object.entries(devBuildScripts(ctx.softwareBuild))) {
+    ensureScript(name, command);
+  }
+  for (const [name, command] of Object.entries(testScripts(ctx.softwareBuild))) {
+    ensureScript(name, command);
+  }
+  // Migrating a block replaces the single legacy dev build with the scenario set.
+  if (ctx.softwareBuild) removeScript("build:dev");
   ensureScript("mark-stable", "turbo run mark-stable");
   ensureScript("do-pack", "turbo run do-pack");
   ensureScript("watch", "turbo watch build");

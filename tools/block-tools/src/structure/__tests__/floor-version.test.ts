@@ -7,7 +7,7 @@ import {
   STRUCTURE_MIN_SUPPORTED,
   StructureVersionFloorError,
   assertVersionAboveFloor,
-  readStructureVersion,
+  readStructureMeta,
 } from "../engine/version";
 import { MemoryFileSystem } from "../engine/fs/memory";
 
@@ -45,7 +45,7 @@ describe("floor-version refusal", () => {
     const fs = new MemoryFileSystem({
       ".structure": JSON.stringify({ version: 0 }) + "\n",
     });
-    const version = await readStructureVersion(fs);
+    const version = readStructureMeta(fs).version;
     expect(version).toBe(0);
     expect(() => assertVersionAboveFloor(version, 1)).toThrow(StructureVersionFloorError);
   });

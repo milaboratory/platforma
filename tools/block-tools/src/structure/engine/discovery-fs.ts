@@ -31,7 +31,7 @@ import type { BlockVars, Module, RunContext } from "./api";
 import type { FileSystem } from "./fs/api";
 import { discoverModules, type WorkspacePackage, type PackageJsonLike } from "./discovery";
 import { createRunContext } from "./ctx";
-import { STRUCTURE_META_FILE, STRUCTURE_MIN_SUPPORTED, assertVersionAboveFloor } from "./version";
+import { STRUCTURE_MIN_SUPPORTED, assertVersionAboveFloor, readStructureMeta } from "./version";
 
 export class StructureCliError extends Error {
   constructor(msg: string) {
@@ -147,21 +147,14 @@ export function parseBlockVars(facadeName: string): BlockVars {
   };
 }
 
-function readVersion(fs: FileSystem): number {
-  try {
-    const parsed = JSON.parse(fs.read(STRUCTURE_META_FILE)) as { version?: number };
-    return typeof parsed.version === "number" ? parsed.version : 0;
-  } catch {
-    return 0;
-  }
-}
-
 export type DiscoverInput = {
   /** Block-rooted filesystem (NodeFileSystem for the CLI, MemoryFileSystem
    *  for the Layer-2 round-trip). */
   fs: FileSystem;
   isSdkInternal: boolean;
   updateDepsOnly?: boolean;
+  /** Turn the per-block software-build marker on for this run; it then persists in `.structure`. */
+  softwareBuild?: boolean;
   dryRun?: boolean;
 };
 
@@ -184,8 +177,10 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
 
   const modules: Module[] = discoverModules(packages);
 
-  const version = readVersion(fs);
-  assertVersionAboveFloor(version, STRUCTURE_MIN_SUPPORTED);
+  const meta = readStructureMeta(fs);
+  assertVersionAboveFloor(meta.version, STRUCTURE_MIN_SUPPORTED);
+  // The marker sticks once written; passing it for this run also turns it on.
+  const softwareBuild = meta.softwareBuild === true || input.softwareBuild === true;
 
   // BlockVars from the block-scope module's name (facade). Fall back to
   // the root module if a block has the root-as-block shape.
@@ -211,7 +206,8 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
     updateDepsOnly: input.updateDepsOnly ?? false,
     modules,
     blockVars,
-    version,
+    version: meta.version,
+    softwareBuild,
     dryRun: input.dryRun ?? false,
   });
 }
