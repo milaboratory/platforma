@@ -73,7 +73,9 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
 
       fs.closeSync(fileDescriptor);
     } else if (item.isDirectory()) {
-      hashDirSync(fullPath, hash);
+      // Keep rootDir fixed and pass the accumulated relPath so nested entries hash under their
+      // full path from the root — otherwise `dirA/` + `file` collides with `dirA/file`.
+      hashDirSync(rootDir, hash, relPath);
     }
   }
 

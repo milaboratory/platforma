@@ -88,42 +88,48 @@ test("PackageInfo considers version override", () => {
 test("content-addressable dev naming appends a content hash", () => {
   const l = createLogger("error");
 
-  // Real package root so the asset's "./src" content root resolves and can be hashed.
+  // Real package roots so the asset's "./src" content root resolves and can be hashed.
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-info-dev-"));
-  fs.mkdirSync(path.join(root, "src"));
-  fs.writeFileSync(path.join(root, "src", "a.txt"), "hello");
-
-  const i = new PackageInfo(l, { packageRoot: root, pkgJsonData: testArtifacts.PackageJson });
-  const asset = i.getArtifact(testArtifacts.EPNameAsset, "asset");
-  const docker = i.getArtifact(testArtifacts.EPNameDocker, "docker");
-
-  // Release (default): version-derived, no suffix.
-  expect(i.artifactVersion(asset)).toEqual(testArtifacts.PackageVersion);
-
-  // Dev: a `-<12 hex>` content suffix, deterministic for unchanged content.
-  i.buildMode = "dev-local";
-  const dev1 = i.artifactVersion(asset);
-  expect(dev1).toMatch(new RegExp(`^${testArtifacts.PackageVersion}-[0-9a-f]{12}$`));
-  expect(i.artifactVersion(asset)).toEqual(dev1);
-
-  // Docker stays version-derived (already content-addressed via its image-ID tag).
-  expect(i.artifactVersion(docker)).toEqual(testArtifacts.PackageVersion);
-
-  // Reproducible: identical content at a different absolute location yields the same suffix
-  // (hash is over relative paths + file contents, sorted — not the build directory).
   const root2 = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-info-dev-"));
-  fs.mkdirSync(path.join(root2, "src"));
-  fs.writeFileSync(path.join(root2, "src", "a.txt"), "hello");
-  const i2 = new PackageInfo(l, { packageRoot: root2, pkgJsonData: testArtifacts.PackageJson });
-  i2.buildMode = "dev-local";
-  expect(i2.artifactVersion(i2.getArtifact(testArtifacts.EPNameAsset, "asset"))).toEqual(dev1);
+  const devAsset = (packageRoot: string): string => {
+    const pi = new PackageInfo(l, { packageRoot, pkgJsonData: testArtifacts.PackageJson });
+    pi.buildMode = "dev-local";
+    return pi.artifactVersion(pi.getArtifact(testArtifacts.EPNameAsset, "asset"));
+  };
 
-  // Changed content ⟹ a different name.
-  fs.writeFileSync(path.join(root, "src", "b.txt"), "world");
-  expect(i.artifactVersion(asset)).not.toEqual(dev1);
+  try {
+    fs.mkdirSync(path.join(root, "src"));
+    fs.writeFileSync(path.join(root, "src", "a.txt"), "hello");
 
-  fs.rmSync(root, { recursive: true, force: true });
-  fs.rmSync(root2, { recursive: true, force: true });
+    const i = new PackageInfo(l, { packageRoot: root, pkgJsonData: testArtifacts.PackageJson });
+    const asset = i.getArtifact(testArtifacts.EPNameAsset, "asset");
+    const docker = i.getArtifact(testArtifacts.EPNameDocker, "docker");
+
+    // Release (default): version-derived, no suffix.
+    expect(i.artifactVersion(asset)).toEqual(testArtifacts.PackageVersion);
+
+    // Dev: a `-<12 hex>` content suffix, deterministic for unchanged content.
+    i.buildMode = "dev-local";
+    const dev1 = i.artifactVersion(asset);
+    expect(dev1).toMatch(new RegExp(`^${testArtifacts.PackageVersion}-[0-9a-f]{12}$`));
+    expect(i.artifactVersion(asset)).toEqual(dev1);
+
+    // Docker stays version-derived (already content-addressed via its image-ID tag).
+    expect(i.artifactVersion(docker)).toEqual(testArtifacts.PackageVersion);
+
+    // Reproducible: identical content at a different absolute location yields the same suffix
+    // (hash is over relative paths + file contents, sorted — not the build directory).
+    fs.mkdirSync(path.join(root2, "src"));
+    fs.writeFileSync(path.join(root2, "src", "a.txt"), "hello");
+    expect(devAsset(root2)).toEqual(dev1);
+
+    // Changed content ⟹ a different name (a fresh build over the changed tree).
+    fs.writeFileSync(path.join(root, "src", "b.txt"), "world");
+    expect(devAsset(root)).not.toEqual(dev1);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
 });
 
 test("build-mode predicates split channel from descriptor shape", () => {
