@@ -1,6 +1,6 @@
 import { Command, Option } from "commander";
 import { util, envs, createBuilder } from "@platforma-sdk/package-builder-lib";
-import { parseScenario, planFor, channels, variants, locations } from "./knobs";
+import { parseScenario, channels, variants, locations } from "./knobs";
 import { runBuild } from "./run-build";
 
 const PL_BUILD_CHANNEL = "PL_BUILD_CHANNEL";
@@ -121,23 +121,20 @@ export function softwareBuildCommand(): Command {
     const logger = util.createLogger(o.logLevel);
 
     try {
-      const plan = planFor(
-        parseScenario({
-          channel: o.channel,
-          variant: o.variant,
-          location: o.location,
-          usePublished: Boolean(o.usePublished),
-        }),
-      );
+      const scenario = parseScenario({
+        channel: o.channel,
+        variant: o.variant,
+        location: o.location,
+        usePublished: Boolean(o.usePublished),
+      });
 
       const core = createBuilder(logger, { packageRoot: o.packageRoot });
-      core.buildMode = plan.buildMode;
       core.version = o.version;
       core.targetPlatform = o.platform as util.PlatformType;
       core.allPlatforms = Boolean(o.allPlatforms);
       core.fullDirHash = Boolean(o.fullDirHash);
 
-      await runBuild(core, plan, {
+      await runBuild(core, scenario, {
         ids: o.packageId,
         force: o.force,
         contentRoot: o.contentRoot,
