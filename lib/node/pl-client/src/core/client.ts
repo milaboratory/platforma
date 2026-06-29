@@ -112,6 +112,15 @@ export class PlClient {
     const conf =
       typeof configOrAddress === "string" ? plAddressToConfig(configOrAddress) : configOrAddress;
 
+    // An empty or whitespace-only asUser means "no impersonation"; normalize to undefined so a
+    // directly-constructed { asUser: "" } does not slip through as an empty login.
+    if (conf.asUser !== undefined && conf.asUser.trim() === "") conf.asUser = undefined;
+
+    // asUser (impersonation) and alternativeRoot both repoint the client root, so they cannot be
+    // combined. Validate here, before init() touches the network, so a misconfiguration fails fast.
+    if (conf.asUser !== undefined && conf.alternativeRoot !== undefined)
+      throw new Error("PlClient: asUser and alternativeRoot cannot be combined.");
+
     this.buildLLPlClient = async (
       shouldUseGzip: boolean,
       wireProtocol?: wireProtocol,
@@ -295,7 +304,20 @@ export class PlClient {
       this._ll = await this.buildLLPlClient(true, wireProtocol);
     }
 
-    const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
+    // Resolve the client root. Normally the caller's own root; when `asUser` is set (admin impersonation),
+    // the target user's root instead. The backend authorizes impersonation by role and silently returns the
+    // caller's own root for non-admins, so no client-side role gate is needed here.
+    let userRoot: SignedResourceId;
+    if (this.conf.asUser === undefined) {
+      userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
+    } else {
+      const impersonatedRoot = await this.userResources.getUserRoot({ login: this.conf.asUser });
+      if (impersonatedRoot === undefined)
+        throw new Error(
+          `PlClient: cannot open root of user '${this.conf.asUser}': no root found (the user may have never logged in).`,
+        );
+      userRoot = impersonatedRoot;
+    }
 
     // Resolve the caller's role once, alongside the user root. Skipped for an
     // anonymous connection (no authenticated user, hence no role); on a backend
