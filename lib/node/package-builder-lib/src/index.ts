@@ -22,6 +22,7 @@ export type Builder = Pick<
   | "buildDockerImages"
   | "buildSoftwareArchives"
   | "buildSwJsonFiles"
+  | "writePublishedArtifactInfo"
   | "publishPackages"
   | "publishDockerImages"
 >;

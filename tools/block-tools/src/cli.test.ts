@@ -15,7 +15,7 @@ function longNames(cmd: Command): string[] {
 describe("block-tools CLI structure", () => {
   const program = buildProgram();
 
-  it("exposes the full command surface (10 commands + structure topic)", () => {
+  it("exposes the full command surface (11 commands + structure topic)", () => {
     expect(program.commands.map((c) => c.name()).sort()).toEqual([
       "build-meta",
       "build-model",
@@ -25,6 +25,7 @@ describe("block-tools CLI structure", () => {
       "publish",
       "refresh-registry",
       "restore-overview-from-snapshot",
+      "software",
       "structure",
       "update-deps",
       "upload-package-v1",
@@ -34,6 +35,24 @@ describe("block-tools CLI structure", () => {
         .commands.map((c) => c.name())
         .sort(),
     ).toEqual(["check", "init", "refresh"]);
+    expect(
+      subcommand(program, "software")
+        .commands.map((c) => c.name())
+        .sort(),
+    ).toEqual(["build"]);
+  });
+
+  it("software build exposes the three knobs + use-published with env bindings", () => {
+    const build = subcommand(subcommand(program, "software"), "build");
+    const names = longNames(build);
+    for (const f of ["--channel", "--variant", "--location", "--use-published"]) {
+      expect(names).toContain(f);
+    }
+    const env = (long: string) => build.options.find((o) => o.long === long)?.envVar;
+    expect(env("--channel")).toBe("PL_BUILD_CHANNEL");
+    expect(env("--variant")).toBe("PL_BUILD_VARIANT");
+    expect(env("--location")).toBe("PL_BUILD_LOCATION");
+    expect(env("--use-published")).toBe("PL_BUILD_USE_PUBLISHED");
   });
 
   it("preserves key flags + env bindings", () => {

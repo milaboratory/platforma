@@ -8,6 +8,10 @@
 export const BIN_REGISTRY_NAME = "platforma-open";
 export const BIN_REGISTRY_DOWNLOAD_URL = "https://bin.pl-open.science/";
 
+// Built-in dev binary registry name; flips to DEV_BIN_REGISTRY_NAME_OVERRIDDEN under PL_DEV_BINARY_UPLOAD_URL.
+export const DEV_BIN_REGISTRY_NAME = "midev";
+export const DEV_BIN_REGISTRY_NAME_OVERRIDDEN = "dev";
+
 // Python
 export const PYTHON_TOOLSET = "pip";
 export const PYTHON_REQUIREMENTS_FILE = "requirements.txt";

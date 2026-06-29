@@ -12,6 +12,7 @@ import { uploadPackageV1Command } from "./cmd/upload-package-v1";
 import { structureCheckCommand } from "./cmd/structure/check";
 import { structureInitCommand } from "./cmd/structure/init";
 import { structureRefreshCommand } from "./cmd/structure/refresh";
+import { softwareCommand } from "./cmd/software";
 
 // `packageRoot` is the package install root (the dir containing `src/` and
 // `bin/`); the `structure` commands resolve their templates under it. bin/run.js
@@ -32,6 +33,7 @@ export function buildProgram(packageRoot: string = process.cwd()): Command {
   program.addCommand(listOverviewSnapshotsCommand());
   program.addCommand(restoreOverviewFromSnapshotCommand());
   program.addCommand(uploadPackageV1Command());
+  program.addCommand(softwareCommand());
 
   // `structure` subcommands: check | init | refresh.
   const structure = new Command("structure").description(

@@ -42,6 +42,7 @@
     "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-sdk/blocks-deps-updater": "workspace:*",
+    "@platforma-sdk/package-builder-lib": "workspace:*",
     "canonicalize": "catalog:",
     "commander": "catalog:",
     "lru-cache": "catalog:",

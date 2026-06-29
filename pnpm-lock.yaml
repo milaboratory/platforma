@@ -4114,6 +4114,9 @@ importers:
       '@platforma-sdk/blocks-deps-updater':
         specifier: workspace:*
         version: link:../blocks-deps-updater
+      '@platforma-sdk/package-builder-lib':
+        specifier: workspace:*
+        version: link:../../lib/node/package-builder-lib
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
