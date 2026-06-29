@@ -417,8 +417,8 @@ export interface ResourceSchema {
  */
 export interface ResourceSchema_AccessFlags {
     /**
-     * Deny-list approach: default = allowed (true)
-     * Controllers set these to false to restrict non-controller roles (role='u', role='w')
+     * Allow-list approach: default = forbidden (false)
+     * Controllers set this to true allow non-controller roles (role='u', role='w')
      *
      * @generated from protobuf field: optional bool create_resource = 1
      */
@@ -428,21 +428,21 @@ export interface ResourceSchema_AccessFlags {
      *
      * @generated from protobuf field: optional bool read_fields = 2
      */
-    readFields?: boolean; // default: true (reads allowed)
+    readFields?: boolean; // default: false (reads denied)
     /**
      * @generated from protobuf field: optional bool write_fields = 3
      */
-    writeFields?: boolean; // default: true (writes allowed)
+    writeFields?: boolean; // default: false (writes denied)
     /**
      * IMPORTANT: read_kv=false with write_kv=true is a forbidden combination
      *
      * @generated from protobuf field: optional bool read_kv = 4
      */
-    readKv?: boolean; // if unset, falls back to read_fields
+    readKv?: boolean; // default: false (KV reads denied)
     /**
      * @generated from protobuf field: optional bool write_kv = 5
      */
-    writeKv?: boolean; // if unset, falls back to write_fields
+    writeKv?: boolean; // default: false (KV writes denied)
     /**
      * Per-field-type overrides (map: field_type → bool)
      * When defined for a field type, overrides resource-level flags
@@ -458,6 +458,13 @@ export interface ResourceSchema_AccessFlags {
     writeByFieldType: {
         [key: number]: boolean;
     };
+    /**
+     * Allows non-controller roles (role='u', role='w') to set error on the resource,
+     * marking it as failed and dropping it from recovery/deduplication indicies.
+     *
+     * @generated from protobuf field: optional bool set_error = 8
+     */
+    setError?: boolean; // default: true (allowed)
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.FieldSchema
@@ -1506,7 +1513,8 @@ class ResourceSchema_AccessFlags$Type extends MessageType<ResourceSchema_AccessF
             { no: 4, name: "read_kv", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 5, name: "write_kv", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ },
             { no: 6, name: "read_by_field_type", kind: "map", K: 13 /*ScalarType.UINT32*/, V: { kind: "scalar", T: 8 /*ScalarType.BOOL*/ } },
-            { no: 7, name: "write_by_field_type", kind: "map", K: 13 /*ScalarType.UINT32*/, V: { kind: "scalar", T: 8 /*ScalarType.BOOL*/ } }
+            { no: 7, name: "write_by_field_type", kind: "map", K: 13 /*ScalarType.UINT32*/, V: { kind: "scalar", T: 8 /*ScalarType.BOOL*/ } },
+            { no: 8, name: "set_error", kind: "scalar", opt: true, T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceSchema_AccessFlags>): ResourceSchema_AccessFlags {
@@ -1542,6 +1550,9 @@ class ResourceSchema_AccessFlags$Type extends MessageType<ResourceSchema_AccessF
                     break;
                 case /* map<uint32, bool> write_by_field_type */ 7:
                     this.binaryReadMap7(message.writeByFieldType, reader, options);
+                    break;
+                case /* optional bool set_error */ 8:
+                    message.setError = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1608,6 +1619,9 @@ class ResourceSchema_AccessFlags$Type extends MessageType<ResourceSchema_AccessF
         /* map<uint32, bool> write_by_field_type = 7; */
         for (let k of globalThis.Object.keys(message.writeByFieldType))
             writer.tag(7, WireType.LengthDelimited).fork().tag(1, WireType.Varint).uint32(parseInt(k)).tag(2, WireType.Varint).bool(message.writeByFieldType[k as any]).join();
+        /* optional bool set_error = 8; */
+        if (message.setError !== undefined)
+            writer.tag(8, WireType.Varint).bool(message.setError);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

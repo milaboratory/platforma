@@ -259,6 +259,8 @@ service Platform {
   }
   rpc ListUserResources(AuthAPI.ListUserResources.Request) returns (stream AuthAPI.ListUserResources.Response) {}
 
+  rpc ListUsers(AuthAPI.ListUsers.Request) returns (AuthAPI.ListUsers.Response) {}
+
   //
   // Other stuff
   //
@@ -483,6 +485,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Request grant_access = 410; // grant access to a resource within transaction
       AuthAPI.RevokeAccess.Request revoke_access = 411; // revoke access to a resource within transaction
+      AuthAPI.ListGrants.Request list_grants = 412; // list grants on a resource within transaction
     }
   }
 
@@ -585,6 +588,7 @@ message TxAPI {
 
       AuthAPI.GrantAccess.Response grant_access = 410;
       AuthAPI.RevokeAccess.Response revoke_access = 411;
+      AuthAPI.ListGrants.TxResponse list_grants = 412;
     }
 
     google.rpc.Status error = 3;
@@ -1699,8 +1703,9 @@ message AuthAPI {
       string user_id_claim = 8;
       string groups_claim = 9;
       FlowType flow_type = 10;
+      optional string access_type = 11; // "online" | "offline"; Google-specific (offline → refresh token)
 
-      // next free: 11;
+      // next free: 12;
     }
 
     message MethodInfo {
@@ -1735,6 +1740,15 @@ message AuthAPI {
     message PublicPKCE {
       string nonce = 1; // server-issued one-time value
       google.protobuf.Timestamp expires_at = 2; // after this, nonce is no longer valid (when enforced)
+      // Confidential-client secret for the IdP token exchange; absent for public clients.
+      // Rationale: Google's OIDC does not support public clients — it requires a
+      // client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+      // gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+      // leaving the server. So the backend holds the secret and forwards it here to the
+      // desktop, which performs the token exchange as a confidential client.
+      optional string client_secret = 3;
+
+      // next free: 4;
     }
 
     message Response {
@@ -1866,6 +1880,10 @@ message AuthAPI {
     message Response {
       Grant grant = 1; // one per stream message
     }
+
+    message TxResponse {
+      repeated Grant grants = 1; // all grants for the resource in a single transactional response
+    }
   }
 
   message Grant {
@@ -1946,6 +1964,23 @@ message AuthAPI {
       bytes resource_signature = 2;
       Base.ResourceType resource_type = 3;
       Grant.Permissions permissions = 4;
+    }
+  }
+
+  message User {
+    // login is the stable identifier of the user — the grant target and the
+    // GetUserRoot key. Further fields (e.g. first name, last name, email) may
+    // be added later without breaking compatibility.
+    string login = 1;
+  }
+
+  message ListUsers {
+    message Request {}
+
+    // Lists users known to the server. A user becomes known on first login;
+    // provisioned users who have never logged in do not appear.
+    message Response {
+      repeated User users = 1;
     }
   }
 }
