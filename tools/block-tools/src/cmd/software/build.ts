@@ -2,11 +2,12 @@ import { Command, Option } from "commander";
 import { util, envs, createBuilder } from "@platforma-sdk/package-builder-lib";
 import { parseScenario, channels, variants, locations } from "./knobs";
 import { runBuild } from "./run-build";
-
-const PL_BUILD_CHANNEL = "PL_BUILD_CHANNEL";
-const PL_BUILD_VARIANT = "PL_BUILD_VARIANT";
-const PL_BUILD_LOCATION = "PL_BUILD_LOCATION";
-const PL_BUILD_USE_PUBLISHED = "PL_BUILD_USE_PUBLISHED";
+import {
+  PL_BUILD_CHANNEL,
+  PL_BUILD_VARIANT,
+  PL_BUILD_LOCATION,
+  PL_BUILD_USE_PUBLISHED,
+} from "./env";
 
 function collect(value: string, previous?: string[]): string[] {
   return previous ? [...previous, value] : [value];
