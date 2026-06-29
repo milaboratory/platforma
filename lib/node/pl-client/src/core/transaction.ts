@@ -182,14 +182,21 @@ export const Role = AuthAPI_Role;
 export type Role = AuthAPI_Role;
 
 /**
- * Sentinel login standing for "all users on the server". A public
- * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant is recorded against this login,
- * and recipients of an everyone-grant surface in `ListGrants` with this value —
- * callers map it to "*". Mirror of `EveryoneUser` in
- * `pl/platform/model/user.go`.
+ * Recognises the backend's "all users on the server" sentinel login. A public
+ * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant is recorded by the backend against a
+ * reserved login, and recipients of an everyone-grant surface in `ListGrants` with that
+ * value — callers detect it here and map it to "*".
+ *
+ * We match by shape (the `everyone-` prefix plus the fixed 64-char token length) rather
+ * than mirroring the exact constant from `pl/platform/model/user.go`, to avoid leaking
+ * that backend implementation detail into the client. The long random token guarantees no
+ * real user login takes this shape.
  */
-export const EveryoneUser =
-  "everyone-Po9ahwahxai7Aejingaiyiequuecu3ei4moaNge4xahTh0Co7XeeLeiph6ahy3As";
+const EveryonePrefix = "everyone-";
+const EveryoneLoginLength = EveryonePrefix.length + 64;
+export function isEveryoneUserLogin(login: string): boolean {
+  return login.length === EveryoneLoginLength && login.startsWith(EveryonePrefix);
+}
 
 const emptySignature = toResourceSignature(new Uint8Array(0));
 

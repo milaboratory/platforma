@@ -19,9 +19,9 @@ const LsProviderFieldPrefix = "storage/"; // provides access to storages list
 
 /** One recipient of a resource, as returned by {@link UserResources.listGrants}. */
 export interface GrantEntry {
-  /** Login the grant targets. An everyone-grant surfaces here as the
-   *  `EveryoneUser` sentinel (re-exported from "./transaction"); callers map it
-   *  to "*". */
+  /** Login the grant targets. An everyone-grant surfaces here as the backend's
+   *  everyone-sentinel — test with {@link isEveryoneUserLogin} (from "./transaction"); callers
+   *  map it to "*". */
   readonly user: string;
   /** True for a writable grant (copy / collaboration), false for read-only. */
   readonly writable: boolean;
@@ -227,9 +227,9 @@ export class UserResources {
    *
    * Takes a signed, writable resource handle: the backend gates `ListGrants` at
    * routing on a signed resource id with writable permission, so only the
-   * resource's owner can call it. An everyone-grant surfaces with `user` equal
-   * to the `EveryoneUser` sentinel (re-exported from "./transaction"); the
-   * caller maps that to "*".
+   * resource's owner can call it. An everyone-grant surfaces with `user` matching
+   * the backend's everyone-sentinel — test with {@link isEveryoneUserLogin} (from
+   * "./transaction"); the caller maps that to "*".
    *
    * gRPC-only: `ListGrants` throws on a REST-connected client
    * ({@link LLPlClient.listGrants}).

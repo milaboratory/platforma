@@ -948,8 +948,8 @@ export class LLPlClient implements WireClientProviderFactory {
    *  share with" view. The backend gates this at routing: the request must
    *  carry a signed, writable resource handle, so only the resource's owner can
    *  call it. gRPC-only (server-streaming, no REST binding). Recipients of an
-   *  everyone-grant surface with {@link grpcTypes.AuthAPI_Grant.user} equal to
-   *  the {@link EveryoneUser} sentinel; the caller maps that to "*". */
+   *  everyone-grant surface with {@link grpcTypes.AuthAPI_Grant.user} matching the
+   *  backend's everyone-sentinel ({@link isEveryoneUserLogin}); the caller maps that to "*". */
   public async listGrants(
     resourceId: bigint,
     resourceSignature: Uint8Array,

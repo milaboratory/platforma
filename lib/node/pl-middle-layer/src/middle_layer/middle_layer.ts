@@ -6,7 +6,7 @@ import type {
   Role,
 } from "@milaboratories/pl-client";
 import {
-  EveryoneUser,
+  isEveryoneUserLogin,
   field,
   GrantType,
   isNotNullSignedResourceId,
@@ -480,8 +480,8 @@ export class MiddleLayer {
         return {
           fieldName,
           rid,
-          everyone: grants.some((g) => g.user === EveryoneUser),
-          recipients: grants.filter((g) => g.user !== EveryoneUser).map((g) => g.user),
+          everyone: grants.some((g) => isEveryoneUserLogin(g.user)),
+          recipients: grants.filter((g) => !isEveryoneUserLogin(g.user)).map((g) => g.user),
         };
       }),
     );

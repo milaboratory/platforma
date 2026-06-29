@@ -2,7 +2,7 @@ import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import type { Filter, PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import {
-  EveryoneUser,
+  isEveryoneUserLogin,
   resourceIdToString,
   resourceType,
   resourceTypesEqual,
@@ -126,7 +126,7 @@ export function createOutgoingSharesComputable(
     },
     {
       // Enrich the full recipient list per envelope via ListGrants (async). An everyone-grant
-      // surfaces with the EveryoneUser sentinel, mapped to "*". The donor's own grant on their
+      // surfaces with the everyone-sentinel (isEveryoneUserLogin), mapped to "*". The donor's own grant on their
       // envelope is dropped — it's their own share, showing their login as a "recipient" is noise.
       postprocessValue: async (
         drafts: OutgoingShareDraft[] | undefined,
@@ -136,7 +136,7 @@ export function createOutgoingSharesComputable(
         return await Promise.all(
           drafts.map(async ({ envelopeRid, ...share }): Promise<OutgoingShare> => {
             const grants = await pl.userResources.listGrants(envelopeRid);
-            const everyone = grants.some((g) => g.user === EveryoneUser);
+            const everyone = grants.some((g) => isEveryoneUserLogin(g.user));
             const recipients = everyone
               ? ["*"]
               : grants.map((g) => g.user).filter((u) => u !== self);
