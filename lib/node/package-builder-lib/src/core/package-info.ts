@@ -506,7 +506,7 @@ export class PackageInfo {
   public artifactVersion(artifact: artifacts.anyArtifactType): string {
     const base = this.baseArtifactVersion(artifact);
 
-    if (this.buildMode !== "release" && artifact.type !== "docker") {
+    if (util.isDevMode(this.buildMode) && artifact.type !== "docker") {
       const hash = this.devContentHash(artifact);
       if (hash) {
         return `${base}-${hash}`;
@@ -542,7 +542,7 @@ export class PackageInfo {
 
     let platforms: util.PlatformType[];
     try {
-      // Sort so the order roots are fed to the hasher does not depend on package.json key order.
+      // Sorted so the hash is independent of package.json root-key order.
       platforms = [...this.artifactPlatforms(withId)].sort();
     } catch {
       return undefined; // no content roots at all — leave the version without a suffix
@@ -607,6 +607,24 @@ export class PackageInfo {
     const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`];
     if (downloadFrom) {
       result.downloadURL = downloadFrom;
+    }
+
+    // Dev channel: the embedded binary registry is the built-in `midev`, flipping to `dev` and
+    // uploading to `PL_DEV_BINARY_UPLOAD_URL` when that is set. Release may override its upload
+    // endpoint without renaming. (A referenced runenv keeps its own registry — resolved elsewhere.)
+    if (util.isDevMode(this.buildMode)) {
+      const devUpload = process.env[envs.PL_DEV_BINARY_UPLOAD_URL];
+      result.name = devUpload
+        ? defaults.DEV_BIN_REGISTRY_NAME_OVERRIDDEN
+        : defaults.DEV_BIN_REGISTRY_NAME;
+      if (devUpload) {
+        result.storageURL = devUpload;
+      }
+    } else {
+      const releaseUpload = process.env[envs.PL_RELEASE_BINARY_UPLOAD_URL];
+      if (releaseUpload) {
+        result.storageURL = releaseUpload;
+      }
     }
 
     if (result.downloadURL) {

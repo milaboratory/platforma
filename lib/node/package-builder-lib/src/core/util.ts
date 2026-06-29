@@ -51,8 +51,7 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
   const hash = hasher ? hasher : createHash("sha256");
   const folder = path.join(rootDir, subdir ?? ".");
 
-  // Sort by name (code-unit order, not locale-dependent) so the hash is independent of the
-  // filesystem's enumeration order — readdir order is not guaranteed and varies across hosts.
+  // Sort for a host-independent hash: readdir enumeration order is not guaranteed.
   const info = fs
     .readdirSync(folder, { withFileTypes: true })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
@@ -299,11 +298,14 @@ export function currentPlatform(): PlatformType {
 export const AllSoftwareSources = ["archive", "docker"] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
-export type BuildMode = "dev-local" | "release";
+export type BuildMode = "dev-local" | "dev-remote" | "release";
 
-/** True for dev-local build mode. */
-export function isDevLocalMode(mode: BuildMode): mode is "dev-local" {
-  return mode === "dev-local";
+export function isDevMode(mode: BuildMode): mode is "dev-local" | "dev-remote" {
+  return mode === "dev-local" || mode === "dev-remote";
+}
+
+export function producesRegistryDescriptor(mode: BuildMode): mode is "dev-remote" | "release" {
+  return mode === "dev-remote" || mode === "release";
 }
 
 export type artifactID = {
