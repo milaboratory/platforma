@@ -36,10 +36,13 @@ describe("DISCOVERY: shortName from the block package name", () => {
       // Nameless root — the standalone shape; classified `root` by path.
       "package.json": "{}",
       // Legacy block package: name IS the bare facade, no `.block` suffix.
+      // Classified `block` via its top-level `block` field (every real block —
+      // legacy shim or migrated facade — carries one).
       "block/package.json": JSON.stringify({
         name: "@platforma-open/test-org.legacy",
         files: ["index.d.ts", "index.js"],
         dependencies: { "@platforma-sdk/block-tools": "*" },
+        block: { components: {}, meta: {} },
       }),
     });
     const ctx = discoverRunContext({ fs, isSdkInternal: false });

@@ -1,8 +1,9 @@
-import { Args, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import { field, resourceIdToString } from "@milaboratories/pl-client";
 import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
-import { PlCommand } from "../../base_command";
+import { connect } from "../../base_command";
+import { addOptions, GlobalOptions, UserAuthOptions, AdminTargetOptions } from "../../cmd-opts";
 import {
   resolveProject,
   deduplicateName,
@@ -11,72 +12,64 @@ import {
 } from "../../project_ops";
 import { outputJson, outputText } from "../../output";
 
-export default class ProjectDuplicate extends PlCommand {
-  static override description =
-    "Duplicate a project within the same user. Auto-renames on collision by default.";
+export default function projectDuplicateCommand(): Command {
+  const cmd = new Command("duplicate").description(
+    "Duplicate a project within the same user. Auto-renames on collision by default.",
+  );
 
-  static override args = {
-    project: Args.string({
-      description: "Project ID or label",
-      required: true,
-    }),
-  };
+  cmd.argument("<project>", "Project ID or label");
+  addOptions(cmd, GlobalOptions(), UserAuthOptions(), AdminTargetOptions());
+  cmd.option("-n, --name <name>", "Name for the duplicate");
+  cmd.addOption(
+    new Option("--auto-rename", "Auto-rename on collision (default: true)").default(true),
+  );
+  cmd.option("--no-auto-rename", "Fail on name collision instead of auto-renaming");
 
-  static override flags = {
-    ...PlCommand.baseFlags,
-    name: Flags.string({
-      char: "n",
-      summary: "Name for the duplicate",
-      helpValue: "<name>",
-    }),
-    "auto-rename": Flags.boolean({
-      summary: "Auto-rename on collision (default: true)",
-      default: true,
-      allowNo: true,
-    }),
-  };
+  cmd.action(async (project: string, flags) => {
+    const { pl, projectListRid } = await connect(flags);
+    try {
+      const { rid: sourceRid } = await resolveProject(pl, projectListRid, project);
 
-  public async run(): Promise<void> {
-    const { args, flags } = await this.parse(ProjectDuplicate);
-    const { pl, projectListRid } = await this.connect(flags);
+      const newId = randomUUID();
 
-    const { rid: sourceRid } = await resolveProject(pl, projectListRid, args.project);
+      const result = await pl.withWriteTx("duplicateProject", async (tx) => {
+        const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
+        const sourceMeta = JSON.parse(sourceMetaStr);
+        const sourceLabel: string = sourceMeta.label;
 
-    const newId = randomUUID();
+        const existingLabels = await getExistingLabelsInTx(tx, projectListRid);
 
-    const result = await pl.withWriteTx("duplicateProject", async (tx) => {
-      const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
-      const sourceMeta = JSON.parse(sourceMetaStr);
-      const sourceLabel: string = sourceMeta.label;
-
-      const existingLabels = await getExistingLabelsInTx(tx, projectListRid);
-
-      // Compute new label
-      let newLabel: string;
-      if (flags.name) {
-        if (!flags["auto-rename"] && existingLabels.includes(flags.name)) {
-          throw new Error(`Project name "${flags.name}" already exists.`);
+        // Compute new label
+        let newLabel: string;
+        if (flags.name) {
+          if (!flags.autoRename && existingLabels.includes(flags.name)) {
+            throw new Error(`Project name "${flags.name}" already exists.`);
+          }
+          newLabel = existingLabels.includes(flags.name)
+            ? deduplicateName(flags.name, existingLabels)
+            : flags.name;
+        } else {
+          newLabel = deduplicateName(sourceLabel, existingLabels);
         }
-        newLabel = existingLabels.includes(flags.name)
-          ? deduplicateName(flags.name, existingLabels)
-          : flags.name;
+
+        const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+        tx.createField(field(projectListRid, newId), "Dynamic", newPrj);
+        await tx.commit();
+
+        const projectResourceId = await newPrj.globalId;
+        const projectId = resourceIdToString(projectResourceId);
+        return { id: projectId, rid: projectResourceId, label: newLabel };
+      });
+
+      if (flags.format === "json") {
+        outputJson({ id: result.id, rid: resourceIdToString(result.rid), label: result.label });
       } else {
-        newLabel = deduplicateName(sourceLabel, existingLabels);
+        outputText(`Duplicated project as "${result.label}" (id: ${result.id})`);
       }
-
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
-      tx.createField(field(projectListRid, newId), "Dynamic", newPrj);
-      await tx.commit();
-
-      const projectResourceId = await newPrj.globalId;
-      const projectId = resourceIdToString(projectResourceId);
-      return { id: projectId, rid: projectResourceId, label: newLabel };
-    });
-
-    if (flags.format === "json") {
-      outputJson({ id: result.id, rid: resourceIdToString(result.rid), label: result.label });
-    } else {
-      outputText(`Duplicated project as "${result.label}" (id: ${result.id})`);
+    } finally {
+      await pl.close();
     }
-  }
+  });
+
+  return cmd;
 }

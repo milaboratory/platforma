@@ -1,6 +1,6 @@
 import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import { compile, savePacks, getPackageInfo } from "../compiler/main";
 import { createLogger } from "../compiler/util";
 import * as opts from "../shared/basecmd";
@@ -10,18 +10,20 @@ import * as path from "node:path";
 import type * as winston from "winston";
 import type { TemplatesAndLibs } from "../compiler/compiler";
 
-export default class Build extends Command {
-  static override description = "build tengo sources into single distributable pack file";
+export default function buildCommand(): Command {
+  const cmd = new Command("build").description(
+    "build tengo sources into single distributable pack file",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  opts.addOptions(cmd, opts.GlobalOptions(), opts.CtagsOptions());
 
-  static override flags = {
-    ...opts.GlobalFlags,
-    ...opts.CtagsFlags,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Build);
+  cmd.action(async (o) => {
+    const flags = {
+      "log-level": o.logLevel as string,
+      "generate-tags": o.generateTags as boolean,
+      "tags-file": o.tagsFile as string,
+      "tags-additional-args": o.tagsAdditionalArgs as string[],
+    };
     const logger = createLogger(flags["log-level"]);
 
     const packageInfo = getPackageInfo(process.cwd(), logger);
@@ -44,7 +46,9 @@ export default class Build extends Command {
     if (flags["generate-tags"]) checkAndGenerateCtags(logger, flags);
 
     logger.info("Template Pack build done.");
-  }
+  });
+
+  return cmd;
 }
 
 function generateTsBinding(compiledDist: TemplatesAndLibs) {

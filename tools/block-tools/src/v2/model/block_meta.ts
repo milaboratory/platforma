@@ -74,6 +74,24 @@ export async function resolveBlockPackMeta(
 }
 
 /**
+ * Resolves a manifest's relative text/binary references against the
+ * `block-pack/` folder of a consumed package. Counterpart to
+ * `resolveBlockPackMeta` (which resolves raw `package.json` meta against
+ * authoring source); inlined explicit content passes through unchanged.
+ */
+export async function resolveManifestBlockPackMeta(
+  manifest: BlockPackMetaManifest,
+  blockPackDir: string,
+): Promise<BlockPackMetaDescription> {
+  const toAbs = mapLocalToAbsolute(blockPackDir);
+  return transformBlockPackMeta(
+    manifest,
+    async (v) => toAbs(v),
+    async (v) => toAbs(v),
+  );
+}
+
+/**
  * Copies absolute text/binary file references into `dstFolder` and returns
  * the manifest form with relative paths.
  */

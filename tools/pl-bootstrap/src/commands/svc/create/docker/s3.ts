@@ -1,4 +1,4 @@
-import { Command, Args } from "@oclif/core";
+import { Command } from "commander";
 import path from "node:path";
 import type * as types from "../../../../templates/types";
 import Core from "../../../../core";
@@ -7,39 +7,37 @@ import * as util from "../../../../util";
 import state from "../../../../state";
 import { ArgParser } from "../arg-parser";
 
-export default class S3 extends Command {
-  static override description =
-    "Run Platforma Backend service as docker container on current host with MinIO as local S3 storage";
+const optionGroups = (): Parameters<typeof cmdOpts.argDefs> => [
+  cmdOpts.GlobalOptions(),
+  cmdOpts.AddressesOptions(),
+  cmdOpts.S3AddressesOptions(),
+  cmdOpts.ImageOptions(),
+  cmdOpts.VersionOptions(),
+  cmdOpts.ArchOptions(),
+  cmdOpts.AuthOptions(),
+  cmdOpts.LicenseOptions(),
+  cmdOpts.MountOptions(),
+  cmdOpts.StorageOptions(),
+  cmdOpts.MinioPresignHostOptions(),
+];
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+export default function svcCreateDockerS3Command(): Command {
+  const cmd = new Command("s3")
+    .description(
+      "Run Platforma Backend service as docker container on current host with MinIO as local S3 storage",
+    )
+    .allowUnknownOption()
+    .allowExcessArguments();
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
+  // Unknown flags are forwarded to the backend, so parse the raw token list
+  // ourselves instead of letting commander reject them.
+  cmd.argument("[args...]", "instance name followed by optional backend flags");
 
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.S3AddressesFlags,
-    ...cmdOpts.ImageFlag,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.ArchFlag,
+  cmd.action(async () => {
+    const args = cmd.args;
+    const parser = new ArgParser(cmdOpts.argDefs(...optionGroups()));
+    const parsed = parser.parse(args);
 
-    ...cmdOpts.AuthFlags,
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.MountFlag,
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.MinioPresignHostFlag,
-  };
-
-  static override args = {
-    name: Args.string({ required: true }),
-  };
-
-  public async run(): Promise<void> {
-    // Use custom parser instead of OCLIF parse
-    const parser = new ArgParser(S3.flags);
-    const parsed = parser.parse(this.argv);
-
-    // Validate required flags
     const errors = parser.validateRequired(parsed.knownFlags);
     if (errors.length > 0) {
       throw new Error(`Validation errors:\n${errors.join("\n")}`);
@@ -53,7 +51,6 @@ export default class S3 extends Command {
       backendCommands.push(`--log-level=${flags["log-level"]}`);
     }
 
-    // Set default values for S3-specific flags
     if (!flags["s3-port"]) flags["s3-port"] = 9000;
     if (!flags["s3-console-port"]) flags["s3-console-port"] = 9001;
 
@@ -115,9 +112,10 @@ export default class S3 extends Command {
       );
     }
 
-    // Log unknown flags that will be passed to backend
     if (backendCommands.length > 0) {
       logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(" ")}`);
     }
-  }
+  });
+
+  return cmd;
 }

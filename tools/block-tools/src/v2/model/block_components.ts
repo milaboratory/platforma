@@ -5,8 +5,10 @@ import type {
   ContentAbsoluteFile,
   ContentAbsoluteFolder,
   ContentAbsoluteUrl,
+  ContentRelative,
 } from "@milaboratories/pl-model-middle-layer";
 import { mapRemoteToAbsolute } from "@milaboratories/pl-model-middle-layer";
+import path from "node:path";
 import {
   cpAbsoluteToRelative,
   packFolderToRelativeTgz,
@@ -42,6 +44,37 @@ export function resolveBlockComponents(
     },
     model: resolveModuleFile(moduleRoot, raw.model),
     ui: resolveModuleFolder(moduleRoot, raw.ui, ["index.html"]),
+  };
+}
+
+/**
+ * Resolves a manifest's relative component paths against the `block-pack/`
+ * folder of a consumed package. Workflow main and model become absolute-file
+ * refs; the UI (a `ui.tgz` archive) resolves to its absolute path carried in
+ * the `absolute-folder` slot — `BlockComponentsDescription` types `ui` as a
+ * folder, and for manifest-consumed packs that slot holds the tgz file path
+ * (the `from-pack-v2` loader reads `.ui.folder` and feeds it to the lazy
+ * `local-tgz` frontend). Counterpart to `resolveBlockComponents`, which
+ * resolves a raw `package.json` description against authoring source.
+ */
+export function resolveManifestBlockComponents(
+  manifest: BlockComponentsManifest,
+  blockPackDir: string,
+): BlockComponentsDescription {
+  const toAbsFile = (c: ContentRelative): ContentAbsoluteFile => ({
+    type: "absolute-file",
+    file: path.resolve(blockPackDir, c.path),
+  });
+  return {
+    workflow: {
+      type: "workflow-v1",
+      main: toAbsFile(manifest.workflow.main),
+    },
+    model: toAbsFile(manifest.model),
+    ui: {
+      type: "absolute-folder",
+      folder: path.resolve(blockPackDir, manifest.ui.path),
+    },
   };
 }
 

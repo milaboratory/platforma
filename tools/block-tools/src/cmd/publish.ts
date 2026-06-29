@@ -1,6 +1,6 @@
-import { Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import fs from "node:fs";
-import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { ManifestFileName } from "../v2/registry/schema_public";
 import {
   BlockPackManifest,
@@ -9,6 +9,7 @@ import {
 } from "@milaboratories/pl-model-middle-layer";
 import { storageByUrl } from "../io/storage";
 import { BlockRegistryV2 } from "../v2/registry/registry";
+import { buildPublishedCoords, writePublishedCoords } from "../v2/resolve_to_registry";
 import path from "node:path";
 
 function simpleDeepMerge<T extends Record<string, unknown>>(
@@ -35,47 +36,40 @@ function simpleDeepMerge<T extends Record<string, unknown>>(
   return result as T;
 }
 
-export default class Publish extends Command {
-  static description =
-    "Publishes the block package and refreshes the registry (for v2 block-pack schema)";
+export function publishCommand(): Command {
+  const cmd = new Command("publish").description(
+    "Publishes the block package and refreshes the registry (for v2 block-pack schema)",
+  );
 
-  static flags = {
-    registry: Flags.string({
-      char: "r",
-      summary: "full address of the registry",
-      helpValue: "<address>",
-      env: "PL_REGISTRY",
-      required: true,
-    }),
+  cmd.addOption(
+    new Option("-r, --registry <address>", "full address of the registry")
+      .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.addOption(
+    new Option(
+      "--registry-serve-url <url>",
+      "CDN serve URL written into block-pack/published.json (npm-consumed blocks)",
+    )
+      .env("PL_REGISTRY_SERVE_URL")
+      .makeOptionMandatory(),
+  );
+  cmd.option("-m, --manifest <path>", "manifest file path", `./block-pack/${ManifestFileName}`);
+  cmd.option("-v, --version-override <path>", "override package version");
+  cmd.addOption(
+    new Option("--refresh", "refresh repository after adding the package")
+      .default(true)
+      .env("PL_REGISTRY_REFRESH"),
+  );
+  cmd.option("--no-refresh", "do not refresh repository after adding the package");
+  cmd.addOption(
+    new Option("--unstable", "do not add the published package to stable channel")
+      .default(false)
+      .env("PL_PUBLISH_UNSTABLE"),
+  );
 
-    manifest: Flags.file({
-      char: "m",
-      summary: "manifest file path",
-      exists: true,
-      default: `./block-pack/${ManifestFileName}`,
-    }),
-
-    "version-override": Flags.file({
-      char: "v",
-      summary: "override package version",
-    }),
-
-    refresh: Flags.boolean({
-      summary: "refresh repository after adding the package",
-      default: true,
-      allowNo: true,
-      env: "PL_REGISTRY_REFRESH",
-    }),
-
-    unstable: Flags.boolean({
-      summary: "do not add the published package to stable channel",
-      default: false,
-      env: "PL_PUBLISH_UNSTABLE",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Publish);
+  cmd.action(async (flags) => {
+    const logger = new ConsoleLoggerAdapter();
 
     const manifestPath = path.resolve(flags.manifest);
     const rawManifest = JSON.parse(
@@ -89,23 +83,35 @@ export default class Publish extends Command {
     );
     const manifestRoot = path.dirname(manifestPath);
 
-    this.log(`Manifest root = ${manifestRoot}`);
+    logger.info(`Manifest root = ${manifestRoot}`);
 
-    if (flags["version-override"])
-      manifest = overrideManifestVersion(manifest, flags["version-override"]);
+    if (flags.versionOverride) manifest = overrideManifestVersion(manifest, flags.versionOverride);
 
     const storage = storageByUrl(flags.registry);
-    const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
+    const registry = new BlockRegistryV2(storage, logger);
 
     await registry.publishPackage(manifest, async (file) =>
       Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file))),
     );
 
     if (!flags.unstable) {
-      this.log(`Adding package to ${StableChannel} channel...`);
+      logger.info(`Adding package to ${StableChannel} channel...`);
       await registry.addPackageToChannel(manifest.description.id, StableChannel);
     }
 
+    // Write registry coordinates next to the manifest so npm consumers can
+    // resolve the published block via `resolveToRegistry`. Written before
+    // returning so `npm publish`'s tarball generation (after prepublishOnly)
+    // picks it up.
+    const coords = buildPublishedCoords({
+      registryUrl: flags.registryServeUrl,
+      id: manifest.description.id,
+    });
+    await writePublishedCoords(manifestRoot, coords);
+    logger.info(`Wrote published coordinates to ${path.resolve(manifestRoot, "published.json")}`);
+
     if (flags.refresh) await registry.updateIfNeeded();
-  }
+  });
+
+  return cmd;
 }
