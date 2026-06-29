@@ -24,8 +24,8 @@ export function softwareRules(): void {
     managed(
       "package.json",
       generate((ctx) => softwarePackageJsonInitial(ctx)),
-      () => {
-        softwarePackageJsonRules();
+      (ctx) => {
+        softwarePackageJsonRules(ctx);
       },
     );
   });

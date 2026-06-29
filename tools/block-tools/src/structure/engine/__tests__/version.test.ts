@@ -1,34 +1,39 @@
 // `.structure` metadata file handling: read default, read parsed
-// value, write, floor enforcement.
+// value, write, the software-build marker, floor enforcement.
 
 import { describe, test, expect } from "vitest";
 import { MemoryFileSystem } from "../fs/memory";
 import {
-  readStructureVersion,
-  writeStructureVersion,
+  readStructureMeta,
+  writeStructureMeta,
   assertVersionAboveFloor,
   STRUCTURE_VERSION,
   StructureVersionFloorError,
 } from "../version";
 
 describe(".structure metadata file", () => {
-  test("missing file reads as 0", async () => {
+  test("missing file reads as version 0, no marker", async () => {
     const fs = new MemoryFileSystem();
-    expect(await readStructureVersion(fs)).toBe(0);
+    expect(readStructureMeta(fs)).toEqual({ version: 0 });
   });
 
-  test("write then read round-trips", async () => {
+  test("write then read round-trips the version", async () => {
     const fs = new MemoryFileSystem();
-    await writeStructureVersion(fs, 3);
-    expect(await readStructureVersion(fs)).toBe(3);
-    const written = fs.read(".structure");
-    expect(JSON.parse(written)).toEqual({ version: 3 });
+    writeStructureMeta(fs, { version: 3 });
+    expect(readStructureMeta(fs).version).toBe(3);
+    expect(JSON.parse(fs.read(".structure"))).toEqual({ version: 3 });
   });
 
-  test("default write uses STRUCTURE_VERSION", async () => {
+  test("softwareBuild is written only when set, and a dropped flag leaves no trace", async () => {
     const fs = new MemoryFileSystem();
-    await writeStructureVersion(fs);
-    expect(await readStructureVersion(fs)).toBe(STRUCTURE_VERSION);
+    writeStructureMeta(fs, { version: 1, softwareBuild: true });
+    expect(JSON.parse(fs.read(".structure"))).toEqual({ version: 1, softwareBuild: true });
+    expect(readStructureMeta(fs).softwareBuild).toBe(true);
+
+    // Writing without the flag rewrites a bare payload — no merge, marker gone.
+    writeStructureMeta(fs, { version: 1 });
+    expect(JSON.parse(fs.read(".structure"))).toEqual({ version: 1 });
+    expect(readStructureMeta(fs).softwareBuild).toBeUndefined();
   });
 
   test("floor check throws below floor", () => {
@@ -37,8 +42,12 @@ describe(".structure metadata file", () => {
     expect(() => assertVersionAboveFloor(0, 0)).not.toThrow();
   });
 
-  test("invalid JSON reads as 0", async () => {
+  test("invalid JSON reads as version 0", async () => {
     const fs = new MemoryFileSystem({ ".structure": "not-json" });
-    expect(await readStructureVersion(fs)).toBe(0);
+    expect(readStructureMeta(fs)).toEqual({ version: 0 });
+  });
+
+  test("STRUCTURE_VERSION is a positive integer", () => {
+    expect(Number.isInteger(STRUCTURE_VERSION) && STRUCTURE_VERSION >= 1).toBe(true);
   });
 });

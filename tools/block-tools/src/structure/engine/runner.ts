@@ -48,7 +48,7 @@ import { parseJson, stringifyJson } from "./parsers/json";
 import type { JsonObject } from "./parsers/json";
 import { parseYaml, stringifyYaml } from "./parsers/yaml";
 import { parseLines, serializeLines } from "./parsers/lines";
-import { writeStructureVersion, STRUCTURE_META_FILE } from "./version";
+import { writeStructureMeta, STRUCTURE_VERSION, STRUCTURE_META_FILE } from "./version";
 
 export type ChangeAction = "create" | "update" | "delete" | "rename" | "noop";
 
@@ -498,8 +498,8 @@ export function run(
     const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
 
     if (isRefreshDefault) {
-      // version bump
-      writeStructureVersion(fs);
+      // version bump + persist the software-build marker
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION, softwareBuild: ctx.softwareBuild });
 
       // post-run recheck. Fresh discovery → fresh flatten →
       // dry-run. Any change list emits RecheckError on the first item.
@@ -517,7 +517,7 @@ export function run(
         opts.derivedPinLookup,
       );
       // Ignore .structure self-write (already up to date after
-      // writeStructureVersion above).
+      // writeStructureMeta above).
       const filtered = recheckChanges.filter((c) => c.path !== STRUCTURE_META_FILE);
       if (filtered.length > 0) {
         throw new RecheckError(filtered[0]!);
@@ -527,7 +527,7 @@ export function run(
     // Init mode: write .structure so the resulting tree carries the
     // current version (matches what `init` ships to disk).
     if (initMode && !ctx.dryRun) {
-      writeStructureVersion(fs);
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION, softwareBuild: ctx.softwareBuild });
     }
 
     return { changes };

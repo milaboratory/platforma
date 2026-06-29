@@ -79,6 +79,7 @@ export type CreateRunContextInput = {
   modules: Module[];
   blockVars: BlockVars;
   version?: number;
+  softwareBuild?: boolean;
   dryRun?: boolean;
 };
 
@@ -89,6 +90,7 @@ export function createRunContext(input: CreateRunContextInput): RunContext {
     modules: input.modules,
     blockVars: input.blockVars,
     version: input.version ?? 0,
+    softwareBuild: input.softwareBuild ?? false,
     dryRun: input.dryRun ?? false,
   };
 }

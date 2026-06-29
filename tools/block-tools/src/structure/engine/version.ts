@@ -15,18 +15,21 @@ export const STRUCTURE_MIN_SUPPORTED = 0;
 /** Block-relative path of the structurer metadata file. */
 export const STRUCTURE_META_FILE = ".structure";
 
-export type StructureMeta = { version: number };
+/** `softwareBuild`: per-block marker. When set, the software module is built with
+ *  `block-tools software build`; written only when on. */
+export type StructureMeta = { version: number; softwareBuild?: boolean };
 
-/** Read `.structure`. Missing file or invalid payload → 0. */
-export function readStructureVersion(fs: FileSystem): number {
-  if (!fs.exists(STRUCTURE_META_FILE)) return 0;
+/** Read `.structure`. Missing file or invalid payload → version 0, no flags. */
+export function readStructureMeta(fs: FileSystem): StructureMeta {
+  if (!fs.exists(STRUCTURE_META_FILE)) return { version: 0 };
   try {
-    const raw = fs.read(STRUCTURE_META_FILE);
-    const parsed = JSON.parse(raw) as Partial<StructureMeta>;
-    if (typeof parsed?.version === "number") return parsed.version;
-    return 0;
+    const parsed = JSON.parse(fs.read(STRUCTURE_META_FILE)) as Partial<StructureMeta>;
+    return {
+      version: typeof parsed?.version === "number" ? parsed.version : 0,
+      softwareBuild: parsed?.softwareBuild === true ? true : undefined,
+    };
   } catch {
-    return 0;
+    return { version: 0 };
   }
 }
 
@@ -53,8 +56,12 @@ export class StructureVersionFloorError extends Error {
   }
 }
 
-export function writeStructureVersion(fs: FileSystem, version: number = STRUCTURE_VERSION): void {
-  const payload: StructureMeta = { version };
+/** Write `.structure`. Writes a fresh payload rather than merging, and persists `softwareBuild`
+ *  only when set — so un-migrated blocks keep a bare `{version}`, and a field the caller stops
+ *  passing disappears on the next write with no dedicated cleanup step. */
+export function writeStructureMeta(fs: FileSystem, meta: StructureMeta): void {
+  const payload: StructureMeta = { version: meta.version };
+  if (meta.softwareBuild) payload.softwareBuild = true;
   // Compact, single-line — this is a tiny machine file, no pretty-print.
   fs.write(STRUCTURE_META_FILE, JSON.stringify(payload));
 }
