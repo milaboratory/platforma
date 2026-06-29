@@ -576,6 +576,15 @@ export interface components {
       nonce: string;
       /** Format: date-time */
       expiresAt: string;
+      /**
+       * @description Confidential-client secret for the IdP token exchange; absent for public clients.
+       *      Rationale: Google's OIDC does not support public clients — it requires a
+       *      client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+       *      gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+       *      leaving the server. So the backend holds the secret and forwards it here to the
+       *      desktop, which performs the token exchange as a confidential client.
+       */
+      clientSecret: string;
     };
     AuthAPI_BeginSSOLogin_Request: Record<string, never>;
     AuthAPI_BeginSSOLogin_Response: {
@@ -657,6 +666,7 @@ export interface components {
       groupsClaim: string;
       /** Format: enum */
       flowType: number;
+      accessType: string;
     };
     AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
     AuthAPI_Login_BasicCredentials: {
@@ -1069,8 +1079,8 @@ export interface components {
     };
     ResourceSchema_AccessFlags: {
       /**
-       * @description Deny-list approach: default = allowed (true)
-       *      Controllers set these to false to restrict non-controller roles (role='u', role='w')
+       * @description Allow-list approach: default = forbidden (false)
+       *      Controllers set this to true allow non-controller roles (role='u', role='w')
        */
       createResource: boolean;
       /** @description IMPORTANT: read_fields=false with write_fields=true is a forbidden combination */
@@ -1090,10 +1100,8 @@ export interface components {
         [key: string]: boolean;
       };
       /**
-       * @description SetError is a control-flow channel and is allowed by default even when
-       *      every other access bit is denied: a failing step on a closely-guarded
-       *      resource must surface to its caller. Controllers may opt out by
-       *      setting this to false.
+       * @description Allows non-controller roles (role='u', role='w') to set error on the resource,
+       *      marking it as failed and dropping it from recovery/deduplication indicies.
        */
       setError: boolean;
     };

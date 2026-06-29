@@ -851,6 +851,15 @@ components:
         expiresAt:
           type: string
           format: date-time
+        clientSecret:
+          type: string
+          description: |-
+            Confidential-client secret for the IdP token exchange; absent for public clients.
+             Rationale: Google's OIDC does not support public clients — it requires a
+             client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+             gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+             leaving the server. So the backend holds the secret and forwards it here to the
+             desktop, which performs the token exchange as a confidential client.
     AuthAPI_BeginSSOLogin_Request:
       type: object
       properties: {}
@@ -982,6 +991,8 @@ components:
         flowType:
           type: integer
           format: enum
+        accessType:
+          type: string
       description: |-
         SSOAuthMethod advertises an external IdP-based login flow. The desktop
          app uses the contents to drive the PKCE exchange locally, then hands the
@@ -1663,8 +1674,8 @@ components:
         createResource:
           type: boolean
           description: |-
-            Deny-list approach: default = allowed (true)
-             Controllers set these to false to restrict non-controller roles (role='u', role='w')
+            Allow-list approach: default = forbidden (false)
+             Controllers set this to true allow non-controller roles (role='u', role='w')
         readFields:
           type: boolean
           description: "IMPORTANT: read_fields=false with write_fields=true is a forbidden combination"
@@ -1689,10 +1700,8 @@ components:
         setError:
           type: boolean
           description: |-
-            SetError is a control-flow channel and is allowed by default even when
-             every other access bit is denied: a failing step on a closely-guarded
-             resource must surface to its caller. Controllers may opt out by
-             setting this to false.
+            Allows non-controller roles (role='u', role='w') to set error on the resource,
+             marking it as failed and dropping it from recovery/deduplication indicies.
     ResourceType:
       type: object
       properties:
