@@ -346,7 +346,7 @@ export const PackageJson = `{
     }
 }`;
 
-export const SingleBinaryackageJson = `{
+export const SingleBinaryPackageJson = `{
   "name": "${PackageName}",
   "version": "${PackageVersion}",
   "block-software": {
