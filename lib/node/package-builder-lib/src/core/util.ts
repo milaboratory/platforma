@@ -10,7 +10,7 @@ import * as envs from "./envs";
 export const packageJsonName = "package.json";
 export const softwareConfigName = "package.json";
 
-export function assertNever(_a: never) {
+export function assertNever(_a: never): never {
   throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 

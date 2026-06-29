@@ -1,5 +1,3 @@
-import { util } from "@platforma-sdk/package-builder-lib";
-
 export const channels = ["dev", "release"] as const;
 export const variants = ["docker", "binary"] as const;
 export const locations = ["local", "remote", "ssh"] as const;
@@ -18,23 +16,12 @@ export interface Knobs {
   usePublished?: boolean;
 }
 
-// The closed set of supported scenarios. Anything outside it is rejected by parseScenario,
-// so planFor only ever sees a buildable case.
+// The closed set of supported scenarios — the single resolved representation runBuild executes.
+// Anything outside it is rejected by parseScenario.
 export type Scenario =
   | { kind: "use-published" } // build-against-existing: descriptor only, no build/push
   | { kind: "legacy" } // no location knob: reproduce `pl-pkg build` (docker push gated by CI)
   | { kind: "target"; channel: Channel; docker: boolean; binary: boolean; remote: boolean };
-
-export interface BuildPlan {
-  buildMode: util.BuildMode;
-  isDev: boolean; // dev channel => docker pushes to the built-in dev registry
-  buildDocker: boolean;
-  buildBinary: boolean;
-  pushDocker: boolean;
-  uploadBinary: boolean;
-  usePublished: boolean;
-  isCIDefaultPush: boolean; // legacy mode => docker push follows the CI default (pl-pkg parity)
-}
 
 // Validate the raw knobs and collapse them to a supported scenario. The one place unsupported
 // combinations are rejected.
@@ -65,57 +52,4 @@ export function parseScenario(knobs: Knobs): Scenario {
     binary: knobs.variant !== "docker",
     remote: knobs.location === "remote",
   };
-}
-
-// Total mapping from a supported scenario to its build plan.
-export function planFor(scenario: Scenario): BuildPlan {
-  switch (scenario.kind) {
-    case "use-published":
-      return {
-        buildMode: "release",
-        isDev: false,
-        buildDocker: false,
-        buildBinary: false,
-        pushDocker: false,
-        uploadBinary: false,
-        usePublished: true,
-        isCIDefaultPush: false,
-      };
-
-    case "legacy":
-      return {
-        buildMode: "release",
-        isDev: false,
-        buildDocker: true,
-        buildBinary: true,
-        pushDocker: false,
-        uploadBinary: false,
-        usePublished: false,
-        isCIDefaultPush: true,
-      };
-
-    case "target": {
-      const { channel, docker, binary, remote } = scenario;
-      const buildMode: util.BuildMode =
-        channel === "release"
-          ? "release"
-          : binary && remote
-            ? "dev-remote" // the only cell that builds+uploads a dev binary
-            : "dev-local";
-
-      return {
-        buildMode,
-        isDev: channel === "dev",
-        buildDocker: docker,
-        buildBinary: binary,
-        pushDocker: docker && remote,
-        uploadBinary: binary && remote,
-        usePublished: false,
-        isCIDefaultPush: false,
-      };
-    }
-
-    default:
-      throw util.assertNever(scenario);
-  }
 }
