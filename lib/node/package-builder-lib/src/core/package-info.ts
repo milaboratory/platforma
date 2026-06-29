@@ -535,15 +535,30 @@ export class PackageInfo {
   /**
    * Short content hash of the artifact's content root(s), used as the dev version suffix.
    */
+  private readonly devContentHashCache = new Map<string, string | undefined>();
+
   private devContentHash(artifact: artifacts.anyArtifactType): string | undefined {
     const withId = artifact as artifacts.withId<artifacts.anyArtifactType>;
+    // Content roots are stable for the lifetime of this builder, so hash each artifact once.
+    if (this.devContentHashCache.has(withId.id)) {
+      return this.devContentHashCache.get(withId.id);
+    }
+
+    const hash = this.computeDevContentHash(withId);
+    this.devContentHashCache.set(withId.id, hash);
+    return hash;
+  }
+
+  private computeDevContentHash(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+  ): string | undefined {
     const hasher = createHash("sha256");
     let hashedAny = false;
 
     let platforms: util.PlatformType[];
     try {
       // Sorted so the hash is independent of package.json root-key order.
-      platforms = [...this.artifactPlatforms(withId)].sort();
+      platforms = [...this.artifactPlatforms(artifact)].sort();
     } catch {
       return undefined; // no content roots at all — leave the version without a suffix
     }
@@ -551,13 +566,16 @@ export class PackageInfo {
     for (const platform of platforms) {
       let root: string;
       try {
-        root = this.artifactContentRoot(withId, platform);
+        root = this.artifactContentRoot(artifact, platform);
       } catch {
         continue; // platform without a defined/present root — skip
       }
       if (!fs.existsSync(root)) {
         continue;
       }
+      // Hash the platform name too, so the same files under a different platform yield a different
+      // hash.
+      hasher.update(platform);
       util.hashDirSync(root, hasher);
       hashedAny = true;
     }
