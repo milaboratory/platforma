@@ -18,7 +18,6 @@ export type BlockContract = {
 
 export type BlockOutputs = BlockContract["outputs"];
 export type BlockData    = BlockContract["data"];
-export type BlockHref    = BlockContract["href"];
 
 // import.meta.url is a file: URL (always forward-slash, even on Windows:
 // file:///C:/…). We expose URLs, NOT paths — the facade stays dependency-free
@@ -51,7 +50,6 @@ export const BlockPointer = {
 export type TestSumNumbersV3BlockContract = BlockContract;
 export type TestSumNumbersV3BlockOutputs  = BlockOutputs;
 export type TestSumNumbersV3BlockData     = BlockData;
-export type TestSumNumbersV3BlockHref     = BlockHref;
 export const TestSumNumbersV3BlockPointer = BlockPointer;
 
 export * from "./block-extra";
