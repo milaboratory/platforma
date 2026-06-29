@@ -31,6 +31,7 @@ import type {
   ServerMessageResponse,
 } from "./ll_transaction";
 import type {
+  AuthAPI_Grant,
   ResourceAPI_Tree_Filter,
   ResourceAPI_Tree_SeedResource,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
@@ -901,6 +902,24 @@ export class PlTransaction {
         targetUser: target,
       },
     });
+  }
+
+  /**
+   * Enumerate the grants of a resource — the donor-side "who did I share with" view.
+   * The backend gates this on the signed, writable resource handle, so only the
+   * resource's owner can read its grants. Recipients of a public
+   * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant surface with `user` matching the
+   * everyone-sentinel — test with {@link isEveryoneUserLogin}.
+   *
+   * Transactional unary op (single response with all grants), so it rides the tx
+   * channel and works on every wire protocol — unlike the standalone server-streaming
+   * `ListGrants` RPC, which has no REST binding.
+   */
+  public listGrants(rId: AnyResourceRef): Promise<AuthAPI_Grant[]> {
+    return this.sendSingleAndParse(
+      { oneofKind: "listGrants", listGrants: this.toSignedResourceId(rId) },
+      (r) => r.listGrants.grants,
+    );
   }
 
   //

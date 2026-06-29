@@ -7,7 +7,6 @@ import {
   createSignedResourceId,
   isNotNullSignedResourceId,
   NullSignedResourceId,
-  parseSignedResourceId,
   toResourceSignature,
 } from "./types";
 import { isUnimplementedError } from "./errors";
@@ -225,18 +224,20 @@ export class UserResources {
    * Enumerates the recipients of a single resource — the donor-side "who did I
    * share with" view.
    *
-   * Takes a signed, writable resource handle: the backend gates `ListGrants` at
-   * routing on a signed resource id with writable permission, so only the
-   * resource's owner can call it. An everyone-grant surfaces with `user` matching
-   * the backend's everyone-sentinel — test with {@link isEveryoneUserLogin} (from
-   * "./transaction"); the caller maps that to "*".
+   * Takes a signed, writable resource handle: the backend gates grant listing on a
+   * signed resource id with writable permission, so only the resource's owner can
+   * call it. An everyone-grant surfaces with `user` matching the backend's
+   * everyone-sentinel — test with {@link isEveryoneUserLogin} (from "./transaction");
+   * the caller maps that to "*".
    *
-   * gRPC-only: `ListGrants` throws on a REST-connected client
-   * ({@link LLPlClient.listGrants}).
+   * Runs over a read transaction ({@link PlTransaction.listGrants}), so it works on
+   * every wire protocol — including REST, where the standalone server-streaming
+   * `ListGrants` RPC has no binding.
    */
   async listGrants(resourceId: SignedResourceId): Promise<GrantEntry[]> {
-    const { globalId, signature } = parseSignedResourceId(resourceId);
-    const grants = await this.ll.listGrants(globalId, signature);
+    const grants = await this.runTx("ListGrants", false, NullSignedResourceId, (tx) =>
+      tx.listGrants(resourceId),
+    );
     return grants.map((grant) => ({
       user: grant.user,
       writable: grant.permissions?.writable ?? false,

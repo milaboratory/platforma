@@ -944,33 +944,9 @@ export class LLPlClient implements WireClientProviderFactory {
     }
   }
 
-  /** Enumerates the grants of a single resource — the donor-side "who did I
-   *  share with" view. The backend gates this at routing: the request must
-   *  carry a signed, writable resource handle, so only the resource's owner can
-   *  call it. gRPC-only (server-streaming, no REST binding). Recipients of an
-   *  everyone-grant surface with {@link grpcTypes.AuthAPI_Grant.user} matching the
-   *  backend's everyone-sentinel ({@link isEveryoneUserLogin}); the caller maps that to "*". */
-  public async listGrants(
-    resourceId: bigint,
-    resourceSignature: Uint8Array,
-  ): Promise<grpcTypes.AuthAPI_Grant[]> {
-    const cl = this.clientProvider.get();
-
-    if (!(cl instanceof GrpcPlApiClient)) {
-      throw new Error("ListGrants requires gRPC wire protocol; REST is not supported");
-    }
-
-    const call = cl.listGrants({ resourceId, resourceSignature });
-    const grants: grpcTypes.AuthAPI_Grant[] = [];
-    for await (const msg of call.responses) {
-      if (msg.grant) grants.push(msg.grant);
-    }
-    return grants;
-  }
-
   /** Lists the users known to the server — the recipient picker's source. A user
    *  becomes known on first login; provisioned users who have never logged in do not
-   *  appear. gRPC-only (unary, no REST binding), mirroring {@link listGrants}. */
+   *  appear. gRPC-only (unary, no REST binding). */
   public async listUsers(): Promise<grpcTypes.AuthAPI_User[]> {
     const cl = this.clientProvider.get();
 
