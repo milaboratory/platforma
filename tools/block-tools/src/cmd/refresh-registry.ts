@@ -1,34 +1,30 @@
-import { Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import { BlockRegistryV2 } from "../v2";
 import { storageByUrl } from "../io";
-import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 
-export default class RefreshRegistry extends Command {
-  static description = "Refresh overview files based on published but not proecessed artefacts";
+export function refreshRegistryCommand(): Command {
+  const cmd = new Command("refresh-registry").description(
+    "Refresh overview files based on published but not proecessed artefacts",
+  );
 
-  static flags = {
-    registry: Flags.string({
-      char: "r",
-      summary: "full address of the registry",
-      helpValue: "<address>",
-      env: "PL_REGISTRY",
-      required: true,
-    }),
+  cmd.addOption(
+    new Option("-r, --registry <address>", "full address of the registry")
+      .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.addOption(
+    new Option("-m, --mode <mode>", 'refresh mode (allowed valiues: "force", "normal", "dry-run")')
+      .choices(["force", "normal", "dry-run"])
+      .env("PL_REGISTRY_REFRESH_DRY_RUN")
+      .default("normal"),
+  );
 
-    mode: Flags.string({
-      char: "m",
-      summary: 'refresh mode (allowed valiues: "force", "normal", "dry-run")',
-      helpValue: "<mode>",
-      options: ["force", "normal", "dry-run"],
-      env: "PL_REGISTRY_REFRESH_DRY_RUN",
-      default: "normal",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(RefreshRegistry);
+  cmd.action(async (flags) => {
     const storage = storageByUrl(flags.registry);
-    const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
+    const registry = new BlockRegistryV2(storage, new ConsoleLoggerAdapter());
     await registry.updateIfNeeded(flags.mode as "force" | "normal" | "dry-run");
-  }
+  });
+
+  return cmd;
 }

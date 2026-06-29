@@ -1,5 +1,93 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.40
+
+### Patch Changes
+
+- Updated dependencies [75e4e19]
+  - @milaboratories/pl-drivers@1.16.3
+
+## 1.64.39
+
+### Patch Changes
+
+- Updated dependencies [528f66d]
+  - @milaboratories/pl-client@3.12.0
+  - @milaboratories/pl-model-backend@1.4.9
+  - @milaboratories/pl-drivers@1.16.2
+  - @milaboratories/pl-errors@1.4.24
+  - @milaboratories/pl-tree@1.12.14
+  - @platforma-sdk/block-tools@2.11.5
+  - @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.38
+
+### Patch Changes
+
+- 534a237: Reshape the `from-pack-v2` BlockPointer to a dependency-free URL locator: rename
+  `folder` → `packUrl` (the block-pack directory) and add optional `rootUrl` (the
+  facade/package root). Both are `file:` URLs, NOT filesystem paths.
+
+  The facade emits the lossless, OS-agnostic locator (`import.meta.url` is always a
+  forward-slash `file:` URL, even on Windows) by pure string ops with zero imports,
+  so it stays dependency-free and loadable in minimal engines (e.g. QuickJS). Each
+  consumer converts at its own edge with `fileURLToPath` (loader, `resolveToRegistry`,
+  tests), where Windows drive letters / `%`-encoding / UNC are handled correctly; the
+  watcher cache key uses `packUrl` directly (a stable string). The structurer that
+  builds a block owns its on-disk layout, so the pointer self-describes where the
+  pack lives instead of letting consumers reconstruct `<root>/block-pack` — a
+  consumer at a different SDK version cannot know a layout the structurer may
+  relocate. `loadPackDescriptionFromManifest` takes the pack directory directly.
+  `dev-v2` is unchanged (keeps its path-valued `folder`).
+
+- Updated dependencies [534a237]
+  - @milaboratories/pl-model-middle-layer@1.30.9
+  - @platforma-sdk/block-tools@2.11.4
+  - @milaboratories/pl-model-backend@1.4.8
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/pf-spec-driver@1.4.16
+  - @milaboratories/computable@2.9.5
+  - @milaboratories/pf-driver@1.7.14
+  - @milaboratories/pl-client@3.11.5
+  - @milaboratories/pl-deployments@3.0.8
+  - @milaboratories/pl-drivers@1.16.1
+  - @milaboratories/pl-errors@1.4.23
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.12.13
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/helpers@1.14.2
+  - @platforma-sdk/model@1.79.20
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.64.37
+
+### Patch Changes
+
+- Updated dependencies [33be13c]
+  - @platforma-sdk/block-tools@2.11.3
+  - @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.36
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.35
+
+### Patch Changes
+
+- c73159f: Fix type error in PFrames driver
+- 3a4036d: Bump `@milaboratories/pframes-rs-*` to 1.1.52, which now populates `bytesMissed` in the serv cache counters. Make `bytesMissed` required on `CacheCounters` accordingly.
+- Updated dependencies [907f87c]
+- Updated dependencies [3a4036d]
+  - @platforma-sdk/workflow-tengo@6.6.4
+  - @milaboratories/pl-model-middle-layer@1.30.8
+  - @milaboratories/pf-spec-driver@1.4.15
+  - @milaboratories/pf-driver@1.7.13
+  - @platforma-sdk/model@1.79.17
+  - @platforma-sdk/block-tools@2.11.2
+
 ## 1.64.34
 
 ### Patch Changes

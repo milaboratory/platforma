@@ -1,4 +1,4 @@
-import { blockSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers-v3";
 import {
   field,
   isNotNullSignedResourceId,
@@ -16,10 +16,12 @@ import {
 import { parseTemplate } from "@milaboratories/pl-model-backend";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 // Resolve V3 template content from the block package's built output
-const v3WorkflowPath = path.join(blockSpec.folder, "block-pack", "main.plj.gz");
+// (BlockPointer.packUrl is a file: URL — convert to a path at this edge).
+const v3WorkflowPath = path.join(fileURLToPath(BlockPointer.packUrl), "main.plj.gz");
 const V3TemplateContent = fs.existsSync(v3WorkflowPath)
   ? fs.readFileSync(v3WorkflowPath)
   : undefined;

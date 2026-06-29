@@ -1,4 +1,4 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import path from "node:path";
 import type { createLocalOptions } from "../../core";
 import Core from "../../core";
@@ -8,36 +8,31 @@ import * as util from "../../util";
 import state from "../../state";
 import * as os from "node:os";
 
-export default class Local extends Command {
-  static override description =
-    "Run Platforma Backend service as local process on current host (no docker container)";
+export default function startLocalCommand(): Command {
+  const cmd = new Command("local").description(
+    "Run Platforma Backend service as local process on current host (no docker container)",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.VersionOptions(),
+    cmdOpts.AddressesOptions(),
+    cmdOpts.PlBinaryOptions(),
+    cmdOpts.PlSourcesOptions(),
+    cmdOpts.ConfigOptions(),
+    cmdOpts.LicenseOptions(),
+    cmdOpts.StorageOptions(),
+    cmdOpts.StoragePrimaryURLOptions(),
+    cmdOpts.StorageWorkPathOptions(),
+    cmdOpts.StorageLibraryURLOptions(),
+    cmdOpts.PlLogFileOptions(),
+    cmdOpts.PlWorkdirOptions(),
+    cmdOpts.AuthOptions(),
+  );
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.VersionFlag,
-
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.PlBinaryFlag,
-    ...cmdOpts.PlSourcesFlag,
-
-    ...cmdOpts.ConfigFlag,
-
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
-
-    ...cmdOpts.PlLogFileFlag,
-    ...cmdOpts.PlWorkdirFlag,
-    ...cmdOpts.AuthFlags,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Local);
+  cmd.action(async (o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
@@ -113,5 +108,7 @@ export default class Local extends Command {
           logger.error(err.message);
         });
     }
-  }
+  });
+
+  return cmd;
 }

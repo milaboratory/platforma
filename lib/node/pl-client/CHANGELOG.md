@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.12.0
+
+### Minor Changes
+
+- 528f66d: add settings for Google SSO
+
 ## 3.11.5
 
 ### Patch Changes

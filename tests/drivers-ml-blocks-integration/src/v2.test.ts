@@ -1,5 +1,5 @@
-import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers";
-import { blockSpec as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
+import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers";
+import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
 import { test } from "vitest";
 import { withMl } from "./with-ml";
 import { awaitBlockDone, createProjectWatcher, outputRef } from "./test-helpers";

@@ -1,4 +1,4 @@
-import { Command, Flags } from "@oclif/core";
+import { Command } from "commander";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -13,44 +13,26 @@ async function getFileContent(path: string) {
   }
 }
 
-export default class BuildModel extends Command {
-  static override description =
-    "Extracts and outputs block model JSON from pre-built block model module";
+export function buildModelCommand(): Command {
+  const cmd = new Command("build-model").description(
+    "Extracts and outputs block model JSON from pre-built block model module",
+  );
 
-  static flags = {
-    modulePath: Flags.string({
-      char: "i",
-      summary: "input module path",
-      helpValue: "<path>",
-      default: ".",
-    }),
+  cmd.option("-i, --modulePath <path>", "input module path", ".");
+  cmd.option(
+    "-b, --sourceBundle <path>",
+    "bundled model code to embed into the model for callback-based rendering to work",
+    "./dist/bundle.js",
+  );
+  cmd.option("-o, --destination <path>", "output model file", "./dist/model.json");
 
-    sourceBundle: Flags.string({
-      char: "b",
-      summary: "bundled model code to embed into the model for callback-based rendering to work",
-      helpValue: "<path>",
-      default: "./dist/bundle.js",
-    }),
-
-    destination: Flags.string({
-      char: "o",
-      summary: "output model file",
-      helpValue: "<path>",
-      default: "./dist/model.json",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(BuildModel);
+  cmd.action(async (flags) => {
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
-    // eslint-disable-next-line prefer-const, @typescript-eslint/no-unsafe-assignment
     let { model, platforma } = require(modulePath);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (!model) model = platforma;
     if (!model) throw new Error('"model" export not found');
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { config } = model;
 
     if (!config)
@@ -64,7 +46,6 @@ export default class BuildModel extends Command {
 
     const code = await getFileContent(flags.sourceBundle);
     if (code !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       config.code = {
         type: "plain",
         content: code,
@@ -72,5 +53,7 @@ export default class BuildModel extends Command {
     }
 
     await fs.promises.writeFile(path.resolve(flags.destination), JSON.stringify(config));
-  }
+  });
+
+  return cmd;
 }
