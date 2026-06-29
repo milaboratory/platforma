@@ -419,6 +419,15 @@ export class Core {
         }
       }
 
+      // Docker software is built as linux/amd64 only (Platforma's K8s target). An explicit
+      // non-x64 target cannot be honored — fail clearly instead of silently emitting amd64.
+      if (this.targetPlatform && util.splitPlatform(this.targetPlatform).arch !== "x64") {
+        throw util.CLIError(
+          `cannot build docker image '${artifact.id}' for target '${this.targetPlatform}': ` +
+            `docker software is built as ${defaults.DOCKER_BUILD_PLATFORM} only`,
+        );
+      }
+
       this.buildDockerImage(artifact.id, artifact, options?.registry);
     }
   }
