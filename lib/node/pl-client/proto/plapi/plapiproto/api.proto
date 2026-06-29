@@ -1703,8 +1703,9 @@ message AuthAPI {
       string user_id_claim = 8;
       string groups_claim = 9;
       FlowType flow_type = 10;
+      optional string access_type = 11; // "online" | "offline"; Google-specific (offline → refresh token)
 
-      // next free: 11;
+      // next free: 12;
     }
 
     message MethodInfo {
@@ -1739,6 +1740,15 @@ message AuthAPI {
     message PublicPKCE {
       string nonce = 1; // server-issued one-time value
       google.protobuf.Timestamp expires_at = 2; // after this, nonce is no longer valid (when enforced)
+      // Confidential-client secret for the IdP token exchange; absent for public clients.
+      // Rationale: Google's OIDC does not support public clients — it requires a
+      // client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+      // gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+      // leaving the server. So the backend holds the secret and forwards it here to the
+      // desktop, which performs the token exchange as a confidential client.
+      optional string client_secret = 3;
+
+      // next free: 4;
     }
 
     message Response {
@@ -1836,8 +1846,8 @@ message AuthAPI {
   message GrantAccess {
     // GrantType distinguishes regular grants from system-level grants.
     enum GrantType {
-      GENERAL = 0; // regular user-to-user grant (default)
-      MAKE_RESOURCE_PUBLIC = 1; // make resource publically-accessible, showing it in ListUserResources for all users. Requires controller role.
+      SINGLE_USER = 0; // grants access for single user (default).
+      ANY_AUTHORISED = 1; // makes resource publically-accessible, showing it in ListUserResources for all authorised clients.
     }
 
     message Request {
@@ -1845,7 +1855,7 @@ message AuthAPI {
       bytes resource_signature = 2;
       string target_user = 3; // user login to grant access to
       Grant.Permissions permissions = 4; // access level to grant
-      GrantType grant_type = 5; // default: GENERAL
+      GrantType grant_type = 5; // default: SINGLE_USER
     }
 
     message Response {}
@@ -1882,8 +1892,8 @@ message AuthAPI {
       bool writable = 1; // write access = ability to modify resource tree + share access
     }
 
-    string user = 1;
-    uint64 resource_id = 2;
+    string user = 1; // grantee
+    uint64 resource_id = 2; // target resource of a grant (what grantee can access)
     Permissions permissions = 3; // access level from grant table
     string granted_by = 4; // login of the user who created this grant
     int64 granted_at = 5; // unix timestamp in milliseconds

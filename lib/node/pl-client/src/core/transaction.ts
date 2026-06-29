@@ -184,7 +184,7 @@ export type Role = AuthAPI_Role;
 
 /**
  * Recognises the backend's "all users on the server" sentinel login. A public
- * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant is recorded by the backend against a
+ * ({@link GrantType.ANY_AUTHORISED}) grant is recorded by the backend against a
  * reserved login, and recipients of an everyone-grant surface in `ListGrants` with that
  * value — callers detect it here and map it to "*".
  *
@@ -866,7 +866,7 @@ export class PlTransaction {
    * project-sharing donor flow to hand a recipient the shared envelope.
    *
    * `grantType` defaults to a regular user-to-user grant
-   * ({@link GrantType.GENERAL}); pass {@link GrantType.MAKE_RESOURCE_PUBLIC}
+   * ({@link GrantType.SINGLE_USER}); pass {@link GrantType.ANY_AUTHORISED}
    * to make the resource public to everyone (requires backend `publicGrants:v1`
    * and a role allowed to grant to everyone — `target` is ignored / rewritten
    * to the everyone-user by the backend).
@@ -875,7 +875,7 @@ export class PlTransaction {
     rId: AnyResourceRef,
     target: string,
     permissions: GrantPermissions,
-    grantType: GrantType = AuthAPI_GrantAccess_GrantType.GENERAL,
+    grantType: GrantType = AuthAPI_GrantAccess_GrantType.SINGLE_USER,
   ): void {
     this.sendVoidAsync({
       oneofKind: "grantAccess",
@@ -908,7 +908,7 @@ export class PlTransaction {
    * Enumerate the grants of a resource — the donor-side "who did I share with" view.
    * The backend gates this on the signed, writable resource handle, so only the
    * resource's owner can read its grants. Recipients of a public
-   * ({@link GrantType.MAKE_RESOURCE_PUBLIC}) grant surface with `user` matching the
+   * ({@link GrantType.ANY_AUTHORISED}) grant surface with `user` matching the
    * everyone-sentinel — test with {@link isEveryoneUserLogin}.
    *
    * Transactional unary op (single response with all grants), so it rides the tx
