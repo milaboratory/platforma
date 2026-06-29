@@ -3,7 +3,7 @@ import type { ResourceType } from "@milaboratories/pl-client";
 import type { BlockConfigContainer } from "@platforma-sdk/model";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 
-export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
+export type FrontendSpec = FrontendFromUrl | FrontendFromFolder | FrontendFromLocalTgz;
 
 export interface FrontendFromUrlData {
   url: string;
@@ -33,6 +33,29 @@ export const FrontendFromFolderResourceType: ResourceType = {
  * added the resource. */
 export interface FrontendFromFolder extends FrontendFromFolderData {
   type: "local";
+}
+
+export interface FrontendFromLocalTgzData {
+  /** Absolute path to a local `ui.tgz` archive. */
+  path: string;
+  /** Modification stamp of the source block; part of the cache key so the
+   * unpacked UI is re-derived when the block changes. */
+  mtime: string;
+  /** HMAC signature of `path + ":" + mtime` using local secret, encoded as hex. */
+  signature: string;
+}
+
+export const FrontendFromLocalTgzResourceType: ResourceType = {
+  name: "Frontend/FromLocalTgz",
+  version: "1",
+};
+
+/** Directs user of the block pack to lazily unpack the frontend from a local
+ * `ui.tgz` archive via the download driver — so it inherits the driver's
+ * usage-tracking and space recycling (unlike `local`, which serves a folder
+ * path directly). Used by the `from-pack-v2` loader for npm-consumed blocks. */
+export interface FrontendFromLocalTgz extends FrontendFromLocalTgzData {
+  type: "local-tgz";
 }
 
 /** Direct instructions to create block-pack from client. Currently, this

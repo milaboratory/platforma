@@ -32,7 +32,7 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.ui`,
-    version: "1.0.0",
+    private: true,
     type: "module",
     scripts: {
       fmt: "ts-builder format",
@@ -60,6 +60,10 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
 }
 
 export function uiPackageJsonRules(): void {
+  // Controlled sibling — workspace-only, never published, but kept versioned
+  // (changesets-owned) so the packed template's lib carries a version.
+  ensureField("private", true);
+
   ensureField("type", "module");
 
   ensureScript("fmt", "ts-builder format");

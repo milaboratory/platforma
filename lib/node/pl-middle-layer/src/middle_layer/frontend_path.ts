@@ -3,8 +3,16 @@ import type { MiddleLayerEnvironment } from "./middle_layer";
 import type { ComputableStableDefined } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import { Pl, resourceTypesEqual } from "@milaboratories/pl-client";
-import type { FrontendFromFolderData, FrontendFromUrlData } from "../model";
-import { FrontendFromFolderResourceType, FrontendFromUrlResourceType } from "../model";
+import type {
+  FrontendFromFolderData,
+  FrontendFromLocalTgzData,
+  FrontendFromUrlData,
+} from "../model";
+import {
+  FrontendFromFolderResourceType,
+  FrontendFromLocalTgzResourceType,
+  FrontendFromUrlResourceType,
+} from "../model";
 import type { UrlResult } from "@milaboratories/pl-drivers";
 import { projectFieldName } from "../model/project_model";
 import { BlockPackFrontendField } from "../mutator/block-pack/block_pack";
@@ -29,6 +37,18 @@ function kernel(
       `Frontend path signature mismatch for: ${data.path}`,
     );
     return data.path;
+  } else if (resourceTypesEqual(node.resourceType, FrontendFromLocalTgzResourceType)) {
+    const data = node.getDataAsJson<FrontendFromLocalTgzData>();
+    if (data === undefined) throw new Error(`No resource data.`);
+    env.signer.verify(
+      `${data.path}:${data.mtime}`,
+      data.signature,
+      `Frontend path signature mismatch for: ${data.path}`,
+    );
+    // Lazily unpack the local ui.tgz through the download driver, so it
+    // inherits the driver's space recycling + usage-tracking (same as the
+    // registry url path), instead of serving an eagerly-unpacked folder.
+    return env.frontendDownloadDriver.getLocalTgz(data.path, data.mtime).withStableType();
   } else {
     throw new Error(`Unsupported resource type: ${JSON.stringify(node.resourceType)}`);
   }

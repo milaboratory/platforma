@@ -10,18 +10,13 @@ import {
   overrideManifestVersion,
   StableChannel,
 } from "@milaboratories/pl-model-middle-layer";
+import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers";
 import fsp from "fs/promises";
 import { regTest } from "./test_utils";
 import path from "path";
-import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 import * as tp from "timers/promises";
-
-// To overcome broken native ESM resolution mechanism:
-//     TypeError: __vite_ssr_import_meta__.resolve is not a function
-// Solution suggested by vitest contributor:
-//     https://github.com/vitejs/vite/discussions/15871#discussioncomment-8473464
-const require = createRequire(import.meta.url);
 
 function bumpVersion(ver: string): string {
   let sepIdx = ver.lastIndexOf(".");
@@ -41,8 +36,10 @@ regTest("simple repo test", async ({ expect, tmpFolder }) => {
 
   // Publishing
 
-  const manifestPath =
-    require.resolve("@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json");
+  // Read the manifest from the pack dir the block self-describes — the slim
+  // facade `exports` deliberately don't expose `block-pack/` as a subpath.
+  // packUrl is a file: URL; convert to a path at this edge.
+  const manifestPath = path.join(fileURLToPath(BlockPointer.packUrl), "manifest.json");
   const manifest1 = BlockPackManifest.parse(
     JSON.parse(await fsp.readFile(manifestPath, { encoding: "utf-8" })),
   );

@@ -1,4 +1,12 @@
-import { blockSpec as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { fileURLToPath } from "node:url";
+
+// Every migration test exercises the block-pack update flow (triggerBlockPackUpdate
+// touches the dev-folder model.json), which needs the dev-folder watcher — a static
+// from-pack-v2 pack can't drive it. Build a dev-v2 pointer from the facade root the
+// from-pack-v2 BlockPointer exposes as `rootUrl` (exactly the dev block folder); dev-v2
+// `folder` is a path, so convert the file: URL at this edge.
+const enterNumberSpec = { type: "dev-v2" as const, folder: fileURLToPath(BlockPointer.rootUrl) };
 import type { Project, StorageDebugView } from "@milaboratories/pl-middle-layer";
 import { parseJson } from "@milaboratories/pl-model-common";
 import { createBlockStorage, isBlockStorage, deriveDataFromStorage } from "@platforma-sdk/model";
