@@ -1,0 +1,1 @@
+# No third-party dependencies - main.py uses the Python standard library only.

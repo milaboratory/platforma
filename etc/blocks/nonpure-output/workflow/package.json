@@ -1,0 +1,22 @@
+{
+  "name": "@milaboratories/milaboratories.test-nonpure-output.workflow",
+  "version": "1.0.18",
+  "private": true,
+  "description": "Tengo-based template",
+  "type": "module",
+  "scripts": {
+    "build": "shx rm -rf dist && pl-tengo build",
+    "check": "pl-tengo check",
+    "format": "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'"
+  },
+  "dependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-open/milaboratories.test-nonpure-output.random-gen": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "shx": "catalog:",
+    "vitest": "catalog:"
+  }
+}
