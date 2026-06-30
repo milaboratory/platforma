@@ -60,6 +60,9 @@ export type RunContext = {
   blockVars: BlockVars;
   /** Layout version read from `.structure`. */
   version: number;
+  /** Per-block marker: when set, the software module is built with `block-tools software build`.
+   *  Persisted in `.structure`; turned on once via `refresh --software-build`. */
+  softwareBuild: boolean;
   /** True for `check` mode and the post-run recheck. */
   dryRun: boolean;
 };

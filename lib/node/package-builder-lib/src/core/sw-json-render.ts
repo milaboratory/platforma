@@ -58,12 +58,12 @@ export class SwJsonRenderer {
         throw util.CLIError(`Entrypoint ${epName} not found in result`);
       }
 
-      if (mode !== "release") {
+      if (util.isDevMode(mode)) {
         info.isDev = true;
       }
 
       const pkg = ep.artifact;
-      if (util.isDevLocalMode(mode)) {
+      if (!util.producesRegistryDescriptor(mode)) {
         switch (pkg.type) {
           case "docker": {
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
@@ -297,6 +297,7 @@ export class SwJsonRenderer {
   ): swJson.remoteSoftwareType | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":
@@ -433,6 +434,7 @@ export class SwJsonRenderer {
   ): swJson.runEnvInfo | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":
@@ -482,6 +484,7 @@ export class SwJsonRenderer {
   ): swJson.assetInfo | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":

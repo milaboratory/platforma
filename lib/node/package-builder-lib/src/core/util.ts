@@ -10,7 +10,7 @@ import * as envs from "./envs";
 export const packageJsonName = "package.json";
 export const softwareConfigName = "package.json";
 
-export function assertNever(_a: never) {
+export function assertNever(_a: never): never {
   throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 
@@ -51,7 +51,10 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
   const hash = hasher ? hasher : createHash("sha256");
   const folder = path.join(rootDir, subdir ?? ".");
 
-  const info = fs.readdirSync(folder, { withFileTypes: true });
+  // Sort for a host-independent hash: readdir enumeration order is not guaranteed.
+  const info = fs
+    .readdirSync(folder, { withFileTypes: true })
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   for (const item of info) {
     const relPath = path.join(subdir ?? ".", item.name);
@@ -70,7 +73,9 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
 
       fs.closeSync(fileDescriptor);
     } else if (item.isDirectory()) {
-      hashDirSync(fullPath, hash);
+      // Keep rootDir fixed and pass the accumulated relPath so nested entries hash under their
+      // full path from the root — otherwise `dirA/` + `file` collides with `dirA/file`.
+      hashDirSync(rootDir, hash, relPath);
     }
   }
 
@@ -295,11 +300,14 @@ export function currentPlatform(): PlatformType {
 export const AllSoftwareSources = ["archive", "docker"] as const; // add 'image', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
-export type BuildMode = "dev-local" | "release";
+export type BuildMode = "dev-local" | "dev-remote" | "release";
 
-/** True for dev-local build mode. */
-export function isDevLocalMode(mode: BuildMode): mode is "dev-local" {
-  return mode === "dev-local";
+export function isDevMode(mode: BuildMode): mode is "dev-local" | "dev-remote" {
+  return mode === "dev-local" || mode === "dev-remote";
+}
+
+export function producesRegistryDescriptor(mode: BuildMode): mode is "dev-remote" | "release" {
+  return mode === "dev-remote" || mode === "release";
 }
 
 export type artifactID = {

@@ -25,6 +25,8 @@ export type RunStructureInput = {
   blockPath: string;
   isSdkInternal: boolean;
   updateDepsOnly: boolean;
+  /** Turn on the per-block software-build marker for this run; it persists in `.structure`. */
+  softwareBuild?: boolean;
   mode: StructureMode;
   /** `<block-tools>/src/structure/templates`. */
   templatesRoot: string;
@@ -60,6 +62,7 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
     fs,
     isSdkInternal: input.isSdkInternal,
     updateDepsOnly: input.updateDepsOnly,
+    softwareBuild: input.softwareBuild,
     dryRun,
   });
 
