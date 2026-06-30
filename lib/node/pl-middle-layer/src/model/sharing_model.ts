@@ -27,8 +27,7 @@ export function asShareId(id: string): ShareId {
 // Pl Model — Project Sharing
 //
 // All sharing structures are defined and managed by the middle layer; the
-// backend knows nothing about envelopes. See
-// docs/text/work/projects/project-sharing/implementation-details.md §"Data model".
+// backend knows nothing about envelopes.
 //
 
 /** Field on the donor's clientRoot holding the {@link SharingOutboxResourceType} resource. */
@@ -43,12 +42,10 @@ export const SharingStateResourceType: ResourceType = { name: "SharingState", ve
 export type EnvelopeMode = "copy" | "read-only" | "collaboration";
 
 /**
- * Whether a role may make a resource public (grant to everyone). Mirrors the backend's
- * authorization rule `util/misecurity/role.go` `CanGrantToEveryone` — true for controller,
+ * Whether a role may make a resource public (grant to everyone): true for controller,
  * admin, and user; false for workflow and unspecified. The middle layer carries no policy
- * beyond mirroring the backend: a crafted call still hits the backend's role + permission-ceiling
- * gate. `null` (no-auth mode) returns false. Rebinds to a per-user backend capability if the
- * backend later exposes one (the admins-only restriction / future multitenant model).
+ * of its own here — a crafted call still hits the backend's role + permission-ceiling gate.
+ * `null` (no-auth mode) returns false.
  */
 export function canGrantToEveryone(role: Role | null): boolean {
   switch (role) {

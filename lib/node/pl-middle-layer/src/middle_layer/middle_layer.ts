@@ -175,8 +175,7 @@ export class MiddleLayer {
    * Whether the connected backend supports project sharing. Synthetic — computed
    * in the middle layer from the backend capabilities the share flow needs (the
    * cross-color field-reference relaxation the accept flow rests on). It can absorb
-   * additional required capabilities later without a UI change. See
-   * `pl-client/src/core/capabilities.ts` / backend `server_capabilities.go`.
+   * additional required capabilities later without a UI change.
    */
   public get sharingSupported(): boolean {
     return this.serverCapabilities.includes("crossTreeRefs:v1");
@@ -191,12 +190,10 @@ export class MiddleLayer {
   }
 
   /**
-   * Whether the UI offers share-with-everybody. Computed in the middle layer, mirroring
-   * the backend's make-public rule — no role policy lives in the UI:
+   * Whether the UI offers share-with-everybody — no role policy lives in the UI:
    *   serverCapabilities.has("publicGrants:v1") && canGrantToEveryone(currentUserRole)
-   * Rebinds to a per-user backend capability if the backend later exposes one (the
-   * admins-only restriction / the future multitenant permission model). Not a security
-   * boundary: a crafted call still hits the backend's role + permission-ceiling gate.
+   * Not a security boundary: a crafted call still hits the backend's role +
+   * permission-ceiling gate.
    */
   public get canShareWithEveryone(): boolean {
     return (
@@ -509,7 +506,7 @@ export class MiddleLayer {
       });
 
       const gid = await envelope.globalId;
-      if (everyone) tx.grantAccess(gid, "", { writable: true }, GrantType.MAKE_RESOURCE_PUBLIC);
+      if (everyone) tx.grantAccess(gid, "", { writable: true }, GrantType.ANY_AUTHORISED);
       else for (const r of recipients) tx.grantAccess(gid, r, { writable: true });
 
       await tx.commit();
@@ -564,15 +561,14 @@ export class MiddleLayer {
   }
 
   /**
-   * Revokes and deletes an outgoing share for all recipients: detaches and deletes the envelope;
-   * the backend auto-revokes all of its grants via `RevokeAllByResource`. Already-accepted copies
-   * are unaffected (ref-counting keeps the adopted resources alive).
+   * Revokes and deletes an outgoing share for all recipients: detaches and deletes the envelope, and
+   * its grants are revoked along with it. Already-accepted copies are unaffected (ref-counting keeps
+   * the adopted resources alive). Idempotent — revoking a share that is already gone is a no-op.
    */
   public async revokeShare(shareId: ShareId): Promise<void> {
     await this.pl.withWriteTx("MLRevokeShare", async (tx) => {
       const target = await this.resolveOutboxEnvelope(tx, shareId);
-      if (target === undefined)
-        throw new Error(`revokeShare: no live share with id ${shareId} in the outbox.`);
+      if (target === undefined) return;
       tx.removeField(field(this.sharingOutboxResourceId, target.fieldName));
       await tx.commit();
     });

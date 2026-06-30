@@ -125,24 +125,33 @@ export function createOutgoingSharesComputable(
       return drafts;
     },
     {
-      // Enrich the full recipient list per envelope via ListGrants (async). An everyone-grant
-      // surfaces with the everyone-sentinel (isEveryoneUserLogin), mapped to "*". The donor's own grant on their
-      // envelope is dropped — it's their own share, showing their login as a "recipient" is noise.
+      // Resolve each share's recipients via listGrants. An everyone-grant maps to "*"; the donor's
+      // own grant is dropped. One tx per envelope so a just-revoked rid faults only its own read,
+      // which allSettled degrades to []. Recipients aren't cached — a live share's recipient set can
+      // change. Transactional listGrants when available, else the standalone gRPC-only RPC.
       postprocessValue: async (
         drafts: OutgoingShareDraft[] | undefined,
       ): Promise<OutgoingShare[] | undefined> => {
         if (drafts === undefined) return undefined;
         const self = pl.userResources.authUser;
-        return await Promise.all(
-          drafts.map(async ({ envelopeRid, ...share }): Promise<OutgoingShare> => {
-            const grants = await pl.userResources.listGrants(envelopeRid);
-            const everyone = grants.some((g) => isEveryoneUserLogin(g.user));
-            const recipients = everyone
-              ? ["*"]
-              : grants.map((g) => g.user).filter((u) => u !== self);
-            return { ...share, recipients };
-          }),
+        const toRecipients = (grants: { user: string }[]): string[] =>
+          grants.some((g) => isEveryoneUserLogin(g.user))
+            ? ["*"]
+            : grants.map((g) => g.user).filter((u) => u !== self);
+
+        const txGrants = pl.hasCapability("txListGrants:v1");
+        const settled = await Promise.allSettled(
+          drafts.map((d) =>
+            txGrants
+              ? pl.withReadTx("ListShareGrant", (tx) => tx.listGrants(d.envelopeRid))
+              : pl.userResources.listGrants(d.envelopeRid),
+          ),
         );
+
+        return drafts.map(({ envelopeRid: _envelopeRid, ...share }, i): OutgoingShare => {
+          const r = settled[i];
+          return { ...share, recipients: r.status === "fulfilled" ? toRecipients(r.value) : [] };
+        });
       },
     },
   );
