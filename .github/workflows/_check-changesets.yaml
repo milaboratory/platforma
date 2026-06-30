@@ -9,13 +9,19 @@ on:
 
 jobs:
   check-changesets:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     outputs:
       has-pending: ${{ steps.check.outputs.has-pending }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # hz-ubuntu-dind has Node baked in the hostedtoolcache but not on PATH;
+      # set it up (cache hit on the baked 22.x) so `npx` is available.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Check changeset status
         id: check
