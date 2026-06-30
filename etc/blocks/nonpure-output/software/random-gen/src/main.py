@@ -13,7 +13,9 @@ import secrets
 
 
 def main() -> None:
-    print(secrets.token_hex(16))
+    # end="" keeps the output clean: no trailing newline gets captured into the
+    # block's nonpureValue output.
+    print(secrets.token_hex(16), end="")
 
 
 if __name__ == "__main__":
