@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-configs",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
@@ -9,6 +9,7 @@
     "./block/model": "./src/blocks/tsconfig.model.json",
     "./block/ui": "./src/blocks/tsconfig.ui.json",
     "./block/test": "./src/blocks/tsconfig.test.json",
+    "./block/facade": "./src/blocks/tsconfig.facade.json",
     "./*": "./src/*"
   },
   "scripts": {

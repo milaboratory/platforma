@@ -576,6 +576,15 @@ export interface components {
       nonce: string;
       /** Format: date-time */
       expiresAt: string;
+      /**
+       * @description Confidential-client secret for the IdP token exchange; absent for public clients.
+       *      Rationale: Google's OIDC does not support public clients — it requires a
+       *      client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+       *      gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+       *      leaving the server. So the backend holds the secret and forwards it here to the
+       *      desktop, which performs the token exchange as a confidential client.
+       */
+      clientSecret: string;
     };
     AuthAPI_BeginSSOLogin_Request: Record<string, never>;
     AuthAPI_BeginSSOLogin_Response: {
@@ -657,6 +666,7 @@ export interface components {
       groupsClaim: string;
       /** Format: enum */
       flowType: number;
+      accessType: string;
     };
     AuthAPI_ListMethods_TokenAuthMethod: Record<string, never>;
     AuthAPI_Login_BasicCredentials: {
@@ -957,14 +967,20 @@ export interface components {
       os: string;
       arch: string;
       /**
-       * @description Opt-in capabilities advertised by this server instance, used by
-       *      clients to pick between fast and fallback code paths without waiting
-       *      for a failed RPC.
+       * @description Opt-in capabilities advertised by this server instance. Two
+       *      client-side usage modes share this same wire field, decided
+       *      per-token by the client:
+       *        - Optimization hint. Client picks between a fast path and a
+       *          fallback without probing by trial-and-error; missing tokens
+       *          just cause the fallback to run (e.g. "treeFilter:v2").
+       *        - Install-time gate. Client refuses to install a block whose
+       *          manifest declares a required capability the server doesn't
+       *          advertise; missing tokens fail closed (e.g. "wasm:v1").
        *
        *      Each entry is an opaque token "<feature>:<version>" (e.g.
-       *      "loadSubtree:v1"). Unrecognized tokens are ignored by the client.
-       *      The field is unset on servers predating this mechanism, which the
-       *      client treats as "no optional capabilities advertised".
+       *      "treeFilter:v2"). The field is unset on servers predating this
+       *      mechanism, which the client treats as "no optional capabilities
+       *      advertised" — fallback for hints, fail-closed for gates.
        *
        *      All list see pl/platform/api/plapiserver/server_capabilities.go
        */
@@ -1063,8 +1079,8 @@ export interface components {
     };
     ResourceSchema_AccessFlags: {
       /**
-       * @description Deny-list approach: default = allowed (true)
-       *      Controllers set these to false to restrict non-controller roles (role='u', role='w')
+       * @description Allow-list approach: default = forbidden (false)
+       *      Controllers set this to true allow non-controller roles (role='u', role='w')
        */
       createResource: boolean;
       /** @description IMPORTANT: read_fields=false with write_fields=true is a forbidden combination */
@@ -1083,6 +1099,11 @@ export interface components {
       writeByFieldType: {
         [key: string]: boolean;
       };
+      /**
+       * @description Allows non-controller roles (role='u', role='w') to set error on the resource,
+       *      marking it as failed and dropping it from recovery/deduplication indicies.
+       */
+      setError: boolean;
     };
     ResourceType: {
       name: string;

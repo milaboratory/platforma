@@ -1,5 +1,46 @@
 # @platforma-sdk/block-tools
 
+## 2.11.5
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.9
+
+## 2.11.4
+
+### Patch Changes
+
+- 534a237: Reshape the `from-pack-v2` BlockPointer to a dependency-free URL locator: rename
+  `folder` → `packUrl` (the block-pack directory) and add optional `rootUrl` (the
+  facade/package root). Both are `file:` URLs, NOT filesystem paths.
+
+  The facade emits the lossless, OS-agnostic locator (`import.meta.url` is always a
+  forward-slash `file:` URL, even on Windows) by pure string ops with zero imports,
+  so it stays dependency-free and loadable in minimal engines (e.g. QuickJS). Each
+  consumer converts at its own edge with `fileURLToPath` (loader, `resolveToRegistry`,
+  tests), where Windows drive letters / `%`-encoding / UNC are handled correctly; the
+  watcher cache key uses `packUrl` directly (a stable string). The structurer that
+  builds a block owns its on-disk layout, so the pointer self-describes where the
+  pack lives instead of letting consumers reconstruct `<root>/block-pack` — a
+  consumer at a different SDK version cannot know a layout the structurer may
+  relocate. `loadPackDescriptionFromManifest` takes the pack directory directly.
+  `dev-v2` is unchanged (keeps its path-valued `folder`).
+
+- Updated dependencies [534a237]
+  - @milaboratories/pl-model-middle-layer@1.30.9
+  - @milaboratories/pl-model-backend@1.4.8
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.3
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+  - @milaboratories/resolve-helper@1.1.3
+
+## 2.11.3
+
+### Patch Changes
+
+- 33be13c: Migrate the block-tools CLI framework from oclif to commander. CLI-only, internal change — the full command surface (build-meta, build-model, pack, publish, refresh-registry, mark-stable, update-deps, list-overview-snapshots, restore-overview-from-snapshot, upload-package-v1, and `structure check|init|refresh`), all flags, short flags, env-var bindings, defaults, and exit behavior are preserved. The library exports (`src/lib.ts` / `dist/index.*` / `dist/lib.d.ts`) are unchanged.
+
 ## 2.11.2
 
 ### Patch Changes

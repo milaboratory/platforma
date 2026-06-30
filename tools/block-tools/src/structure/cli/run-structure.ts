@@ -1,5 +1,5 @@
 // Shared driver for the `structure check` and `structure refresh`
-// oclif commands. Wraps DISCOVERY (discover-fs) + the engine runner for
+// commands. Wraps DISCOVERY (discover-fs) + the engine runner for
 // one block path, handling the standalone vs `--sdk-internal` split, the
 // `--update-deps-only` registry prefetch, and the post-run recheck's
 // fresh re-discovery. Each block path is processed independently (no
@@ -26,7 +26,7 @@ export type RunStructureInput = {
   isSdkInternal: boolean;
   updateDepsOnly: boolean;
   mode: StructureMode;
-  /** `<block-tools>/src/structure/templates` (from oclif `config.root`). */
+  /** `<block-tools>/src/structure/templates`. */
   templatesRoot: string;
   log: (msg: string) => void;
 };

@@ -1,6 +1,15 @@
 import type { AnyResourceRef, PlTransaction } from "@milaboratories/pl-client";
-import type { FrontendFromFolderData, FrontendFromUrlData, FrontendSpec } from "../../model";
-import { FrontendFromFolderResourceType, FrontendFromUrlResourceType } from "../../model";
+import type {
+  FrontendFromFolderData,
+  FrontendFromLocalTgzData,
+  FrontendFromUrlData,
+  FrontendSpec,
+} from "../../model";
+import {
+  FrontendFromFolderResourceType,
+  FrontendFromLocalTgzResourceType,
+  FrontendFromUrlResourceType,
+} from "../../model";
 import { assertNever } from "@milaboratories/ts-helpers";
 
 export function createFrontend(tx: PlTransaction, spec: FrontendSpec): AnyResourceRef {
@@ -17,6 +26,15 @@ export function createFrontend(tx: PlTransaction, spec: FrontendSpec): AnyResour
           path: spec.path,
           signature: spec.signature,
         } as FrontendFromFolderData),
+      );
+    case "local-tgz":
+      return tx.createValue(
+        FrontendFromLocalTgzResourceType,
+        JSON.stringify({
+          path: spec.path,
+          mtime: spec.mtime,
+          signature: spec.signature,
+        } as FrontendFromLocalTgzData),
       );
     default:
       return assertNever(spec);
