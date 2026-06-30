@@ -1,7 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers",
   "version": "1.0.249",
-  "private": true,
   "files": [
     "dist",
     "block-pack"
