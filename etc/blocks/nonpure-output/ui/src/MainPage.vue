@@ -11,9 +11,5 @@ const app = useApp();
       Non-pure output (changes on every run):
       {{ app.model.outputs.nonpureValue }}
     </PlAlert>
-
-    <PlAlert v-if="app.error" type="error">
-      {{ app.error }}
-    </PlAlert>
   </PlBlockPage>
 </template>
