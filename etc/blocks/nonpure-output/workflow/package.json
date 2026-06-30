@@ -10,8 +10,8 @@
     "format": "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'"
   },
   "dependencies": {
-    "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@platforma-open/milaboratories.test-nonpure-output.random-gen": "workspace:*"
+    "@platforma-open/milaboratories.test-nonpure-output.random-gen": "workspace:*",
+    "@platforma-sdk/workflow-tengo": "workspace:*"
   },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "workspace:*",
