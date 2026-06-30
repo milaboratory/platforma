@@ -136,10 +136,10 @@ export function writeSharingDecision(
 }
 
 /**
- * Copies every project snapshot inside an envelope into the acceptor's own project list — the
- * cross-color attach the delivered backend changes legalize. Mirrors
- * {@link duplicateProject}'s `rename` contract, but resolves the source against the envelope
- * tree (not the acceptor's own list), so the wrapper cannot be reused.
+ * Copies every project snapshot inside an envelope into the acceptor's own project list — a
+ * cross-color attach the backend permits. Mirrors {@link duplicateProject}'s `rename` contract,
+ * but resolves the source against the envelope tree (not the acceptor's own list), so the
+ * wrapper cannot be reused.
  *
  * @returns ids of the projects created in the acceptor's list.
  */

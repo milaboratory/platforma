@@ -8,7 +8,7 @@ import type {
   TxOps,
 } from "@milaboratories/pl-client";
 import type { Filter } from "@milaboratories/pl-client";
-import { isTimeoutOrCancelError } from "@milaboratories/pl-client";
+import { isUnauthenticated, isTimeoutOrCancelError } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
@@ -229,6 +229,24 @@ export class SynchronizedTreeState {
   /** Executed from the main loop, and initialization procedure. */
   private async refresh(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     if (this.terminated) throw new Error("tree synchronization is terminated");
+    try {
+      await this.loadAndApply(stats, txOps);
+    } catch (e) {
+      // Discovery-tree self-heal: a discovered root whose grant was revoked/expired fails the whole
+      // ResourceTree poll with Unauthenticated. Re-discover (drops dead roots) and retry once. This is
+      // self-discriminating — a genuinely dead session also fails discover()'s own call, so real auth
+      // loss still propagates. Only for discovery trees; explicit-root trees propagate as-is.
+      if (this.sharedSeeds.length > 0 && isUnauthenticated(e)) {
+        this.logger?.warn(
+          "discovery tree: Unauthenticated on ResourceTree (likely revoked/expired root); re-discovering and retrying",
+        );
+        await this.discover();
+        await this.loadAndApply(stats, txOps);
+      } else throw e;
+    }
+  }
+
+  private async loadAndApply(stats?: TreeLoadingStat, txOps?: TxOps): Promise<void> {
     const request = constructTreeLoadingRequest(this.state, {
       pruningFunction: this.pruning,
       fieldFilter: this.fieldFilter,

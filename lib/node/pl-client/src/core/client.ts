@@ -254,9 +254,8 @@ export class PlClient {
   }
 
   /**
-   * True if the backend honors per-file `permissions` on workdir fill rules
-   * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
-   * for the full definition.
+   * True if the backend honors per-file `permissions` on workdir fill rules.
+   * See {@link LLPlClient.supportsWritableWorkdirFiles} for the full definition.
    */
   public get supportsWritableWorkdirFiles(): boolean {
     this.checkInitialized();
@@ -297,16 +296,11 @@ export class PlClient {
 
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
 
-    // Resolve the caller's role once, alongside the user root. Skipped for an
-    // anonymous connection (no authenticated user, hence no role); on a backend
-    // that predates GetSessionInfo the call throws and the role stays null —
-    // sharing-with-everybody simply never offers, matching the no-auth case.
-    if (this.userResources.authUser !== null) {
-      try {
-        this._currentUserRole = (await this._ll.getSessionInfo()).role;
-      } catch {
-        this._currentUserRole = null;
-      }
+    // Resolve the caller's role once; only the publicGrants-gated share-with-everybody check uses it,
+    // so skip it for anonymous connections or when publicGrants:v1 is absent. Use _ll.hasCapability,
+    // not this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
+    if (this.userResources.authUser !== null && this._ll.hasCapability("publicGrants:v1")) {
+      this._currentUserRole = (await this._ll.getSessionInfo()).role;
     }
 
     if (this.conf.alternativeRoot === undefined) {
