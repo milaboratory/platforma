@@ -12,7 +12,6 @@ packages:
   - lib/model/backend
 
   - lib/node/ts-helpers
-  - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
   - lib/node/pl-http
   - lib/node/pl-errors
@@ -31,6 +30,7 @@ packages:
   - lib/node/pl-mcp-server
   - lib/node/pl-deployments
   - lib/node/pl-config
+  - lib/node/package-builder-lib
 
   - lib/ptabler/js
   - lib/ptabler/schema
@@ -43,7 +43,6 @@ packages:
   - lib/strings
 
   - tools/tengo-builder
-  - tools/oclif-index
   - tools/block-tools
   - tools/ts-configs
   - tools/build-configs
@@ -191,7 +190,7 @@ catalog:
 
   "@changesets/cli": ^2.29.5
 
-  "oclif": ^4.16.2
+  "commander": ^15.0.0
 
   "turbo": 2.5.3
 
@@ -244,9 +243,11 @@ catalog:
 
   "zod": ~3.25.76
 
-  "yaml": ^2.8.0
+  "archiver": ^7.0.1
 
-  "@oclif/core": ^4.0.37
+  "@types/archiver": ^6.0.3
+
+  "yaml": ^2.8.0
 
   "winston": ^3.17.0
 
@@ -297,7 +298,7 @@ catalog:
   "@platforma-open/milaboratories.software-small-binaries": ^2.1.1
   "@platforma-open/milaboratories.software-test-utils": ^1.1.6
   "@platforma-open/milaboratories.software-conda-empty": ^1.0.1
-  "@platforma-open/milaboratories.runenv-python-3": 1.10.5
+  "@platforma-open/milaboratories.runenv-python-3": 1.10.6
 
   "shx": ^0.4.0
 

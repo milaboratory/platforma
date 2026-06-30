@@ -1,10 +1,10 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-block-model.model";
 import { blockTest } from "@platforma-sdk/test";
 import { createPlDataTableStateV2, pluginOutputKey } from "@platforma-sdk/model";
-import { blockSpec } from "this-block";
+import { TestBlockModelBlockPointer } from "this-block";
 
 blockTest("with args", { timeout: 60000 }, async ({ rawPrj: project, expect }) => {
-  const blockId = await project.addBlock("Block", blockSpec);
+  const blockId = await project.addBlock("Block", TestBlockModelBlockPointer);
 
   const stableOverview1 = await project.overview.awaitStableValue();
 
@@ -62,7 +62,7 @@ blockTest(
   "block-level services",
   { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect }) => {
-    const blockId = await project.addBlock("Block", blockSpec);
+    const blockId = await project.addBlock("Block", TestBlockModelBlockPointer);
 
     await project.runBlock(blockId);
     const blockState = await helpers.awaitBlockDoneAndGetStableBlockState(blockId, 50000);

@@ -262,11 +262,11 @@ class RemoteBlobProviderImpl implements RemoteBlobProvider<BlobResourceRef> {
   ): Promise<RemoteBlobProviderImpl> {
     const pool = new RemoteBlobPool(blobDriver, logger);
     const store = new BlobStore({ remoteBlobProvider: pool, logger });
-    const cachingStore = await HttpHelpers.createCachingObjectStore({
+    const cachingStore = (await HttpHelpers.createCachingObjectStore({
       upstream: store,
       config: cacheConfig,
       logger,
-    });
+    })) as PFrameInternal.CachingObjectStore; // TODO: remove cast after next PFrames release
 
     const handler = HttpHelpers.createRequestHandler({ store: cachingStore });
     const server = await HttpHelpers.createHttpServer({ ...serverOptions, handler });

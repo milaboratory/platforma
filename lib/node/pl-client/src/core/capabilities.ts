@@ -23,7 +23,7 @@ export type BackendCapability =
   // `pl/platform/api/plapiserver/server_capabilities.go`.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
   | "userListing:v1" // `ListUsers` RPC (recipient picker)
-  | "publicGrants:v1"; // `grant_access` with `MAKE_RESOURCE_PUBLIC` allowed for any role
+  | "publicGrants:v1"; // `grant_access` with `ANY_AUTHORISED` allowed for any role
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

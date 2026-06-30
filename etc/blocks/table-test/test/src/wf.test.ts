@@ -1,6 +1,6 @@
 import type { PTableHandle } from "@platforma-sdk/model";
 import { blockTest } from "@platforma-sdk/test";
-import { blockSpec } from "this-block";
+import { TestBlockTableBlockPointer } from "this-block";
 
 type TableOutput = {
   ok: boolean;
@@ -11,7 +11,7 @@ blockTest(
   "V3 table resolves linked columns through multi-hop linker chain",
   { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect, ml }) => {
-    const blockId = await project.addBlock("Block", blockSpec);
+    const blockId = await project.addBlock("Block", TestBlockTableBlockPointer);
 
     await project.runBlock(blockId);
     const state = await helpers.awaitBlockDoneAndGetStableBlockState(blockId, 50000);

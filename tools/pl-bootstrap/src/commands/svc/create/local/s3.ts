@@ -1,4 +1,4 @@
-import { Command, Args } from "@oclif/core";
+import { Command } from "commander";
 import path from "node:path";
 import type { createLocalS3Options } from "../../../../core";
 import Core from "../../../../core";
@@ -9,45 +9,41 @@ import * as platforma from "../../../../platforma";
 import * as os from "node:os";
 import { ArgParser } from "../arg-parser";
 
-export default class Local extends Command {
-  static override description =
-    "Run Platforma Backend service as local process on current host (no docker container)";
+const optionGroups = (): Parameters<typeof cmdOpts.argDefs> => [
+  cmdOpts.GlobalOptions(),
+  cmdOpts.VersionOptions(),
+  cmdOpts.S3AddressesOptions(),
+  cmdOpts.AddressesOptions(),
+  cmdOpts.PlBinaryOptions(),
+  cmdOpts.PlSourcesOptions(),
+  cmdOpts.ConfigOptions(),
+  cmdOpts.LicenseOptions(),
+  cmdOpts.StorageOptions(),
+  cmdOpts.StoragePrimaryURLOptions(),
+  cmdOpts.StorageWorkPathOptions(),
+  cmdOpts.StorageLibraryURLOptions(),
+  cmdOpts.PlLogFileOptions(),
+  cmdOpts.PlWorkdirOptions(),
+  cmdOpts.AuthOptions(),
+];
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+export default function svcCreateLocalS3Command(): Command {
+  const cmd = new Command("s3")
+    .description(
+      "Run Platforma Backend service as local process on current host (no docker container)",
+    )
+    .allowUnknownOption()
+    .allowExcessArguments();
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.VersionFlag,
+  // Unknown flags are forwarded to the backend, so parse the raw token list
+  // ourselves instead of letting commander reject them.
+  cmd.argument("[args...]", "instance name followed by optional backend flags");
 
-    ...cmdOpts.S3AddressesFlags,
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.PlBinaryFlag,
-    ...cmdOpts.PlSourcesFlag,
+  cmd.action(async () => {
+    const args = cmd.args;
+    const parser = new ArgParser(cmdOpts.argDefs(...optionGroups()));
+    const parsed = parser.parse(args);
 
-    ...cmdOpts.ConfigFlag,
-
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
-
-    ...cmdOpts.PlLogFileFlag,
-    ...cmdOpts.PlWorkdirFlag,
-    ...cmdOpts.AuthFlags,
-  };
-
-  static override args = {
-    name: Args.string({ required: true }),
-  };
-
-  public async run(): Promise<void> {
-    // Use custom parser instead of OCLIF parse
-    const parser = new ArgParser(Local.flags);
-    const parsed = parser.parse(this.argv);
-
-    // Validate required flags
     const errors = parser.validateRequired(parsed.knownFlags);
     if (errors.length > 0) {
       throw new Error(`Validation errors:\n${errors.join("\n")}`);
@@ -136,9 +132,10 @@ export default class Local extends Command {
         logger.error(err.message);
       });
 
-    // Log unknown flags that will be passed to backend
     if (backendCommands.length > 0) {
       logger.info(`Unknown flags will be passed to backend: ${backendCommands.join(" ")}`);
     }
-  }
+  });
+
+  return cmd;
 }

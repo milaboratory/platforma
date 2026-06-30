@@ -1,5 +1,34 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.30.9
+
+### Patch Changes
+
+- 534a237: Reshape the `from-pack-v2` BlockPointer to a dependency-free URL locator: rename
+  `folder` → `packUrl` (the block-pack directory) and add optional `rootUrl` (the
+  facade/package root). Both are `file:` URLs, NOT filesystem paths.
+
+  The facade emits the lossless, OS-agnostic locator (`import.meta.url` is always a
+  forward-slash `file:` URL, even on Windows) by pure string ops with zero imports,
+  so it stays dependency-free and loadable in minimal engines (e.g. QuickJS). Each
+  consumer converts at its own edge with `fileURLToPath` (loader, `resolveToRegistry`,
+  tests), where Windows drive letters / `%`-encoding / UNC are handled correctly; the
+  watcher cache key uses `packUrl` directly (a stable string). The structurer that
+  builds a block owns its on-disk layout, so the pointer self-describes where the
+  pack lives instead of letting consumers reconstruct `<root>/block-pack` — a
+  consumer at a different SDK version cannot know a layout the structurer may
+  relocate. `loadPackDescriptionFromManifest` takes the pack directory directly.
+  `dev-v2` is unchanged (keeps its path-valued `folder`).
+
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/helpers@1.14.2
+
+## 1.30.8
+
+### Patch Changes
+
+- 3a4036d: Bump `@milaboratories/pframes-rs-*` to 1.1.52, which now populates `bytesMissed` in the serv cache counters. Make `bytesMissed` required on `CacheCounters` accordingly.
+
 ## 1.30.7
 
 ### Patch Changes

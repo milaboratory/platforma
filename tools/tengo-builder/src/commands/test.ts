@@ -1,30 +1,27 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import { createLogger } from "../compiler/util";
 import { dumpArtifacts } from "../shared/dump";
-import { GlobalFlags } from "../shared/basecmd";
+import { addOptions, GlobalOptions } from "../shared/basecmd";
 import { spawnEmbed, waitFor } from "../shared/proc";
 import { TengoTesterBinaryPath } from "@milaboratories/tengo-tester";
 
-export default class Test extends Command {
-  static override description = "run tengo unit tests (.test.tengo)";
+export default function testCommand(): Command {
+  const cmd = new Command("test").description("run tengo unit tests (.test.tengo)");
 
-  static strict = false;
+  cmd.argument("[paths...]", "source paths to test (defaults to ./src)");
+  addOptions(cmd, GlobalOptions());
 
-  static override flags = { ...GlobalFlags };
+  cmd.action(async (paths: string[], o) => {
+    const logLevel = o.logLevel as string;
+    const logger = createLogger(logLevel);
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Test);
-    const logger = createLogger(flags["log-level"]);
-
-    const testerArgs: string[] = this.argv.length == 0 ? ["./src"] : this.argv;
+    const testerArgs: string[] = paths.length == 0 ? ["./src"] : paths;
 
     const tester = spawnEmbed(
       TengoTesterBinaryPath,
       "run",
       "--log-level",
-      flags["log-level"],
+      logLevel,
       "--artifacts",
       "-",
       ...testerArgs,
@@ -39,5 +36,7 @@ export default class Test extends Command {
       const code = await waitFor(tester);
       process.exit(code);
     }
-  }
+  });
+
+  return cmd;
 }

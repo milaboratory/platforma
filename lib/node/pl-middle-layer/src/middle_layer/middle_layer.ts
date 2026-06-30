@@ -459,9 +459,9 @@ export class MiddleLayer {
       // grant on the envelope). Atomic with the create.
       const envelopeGid = await envelope.globalId;
       if (everyone) {
-        // One everyone-grant: empty/ignored target, MAKE_RESOURCE_PUBLIC. The backend rewrites
+        // One everyone-grant: empty/ignored target, ANY_AUTHORISED. The backend rewrites
         // the target to the everyone-user; gated by role + permission ceiling.
-        tx.grantAccess(envelopeGid, "", { writable: true }, GrantType.MAKE_RESOURCE_PUBLIC);
+        tx.grantAccess(envelopeGid, "", { writable: true }, GrantType.ANY_AUTHORISED);
       } else {
         for (const recipient of options.recipients) {
           tx.grantAccess(envelopeGid, recipient, { writable: true });

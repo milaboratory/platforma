@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.node.json",
+  "compilerOptions": {
+    "customConditions": [],
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "dist-types", "node_modules"]
+}

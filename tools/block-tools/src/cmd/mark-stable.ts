@@ -1,67 +1,47 @@
-import { Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import { BlockRegistryV2, loadPackDescriptionRaw } from "../v2";
 import path from "node:path";
 import { overrideDescriptionVersion, StableChannel } from "@milaboratories/pl-model-middle-layer";
 import { storageByUrl } from "../io";
-import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 
-export default class MarkStable extends Command {
-  static description = "Mark target block stable";
+export function markStableCommand(): Command {
+  const cmd = new Command("mark-stable").description("Mark target block stable");
 
-  static flags = {
-    modulePath: Flags.string({
-      char: "i",
-      summary: "input module path",
-      helpValue: "<path>",
-      default: ".",
-    }),
+  cmd.option("-i, --modulePath <path>", "input module path", ".");
+  cmd.addOption(
+    new Option("-c, --channel <channel name>", "custom channel").default(StableChannel).hideHelp(),
+  );
+  cmd.option("-v, --version-override <path>", "override package version");
+  cmd.addOption(
+    new Option("-r, --registry <address>", "full address of the registry")
+      .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.addOption(
+    new Option("--refresh", "refresh repository after adding the package")
+      .default(true)
+      .env("PL_REGISTRY_REFRESH"),
+  );
+  cmd.option("--no-refresh", "do not refresh repository after adding the package");
+  cmd.option(
+    "--unmark",
+    'reverses meaning of this command, flag can be used to remove "stable" flag from the package',
+    false,
+  );
 
-    channel: Flags.string({
-      char: "c",
-      hidden: true,
-      summary: "custom channel",
-      helpValue: "<channel name>",
-      default: StableChannel,
-    }),
-
-    "version-override": Flags.file({
-      char: "v",
-      summary: "override package version",
-    }),
-
-    registry: Flags.string({
-      char: "r",
-      summary: "full address of the registry",
-      helpValue: "<address>",
-      env: "PL_REGISTRY",
-      required: true,
-    }),
-
-    refresh: Flags.boolean({
-      summary: "refresh repository after adding the package",
-      default: true,
-      allowNo: true,
-      env: "PL_REGISTRY_REFRESH",
-    }),
-
-    unmark: Flags.boolean({
-      summary:
-        'reverses meaning of this command, flag can be used to remove "stable" flag from the package',
-      default: false,
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(MarkStable);
+  cmd.action(async (flags) => {
     let description = await loadPackDescriptionRaw(path.resolve(flags.modulePath));
-    if (flags["version-override"])
-      description = overrideDescriptionVersion(description, flags["version-override"]);
+    if (flags.versionOverride)
+      description = overrideDescriptionVersion(description, flags.versionOverride);
     const storage = storageByUrl(flags.registry);
-    const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
+    const registry = new BlockRegistryV2(storage, new ConsoleLoggerAdapter());
 
     if (flags.unmark) await registry.removePackageFromChannel(description.id, flags.channel);
     else await registry.addPackageToChannel(description.id, flags.channel);
 
     if (flags.refresh) await registry.updateIfNeeded();
-  }
+  });
+
+  return cmd;
 }

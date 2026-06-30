@@ -60,4 +60,6 @@ export const model = BlockModel.create()
 
   .done(2);
 
+export const platforma = model;
+
 export type BlockOutputs = InferOutputsType<typeof model>;

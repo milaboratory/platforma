@@ -1,37 +1,35 @@
 import path from "node:path";
 
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import Core from "../../core";
 import * as cmdOpts from "../../cmd-opts";
 import * as util from "../../util";
 import type * as types from "../../templates/types";
 import state from "../../state";
 
-export default class Docker extends Command {
-  static override description = "Run platforma backend service with 'FS' primary storage type";
+export default function startDockerCommand(): Command {
+  const cmd = new Command("docker").description(
+    "Run platforma backend service with 'FS' primary storage type",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.AddressesOptions(),
+    cmdOpts.ImageOptions(),
+    cmdOpts.VersionOptions(),
+    cmdOpts.ArchOptions(),
+    cmdOpts.AuthOptions(),
+    cmdOpts.LicenseOptions(),
+    cmdOpts.MountOptions(),
+    cmdOpts.StorageOptions(),
+    cmdOpts.StoragePrimaryURLOptions(),
+    cmdOpts.StorageWorkPathOptions(),
+    cmdOpts.StorageLibraryURLOptions(),
+  );
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.ImageFlag,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.ArchFlag,
-
-    ...cmdOpts.AuthFlags,
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.MountFlag,
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Docker);
+  cmd.action(async (o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
@@ -82,5 +80,7 @@ export default class Docker extends Command {
     });
 
     core.switchInstance(instance);
-  }
+  });
+
+  return cmd;
 }
