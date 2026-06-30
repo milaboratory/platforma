@@ -9,7 +9,7 @@ on:
 
 jobs:
   check-changesets:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     outputs:
       has-pending: ${{ steps.check.outputs.has-pending }}
     steps:
