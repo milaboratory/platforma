@@ -1,6 +1,6 @@
 ---
-"@milaboratories/milaboratories.ui-examples": patch
-"@milaboratories/milaboratories.test-enter-numbers": patch
+"@milaboratories/milaboratories.ui-examples": minor
+"@milaboratories/milaboratories.test-enter-numbers": minor
 ---
 
 Publish the new-shape facades for two in-monorepo test blocks so a real
