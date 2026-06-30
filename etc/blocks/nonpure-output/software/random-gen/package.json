@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "description": "Impure command: prints a fresh random value on every run",
-  "scripts": {
-    "build": "shx rm -rf ./dist && pl-pkg build",
-    "prepublishOnly": "pl-pkg prepublish",
-    "do-pack": "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open-*.tgz package.tgz"
-  },
   "files": [
     "./dist/**/*"
   ],
+  "type": "module",
+  "scripts": {
+    "build": "pl-pkg build",
+    "prepublishOnly": "pl-pkg prepublish",
+    "do-pack": "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open-*.tgz package.tgz",
+    "changeset": "changeset",
+    "version-packages": "changeset version"
+  },
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+    "@platforma-sdk/package-builder": "workspace:*",
     "shx": "catalog:"
   },
   "block-software": {
