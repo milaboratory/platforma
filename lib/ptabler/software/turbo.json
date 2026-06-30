@@ -2,7 +2,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": ["PL_PKG_DEV"]
+      "env": ["PL_PKG_DEV", "PL_DOCKER_REGISTRY_PUSH_TO", "PL_DOCKER_BUILD", "PL_DOCKER_AUTOPUSH"]
     }
   }
 }

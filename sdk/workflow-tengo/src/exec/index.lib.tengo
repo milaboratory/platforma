@@ -1368,6 +1368,12 @@ builder := func() {
 			// pins it). Either way the device requirement and the CPU/RAM-must-be-set
 			// rule apply.
 			if !is_undefined(gpuMemory) || !is_undefined(gpuFormulaAst) {
+				// Fail early and clearly if a GPU is requested but the backend has no GPU
+				// support (no runner advertises a GPU — exec.hasGpu is false). Without this
+				// the request would surface as an opaque downstream failure. Blocks that can
+				// run on CPU should gate the request: `if exec.hasGpu { builder.gpuMemory(...) }`
+				// (or `.gpuFormula(...)`), which skips it entirely on GPU-less backends.
+				ll.assert(feats.hasGpu, "exec.builder: this command requests a GPU (gpuMemory()/gpuFormula()), but this backend has no GPU support — no runner advertises a GPU (exec.hasGpu is false). Gate the GPU request behind `if exec.hasGpu { ... }` to fall back to CPU, or run it on a GPU-enabled backend.")
 				// A cpuFormula/memFormula satisfies this requirement just like a static
 				// .cpu()/.mem(): it provides an explicit request, computed at run time
 				// (the ephemeral impl overrides the quota before allocation; gpuMemory is
