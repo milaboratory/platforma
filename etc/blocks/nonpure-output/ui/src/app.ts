@@ -14,8 +14,6 @@ export const sdkPlugin = defineApp(platforma, () => {
 
 type App = ReturnType<typeof sdkPlugin.useApp>;
 
-type __cases = [
-  Expect<Equal<App["getRoute"], (href: "/") => Component | undefined>>,
-];
+type __cases = [Expect<Equal<App["getRoute"], (href: "/") => Component | undefined>>];
 
 export const useApp = sdkPlugin.useApp;
