@@ -1245,6 +1245,133 @@ importers:
         specifier: 'catalog:'
         version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
 
+  etc/blocks/nonpure-output/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-nonpure-output.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-nonpure-output.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-nonpure-output.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
+
+  etc/blocks/nonpure-output/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      '@types/node':
+        specifier: '*'
+        version: 24.5.2
+      typescript:
+        specifier: '*'
+        version: 5.9.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+    devDependencies:
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+
+  etc/blocks/nonpure-output/software/random-gen:
+    devDependencies:
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.10.6
+      '@platforma-sdk/package-builder':
+        specifier: workspace:*
+        version: link:../../../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
+
+  etc/blocks/nonpure-output/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-nonpure-output.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:*
+        version: link:../../../../sdk/ui-vue
+      '@types/node':
+        specifier: '*'
+        version: 24.5.2
+      typescript:
+        specifier: '*'
+        version: 5.9.3
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.24(typescript@5.9.3)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 9.2.0
+      '@milaboratories/build-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/build-configs
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../../../lib/util/helpers
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
+
+  etc/blocks/nonpure-output/workflow:
+    dependencies:
+      '@platforma-open/milaboratories.test-nonpure-output.random-gen':
+        specifier: workspace:*
+        version: link:../software/random-gen
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/test':
+        specifier: workspace:*
+        version: link:../../../../sdk/test
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.3(@types/node@24.5.2)(@vitest/coverage-istanbul@4.1.3)(happy-dom@15.11.7)(jsdom@25.0.1)(vite@8.0.6(@types/node@24.5.2)(esbuild@0.27.3)(jiti@2.6.1)(sass@1.83.4)(tsx@4.19.1)(yaml@2.8.0))
+
   etc/blocks/pool-explorer/block:
     devDependencies:
       '@milaboratories/milaboratories.pool-explorer.model':

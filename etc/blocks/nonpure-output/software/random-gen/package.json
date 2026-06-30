@@ -1,0 +1,42 @@
+{
+  "name": "@platforma-open/milaboratories.test-nonpure-output.random-gen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Impure command: prints a fresh random value on every run",
+  "scripts": {
+    "build": "shx rm -rf ./dist && pl-pkg build",
+    "prepublishOnly": "pl-pkg prepublish",
+    "do-pack": "shx rm -f *.tgz && pl-pkg build && pnpm pack && shx mv platforma-open-*.tgz package.tgz"
+  },
+  "files": [
+    "./dist/**/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@platforma-sdk/package-builder": "workspace:*",
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+    "shx": "catalog:"
+  },
+  "block-software": {
+    "entrypoints": {
+      "main": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.10",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/main.py"
+          ]
+        }
+      }
+    }
+  }
+}

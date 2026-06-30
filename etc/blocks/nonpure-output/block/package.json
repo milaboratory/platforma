@@ -1,0 +1,40 @@
+{
+  "name": "@milaboratories/milaboratories.test-nonpure-output",
+  "version": "1.0.127",
+  "private": true,
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "scripts": {
+    "build": "shx rm -rf ./block-pack && block-tools pack",
+    "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
+    "do-pack": "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz"
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.test-nonpure-output.model": "workspace:*",
+    "@milaboratories/milaboratories.test-nonpure-output.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-nonpure-output.workflow": "workspace:*",
+    "@platforma-sdk/model": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*",
+    "shx": "catalog:"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-nonpure-output.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-nonpure-output.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-nonpure-output.ui/dist"
+    },
+    "meta": {
+      "title": "Non-pure Output (CID conflict repro)",
+      "description": "Test block whose command emits a different value every run, reproducing the recover-mode CID conflict",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      }
+    }
+  }
+}

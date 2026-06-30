@@ -1,0 +1,34 @@
+{
+  "name": "@milaboratories/milaboratories.test-nonpure-output.ui",
+  "version": "1.0.117",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ts-builder serve --target block-ui",
+    "watch": "ts-builder build --target block-ui --watch",
+    "check": "ts-builder check --target block-ui",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-ui",
+    "build": "ts-builder build --target block-ui",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.test-nonpure-output.model": "workspace:*",
+    "@platforma-sdk/ui-vue": "workspace:*",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "catalog:",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
+  }
+}
