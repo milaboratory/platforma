@@ -21,7 +21,7 @@ jobs:
   # 1. Init
   # ──────────────────────────────────────────────
   init:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     outputs:
       is-release: ${{ steps.context.outputs.is-release }}
       current-version: ${{ steps.context.outputs.current-version }}
@@ -135,7 +135,7 @@ jobs:
   # 7. Notify
   # ──────────────────────────────────────────────
   notify:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     if: always()
     needs: [init, check-changesets, check-pnpm-consistency, test, publish]
     steps:

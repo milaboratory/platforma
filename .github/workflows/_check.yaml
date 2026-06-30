@@ -5,7 +5,7 @@ on:
 
 jobs:
   check-pnpm-consistency:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     steps:
       - uses: actions/checkout@v4
         with:

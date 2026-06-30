@@ -13,7 +13,7 @@ env:
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     outputs:
       is-release: ${{ steps.context.outputs.is-release }}
       current-version: ${{ steps.context.outputs.current-version }}
@@ -38,7 +38,7 @@ jobs:
     secrets: inherit
 
   monitor-merge-queue:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     if: always()
     needs: [test]
     steps:

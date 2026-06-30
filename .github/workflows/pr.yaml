@@ -15,7 +15,7 @@ env:
 
 jobs:
   init:
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     outputs:
       is-release: ${{ steps.context.outputs.is-release }}
       current-version: ${{ steps.context.outputs.current-version }}
@@ -42,7 +42,7 @@ jobs:
   debug:
     needs: [check-pnpm-consistency, test]
     if: ${{ failure() && contains(github.event.pull_request.labels.*.name, 'debug') }}
-    runs-on: ubuntu-latest
+    runs-on: hz-ubuntu-dind
     steps:
       - name: Interactive debug session (VS Code)
         uses: fawazahmed0/action-debug-vscode@main
