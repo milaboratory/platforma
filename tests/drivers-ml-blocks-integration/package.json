@@ -18,6 +18,7 @@
     "@milaboratories/milaboratories.test-download-file": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-old": "catalog:",
     "@milaboratories/milaboratories.test-enter-numbers-v3": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs": "workspace:*",
