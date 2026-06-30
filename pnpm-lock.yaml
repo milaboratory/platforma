@@ -24,6 +24,9 @@ catalogs:
     '@inquirer/prompts':
       specifier: ^7.0.1
       version: 7.0.1
+    '@milaboratories/milaboratories.test-enter-numbers-old':
+      specifier: npm:@milaboratories/milaboratories.test-enter-numbers@1.1.0
+      version: 1.1.0
     '@milaboratories/pframes-rs-node':
       specifier: 1.1.52
       version: 1.1.52
@@ -3769,6 +3772,9 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/block
+      '@milaboratories/milaboratories.test-enter-numbers-old':
+        specifier: 'catalog:'
+        version: '@milaboratories/milaboratories.test-enter-numbers@1.1.0'
       '@milaboratories/milaboratories.test-enter-numbers-v3':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers-v3/block
@@ -5373,6 +5379,9 @@ packages:
   '@milaboratories/helpers@1.14.2':
     resolution: {integrity: sha512-zOkD4aWNbembwI+AsPTz7nmWC1VPA4rwGBc+Nd5jPpKVh7rCtZwQrlOP5mVqRVMKIAjb1nU8kzzCGfqNPqfJjA==}
     engines: {node: '>=22'}
+
+  '@milaboratories/milaboratories.test-enter-numbers@1.1.0':
+    resolution: {integrity: sha512-tDtviGMdgl3AFGIUGtkF/8gD//arEEhvcnVElAt3657lgEM2vXMtxctJGcNBcF01v11W+HdegiSiA4IsrBNUXg==}
 
   '@milaboratories/pframes-rs-node@1.1.52':
     resolution: {integrity: sha512-Uu4KsQx0GiKvFASI+Cm0nMCMieUVo35mpz4j8mYUYImr7S+bVDDcHweCWrkLkSeImnOQnYHVo9RycViG6QwUQw==}
@@ -10938,6 +10947,8 @@ snapshots:
   '@microsoft/tsdoc@0.15.1': {}
 
   '@milaboratories/helpers@1.14.2': {}
+
+  '@milaboratories/milaboratories.test-enter-numbers@1.1.0': {}
 
   '@milaboratories/pframes-rs-node@1.1.52(encoding@0.1.13)':
     dependencies:
