@@ -6,16 +6,21 @@ import type { Signer } from "@milaboratories/ts-helpers";
 import { assertNever } from "@milaboratories/ts-helpers";
 import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
 import { createFrontend } from "./frontend";
 import { requiredCapabilitiesFromTemplate } from "./required_capabilities";
 import type { BlockConfigContainer } from "@platforma-sdk/model";
 import { Code } from "@platforma-sdk/model";
-import { loadPackDescription, RegistryV1 } from "@platforma-sdk/block-tools";
+import {
+  loadPackDescription,
+  loadPackDescriptionFromManifest,
+  RegistryV1,
+} from "@platforma-sdk/block-tools";
 import type { BlockPackInfo } from "../../model/block_pack";
 import { resolveDevPacket } from "../../dev_env";
-import { getDevV2PacketMtime } from "../../block_registry";
+import { getDevV2PacketMtime, getFromPackV2Mtime } from "../../block_registry";
 import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
@@ -91,6 +96,17 @@ export class BlockPackPreparer {
 
       case "dev-v2": {
         const description = await loadPackDescription(spec.folder);
+        const configContent = await fs.promises.readFile(description.components.model.file, {
+          encoding: "utf-8",
+        });
+        return parseStringConfig(configContent);
+      }
+
+      case "from-pack-v2": {
+        // packUrl is a file: URL (the facade emits URLs, not paths); convert at
+        // this Node boundary before touching the filesystem.
+        const packDir = fileURLToPath(spec.packUrl);
+        const description = await loadPackDescriptionFromManifest(packDir);
         const configContent = await fs.promises.readFile(description.components.model.file, {
           encoding: "utf-8",
         });
@@ -224,6 +240,49 @@ export class BlockPackPreparer {
             type: "local",
             path: frontendPath,
             signature: this.signer.sign(frontendPath),
+          },
+          source,
+        };
+      }
+
+      case "from-pack-v2": {
+        // packUrl is a file: URL (the facade emits URLs, not paths); convert at
+        // this Node boundary before touching the filesystem.
+        const packDir = fileURLToPath(spec.packUrl);
+        const description = await loadPackDescriptionFromManifest(packDir);
+        const config = parseStringConfig(
+          await fs.promises.readFile(description.components.model.file, {
+            encoding: "utf-8",
+          }),
+        );
+        const workflowContent = await fs.promises.readFile(
+          description.components.workflow.main.file,
+        );
+        // UI ships as ui.tgz inside block-pack/; its absolute path is carried
+        // in the ui folder slot. The tarball is unpacked lazily at serve-time by
+        // the download driver (local-tgz frontend), not eagerly here — so it
+        // inherits the driver's usage-tracking and space recycling.
+        const uiTgzPath = description.components.ui.folder;
+        const source = { ...spec };
+        let mtime = spec.mtime;
+        if (mtime === undefined) {
+          // No explicit mtime: derive one so the frontend cache key invalidates
+          // when the block changes.
+          mtime = await getFromPackV2Mtime(packDir, uiTgzPath);
+          source.mtime = mtime;
+        }
+        return {
+          type: "explicit",
+          template: {
+            type: "explicit",
+            content: workflowContent,
+          },
+          config,
+          frontend: {
+            type: "local-tgz",
+            path: uiTgzPath,
+            mtime,
+            signature: this.signer.sign(`${uiTgzPath}:${mtime}`),
           },
           source,
         };

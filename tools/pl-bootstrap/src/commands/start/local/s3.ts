@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import type { createLocalS3Options } from "../../../core";
 import Core from "../../../core";
 import * as cmdOpts from "../../../cmd-opts";
@@ -9,37 +9,32 @@ import * as util from "../../../util";
 import state from "../../../state";
 import * as os from "node:os";
 
-export default class S3 extends Command {
-  static override description =
-    "Run Platforma Backend service as local process on current host (no docker container)";
+export default function startLocalS3Command(): Command {
+  const cmd = new Command("s3").description(
+    "Run Platforma Backend service as local process on current host (no docker container)",
+  );
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.VersionOptions(),
+    cmdOpts.AddressesOptions(),
+    cmdOpts.S3AddressesOptions(),
+    cmdOpts.PlBinaryOptions(),
+    cmdOpts.PlSourcesOptions(),
+    cmdOpts.ConfigOptions(),
+    cmdOpts.LicenseOptions(),
+    cmdOpts.StorageOptions(),
+    cmdOpts.StoragePrimaryURLOptions(),
+    cmdOpts.StorageWorkPathOptions(),
+    cmdOpts.StorageLibraryURLOptions(),
+    cmdOpts.PlLogFileOptions(),
+    cmdOpts.PlWorkdirOptions(),
+    cmdOpts.AuthOptions(),
+  );
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.VersionFlag,
-
-    ...cmdOpts.AddressesFlags,
-    ...cmdOpts.S3AddressesFlags,
-    ...cmdOpts.PlBinaryFlag,
-    ...cmdOpts.PlSourcesFlag,
-
-    ...cmdOpts.ConfigFlag,
-
-    ...cmdOpts.LicenseFlags,
-
-    ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
-
-    ...cmdOpts.PlLogFileFlag,
-    ...cmdOpts.PlWorkdirFlag,
-    ...cmdOpts.AuthFlags,
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(S3);
+  cmd.action(async (o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
@@ -113,12 +108,6 @@ export default class S3 extends Command {
         .then(() => {
           const children = core.switchInstance(instance);
 
-          // setTimeout(() => {
-          //   for (const child of children) {
-          //     child.unref();
-          //   }
-          // }, 1000);
-
           const results: Promise<void>[] = [];
           for (const child of children) {
             results.push(
@@ -135,5 +124,7 @@ export default class S3 extends Command {
           logger.error(err.message);
         });
     }
-  }
+  });
+
+  return cmd;
 }

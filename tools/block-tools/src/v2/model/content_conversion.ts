@@ -131,7 +131,6 @@ export function cpAbsoluteToRelative(
       const fileName = path.basename(value.file);
       const dst = path.resolve(dstFolder, fileName);
       fileAccumulator?.push(fileName);
-      // eslint-disable-next-line n/no-unsupported-features/node-builtins
       await fsp.cp(value.file, dst);
       return { type: "relative", path: fileName };
     } else return value as Exclude<T, ContentAbsoluteFile>;

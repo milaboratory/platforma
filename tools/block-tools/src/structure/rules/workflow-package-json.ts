@@ -25,7 +25,7 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.workflow`,
-    version: "1.0.0",
+    private: true,
     type: "module",
     scripts: {
       // No `fmt`: the workflow is Tengo, not TS — nothing for oxlint/oxfmt
@@ -54,6 +54,10 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
 }
 
 export function workflowPackageJsonRules(): void {
+  // Controlled sibling — workspace-only, never published, but kept versioned
+  // (changesets-owned) so the packed template's lib carries a version.
+  ensureField("private", true);
+
   ensureField("type", "module");
 
   // No `fmt` script: the workflow is Tengo, not TS — build + check run via

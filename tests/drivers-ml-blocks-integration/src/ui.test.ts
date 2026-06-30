@@ -1,4 +1,4 @@
-import { blockSpec as uiExamplesSpec } from "@milaboratories/milaboratories.ui-examples";
+import { BlockPointer as uiExamplesSpec } from "@milaboratories/milaboratories.ui-examples";
 import { test } from "vitest";
 import { withMl } from "./with-ml";
 import { createProjectWatcher } from "./test-helpers";

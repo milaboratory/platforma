@@ -19,7 +19,6 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.test`,
-    version: "1.0.0",
     private: true,
     type: "module",
     scripts: {
@@ -41,6 +40,11 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 }
 
 export function testPackageJsonRules(): void {
+  // Controlled sibling — workspace-only, never published. (The initial already
+  // seeds `private: true`; the body re-asserts it. The `version` is kept —
+  // changesets-owned — so the packed template's lib carries a version.)
+  ensureField("private", true);
+
   ensureField("type", "module");
 
   ensureScript("fmt", "ts-builder format");

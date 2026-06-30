@@ -9,7 +9,7 @@ import type { BlockVars } from "../engine/api";
 
 const EXPECTED_MODEL_PACKAGE_JSON = `{
   "name": "@platforma-open/test-org.demo.model",
-  "version": "1.0.0",
+  "private": true,
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",

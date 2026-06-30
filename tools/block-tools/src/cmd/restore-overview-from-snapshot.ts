@@ -1,44 +1,32 @@
-import { Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import { BlockRegistryV2 } from "../v2/registry/registry";
 import { storageByUrl } from "../io/storage";
-import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 
-export default class RestoreOverviewFromSnapshot extends Command {
-  static description = "Restore global overview from a snapshot";
+export function restoreOverviewFromSnapshotCommand(): Command {
+  const cmd = new Command("restore-overview-from-snapshot").description(
+    "Restore global overview from a snapshot",
+  );
 
-  static flags = {
-    registry: Flags.string({
-      char: "r",
-      summary: "full address of the registry",
-      helpValue: "<address>",
-      env: "PL_REGISTRY",
-      required: true,
-    }),
+  cmd.addOption(
+    new Option("-r, --registry <address>", "full address of the registry")
+      .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.requiredOption("-s, --snapshot <timestamp>", "snapshot timestamp ID to restore from");
+  cmd.option("--skip-confirmation", "skip confirmation prompt (use with caution)", false);
 
-    snapshot: Flags.string({
-      char: "s",
-      summary: "snapshot timestamp ID to restore from",
-      helpValue: "<timestamp>",
-      required: true,
-    }),
-
-    "skip-confirmation": Flags.boolean({
-      summary: "skip confirmation prompt (use with caution)",
-      default: false,
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(RestoreOverviewFromSnapshot);
+  cmd.action(async (flags) => {
+    const logger = new ConsoleLoggerAdapter();
     const storage = storageByUrl(flags.registry);
-    const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
+    const registry = new BlockRegistryV2(storage, logger);
 
     // Check if snapshot exists
     const snapshots = await registry.listGlobalOverviewSnapshots();
     const targetSnapshot = snapshots.find((s) => s.timestamp === flags.snapshot);
 
     if (!targetSnapshot) {
-      this.error(
+      throw new Error(
         `Snapshot '${flags.snapshot}' not found. Available snapshots:\n${
           snapshots.map((s) => `  - ${s.timestamp}`).join("\n") || "  (none)"
         }`,
@@ -46,7 +34,7 @@ export default class RestoreOverviewFromSnapshot extends Command {
     }
 
     // Confirmation prompt (unless skipped)
-    if (!flags["skip-confirmation"]) {
+    if (!flags.skipConfirmation) {
       const readline = await import("node:readline");
       const rl = readline.createInterface({
         input: process.stdin,
@@ -64,7 +52,7 @@ export default class RestoreOverviewFromSnapshot extends Command {
       rl.close();
 
       if (answer.toLowerCase() !== "y" && answer.toLowerCase() !== "yes") {
-        this.log("Restore cancelled.");
+        logger.info("Restore cancelled.");
         return;
       }
     }
@@ -72,9 +60,11 @@ export default class RestoreOverviewFromSnapshot extends Command {
     // Perform restore
     try {
       await registry.restoreGlobalOverviewFromSnapshot(flags.snapshot);
-      this.log(`✅ Successfully restored global overview from snapshot '${flags.snapshot}'`);
+      logger.info(`✅ Successfully restored global overview from snapshot '${flags.snapshot}'`);
     } catch (error) {
-      this.error(`Failed to restore from snapshot: ${String(error)}`);
+      throw new Error(`Failed to restore from snapshot: ${String(error)}`);
     }
-  }
+  });
+
+  return cmd;
 }

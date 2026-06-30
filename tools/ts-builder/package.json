@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-builder",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "TS build tool for the milaboratories packages",
   "bin": {
     "ts-builder": "./bin/ts-builder.js"
@@ -25,13 +25,13 @@
   "dependencies": {
     "@milaboratories/ts-configs": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
-    "commander": "^12.0.0",
+    "commander": "catalog:",
     "jsonc-parser": "catalog:",
     "oxfmt": "0.35.0",
     "oxlint": "1.63.0",
     "oxlint-plugin-eslint": "1.63.0",
-    "rolldown": "^1.0.0-rc.13",
-    "rolldown-plugin-dts": "^0.23.2",
+    "rolldown": "^1.1.2",
+    "rolldown-plugin-dts": "^0.26.0",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",

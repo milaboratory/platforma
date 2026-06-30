@@ -1,46 +1,42 @@
-import { Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import { BlockRegistryV2 } from "../v2/registry/registry";
 import { storageByUrl } from "../io/storage";
-import { OclifLoggerAdapter } from "@milaboratories/ts-helpers-oclif";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 
-export default class ListOverviewSnapshots extends Command {
-  static description = "List all available global overview snapshots in the registry";
+export function listOverviewSnapshotsCommand(): Command {
+  const cmd = new Command("list-overview-snapshots").description(
+    "List all available global overview snapshots in the registry",
+  );
 
-  static flags = {
-    registry: Flags.string({
-      char: "r",
-      summary: "full address of the registry",
-      helpValue: "<address>",
-      env: "PL_REGISTRY",
-      required: true,
-    }),
+  cmd.addOption(
+    new Option("-r, --registry <address>", "full address of the registry")
+      .env("PL_REGISTRY")
+      .makeOptionMandatory(),
+  );
+  cmd.option("--json", "output in JSON format", false);
 
-    json: Flags.boolean({
-      summary: "output in JSON format",
-      default: false,
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(ListOverviewSnapshots);
+  cmd.action(async (flags) => {
+    const logger = new ConsoleLoggerAdapter();
     const storage = storageByUrl(flags.registry);
-    const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
+    const registry = new BlockRegistryV2(storage, logger);
 
     const snapshots = await registry.listGlobalOverviewSnapshots();
 
     if (flags.json) {
-      this.log(JSON.stringify(snapshots, null, 2));
+      logger.info(JSON.stringify(snapshots, null, 2));
     } else {
       if (snapshots.length === 0) {
-        this.log("No snapshots found.");
+        logger.info("No snapshots found.");
       } else {
-        this.log(`Found ${snapshots.length} snapshot(s):\n`);
+        logger.info(`Found ${snapshots.length} snapshot(s):\n`);
         for (const snapshot of snapshots) {
-          this.log(`  ${snapshot.timestamp}`);
-          this.log(`    Path: ${snapshot.path}`);
-          this.log("");
+          logger.info(`  ${snapshot.timestamp}`);
+          logger.info(`    Path: ${snapshot.path}`);
+          logger.info("");
         }
       }
     }
-  }
+  });
+
+  return cmd;
 }
