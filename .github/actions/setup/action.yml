@@ -91,7 +91,7 @@ runs:
 
     - name: Cache pnpm store (S3/RGW)
       if: inputs.cache-s3-access-key != ''
-      uses: milaboratory/github-ci/actions/node/cache-pnpm-s3@feat/hz-s3-cache-actions
+      uses: milaboratory/github-ci/actions/node/cache-pnpm-s3@v4
       with:
         access-key: ${{ inputs.cache-s3-access-key }}
         secret-key: ${{ inputs.cache-s3-secret-key }}
