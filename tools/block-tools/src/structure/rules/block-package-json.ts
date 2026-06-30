@@ -81,7 +81,7 @@ function blockScripts(npmOrg: string, isSdkInternal: boolean): Record<string, st
     build: "ts-builder build --target block-facade && block-tools pack",
     check: "ts-builder type-check --target block-facade",
     prepublishOnly: prepublishScript(npmOrg, isSdkInternal),
-    "do-pack": "pnpm pack && shx mv *.tgz package.tgz",
+    "do-pack": "shx rm -f package.tgz && pnpm pack && shx mv *.tgz package.tgz",
   };
 }
 
