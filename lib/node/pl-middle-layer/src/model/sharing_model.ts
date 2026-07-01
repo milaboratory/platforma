@@ -69,6 +69,7 @@ export interface EnvelopeData {
   message?: string; // optional message shown with the pending share
   projectLabels: Record<string, string>; // labels of contained projects, keyed by project field uuid; carried so the pending-share UI renders without traversing into the projects
   sourceProjectIds?: string[]; // persistable ids of the donor's source projects this share was built from; used to find and supersede a prior share of the same project. Optional: envelopes created before this field shipped omit it.
+  projectSources?: Record<string, string>; // project field uuid -> source projectId; lets renew re-snapshot live sources and carry deleted ones forward. Optional: envelopes predating it fall back to positional matching.
 }
 
 /** Dynamic field on SharingState, one per handled share, keyed by shareId. */
@@ -87,8 +88,11 @@ export interface SharingDecision {
  *  write; read-only shares omit it. The donor reads these from its own outbox to see
  *  who responded and when. Informational, not authoritative (a writable grant holder
  *  could write under another login — same trust assumption as the sender field).
- *  Copied forward when a share is replaced. */
-export const acceptanceField = (login: string) => `acceptance/${login}`;
+ *  Copied forward when a share is renewed. */
+export const AcceptanceFieldPrefix = "acceptance/";
+export const acceptanceField = (login: string) => `${AcceptanceFieldPrefix}${login}`;
+export const isAcceptanceField = (name: string) => name.startsWith(AcceptanceFieldPrefix);
+export const acceptanceFieldLogin = (name: string) => name.slice(AcceptanceFieldPrefix.length);
 
 export interface EnvelopeAcceptance {
   action: "accepted" | "rejected";

@@ -2,4 +2,4 @@
 "@milaboratories/pl-middle-layer": patch
 ---
 
-Expose `projectIds` on `OutgoingShare` (from the envelope's `sourceProjectIds`) so a share can be renewed via `replaceShare` without the caller tracking the source projects.
+Add `MiddleLayer.renewShare(shareId, { recipients?, everyone?, message? })`, replacing `replaceShare`: renews a share under its stable id — re-snapshots live source projects, carries a deleted source's snapshot forward, edits recipients/message, transfers already-decided recipients' accept/reject records, and can upgrade a targeted share to everyone.

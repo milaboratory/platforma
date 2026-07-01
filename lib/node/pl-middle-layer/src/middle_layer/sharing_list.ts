@@ -17,13 +17,12 @@ import type {
   ShareId,
 } from "../model/sharing_model";
 import {
+  AcceptanceFieldPrefix,
   asShareId,
   SharedEnvelopeResourceType,
   SharingOutboxResourceType,
   SharingStateResourceType,
 } from "../model/sharing_model";
-
-const AcceptanceFieldPrefix = "acceptance/";
 
 /** Donor-facing view of one outgoing share. */
 export interface OutgoingShare {
@@ -33,10 +32,6 @@ export interface OutgoingShare {
   mode: EnvelopeMode;
   message?: string;
   projectLabels: string[]; // label values from EnvelopeData.projectLabels (values only)
-  /** Persistable ids of the donor's source projects this share was built from
-   *  (from EnvelopeData.sourceProjectIds). Empty for envelopes predating that field —
-   *  such shares cannot be renewed. Passed to {@link MiddleLayer.replaceShare} to renew. */
-  projectIds: string[];
   /** Full recipient logins, from `ListGrants` on the envelope; `["*"]` for everyone-shares. */
   recipients: string[];
   /** Per recipient who has responded: their decision and when, from acceptance/{login}. */
@@ -121,7 +116,6 @@ export function createOutgoingSharesComputable(
           mode: data.mode,
           ...(data.message !== undefined ? { message: data.message } : {}),
           projectLabels: Object.values(data.projectLabels),
-          projectIds: data.sourceProjectIds ?? [],
           responses,
           envelopeRid: envelope.id,
         });
