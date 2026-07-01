@@ -1,6 +1,6 @@
 import type { ResourceType, Role } from "@milaboratories/pl-client";
 import { Role as RoleEnum } from "@milaboratories/pl-client";
-import type { Branded } from "@milaboratories/pl-model-common";
+import type { Branded, ProjectId } from "@milaboratories/pl-model-common";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -41,6 +41,14 @@ export const SharingStateResourceType: ResourceType = { name: "SharingState", ve
 
 export type EnvelopeMode = "copy" | "read-only" | "collaboration";
 
+/** Per-project decision on change, matching the UI labels: re-snapshot the live source ("update"),
+ *  carry the existing snapshot ("keep"), or drop the project from the pack ("remove"). */
+export type ProjectChangeAction = "keep" | "update" | "remove";
+
+/** Key of the per-project envelope maps: a uuid minted per snapshot to name the `project/{uuid}`
+ *  field. Distinct from {@link ProjectId} — re-snapshotting one source yields a new uuid each time. */
+export type ProjectFieldUuid = Branded<string, "ProjectFieldUuid">;
+
 /**
  * Whether a role may make a resource public (grant to everyone): true for controller,
  * admin, and user; false for workflow and unspecified. The middle layer carries no policy
@@ -58,17 +66,23 @@ export function canGrantToEveryone(role: Role | null): boolean {
   }
 }
 
+/** One project's snapshot inside an envelope, keyed by {@link ProjectFieldUuid} in {@link EnvelopeData.projects}. */
+export interface EnvelopeProject {
+  label: string; // carried so the pending-share UI renders without traversing into the project
+  source: ProjectId; // donor's source projectId; supersedes a prior share and matches the snapshot to its live source on change
+  updatedAt: number; // ms epoch of the last (re)snapshot
+}
+
 /** Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated. */
 export interface EnvelopeData {
   schemaVersion: 1;
-  shareId: ShareId; // donor-generated UUID; logical share identity, stable across replaces
+  shareId: ShareId; // donor-generated UUID; logical share identity, stable across changes
   sharedAt: number; // ms epoch; this instance's creation time — distinguishes instances of one shareId
   expiresAt: number | null; // ms epoch; sharedAt + ttl (default 14 days) for a targeted share; null for share-with-everybody (never expires)
   mode: EnvelopeMode; // what the acceptor's app should do with the contents
   sender: string; // donor login (informational; backend granted_by is authoritative)
-  message?: string; // optional message shown with the pending share
-  projectLabels: Record<string, string>; // labels of contained projects, keyed by project field uuid; carried so the pending-share UI renders without traversing into the projects
-  sourceProjectIds?: string[]; // persistable ids of the donor's source projects this share was built from; used to find and supersede a prior share of the same project. Optional: envelopes created before this field shipped omit it.
+  title: string; // display name shown to recipients; defaults to the first project's name
+  projects: Record<ProjectFieldUuid, EnvelopeProject>; // contained projects, keyed by project field uuid
 }
 
 /** Dynamic field on SharingState, one per handled share, keyed by shareId. */
@@ -87,8 +101,11 @@ export interface SharingDecision {
  *  write; read-only shares omit it. The donor reads these from its own outbox to see
  *  who responded and when. Informational, not authoritative (a writable grant holder
  *  could write under another login — same trust assumption as the sender field).
- *  Copied forward when a share is replaced. */
-export const acceptanceField = (login: string) => `acceptance/${login}`;
+ *  Copied forward when a share is changed. */
+export const AcceptanceFieldPrefix = "acceptance/";
+export const acceptanceField = (login: string) => `${AcceptanceFieldPrefix}${login}`;
+export const isAcceptanceField = (name: string) => name.startsWith(AcceptanceFieldPrefix);
+export const acceptanceFieldLogin = (name: string) => name.slice(AcceptanceFieldPrefix.length);
 
 export interface EnvelopeAcceptance {
   action: "accepted" | "rejected";
@@ -116,7 +133,7 @@ export function decodeEnvelopeData(data: Uint8Array): EnvelopeData {
 export type ShareProjectsOptions =
   | {
       recipients: string[]; // recipient logins
-      message?: string; // optional message shown with the pending share
+      title: string; // display name shown to recipients; defaults to the first project's name
       mode: EnvelopeMode; // v1 UI always sends "copy"
     }
   | {
@@ -124,9 +141,10 @@ export type ShareProjectsOptions =
       /**
        * When true and an everyone-share of the same project already exists, refresh it under its
        * stable shareId (recipients who already accepted or rejected are not re-prompted) instead of
-       * minting a new share. No-op when no prior everyone-share of the project exists.
+       * minting a new share. No-op when no prior everyone-share of the project exists. Callers that
+       * don't care pass `false`.
        */
-      replace?: boolean;
-      message?: string;
+      replace: boolean;
+      title: string;
       mode: EnvelopeMode;
     };
