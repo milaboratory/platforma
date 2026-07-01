@@ -20,22 +20,30 @@ import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import {
+  acceptanceFieldLogin,
   canGrantToEveryone,
   decodeEnvelopeData,
+  isAcceptanceField,
   SharingOutboxField,
   SharingOutboxResourceType,
   SharingStateField,
   SharingStateResourceType,
+  type EnvelopeAcceptance,
   type EnvelopeData,
+  type ProjectChangeAction,
+  type ProjectFieldUuid,
   type ShareId,
   type ShareProjectsOptions,
 } from "../model/sharing_model";
 import {
   buildShareEnvelope,
   copyEnvelopeProjectsIntoList,
+  envelopeProjectFieldUuid,
+  isEnvelopeProjectField,
   resourceIdsToStrings,
   writeEnvelopeAcceptance,
   writeSharingDecision,
+  type EnvelopeProjectSource,
 } from "../mutator/sharing";
 import type { LiveEnvelope, OutgoingShare, PendingShare } from "./sharing_list";
 import {
@@ -47,7 +55,7 @@ import {
 } from "./sharing_list";
 import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
-import { BlockEventDispatcher } from "@milaboratories/ts-helpers";
+import { BlockEventDispatcher, cachedDeserialize } from "@milaboratories/ts-helpers";
 import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import type { Computable, ComputableStableDefined } from "@milaboratories/computable";
 import { WatchableValue } from "@milaboratories/computable";
@@ -392,7 +400,7 @@ export class MiddleLayer {
         (p) => p.everyone,
       );
       if (priorEveryone !== undefined) {
-        await this.replaceShare(priorEveryone.shareId, projectIds);
+        await this.changeShare(priorEveryone.shareId, { title: options.title });
         return;
       }
     }
@@ -404,7 +412,7 @@ export class MiddleLayer {
    * Mints a fresh share: snapshots the projects into one new envelope (a fresh shareId),
    * supersedes prior shares of the same project, and grants it — all in one atomic write
    * transaction, so a failed grant rolls the whole thing back and the outbox is left as it was.
-   * The everyone+replace path is the {@link replaceShare} branch of {@link shareProjects}; this is
+   * The everyone-refresh path is the {@link changeShare} branch of {@link shareProjects}; this is
    * the mint-a-new-envelope branch.
    */
   private async createNewShare(
@@ -412,7 +420,15 @@ export class MiddleLayer {
     options: ShareProjectsOptions,
   ): Promise<void> {
     const everyone = "everyone" in options;
-    const sourceRids = await Promise.all(projectIds.map((id) => this.resolveProjectId(id)));
+    const sources: EnvelopeProjectSource[] = await Promise.all(
+      projectIds.map(
+        async (id): Promise<EnvelopeProjectSource> => ({
+          kind: "fresh",
+          projectId: id,
+          sourceRid: await this.resolveProjectId(id),
+        }),
+      ),
+    );
     const sender = this.currentUserLogin ?? "";
     // Targeted share: sharedAt + ttl. Share-with-everybody: never expires (null).
     const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
@@ -444,12 +460,11 @@ export class MiddleLayer {
         }
       }
 
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sourceRids, {
+      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
         mode: options.mode,
         sender,
-        message: options.message,
+        title: options.title,
         expiresAt,
-        sourceProjectIds: projectIds,
       });
 
       // Grant in the same transaction (writable: the cross-color accept rule demands a writable
@@ -471,39 +486,122 @@ export class MiddleLayer {
     await this.sharingOutboxTree.refreshState();
   }
 
-  /** Refreshes an existing share under its stable {@link ShareId}: mints a new envelope instance
-   *  with updated snapshots, re-grants to the same audience, and tears the old envelope down — one
-   *  write transaction. Discovery dedups on shareId, so recipients who already accepted or rejected
-   *  are not re-prompted; undecided/new recipients see the new content. Response history is not
-   *  carried forward (a stale record of a different version is worse than none). */
-  public async replaceShare(shareId: ShareId, projectIds: ProjectId[]): Promise<void> {
-    await this.pl.withWriteTx("MLReplaceShare", async (tx) => {
+  /**
+   * Changes a share in place (same {@link ShareId}), in one write transaction: re-snapshots live
+   * source projects and carries deleted ones' snapshots forward; applies edited recipients/title;
+   * transfers already-decided recipients' accept/reject records (they keep their copy and aren't
+   * re-prompted); re-grants; drops the old envelope.
+   *
+   * `opts.recipients` is the full targeted set (decided users are always kept). `opts.title`
+   * replaces the title — omit keeps the current one. `opts.everyone` upgrades targeted ->
+   * everyone; the reverse is impossible and ignored.
+   *
+   * `opts.projectActions` is a per-source-project decision, keyed by projectId: `update`
+   * re-snapshots the live source (falls back to carry if the source is gone), `keep` carries the
+   * existing snapshot (and its timestamp), `remove` drops the project from the pack. A project not
+   * in the map defaults to `keep`. Omit the whole map for the legacy auto behavior (live sources
+   * updated, gone ones kept) — the everyone-refresh path relies on that.
+   */
+  public async changeShare(
+    shareId: ShareId,
+    opts: {
+      recipients?: string[];
+      everyone?: boolean;
+      title?: string;
+      projectActions?: Record<ProjectId, ProjectChangeAction>;
+    } = {},
+  ): Promise<void> {
+    await this.pl.withWriteTx("MLChangeShare", async (tx) => {
       const old = await this.resolveOutboxEnvelope(tx, shareId);
       if (old === undefined)
-        throw new Error(`replaceShare: no live share with id ${shareId} in the outbox.`);
+        throw new Error(`changeShare: no live share with id ${shareId} in the outbox.`);
 
-      const grants = await tx.listGrants(old.rid);
       const self = this.currentUserLogin ?? "";
-      const everyone = grants.some((g) => isEveryoneUserLogin(g.user));
-      const recipients = grants
+      const grants = await tx.listGrants(old.rid);
+      // A targeted share may be upgraded to everyone; an everyone-share can't be narrowed back.
+      const everyone = grants.some((g) => isEveryoneUserLogin(g.user)) || opts.everyone === true;
+
+      // Read the old envelope's project snapshots (uuid -> rid) and accept/reject records.
+      const oldRd = await tx.getResourceData(old.rid, true);
+      const snapshotByUuid = new Map<string, SignedResourceId>();
+      const acceptances: { login: string; acc: EnvelopeAcceptance }[] = [];
+      for (const f of oldRd.fields) {
+        if (isNullSignedResourceId(f.value)) continue;
+        if (isEnvelopeProjectField(f.name)) {
+          snapshotByUuid.set(envelopeProjectFieldUuid(f.name), f.value);
+        } else if (isAcceptanceField(f.name)) {
+          const raw = (await tx.getResourceData(f.value, false)).data;
+          if (raw === undefined) continue;
+          acceptances.push({
+            login: acceptanceFieldLogin(f.name),
+            acc: cachedDeserialize(raw) as EnvelopeAcceptance,
+          });
+        }
+      }
+      const decidedLogins = acceptances.map((a) => a.login);
+
+      // Everyone-shares ignore recipients; targeted shares keep decided users plus the edited set.
+      const priorRecipients = grants
         .filter((g) => !isEveryoneUserLogin(g.user) && g.user !== self)
         .map((g) => g.user);
+      const recipients = everyone
+        ? []
+        : Array.from(new Set([...(opts.recipients ?? priorRecipients), ...decidedLogins]));
 
-      const sourceRids = await Promise.all(projectIds.map((id) => this.resolveProjectId(id)));
+      // Live source projects by persistable id — these get a fresh snapshot.
+      const liveProjects = new Map<string, SignedResourceId>();
+      const projList = await tx.getResourceData(this.projectListResourceId, true);
+      for (const f of projList.fields) {
+        if (isNullSignedResourceId(f.value)) continue;
+        liveProjects.set(resourceIdToString(f.value), f.value);
+      }
+
+      // Per project (keyed by field uuid), apply the caller's decision (default `keep`); with no
+      // projectActions map, fall back to the legacy auto behavior: update a live source, keep a gone one.
+      const actions = opts.projectActions;
+      const sources: EnvelopeProjectSource[] = [];
+      for (const uuid of Object.keys(old.data.projects) as ProjectFieldUuid[]) {
+        const { label, source, updatedAt } = old.data.projects[uuid];
+        const liveRid = liveProjects.get(source);
+
+        const action = actions
+          ? (actions[source] ?? "keep")
+          : liveRid !== undefined
+            ? "update"
+            : "keep";
+        if (action === "remove") continue;
+
+        if (action === "update" && liveRid !== undefined) {
+          sources.push({ kind: "fresh", projectId: source, sourceRid: liveRid });
+        } else {
+          // keep, or an "update" whose source vanished before commit (deleted meanwhile, e.g. from
+          // another client): carry the prior snapshot. Liveness is read inside this write tx — race-safe.
+          const snapshotRid = snapshotByUuid.get(uuid);
+          if (snapshotRid !== undefined)
+            sources.push({ kind: "carry", projectId: source, label, snapshotRid, updatedAt });
+        }
+      }
+
+      // Omit (undefined) keeps the current title; a provided value replaces it.
+      const title = opts.title === undefined ? old.data.title : opts.title.trim();
       const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
 
-      // Same shareId reuses the same outbox field name {shareId}; detach the old field BEFORE
-      // buildShareEnvelope creates the new one, or they collide in one tx.
+      // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
       tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
 
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sourceRids, {
+      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
         mode: old.data.mode,
-        sender: this.currentUserLogin ?? "",
-        ...(old.data.message !== undefined ? { message: old.data.message } : {}),
+        sender: self,
+        title,
         expiresAt,
-        shareId, // SAME shareId — the essence of replace
-        sourceProjectIds: projectIds.map(String),
+        shareId, // SAME shareId — the essence of change
       });
+
+      // Transfer the decided users' records onto the new envelope (donor-written copies).
+      for (const { login, acc } of acceptances) {
+        if (!everyone && !recipients.includes(login)) continue;
+        writeEnvelopeAcceptance(tx, envelope, login, acc.action, acc.timestamp);
+      }
 
       const gid = await envelope.globalId;
       if (everyone) tx.grantAccess(gid, "", { writable: true }, GrantType.ANY_AUTHORISED);
@@ -519,7 +617,7 @@ export class MiddleLayer {
    * Finds the donor's own outgoing envelopes built from any of the given source projects —
    * the supersede candidates for a fresh share of the same project(s). Reads each envelope's
    * recipient set via `ListGrants` so the caller can pull individual recipients or detect an
-   * everyone-share. Envelopes predating `sourceProjectIds` carry none and never match.
+   * everyone-share.
    */
   private async findSupersedableEnvelopes(projectIds: ProjectId[]): Promise<
     {
@@ -530,7 +628,7 @@ export class MiddleLayer {
       recipients: string[];
     }[]
   > {
-    const wanted = new Set(projectIds.map((id) => String(id)));
+    const wanted = new Set(projectIds);
 
     const matched = await this.pl.withReadTx("MLFindSupersede", async (tx) => {
       const outbox = await tx.getResourceData(this.sharingOutboxResourceId, true);
@@ -540,7 +638,7 @@ export class MiddleLayer {
         const rd = await tx.getResourceData(f.value, false);
         if (rd.data === undefined) continue;
         const data = decodeEnvelopeData(rd.data);
-        if ((data.sourceProjectIds ?? []).some((id) => wanted.has(id)))
+        if (Object.values(data.projects).some((p) => wanted.has(p.source)))
           out.push({ fieldName: f.name, rid: f.value, shareId: data.shareId });
       }
       return out;

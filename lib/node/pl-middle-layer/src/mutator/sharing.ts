@@ -2,12 +2,15 @@ import type { PlTransaction, ResourceRef, SignedResourceId } from "@milaboratori
 import { field, isNotNullSignedResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
+import type { ProjectId } from "@milaboratories/pl-model-common";
 import { ProjectMetaKey } from "../model/project_model";
 import { duplicateProject } from "./project";
 import type {
   EnvelopeData,
   EnvelopeAcceptance,
   EnvelopeMode,
+  EnvelopeProject,
+  ProjectFieldUuid,
   ShareId,
   SharingDecision,
 } from "../model/sharing_model";
@@ -19,17 +22,38 @@ import {
 } from "../model/sharing_model";
 
 /** Field name carrying a project snapshot inside a {@link SharedEnvelopeResourceType}. */
-export const envelopeProjectField = (uuid: string) => `project/${uuid}`;
-const EnvelopeProjectFieldPrefix = "project/";
+export const EnvelopeProjectFieldPrefix = "project/";
+export const envelopeProjectField = (uuid: ProjectFieldUuid) =>
+  `${EnvelopeProjectFieldPrefix}${uuid}`;
 
 /** True for an envelope field that carries a project snapshot. */
 export function isEnvelopeProjectField(name: string): boolean {
   return name.startsWith(EnvelopeProjectFieldPrefix);
 }
 
+/** Extracts the project field uuid from a `project/{uuid}` field name. */
+export function envelopeProjectFieldUuid(name: string): ProjectFieldUuid {
+  return name.slice(EnvelopeProjectFieldPrefix.length) as ProjectFieldUuid;
+}
+
 //
 // Donor side
 //
+
+/**
+ * One project going into an envelope: `fresh` snapshots a live source (normal path); `carry`
+ * re-attaches an existing snapshot (change's "keep", or an "update" whose source is gone).
+ */
+export type EnvelopeProjectSource =
+  | { kind: "fresh"; projectId: ProjectId; sourceRid: SignedResourceId }
+  | {
+      kind: "carry";
+      projectId: ProjectId;
+      label: string;
+      snapshotRid: SignedResourceId;
+      /** ms epoch the carried snapshot was last taken; preserved so "keep" keeps its timestamp. */
+      updatedAt: number;
+    };
 
 /**
  * Builds one {@link SharedEnvelopeResourceType} on the donor side inside the given write
@@ -43,33 +67,37 @@ export function isEnvelopeProjectField(name: string): boolean {
 export async function buildShareEnvelope(
   tx: PlTransaction,
   outboxRid: SignedResourceId,
-  sourceProjectRids: SignedResourceId[],
+  sources: EnvelopeProjectSource[],
   params: {
     mode: EnvelopeMode;
     sender: string;
-    message?: string;
+    title: string;
     /** ms epoch; sharedAt + ttl for a targeted share, null for share-with-everybody. */
     expiresAt: number | null;
-    /** Existing shareId for a replace; a fresh one is minted when omitted. */
+    /** Existing shareId for a change; a fresh one is minted when omitted. */
     shareId?: ShareId;
     sharedAt?: number;
-    /** Persistable ids of the source projects, recorded so a later share can find and
-     *  supersede a prior share of the same project. */
-    sourceProjectIds: string[];
   },
 ): Promise<{ envelope: ResourceRef; data: EnvelopeData }> {
   const shareId = params.shareId ?? newShareId();
   const sharedAt = params.sharedAt ?? Date.now();
 
-  // Snapshot each source project by reference and collect labels for the pending-share UI.
-  const projectLabels: Record<string, string> = {};
-  const snapshots: { uuid: string; ref: ResourceRef }[] = [];
-  for (const sourceRid of sourceProjectRids) {
-    const meta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
-    const uuid = randomUUID();
-    const ref = await duplicateProject(tx, sourceRid, { label: meta.label });
-    projectLabels[uuid] = meta.label;
-    snapshots.push({ uuid, ref });
+  // Snapshot (fresh) or re-attach (carry) each project, collecting its metadata for the pack.
+  const projects: Record<ProjectFieldUuid, EnvelopeProject> = {};
+  const snapshots: { uuid: ProjectFieldUuid; ref: ResourceRef | SignedResourceId }[] = [];
+  for (const src of sources) {
+    const uuid = randomUUID() as ProjectFieldUuid;
+    if (src.kind === "fresh") {
+      const meta = await tx.getKValueJson<ProjectMeta>(src.sourceRid, ProjectMetaKey);
+      const ref = await duplicateProject(tx, src.sourceRid, { label: meta.label });
+      projects[uuid] = { label: meta.label, source: src.projectId, updatedAt: sharedAt }; // (re)snapshotted now
+      snapshots.push({ uuid, ref });
+    } else {
+      // Re-attach the prior snapshot; the new envelope references it before the old one is
+      // detached in the same tx, so it stays alive. Label and timestamp carry unchanged.
+      projects[uuid] = { label: src.label, source: src.projectId, updatedAt: src.updatedAt };
+      snapshots.push({ uuid, ref: src.snapshotRid });
+    }
   }
 
   const data: EnvelopeData = {
@@ -79,9 +107,8 @@ export async function buildShareEnvelope(
     expiresAt: params.expiresAt,
     mode: params.mode,
     sender: params.sender,
-    ...(params.message !== undefined ? { message: params.message } : {}),
-    projectLabels,
-    sourceProjectIds: params.sourceProjectIds,
+    title: params.title,
+    projects,
   };
 
   // Immutable data set once at creation, never altered.
@@ -101,12 +128,13 @@ export async function buildShareEnvelope(
 }
 
 /**
- * Records the acceptor's response onto the envelope as a dynamic `acceptance/{login}` field
- * (read-write shares only). The acceptor's writable envelope grant is what permits this write.
+ * Records a response onto the envelope as a dynamic `acceptance/{login}` field: the acceptor
+ * writing their own decision (their writable grant permits it), or the donor transferring an
+ * existing record onto a changed envelope. Accepts the envelope by ref or id.
  */
 export function writeEnvelopeAcceptance(
   tx: PlTransaction,
-  envelopeRid: SignedResourceId,
+  envelopeRid: ResourceRef | SignedResourceId,
   login: string,
   action: EnvelopeAcceptance["action"],
   timestamp: number,
