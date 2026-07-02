@@ -1,0 +1,30 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+// A tiny Python script that prints a fresh random value on every run (stdlib only,
+// so it works on every platform).
+randomGenSw := assets.importSoftware("@platforma-open/milaboratories.test-nonpure-output.random-gen:main")
+
+wf.body(func(args) {
+	// Intentionally NON-DETERMINISTIC output: the command emits a different value on
+	// every run, so this block is "impure" - the same inputs do not yield the same
+	// output.
+	//
+	// This reproduces the recover-mode CID conflict in the backend: when the project
+	// is re-derived, the backend recovers this output's predicted CID from the
+	// glossary, but re-running the command produces a different value, so the
+	// resource's effectiveCID diverges from its recovered canonicalID.
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(randomGenSw).
+		saveStdoutContent().
+		run()
+
+	return {
+		outputs: {
+			nonpureValue: run.getStdoutContent()
+		},
+		exports: {}
+	}
+})
