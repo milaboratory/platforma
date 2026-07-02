@@ -243,20 +243,24 @@ referencedMetricFiles := func(resolvedNode) {
 	return acc
 }
 
-// applyFormulaFallback resolves the static ram/cpu to use when the backend
+// applyFormulaFallback resolves the static ram/cpu/gpu to use when the backend
 // cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
-// by dimension — { ram: { ast, fallback, static }, cpu: { ast, fallback, static } }
-// — where `ast` is the formula (if any), `static` the .mem()/.cpu() request (if
-// any), and `fallback` the { fallback } given on the formula. A formula dimension
-// needs SOME static value: a static request always wins (the formula won't run on
-// this backend) and doubles as the fallback, so `fallback` fills in only when no
-// static request was set; the sole error is a formula dimension with NEITHER.
-// Returns { ram, cpu, err } — err a message string or undefined; the caller asserts
-// err is undefined, then applies ram/cpu. (Field is `err`, not `error`: `error` is
-// a reserved word in Tengo.) The ram/cpu values are validated by the builder before
-// they reach here; this only picks among them.
+// by dimension — { ram: { ast, fallback, static }, cpu: {...}, gpu?: {...} } —
+// where `ast` is the formula (if any), `static` the .mem()/.cpu()/.gpuMemory()
+// request (if any), and `fallback` the { fallback } given on the formula. A
+// formula dimension needs SOME static value: a static request always wins (the
+// formula won't run on this backend) and doubles as the fallback, so `fallback`
+// fills in only when no static request was set; the sole error is a formula
+// dimension with NEITHER. Returns { ram, cpu, gpu, err } — err a message string or
+// undefined; the caller asserts err is undefined, then applies ram/cpu/gpu. (Field
+// is `err`, not `error`: `error` is a reserved word in Tengo.) The values are
+// validated by the builder before they reach here; this only picks among them.
+// The gpu dimension is optional in `dims` (omitted when no .gpuMemory()/gpuFormula
+// is in play); res.gpu is then undefined and the caller leaves the quota's
+// gpuMemory unset.
 applyFormulaFallback := func(dims) {
-	res := { ram: dims.ram.static, cpu: dims.cpu.static, err: undefined }
+	gpu := is_undefined(dims.gpu) ? {} : dims.gpu
+	res := { ram: dims.ram.static, cpu: dims.cpu.static, gpu: gpu.static, err: undefined }
 	if !is_undefined(dims.ram.ast) && is_undefined(res.ram) {
 		if is_undefined(dims.ram.fallback) {
 			res.err = "exec.builder: memFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
@@ -270,6 +274,13 @@ applyFormulaFallback := func(dims) {
 			return res
 		}
 		res.cpu = dims.cpu.fallback
+	}
+	if !is_undefined(gpu.ast) && is_undefined(res.gpu) {
+		if is_undefined(gpu.fallback) {
+			res.err = "exec.builder: gpuFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on gpuFormula, set a static .gpuMemory(), or upgrade the backend."
+			return res
+		}
+		res.gpu = gpu.fallback
 	}
 	return res
 }

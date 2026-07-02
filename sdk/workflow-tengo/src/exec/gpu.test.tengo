@@ -1,6 +1,7 @@
 test := import(":test")
 exec := import(":exec")
 ll := import(":ll")
+f := import(":exec.formula")
 
 Test_gpu_no_args := func() {
 	b := exec.builder().
@@ -42,4 +43,38 @@ Test_gpu_override := func() {
 		gpuMemory("16GiB")
 
 	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() override should return valid builder")
+}
+
+Test_gpuFormula_returns_builder := func() {
+	// gpuFormula computes the VRAM request from input metrics. A static cpu()/mem()
+	// is still required (GPU nodes vary in CPU/RAM), supplied here as the fallback.
+	b := exec.builder().
+		cmd("test").
+		cpu(1).
+		mem("2GiB").
+		gpuFormula(f.clamp(f.mul(f.size("input"), 4), f.gib(8), f.gib(48)), { fallback: "16GiB" })
+
+	test.isTrue(ll.methodExists(b, "run"), "gpuFormula() should return builder with run method")
+}
+
+Test_gpuFormula_with_mem_cpu_formulas := func() {
+	// All three dimensions driven by formulas, each with a fallback for old backends.
+	b := exec.builder().
+		cmd("test").
+		memFormula(f.clamp(f.mul(f.size("input"), 6), f.gib(4), f.gib(64)), { fallback: "16GiB" }).
+		cpuFormula(f.clamp(f.divCeil(f.size("input"), f.gib(4)), 4, 16), { fallback: 8 }).
+		gpuFormula(f.clamp(f.mul(f.size("input"), 4), f.gib(8), f.gib(48)), { fallback: "16GiB" })
+
+	test.isTrue(ll.methodExists(b, "run"), "mem/cpu/gpu formulas together should return valid builder")
+}
+
+Test_gpuFormula_chaining := func() {
+	b := exec.builder().
+		cmd("test").
+		cpu(1).
+		mem("2GiB").
+		gpuFormula(f.gib(16), { fallback: "16GiB" }).
+		arg("--flag")
+
+	test.isTrue(ll.methodExists(b, "run"), "gpuFormula() should not break the builder chain")
 }
