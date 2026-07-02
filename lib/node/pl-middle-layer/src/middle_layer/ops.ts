@@ -248,6 +248,11 @@ export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
 
   /** Prioritize this channel if update is available in this block */
   readonly preferredUpdateChannel?: string;
+
+  /** Default lifetime applied to a targeted shared envelope at creation, as
+   * `sharedAt + envelopeTtlMs`. Share-with-everybody envelopes never expire
+   * (`expiresAt: null`) and ignore this. */
+  readonly envelopeTtlMs: number;
 };
 
 export type MiddleLayerOps = MiddleLayerOpsSettings & MiddleLayerOpsPaths;
@@ -260,6 +265,7 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   | "projectRefreshInterval"
   | "devBlockUpdateRecheckInterval"
   | "debugOps"
+  | "envelopeTtlMs"
 > = {
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
@@ -272,6 +278,7 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 2000,
+  envelopeTtlMs: 14 * 24 * 3600 * 1000, // 14 days
 };
 
 export function DefaultMiddleLayerOpsPaths(

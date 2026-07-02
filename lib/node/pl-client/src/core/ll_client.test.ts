@@ -50,7 +50,15 @@ test("unauthenticated status change", async () => {
     return;
   }
 
-  const client = await LLPlClient.build(plAddressToTestConfig(cfg.address));
+  // The flip to Unauthenticated is async, so await it via the status listener.
+  let onUnauthenticated!: () => void;
+  const unauthenticated = new Promise<void>((resolve) => (onUnauthenticated = resolve));
+
+  const client = await LLPlClient.build(plAddressToTestConfig(cfg.address), {
+    statusListener: (s) => {
+      if (s === "Unauthenticated") onUnauthenticated();
+    },
+  });
   expect(client.status).toBe("OK");
 
   const tx = client.createTx(true);
@@ -73,7 +81,12 @@ test("unauthenticated status change", async () => {
     await tx.await();
   }).rejects.toThrow(UnauthenticatedError);
 
-  await tp.setImmediate();
+  await Promise.race([
+    unauthenticated,
+    tp
+      .setTimeout(5000)
+      .then(() => Promise.reject(new Error("status never became Unauthenticated"))),
+  ]);
 
   expect(client.status).toEqual("Unauthenticated");
 });

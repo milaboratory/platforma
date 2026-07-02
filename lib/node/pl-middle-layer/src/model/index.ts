@@ -12,3 +12,5 @@ export {
   BlockArgsAuthorKeyPrefix,
   ProjectStructureAuthorKey,
 } from "./project_model";
+
+export * from "./sharing_model";
