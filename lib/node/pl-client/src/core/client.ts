@@ -2,6 +2,7 @@ import type { AuthOps, PlClientConfig, PlConnectionStatusListener, wireProtocol 
 import type { PlCallOps } from "./ll_client";
 import { LLPlClient } from "./ll_client";
 import { PlTransaction, TxCommitConflict } from "./transaction";
+import type { Role } from "./transaction";
 import type { OptionalSignedResourceId, SignedResourceId } from "./types";
 import {
   ensureSignedResourceIdNotNull,
@@ -79,6 +80,11 @@ export class PlClient {
   private _clientRoot: OptionalSignedResourceId = NullSignedResourceId;
 
   private _userResources?: UserResources;
+
+  /** Cached effective role of the authenticated session, fetched once during
+   *  init via the GetSessionInfo RPC. `null` for an anonymous (no-auth)
+   *  connection — mirrors {@link authUser}. Read through {@link currentUserRole}. */
+  private _currentUserRole: Role | null = null;
 
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
@@ -232,10 +238,24 @@ export class PlClient {
     return this._ll!.hasCapability(capability);
   }
 
+  /** Effective role of the authenticated session, resolved once during init via
+   *  the GetSessionInfo RPC and cached. `null` for an anonymous (no-auth)
+   *  connection, or when the backend predates GetSessionInfo. Mirrors
+   *  {@link authUser}'s null contract. */
+  public get currentUserRole(): Role | null {
+    this.checkInitialized();
+    return this._currentUserRole;
+  }
+
+  /** Login of the authenticated user, or `null` for an anonymous connection. */
+  public get authUser(): string | null {
+    this.checkInitialized();
+    return this.userResources.authUser;
+  }
+
   /**
-   * True if the backend honors per-file `permissions` on workdir fill rules
-   * (PR #1830 in milaboratory/pl). See `LLPlClient.supportsWritableWorkdirFiles`
-   * for the full definition.
+   * True if the backend honors per-file `permissions` on workdir fill rules.
+   * See {@link LLPlClient.supportsWritableWorkdirFiles} for the full definition.
    */
   public get supportsWritableWorkdirFiles(): boolean {
     this.checkInitialized();
@@ -275,6 +295,13 @@ export class PlClient {
     }
 
     const userRoot = await this.userResources.getUserRoot({ createIfNotExists: true });
+
+    // Resolve the caller's role once; only the publicGrants-gated share-with-everybody check uses it,
+    // so skip it for anonymous connections or when publicGrants:v1 is absent. Use _ll.hasCapability,
+    // not this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
+    if (this.userResources.authUser !== null && this._ll.hasCapability("publicGrants:v1")) {
+      this._currentUserRole = (await this._ll.getSessionInfo()).role;
+    }
 
     if (this.conf.alternativeRoot === undefined) {
       this._clientRoot = userRoot;

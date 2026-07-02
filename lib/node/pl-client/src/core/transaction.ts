@@ -1,5 +1,3 @@
-// TODO: fix this
-/* eslint-disable no-prototype-builtins */
 import type {
   ColorProof,
   LocalResourceId,
@@ -31,10 +29,15 @@ import type {
   ServerMessageResponse,
 } from "./ll_transaction";
 import type {
+  AuthAPI_Grant,
   ResourceAPI_Tree_Filter,
   ResourceAPI_Tree_SeedResource,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
+import {
+  TxAPI_Open_Request_WritableTx,
+  AuthAPI_GrantAccess_GrantType,
+  AuthAPI_Role,
+} from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { NonUndefined } from "utility-types";
 import { toBytes } from "../util/util";
 import {
@@ -153,6 +156,42 @@ export async function toGlobalFieldId(ref: FieldRef | FieldId): Promise<FieldId>
 export interface ResourceIdWithSignature {
   resourceId: bigint;
   resourceSignature: ResourceSignature;
+}
+
+/** Access level handed to a grant recipient (see {@link PlTransaction.grantAccess}). */
+export interface GrantPermissions {
+  /** Write access = ability to modify the resource subtree + re-share it. */
+  writable: boolean;
+}
+
+/**
+ * Distinguishes a regular user-to-user grant from a system-level public grant.
+ * Re-export of the wire enum so callers need not reach into the generated proto.
+ */
+export const GrantType = AuthAPI_GrantAccess_GrantType;
+export type GrantType = AuthAPI_GrantAccess_GrantType;
+
+/**
+ * Effective role of an authenticated session (controller / workflow / user / admin).
+ * Re-export of the wire enum so callers need not reach into the generated proto.
+ * Returned by {@link LLPlClient.getSessionInfo} and surfaced as
+ * {@link PlClient.currentUserRole}.
+ */
+export const Role = AuthAPI_Role;
+export type Role = AuthAPI_Role;
+
+/**
+ * Recognises the "all users on the server" sentinel login. A public
+ * ({@link GrantType.ANY_AUTHORISED}) grant is recorded against a reserved login, and
+ * recipients of an everyone-grant surface in `ListGrants` with that value — callers
+ * detect it here and map it to "*".
+ *
+ * Matched by exact token equality. The long random token guarantees no real user login
+ * collides with it.
+ */
+const EveryoneUser = "everyone-Po9ahwahxai7Aejingaiyiequuecu3ei4moaNge4xahTh0Co7XeeLeiph6ahy3As";
+export function isEveryoneUserLogin(login: string): boolean {
+  return login === EveryoneUser;
 }
 
 const emptySignature = toResourceSignature(new Uint8Array(0));
@@ -815,6 +854,67 @@ export class PlTransaction {
         ...this.toSignedErrorRef(ref),
       },
     });
+  }
+
+  /**
+   * Grant another user access to a resource (and its subtree). Used by the
+   * project-sharing donor flow to hand a recipient the shared envelope.
+   *
+   * `grantType` defaults to a regular user-to-user grant
+   * ({@link GrantType.SINGLE_USER}); pass {@link GrantType.ANY_AUTHORISED}
+   * to make the resource public to everyone (requires backend `publicGrants:v1`
+   * and a role allowed to grant to everyone — `target` is ignored / rewritten
+   * to the everyone-user by the backend).
+   */
+  public grantAccess(
+    rId: AnyResourceRef,
+    target: string,
+    permissions: GrantPermissions,
+    grantType: GrantType = AuthAPI_GrantAccess_GrantType.SINGLE_USER,
+  ): void {
+    this.sendVoidAsync({
+      oneofKind: "grantAccess",
+      grantAccess: {
+        ...this.toSignedResourceId(rId),
+        targetUser: target,
+        permissions,
+        grantType,
+      },
+    });
+  }
+
+  /**
+   * Revoke a single user's grant on a resource — the inverse of {@link grantAccess}.
+   * Used by the sharing donor flow to pull one recipient out of a multi-recipient
+   * envelope without tearing the whole share down. A no-op on the backend if the user
+   * has no grant.
+   */
+  public revokeAccess(rId: AnyResourceRef, target: string): void {
+    this.sendVoidAsync({
+      oneofKind: "revokeAccess",
+      revokeAccess: {
+        ...this.toSignedResourceId(rId),
+        targetUser: target,
+      },
+    });
+  }
+
+  /**
+   * Enumerate the grants of a resource — the donor-side "who did I share with" view.
+   * The backend gates this on the signed, writable resource handle, so only the
+   * resource's owner can read its grants. Recipients of a public
+   * ({@link GrantType.ANY_AUTHORISED}) grant surface with `user` matching the
+   * everyone-sentinel — test with {@link isEveryoneUserLogin}.
+   *
+   * Transactional unary op (single response with all grants), so it rides the tx
+   * channel and works on every wire protocol — unlike the standalone server-streaming
+   * `ListGrants` RPC, which has no REST binding.
+   */
+  public listGrants(rId: AnyResourceRef): Promise<AuthAPI_Grant[]> {
+    return this.sendSingleAndParse(
+      { oneofKind: "listGrants", listGrants: this.toSignedResourceId(rId) },
+      (r) => r.listGrants.grants,
+    );
   }
 
   //

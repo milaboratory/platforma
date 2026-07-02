@@ -3938,7 +3938,7 @@ export interface AuthAPI_GrantAccess_Request {
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.GrantAccess.GrantType grant_type = 5
      */
-    grantType: AuthAPI_GrantAccess_GrantType; // default: GENERAL
+    grantType: AuthAPI_GrantAccess_GrantType; // default: SINGLE_USER
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Response
@@ -3952,17 +3952,17 @@ export interface AuthAPI_GrantAccess_Response {
  */
 export enum AuthAPI_GrantAccess_GrantType {
     /**
-     * regular user-to-user grant (default)
+     * grants access for single user (default).
      *
-     * @generated from protobuf enum value: GENERAL = 0;
+     * @generated from protobuf enum value: SINGLE_USER = 0;
      */
-    GENERAL = 0,
+    SINGLE_USER = 0,
     /**
-     * make resource publically-accessible, showing it in ListUserResources for all users. Requires controller role.
+     * makes resource publically-accessible, showing it in ListUserResources for all authorised clients.
      *
-     * @generated from protobuf enum value: MAKE_RESOURCE_PUBLIC = 1;
+     * @generated from protobuf enum value: ANY_AUTHORISED = 1;
      */
-    MAKE_RESOURCE_PUBLIC = 1
+    ANY_AUTHORISED = 1
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.RevokeAccess
@@ -4034,11 +4034,11 @@ export interface AuthAPI_Grant {
     /**
      * @generated from protobuf field: string user = 1
      */
-    user: string;
+    user: string; // grantee
     /**
      * @generated from protobuf field: uint64 resource_id = 2
      */
-    resourceId: bigint;
+    resourceId: bigint; // target resource of a grant (what grantee can access)
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 3
      */

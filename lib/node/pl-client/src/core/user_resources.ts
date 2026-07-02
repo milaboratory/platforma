@@ -16,6 +16,26 @@ const AnonymousClientRoot = "AnonymousRoot";
 const LsStorageTypePrefix = "LS/"; // implements ls API in particular storage
 const LsProviderFieldPrefix = "storage/"; // provides access to storages list
 
+/** One recipient of a resource, as returned by {@link UserResources.listGrants}. */
+export interface GrantEntry {
+  /** Login the grant targets. An everyone-grant surfaces here as the backend's
+   *  everyone-sentinel — test with {@link isEveryoneUserLogin} (from "./transaction"); callers
+   *  map it to "*". */
+  readonly user: string;
+  /** True for a writable grant (copy / collaboration), false for read-only. */
+  readonly writable: boolean;
+  /** Login of the user who created the grant. */
+  readonly grantedBy: string;
+  /** When the grant was created (ms epoch). */
+  readonly grantedAt: number;
+}
+
+/** One user known to the server, as returned by {@link UserResources.listUsers}. */
+export interface UserEntry {
+  /** Stable identifier of the user; the grant target and `GetUserRoot` key. */
+  readonly login: string;
+}
+
 /** Information about a single data library (LS storage). */
 export interface StorageInfo {
   /** Machine-stable identifier, e.g. "library". Used for filtering and map keys. */
@@ -170,6 +190,71 @@ export class UserResources {
       return await this.getDataLibrariesViaList(opts);
     }
     return await this.getDataLibrariesViaLegacy();
+  }
+
+  /**
+   * Discovers shared resources of a given type granted to the user, as signed resource ids.
+   *
+   * The public, type-filtered form of {@link getDataLibrariesViaList}: it polls the
+   * `ListUserResources` gRPC stream and returns every `sharedResource` entry whose
+   * `resourceType.name` matches `resourceTypeName`. Matching is by name only — the
+   * version is ignored (permissive, survives schema bumps).
+   *
+   * gRPC-only: `ListUserResources` throws on a REST-connected client
+   * ({@link LLPlClient.listUserResources}), so callers on REST get a thrown error.
+   */
+  async listSharedResourcesByType(
+    resourceTypeName: string,
+    opts: { login?: string } = {},
+  ): Promise<SignedResourceId[]> {
+    const responses = await this.ll.listUserResources({ login: opts.login });
+
+    const result: SignedResourceId[] = [];
+    for (const msg of responses) {
+      if (msg.entry.oneofKind !== "sharedResource") continue;
+      const sr = msg.entry.sharedResource;
+      if (!sr.resourceType) continue;
+      if (sr.resourceType.name !== resourceTypeName) continue;
+      result.push(createSignedResourceId(sr.resourceId, toResourceSignature(sr.resourceSignature)));
+    }
+    return result;
+  }
+
+  /**
+   * Enumerates the recipients of a single resource — the donor-side "who did I
+   * share with" view.
+   *
+   * Takes a signed, writable resource handle: the backend gates grant listing on a
+   * signed resource id with writable permission, so only the resource's owner can
+   * call it. An everyone-grant surfaces with `user` matching the backend's
+   * everyone-sentinel — test with {@link isEveryoneUserLogin} (from "./transaction");
+   * the caller maps that to "*".
+   *
+   * Runs over a read transaction ({@link PlTransaction.listGrants}), so it works on
+   * every wire protocol — including REST, where the standalone server-streaming
+   * `ListGrants` RPC has no binding.
+   */
+  async listGrants(resourceId: SignedResourceId): Promise<GrantEntry[]> {
+    const grants = await this.runTx("ListGrants", false, NullSignedResourceId, (tx) =>
+      tx.listGrants(resourceId),
+    );
+    return grants.map((grant) => ({
+      user: grant.user,
+      writable: grant.permissions?.writable ?? false,
+      grantedBy: grant.grantedBy,
+      grantedAt: Number(grant.grantedAt),
+    }));
+  }
+
+  /**
+   * Lists the logins of users known to the server, for the recipient picker. A user becomes
+   * known on first login; provisioned users who have never logged in do not appear. gRPC-only
+   * (the underlying {@link LLPlClient.listUsers} has no REST binding) — throws on a
+   * REST-connected client, so callers gate on the `userListing:v1` capability.
+   */
+  async listUsers(): Promise<UserEntry[]> {
+    const users = await this.ll.listUsers();
+    return users.map((user) => ({ login: user.login }));
   }
 
   private async getUserRootViaRpc(opts: {

@@ -52,13 +52,14 @@ export function constructTreeLoadingRequest(
 ): TreeLoadingRequest {
   const seedResources: SignedResourceId[] = [];
   const finalResources = new Set<SignedResourceId>();
+  const materialized = new Set<SignedResourceId>();
   tree.forEachResource((res) => {
+    materialized.add(res.id);
     if (res.finalState) finalResources.add(res.id);
     else seedResources.push(res.id);
   });
 
-  // if tree is empty, seeding tree reconstruction from the specified root
-  if (seedResources.length === 0 && finalResources.size === 0) seedResources.push(tree.root);
+  for (const root of tree.roots) if (!materialized.has(root)) seedResources.push(root);
 
   return {
     seedResources,

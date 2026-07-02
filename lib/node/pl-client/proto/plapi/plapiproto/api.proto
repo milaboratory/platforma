@@ -1846,8 +1846,8 @@ message AuthAPI {
   message GrantAccess {
     // GrantType distinguishes regular grants from system-level grants.
     enum GrantType {
-      GENERAL = 0; // regular user-to-user grant (default)
-      MAKE_RESOURCE_PUBLIC = 1; // make resource publically-accessible, showing it in ListUserResources for all users. Requires controller role.
+      SINGLE_USER = 0; // grants access for single user (default).
+      ANY_AUTHORISED = 1; // makes resource publically-accessible, showing it in ListUserResources for all authorised clients.
     }
 
     message Request {
@@ -1855,7 +1855,7 @@ message AuthAPI {
       bytes resource_signature = 2;
       string target_user = 3; // user login to grant access to
       Grant.Permissions permissions = 4; // access level to grant
-      GrantType grant_type = 5; // default: GENERAL
+      GrantType grant_type = 5; // default: SINGLE_USER
     }
 
     message Response {}
@@ -1892,8 +1892,8 @@ message AuthAPI {
       bool writable = 1; // write access = ability to modify resource tree + share access
     }
 
-    string user = 1;
-    uint64 resource_id = 2;
+    string user = 1; // grantee
+    uint64 resource_id = 2; // target resource of a grant (what grantee can access)
     Permissions permissions = 3; // access level from grant table
     string granted_by = 4; // login of the user who created this grant
     int64 granted_at = 5; // unix timestamp in milliseconds

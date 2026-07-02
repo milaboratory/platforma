@@ -20,6 +20,8 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
   if ((err as any).name == "RpcError" && (err as any).code == "UNAUTHENTICATED") return true;
   if ((err as any).name == "RESTError" && (err as any).status.code == Code.UNAUTHENTICATED)
     return true;
+  // PlError (e.g. UnrecoverablePlError from a failed streaming tx) carries the status code numerically.
+  if (err instanceof PlError && err.status?.code === Code.UNAUTHENTICATED) return true;
   if ((err as any).cause !== undefined && !nested)
     return isUnauthenticated((err as any).cause, true);
   return false;

@@ -42,7 +42,7 @@ import {
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { isAbortedError } from "./errors";
+import { isAbortedError, isUnauthenticated } from "./errors";
 import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
@@ -122,6 +122,7 @@ export class LLPlClient implements WireClientProviderFactory {
   private _authMethodsSync?: grpcTypes.AuthAPI_ListMethods_Response;
 
   private _status: PlConnectionStatus = "OK";
+  private authProbeInFlight = false;
   private readonly statusListener?: PlConnectionStatusListener;
 
   private _wireProto: wireProtocol = "grpc";
@@ -393,6 +394,25 @@ export class LLPlClient implements WireClientProviderFactory {
     });
   }
 
+  /**
+   * UNAUTHENTICATED covers both a dead session (must reset) and a per-request authorization failure
+   * such as a revoked resource signature (must not). Disambiguate by probing getSessionInfo — an
+   * authenticated call with no resource signature: success means the session is alive and the failure
+   * was resource-level; a probe that is itself Unauthenticated means real auth loss. Coalesced via
+   * authProbeInFlight so a burst of failures costs one probe.
+   */
+  private async verifyThenMaybeEscalateUnauthenticated(): Promise<void> {
+    if (this._status !== "OK" || this.authProbeInFlight) return;
+    this.authProbeInFlight = true;
+    try {
+      await this.getSessionInfo();
+    } catch (e) {
+      if (isUnauthenticated(e)) this.updateStatus("Unauthenticated");
+    } finally {
+      this.authProbeInFlight = false;
+    }
+  }
+
   public get status(): PlConnectionStatus {
     return this._status;
   }
@@ -458,7 +478,7 @@ export class LLPlClient implements WireClientProviderFactory {
         }
 
         if (respErr.error.code === Code.UNAUTHENTICATED) {
-          this.updateStatus("Unauthenticated");
+          void this.verifyThenMaybeEscalateUnauthenticated();
         }
 
         // Let later middleware to deal with standard gRPC error.
@@ -476,7 +496,7 @@ export class LLPlClient implements WireClientProviderFactory {
             onReceiveStatus: (status, next) => {
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
-                this.updateStatus("Unauthenticated");
+                void this.verifyThenMaybeEscalateUnauthenticated();
               if (status.code == GrpcStatus.UNAVAILABLE)
                 // (!!!) don't change to "==="
                 this.updateStatus("Disconnected");
@@ -742,13 +762,12 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   /**
-   * True if the backend honors per-file `permissions` on workdir fill rules
-   * (PR #1830 in milaboratory/pl). Backends before this change ignore the
-   * requested mode and always land files at the canonical archive perm,
-   * making `exec.builder().writeFile/addFile({ writable: true })` a no-op.
+   * True if the backend honors per-file `permissions` on workdir fill rules, so
+   * `exec.builder().writeFile/addFile({ writable: true })` takes effect. When false
+   * the requested mode is ignored and files land at the canonical archive perm.
    *
-   * Tagged at 3.5.0 cut without the change, so [3, 5, 0] excludes the tagged
-   * release but includes dev builds past the tag (e.g. "3.5.0-224-g0ca182").
+   * [3, 5, 0] excludes the tagged 3.5.0 release but includes dev builds past the
+   * tag (e.g. "3.5.0-224-g0ca182"), which is where the support lands.
    */
   public get supportsWritableWorkdirFiles(): boolean {
     return isAfterVersion(this.serverInfo.coreVersion, [3, 5, 0]);
@@ -929,6 +948,37 @@ export class LLPlClient implements WireClientProviderFactory {
       responses.push(msg);
     }
     return responses;
+  }
+
+  /** Returns the authenticated caller's session id and effective role.
+   *  Models the {@link getUserRoot} wrapper: gRPC unary with a REST fallback. */
+  public async getSessionInfo(): Promise<grpcTypes.AuthAPI_GetSessionInfo_Response> {
+    const cl = this.clientProvider.get();
+    if (cl instanceof GrpcPlApiClient) {
+      return (await cl.getSessionInfo({})).response;
+    } else {
+      const resp = notEmpty(
+        (await cl.POST("/v1/auth/session-info", { body: {} })).data,
+        "REST: empty response for getSessionInfo request",
+      );
+      return {
+        sessionId: Uint8Array.from(Buffer.from(resp.sessionId, "base64")),
+        role: resp.role as AuthAPI_Role,
+      };
+    }
+  }
+
+  /** Lists the users known to the server — the recipient picker's source. A user
+   *  becomes known on first login; provisioned users who have never logged in do not
+   *  appear. gRPC-only (unary, no REST binding). */
+  public async listUsers(): Promise<grpcTypes.AuthAPI_User[]> {
+    const cl = this.clientProvider.get();
+
+    if (!(cl instanceof GrpcPlApiClient)) {
+      throw new Error("ListUsers requires gRPC wire protocol; REST is not supported");
+    }
+
+    return (await cl.listUsers({})).response.users;
   }
 
   public async txSync(txId: bigint): Promise<void> {
