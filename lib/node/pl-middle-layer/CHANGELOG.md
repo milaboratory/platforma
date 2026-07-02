@@ -1,5 +1,35 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.42
+
+### Patch Changes
+
+- d3c82d9: Shares now carry an editable `title` (shown to recipients, defaults to the first project's name) in place of the free-text `message`. `MiddleLayer.changeShare(shareId, { recipients?, everyone?, title?, projectActions? })` replaces `renewShare`: it edits a share under its stable id, transfers already-decided recipients' accept/reject records, and can upgrade a targeted share to everyone. `projectActions` is a per-project decision keyed by projectId (`update` re-snapshots the live source, `keep` carries the existing snapshot, `remove` drops the project); omit it for the legacy auto behavior (live sources updated, deleted ones kept). `shareProjects` options now require `title` (and `replace` on the everyone variant). `OutgoingShare` exposes `{ title, projects: { projectId, label, updatedAt }[] }` and `PendingShare` exposes `title`; both drop `message`, and `PendingShare` drops `projectLabels`.
+- 3df748f: Project sharing (Copy & Share). The middle layer can share a copy of a project with named recipients or with everybody on the server, and recipients accept/reject pending shares into their own project list (cross-color attach). Re-sharing a project supersedes the donor's prior share of that same project: an everyone-share replaces the previous everyone-share, and a targeted share pulls each named recipient out of any earlier share of that project, deleting it if no recipients remain.
+
+  - `pl-middle-layer`: sharing model + mutators and the `MiddleLayer` API — `shareProjects`, `acceptShare`, `rejectShare`, `revokeShare`, reactive `pendingShares` / `outgoingShares`; branded `ShareId`; 14-day outbox cleanup for targeted shares; the donor's own login and own pending shares are filtered out of the relevant views.
+  - `pl-client`: `PlTransaction.revokeAccess` (revoke a single recipient's grant), `UserResources.listUsers`, and `listGrants`; regenerated gRPC bindings.
+  - `pl-tree`: multi-root `SynchronizedTreeState` with `{kind:'shared'}` shared-resource discovery seeds, used for pending-share discovery. Discovery trees self-heal when a discovered grant is revoked/expired instead of failing the whole poll.
+  - `pl-model-common`: register `SharingOutbox` / `SharingState` / `SharedEnvelope` resource type names.
+
+  Revoking a share no longer disconnects the client: a per-resource signature failure (revoked grant) is distinguished from a dead session at the transport layer, so it no longer triggers a session reset. `revokeShare` is idempotent.
+
+- Updated dependencies [f01c92d]
+- Updated dependencies [3df748f]
+  - @platforma-sdk/block-tools@2.11.7
+  - @milaboratories/pl-client@3.12.1
+  - @milaboratories/pl-tree@1.12.15
+  - @milaboratories/pl-model-common@1.46.3
+  - @milaboratories/pl-model-backend@1.4.10
+  - @milaboratories/pl-drivers@1.16.4
+  - @milaboratories/pl-errors@1.4.25
+  - @milaboratories/pl-model-middle-layer@1.30.10
+  - @milaboratories/pf-spec-driver@1.4.17
+  - @milaboratories/pf-driver@1.7.15
+  - @milaboratories/pl-deployments@3.0.9
+  - @platforma-sdk/model@1.79.24
+  - @platforma-sdk/workflow-tengo@6.6.5
+
 ## 1.64.41
 
 ### Patch Changes

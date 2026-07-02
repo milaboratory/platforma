@@ -1,5 +1,15 @@
 # @platforma-sdk/block-tools
 
+## 2.11.7
+
+### Patch Changes
+
+- f01c92d: Make the generated block `do-pack` script idempotent: it now removes any prior `package.tgz` before packing. Re-running `do-pack`, or running it on a dirty working tree, no longer fails with `mv: dest is not a directory (too many sources)`.
+- Updated dependencies [3df748f]
+  - @milaboratories/pl-model-common@1.46.3
+  - @milaboratories/pl-model-backend@1.4.10
+  - @milaboratories/pl-model-middle-layer@1.30.10
+
 ## 2.11.6
 
 ### Patch Changes

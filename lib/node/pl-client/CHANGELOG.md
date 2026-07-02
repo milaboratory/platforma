@@ -1,5 +1,21 @@
 # @milaboratories/pl-client
 
+## 3.12.1
+
+### Patch Changes
+
+- 3df748f: Project sharing (Copy & Share). The middle layer can share a copy of a project with named recipients or with everybody on the server, and recipients accept/reject pending shares into their own project list (cross-color attach). Re-sharing a project supersedes the donor's prior share of that same project: an everyone-share replaces the previous everyone-share, and a targeted share pulls each named recipient out of any earlier share of that project, deleting it if no recipients remain.
+
+  - `pl-middle-layer`: sharing model + mutators and the `MiddleLayer` API — `shareProjects`, `acceptShare`, `rejectShare`, `revokeShare`, reactive `pendingShares` / `outgoingShares`; branded `ShareId`; 14-day outbox cleanup for targeted shares; the donor's own login and own pending shares are filtered out of the relevant views.
+  - `pl-client`: `PlTransaction.revokeAccess` (revoke a single recipient's grant), `UserResources.listUsers`, and `listGrants`; regenerated gRPC bindings.
+  - `pl-tree`: multi-root `SynchronizedTreeState` with `{kind:'shared'}` shared-resource discovery seeds, used for pending-share discovery. Discovery trees self-heal when a discovered grant is revoked/expired instead of failing the whole poll.
+  - `pl-model-common`: register `SharingOutbox` / `SharingState` / `SharedEnvelope` resource type names.
+
+  Revoking a share no longer disconnects the client: a per-resource signature failure (revoked grant) is distinguished from a dead session at the transport layer, so it no longer triggers a session reset. `revokeShare` is idempotent.
+
+- Updated dependencies [3df748f]
+  - @milaboratories/pl-model-common@1.46.3
+
 ## 3.12.0
 
 ### Minor Changes
