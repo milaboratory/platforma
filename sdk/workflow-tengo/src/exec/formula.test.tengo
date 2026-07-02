@@ -303,6 +303,21 @@ TestFallbackGpuOmittedYieldsUndefined := func() {
 	test.isTrue(is_undefined(res.err))
 }
 
+TestFallbackGpuAllUndefinedFieldsYieldsUndefined := func() {
+	// The production caller (index.lib.tengo) always passes a three-field gpu map
+	// { ast, fallback, static } — all undefined when no GPU is in play — rather than
+	// omitting the key. That reaches the `dims.gpu` branch of applyFormulaFallback,
+	// not the omitted-key branch above; res.gpu must still be undefined with no error.
+	// This guards the actual call shape used in production.
+	res := f.applyFormulaFallback({
+		ram: { static: "4GiB" },
+		cpu: { static: 2 },
+		gpu: { ast: undefined, fallback: undefined, static: undefined }
+	})
+	test.isTrue(is_undefined(res.gpu))
+	test.isTrue(is_undefined(res.err))
+}
+
 TestFallbackGpuFormulaAppliesFallback := func() {
 	// gpuFormula present with a { fallback } VRAM string => res.gpu is the fallback.
 	res := f.applyFormulaFallback({
