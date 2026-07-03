@@ -16,6 +16,11 @@ export interface PlClientConfig {
    * client root. */
   alternativeRoot?: string;
 
+  /** Admin-only impersonation: if set, the client opens the root of the user with this login instead of the
+   * caller's own root. The backend authorizes this by role and silently falls back to the caller's own root for
+   * regular users, so it is safe without a client-side gate. Mutually exclusive with {@link alternativeRoot}. */
+  asUser?: string;
+
   /** If true, client will establish tls connection to the server, using default
    * CA of node instance. */
   // Not implementing custom ssl validation logic for now.
@@ -190,6 +195,7 @@ export function plAddressToConfig(
   return {
     hostAndPort: `${url.hostname}:${port}`,
     alternativeRoot: url.searchParams.get("alternative-root") ?? undefined,
+    asUser: url.searchParams.get("as-user") || undefined,
     ssl: url.protocol === "https:" || url.protocol === "tls:",
 
     wireProtocol: (url.searchParams.get("wire-protocol") as wireProtocol) ?? undefined,

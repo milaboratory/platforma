@@ -14,7 +14,12 @@ import {
   resourceIdToString,
 } from "@milaboratories/pl-client";
 import { LRUCache } from "lru-cache";
-import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
+import {
+  createProjectList,
+  ensureProjectListRid,
+  ProjectsField,
+  ProjectsResourceType,
+} from "./project_list";
 import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
@@ -22,6 +27,7 @@ import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import {
   acceptanceFieldLogin,
   canGrantToEveryone,
+  canImpersonate,
   decodeEnvelopeData,
   isAcceptanceField,
   SharingOutboxField,
@@ -186,7 +192,15 @@ export class MiddleLayer {
    * additional required capabilities later without a UI change.
    */
   public get sharingSupported(): boolean {
-    return this.serverCapabilities.includes("crossTreeRefs:v1");
+    // Sharing does not compose with impersonation (discovery is scoped to the admin's session,
+    // decisions attribute to the admin), so it is disabled while impersonating. Admins move
+    // projects across roots with duplicateProjectToUser instead.
+    return this.serverCapabilities.includes("crossTreeRefs:v1") && !this.impersonating;
+  }
+
+  /** True when this session is impersonating another user (an admin opened another user's root). */
+  public get impersonating(): boolean {
+    return this.pl.conf.asUser !== undefined;
   }
 
   /**
@@ -205,9 +219,21 @@ export class MiddleLayer {
    */
   public get canShareWithEveryone(): boolean {
     return (
+      !this.impersonating &&
       this.serverCapabilities.includes("publicGrants:v1") &&
       canGrantToEveryone(this.currentUserRole)
     );
+  }
+
+  /**
+   * Whether the authenticated user may impersonate others (open another user's root). Mirrors
+   * the backend's `CanImpersonate` role gate — admin/controller only, never a regular user.
+   * Derived from the session role, which stays the authenticated admin's even while
+   * impersonating, so this stays true across a switch: the "return to my root" affordance must
+   * not vanish mid-impersonation. Not a security boundary; the backend re-checks on every call.
+   */
+  public get currentUserCanImpersonate(): boolean {
+    return canImpersonate(this.currentUserRole);
   }
 
   /** Adds a runtime capability to the middle layer. */
@@ -367,6 +393,50 @@ export class MiddleLayer {
     const newProjectId = resourceIdToString(signedRid) as ProjectId;
     this.projectIdCache.set(newProjectId, signedRid);
     return newProjectId;
+  }
+
+  /**
+   * Duplicates a project into another user's root, minted in the TARGET user's color so the target
+   * owns it. Sibling of {@link duplicateProject}, but writes into a different root. The source
+   * project (on the current client root) is referenced cross-color for its block data, kept alive
+   * by refcounting, exactly like accepting a shared project. Works both ways: pull (while
+   * impersonating a user, copy their project to yourself) and push (from your own root, copy a
+   * project to a user). Admin cross-root op; requires the crossTreeRefs:v1 backend capability.
+   */
+  public async duplicateProjectToUser(
+    srcProjectId: ProjectId,
+    targetLogin: string,
+    rename?: (previousLabel: string, existingLabels: string[]) => string,
+  ): Promise<void> {
+    if (!this.serverCapabilities.includes("crossTreeRefs:v1"))
+      throw new Error("duplicateProjectToUser requires the crossTreeRefs:v1 backend capability.");
+
+    const sourceRid = await this.resolveProjectId(srcProjectId);
+    const targetRoot = await this.pl.getUserRoot({ login: targetLogin, createIfNotExists: true });
+
+    // Run on the target root: the tx default color is the target's, so the new project (and the
+    // target's project list, if created here) are minted in the target's color.
+    await this.pl.withWriteTxOnRoot(targetRoot, "MLDuplicateProjectToUser", async (tx) => {
+      // Resolve or lazily create the target root's project list (tx.clientRoot === targetRoot).
+      const targetProjectListRid = await ensureProjectListRid(tx);
+
+      // Source label + the target's existing labels, for collision-aware renaming.
+      const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
+      const targetListData = await tx.getResourceData(targetProjectListRid, true);
+      const existingLabels = (
+        await Promise.all(
+          targetListData.fields
+            .map((f) => f.value)
+            .filter(isNotNullSignedResourceId)
+            .map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+        )
+      ).map((m) => m.label);
+      const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
+
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      tx.createField(field(targetProjectListRid, randomUUID()), "Dynamic", newPrj);
+      await tx.commit();
+    });
   }
 
   //

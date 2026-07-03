@@ -73,6 +73,21 @@ test("should retain non-default port for https URL", () => {
   expect(config.ssl).toBe(true);
 });
 
+test("asUser is undefined when as-user param is absent", () => {
+  const conf = plAddressToConfig("http://127.0.0.1:6345");
+  expect(conf.asUser).toBeUndefined();
+});
+
+test("asUser is undefined when as-user param is empty", () => {
+  const conf = plAddressToConfig("http://127.0.0.1:6345/?as-user=");
+  expect(conf.asUser).toBeUndefined();
+});
+
+test("asUser is parsed from the as-user url param", () => {
+  const conf = plAddressToConfig("http://127.0.0.1:6345/?as-user=alice");
+  expect(conf.asUser).toEqual("alice");
+});
+
 test("should throw an error for grpc URL without an explicit port", () => {
   expect(() => plAddressToConfig("grpc://example.com")).toThrow(
     "Port must be specified explicitly for grpc: protocol.",
