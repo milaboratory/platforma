@@ -476,6 +476,22 @@ export class PlClient {
     return await this.withTx(name, true, body, { ...ops, ...defaultTxOps });
   }
 
+  /**
+   * Runs a write transaction whose default color is `root`'s signature instead of the client
+   * root's, and whose `tx.clientRoot` is `root`. For admin cross-root operations (e.g. copying a
+   * project into another user's root so the copy is minted in that user's color). The backend
+   * still authorizes the write by role.
+   */
+  public async withWriteTxOnRoot<T>(
+    root: SignedResourceId,
+    name: string,
+    body: (tx: PlTransaction) => Promise<T>,
+    ops: Partial<TxOps> = {},
+  ): Promise<T> {
+    this.checkInitialized();
+    return await this._withTx(name, true, root, body, { ...ops, ...defaultTxOps });
+  }
+
   public async withReadTx<T>(
     name: string,
     body: (tx: PlTransaction) => Promise<T>,
