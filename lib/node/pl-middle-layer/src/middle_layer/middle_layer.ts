@@ -187,7 +187,7 @@ export class MiddleLayer {
   public get sharingSupported(): boolean {
     // Sharing does not compose with impersonation (discovery is scoped to the admin's session,
     // decisions attribute to the admin), so it is disabled while impersonating. Admins move
-    // projects across roots with copyProjectToUser instead.
+    // projects across roots with duplicateProjectToUser instead.
     return this.serverCapabilities.includes("crossTreeRefs:v1") && !this.impersonating;
   }
 
@@ -391,27 +391,27 @@ export class MiddleLayer {
   }
 
   /**
-   * Copies a project into another user's root, minted in the TARGET user's color so the target
-   * owns it. The source project (on the current client root) is referenced cross-color for its
-   * block data, kept alive by refcounting, exactly like accepting a shared project. Works both
-   * ways: pull (while impersonating a user, copy their project to yourself) and push (from your
-   * own root, copy a project to a user). Admin cross-root op; requires the crossTreeRefs:v1
-   * backend capability.
+   * Duplicates a project into another user's root, minted in the TARGET user's color so the target
+   * owns it. Sibling of {@link duplicateProject}, but writes into a different root. The source
+   * project (on the current client root) is referenced cross-color for its block data, kept alive
+   * by refcounting, exactly like accepting a shared project. Works both ways: pull (while
+   * impersonating a user, copy their project to yourself) and push (from your own root, copy a
+   * project to a user). Admin cross-root op; requires the crossTreeRefs:v1 backend capability.
    */
-  public async copyProjectToUser(
+  public async duplicateProjectToUser(
     srcProjectId: ProjectId,
     targetLogin: string,
     rename?: (previousLabel: string, existingLabels: string[]) => string,
   ): Promise<void> {
     if (!this.serverCapabilities.includes("crossTreeRefs:v1"))
-      throw new Error("copyProjectToUser requires the crossTreeRefs:v1 backend capability.");
+      throw new Error("duplicateProjectToUser requires the crossTreeRefs:v1 backend capability.");
 
     const sourceRid = await this.resolveProjectId(srcProjectId);
     const targetRoot = await this.pl.getUserRoot({ login: targetLogin, createIfNotExists: true });
 
     // Run on the target root: the tx default color is the target's, so the new project (and the
     // target's project list, if created here) are minted in the target's color.
-    await this.pl.withWriteTxOnRoot(targetRoot, "MLCopyProjectToUser", async (tx) => {
+    await this.pl.withWriteTxOnRoot(targetRoot, "MLDuplicateProjectToUser", async (tx) => {
       // Resolve or lazily create the target root's project list (tx.clientRoot === targetRoot).
       const targetProjectListRid = await ensureProjectListRid(tx);
 
