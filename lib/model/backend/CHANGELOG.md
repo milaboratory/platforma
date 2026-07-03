@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.12
+
+### Patch Changes
+
+- Updated dependencies [effca5f]
+  - @milaboratories/pl-client@3.13.1
+
 ## 1.4.11
 
 ### Patch Changes
