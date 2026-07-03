@@ -310,6 +310,18 @@ export function producesRegistryDescriptor(mode: BuildMode): mode is "dev-remote
   return mode === "dev-remote" || mode === "release";
 }
 
+// Resolve a `--do`/`--no-do` (or PL_*_/PL_*_NO_ env) tri-state: explicit off wins, then explicit
+// on, else the default.
+export function shouldDoAction(
+  defaultValue: boolean,
+  doFlag?: boolean,
+  noDoFlag?: boolean,
+): boolean {
+  if (noDoFlag) return false;
+  if (doFlag) return true;
+  return defaultValue;
+}
+
 export type artifactID = {
   package: string;
   name: string;

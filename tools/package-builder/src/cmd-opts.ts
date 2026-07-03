@@ -230,17 +230,4 @@ export function modeFromFlag(dev?: devModeName): util.BuildMode {
   }
 }
 
-export function shouldDoAction(defaultValue: boolean, doFlag: boolean, noDoFlag: boolean): boolean {
-  if (noDoFlag) {
-    // Action was deliberately disabled by CLI flag or env variable
-    return false;
-  }
-  if (doFlag) {
-    // Action was deliberately enabled by CLI flag or env variable
-    return true;
-  }
-
-  // Build docker images in CI by default
-  // Do not build docker images automatically outside CI for now.
-  return defaultValue;
-}
+export const shouldDoAction = util.shouldDoAction;

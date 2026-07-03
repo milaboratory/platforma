@@ -34,7 +34,7 @@ export async function runBuild(
       forceBuild: Boolean(opts.force),
       contentRoot: opts.contentRoot,
       skipIfEmpty: ids ? false : true,
-      condaBuild: shouldDoAction(true, opts.condaBuild, opts.condaNoBuild),
+      condaBuild: util.shouldDoAction(true, opts.condaBuild, opts.condaNoBuild),
     });
 
   switch (scenario.kind) {
@@ -49,10 +49,14 @@ export async function runBuild(
 
     case "legacy": {
       // Bare pl-pkg-parity invocation: docker build/push follow the CI default + flags.
-      const buildDocker = shouldDoAction(envs.isCI(), opts.dockerBuild, opts.dockerNoBuild);
+      const buildDocker = util.shouldDoAction(envs.isCI(), opts.dockerBuild, opts.dockerNoBuild);
       const pushDocker =
         buildDocker &&
-        shouldDoAction(envs.isCI() && !core.isPrivate, opts.dockerAutopush, opts.dockerNoAutopush);
+        util.shouldDoAction(
+          envs.isCI() && !core.isPrivate,
+          opts.dockerAutopush,
+          opts.dockerNoAutopush,
+        );
 
       if (buildDocker) {
         core.buildDockerImages({
@@ -105,13 +109,6 @@ function buildModeFor(scenario: Scenario): util.BuildMode {
   if (scenario.kind !== "target") return "release";
   if (scenario.channel === "release") return "release";
   return scenario.binary && scenario.remote ? "dev-remote" : "dev-local";
-}
-
-// pl-pkg's tri-state flag resolution: explicit no-flag wins, then explicit yes-flag, else default.
-function shouldDoAction(defaultValue: boolean, doFlag?: boolean, noDoFlag?: boolean): boolean {
-  if (noDoFlag) return false;
-  if (doFlag) return true;
-  return defaultValue;
 }
 
 // Docker push target + the pull address embedded in the descriptor, for a channel target. The push
