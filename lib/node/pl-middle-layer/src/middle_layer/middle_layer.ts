@@ -21,6 +21,7 @@ import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import {
   canGrantToEveryone,
+  canImpersonate,
   decodeEnvelopeData,
   SharingOutboxField,
   SharingOutboxResourceType,
@@ -212,6 +213,17 @@ export class MiddleLayer {
       this.serverCapabilities.includes("publicGrants:v1") &&
       canGrantToEveryone(this.currentUserRole)
     );
+  }
+
+  /**
+   * Whether the authenticated user may impersonate others (open another user's root). Mirrors
+   * the backend's `CanImpersonate` role gate — admin/controller only, never a regular user.
+   * Derived from the session role, which stays the authenticated admin's even while
+   * impersonating, so this stays true across a switch: the "return to my root" affordance must
+   * not vanish mid-impersonation. Not a security boundary; the backend re-checks on every call.
+   */
+  public get currentUserCanImpersonate(): boolean {
+    return canImpersonate(this.currentUserRole);
   }
 
   /** Adds a runtime capability to the middle layer. */
