@@ -17,9 +17,9 @@ import {
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
-// The dev-build entry points. `block-tools software build` reads the target from three env knobs;
-// each script fixes one cell of the channel × variant × location grid (plus build-against-existing
-// and a release build). When the marker is off, a single `build:dev` is emitted instead.
+// `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
+// choice (A-0021@4.0). `no-software` builds placeholder software for test-framework validators.
+// Marker off → the legacy single `build:dev`.
 const DEV_BINARY_LOCAL_SELECTOR =
   "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local";
 
@@ -28,15 +28,12 @@ function devBuildScripts(softwareBuild: boolean): Record<string, string> {
     return { "build:dev": "env PL_PKG_DEV=local turbo run build" };
   }
   return {
-    "build:dev-docker-local":
-      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=docker PL_BUILD_LOCATION=local turbo run build",
-    "build:dev-binary-local": `${DEV_BINARY_LOCAL_SELECTOR} turbo run build`,
-    "build:dev-docker-remote":
-      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=docker PL_BUILD_LOCATION=remote turbo run build",
-    "build:dev-binary-remote":
-      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=remote turbo run build",
-    "build:dev-binary-ssh":
-      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=ssh turbo run build",
+    "build:dev-local":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run build",
+    "build:dev-remote":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
+    "build:dev-no-software":
+      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none PL_BUILD_LOCATION=local turbo run build",
     "build:dev-binary-existing":
       "env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
     "build:release": "env PL_BUILD_CHANNEL=release PL_BUILD_LOCATION=remote turbo run build",
