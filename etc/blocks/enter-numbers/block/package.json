@@ -1,26 +1,38 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers",
-  "version": "1.0.249",
-  "private": true,
+  "version": "1.1.0",
   "files": [
-    "index.d.ts",
-    "index.js"
+    "dist",
+    "block-pack"
   ],
-  "scripts": {
-    "build": "shx rm -rf ./block-pack && block-tools pack",
-    "mark-stable": "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
-    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'",
-    "do-pack": "shx rm -f *.tgz && block-tools pack && pnpm pack && shx mv *.tgz package.tgz"
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "sources": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "dependencies": {
+  "scripts": {
+    "build": "ts-builder build --target block-facade && block-tools pack",
+    "prepublishOnly": "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1 --registry-serve-url https://aux-blocks.pl-open.science",
+    "do-pack": "shx rm -f package.tgz && pnpm pack && shx mv *.tgz package.tgz",
+    "check": "ts-builder type-check --target block-facade"
+  },
+  "dependencies": {},
+  "devDependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.ui": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.workflow": "workspace:*",
-    "@platforma-sdk/model": "workspace:*"
-  },
-  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
-    "shx": "catalog:"
+    "@platforma-sdk/model": "workspace:*",
+    "shx": "catalog:",
+    "typescript": "catalog:"
   },
   "block": {
     "components": {

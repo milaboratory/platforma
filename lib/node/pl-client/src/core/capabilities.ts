@@ -5,8 +5,7 @@
  * to detect incompatibilities between blocks and backend via
  * via `TemplateDataV3.requiredCapabilities`.
  *
- * Mirror of `pl/platform/api/plapiserver/server_capabilities.go` — keep
- * tokens in sync with the backend's advertised list. Format is
+ * Keep tokens in sync with the backend's advertised list. Format is
  * `<feature>:<version>`; bump the version when wire semantics change.
  *
  * Shared across:
@@ -19,11 +18,11 @@ export type BackendCapability =
   | "auth:v2"
   | "treeFilter:v2"
   | "wasm:v1"
-  // Project-sharing tokens. See `advertisedCapabilities` in
-  // `pl/platform/api/plapiserver/server_capabilities.go`.
+  // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
-  | "userListing:v1" // `ListUsers` RPC (recipient picker)
-  | "publicGrants:v1"; // `grant_access` with `MAKE_RESOURCE_PUBLIC` allowed for any role
+  | "userListing:v1" // list users for the recipient picker
+  | "publicGrants:v1" // public (everyone) grants allowed for any role
+  | "txListGrants:v1"; // list grants inside a transaction (batched recipient reads)
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

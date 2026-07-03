@@ -1,5 +1,6 @@
-import { Args, Command, Flags } from "@oclif/core";
+import { Command, Option } from "commander";
 import path from "node:path";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import {
   resolveBlockVars,
   runInit,
@@ -7,59 +8,51 @@ import {
   type InitFlagValues,
 } from "../../structure/init-block-constructor";
 
-export default class StructureInit extends Command {
-  static override description =
-    "Scaffold a fresh Platforma block from the canonical structure. Missing flags are prompted unless --non-interactive.";
+export function structureInitCommand(packageRoot: string): Command {
+  const cmd = new Command("init").description(
+    "Scaffold a fresh Platforma block from the canonical structure. Missing flags are prompted unless --non-interactive.",
+  );
 
-  static override examples = [
-    "<%= config.bin %> <%= command.id %> --npm-org @platforma-open --org-scope my-org --short-name demo --no-software --non-interactive",
-    "<%= config.bin %> <%= command.id %> ./demo --npm-org @platforma-open --org-scope my-org --short-name demo --with-software --platform python --non-interactive",
-  ];
+  cmd.argument("[path]", "target directory (default: <short-name> under the current directory)");
+  cmd.option("--npm-org <org>", "npm org, e.g. @platforma-open");
+  cmd.option("--org-scope <scope>", "org scope, e.g. my-org");
+  cmd.option("--short-name <name>", "block short name, e.g. mixcr-clonotyping");
+  cmd.option("--with-software", "include a software module");
+  cmd.option("--no-software", "omit the software module");
+  cmd.addOption(
+    new Option("--platform <platform>", "software platform (single-valued)").choices([
+      ...SUPPORTED_PLATFORMS,
+    ]),
+  );
+  cmd.option("--non-interactive", "error on any missing flag instead of prompting");
 
-  static override args = {
-    path: Args.string({
-      description: "target directory (default: <short-name> under the current directory)",
-    }),
-  };
+  cmd.action(async (argPath: string | undefined, flags) => {
+    const logger = new ConsoleLoggerAdapter();
 
-  static override flags = {
-    "npm-org": Flags.string({ description: "npm org, e.g. @platforma-open" }),
-    "org-scope": Flags.string({ description: "org scope, e.g. my-org" }),
-    "short-name": Flags.string({ description: "block short name, e.g. mixcr-clonotyping" }),
-    "with-software": Flags.boolean({ description: "include a software module" }),
-    "no-software": Flags.boolean({ description: "omit the software module" }),
-    platform: Flags.string({
-      description: "software platform (single-valued)",
-      options: [...SUPPORTED_PLATFORMS],
-    }),
-    "non-interactive": Flags.boolean({
-      description: "error on any missing flag instead of prompting",
-    }),
-  };
-
-  public async run(): Promise<void> {
-    const { args, flags } = await this.parse(StructureInit);
-
-    if (flags["with-software"] && flags["no-software"]) {
-      this.error("--with-software and --no-software are mutually exclusive.");
+    // commander maps `--with-software` -> flags.withSoftware===true and
+    // `--no-software` -> flags.software===false
+    const withSoftwareFlag = flags.withSoftware === true;
+    const noSoftwareFlag = flags.software === false;
+    if (withSoftwareFlag && noSoftwareFlag) {
+      throw new Error("--with-software and --no-software are mutually exclusive.");
     }
-    const withSoftware = flags["with-software"] ? true : flags["no-software"] ? false : undefined;
+    const withSoftware = withSoftwareFlag ? true : noSoftwareFlag ? false : undefined;
 
     const flagValues: InitFlagValues = {
-      npmOrg: flags["npm-org"],
-      orgScope: flags["org-scope"],
-      shortName: flags["short-name"],
+      npmOrg: flags.npmOrg,
+      orgScope: flags.orgScope,
+      shortName: flags.shortName,
       withSoftware,
       platform: flags.platform,
-      nonInteractive: flags["non-interactive"],
+      nonInteractive: flags.nonInteractive,
     };
 
     const vars = await resolveBlockVars(flagValues);
-    const blockPath = args.path
-      ? path.resolve(args.path)
-      : path.resolve(process.cwd(), vars.shortName);
-    const templatesRoot = path.join(this.config.root, "src", "structure", "templates");
+    const blockPath = argPath ? path.resolve(argPath) : path.resolve(process.cwd(), vars.shortName);
+    const templatesRoot = path.join(packageRoot, "src", "structure", "templates");
 
-    await runInit({ vars, blockPath, templatesRoot, log: (m) => this.log(m) });
-  }
+    await runInit({ vars, blockPath, templatesRoot, log: (m) => logger.info(m) });
+  });
+
+  return cmd;
 }

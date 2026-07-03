@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "4.0.9",
+  "version": "4.0.12",
   "description": "Pl Tengo Template Builder",
   "license": "UNLICENSED",
   "bin": {
@@ -13,7 +13,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "oclif-index && node --run fmt && ts-builder build --target node",
+    "build": "node --run fmt && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
@@ -28,28 +28,17 @@
     "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/tengo-tester": "catalog:",
     "@milaboratories/ts-helpers": "workspace:*",
-    "@oclif/core": "catalog:",
+    "commander": "catalog:",
     "winston": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  },
-  "oclif": {
-    "bin": "pl-tengo",
-    "commands": {
-      "identifier": "COMMANDS",
-      "strategy": "explicit",
-      "target": "./dist/index.js"
-    },
-    "dirname": "pl-tengo",
-    "topicSeparator": " "
   },
   "engines": {
     "node": ">=22"

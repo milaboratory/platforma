@@ -1,40 +1,33 @@
-import { Args, Flags } from "@oclif/core";
-import { PlCommand } from "../../base_command";
+import { Command, Option } from "commander";
+import { connect } from "../../base_command";
+import { addOptions, GlobalOptions, UserAuthOptions, AdminTargetOptions } from "../../cmd-opts";
 import { resolveProject, renameProject } from "../../project_ops";
 import { outputJson, outputText } from "../../output";
 import { resourceIdToString } from "@milaboratories/pl-client";
 
-export default class ProjectRename extends PlCommand {
-  static override description = "Rename a project.";
+export default function projectRenameCommand(): Command {
+  const cmd = new Command("rename").description("Rename a project.");
 
-  static override args = {
-    project: Args.string({
-      description: "Project ID or label",
-      required: true,
-    }),
-  };
+  cmd.argument("<project>", "Project ID or label");
+  addOptions(cmd, GlobalOptions(), UserAuthOptions(), AdminTargetOptions());
+  cmd.addOption(new Option("-n, --name <name>", "New name for the project").makeOptionMandatory());
 
-  static override flags = {
-    ...PlCommand.baseFlags,
-    name: Flags.string({
-      char: "n",
-      summary: "New name for the project",
-      helpValue: "<name>",
-      required: true,
-    }),
-  };
+  cmd.action(async (project: string, flags) => {
+    const { pl, projectListRid } = await connect(flags);
+    try {
+      const { id, rid } = await resolveProject(pl, projectListRid, project);
 
-  public async run(): Promise<void> {
-    const { args, flags } = await this.parse(ProjectRename);
-    const { pl, projectListRid } = await this.connect(flags);
-    const { id, rid } = await resolveProject(pl, projectListRid, args.project);
+      await renameProject(pl, rid, flags.name);
 
-    await renameProject(pl, rid, flags.name);
-
-    if (flags.format === "json") {
-      outputJson({ id, rid: resourceIdToString(rid), label: flags.name });
-    } else {
-      outputText(`Renamed project to "${flags.name}"`);
+      if (flags.format === "json") {
+        outputJson({ id, rid: resourceIdToString(rid), label: flags.name });
+      } else {
+        outputText(`Renamed project to "${flags.name}"`);
+      }
+    } finally {
+      await pl.close();
     }
-  }
+  });
+
+  return cmd;
 }

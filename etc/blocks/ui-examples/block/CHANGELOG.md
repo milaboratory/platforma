@@ -1,5 +1,34 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.4.0
+
+### Minor Changes
+
+- 238ea03: Publish the new-shape facades for two in-monorepo test blocks so a real
+  published version (carrying `BlockPointer` / `from-pack-v2`, slim deps) exists on
+  the registry. `test-enter-numbers` had `private: true` removed so it can publish
+  for the first time; `ui-examples` was already public but its latest published
+  tarball still ships the pre-facade boilerplate shape, so this republishes it in
+  the new shape.
+
+  This enables the testing-framework self-verification route to pnpm-alias an older
+  published version of these blocks beside the workspace version.
+
+## 1.3.58
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.workflow@1.2.37
+
+## 1.3.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.workflow@1.2.36
+- @platforma-sdk/model@1.79.17
+- @milaboratories/milaboratories.ui-examples.model@1.6.40
+- @milaboratories/milaboratories.ui-examples.ui@1.11.41
+
 ## 1.3.56
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @milaboratories/ts-builder
 
+## 1.6.0
+
+### Minor Changes
+
+- 534a237: Add `block-facade` build target and facade tsconfig preset.
+
+  - ts-builder: new `--target block-facade` that bundles a facade's `src/` into a
+    self-contained `dist/` (single inlined `.d.ts` + bundled `.js`, all deps
+    force-inlined via `external: () => false`). Bumps `rolldown` to ^1.1.2 and
+    `rolldown-plugin-dts` to ^0.26.0.
+  - ts-configs: new `@milaboratories/ts-configs/block/facade` preset
+    (`customConditions: []` so dts-bundling reads sibling `.d.ts`, not source).
+
+### Patch Changes
+
+- Updated dependencies [534a237]
+  - @milaboratories/ts-configs@1.3.0
+
 ## 1.5.2
 
 ### Patch Changes

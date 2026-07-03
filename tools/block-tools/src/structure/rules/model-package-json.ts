@@ -33,7 +33,7 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.model`,
-    version: "1.0.0",
+    private: true,
     type: "module",
     // The block-model build emits both index.cjs and index.js. `main` is
     // the CommonJS entry (require fallback); `module` the ESM entry.
@@ -70,6 +70,11 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
 }
 
 export function modelPackageJsonRules(): void {
+  // Controlled sibling — workspace-only, never published. `private: true` makes
+  // npm refuse to publish it; the `version` is kept (changesets-owned) so the
+  // packed template's lib carries a version.
+  ensureField("private", true);
+
   ensureField("type", "module");
   // build emits both; main = CJS entry, module = ESM entry (prod convention).
   ensureField("main", "dist/index.cjs");

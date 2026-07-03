@@ -87,6 +87,10 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case ResourceTypeName.UserProject:
     case ResourceTypeName.Projects:
     case ResourceTypeName.ClientRoot:
+    // Never final — these sharing resources gain and lose dynamic child fields over their lifetime.
+    case ResourceTypeName.SharingOutbox:
+    case ResourceTypeName.SharingState:
+    case ResourceTypeName.SharedEnvelope:
       return false;
     default:
       if (

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/pl-cli",
-  "version": "0.7.68",
+  "version": "0.7.76",
   "description": "CLI for Platforma server state manipulation",
   "license": "UNLICENSED",
   "bin": {
@@ -22,7 +22,6 @@
     }
   },
   "scripts": {
-    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts && node --run fmt",
     "build": "vite build",
     "test": "vitest run --passWithNoTests",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
@@ -35,11 +34,10 @@
   "dependencies": {
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
-    "@oclif/core": "catalog:"
+    "commander": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
@@ -48,23 +46,5 @@
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
-  },
-  "oclif": {
-    "bin": "pl-cli",
-    "commands": {
-      "identifier": "COMMANDS",
-      "strategy": "explicit",
-      "target": "./dist/cli.js"
-    },
-    "dirname": "pl-cli",
-    "topicSeparator": " ",
-    "topics": {
-      "admin": {
-        "description": "Admin operations (requires controller credentials)"
-      },
-      "project": {
-        "description": "Manage projects"
-      }
-    }
   }
 }

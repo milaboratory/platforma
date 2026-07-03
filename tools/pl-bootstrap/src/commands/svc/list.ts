@@ -1,16 +1,10 @@
-import { Command } from "@oclif/core";
+import { Command } from "commander";
 import state from "../../state";
 
-export default class List extends Command {
-  static override description = "List available instances";
+export default function svcListCommand(): Command {
+  const cmd = new Command("list").description("List available instances");
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
-
-  static override flags = {};
-
-  public async run(): Promise<void> {
-    await this.parse(List);
-
+  cmd.action(() => {
     const instances = state.instanceList;
     const currentInstance = state.currentInstanceName;
 
@@ -26,5 +20,7 @@ export default class List extends Command {
         console.log(`   ${iName} (${statusReport.join(", ")})`);
       }
     }
-  }
+  });
+
+  return cmd;
 }
