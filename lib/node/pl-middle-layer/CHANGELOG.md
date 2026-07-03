@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.65.0
+
+### Minor Changes
+
+- ffa04e7: Admin impersonation and direct cross-root project copy for MILAB-6484.
+
+  pl-client: add an `asUser` client config option (and `as-user` URL param) so an admin can open another user's root instead of their own; the backend authorizes impersonation by role and falls back to the caller's own root for regular users. Add `withWriteTxOnRoot` to run a write transaction (and its default color) against an arbitrary root.
+
+  pl-middle-layer: add `duplicateProjectToUser` to copy a project into another user's root, minted in the target's color; disable sharing while impersonating (`sharingSupported` / `canShareWithEveryone` are false when `asUser` is set) and expose an `impersonating` getter. Expose `currentUserCanImpersonate` (admin/controller only, mirroring the backend `CanImpersonate` gate) so the impersonation UI is offered to admins only, never to regular users.
+
+### Patch Changes
+
+- Updated dependencies [ffa04e7]
+  - @milaboratories/pl-client@3.13.0
+  - @milaboratories/pl-model-backend@1.4.11
+  - @milaboratories/pl-drivers@1.16.5
+  - @milaboratories/pl-errors@1.4.26
+  - @milaboratories/pl-tree@1.12.16
+  - @platforma-sdk/block-tools@2.11.8
+  - @platforma-sdk/workflow-tengo@6.6.5
+
 ## 1.64.42
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @milaboratories/pl-client
 
+## 3.13.0
+
+### Minor Changes
+
+- ffa04e7: Admin impersonation and direct cross-root project copy for MILAB-6484.
+
+  pl-client: add an `asUser` client config option (and `as-user` URL param) so an admin can open another user's root instead of their own; the backend authorizes impersonation by role and falls back to the caller's own root for regular users. Add `withWriteTxOnRoot` to run a write transaction (and its default color) against an arbitrary root.
+
+  pl-middle-layer: add `duplicateProjectToUser` to copy a project into another user's root, minted in the target's color; disable sharing while impersonating (`sharingSupported` / `canShareWithEveryone` are false when `asUser` is set) and expose an `impersonating` getter. Expose `currentUserCanImpersonate` (admin/controller only, mirroring the backend `CanImpersonate` gate) so the impersonation UI is offered to admins only, never to regular users.
+
 ## 3.12.1
 
 ### Patch Changes
