@@ -8,7 +8,11 @@ import type {
   TxOps,
 } from "@milaboratories/pl-client";
 import type { Filter } from "@milaboratories/pl-client";
-import { isUnauthenticated, isTimeoutOrCancelError } from "@milaboratories/pl-client";
+import {
+  isUnauthenticated,
+  isTimeoutOrCancelError,
+  isUnimplementedError,
+} from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
@@ -287,8 +291,14 @@ export class SynchronizedTreeState {
 
     const discovered = new Set<SignedResourceId>();
     for (const seed of this.sharedSeeds) {
-      // match by name only (permissive; ignores version, so it survives schema bumps)
-      const ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name);
+      let ids: SignedResourceId[];
+      try {
+        // match by name only (permissive; ignores version, so it survives schema bumps)
+        ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name);
+      } catch (e: unknown) {
+        if (isUnimplementedError(e)) continue;
+        throw e;
+      }
       for (const id of ids) discovered.add(id);
     }
 
