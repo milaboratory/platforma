@@ -1,6 +1,7 @@
 ---
 "@platforma-sdk/block-tools": minor
 "@platforma-sdk/package-builder-lib": minor
+"@platforma-sdk/package-builder": patch
 ---
 
 Add the `block-tools software build` command: the single-pass software builder driven by
@@ -18,3 +19,6 @@ binary upload). Dev binary remote uploads a content-addressed archive to the dev
 (endpoint via `PL_DEV_BINARY_UPLOAD_URL`). `location=ssh` and `ecr://` auto docker-login are not
 yet implemented. The command is additive — no block is retargeted to it yet, and `pl-pkg` is
 unchanged.
+
+The `--do`/`--no-do` tri-state flag resolver (`shouldDoAction`) moves to `package-builder-lib`'s
+`util` and is shared by both `pl-pkg` and the new command instead of being duplicated.
