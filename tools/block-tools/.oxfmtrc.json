@@ -1,4 +1,10 @@
 {
   "extends": ["node_modules/@milaboratories/ts-builder/configs/oxfmt.json"],
-  "ignorePatterns": ["dist", "coverage", "CHANGELOG.md", "src/structure/templates/text/workflows"]
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "CHANGELOG.md",
+    "src/structure/templates/static",
+    "src/structure/templates/text"
+  ]
 }

@@ -1,45 +1,33 @@
-import { Command, Args, Flags } from "@oclif/core";
+import { Command } from "commander";
 import Core from "../../core";
 import * as cmdOpts from "../../cmd-opts";
 import * as util from "../../util";
 
-export default class Delete extends Command {
-  static override description = "List available instances";
+export default function svcDeleteCommand(): Command {
+  const cmd = new Command("delete").description("List available instances");
 
-  static override examples = ["<%= config.bin %> <%= command.id %>"];
+  cmd.argument("[name]", "instance name to remove");
+  cmdOpts.addOptions(cmd, cmdOpts.GlobalOptions());
+  cmd.option("--all", "remove all known instances");
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-
-    all: Flags.boolean({
-      description: "remove all known instances",
-      required: false,
-    }),
-  };
-
-  static args = {
-    name: Args.string({ required: false }),
-  };
-
-  public async run(): Promise<void> {
-    const { flags, args } = await this.parse(Delete);
+  cmd.action(async (nameArg: string | undefined, o) => {
+    const flags = cmdOpts.toFlags(o);
 
     const logger = util.createLogger(flags["log-level"]);
     const core = new Core(logger);
 
-    const name = args.name;
-    const all = flags.all;
-
-    if (all) {
+    if (o.all) {
       core.cleanupInstance();
       process.exit(0);
     }
 
-    if (!name) {
+    if (!nameArg) {
       logger.error(`Please, specify name of instance to be removed or set '--all' flag instead`);
       process.exit(1);
     }
 
-    core.cleanupInstance(name);
-  }
+    core.cleanupInstance(nameArg);
+  });
+
+  return cmd;
 }

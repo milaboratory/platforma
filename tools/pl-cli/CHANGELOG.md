@@ -1,5 +1,72 @@
 # @platforma-sdk/pl-cli
 
+## 0.7.76
+
+### Patch Changes
+
+- Updated dependencies [d3c82d9]
+- Updated dependencies [3df748f]
+  - @milaboratories/pl-middle-layer@1.64.42
+  - @milaboratories/pl-client@3.12.1
+
+## 0.7.75
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.64.41
+
+## 0.7.74
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.64.40
+
+## 0.7.73
+
+### Patch Changes
+
+- Updated dependencies [528f66d]
+  - @milaboratories/pl-client@3.12.0
+  - @milaboratories/pl-middle-layer@1.64.39
+
+## 0.7.72
+
+### Patch Changes
+
+- Updated dependencies [534a237]
+  - @milaboratories/pl-middle-layer@1.64.38
+  - @milaboratories/pl-client@3.11.5
+
+## 0.7.71
+
+### Patch Changes
+
+- 663af8d: Migrate the pl-cli (`pl-cli`) CLI framework from oclif to commander. CLI-only,
+  internal change — the full command surface (`project list|info|duplicate|rename|delete`,
+  `admin copy-project`), all flags (`-a/--address`, `-f/--format`, `-u/--user`,
+  `-p/--password`, `--admin-user`, `--admin-password`, `--target-user`,
+  `-n/--name`, `--auto-rename`/`--no-auto-rename`, `--force`, `--source-user`,
+  `--source-project`), their env-var bindings, required/choice constraints, and the
+  `project` ID positional argument are preserved. The oclif base-command class
+  becomes plain `connect()`/`connectClient()` helpers; the library exports
+  (`src/lib.ts`) are unchanged. Drops `@oclif/core`, `@milaboratories/oclif-index`,
+  and the generated command index.
+  - @milaboratories/pl-middle-layer@1.64.37
+
+## 0.7.70
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.64.36
+
+## 0.7.69
+
+### Patch Changes
+
+- Updated dependencies [c73159f]
+- Updated dependencies [3a4036d]
+  - @milaboratories/pl-middle-layer@1.64.35
+
 ## 0.7.68
 
 ### Patch Changes

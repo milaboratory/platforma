@@ -28,6 +28,33 @@ inputs:
     description: 'Turbo team ID (controls cache directory)'
     required: false
     default: 'ci-010101'
+  # --- S3/RGW caches (self-hosted hz runners). When the cache-s3 keys are set,
+  #     the pnpm store is cached in RGW (node/cache-pnpm-s3, use-fallback->GitHub)
+  #     instead of actions/cache. Turbo S3 env points the remote cache at RGW.
+  cache-s3-access-key:
+    description: 'S3/RGW access key for the pnpm cache. Empty = GitHub actions/cache.'
+    required: false
+    default: ''
+  cache-s3-secret-key:
+    description: 'S3/RGW secret key for the pnpm cache.'
+    required: false
+    default: ''
+  turbo-s3-endpoint:
+    description: 'S3 endpoint URL for the Turbo remote cache (RGW). Empty = AWS default.'
+    required: false
+    default: ''
+  turbo-s3-region:
+    description: 'S3 region for the Turbo remote cache.'
+    required: false
+    default: ''
+  turbo-s3-access-key:
+    description: 'S3 access key for the Turbo remote cache (RGW).'
+    required: false
+    default: ''
+  turbo-s3-secret-key:
+    description: 'S3 secret key for the Turbo remote cache (RGW).'
+    required: false
+    default: ''
   quay-username:
     description: 'Quay.io username for Docker login'
     required: false
@@ -54,12 +81,20 @@ runs:
       shell: bash
       run: echo "store-path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
-    - name: Cache pnpm store
+    - name: Cache pnpm store (GitHub)
+      if: inputs.cache-s3-access-key == ''
       uses: actions/cache@v4
       with:
         path: ${{ steps.pnpm-cache.outputs.store-path }}
         key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: pnpm-store-${{ runner.os }}-
+
+    - name: Cache pnpm store (S3/RGW)
+      if: inputs.cache-s3-access-key != ''
+      uses: milaboratory/github-ci/actions/node/cache-pnpm-s3@v4
+      with:
+        access-key: ${{ inputs.cache-s3-access-key }}
+        secret-key: ${{ inputs.cache-s3-secret-key }}
 
     - name: Configure AWS credentials
       if: inputs.aws-iam-role != ''
@@ -94,6 +129,15 @@ runs:
     - name: Setup Turbo S3 remote cache
       if: inputs.turbo-s3-bucket != ''
       uses: milaboratory/github-ci/actions/turborepo/cache-s3@v4
+      env:
+        # Scoped to THIS step only. NEVER set AWS_ENDPOINT_URL globally — it would
+        # redirect aws-cli/ECR image pulls to RGW and break them. The turbo cache
+        # server (ducktors/turborepo-remote-cache) reads these S3_* vars.
+        S3_ACCESS_KEY: ${{ inputs.turbo-s3-access-key }}
+        S3_SECRET_KEY: ${{ inputs.turbo-s3-secret-key }}
+        S3_REGION: ${{ inputs.turbo-s3-region }}
+        S3_ENDPOINT: ${{ inputs.turbo-s3-endpoint }}
+        S3_USE_PATH_STYLE: 'true'
       with:
         storage-provider: 's3'
         storage-path: ${{ inputs.turbo-s3-bucket }}

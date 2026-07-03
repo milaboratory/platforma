@@ -1,5 +1,130 @@
 # @milaboratories/pl-middle-layer
 
+## 1.64.42
+
+### Patch Changes
+
+- d3c82d9: Shares now carry an editable `title` (shown to recipients, defaults to the first project's name) in place of the free-text `message`. `MiddleLayer.changeShare(shareId, { recipients?, everyone?, title?, projectActions? })` replaces `renewShare`: it edits a share under its stable id, transfers already-decided recipients' accept/reject records, and can upgrade a targeted share to everyone. `projectActions` is a per-project decision keyed by projectId (`update` re-snapshots the live source, `keep` carries the existing snapshot, `remove` drops the project); omit it for the legacy auto behavior (live sources updated, deleted ones kept). `shareProjects` options now require `title` (and `replace` on the everyone variant). `OutgoingShare` exposes `{ title, projects: { projectId, label, updatedAt }[] }` and `PendingShare` exposes `title`; both drop `message`, and `PendingShare` drops `projectLabels`.
+- 3df748f: Project sharing (Copy & Share). The middle layer can share a copy of a project with named recipients or with everybody on the server, and recipients accept/reject pending shares into their own project list (cross-color attach). Re-sharing a project supersedes the donor's prior share of that same project: an everyone-share replaces the previous everyone-share, and a targeted share pulls each named recipient out of any earlier share of that project, deleting it if no recipients remain.
+
+  - `pl-middle-layer`: sharing model + mutators and the `MiddleLayer` API — `shareProjects`, `acceptShare`, `rejectShare`, `revokeShare`, reactive `pendingShares` / `outgoingShares`; branded `ShareId`; 14-day outbox cleanup for targeted shares; the donor's own login and own pending shares are filtered out of the relevant views.
+  - `pl-client`: `PlTransaction.revokeAccess` (revoke a single recipient's grant), `UserResources.listUsers`, and `listGrants`; regenerated gRPC bindings.
+  - `pl-tree`: multi-root `SynchronizedTreeState` with `{kind:'shared'}` shared-resource discovery seeds, used for pending-share discovery. Discovery trees self-heal when a discovered grant is revoked/expired instead of failing the whole poll.
+  - `pl-model-common`: register `SharingOutbox` / `SharingState` / `SharedEnvelope` resource type names.
+
+  Revoking a share no longer disconnects the client: a per-resource signature failure (revoked grant) is distinguished from a dead session at the transport layer, so it no longer triggers a session reset. `revokeShare` is idempotent.
+
+- Updated dependencies [f01c92d]
+- Updated dependencies [3df748f]
+  - @platforma-sdk/block-tools@2.11.7
+  - @milaboratories/pl-client@3.12.1
+  - @milaboratories/pl-tree@1.12.15
+  - @milaboratories/pl-model-common@1.46.3
+  - @milaboratories/pl-model-backend@1.4.10
+  - @milaboratories/pl-drivers@1.16.4
+  - @milaboratories/pl-errors@1.4.25
+  - @milaboratories/pl-model-middle-layer@1.30.10
+  - @milaboratories/pf-spec-driver@1.4.17
+  - @milaboratories/pf-driver@1.7.15
+  - @milaboratories/pl-deployments@3.0.9
+  - @platforma-sdk/model@1.79.24
+  - @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.41
+
+### Patch Changes
+
+- Updated dependencies [eecf3a5]
+  - @platforma-sdk/block-tools@2.11.6
+
+## 1.64.40
+
+### Patch Changes
+
+- Updated dependencies [75e4e19]
+  - @milaboratories/pl-drivers@1.16.3
+
+## 1.64.39
+
+### Patch Changes
+
+- Updated dependencies [528f66d]
+  - @milaboratories/pl-client@3.12.0
+  - @milaboratories/pl-model-backend@1.4.9
+  - @milaboratories/pl-drivers@1.16.2
+  - @milaboratories/pl-errors@1.4.24
+  - @milaboratories/pl-tree@1.12.14
+  - @platforma-sdk/block-tools@2.11.5
+  - @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.38
+
+### Patch Changes
+
+- 534a237: Reshape the `from-pack-v2` BlockPointer to a dependency-free URL locator: rename
+  `folder` → `packUrl` (the block-pack directory) and add optional `rootUrl` (the
+  facade/package root). Both are `file:` URLs, NOT filesystem paths.
+
+  The facade emits the lossless, OS-agnostic locator (`import.meta.url` is always a
+  forward-slash `file:` URL, even on Windows) by pure string ops with zero imports,
+  so it stays dependency-free and loadable in minimal engines (e.g. QuickJS). Each
+  consumer converts at its own edge with `fileURLToPath` (loader, `resolveToRegistry`,
+  tests), where Windows drive letters / `%`-encoding / UNC are handled correctly; the
+  watcher cache key uses `packUrl` directly (a stable string). The structurer that
+  builds a block owns its on-disk layout, so the pointer self-describes where the
+  pack lives instead of letting consumers reconstruct `<root>/block-pack` — a
+  consumer at a different SDK version cannot know a layout the structurer may
+  relocate. `loadPackDescriptionFromManifest` takes the pack directory directly.
+  `dev-v2` is unchanged (keeps its path-valued `folder`).
+
+- Updated dependencies [534a237]
+  - @milaboratories/pl-model-middle-layer@1.30.9
+  - @platforma-sdk/block-tools@2.11.4
+  - @milaboratories/pl-model-backend@1.4.8
+  - @milaboratories/pl-model-common@1.46.2
+  - @milaboratories/pf-spec-driver@1.4.16
+  - @milaboratories/computable@2.9.5
+  - @milaboratories/pf-driver@1.7.14
+  - @milaboratories/pl-client@3.11.5
+  - @milaboratories/pl-deployments@3.0.8
+  - @milaboratories/pl-drivers@1.16.1
+  - @milaboratories/pl-errors@1.4.23
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.12.13
+  - @milaboratories/ts-helpers@1.8.3
+  - @milaboratories/helpers@1.14.2
+  - @platforma-sdk/model@1.79.20
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.64.37
+
+### Patch Changes
+
+- Updated dependencies [33be13c]
+  - @platforma-sdk/block-tools@2.11.3
+  - @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.36
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@6.6.5
+
+## 1.64.35
+
+### Patch Changes
+
+- c73159f: Fix type error in PFrames driver
+- 3a4036d: Bump `@milaboratories/pframes-rs-*` to 1.1.52, which now populates `bytesMissed` in the serv cache counters. Make `bytesMissed` required on `CacheCounters` accordingly.
+- Updated dependencies [907f87c]
+- Updated dependencies [3a4036d]
+  - @platforma-sdk/workflow-tengo@6.6.4
+  - @milaboratories/pl-model-middle-layer@1.30.8
+  - @milaboratories/pf-spec-driver@1.4.15
+  - @milaboratories/pf-driver@1.7.13
+  - @platforma-sdk/model@1.79.17
+  - @platforma-sdk/block-tools@2.11.2
+
 ## 1.64.34
 
 ### Patch Changes

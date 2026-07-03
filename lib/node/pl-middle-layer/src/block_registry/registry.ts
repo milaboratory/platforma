@@ -63,6 +63,25 @@ export async function getDevV2PacketMtime(
   return (wfStats.mtimeNs > modelStats.mtimeNs ? wfStats.mtimeNs : modelStats.mtimeNs).toString();
 }
 
+/** Mtime for a `from-pack-v2` locator: prefer the manifest `timestamp`, else
+ * stat the `ui.tgz` archive. Must be called identically by `block_pack.ts`
+ * prepare (which bakes the result into the spec) and the update watcher (which
+ * recomputes it to diff against the stored value) — divergence makes the block
+ * flap perpetually "update available". */
+export async function getFromPackV2Mtime(packDir: string, uiTgzPath: string): Promise<string> {
+  try {
+    const manifestPath = path.join(packDir, "manifest.json");
+    const raw = JSON.parse(await fs.promises.readFile(manifestPath, { encoding: "utf-8" })) as {
+      timestamp?: unknown;
+    };
+    if (typeof raw.timestamp === "number") return String(raw.timestamp);
+  } catch {
+    // fall through to stat
+  }
+  const stat = await fs.promises.stat(uiTgzPath, { bigint: true });
+  return stat.mtimeNs.toString();
+}
+
 export class BlockPackRegistry {
   constructor(
     private readonly v2Provider: V2RegistryProvider,

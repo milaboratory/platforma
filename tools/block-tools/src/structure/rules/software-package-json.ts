@@ -10,6 +10,7 @@
 
 import {
   ensureField,
+  removeField,
   ensureScript,
   ensureDevDeps,
   enforceAlphabeticalOrder,
@@ -46,7 +47,6 @@ export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unkn
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.software`,
-    version: "1.0.0",
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],
@@ -65,6 +65,12 @@ export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unkn
 }
 
 export function softwarePackageJsonRules(): void {
+  // Software packages must never be private: `pl-pkg` gates docker image
+  // auto-push on `!isPrivate`, so a private software package builds its image
+  // but never pushes it — the block then 404s pulling it at runtime. Strip it
+  // so a `structure refresh` heals any block that has it.
+  removeField("private");
+
   ensureField("type", "module");
   ensureField("files", ["./dist/**/*"]);
 

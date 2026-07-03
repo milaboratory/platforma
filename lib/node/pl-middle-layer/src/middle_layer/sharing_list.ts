@@ -10,6 +10,7 @@ import {
 } from "@milaboratories/pl-client";
 import { Computable } from "@milaboratories/computable";
 import type { MiddleLayerEnvironment } from "./middle_layer";
+import type { ProjectId } from "@milaboratories/pl-model-common";
 import type {
   EnvelopeAcceptance,
   EnvelopeData,
@@ -17,35 +18,45 @@ import type {
   ShareId,
 } from "../model/sharing_model";
 import {
+  AcceptanceFieldPrefix,
   asShareId,
   SharedEnvelopeResourceType,
   SharingOutboxResourceType,
   SharingStateResourceType,
 } from "../model/sharing_model";
 
-const AcceptanceFieldPrefix = "acceptance/";
-
 /** Donor-facing view of one outgoing share. */
 export interface OutgoingShare {
-  shareId: ShareId; // stable logical identity of the share, preserved across replaces
+  shareId: ShareId; // stable logical identity of the share, preserved across changes
   sharedAt: number; // this instance's creation time (ms epoch)
   expiresAt?: number; // EnvelopeData.expiresAt; null maps to undefined = never expires
   mode: EnvelopeMode;
-  message?: string;
-  projectLabels: string[]; // label values from EnvelopeData.projectLabels (values only)
+  title: string; // display name shown to recipients; defaults to the first project's name
+  /** One entry per project in the pack, so the change UI can offer a per-project decision.
+   *  `projectId` is the donor's source project id; `updatedAt` is when this project's
+   *  snapshot was last (re)taken. */
+  projects: { projectId: ProjectId; label: string; updatedAt: number }[];
   /** Full recipient logins, from `ListGrants` on the envelope; `["*"]` for everyone-shares. */
   recipients: string[];
   /** Per recipient who has responded: their decision and when, from acceptance/{login}. */
   responses: Record<string, { action: "accepted" | "rejected"; timestamp: number }>;
 }
 
+/** Per-project view for the donor's change UI, from {@link EnvelopeData.projects}. */
+function envelopeProjects(data: EnvelopeData): OutgoingShare["projects"] {
+  return Object.values(data.projects).map((p) => ({
+    projectId: p.source,
+    label: p.label,
+    updatedAt: p.updatedAt,
+  }));
+}
+
 /** Acceptor-facing view of one pending share. */
 export interface PendingShare {
   shareId: ShareId;
   sender: string; // EnvelopeData.sender, display only
-  message?: string;
+  title: string; // display name shown to recipients; defaults to the first project's name
   mode: EnvelopeMode; // v1 renders only "copy" entries
-  projectLabels: string[]; // label values from EnvelopeData.projectLabels (values only)
   grantedAt: number;
 }
 
@@ -115,8 +126,8 @@ export function createOutgoingSharesComputable(
           sharedAt: data.sharedAt,
           ...(data.expiresAt !== null ? { expiresAt: data.expiresAt } : {}),
           mode: data.mode,
-          ...(data.message !== undefined ? { message: data.message } : {}),
-          projectLabels: Object.values(data.projectLabels),
+          title: data.title,
+          projects: envelopeProjects(data),
           responses,
           envelopeRid: envelope.id,
         });
@@ -125,24 +136,33 @@ export function createOutgoingSharesComputable(
       return drafts;
     },
     {
-      // Enrich the full recipient list per envelope via ListGrants (async). An everyone-grant
-      // surfaces with the everyone-sentinel (isEveryoneUserLogin), mapped to "*". The donor's own grant on their
-      // envelope is dropped — it's their own share, showing their login as a "recipient" is noise.
+      // Resolve each share's recipients via listGrants. An everyone-grant maps to "*"; the donor's
+      // own grant is dropped. One tx per envelope so a just-revoked rid faults only its own read,
+      // which allSettled degrades to []. Recipients aren't cached — a live share's recipient set can
+      // change. Transactional listGrants when available, else the standalone gRPC-only RPC.
       postprocessValue: async (
         drafts: OutgoingShareDraft[] | undefined,
       ): Promise<OutgoingShare[] | undefined> => {
         if (drafts === undefined) return undefined;
         const self = pl.userResources.authUser;
-        return await Promise.all(
-          drafts.map(async ({ envelopeRid, ...share }): Promise<OutgoingShare> => {
-            const grants = await pl.userResources.listGrants(envelopeRid);
-            const everyone = grants.some((g) => isEveryoneUserLogin(g.user));
-            const recipients = everyone
-              ? ["*"]
-              : grants.map((g) => g.user).filter((u) => u !== self);
-            return { ...share, recipients };
-          }),
+        const toRecipients = (grants: { user: string }[]): string[] =>
+          grants.some((g) => isEveryoneUserLogin(g.user))
+            ? ["*"]
+            : grants.map((g) => g.user).filter((u) => u !== self);
+
+        const txGrants = pl.hasCapability("txListGrants:v1");
+        const settled = await Promise.allSettled(
+          drafts.map((d) =>
+            txGrants
+              ? pl.withReadTx("ListShareGrant", (tx) => tx.listGrants(d.envelopeRid))
+              : pl.userResources.listGrants(d.envelopeRid),
+          ),
         );
+
+        return drafts.map(({ envelopeRid: _envelopeRid, ...share }, i): OutgoingShare => {
+          const r = settled[i];
+          return { ...share, recipients: r.status === "fulfilled" ? toRecipients(r.value) : [] };
+        });
       },
     },
   );
@@ -281,9 +301,8 @@ export function createPendingSharesComputable(
       result.push({
         shareId: data.shareId,
         sender: data.sender,
-        ...(data.message !== undefined ? { message: data.message } : {}),
+        title: data.title,
         mode: data.mode,
-        projectLabels: Object.values(data.projectLabels),
         grantedAt: data.sharedAt,
       });
     }

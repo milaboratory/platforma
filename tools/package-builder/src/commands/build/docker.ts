@@ -1,28 +1,27 @@
-import { Command } from "@oclif/core";
-import * as cmdOpts from "../../core/cmd-opts";
-import * as util from "../../core/util";
-import { Core } from "../../core/core";
-import * as envs from "../../core/envs";
+import { Command } from "commander";
+import * as cmdOpts from "../../cmd-opts";
+import { util, envs, createBuilder } from "@platforma-sdk/package-builder-lib";
 
-export default class Docker extends Command {
-  static override description = "build docker images";
+export function buildDockerCommand(): Command {
+  const cmd = new Command("docker").description("build docker images");
 
-  static override flags = {
-    ...cmdOpts.GlobalFlags,
-    ...cmdOpts.BuildFlags,
-    ...cmdOpts.VersionFlag,
-    ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.DockerFlags,
-  };
+  cmdOpts.addOptions(
+    cmd,
+    cmdOpts.GlobalOptions(),
+    cmdOpts.BuildOptions(),
+    cmdOpts.VersionOption(),
+    cmdOpts.PackageIDOption(),
+    cmdOpts.DockerOptions(),
+  );
 
-  public async run(): Promise<void> {
-    const { flags } = await this.parse(Docker);
+  cmd.action(async (opts: cmdOpts.AnyOptions) => {
+    const flags = cmdOpts.toFlags(opts);
     const logger = util.createLogger(flags["log-level"]);
 
-    const core = new Core(logger, { packageRoot: flags["package-root"] });
+    const core = createBuilder(logger, { packageRoot: flags["package-root"] });
     core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName);
 
-    core.pkgInfo.version = flags.version;
+    core.version = flags.version;
 
     core.buildDockerImages({
       ids: flags["package-id"],
@@ -30,11 +29,11 @@ export default class Docker extends Command {
     });
 
     const autopush = cmdOpts.shouldDoAction(
-      envs.isCI() && !core.pkgInfo.isPrivate, // do not push docker images of private packages
+      envs.isCI() && !core.isPrivate, // do not push docker images of private packages
       flags["docker-autopush"],
       flags["docker-no-autopush"],
     );
-    if (autopush && !core.pkgInfo.isPrivate) {
+    if (autopush && !core.isPrivate) {
       core.publishDockerImages({
         ids: flags["package-id"],
         strictPlatformMatching: envs.isCI(),
@@ -44,5 +43,7 @@ export default class Docker extends Command {
     core.buildSwJsonFiles({
       packageIds: flags["package-id"] ? flags["package-id"] : undefined,
     });
-  }
+  });
+
+  return cmd;
 }

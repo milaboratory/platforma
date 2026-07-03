@@ -3605,6 +3605,10 @@ export interface AuthAPI_ListMethods_SSOAuthMethod {
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType flow_type = 10
      */
     flowType: AuthAPI_ListMethods_SSOAuthMethod_FlowType;
+    /**
+     * @generated from protobuf field: optional string access_type = 11
+     */
+    accessType?: string; // "online" | "offline"; Google-specific (offline → refresh token)
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType
@@ -3684,6 +3688,17 @@ export interface AuthAPI_BeginSSOLogin_PublicPKCE {
      * @generated from protobuf field: google.protobuf.Timestamp expires_at = 2
      */
     expiresAt?: Timestamp; // after this, nonce is no longer valid (when enforced)
+    /**
+     * Confidential-client secret for the IdP token exchange; absent for public clients.
+     * Rationale: Google's OIDC does not support public clients — it requires a
+     * client_secret at the token endpoint even for the PKCE auth-code flow. That is a
+     * gap in Google Cloud OIDC: a desktop app cannot use Google OIDC without the secret
+     * leaving the server. So the backend holds the secret and forwards it here to the
+     * desktop, which performs the token exchange as a confidential client.
+     *
+     * @generated from protobuf field: optional string client_secret = 3
+     */
+    clientSecret?: string;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.Response
@@ -3923,7 +3938,7 @@ export interface AuthAPI_GrantAccess_Request {
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.GrantAccess.GrantType grant_type = 5
      */
-    grantType: AuthAPI_GrantAccess_GrantType; // default: GENERAL
+    grantType: AuthAPI_GrantAccess_GrantType; // default: SINGLE_USER
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess.Response
@@ -3937,17 +3952,17 @@ export interface AuthAPI_GrantAccess_Response {
  */
 export enum AuthAPI_GrantAccess_GrantType {
     /**
-     * regular user-to-user grant (default)
+     * grants access for single user (default).
      *
-     * @generated from protobuf enum value: GENERAL = 0;
+     * @generated from protobuf enum value: SINGLE_USER = 0;
      */
-    GENERAL = 0,
+    SINGLE_USER = 0,
     /**
-     * make resource publically-accessible, showing it in ListUserResources for all users. Requires controller role.
+     * makes resource publically-accessible, showing it in ListUserResources for all authorised clients.
      *
-     * @generated from protobuf enum value: MAKE_RESOURCE_PUBLIC = 1;
+     * @generated from protobuf enum value: ANY_AUTHORISED = 1;
      */
-    MAKE_RESOURCE_PUBLIC = 1
+    ANY_AUTHORISED = 1
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.RevokeAccess
@@ -4019,11 +4034,11 @@ export interface AuthAPI_Grant {
     /**
      * @generated from protobuf field: string user = 1
      */
-    user: string;
+    user: string; // grantee
     /**
      * @generated from protobuf field: uint64 resource_id = 2
      */
-    resourceId: bigint;
+    resourceId: bigint; // target resource of a grant (what grantee can access)
     /**
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 3
      */
@@ -17552,7 +17567,8 @@ class AuthAPI_ListMethods_SSOAuthMethod$Type extends MessageType<AuthAPI_ListMet
             { no: 7, name: "subject_token_source", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 8, name: "user_id_claim", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 9, name: "groups_claim", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 10, name: "flow_type", kind: "enum", T: () => ["MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType", AuthAPI_ListMethods_SSOAuthMethod_FlowType] }
+            { no: 10, name: "flow_type", kind: "enum", T: () => ["MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType", AuthAPI_ListMethods_SSOAuthMethod_FlowType] },
+            { no: 11, name: "access_type", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_ListMethods_SSOAuthMethod>): AuthAPI_ListMethods_SSOAuthMethod {
@@ -17610,6 +17626,9 @@ class AuthAPI_ListMethods_SSOAuthMethod$Type extends MessageType<AuthAPI_ListMet
                 case /* MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType flow_type */ 10:
                     message.flowType = reader.int32();
                     break;
+                case /* optional string access_type */ 11:
+                    message.accessType = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -17656,6 +17675,9 @@ class AuthAPI_ListMethods_SSOAuthMethod$Type extends MessageType<AuthAPI_ListMet
         /* MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod.FlowType flow_type = 10; */
         if (message.flowType !== 0)
             writer.tag(10, WireType.Varint).int32(message.flowType);
+        /* optional string access_type = 11; */
+        if (message.accessType !== undefined)
+            writer.tag(11, WireType.LengthDelimited).string(message.accessType);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -17833,7 +17855,8 @@ class AuthAPI_BeginSSOLogin_PublicPKCE$Type extends MessageType<AuthAPI_BeginSSO
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.PublicPKCE", [
             { no: 1, name: "nonce", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "expires_at", kind: "message", T: () => Timestamp }
+            { no: 2, name: "expires_at", kind: "message", T: () => Timestamp },
+            { no: 3, name: "client_secret", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_BeginSSOLogin_PublicPKCE>): AuthAPI_BeginSSOLogin_PublicPKCE {
@@ -17854,6 +17877,9 @@ class AuthAPI_BeginSSOLogin_PublicPKCE$Type extends MessageType<AuthAPI_BeginSSO
                 case /* google.protobuf.Timestamp expires_at */ 2:
                     message.expiresAt = Timestamp.internalBinaryRead(reader, reader.uint32(), options, message.expiresAt);
                     break;
+                case /* optional string client_secret */ 3:
+                    message.clientSecret = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -17872,6 +17898,9 @@ class AuthAPI_BeginSSOLogin_PublicPKCE$Type extends MessageType<AuthAPI_BeginSSO
         /* google.protobuf.Timestamp expires_at = 2; */
         if (message.expiresAt)
             Timestamp.internalBinaryWrite(message.expiresAt, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+        /* optional string client_secret = 3; */
+        if (message.clientSecret !== undefined)
+            writer.tag(3, WireType.LengthDelimited).string(message.clientSecret);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

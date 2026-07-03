@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "5.3.35",
+  "version": "5.3.37",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "keywords": [],
   "license": "UNLICENSED",
@@ -16,7 +16,7 @@
     "./postinstall.js"
   ],
   "scripts": {
-    "build": "oclif-index && node --run fmt && ts-builder build --target node",
+    "build": "node --run fmt && ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",
-    "@oclif/core": "catalog:",
+    "commander": "catalog:",
     "decompress": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",
@@ -37,23 +37,11 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
-    "@milaboratories/oclif-index": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
-    "ts-node": "catalog:",
     "typescript": "catalog:"
-  },
-  "oclif": {
-    "bin": "pl-dev",
-    "commands": {
-      "identifier": "COMMANDS",
-      "strategy": "explicit",
-      "target": "./dist/index.js"
-    },
-    "dirname": "pl-service",
-    "topicSeparator": " "
   }
 }

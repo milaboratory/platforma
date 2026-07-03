@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
-// eslint-disable-next-line unicorn/prefer-top-level-await
-(async () => {
-  const oclif = await import("@oclif/core");
-  await oclif.execute({ dir: __dirname });
-})();
+const path = require("node:path");
+const { run } = require("../dist/cli.js");
+
+const packageRoot = path.resolve(__dirname, "..");
+
+run(process.argv, packageRoot).catch((error) => {
+  console.error(`error: ${error?.message ?? error}`);
+  process.exitCode = 1;
+});
