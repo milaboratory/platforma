@@ -61,6 +61,25 @@ export function canGrantToEveryone(role: Role | null): boolean {
   }
 }
 
+/**
+ * Whether a role may impersonate another user: open/create another user's root and list
+ * the resources that user can access. Mirrors the backend's authorization rule
+ * `util/misecurity/role.go` `CanImpersonate` — true for controller and admin only. This is
+ * the admin gate for the "open another user's root" feature and is intentionally stricter
+ * than {@link canGrantToEveryone}, which also returns true for a regular user (a normal user
+ * may share their own projects, but must never be offered impersonation). `null` (no-auth
+ * mode) returns false.
+ */
+export function canImpersonate(role: Role | null): boolean {
+  switch (role) {
+    case RoleEnum.CONTROLLER:
+    case RoleEnum.ADMIN:
+      return true;
+    default:
+      return false;
+  }
+}
+
 /** Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated. */
 export interface EnvelopeData {
   schemaVersion: 1;
