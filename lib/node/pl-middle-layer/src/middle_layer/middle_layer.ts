@@ -178,8 +178,16 @@ export class MiddleLayer {
    * additional required capabilities later without a UI change. See
    * `pl-client/src/core/capabilities.ts` / backend `server_capabilities.go`.
    */
+  /** True when this session is impersonating another user (an admin opened another user's root). */
+  public get impersonating(): boolean {
+    return this.pl.conf.asUser !== undefined;
+  }
+
   public get sharingSupported(): boolean {
-    return this.serverCapabilities.includes("crossTreeRefs:v1");
+    // Sharing does not compose with impersonation (discovery is scoped to the admin's session,
+    // decisions attribute to the admin), so it is disabled while impersonating. Admins move
+    // projects across roots with copyProjectToUser instead.
+    return this.serverCapabilities.includes("crossTreeRefs:v1") && !this.impersonating;
   }
 
   /**
@@ -200,6 +208,7 @@ export class MiddleLayer {
    */
   public get canShareWithEveryone(): boolean {
     return (
+      !this.impersonating &&
       this.serverCapabilities.includes("publicGrants:v1") &&
       canGrantToEveryone(this.currentUserRole)
     );
@@ -362,6 +371,61 @@ export class MiddleLayer {
     const newProjectId = resourceIdToString(signedRid) as ProjectId;
     this.projectIdCache.set(newProjectId, signedRid);
     return newProjectId;
+  }
+
+  /**
+   * Copies a project into another user's root, minted in the TARGET user's color so the target
+   * owns it. The source project (on the current client root) is referenced cross-color for its
+   * block data, kept alive by refcounting, exactly like accepting a shared project. Works both
+   * ways: pull (while impersonating a user, copy their project to yourself) and push (from your
+   * own root, copy a project to a user). Admin cross-root op; requires the crossTreeRefs:v1
+   * backend capability.
+   */
+  public async copyProjectToUser(
+    srcProjectId: ProjectId,
+    targetLogin: string,
+    rename?: (previousLabel: string, existingLabels: string[]) => string,
+  ): Promise<void> {
+    if (!this.serverCapabilities.includes("crossTreeRefs:v1"))
+      throw new Error("copyProjectToUser requires the crossTreeRefs:v1 backend capability.");
+
+    const sourceRid = await this.resolveProjectId(srcProjectId);
+    const targetRoot = await this.pl.getUserRoot({ login: targetLogin, createIfNotExists: true });
+
+    // Run on the target root: the tx default color is the target's, so the new project (and the
+    // target's project list, if created here) are minted in the target's color.
+    await this.pl.withWriteTxOnRoot(targetRoot, "MLCopyProjectToUser", async (tx) => {
+      // Resolve or lazily create the target root's project list (tx.clientRoot === targetRoot).
+      const projectsField = field(tx.clientRoot, ProjectsField);
+      tx.createField(projectsField, "Dynamic");
+      const fData = await tx.getField(projectsField);
+      let targetProjectListRid: SignedResourceId;
+      if (isNullSignedResourceId(fData.value)) {
+        const ref = tx.createEphemeral(ProjectsResourceType);
+        tx.lock(ref);
+        tx.setField(projectsField, ref);
+        targetProjectListRid = await ref.globalId;
+      } else {
+        targetProjectListRid = fData.value;
+      }
+
+      // Source label + the target's existing labels, for collision-aware renaming.
+      const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
+      const targetListData = await tx.getResourceData(targetProjectListRid, true);
+      const existingLabels = (
+        await Promise.all(
+          targetListData.fields
+            .map((f) => f.value)
+            .filter(isNotNullSignedResourceId)
+            .map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+        )
+      ).map((m) => m.label);
+      const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
+
+      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      tx.createField(field(targetProjectListRid, randomUUID()), "Dynamic", newPrj);
+      await tx.commit();
+    });
   }
 
   //
