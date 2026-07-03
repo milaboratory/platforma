@@ -18,8 +18,7 @@ import {
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 // `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
-// choice (A-0021@4.0). `no-software` builds placeholder software for test-framework validators.
-// Marker off → the legacy single `build:dev`.
+// choice. `no-software` builds placeholder software for validators. Marker off → single `build:dev`.
 const DEV_BINARY_LOCAL_SELECTOR =
   "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local";
 

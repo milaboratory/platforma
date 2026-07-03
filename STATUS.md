@@ -112,13 +112,13 @@ Deferred / non-blocking:
       unchanged. No block enrolled yet.
       Emits the collapsed A-0021@4.0 set — `build:dev-local` / `build:dev-remote` (both
       `variant=all`) / `build:dev-no-software` (`variant=none`) / `build:dev-binary-existing` /
-      `build:release`. Command-side `variant=all`/`none` handling is still pending (below), so the
-      `dev-local`/`dev-remote`/`dev-no-software` scripts won't run end-to-end until that lands.
-- [ ] No-software build: `PL_BUILD_VARIANT=none` → placeholder `.sw.json` (new SwJsonRenderer
-      emit branch), driven by `build:dev-no-software`, for test-framework validators. Ships the
-      `binary` placeholder (safe superset) until Q-0021 settles validator behaviour. [A-0046] [A-0047]
-- [ ] Extend `PL_BUILD_VARIANT` to `all` / `none` (implemented values are `docker` / `binary`);
-      `all` = build every variant the software declares, the value the scripts pass. [A-0025]
+      `build:release`.
+- [x] `PL_BUILD_VARIANT` extended to `all` / `none`. `all` = build every variant the software
+      declares (the value the scripts pass); `none` = no-software. [A-0025]
+- [x] No-software build: `PL_BUILD_VARIANT=none` → minimal `binary` placeholder `.sw.json` per
+      entrypoint (`SwJsonRenderer.renderPlaceholderEntrypoints`), nothing built or pushed, driven
+      by `build:dev-no-software`. Ships the `binary` placeholder (safe superset) until Q-0021
+      settles validator behaviour. [A-0046] [A-0047]
 - [ ] Retarget monorepo blocks `etc/blocks/*`: `pl-pkg build` → `block-tools software build`,
       flag-gated (mechanism ready — enroll per block). [A-0033]
 - [ ] Retire `pl-pkg` build surface ~1–2 wks after confirmation (do last). [A-0033]

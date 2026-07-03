@@ -24,6 +24,23 @@ describe("parseScenario — knobs collapse to the supported set", () => {
     });
   });
 
+  it("variant=all builds both kinds", () => {
+    expect(parseScenario({ channel: "dev", variant: "all", location: "local" })).toEqual({
+      kind: "target",
+      channel: "dev",
+      docker: true,
+      binary: true,
+      remote: false,
+    });
+  });
+
+  it("variant=none => no-software, regardless of location", () => {
+    expect(parseScenario({ channel: "dev", variant: "none", location: "local" })).toEqual({
+      kind: "no-software",
+    });
+    expect(parseScenario({ variant: "none" })).toEqual({ kind: "no-software" });
+  });
+
   it("use-published collapses everything but rejects docker", () => {
     expect(parseScenario({ channel: "dev", usePublished: true })).toEqual({
       kind: "use-published",

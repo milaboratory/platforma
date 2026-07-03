@@ -1,5 +1,5 @@
 export const channels = ["dev", "release"] as const;
-export const variants = ["docker", "binary"] as const;
+export const variants = ["docker", "binary", "all", "none"] as const;
 export const locations = ["local", "remote", "ssh"] as const;
 
 export type Channel = (typeof channels)[number];
@@ -20,7 +20,8 @@ export interface Knobs {
 // Anything outside it is rejected by parseScenario.
 export type Scenario =
   | { kind: "use-published" } // build-against-existing: descriptor only, no build/push
-  | { kind: "legacy" } // no location knob: reproduce `pl-pkg build` (docker push gated by CI)
+  | { kind: "no-software" } // placeholder descriptors, nothing built or pushed
+  | { kind: "legacy" } // no location knob: bare `pl-pkg build` behaviour (docker push gated by CI)
   | { kind: "target"; channel: Channel; docker: boolean; binary: boolean; remote: boolean };
 
 // Validate the raw knobs and collapse them to a supported scenario. The one place unsupported
@@ -39,12 +40,17 @@ export function parseScenario(knobs: Knobs): Scenario {
     throw new Error("location 'ssh' is not implemented yet");
   }
 
-  // No location: the bare `block-tools software build` invocation, kept a drop-in for `pl-pkg build`.
+  // Placeholder descriptors only, nothing built or pushed; location is ignored.
+  if (knobs.variant === "none") {
+    return { kind: "no-software" };
+  }
+
+  // No location: the bare invocation, a drop-in for `pl-pkg build`.
   if (knobs.location === undefined) {
     return { kind: "legacy" };
   }
 
-  // Unset variant acts per-entrypoint (both kinds), matching pl-pkg.
+  // `all` (and unset) builds every declared variant; the engine skips the kinds the software omits.
   return {
     kind: "target",
     channel: knobs.channel ?? "release",

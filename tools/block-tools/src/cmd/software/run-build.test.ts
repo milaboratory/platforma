@@ -77,6 +77,14 @@ describe("runBuild orchestration", () => {
     expect(calls).toEqual(["writePublishedArtifactInfo", "buildSwJsonFiles"]);
   });
 
+  it("no-software writes a placeholder descriptor only — no build, no push", async () => {
+    const b = await run({ channel: "dev", variant: "none", location: "local" });
+    expect(b.calls).toEqual(["buildSwJsonFiles"]);
+    expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ noSoftware: true }),
+    );
+  });
+
   it("sets the scenario-derived build mode on the engine", async () => {
     expect((await run({})).core.buildMode).toBe("release");
     expect(
