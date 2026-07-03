@@ -205,6 +205,7 @@ export class Core {
     entrypoints?: string[];
     sources?: util.SoftwareSource[];
     requireAllArtifacts?: boolean;
+    noSoftware?: boolean;
   }) {
     const index = this.packageEntrypointsIndex;
 
@@ -227,10 +228,12 @@ export class Core {
       entrypoints = entrypoints.filter(([epName, _]) => entrypointNames.includes(epName));
     }
 
-    const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
-      requireAllArtifacts: options?.requireAllArtifacts,
-      fullDirHash: this.fullDirHash,
-    });
+    const infos = options?.noSoftware
+      ? this.renderer.renderPlaceholderEntrypoints(new Map(entrypoints))
+      : this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
+          requireAllArtifacts: options?.requireAllArtifacts,
+          fullDirHash: this.fullDirHash,
+        });
 
     for (const swJson of infos.values()) {
       this.renderer.writeSwJson(swJson);

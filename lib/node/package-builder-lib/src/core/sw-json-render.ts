@@ -122,6 +122,31 @@ export class SwJsonRenderer {
     return result;
   }
 
+  // One minimal `binary` placeholder per entrypoint, so a block builds, loads, and renders without
+  // any software; only executing it fails, against the sentinel registry. References are copied
+  // through by the caller, so they are skipped here.
+  public renderPlaceholderEntrypoints(
+    entrypoints: Map<string, entrypoint.Entrypoint>,
+  ): Map<string, swJson.swJsonType> {
+    const result = new Map<string, swJson.swJsonType>();
+    for (const [epName, ep] of entrypoints.entries()) {
+      if (ep.type === "reference") continue;
+      const originEpName = docker.entrypointNameToOrigin(epName);
+      if (result.has(originEpName)) continue;
+      result.set(originEpName, {
+        id: { package: this.pkgInfo.packageName, name: originEpName },
+        isDev: true,
+        binary: {
+          type: "binary",
+          registry: defaults.NO_SOFTWARE_PLACEHOLDER,
+          package: defaults.NO_SOFTWARE_PLACEHOLDER,
+          cmd: ["true"],
+        },
+      });
+    }
+    return result;
+  }
+
   public writeSwJson(info: swJson.swJsonType, dstFile?: string) {
     const epType = info.asset ? "asset" : "software";
     const dstSwInfoPath =

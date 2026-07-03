@@ -43,6 +43,10 @@ export async function runBuild(
       core.writePublishedArtifactInfo({ ids });
       break;
 
+    case "no-software":
+      // Nothing built or pushed; the placeholder descriptor is written below.
+      break;
+
     case "legacy": {
       // Bare pl-pkg-parity invocation: docker build/push follow the CI default + flags.
       const buildDocker = shouldDoAction(envs.isCI(), opts.dockerBuild, opts.dockerNoBuild);
@@ -94,7 +98,7 @@ export async function runBuild(
   }
 
   // DESCRIPTOR LAST — only after build + push have succeeded.
-  core.buildSwJsonFiles({ packageIds: ids });
+  core.buildSwJsonFiles({ packageIds: ids, noSoftware: scenario.kind === "no-software" });
 }
 
 function buildModeFor(scenario: Scenario): util.BuildMode {
