@@ -14,7 +14,12 @@ import {
   resourceIdToString,
 } from "@milaboratories/pl-client";
 import { LRUCache } from "lru-cache";
-import { createProjectList, ProjectsField, ProjectsResourceType } from "./project_list";
+import {
+  createProjectList,
+  ensureProjectListRid,
+  ProjectsField,
+  ProjectsResourceType,
+} from "./project_list";
 import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
@@ -179,16 +184,16 @@ export class MiddleLayer {
    * additional required capabilities later without a UI change. See
    * `pl-client/src/core/capabilities.ts` / backend `server_capabilities.go`.
    */
-  /** True when this session is impersonating another user (an admin opened another user's root). */
-  public get impersonating(): boolean {
-    return this.pl.conf.asUser !== undefined;
-  }
-
   public get sharingSupported(): boolean {
     // Sharing does not compose with impersonation (discovery is scoped to the admin's session,
     // decisions attribute to the admin), so it is disabled while impersonating. Admins move
     // projects across roots with copyProjectToUser instead.
     return this.serverCapabilities.includes("crossTreeRefs:v1") && !this.impersonating;
+  }
+
+  /** True when this session is impersonating another user (an admin opened another user's root). */
+  public get impersonating(): boolean {
+    return this.pl.conf.asUser !== undefined;
   }
 
   /**
@@ -408,18 +413,7 @@ export class MiddleLayer {
     // target's project list, if created here) are minted in the target's color.
     await this.pl.withWriteTxOnRoot(targetRoot, "MLCopyProjectToUser", async (tx) => {
       // Resolve or lazily create the target root's project list (tx.clientRoot === targetRoot).
-      const projectsField = field(tx.clientRoot, ProjectsField);
-      tx.createField(projectsField, "Dynamic");
-      const fData = await tx.getField(projectsField);
-      let targetProjectListRid: SignedResourceId;
-      if (isNullSignedResourceId(fData.value)) {
-        const ref = tx.createEphemeral(ProjectsResourceType);
-        tx.lock(ref);
-        tx.setField(projectsField, ref);
-        targetProjectListRid = await ref.globalId;
-      } else {
-        targetProjectListRid = fData.value;
-      }
+      const targetProjectListRid = await ensureProjectListRid(tx);
 
       // Source label + the target's existing labels, for collision-aware renaming.
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);

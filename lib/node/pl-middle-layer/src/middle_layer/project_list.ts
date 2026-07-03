@@ -1,7 +1,19 @@
 import type { PruningFunction } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { Filter, PlClient, ResourceType, SignedResourceId } from "@milaboratories/pl-client";
-import { resourceIdToString, resourceTypesEqual, treeFilter } from "@milaboratories/pl-client";
+import type {
+  Filter,
+  PlClient,
+  PlTransaction,
+  ResourceType,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
+import {
+  field,
+  isNullSignedResourceId,
+  resourceIdToString,
+  resourceTypesEqual,
+  treeFilter,
+} from "@milaboratories/pl-client";
 import type { TreeAndComputableU } from "./types";
 import type { WatchableValue } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
@@ -17,6 +29,25 @@ import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
 
 export const ProjectsField = "projects";
 export const ProjectsResourceType: ResourceType = { name: "Projects", version: "1" };
+
+/**
+ * Resolves the projects-list resource on the transaction's client root, lazily creating (and
+ * locking) an empty one when the {@link ProjectsField} is not yet populated. Returns its signed
+ * id. Used when writing into a root that may have no projects list yet, e.g. copying a project
+ * into another user's root during admin impersonation.
+ */
+export async function ensureProjectListRid(tx: PlTransaction): Promise<SignedResourceId> {
+  const projectsField = field(tx.clientRoot, ProjectsField);
+  tx.createField(projectsField, "Dynamic");
+  const fData = await tx.getField(projectsField);
+  if (isNullSignedResourceId(fData.value)) {
+    const ref = tx.createEphemeral(ProjectsResourceType);
+    tx.lock(ref);
+    tx.setField(projectsField, ref);
+    return await ref.globalId;
+  }
+  return fData.value;
+}
 
 export const ProjectsListTreePruningFunction: PruningFunction = (resource) => {
   if (!resourceTypesEqual(resource.type, ProjectsResourceType)) return [];
