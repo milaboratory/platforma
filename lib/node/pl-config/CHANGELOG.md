@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.8.3
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.4
+
 ## 1.8.2
 
 ### Patch Changes
