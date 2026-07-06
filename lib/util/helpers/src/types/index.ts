@@ -73,17 +73,21 @@ export type AwaitedStruct<O extends Record<string, unknown>> = {
   [P in keyof O]: Awaited<O[P]>;
 };
 
-export type DeepReadonly<T> = keyof T extends never
+export type DeepReadonly<T> = T extends Primitive | AnyFunction
   ? T
-  : { readonly [k in keyof T]: DeepReadonly<T[k]> };
+  : T extends object
+    ? { readonly [k in keyof T]: DeepReadonly<T[k]> }
+    : T;
 
 export type Mutable<T> = {
   -readonly [P in keyof T]: T[P];
 };
 
-export type DeepMutable<T> = keyof T extends never
+export type DeepMutable<T> = T extends Primitive | AnyFunction
   ? T
-  : { -readonly [k in keyof T]: DeepMutable<T[k]> };
+  : T extends object
+    ? { -readonly [k in keyof T]: DeepMutable<T[k]> }
+    : T;
 
 export type Unionize<T extends Record<string, unknown>> = {
   [K in keyof T]: { key: K; value: T[K] };
