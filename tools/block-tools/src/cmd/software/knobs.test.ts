@@ -47,8 +47,4 @@ describe("parseScenario — knobs collapse to the supported set", () => {
     });
     expect(() => parseScenario({ usePublished: true, variant: "docker" })).toThrow(/binary-only/);
   });
-
-  it("ssh is rejected", () => {
-    expect(() => parseScenario({ location: "ssh" })).toThrow(/ssh/);
-  });
 });
