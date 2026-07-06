@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { runBuild } from "./run-build";
 import { parseScenario, type Knobs } from "./knobs";
 import { defaults, type Builder } from "@platforma-sdk/package-builder-lib";
+import { ensureEcrLogin, ensureAwsProfile } from "./ecr-login";
+
+// Neutralize the real docker/aws shelling; assert only that the orchestration calls it.
+vi.mock("./ecr-login", () => ({ ensureEcrLogin: vi.fn(), ensureAwsProfile: vi.fn() }));
 
 // A Builder stub that records which engine methods ran, in order.
 function fakeBuilder() {
@@ -35,6 +39,7 @@ afterEach(() => {
   ]) {
     delete process.env[k];
   }
+  vi.clearAllMocks();
 });
 
 // What registry/pushTo the engine was called with for a docker target.
@@ -175,6 +180,23 @@ describe("runBuild orchestration", () => {
       process.env.PL_RELEASE_DOCKER_PUSH_URL = "quay.io/org/repo";
       // bare invocation: docker addresses stay unset (engine pushes to the embedded tag).
       expect(await dockerAddresses({})).toEqual({ pull: undefined, push: undefined });
+    });
+
+    it("dev default (ecr:// push target) auto-logs-in for the stripped host", async () => {
+      await run(devRemote);
+      expect(ensureEcrLogin).toHaveBeenCalledWith(defaults.DEV_DOCKER_REGISTRY, undefined);
+      expect(ensureAwsProfile).toHaveBeenCalled();
+    });
+
+    it("a plain (non-ecr) push override opts out of auto-login", async () => {
+      process.env.PL_DEV_DOCKER_PUSH_URL = "ecr.example/dev";
+      await run(devRemote);
+      expect(ensureEcrLogin).not.toHaveBeenCalled();
+    });
+
+    it("local docker build never logs in", async () => {
+      await run({ channel: "dev", variant: "docker", location: "local" });
+      expect(ensureEcrLogin).not.toHaveBeenCalled();
     });
 
     it("explicit --docker-push-to wins over the channel override", async () => {

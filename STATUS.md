@@ -93,7 +93,18 @@ Deferred / non-blocking:
       `PULL_URL`, `PL_RELEASE_DOCKER_*`) done. Docker push carries the channel's built-in default,
       pull defaults to push; channel overrides apply to channel targets only — the bare pl-pkg-parity
       invocation is untouched. The `ecr://` auto-login that a dev push URL can trigger is A-0044.
-- [ ] `ecr://` auto docker-login + AWS SDK cred chain (env-first / `pl-block-dev`). [A-0044]
+- [x] `ecr://` auto docker-login + AWS SDK cred chain (env-first / SSO profile). [A-0044]
+      Push-target scheme (`cmd/software/ecr-login.ts`): the built-in dev default
+      (`DEV_DOCKER_PUSH_TARGET = ecr://…`) triggers an ECR `docker login` before push; a plain
+      `https://`/bare host opts out. Scheme stripped for the tag/push and the embedded pull address.
+      Token fetched via the AWS **SDK** (`@aws-sdk/client-ecr-public`) — same default cred chain as
+      the S3 upload; login runs **unconditionally** (idempotent ~1s) so an expired session fails at
+      login with a clear hint, not opaquely at push. `ensureAwsProfile` sets `AWS_PROFILE` once
+      (env-creds-first, else `PL_AWS_PROFILE` ?? `research-poweruser`), so docker + S3 share one
+      chain. Public ECR only (the sole ecr:// target). Engine/pl-pkg untouched (login lives in the
+      block-tools layer).
+      **Spec drift:** A-0044 (+README/design/impl-ref) name profile `pl-block-dev`, which does not
+      exist in the real SSO setup — code uses `research-poweruser` per DevOps. Reconcile the spec.
 - [x] Build-against-existing: descriptor at the published **release** (`platforma-open`)
       version-derived binary, no build/push. [A-0016]
       `--use-published`/`PL_BUILD_USE_PUBLISHED` → `writePublishedArtifactInfo` synthesizes the

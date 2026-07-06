@@ -5,6 +5,9 @@ export * as util from "./core/util";
 export * as envs from "./core/envs";
 export * as defaults from "./defaults";
 
+/** The logger the engine and its callers pass around. */
+export type Logger = winston.Logger;
+
 /**
  * Public surface of the build engine. Derived from `Core` so signatures never
  * drift, while the `Core` class itself stays internal (per A-0023: the engine is

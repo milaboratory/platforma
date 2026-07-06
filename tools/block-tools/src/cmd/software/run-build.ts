@@ -1,5 +1,12 @@
-import { util, envs, defaults, type Builder } from "@platforma-sdk/package-builder-lib";
+import {
+  util,
+  envs,
+  defaults,
+  type Builder,
+  type Logger,
+} from "@platforma-sdk/package-builder-lib";
 import type { Channel, Scenario } from "./knobs";
+import { ensureAwsProfile, ensureEcrLogin } from "./ecr-login";
 
 // Pass-through controls mirroring `pl-pkg build`. Empty means "engine default".
 export interface BuildOptions {
@@ -24,6 +31,7 @@ export async function runBuild(
   core: Builder,
   scenario: Scenario,
   opts: BuildOptions,
+  logger?: Logger,
 ): Promise<void> {
   const ids = opts.ids;
   core.buildMode = buildModeFor(scenario);
@@ -86,8 +94,10 @@ export async function runBuild(
       }
       if (binary) await buildBinary();
 
-      // PUSH when the target is remote (still no descriptor on disk).
+      // PUSH when remote. Select the AWS credential chain once (docker login + S3 upload share it).
+      if (remote && (docker || binary)) ensureAwsProfile(logger);
       if (docker && remote) {
+        if (addr.autoLogin && addr.push) await ensureEcrLogin(addr.push, logger);
         core.publishDockerImages({ ids, pushTo: addr.push, strictPlatformMatching: envs.isCI() });
       }
       if (binary && remote) {
@@ -111,22 +121,37 @@ function buildModeFor(scenario: Scenario): util.BuildMode {
   return scenario.binary && scenario.remote ? "dev-remote" : "dev-local";
 }
 
-// Docker push target + the pull address embedded in the descriptor, for a channel target. The push
-// URL carries the channel's built-in default (dev => the dev ECR, release => the artifact's own
-// registry); the pull URL defaults to the push URL. Explicit --docker-registry/--docker-push-to win.
-// (`ecr://`-scheme push URLs and the auto docker-login they trigger are handled separately — A-0044.)
+// Bare registry ref (host[:port]/path) with any URL scheme removed.
+function stripScheme(raw: string): string {
+  if (!raw.includes("://")) return raw; // already bare
+  const url = new URL(raw);
+  return url.host + url.pathname;
+}
+
+// A push target may carry a scheme selecting auto docker-login: `ecr://` opts in, anything else out.
+function parsePushTarget(raw: string): { registry: string; autoLogin: boolean } {
+  return { registry: stripScheme(raw), autoLogin: raw.startsWith("ecr://") };
+}
+
+// Docker push target + the descriptor's embedded pull address for a channel. Precedence: flag >
+// channel env > dev built-in default (release has none); pull defaults to push. `autoLogin` follows
+// the push target's ecr:// scheme.
 function resolveDockerAddresses(
   channel: Channel,
   opts: BuildOptions,
-): { pull?: string; push?: string } {
+): { pull?: string; push?: string; autoLogin: boolean } {
   const isDev = channel === "dev";
   const channelPush =
     process.env[isDev ? envs.PL_DEV_DOCKER_PUSH_URL : envs.PL_RELEASE_DOCKER_PUSH_URL];
   const channelPull =
     process.env[isDev ? envs.PL_DEV_DOCKER_PULL_URL : envs.PL_RELEASE_DOCKER_PULL_URL];
 
-  const push =
-    opts.dockerPushTo ?? channelPush ?? (isDev ? defaults.DEV_DOCKER_REGISTRY : undefined);
-  const pull = opts.dockerRegistry ?? channelPull ?? push;
-  return { pull, push };
+  const rawPush =
+    opts.dockerPushTo ?? channelPush ?? (isDev ? defaults.DEV_DOCKER_PUSH_TARGET : undefined);
+  const parsed = rawPush ? parsePushTarget(rawPush) : { registry: undefined, autoLogin: false };
+
+  const rawPull = opts.dockerRegistry ?? channelPull ?? rawPush;
+  const pull = rawPull ? stripScheme(rawPull) : undefined;
+
+  return { pull, push: parsed.registry, autoLogin: parsed.autoLogin };
 }

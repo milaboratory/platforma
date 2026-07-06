@@ -213,6 +213,7 @@ catalog:
   "@protobuf-ts/runtime-rpc": *protobuf-ts
   "@aws-sdk/client-s3": &aws-sdk-version 3.859.0
   "@aws-sdk/lib-storage": *aws-sdk-version
+  "@aws-sdk/client-ecr-public": *aws-sdk-version
 
   # Util & other libs
 
