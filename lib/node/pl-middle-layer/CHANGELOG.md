@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.65.3
+
+### Patch Changes
+
+- d1c4453: Only admins should be able to share projects to everyone
+
 ## 1.65.2
 
 ### Patch Changes
