@@ -1,6 +1,6 @@
 export const channels = ["dev", "release"] as const;
 export const variants = ["docker", "binary", "all", "none"] as const;
-export const locations = ["local", "remote", "ssh"] as const;
+export const locations = ["local", "remote"] as const;
 
 export type Channel = (typeof channels)[number];
 export type Variant = (typeof variants)[number];
@@ -34,10 +34,6 @@ export function parseScenario(knobs: Knobs): Scenario {
       );
     }
     return { kind: "use-published" };
-  }
-
-  if (knobs.location === "ssh") {
-    throw new Error("location 'ssh' is not implemented yet");
   }
 
   // Placeholder descriptors only, nothing built or pushed; location is ignored.
