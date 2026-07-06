@@ -3304,9 +3304,6 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
-      '@platforma-sdk/package-builder':
-        specifier: workspace:*
-        version: link:../../../tools/package-builder
 
   lib/ptexter:
     devDependencies:
@@ -3316,9 +3313,6 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
-      '@platforma-sdk/package-builder':
-        specifier: 'workspace:'
-        version: link:../../tools/package-builder
 
   lib/strings: {}
 

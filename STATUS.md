@@ -132,12 +132,23 @@ Deferred / non-blocking:
       settles validator behaviour. [A-0046] [A-0047]
 - [x] Retarget monorepo software: `pl-pkg build` → `block-tools software build`. [A-0033]
       `etc/blocks/*` carry no software (model/workflow/UI only), so the structurer `--software-build`
-      flag has nothing to enroll there. The actual monorepo `pl-pkg build` software leaves are
-      `lib/ptabler/software` and `lib/ptexter`; swapped their `build`/`do-pack` scripts directly
-      (no-knob `software build` = pl-pkg parity). Verified: both build, emitting descriptors
-      byte-identical to `pl-pkg build` (release `platforma-open`, version-derived, no dev hash).
-      `prepublishOnly` stays on `pl-pkg prepublish` (no `software` equivalent; pl-pkg coexists).
-      Test fixtures (`tests/package-builder/*`, `tests/tengo-builder/2-artifacts`) stay on pl-pkg.
+      flag has nothing to enroll there. The actual monorepo software leaves are `lib/ptabler/software`
+      and `lib/ptexter` — now **fully pl-pkg-free**: `build`/`do-pack` → `block-tools software build`,
+      `prepublishOnly` dropped, `@platforma-sdk/package-builder` dep removed. Release upload moves to
+      the CI build step (`ci:build:release` = `build:release`, i.e. channel=release/location=remote)
+      so `pnpm publish` just packs — Option B. Test fixtures (`tests/package-builder/*`,
+      `tests/tengo-builder/2-artifacts`) stay on pl-pkg (they test it).
+- [x] Monorepo root script set + dev/test flow off `PL_PKG_DEV`. Root exposes the full spec
+      `build:dev-local|dev-remote|dev-no-software|dev-binary-existing` + `build:release`; `test:local`
+      / `do-pack:local` / `ci:build:local` migrated to `PL_BUILD_*` (legacy `build:local` deleted).
+      `PL_PKG_DEV` dropped from monorepo scripts + root/ptabler/ptexter turbo `env` (kept in the
+      structurer template — pl-pkg blocks still use it). Software-build cache vars scoped to the two
+      software packages' `build`+`do-pack` env (strict env mode; root would fragment the shared cache).
+- [x] Built-in `midev` binary upload default (`DEV_BINARY_UPLOAD_TARGET`,
+      `s3://milab-midev-registry?region=eu-central-1`) — zero-config dev binary push, binary twin of
+      the `ecr://` docker default. **Verified live**: all 4 runnable scenarios build to spec, and a
+      real `build:dev-remote` of ptabler round-trips — docker anon-pullable from the dev ECR, binary
+      uploaded to midev and downloadable via `bin-dev.pl-open.science` (HTTP 200). midev infra is live.
 - [ ] Retire `pl-pkg` build surface ~1–2 wks after confirmation (do last). [A-0033]
 
 ## blocks (`blocks/*`)

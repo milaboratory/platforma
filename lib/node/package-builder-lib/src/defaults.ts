@@ -12,6 +12,10 @@ export const BIN_REGISTRY_DOWNLOAD_URL = "https://bin.pl-open.science/";
 export const DEV_BIN_REGISTRY_NAME = "midev";
 export const DEV_BIN_REGISTRY_NAME_OVERRIDDEN = "dev";
 
+// Built-in midev dev binary upload endpoint (zero-config dev push), the binary counterpart of
+// DEV_DOCKER_PUSH_TARGET. Override with PL_DEV_BINARY_UPLOAD_URL.
+export const DEV_BINARY_UPLOAD_TARGET = "s3://milab-midev-registry?region=eu-central-1";
+
 // Python
 export const PYTHON_TOOLSET = "pip";
 export const PYTHON_REQUIREMENTS_FILE = "requirements.txt";

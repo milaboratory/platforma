@@ -2,6 +2,7 @@ import { PackageInfo } from "./package-info";
 import * as testArtifacts from "./schemas/test-artifacts";
 import { createLogger, isDevMode, producesRegistryDescriptor } from "./util";
 import * as envs from "./envs";
+import * as defaults from "../defaults";
 import { test, expect, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
@@ -159,9 +160,11 @@ test("dev channel flips the embedded binary registry name to midev/dev", () => {
   const releaseName = i.artifactRegistrySettings(binary).name;
   expect(releaseName).toEqual("platforma-open");
 
-  // Dev, built-in default: name flips to midev, no upload URL forced.
+  // Dev, built-in default: name is midev, upload routes to the built-in midev endpoint.
   i.buildMode = "dev-remote";
-  expect(i.artifactRegistrySettings(binary).name).toEqual("midev");
+  const devDefault = i.artifactRegistrySettings(binary);
+  expect(devDefault.name).toEqual("midev");
+  expect(devDefault.storageURL).toEqual(defaults.DEV_BINARY_UPLOAD_TARGET);
 
   // Dev with an explicit endpoint: name flips to dev and the upload URL routes there.
   process.env[devUploadEnv] = "s3://my-bucket/dev?region=eu-central-1";
