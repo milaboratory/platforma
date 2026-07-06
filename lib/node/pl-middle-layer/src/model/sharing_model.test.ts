@@ -16,7 +16,7 @@ test("canImpersonate: admin and controller only", () => {
   expect(canImpersonate(null)).toBe(false);
 });
 
-test("canGrantToEveryone includes USER but canImpersonate does not", () => {
-  expect(canGrantToEveryone(Role.USER)).toBe(true);
+test("canGrantToEveryone and canImpersonate does not include USER", () => {
+  expect(canGrantToEveryone(Role.USER)).toBe(false);
   expect(canImpersonate(Role.USER)).toBe(false);
 });

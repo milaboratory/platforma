@@ -51,7 +51,7 @@ export type ProjectFieldUuid = Branded<string, "ProjectFieldUuid">;
 
 /**
  * Whether a role may make a resource public (grant to everyone): true for controller,
- * admin, and user; false for workflow and unspecified. The middle layer carries no policy
+ * admin; false for workflow and unspecified. The middle layer carries no policy
  * of its own here — a crafted call still hits the backend's role + permission-ceiling gate.
  * `null` (no-auth mode) returns false.
  */
@@ -59,7 +59,6 @@ export function canGrantToEveryone(role: Role | null): boolean {
   switch (role) {
     case RoleEnum.CONTROLLER:
     case RoleEnum.ADMIN:
-    case RoleEnum.USER:
       return true;
     default:
       return false;
