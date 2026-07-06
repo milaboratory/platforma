@@ -39,6 +39,12 @@ export const NO_SOFTWARE_PLACEHOLDER = "no-software-placeholder";
 // Override per-run with --docker-registry / PL_DOCKER_REGISTRY.
 export const DEV_DOCKER_REGISTRY = "public.ecr.aws/u5p1x5q2/pl-containers";
 
+// ecr:// scheme requests automatic docker login; the pull address stays the bare registry.
+export const DEV_DOCKER_PUSH_TARGET = `ecr://${DEV_DOCKER_REGISTRY}`;
+
+// Fallback AWS SSO profile for dev push; override with PL_AWS_PROFILE or AWS_PROFILE.
+export const AWS_DEV_PROFILE = "research-poweruser";
+
 // All docker images are built for and pushed as linux/amd64, regardless of host arch.
 // Platforma's K8s nodes are linux/amd64; building for any other platform produces
 // a non-runnable artifact. On non-x64 hosts the build cross-compiles via the

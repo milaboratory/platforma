@@ -135,20 +135,25 @@ export function softwareBuildCommand(): Command {
       core.allPlatforms = Boolean(o.allPlatforms);
       core.fullDirHash = Boolean(o.fullDirHash);
 
-      await runBuild(core, scenario, {
-        ids: o.packageId,
-        force: o.force,
-        contentRoot: o.contentRoot,
-        storageUrl: o.storageUrl,
-        dockerRegistry: o.dockerRegistry,
-        dockerPushTo: o.dockerPushTo,
-        dockerBuild: o.dockerBuild,
-        dockerNoBuild: o.dockerNoBuild,
-        dockerAutopush: o.dockerAutopush,
-        dockerNoAutopush: o.dockerNoAutopush,
-        condaBuild: o.condaBuild,
-        condaNoBuild: o.condaNoBuild,
-      });
+      await runBuild(
+        core,
+        scenario,
+        {
+          ids: o.packageId,
+          force: o.force,
+          contentRoot: o.contentRoot,
+          storageUrl: o.storageUrl,
+          dockerRegistry: o.dockerRegistry,
+          dockerPushTo: o.dockerPushTo,
+          dockerBuild: o.dockerBuild,
+          dockerNoBuild: o.dockerNoBuild,
+          dockerAutopush: o.dockerAutopush,
+          dockerNoAutopush: o.dockerNoAutopush,
+          condaBuild: o.condaBuild,
+          condaNoBuild: o.condaNoBuild,
+        },
+        logger,
+      );
     } catch (e) {
       logger.debug(e);
       if (e instanceof Error) logger.debug(e.stack);
