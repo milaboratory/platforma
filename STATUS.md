@@ -130,8 +130,14 @@ Deferred / non-blocking:
       entrypoint (`SwJsonRenderer.renderPlaceholderEntrypoints`), nothing built or pushed, driven
       by `build:dev-no-software`. Ships the `binary` placeholder (safe superset) until Q-0021
       settles validator behaviour. [A-0046] [A-0047]
-- [ ] Retarget monorepo blocks `etc/blocks/*`: `pl-pkg build` → `block-tools software build`,
-      flag-gated (mechanism ready — enroll per block). [A-0033]
+- [x] Retarget monorepo software: `pl-pkg build` → `block-tools software build`. [A-0033]
+      `etc/blocks/*` carry no software (model/workflow/UI only), so the structurer `--software-build`
+      flag has nothing to enroll there. The actual monorepo `pl-pkg build` software leaves are
+      `lib/ptabler/software` and `lib/ptexter`; swapped their `build`/`do-pack` scripts directly
+      (no-knob `software build` = pl-pkg parity). Verified: both build, emitting descriptors
+      byte-identical to `pl-pkg build` (release `platforma-open`, version-derived, no dev hash).
+      `prepublishOnly` stays on `pl-pkg prepublish` (no `software` equivalent; pl-pkg coexists).
+      Test fixtures (`tests/package-builder/*`, `tests/tengo-builder/2-artifacts`) stay on pl-pkg.
 - [ ] Retire `pl-pkg` build surface ~1–2 wks after confirmation (do last). [A-0033]
 
 ## blocks (`blocks/*`)

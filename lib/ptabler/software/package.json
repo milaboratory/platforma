@@ -6,16 +6,17 @@
     "init-python:pip-install": ".venv/bin/pip install --quiet --disable-pip-version-check",
     "init-python": "pnpm run init-python:create-venv && pnpm run init-python:pip-install -r src/requirements.dev.txt -r src/requirements.txt",
     "lint": "[ ! -d .venv ] || .venv/bin/ruff check",
-    "build": "rm -rf ./dist && pl-pkg build",
+    "build": "rm -rf ./dist && block-tools software build",
     "prepublishOnly": "pl-pkg prepublish",
     "test": "[ ! -d .venv ] || (.venv/bin/coverage run -m unittest discover --verbose -s src -p '*.py' && .venv/bin/coverage report -m)",
-    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open-milaboratories.software-ptabler-*.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-ptabler-*.tgz package.tgz"
   },
   "files": [
     "./dist/**/*"
   ],
   "dependencies": {},
   "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*",
     "@platforma-sdk/package-builder": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:"
   },

@@ -3301,6 +3301,9 @@ importers:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
         version: 1.10.6
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../tools/block-tools
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
@@ -3310,6 +3313,9 @@ importers:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
         version: 1.10.6
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../tools/block-tools
       '@platforma-sdk/package-builder':
         specifier: 'workspace:'
         version: link:../../tools/package-builder
