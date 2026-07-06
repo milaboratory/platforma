@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-common
 
+## 1.46.4
+
+### Patch Changes
+
+- Updated dependencies [c07d2bb]
+  - @milaboratories/helpers@1.14.3
+
 ## 1.46.3
 
 ### Patch Changes

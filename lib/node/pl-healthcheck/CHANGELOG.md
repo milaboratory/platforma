@@ -1,5 +1,11 @@
 # @milaboratories/pl-healthcheck
 
+## 1.0.2
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.4
+
 ## 1.0.1
 
 ### Patch Changes
