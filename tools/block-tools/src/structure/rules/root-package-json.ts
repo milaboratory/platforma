@@ -31,8 +31,7 @@ function devBuildScripts(softwareBuild: boolean): Record<string, string> {
       "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run build",
     "build:dev-remote":
       "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
-    "build:dev-no-software":
-      "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none PL_BUILD_LOCATION=local turbo run build",
+    "build:dev-no-software": "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none turbo run build",
     "build:dev-binary-existing":
       "env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
     "build:release":

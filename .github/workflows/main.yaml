@@ -98,7 +98,8 @@ jobs:
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ci:build
+          PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL: ${{ secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL }}
+        run: pnpm run ci:build:release
 
       - name: Security scan
         uses: milaboratory/github-ci/actions/docker/scan-pnpm-repo@v4

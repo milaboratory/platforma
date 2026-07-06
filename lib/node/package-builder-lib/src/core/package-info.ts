@@ -627,17 +627,14 @@ export class PackageInfo {
       result.downloadURL = downloadFrom;
     }
 
-    // Dev channel: the embedded binary registry is the built-in `midev`, flipping to `dev` and
-    // uploading to `PL_DEV_BINARY_UPLOAD_URL` when that is set. Release may override its upload
-    // endpoint without renaming. (A referenced runenv keeps its own registry — resolved elsewhere.)
+    // Dev channel: the embedded binary registry is the built-in `midev` uploading to its built-in
+    // endpoint, flipping to `dev` and `PL_DEV_BINARY_UPLOAD_URL` when that is set.
     if (util.isDevMode(this.buildMode)) {
       const devUpload = process.env[envs.PL_DEV_BINARY_UPLOAD_URL];
       result.name = devUpload
         ? defaults.DEV_BIN_REGISTRY_NAME_OVERRIDDEN
         : defaults.DEV_BIN_REGISTRY_NAME;
-      if (devUpload) {
-        result.storageURL = devUpload;
-      }
+      result.storageURL = devUpload ?? defaults.DEV_BINARY_UPLOAD_TARGET;
     } else {
       const releaseUpload = process.env[envs.PL_RELEASE_BINARY_UPLOAD_URL];
       if (releaseUpload) {
