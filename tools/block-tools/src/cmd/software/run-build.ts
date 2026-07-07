@@ -41,7 +41,7 @@ export async function runBuild(
       ids,
       forceBuild: Boolean(opts.force),
       contentRoot: opts.contentRoot,
-      skipIfEmpty: ids ? false : true,
+      skipIfEmpty: Boolean(ids),
       condaBuild: util.shouldDoAction(true, opts.condaBuild, opts.condaNoBuild),
     });
 

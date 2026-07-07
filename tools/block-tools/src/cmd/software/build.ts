@@ -9,10 +9,6 @@ import {
   PL_BUILD_USE_PUBLISHED,
 } from "./env";
 
-function collect(value: string, previous?: string[]): string[] {
-  return previous ? [...previous, value] : [value];
-}
-
 // Build a software module in one pass — build, push when remote, then write the descriptor
 // last. With no knobs it reproduces `pl-pkg build`.
 export function softwareBuildCommand(): Command {
@@ -65,9 +61,7 @@ export function softwareBuildCommand(): Command {
       .env(envs.PL_PKG_FULL_HASH)
       .default(false),
   );
-  cmd.addOption(
-    new Option("--package-id <id>", "act only on selected packages").argParser(collect),
-  );
+  cmd.addOption(new Option("--package-id <id...>", "act only on selected packages"));
   cmd.addOption(
     new Option("--content-root <path>", "override software content root").env(
       envs.PL_PKG_CONTENT_ROOT,
