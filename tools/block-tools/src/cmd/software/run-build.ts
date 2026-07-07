@@ -41,7 +41,9 @@ export async function runBuild(
       ids,
       forceBuild: Boolean(opts.force),
       contentRoot: opts.contentRoot,
-      skipIfEmpty: Boolean(ids),
+      // Tolerate a package with no archives only on a build-all run; when specific ids are
+      // requested, an empty build is a real error the caller wants to hear about.
+      skipIfEmpty: !ids,
       condaBuild: util.shouldDoAction(true, opts.condaBuild, opts.condaNoBuild),
     });
 
@@ -85,7 +87,10 @@ export async function runBuild(
     }
 
     case "target": {
-      const { channel, docker, binary, remote } = scenario;
+      const { channel, variant, location } = scenario;
+      const docker = variant !== "binary";
+      const binary = variant !== "docker";
+      const remote = location === "remote";
       const addr = resolveDockerAddresses(channel, opts);
 
       // BUILD (descriptor not written yet).
@@ -118,7 +123,10 @@ export async function runBuild(
 function buildModeFor(scenario: Scenario): util.BuildMode {
   if (scenario.kind !== "target") return "release";
   if (scenario.channel === "release") return "release";
-  return scenario.binary && scenario.remote ? "dev-remote" : "dev-local";
+  // Only a remote binary build needs dev-remote (it uploads an archive). Docker-only, or any
+  // local build, uses dev-local — docker naming is content-addressed by image ID regardless.
+  const binaryRemote = scenario.variant !== "docker" && scenario.location === "remote";
+  return binaryRemote ? "dev-remote" : "dev-local";
 }
 
 // Bare registry ref (host[:port]/path) with any URL scheme removed.

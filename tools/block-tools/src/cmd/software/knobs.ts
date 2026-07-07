@@ -16,21 +16,28 @@ export interface Knobs {
   usePublished?: boolean;
 }
 
+// The variant a resolved target actually builds — "none" is its own scenario, never a target.
+export type TargetVariant = Exclude<Variant, "none">;
+
 // The closed set of supported scenarios — the single resolved representation runBuild executes.
-// Anything outside it is rejected by parseScenario.
+// Anything outside it is rejected by parseScenario. The `target` cell keeps the knobs as enums
+// (like `channel`), rather than pre-derived booleans, so all three axes read consistently;
+// runBuild derives the docker/binary/remote flags it needs.
 export type Scenario =
   | { kind: "use-published" } // build-against-existing: descriptor only, no build/push
   | { kind: "no-software" } // placeholder descriptors, nothing built or pushed
   | { kind: "legacy" } // no location knob: bare `pl-pkg build` behaviour (docker push gated by CI)
-  | { kind: "target"; channel: Channel; docker: boolean; binary: boolean; remote: boolean };
+  | { kind: "target"; channel: Channel; variant: TargetVariant; location: Location };
 
 // Validate the raw knobs and collapse them to a supported scenario. The one place unsupported
 // combinations are rejected.
 export function parseScenario(knobs: Knobs): Scenario {
   if (knobs.usePublished) {
-    if (knobs.variant === "docker") {
+    // Build-against-existing references an already-published *binary* artifact; docker (and `all`,
+    // which includes docker) has no published-reference path.
+    if (knobs.variant === "docker" || knobs.variant === "all") {
       throw new Error(
-        "--use-published is binary-only and cannot be combined with --variant docker",
+        `--use-published is binary-only and cannot be combined with --variant ${knobs.variant}`,
       );
     }
     return { kind: "use-published" };
@@ -46,12 +53,12 @@ export function parseScenario(knobs: Knobs): Scenario {
     return { kind: "legacy" };
   }
 
-  // `all` (and unset) builds every declared variant; the engine skips the kinds the software omits.
+  // `all` (the default when unset) builds every declared variant; the engine skips the kinds the
+  // software omits.
   return {
     kind: "target",
     channel: knobs.channel ?? "release",
-    docker: knobs.variant !== "binary",
-    binary: knobs.variant !== "docker",
-    remote: knobs.location === "remote",
+    variant: knobs.variant ?? "all",
+    location: knobs.location,
   };
 }
