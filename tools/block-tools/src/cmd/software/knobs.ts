@@ -1,3 +1,5 @@
+import { util } from "@platforma-sdk/package-builder-lib";
+
 export const channels = ["dev", "release"] as const;
 export const variants = ["docker", "binary", "all", "none"] as const;
 export const locations = ["local", "remote"] as const;
@@ -6,9 +8,7 @@ export type Channel = (typeof channels)[number];
 export type Variant = (typeof variants)[number];
 export type Location = (typeof locations)[number];
 
-// Raw CLI surface: three orthogonal flags + a mode switch, each independently optional
-// (commander hands them over one by one, env-backed). parseScenario narrows this open
-// space to the closed set of scenarios the tool actually supports.
+// Raw CLI flags, each independently optional; parseScenario narrows them to a supported Scenario.
 export interface Knobs {
   channel?: Channel;
   variant?: Variant;
@@ -19,42 +19,39 @@ export interface Knobs {
 // The variant a resolved target actually builds — "none" is its own scenario, never a target.
 export type TargetVariant = Exclude<Variant, "none">;
 
-// The closed set of supported scenarios — the single resolved representation runBuild executes.
-// Anything outside it is rejected by parseScenario. The `target` cell keeps the knobs as enums
-// (like `channel`), rather than pre-derived booleans, so all three axes read consistently;
-// runBuild derives the docker/binary/remote flags it needs.
+// The closed set of scenarios runBuild executes; parseScenario rejects anything else. `target`
+// carries the resolved knobs as enums (not pre-derived booleans) — runBuild derives the flags.
 export type Scenario =
-  | { kind: "use-published" } // build-against-existing: descriptor only, no build/push
-  | { kind: "no-software" } // placeholder descriptors, nothing built or pushed
-  | { kind: "legacy" } // no location knob: bare `pl-pkg build` behaviour (docker push gated by CI)
+  // `build:dev-binary-existing` (PL_BUILD_USE_PUBLISHED): reference the published binary; no build/push.
+  | { kind: "binary-existing" }
+  // `build:dev-no-software` (PL_BUILD_VARIANT=none): placeholder descriptors; nothing built or pushed.
+  | { kind: "no-software" }
+  // no build:* script — the scriptless default (direct call / `do-pack`); drop-in `pl-pkg build`.
+  | { kind: "bare" }
+  // `build:dev-local` / `build:dev-remote` / `build:release` / `test`: build for a target.
   | { kind: "target"; channel: Channel; variant: TargetVariant; location: Location };
 
-// Validate the raw knobs and collapse them to a supported scenario. The one place unsupported
-// combinations are rejected.
+// Collapse the raw knobs to a supported Scenario; the one place bad combinations are rejected.
 export function parseScenario(knobs: Knobs): Scenario {
   if (knobs.usePublished) {
-    // Build-against-existing references an already-published *binary* artifact; docker (and `all`,
-    // which includes docker) has no published-reference path.
+    // A published binary can be referenced; docker (and `all`, which includes it) cannot.
     if (knobs.variant === "docker" || knobs.variant === "all") {
-      throw new Error(
+      throw util.CLIError(
         `--use-published is binary-only and cannot be combined with --variant ${knobs.variant}`,
       );
     }
-    return { kind: "use-published" };
+    return { kind: "binary-existing" };
   }
 
-  // Placeholder descriptors only, nothing built or pushed; location is ignored.
   if (knobs.variant === "none") {
     return { kind: "no-software" };
   }
 
-  // No location: the bare invocation, a drop-in for `pl-pkg build`.
   if (knobs.location === undefined) {
-    return { kind: "legacy" };
+    return { kind: "bare" };
   }
 
-  // `all` (the default when unset) builds every declared variant; the engine skips the kinds the
-  // software omits.
+  // `all` (the default) builds every declared variant; the engine skips the kinds the software omits.
   return {
     kind: "target",
     channel: knobs.channel ?? "release",

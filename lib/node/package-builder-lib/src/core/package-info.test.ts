@@ -133,6 +133,58 @@ test("content-addressable dev naming appends a content hash", () => {
   }
 });
 
+test("dev content hash: absent root yields no suffix; a pinned version still gets one", () => {
+  const l = createLogger("error");
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-info-noroot-"));
+  const withSrc = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-info-src-"));
+  try {
+    // No ./src on disk → the asset's content root is absent → no hash suffix, even in dev.
+    const noRoot = new PackageInfo(l, {
+      packageRoot: empty,
+      pkgJsonData: testArtifacts.PackageJson,
+    });
+    noRoot.buildMode = "dev-local";
+    expect(noRoot.artifactVersion(noRoot.getArtifact(testArtifacts.EPNameAsset, "asset"))).toEqual(
+      testArtifacts.PackageVersion,
+    );
+
+    // Present root + explicit --version override: dev naming stays content-addressable, so the
+    // pinned version still gets the -<hash> suffix (a same-name re-push would be silently stale).
+    fs.mkdirSync(path.join(withSrc, "src"));
+    fs.writeFileSync(path.join(withSrc, "src", "a.txt"), "hello");
+    const pinned = new PackageInfo(l, {
+      packageRoot: withSrc,
+      pkgJsonData: testArtifacts.PackageJson,
+    });
+    pinned.buildMode = "dev-local";
+    pinned.version = "9.9.9";
+    expect(pinned.artifactVersion(pinned.getArtifact(testArtifacts.EPNameAsset, "asset"))).toMatch(
+      /^9\.9\.9-[0-9a-f]{12}$/,
+    );
+  } finally {
+    fs.rmSync(empty, { recursive: true, force: true });
+    fs.rmSync(withSrc, { recursive: true, force: true });
+  }
+});
+
+test("dev content hash is memoized for the builder's lifetime", () => {
+  const l = createLogger("error");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "pkg-info-memo-"));
+  try {
+    fs.mkdirSync(path.join(root, "src"));
+    fs.writeFileSync(path.join(root, "src", "a.txt"), "hello");
+    const i = new PackageInfo(l, { packageRoot: root, pkgJsonData: testArtifacts.PackageJson });
+    i.buildMode = "dev-local";
+    const asset = i.getArtifact(testArtifacts.EPNameAsset, "asset");
+    const first = i.artifactVersion(asset);
+    // Mutate the tree; content roots are read once per builder, so the cached hash must not change.
+    fs.writeFileSync(path.join(root, "src", "b.txt"), "world");
+    expect(i.artifactVersion(asset)).toEqual(first);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("build-mode predicates split channel from descriptor shape", () => {
   expect(isDevMode("dev-local")).toBe(true);
   expect(isDevMode("dev-remote")).toBe(true);

@@ -41,7 +41,7 @@ export const NO_SOFTWARE_PLACEHOLDER = "no-software-placeholder";
 
 // Block-software dev pushes (pl-pkg build --dev=local) target this ECR by default.
 // Override per-run with --docker-registry / PL_DOCKER_REGISTRY.
-export const DEV_DOCKER_REGISTRY = "public.ecr.aws/u5p1x5q2/pl-containers";
+export const DEV_DOCKER_REGISTRY = "public.ecr.aws/miresearch/pl-containers";
 
 // ecr:// scheme requests automatic docker login; the pull address stays the bare registry.
 export const DEV_DOCKER_PUSH_TARGET = `ecr://${DEV_DOCKER_REGISTRY}`;
