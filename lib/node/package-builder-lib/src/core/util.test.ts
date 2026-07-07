@@ -1,4 +1,4 @@
-import { hashDirSync } from "./util";
+import { hashDirSync, shouldDoAction } from "./util";
 import { test, expect } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
@@ -41,4 +41,12 @@ test("hashDirSync is identical for identical trees at different locations", () =
     fs.rmSync(a, { recursive: true, force: true });
     fs.rmSync(b, { recursive: true, force: true });
   }
+});
+
+test("shouldDoAction: disable wins over enable wins over the default", () => {
+  expect(shouldDoAction({ default: true })).toBe(true);
+  expect(shouldDoAction({ default: false })).toBe(false);
+  expect(shouldDoAction({ default: false, enable: true })).toBe(true);
+  expect(shouldDoAction({ default: true, disable: true })).toBe(false);
+  expect(shouldDoAction({ default: false, enable: true, disable: true })).toBe(false);
 });

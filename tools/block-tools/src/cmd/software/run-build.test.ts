@@ -27,7 +27,7 @@ function fakeBuilder() {
 }
 
 const run = (knobs: Knobs, b = fakeBuilder()) =>
-  runBuild(b.core, parseScenario(knobs), {}).then(() => b);
+  runBuild({ core: b.core, scenario: parseScenario(knobs) }).then(() => b);
 
 afterEach(() => {
   for (const k of [
@@ -202,23 +202,35 @@ describe("runBuild orchestration", () => {
     it("explicit --docker-push-to wins over the channel override", async () => {
       process.env.PL_DEV_DOCKER_PUSH_URL = "ecr.example/dev";
       const b = await run(devRemote);
-      await runBuild(b.core, parseScenario(devRemote), { dockerPushTo: "flag.example/repo" });
+      await runBuild({
+        core: b.core,
+        scenario: parseScenario(devRemote),
+        options: { dockerPushTo: "flag.example/repo" },
+      });
       const lastPush = b.spies.publishDockerImages.mock.calls.at(-1)?.[0] as { pushTo?: string };
       expect(lastPush.pushTo).toBe("flag.example/repo");
     });
   });
 
-  describe("bare (no knobs) defers docker to the CI default", () => {
-    it("outside CI: build binary only, no docker, no push", async () => {
-      delete process.env.CI;
-      const { calls } = await run({});
-      expect(calls).toEqual(["buildSoftwareArchives", "buildSwJsonFiles"]);
+  describe("bare honors the resolved docker decisions (resolution lives in build.ts)", () => {
+    it("buildDocker=false: binary only, no docker", async () => {
+      const b = fakeBuilder();
+      await runBuild({
+        core: b.core,
+        scenario: parseScenario({}),
+        options: { buildDocker: false },
+      });
+      expect(b.calls).toEqual(["buildSoftwareArchives", "buildSwJsonFiles"]);
     });
 
-    it("in CI: builds and pushes docker too", async () => {
-      process.env.CI = "true";
-      const { calls } = await run({});
-      expect(calls).toEqual([
+    it("buildDocker + pushDocker: build then push docker around the binary", async () => {
+      const b = fakeBuilder();
+      await runBuild({
+        core: b.core,
+        scenario: parseScenario({}),
+        options: { buildDocker: true, pushDocker: true },
+      });
+      expect(b.calls).toEqual([
         "buildDockerImages",
         "buildSoftwareArchives",
         "publishDockerImages",
@@ -233,14 +245,11 @@ describe("runBuild option pass-through", () => {
   beforeEach(() => (b = fakeBuilder()));
 
   it("forwards package ids and storage URL to the engine", async () => {
-    await runBuild(
-      b.core,
-      parseScenario({ channel: "dev", variant: "binary", location: "remote" }),
-      {
-        ids: ["pkg-a"],
-        storageUrl: "s3://bucket/dev",
-      },
-    );
+    await runBuild({
+      core: b.core,
+      scenario: parseScenario({ channel: "dev", variant: "binary", location: "remote" }),
+      options: { ids: ["pkg-a"], storageUrl: "s3://bucket/dev" },
+    });
     expect(b.spies.buildSoftwareArchives).toHaveBeenCalledWith(
       expect.objectContaining({ ids: ["pkg-a"], skipIfEmpty: false }),
     );
@@ -248,13 +257,6 @@ describe("runBuild option pass-through", () => {
       ids: ["pkg-a"],
       storageURL: "s3://bucket/dev",
     });
-  });
-
-  it("--docker-no-build wins over the CI default in bare mode", async () => {
-    process.env.CI = "true";
-    await runBuild(b.core, parseScenario({}), { dockerNoBuild: true });
-    expect(b.spies.buildDockerImages).not.toHaveBeenCalled();
-    expect(b.calls).toEqual(["buildSoftwareArchives", "buildSwJsonFiles"]);
   });
 });
 
@@ -265,11 +267,10 @@ describe("descriptor-last: not written when a step fails", () => {
     const b = fakeBuilder();
     b.spies.buildSoftwareArchives.mockRejectedValueOnce(new Error("build boom"));
     await expect(
-      runBuild(
-        b.core,
-        parseScenario({ channel: "dev", variant: "binary", location: "remote" }),
-        {},
-      ),
+      runBuild({
+        core: b.core,
+        scenario: parseScenario({ channel: "dev", variant: "binary", location: "remote" }),
+      }),
     ).rejects.toThrow("build boom");
     expect(b.spies.buildSwJsonFiles).not.toHaveBeenCalled();
   });
@@ -280,11 +281,10 @@ describe("descriptor-last: not written when a step fails", () => {
       throw new Error("push boom");
     });
     await expect(
-      runBuild(
-        b.core,
-        parseScenario({ channel: "dev", variant: "docker", location: "remote" }),
-        {},
-      ),
+      runBuild({
+        core: b.core,
+        scenario: parseScenario({ channel: "dev", variant: "docker", location: "remote" }),
+      }),
     ).rejects.toThrow("push boom");
     expect(b.spies.buildSwJsonFiles).not.toHaveBeenCalled();
   });

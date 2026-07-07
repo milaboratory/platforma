@@ -8,31 +8,31 @@ import {
 import type { Channel, Scenario } from "./knobs";
 import { ensureAwsProfile, ensureEcrLogin } from "./ecr-login";
 
-// Pass-through controls mirroring `pl-pkg build`. Empty means "engine default".
-export interface BuildOptions {
+// Pass-through controls mirroring `pl-pkg build`. Empty means "engine default". The --docker-/
+// --conda- flag pairs are already collapsed to decisions at the CLI boundary (build.ts): only the
+// `bare` scenario reads buildDocker/pushDocker; condaBuild applies to every binary build.
+export type BuildOptions = {
   ids?: string[];
   force?: boolean;
   contentRoot?: string;
   storageUrl?: string;
   dockerRegistry?: string;
   dockerPushTo?: string;
-  dockerBuild?: boolean;
-  dockerNoBuild?: boolean;
-  dockerAutopush?: boolean;
-  dockerNoAutopush?: boolean;
+  buildDocker?: boolean;
+  pushDocker?: boolean;
   condaBuild?: boolean;
-  condaNoBuild?: boolean;
-}
+};
 
 // Build a scenario in one pass: build, push when remote, then write the descriptor last —
 // "ready ⟺ the descriptor exists". The pre-configured builder is injected; runBuild sets the
 // scenario's build mode and drives it.
-export async function runBuild(
-  core: Builder,
-  scenario: Scenario,
-  opts: BuildOptions,
-  logger?: Logger,
-): Promise<void> {
+export async function runBuild(params: {
+  core: Builder;
+  scenario: Scenario;
+  options?: BuildOptions;
+  logger?: Logger;
+}): Promise<void> {
+  const { core, scenario, options: opts = {}, logger } = params;
   const ids = opts.ids;
   core.buildMode = buildModeForScenario(scenario);
 
@@ -44,7 +44,7 @@ export async function runBuild(
       // Tolerate a package with no archives only on a build-all run; when specific ids are
       // requested, an empty build is a real error the caller wants to hear about.
       skipIfEmpty: !ids,
-      condaBuild: util.shouldDoAction(true, opts.condaBuild, opts.condaNoBuild),
+      condaBuild: opts.condaBuild,
     });
 
   switch (scenario.kind) {
@@ -58,17 +58,8 @@ export async function runBuild(
       break;
 
     case "bare": {
-      // Bare pl-pkg-parity invocation: docker build/push follow the CI default + flags.
-      const buildDocker = util.shouldDoAction(envs.isCI(), opts.dockerBuild, opts.dockerNoBuild);
-      const pushDocker =
-        buildDocker &&
-        util.shouldDoAction(
-          envs.isCI() && !core.isPrivate,
-          opts.dockerAutopush,
-          opts.dockerNoAutopush,
-        );
-
-      if (buildDocker) {
+      // Bare pl-pkg-parity invocation; buildDocker/pushDocker were resolved at the CLI boundary.
+      if (opts.buildDocker) {
         core.buildDockerImages({
           ids,
           registry: opts.dockerRegistry,
@@ -76,7 +67,7 @@ export async function runBuild(
         });
       }
       await buildBinary();
-      if (pushDocker) {
+      if (opts.pushDocker) {
         core.publishDockerImages({
           ids,
           pushTo: opts.dockerPushTo,
