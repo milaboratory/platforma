@@ -340,7 +340,7 @@ _node = func(ast, fallback) {
 	self.minus   = func(x) { return _node(_bin("sub", ast, x), fallback) }
 	self.atLeast = func(x) { return _node(_bin("max", ast, x), fallback) }
 	self.atMost  = func(x) { return _node(_bin("min", ast, x), fallback) }
-	self.between = func(lo, hi) { return _node({ op: "clamp", value: ast, lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
+	self.between = func(lo, hi) { return _node({ op: "clamp", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
 	self.staticFallback = func(v) { return _node(ast, _staticValue(v)) }
 	return self
 }
