@@ -40,7 +40,8 @@ self.body(func(inputs) {
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu},cidmetric-" + mode).
 		addFile("input.txt", inputFile, { tag: "reads" }).
-		resources({ onCPU: { ram: memAst, cpu: f.add(2, 1) } }).
+		memFormula(memAst).
+		cpuFormula(f.add(2, 1)).
 		saveStdoutContent().
 		run()
 

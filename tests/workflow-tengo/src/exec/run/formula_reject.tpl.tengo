@@ -1,21 +1,17 @@
 /**
  * Negative-path resource-formula templates: each `mode` builds a formula that
- * MUST be rejected, proving the guards actually fire end-to-end.
+ * MUST be rejected, proving the run-time guards actually fire end-to-end.
  *
- *   negative     — memFormula underflows (f.sub) to a negative byte count -> rejected (ram), at run time
- *   zero         — memFormula evaluates to exactly 0                       -> rejected (ram), at run time
- *   boolCpu      — cpuFormula is a top-level comparison (a bool)           -> rejected (cpu), at run time
- *   bam          — f.lineCount() on a .bam file (unsupported format)       -> rejected at workflow render time
- *   gpuRequired  — resources({ onGPU }) with NO onCPU on a GPU-less backend -> rejected at workflow render time (fail fast)
+ *   negative — memFormula underflows (f.sub) to a negative byte count -> rejected (ram)
+ *   zero     — memFormula evaluates to exactly 0                       -> rejected (ram)
+ *   boolCpu  — cpuFormula is a top-level comparison (a bool)           -> rejected (cpu)
+ *   bam      — f.lineCount() on a .bam file (unsupported format)       -> rejected at builder time
  *
  * The positive-integer result guard lives in the ephemeral impl
- * (exec.formula.evaluateResource); the format-compatibility guard and the
- * GPU-required guard live in the builder (resolveAst -> _assertMetricCompatible;
- * resources() -> feats.hasGpu). Both surface to the test as a render failure (the
- * impl panic propagates to the awaited output; the workflow-render-time panic
- * fails the render directly). NOTE: gpuRequired only fails as intended on a
- * backend WITHOUT GPU support (exec.hasGpu is false) — the case the test suite
- * runs against.
+ * (exec.formula.evaluateResource); the format-compatibility guard lives
+ * in the builder (resolveAst -> _assertMetricCompatible). Both surface to the
+ * test as a render failure (the impl panic propagates to the awaited output;
+ * the builder panic fails the render directly).
  *
  * The ",reject-<mode>" arg suffix keeps each failing exec CID-distinct — formula
  * meta inputs are CID-transparent, so identical args would otherwise dedup the
@@ -44,27 +40,21 @@ self.body(func(inputs) {
 
 	if mode == "negative" {
 		// 1 GiB - 2 GiB underflows to a negative byte count -> rejected (ram).
-		b = b.resources({ onCPU: { ram: f.sub(f.gib(1), f.gib(2)), cpu: f.add(1, 1) } })
+		b = b.memFormula(f.sub(f.gib(1), f.gib(2))).cpuFormula(f.add(1, 1))
 	} else if mode == "zero" {
 		// 1 GiB - 1 GiB = 0 -> a zero RAM request is rejected (ram).
-		b = b.resources({ onCPU: { ram: f.sub(f.gib(1), f.gib(1)), cpu: f.add(1, 1) } })
+		b = b.memFormula(f.sub(f.gib(1), f.gib(1))).cpuFormula(f.add(1, 1))
 	} else if mode == "boolCpu" {
 		// A top-level comparison evaluates to a bool, not an int -> rejected (cpu).
-		b = b.resources({ onCPU: { ram: f.gib(1), cpu: f.gt(f.gib(8), f.gib(4)) } })
+		b = b.memFormula(f.gib(1)).cpuFormula(f.gt(f.gib(8), f.gib(4)))
 	} else if mode == "bam" {
 		// f.lineCount() on a .bam file: the builder's format check rejects it before
 		// any pre-exec runs. The file content is irrelevant — the guard keys off the
 		// extension — so we reuse the standard text fixture under a .bam name.
 		inputFile := file.importFile(inputs.file).file
 		b = b.addFile("reads.bam", inputFile, { tag: "reads" }).
-			resources({ onCPU: { ram: f.add(f.mib(512), f.lineCount("reads")), cpu: f.add(1, 1) } })
-	} else if mode == "gpuRequired" {
-		// onGPU with NO onCPU means "GPU required". On a backend without GPU support
-		// (exec.hasGpu is false) resources() must fail fast at workflow render time — there is
-		// no CPU fallback to degrade to. This proves the fail-fast guard fires end-to-end.
-		// Values are irrelevant — the fail-fast assert fires in resources() before any
-		// formula is evaluated — so keep them static.
-		b = b.resources({ onGPU: { cpu: 4, ram: "16GiB", vram: "16GiB" } })
+			memFormula(f.add(f.mib(512), f.lineCount("reads"))).
+			cpuFormula(f.add(1, 1))
 	} else {
 		ll.panic("formula_reject: unknown mode %v", mode)
 	}
