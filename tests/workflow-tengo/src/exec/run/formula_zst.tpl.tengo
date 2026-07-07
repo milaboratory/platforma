@@ -31,8 +31,7 @@ self.body(func(inputs) {
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu},zst").
 		addFile("reads.fastq.zst", inputFile, { tag: "reads" }).
-		memFormula(f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024))).
-		cpuFormula(f.add(1, 1)).
+		resources({ onCPU: { ram: f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024)), cpu: f.add(1, 1) } }).
 		saveStdoutContent().
 		run()
 

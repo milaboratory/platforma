@@ -30,8 +30,7 @@ self.body(func(inputs) {
 		argWithVar("{system.ram.bytes},{system.cpu},cidfiles").
 		addFile("a.txt", fileA, { tag: "a" }).
 		addFile("b.txt", fileB, { tag: "b" }).
-		memFormula(f.add(f.mib(512), f.mul(f.lineCount(inputs.whichTag), 1024))).
-		cpuFormula(f.add(1, 1)).
+		resources({ onCPU: { ram: f.add(f.mib(512), f.mul(f.lineCount(inputs.whichTag), 1024)), cpu: f.add(1, 1) } }).
 		saveStdoutContent().
 		run()
 
