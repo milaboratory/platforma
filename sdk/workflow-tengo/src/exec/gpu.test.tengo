@@ -43,3 +43,66 @@ Test_gpu_override := func() {
 
 	test.isTrue(ll.methodExists(b, "run"), "gpuMemory() override should return valid builder")
 }
+
+f := exec.formula
+
+Test_resources_cpu_only := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({
+			queue: "heavy",
+			onCPU: {
+				cpu: f.size("input").per(f.gib(4)).between(4, 16).staticFallback(16),
+				ram: f.size("input").times(12).plus(f.gib(8)).atLeast(f.gib(16)).staticFallback(f.gib(64))
+			}
+		})
+
+	test.isTrue(ll.methodExists(b, "run"), "resources({onCPU}) should return a valid builder")
+}
+
+Test_resources_static_values := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 4, ram: "16GiB" } })
+
+	test.isTrue(ll.methodExists(b, "run"), "resources() with static cpu/ram should return a valid builder")
+}
+
+Test_resources_adaptive := func() {
+	// onCPU + onGPU is adaptive at workflow render time; the chain stays valid on both
+	// GPU-capable and GPU-less backends (exec.hasGpu picks the block).
+	b := exec.builder().
+		cmd("test").
+		resources({
+			queue: "heavy",
+			onCPU: {
+				cpu: f.const(4).staticFallback(4),
+				ram: f.size("input").times(12).atLeast(f.gib(16)).staticFallback(f.gib(64))
+			},
+			onGPU: {
+				cpu: 4,
+				ram: f.size("input").times(6).plus(f.gib(2)).between(f.gib(8), f.gib(32)).staticFallback(f.gib(32)),
+				vram: f.size("input").times(8).plus(f.gib(2)).between(f.gib(6), f.gib(48)).staticFallback(f.gib(48))
+			}
+		})
+
+	test.isTrue(ll.methodExists(b, "run"), "resources({onCPU, onGPU}) should return a valid builder")
+}
+
+Test_resources_gpu_required := func() {
+	// onGPU alone asserts a GPU-capable backend at workflow render time; only exercise it
+	// where one is advertised, else the assertion is the correct behavior.
+	if exec.hasGpu {
+		b := exec.builder().
+			cmd("test").
+			resources({
+				onGPU: {
+					cpu: f.size("input").per(f.gib(4)).between(4, 16).staticFallback(16),
+					ram: f.size("input").times(12).plus(f.gib(8)).atLeast(f.gib(16)).staticFallback(f.gib(64)),
+					vram: f.size("input").times(8).plus(f.gib(2)).between(f.gib(6), f.gib(48)).staticFallback(f.gib(48))
+				}
+			})
+
+		test.isTrue(ll.methodExists(b, "run"), "resources({onGPU}) should return a valid builder")
+	}
+}

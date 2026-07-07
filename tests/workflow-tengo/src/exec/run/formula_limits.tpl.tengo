@@ -61,8 +61,7 @@ self.body(func(inputs) {
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu}," + mode).
 		addFile("input.txt", inputFile, { tag: "reads" }).
-		memFormula(memAst).
-		cpuFormula(cpuAst).
+		resources({ onCPU: { ram: memAst, cpu: cpuAst } }).
 		saveStdoutContent()
 
 	// Second file under the same tag, to exercise multi-file metric aggregation.
