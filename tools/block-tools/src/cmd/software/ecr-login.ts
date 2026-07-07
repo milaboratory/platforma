@@ -1,18 +1,20 @@
 import { spawnSync } from "node:child_process";
 import * as os from "node:os";
-import { ECRPUBLICClient, GetAuthorizationTokenCommand } from "@aws-sdk/client-ecr-public";
+import {
+  ECRPUBLICClient as EcrPublicClient,
+  GetAuthorizationTokenCommand,
+} from "@aws-sdk/client-ecr-public";
 import { util, defaults, type Logger } from "@platforma-sdk/package-builder-lib";
 
 const PUBLIC_ECR_HOST = "public.ecr.aws";
 // ECR Public's API is served only from us-east-1, independent of where images are pulled.
 const PUBLIC_ECR_REGION = "us-east-1";
-const PL_AWS_PROFILE = "PL_AWS_PROFILE";
 
 // Pin AWS_PROFILE once so the ECR client and the S3 upload resolve identical credentials.
 // Env credentials (CI) and an explicit AWS_PROFILE take precedence and skip this.
 export function ensureAwsProfile(logger?: Logger): void {
   if (process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE) return;
-  const profile = process.env[PL_AWS_PROFILE] ?? defaults.AWS_DEV_PROFILE;
+  const profile = process.env.PL_AWS_PROFILE ?? defaults.AWS_DEV_PROFILE;
   process.env.AWS_PROFILE = profile;
   logger?.debug(`Using AWS profile '${profile}' for dev push credentials`);
 }
@@ -23,8 +25,7 @@ function registryHost(registry: string): string {
 }
 
 function ssoLoginHint(): string {
-  const profile =
-    process.env.AWS_PROFILE ?? process.env[PL_AWS_PROFILE] ?? defaults.AWS_DEV_PROFILE;
+  const profile = process.env.AWS_PROFILE ?? process.env.PL_AWS_PROFILE ?? defaults.AWS_DEV_PROFILE;
   return `  aws sso login --profile ${profile}`;
 }
 
@@ -45,7 +46,7 @@ export async function ensureEcrLogin(registry: string, logger?: Logger): Promise
   let user: string;
   let password: string;
   try {
-    const client = new ECRPUBLICClient({ region: PUBLIC_ECR_REGION });
+    const client = new EcrPublicClient({ region: PUBLIC_ECR_REGION });
     const res = await client.send(new GetAuthorizationTokenCommand({}));
     const token = res.authorizationData?.authorizationToken;
     if (!token) throw new Error("empty authorization token");

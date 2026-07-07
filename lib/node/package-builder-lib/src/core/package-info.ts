@@ -540,11 +540,10 @@ export class PackageInfo {
   private devContentHash(artifact: artifacts.anyArtifactType): string | undefined {
     const withId = artifact as artifacts.withId<artifacts.anyArtifactType>;
     // Content roots are stable for the lifetime of this builder, so hash each artifact once.
-    if (this.devContentHashCache.has(withId.id)) {
-      return this.devContentHashCache.get(withId.id);
-    }
+    let hash = this.devContentHashCache.get(withId.id);
+    if (hash !== undefined) return hash;
 
-    const hash = this.computeDevContentHash(withId);
+    hash = this.computeDevContentHash(withId);
     this.devContentHashCache.set(withId.id, hash);
     return hash;
   }
@@ -558,7 +557,7 @@ export class PackageInfo {
     let platforms: util.PlatformType[];
     try {
       // Sorted so the hash is independent of package.json root-key order.
-      platforms = [...this.artifactPlatforms(artifact)].sort();
+      platforms = this.artifactPlatforms(artifact).toSorted();
     } catch {
       return undefined; // no content roots at all — leave the version without a suffix
     }

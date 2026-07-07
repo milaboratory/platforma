@@ -70,14 +70,6 @@ export function toFlags(o: AnyOptions): Flags {
   };
 }
 
-// Collector for repeatable options.
-// No default value: absent -> undefined, present -> string[]. This preserves
-// the `flags["package-id"] ? ... : undefined` checks in the command bodies
-// (an empty `[]` would be truthy and change behavior).
-function collect(value: string, previous?: string[]): string[] {
-  return previous ? [...previous, value] : [value];
-}
-
 export const GlobalOptions = (): Option[] => [
   new Option("--log-level <level>", "logging level")
     .choices(["error", "warn", "info", "debug"])
@@ -165,11 +157,11 @@ export const DirHashOption = (): Option[] => [
 ];
 
 export const EntrypointNameOption = (): Option[] => [
-  new Option("--entrypoint <name>", "build only selected entrypoints").argParser(collect),
+  new Option("--entrypoint <name...>", "build only selected entrypoints"),
 ];
 
 export const PackageIDOption = (): Option[] => [
-  new Option("--package-id <id>", "build/publish only selected packages").argParser(collect),
+  new Option("--package-id <id...>", "build/publish only selected packages"),
 ];
 
 export const VersionOption = (): Option[] => [
