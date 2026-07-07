@@ -499,7 +499,7 @@ builder := func() {
 		 *   - static: a number (cores, or bytes for ram/vram) or a size string
 		 *     ("16GiB"). Enters the exec as-is.
 		 *   - formula: an `exec.formula` chain — e.g.
-		 *       f.size("input").per(f.gib(4)).between(4, 16).staticFallback(16)
+		 *       f.size("input").dividedBy(f.gib(4)).between(4, 16).staticFallback(16)
 		 *     Evaluated at run time from input-file metrics (size / line count).
 		 *     A formula SHOULD end in .staticFallback(...) — the value used on
 		 *     backends that cannot evaluate formulas (no getBlobSize); without it

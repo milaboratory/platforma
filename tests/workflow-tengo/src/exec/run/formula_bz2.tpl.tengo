@@ -32,7 +32,7 @@ self.body(func(inputs) {
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu},bz2").
 		addFile("reads.fastq.bz2", inputFile, { tag: "reads" }).
-		resources({ onCPU: { ram: f.add(f.mib(512), f.mul(f.lineCount("reads"), 1024)), cpu: f.add(1, 1) } }).
+		resources({ onCPU: { ram: f.lineCount("reads").times(1024).plus(f.mib(512)), cpu: f.const(1).plus(1) } }).
 		saveStdoutContent().
 		run()
 

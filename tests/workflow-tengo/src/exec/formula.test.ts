@@ -3,7 +3,7 @@ import { tplTest } from "@platforma-sdk/test";
 import * as env from "../env";
 
 /**
- * End-to-end proof that resource formulas (memFormula / cpuFormula) are
+ * End-to-end proof that resource formulas (RAM / CPU) are
  * evaluated at runtime against a LIVE backend, and that the line-counter
  * sub-exec actually runs.
  *
@@ -76,7 +76,7 @@ async function libraryFileHandle(
  *   lineCount — the line-counter sub-exec runs and its count flows into RAM.
  *   multi     — two files under one tag: size sums both blobs and lineCount sums
  *               both counts (metric map has 2 entries → exercises the aggregate
- *               map + the impl's wildcard await), and divCeil rounds up.
+ *               map + the impl's wildcard await), and .dividedBy (ceil) rounds up.
  */
 const fileCases = [
   {
@@ -93,9 +93,9 @@ const fileCases = [
   },
   {
     mode: "multi",
-    // cpu = divCeil(2*lineCount, 50); ceiling of 84/50 = 2 (truncating div = 1).
-    // Robust to a ±1 newline-vs-line ambiguity in the counter: divCeil(86,50)=2 too.
-    desc: "ram = 1GiB + 2*fileSize, cpu = divCeil(2*lineCount, 50) (multi-file aggregation)",
+    // cpu = ceil(2*lineCount / 50); ceiling of 84/50 = 2 (truncating div = 1).
+    // Robust to a ±1 newline-vs-line ambiguity in the counter: ceil(86/50)=2 too.
+    desc: "ram = 1GiB + 2*fileSize, cpu = ceil(2*lineCount / 50) (multi-file aggregation)",
     expectedRam: 1 * GIB + 2 * FIXTURE_BYTES,
     expectedCpu: Math.ceil((2 * FIXTURE_NEWLINES) / 50),
   },
@@ -141,7 +141,7 @@ for (const tc of fileCases) {
  * a different slice of the evaluator wires through the ephemeral impl:
  *   formula_const — the constant-arithmetic plumbing (builder → pure template →
  *                   ephemeral impl eval → quota override), independent of files.
- *   formula_ops   — non-arithmetic ops (clamp, comparison, conditional) evaluate
+ *   formula_ops   — non-arithmetic ops (.between, comparison, conditional) evaluate
  *                   against the real evaluator, not just the unit-test resolver.
  */
 const constCases = [
@@ -153,7 +153,7 @@ const constCases = [
   },
   {
     template: "exec.run.formula_ops",
-    desc: "ram = 4GiB (clamp caps 8GiB→4GiB), cpu = 2 (if/gt selects)",
+    desc: "ram = 4GiB (.between caps 8GiB→4GiB), cpu = 2 (.when/.gt selects)",
     expectedRam: 4 * GIB,
     expectedCpu: 2,
   },
@@ -302,20 +302,20 @@ const rejectCases = [
   {
     mode: "negative",
     needsFile: false,
-    pattern: /\(ram\) must evaluate to a positive integer/, // result underflows to negative (f.sub)
-    desc: "memFormula underflow (negative) rejected, names ram",
+    pattern: /\(ram\) must evaluate to a positive integer/, // result underflows to negative (.minus)
+    desc: "RAM formula underflow (negative) rejected, names ram",
   },
   {
     mode: "zero",
     needsFile: false,
     pattern: /\(ram\) must evaluate to a positive integer/, // result is an unfloored 0
-    desc: "memFormula = 0 (unfloored) rejected, names ram",
+    desc: "RAM formula = 0 (unfloored) rejected, names ram",
   },
   {
     mode: "boolCpu",
     needsFile: false,
     pattern: /\(cpu\) must compute a number/, // top-level comparison rejected structurally
-    desc: "cpuFormula = comparison (bool) rejected, names cpu",
+    desc: "CPU formula = comparison (bool) rejected, names cpu",
   },
   {
     mode: "bam",
@@ -367,7 +367,7 @@ for (const tc of rejectCases) {
 /**
  * Formula CID-transparency direct proof. The resolved formula ASTs ride the META
  * input rail, so they are EXCLUDED from the exec CID. Render the SAME exec twice
- * (identical software/arg/no files), differing ONLY in the memFormula value
+ * (identical software/arg/no files), differing ONLY in the RAM formula value
  * (2 GiB vs 4 GiB). Because the formula does NOT affect the CID, the two renders
  * share one CID and dedup to a single allocation: the memGib=4 render dedups to
  * the memGib=2 render, so BOTH read back 2 GiB. (If the formula ever leaked into
@@ -378,7 +378,7 @@ for (const tc of rejectCases) {
  * constant ",cid" arg suffix so the two renders differ ONLY by formula.
  */
 tplTest.concurrent(
-  "formula-cid-transparent: changing the memFormula dedups to one allocation",
+  "formula-cid-transparent: changing the RAM formula dedups to one allocation",
   async ({ helper, expect }) => {
     const readRam = async (memGib: number) => {
       const result = await helper.renderTemplate(
