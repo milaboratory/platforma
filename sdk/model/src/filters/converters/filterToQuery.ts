@@ -16,7 +16,7 @@ export type QueryColumnIdAxis = {
 
 export type QueryColumnIdColumn = {
   type: "column";
-  /** May be a rich {@link ColumnUniversalId} (Discovered / Overrided / Filtered) or bare PObjectId. */
+  /** May be a rich {@link ColumnUniversalId} (Discovered / Overridden / Filtered) or bare PObjectId. */
   id: ColumnUniversalId;
 };
 

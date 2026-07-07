@@ -14,7 +14,7 @@ import {
 import { collectLinkerIds, hitQualifications, queriesQualifications } from "./utils";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
-import { ColumnOverridedRecipe } from "./column_recipes/column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import type { ColumnFieldStatus, ColumnRecipe } from "./column_recipes/types";
 import { installStubRegistry } from "./__test_helpers__/stub_registry";
 
@@ -100,7 +100,7 @@ class StubRecipe implements ColumnRecipe<ColumnUniversalId> {
     return this.query;
   }
   withSpecs(o: SpecOverrides): ColumnRecipe {
-    return ColumnOverridedRecipe.wrap(this, o);
+    return ColumnOverriddenRecipe.wrap(this, o);
   }
 }
 
@@ -206,9 +206,9 @@ describe("hitQualifications", () => {
     expect(hitQualifications(d)).toEqual([axisQual("sample")]);
   });
 
-  test("descends through Overrided wrapper", () => {
+  test("descends through Overridden wrapper", () => {
     const d = discovered({ column: hit, columnQualifications: [axisQual("donor")] });
-    const wrapped = ColumnOverridedRecipe.wrap(d, overrides({ annotations: { x: "1" } }));
+    const wrapped = ColumnOverriddenRecipe.wrap(d, overrides({ annotations: { x: "1" } }));
     expect(hitQualifications(wrapped)).toEqual([axisQual("donor")]);
   });
 
@@ -219,9 +219,9 @@ describe("hitQualifications", () => {
     expect(hitQualifications(wrapped)).toEqual([axisQual("donor")]);
   });
 
-  test("descends through stacked Overrided<Filtered<Discovered>>", () => {
+  test("descends through stacked Overridden<Filtered<Discovered>>", () => {
     const d = discovered({ column: hit, columnQualifications: [axisQual("donor")] });
-    const stacked = ColumnOverridedRecipe.wrap(
+    const stacked = ColumnOverriddenRecipe.wrap(
       ColumnFilteredRecipe.wrap(d, [[0, "v"]]),
       overrides({ annotations: { x: "1" } }),
     );
@@ -243,7 +243,7 @@ describe("queriesQualifications", () => {
   test("descends through wrappers", () => {
     const quals = { [otherCol]: [axisQual("primary-side")] };
     const d = discovered({ column: hit, queriesQualifications: quals });
-    const wrapped = ColumnOverridedRecipe.wrap(d, overrides());
+    const wrapped = ColumnOverriddenRecipe.wrap(d, overrides());
     expect(queriesQualifications(wrapped)).toEqual(quals);
   });
 });

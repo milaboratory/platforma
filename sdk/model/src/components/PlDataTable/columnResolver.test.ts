@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   createLocalPObjectId,
-  createColumnOverridedId,
+  createColumnOverriddenId,
   type AxisId,
   type AxisSpec,
   type PColumnSpec,
@@ -14,7 +14,7 @@ import type { ColumnRecipe } from "../../columns";
 import { createColumnResolver } from "./columnResolver";
 
 function wrap(id: PObjectId | SUniversalPColumnId, tag: string): SUniversalPColumnId {
-  return createColumnOverridedId({
+  return createColumnOverriddenId({
     source: id,
     specOverrides: { annotations: { tag }, domain: {}, contextDomain: {}, axesSpec: {} },
   });

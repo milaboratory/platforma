@@ -11,7 +11,7 @@ export type PTableColumnSpecColumn = {
   type: "column";
   /**
    * Leaf column id as it appears in the SpecQuery — may be a rich
-   * {@link ColumnUniversalId} (Discovered / Overrided / Filtered) or a bare
+   * {@link ColumnUniversalId} (Discovered / Overridden / Filtered) or a bare
    * {@link PObjectId}. The host resolver strips to bare via `extractPObjectId`
    * before physical lookup.
    */

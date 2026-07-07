@@ -15,7 +15,7 @@ import { TreeNodeAccessor } from "../render/accessor";
 import { getUniquePartitionKeys } from "../render/util/pcolumn_data";
 import type { ColumnRecipe } from "./column_recipes";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
-import { ColumnOverridedRecipe } from "./column_recipes/column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import { Column } from "./column";
 import { getLeafColumnData } from "./utils";
 
@@ -39,16 +39,16 @@ const MAX_KEY_COMBINATIONS = 10_000;
  * Expand each input column along the requested partition axes into one
  * {@link ColumnRecipe} per Cartesian combination of unique partition values.
  *
- * Each split is produced as `ColumnOverridedRecipe.wrap(ColumnFilteredRecipe.wrap(inner, axisFilters), { domain, annotations })`:
+ * Each split is produced as `ColumnOverriddenRecipe.wrap(ColumnFilteredRecipe.wrap(inner, axisFilters), { domain, annotations })`:
  *   - `ColumnFilteredRecipe` pins all split axes at once (one wrap call with
  *     every `[idx, value]` pair) and removes them from `axesSpec`. The
  *     engine performs the data slicing via the `sliceAxes` query node.
- *   - `ColumnOverridedRecipe` overlays a `domain[axisName] = String(value)`
+ *   - `ColumnOverriddenRecipe` overlays a `domain[axisName] = String(value)`
  *     entry per split axis and appends a `split:<canonicalAxisId>` trace
  *     entry per split axis to the existing `pl7.app/trace` annotation.
  *
  * The recipe id is a canonical
- * `ColumnOverridedId(source: ColumnFilteredId(source: inner.id, axisFilters), specOverrides)`
+ * `ColumnOverriddenId(source: ColumnFilteredId(source: inner.id, axisFilters), specOverrides)`
  * — distinct per split combination, parseable by `extractPObjectId`, and
  * traversable by recipe walkers.
  *
@@ -122,7 +122,7 @@ export function expandByPartition(
       }
 
       const filtered = ColumnFilteredRecipe.wrap(inner, axisFilters);
-      const overrided = ColumnOverridedRecipe.wrap(filtered, {
+      const overrided = ColumnOverriddenRecipe.wrap(filtered, {
         domain,
         annotations: {
           [Annotation.Trace]: JSON.stringify([...baseTrace, ...traceEntries]),

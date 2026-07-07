@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createLocalPObjectId,
-  parseColumnOverridedId,
+  parseColumnOverriddenId,
   SpecOverrides,
   type PColumnSpec,
   type PObjectId,
@@ -55,7 +55,7 @@ describe("ColumnLazy.clone", () => {
       axesSpec: {},
     });
 
-    const parsed = parseColumnOverridedId(c2.id);
+    const parsed = parseColumnOverriddenId(c2.id);
     // source must be the canonical leaf — not a nested wrap
     expect(parsed.source).toBe(baseLeaf);
     expect(parsed.specOverrides.annotations).toEqual({ a: "1", b: "2" });

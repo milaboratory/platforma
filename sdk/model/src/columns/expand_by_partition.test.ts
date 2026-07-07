@@ -3,9 +3,9 @@ import {
   canonicalizeAxisId,
   getAxisId,
   isColumnFilteredKey,
-  isColumnOverridedKey,
+  isColumnOverriddenKey,
   parseColumnIdSafety,
-  parseColumnOverridedId,
+  parseColumnOverriddenId,
   type AxisSpec,
   type JsonPartitionedDataInfoEntries,
   type PColumnSpec,
@@ -233,7 +233,7 @@ describe("expandByPartition", () => {
     expect(result).toHaveLength(0);
   });
 
-  test("recipe ids are canonical Overrided<Filtered<inner>>", () => {
+  test("recipe ids are canonical Overridden<Filtered<inner>>", () => {
     const s = createReadyLazy(
       "col1",
       createSpec("c", [createAxis("sample"), createAxis("gene")]),
@@ -249,9 +249,9 @@ describe("expandByPartition", () => {
     expect(result).toHaveLength(2);
 
     for (const recipe of result!) {
-      // Outer wrap is Overrided
-      const overridedKey = parseColumnOverridedId(recipe.id);
-      expect(isColumnOverridedKey(overridedKey)).toBe(true);
+      // Outer wrap is Overridden
+      const overridedKey = parseColumnOverriddenId(recipe.id);
+      expect(isColumnOverriddenKey(overridedKey)).toBe(true);
       // Inner is a stringified Filtered id
       expect(typeof overridedKey.source).toBe("string");
       const innerParsed = parseColumnIdSafety(overridedKey.source);
@@ -278,10 +278,10 @@ describe("expandByPartition", () => {
     expect(result).toBeDefined();
     expect(result).toHaveLength(2);
 
-    const overrided0 = parseColumnOverridedId(result![0].id);
+    const overrided0 = parseColumnOverriddenId(result![0].id);
     expect(overrided0.specOverrides.domain).toEqual({ sample: "s1" });
 
-    const overrided1 = parseColumnOverridedId(result![1].id);
+    const overrided1 = parseColumnOverriddenId(result![1].id);
     expect(overrided1.specOverrides.domain).toEqual({ sample: "s2" });
   });
 

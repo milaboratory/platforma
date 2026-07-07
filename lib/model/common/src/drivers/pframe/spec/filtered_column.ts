@@ -49,7 +49,7 @@ export function isFilteredPColumn(id: unknown): id is FilteredPColumn {
 /**
  * `source` is either a leaf {@link PObjectId} or a {@link ColumnDiscoveredId}.
  * Filtered never nests inside Filtered (flat-merge invariant), and Filtered is
- * never the outer wrapper around Overrided — Overrided is always outermost.
+ * never the outer wrapper around Overridden — Overridden is always outermost.
  */
 export interface ColumnFilteredKey {
   __isFiltered: true;

@@ -24,9 +24,9 @@ import {
 import { throwError } from "@milaboratories/helpers";
 import {
   applySpecOverrides,
-  isColumnOverridedKey,
-  type ColumnOverridedId,
-  type ColumnOverridedKey,
+  isColumnOverriddenKey,
+  type ColumnOverriddenId,
+  type ColumnOverriddenKey,
 } from "./overrided";
 import { canonicalizeJson } from "../../../json";
 import { AxisSpec, PColumnSpec } from "./spec";
@@ -61,14 +61,14 @@ export type ColumnUniversalKey =
   | GlobalPObjectKey
   | ColumnFilteredKey
   | ColumnDiscoveredKey
-  | ColumnOverridedKey;
+  | ColumnOverriddenKey;
 
 export type ColumnUniversalId =
   | LocalPObjectId
   | GlobalPObjectId
   | ColumnFilteredId
   | ColumnDiscoveredId
-  | ColumnOverridedId;
+  | ColumnOverriddenId;
 
 /**
  * Canonically serializes a column key to a branded string id. Accepts both
@@ -112,7 +112,7 @@ export function extractPObjectId(id: ColumnUniversalId | ColumnUniversalKey): PO
 
   if (isPObjectKey(id)) return createPObjectId(id);
   if (isColumnFilteredKey(id)) return extractPObjectId(id.source);
-  if (isColumnOverridedKey(id)) return extractPObjectId(id.source);
+  if (isColumnOverriddenKey(id)) return extractPObjectId(id.source);
   if (isColumnDiscoveredKey(id)) return extractPObjectId(id.column);
 
   throw new Error(`extractPObjectId: unrecognized column id structure: ${JSON.stringify(id)}`);
@@ -129,7 +129,7 @@ export function extractPObjectId(id: ColumnUniversalId | ColumnUniversalKey): PO
  * - {@link ColumnFilteredKey}: drops the axes whose positional index appears in
  *   `axisFilters[i][0]` from the inner spec's `axesSpec` — mirrors
  *   `ColumnFilteredRecipe.getSpec()`.
- * - {@link ColumnOverridedKey}: applies `specOverrides` via
+ * - {@link ColumnOverriddenKey}: applies `specOverrides` via
  *   {@link applySpecOverrides} on top of the inner spec.
  */
 export function reconstructSpecFromId(
@@ -150,7 +150,7 @@ export function reconstructSpecFromId(
   if (isColumnFilteredKey(id)) {
     return applyAxisFilters(reconstructSpecFromId(baseSpec, id.source), id.axisFilters);
   }
-  if (isColumnOverridedKey(id)) {
+  if (isColumnOverriddenKey(id)) {
     const inner = reconstructSpecFromId(baseSpec, id.source);
     return applySpecOverrides(inner, id.specOverrides);
   }

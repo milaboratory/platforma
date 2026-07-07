@@ -28,7 +28,7 @@ import {
   ResultPoolEntriesProvider,
   convertColumnSelectorToMultiColumnSelector,
   createGlobalPObjectId,
-  createColumnOverridedId,
+  createColumnOverriddenId,
   dedupColumns,
   deriveNativeId,
   deriveSpecDelta,
@@ -378,7 +378,7 @@ function applyDiscovery(
 }
 
 function applyOverride(id: ColumnUniversalId, delta: SpecOverrides): ColumnUniversalId {
-  return createColumnOverridedId({ source: id, specOverrides: delta });
+  return createColumnOverriddenId({ source: id, specOverrides: delta });
 }
 
 function remapAnchorQualifications(

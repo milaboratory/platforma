@@ -115,7 +115,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
 
   // Same `value`/`name` anchor as tableV3, but with extra columns produced by
   // splitting the `count` (group, name) column on its `group` axis: each group
-  // value becomes its own ColumnOverridedRecipe in `columns`, joining onto the
+  // value becomes its own ColumnOverriddenRecipe in `columns`, joining onto the
   // primary on the shared `name` axis.
   .outputWithStatus("tableSplitV3", (ctx) => {
     const valueAnchor = { name: "value", axes: [{ name: "name" }] };

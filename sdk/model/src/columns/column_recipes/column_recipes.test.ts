@@ -2,15 +2,15 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createColumnDiscoveredKey,
   createColumnFilteredKey,
-  createColumnOverridedId,
-  createColumnOverridedKey,
+  createColumnOverriddenId,
+  createColumnOverriddenKey,
   createGlobalPObjectId,
   createLocalPObjectId,
   isFilteredPColumn,
-  isColumnOverridedKey,
+  isColumnOverriddenKey,
   isColumnDiscoveredKey,
   parseColumnIdSafety,
-  parseColumnOverridedId,
+  parseColumnOverriddenId,
   stringifyColumnDiscoveredId,
   stringifyColumnFilteredId,
   type ColumnDiscoveredKey,
@@ -21,7 +21,7 @@ import {
   type ColumnUniversalId,
 } from "@milaboratories/pl-model-common";
 import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
-import { ColumnOverridedRecipe } from "./column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
 import { ColumnRecipe } from "./index";
 import { ColumnAbsentError } from "../column_lazy";
@@ -91,7 +91,7 @@ const overrides = (patch: Partial<SpecOverrides>): SpecOverrides => ({
 });
 
 /**
- * Minimal `ColumnRecipe` stub — lets us test Overrided/Filtered without
+ * Minimal `ColumnRecipe` stub — lets us test Overridden/Filtered without
  * ctx mocking and without touching the pframeSpec service.
  */
 class StubRecipe implements ColumnRecipe<ColumnUniversalId> {
@@ -120,7 +120,7 @@ class StubRecipe implements ColumnRecipe<ColumnUniversalId> {
     return this.state.query;
   }
   withSpecs(o: SpecOverrides): ColumnRecipe {
-    return ColumnOverridedRecipe.wrap(this, o);
+    return ColumnOverriddenRecipe.wrap(this, o);
   }
 }
 
@@ -130,55 +130,55 @@ const stubInner = (state: ConstructorParameters<typeof StubRecipe>[1] = {}) =>
   new StubRecipe(baseLeaf as unknown as ColumnUniversalId, state);
 
 // ════════════════════════════════════════════════════════════════════════════
-// ColumnOverridedRecipe
+// ColumnOverriddenRecipe
 // ════════════════════════════════════════════════════════════════════════════
 
-describe("ColumnOverridedRecipe", () => {
-  test("wrap(plain inner): id is Overrided{source: inner.id, specOverrides}", () => {
+describe("ColumnOverriddenRecipe", () => {
+  test("wrap(plain inner): id is Overridden{source: inner.id, specOverrides}", () => {
     const inner = stubInner();
     const ov = overrides({ annotations: { a: "1" } });
-    const wrapped = ColumnOverridedRecipe.wrap(inner, ov);
-    const parsed = parseColumnOverridedId(wrapped.id);
-    expect(parsed.__isOverrided).toBe(true);
+    const wrapped = ColumnOverriddenRecipe.wrap(inner, ov);
+    const parsed = parseColumnOverriddenId(wrapped.id);
+    expect(parsed.__isOverridden).toBe(true);
     expect(parsed.source).toBe(inner.id);
     expect(parsed.specOverrides.annotations).toEqual({ a: "1" });
   });
 
-  test("wrap on already-Overrided → flat merge (single layer, merged overrides)", () => {
+  test("wrap on already-Overridden → flat merge (single layer, merged overrides)", () => {
     const inner = stubInner();
-    const a = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { x: "1" } }));
-    const b = ColumnOverridedRecipe.wrap(a, overrides({ annotations: { y: "2" } }));
+    const a = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { x: "1" } }));
+    const b = ColumnOverriddenRecipe.wrap(a, overrides({ annotations: { y: "2" } }));
 
-    const parsed = parseColumnOverridedId(b.id);
-    // source is the leaf, not a nested Overrided
+    const parsed = parseColumnOverriddenId(b.id);
+    // source is the leaf, not a nested Overridden
     expect(parsed.source).toBe(inner.id);
     expect(parsed.specOverrides.annotations).toEqual({ x: "1", y: "2" });
 
-    // and source itself is not an Overrided wrap
+    // and source itself is not an Overridden wrap
     const innerParsed = parseColumnIdSafety(parsed.source);
-    expect(innerParsed === undefined || !isColumnOverridedKey(innerParsed)).toBe(true);
+    expect(innerParsed === undefined || !isColumnOverriddenKey(innerParsed)).toBe(true);
   });
 
   test("withSpecs(o1).withSpecs(o2) has same id as withSpecs(merge(o1,o2))", () => {
     const inner = stubInner();
-    const a = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1" } })).withSpecs(
+    const a = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1" } })).withSpecs(
       overrides({ annotations: { b: "2" } }),
     );
-    const b = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1", b: "2" } }));
+    const b = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1", b: "2" } }));
     expect(a.id).toBe(b.id);
   });
 
   test("getSpec applies overrides to inner.getSpec()", () => {
     const inner = stubInner({ spec: stubSpec() });
-    const wrapped = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
+    const wrapped = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
     expect(wrapped.getSpec().annotations).toEqual({ a: "1" });
   });
 
   test("getSpec propagates throws from inner.getSpec()", () => {
-    // Inner without a stubbed spec throws — Overrided forwards the error.
+    // Inner without a stubbed spec throws — Overridden forwards the error.
     const inner = stubInner({ spec: undefined });
     expect(() =>
-      ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1" } })).getSpec(),
+      ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1" } })).getSpec(),
     ).toThrow(/no stub spec/);
   });
 
@@ -189,7 +189,7 @@ describe("ColumnOverridedRecipe", () => {
       refs,
       status: "resolving",
     });
-    const wrapped = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
+    const wrapped = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
     expect(wrapped.getReferencedIds()).toEqual(refs);
     expect(wrapped.getDataStatus()).toBe("resolving");
   });
@@ -197,11 +197,11 @@ describe("ColumnOverridedRecipe", () => {
   test("getQuery wraps inner query in a specOverride node carrying the overrides", () => {
     const inner = stubInner({ query: leafQuery });
     const ov = overrides({ annotations: { a: "1" } });
-    const wrapped = ColumnOverridedRecipe.wrap(inner, ov);
+    const wrapped = ColumnOverriddenRecipe.wrap(inner, ov);
     const query = wrapped.getQuery();
     expect(query.type).toBe("specOverride");
     if (query.type === "specOverride") {
-      // Inner leaf gets rebranded to the Overrided id so every variant of the
+      // Inner leaf gets rebranded to the Overridden id so every variant of the
       // same physical column produces a distinct leaf for the engine.
       expect(query.input).toEqual({ type: "column", column: wrapped.id });
       expect(query.override).toBe(ov);
@@ -210,7 +210,7 @@ describe("ColumnOverridedRecipe", () => {
 
   test("getQuery is cached: repeated calls return the same node", () => {
     const inner = stubInner({ query: leafQuery });
-    const wrapped = ColumnOverridedRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
+    const wrapped = ColumnOverriddenRecipe.wrap(inner, overrides({ annotations: { a: "1" } }));
     expect(wrapped.getQuery()).toBe(wrapped.getQuery());
   });
 });
@@ -330,7 +330,7 @@ describe("ColumnFilteredRecipe", () => {
     expect(() => ColumnFilteredRecipe.wrap(inner, [[5, "v"]])).toThrow(/out of range/);
   });
 
-  test("withSpecs → Overrided<Filtered<inner>> (Overrided on the outside)", () => {
+  test("withSpecs → Overridden<Filtered<inner>> (Overridden on the outside)", () => {
     const inner = stubInner({
       spec: stubSpec([
         { name: "a", type: "String" },
@@ -341,8 +341,8 @@ describe("ColumnFilteredRecipe", () => {
     const layered = filtered.withSpecs(overrides({ annotations: { a: "1" } }));
 
     const parsedOuter = parseColumnIdSafety(layered.id);
-    expect(parsedOuter && isColumnOverridedKey(parsedOuter)).toBe(true);
-    if (parsedOuter && isColumnOverridedKey(parsedOuter)) {
+    expect(parsedOuter && isColumnOverriddenKey(parsedOuter)).toBe(true);
+    if (parsedOuter && isColumnOverriddenKey(parsedOuter)) {
       const parsedInner = parseColumnIdSafety(parsedOuter.source);
       expect(parsedInner && isFilteredPColumn(parsedInner)).toBe(true);
     }
@@ -446,17 +446,17 @@ describe("ColumnDiscoveredRecipe", () => {
     expect(r.getSpec().axesSpec).toEqual(hitSpec.axesSpec);
   });
 
-  test("withSpecs → Overrided<Discovered>, flat-merge on repeat", () => {
+  test("withSpecs → Overridden<Discovered>, flat-merge on repeat", () => {
     setupCtx({ [baseLeaf]: stubSpec() });
     const r =
       ColumnDiscoveredRecipe.fromKey(trivialKey) ?? throwError("fromKey returned undefined");
     const a = r.withSpecs(overrides({ annotations: { x: "1" } }));
     const b = a.withSpecs(overrides({ annotations: { y: "2" } }));
 
-    const parsed = parseColumnOverridedId(b.id);
+    const parsed = parseColumnOverriddenId(b.id);
     expect(parsed.specOverrides.annotations).toEqual({ x: "1", y: "2" });
 
-    // source must be Discovered, not Overrided
+    // source must be Discovered, not Overridden
     const inner = parseColumnIdSafety(parsed.source);
     expect(inner && isColumnDiscoveredKey(inner)).toBe(true);
   });
@@ -539,11 +539,11 @@ describe("Wrapper getStatusByKey delegates to source", () => {
     ).toBe("absent");
   });
 
-  test("ColumnOverridedRecipe.getStatusByKey returns the source's status", () => {
+  test("ColumnOverriddenRecipe.getStatusByKey returns the source's status", () => {
     setupCtx({ [baseLeaf]: stubSpec() });
     expect(
-      ColumnOverridedRecipe.getStatusByKey(
-        createColumnOverridedKey({ source: baseLeaf, specOverrides: overrides({}) }),
+      ColumnOverriddenRecipe.getStatusByKey(
+        createColumnOverriddenKey({ source: baseLeaf, specOverrides: overrides({}) }),
       ),
     ).toBe("present");
 
@@ -551,8 +551,8 @@ describe("Wrapper getStatusByKey delegates to source", () => {
     (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = ctx;
     installStubRegistry(ctx, {}, { isFinal: false });
     expect(
-      ColumnOverridedRecipe.getStatusByKey(
-        createColumnOverridedKey({ source: baseLeaf, specOverrides: overrides({}) }),
+      ColumnOverriddenRecipe.getStatusByKey(
+        createColumnOverriddenKey({ source: baseLeaf, specOverrides: overrides({}) }),
       ),
     ).toBe("resolving");
   });
@@ -579,9 +579,9 @@ describe("ColumnRecipe.getStatus (top-level dispatcher)", () => {
     expect(ColumnRecipe.getStatus(id)).toBe("present");
   });
 
-  test("routes ColumnOverridedKey id to ColumnOverridedRecipe.getStatusByKey", () => {
+  test("routes ColumnOverriddenKey id to ColumnOverriddenRecipe.getStatusByKey", () => {
     setupCtx({ [baseLeaf]: stubSpec() });
-    const id = createColumnOverridedId({
+    const id = createColumnOverriddenId({
       source: baseLeaf,
       specOverrides: overrides({}),
     });
@@ -607,7 +607,7 @@ describe("ColumnRecipe(id) throw propagation on absent leaves", () => {
     const ctx = makeCtx();
     (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = ctx;
     installStubRegistry(ctx, {}, { isFinal: true });
-    const id = createColumnOverridedId({
+    const id = createColumnOverriddenId({
       source: baseLeaf,
       specOverrides: overrides({}),
     });

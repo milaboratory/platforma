@@ -22,7 +22,7 @@ import type {
   ColumnRecipe,
   ColumnResolutionStatus,
 } from "./column_recipes/types";
-import { ColumnOverridedRecipe } from "./column_recipes/column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 
 export type ColumnLazyId = PObjectId;
 export type ColumnLazyData = undefined | PColumnDataUniversal;
@@ -49,7 +49,7 @@ export class ColumnAbsentError extends Error {
 /**
  * ColumnLazy is the leaf-recipe building block: a {@link ColumnRecipe} whose
  * `id` is a bare {@link PObjectId} and whose readers are bound to a single
- * tree-accessor leaf. Layered encodings (Overrided / Discovered / Filtered)
+ * tree-accessor leaf. Layered encodings (Overridden / Discovered / Filtered)
  * are reified through their dedicated recipe classes and reference leaf
  * columns by id.
  */
@@ -98,12 +98,12 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
   }
 
   /**
-   * Overlay overrides → produces a {@link ColumnOverridedRecipe} wrapping
+   * Overlay overrides → produces a {@link ColumnOverriddenRecipe} wrapping
    * this leaf. ColumnLazy itself stays bare (id remains a plain PObjectId);
    * layering lives entirely in the recipe wrappers.
    */
   withSpecs(overrides: SpecOverrides): ColumnRecipe {
-    return ColumnOverridedRecipe.wrap(this, overrides);
+    return ColumnOverriddenRecipe.wrap(this, overrides);
   }
 
   /**
