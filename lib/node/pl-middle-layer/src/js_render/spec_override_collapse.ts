@@ -1,7 +1,12 @@
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type { DataInfo, PColumn, PColumnValues } from "@platforma-sdk/model";
 import { applySpecOverrides, matchAxis } from "@milaboratories/pl-model-common";
-import type { AxesSpec, AxisSpec, SpecOverrides, SpecQuery } from "@milaboratories/pl-model-common";
+import type {
+  AxesSpec,
+  AxisPatches,
+  SpecOverrides,
+  SpecQuery,
+} from "@milaboratories/pl-model-common";
 
 type Leaf = PColumn<PlTreeNodeAccessor | PColumnValues | DataInfo<PlTreeNodeAccessor>>;
 type Node = SpecQuery<Leaf>;
@@ -122,7 +127,7 @@ function pushSpecOverrideDown(node: Node, overrides: SpecOverrides): Node {
         if (!filteredInnerIdxs.has(i)) outerToInner.push(i);
       }
 
-      const translated: Record<number, AxisSpec> = {};
+      const translated: AxisPatches = {};
       for (const [outerKey, patch] of Object.entries(overrides.axesSpec)) {
         const outerIdx = Number(outerKey);
         const innerIdx = outerToInner[outerIdx];
@@ -132,7 +137,7 @@ function pushSpecOverrideDown(node: Node, overrides: SpecOverrides): Node {
               `out of range (slice output has ${outerToInner.length} axes)`,
           );
         }
-        translated[innerIdx] = patch as AxisSpec;
+        translated[innerIdx] = patch;
       }
 
       const translatedOverrides: SpecOverrides = { ...overrides, axesSpec: translated };
