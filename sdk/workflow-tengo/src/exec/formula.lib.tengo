@@ -3,10 +3,13 @@
 // below) that flows through two phases across the exec boundary:
 //
 // WORKFLOW RENDER TIME (in exec.builder().run(), before the exec exists):
-//   1. The author composes a formula from the exported constructors
-//      (size/lineCount, gib/..., add/mul/clamp/if) OR the fluent chain
-//      (.per/.times/.plus/.between/... + .staticFallback). Both build the SAME
-//      AST — the chain is sugar. Bare ints auto-wrap to const.
+//   1. The author composes a formula by chaining off a leaf constructor
+//      (size/lineCount, gib/mib/..., const). The chain covers arithmetic
+//      (.plus/.minus/.times/.dividedBy/.dividedByFloor), bounds
+//      (.atLeast/.atMost/.between),
+//      comparisons (.gt/.gte/.lt/.lte), logic (.and/.or/.not) and multi-branch
+//      conditionals (f.when(cond, value).when(...).otherwise(default)).
+//      Bare ints auto-wrap to const.
 //   2. resolveAst() turns each { op: "metric", tag } into a concrete
 //      { op: "metricSum", files } via the builder's tag -> files map (an empty
 //      tag collapses to its { default }), and rejects lineCount on a non-text file.
@@ -31,9 +34,9 @@
 // FLUENT WRAPPERS: every constructor returns a chainable wrapper — a map
 //   { __isFormula__: true, __ast__: <plain AST>, __fallback__: <static?> } that
 //   also carries the chain methods. The plain AST is never contaminated: _wrap
-//   (used by every constructor when composing children) unwraps a wrapper back to
-//   its __ast__, so the tree stored and serialized is always plain maps. The
-//   builder reads a value with astOf()/fallbackOf(); the evaluator entry points
+//   (used by every method when composing children) unwraps a wrapper back to its
+//   __ast__, so the tree stored and serialized is always plain maps. The builder
+//   reads a value with astOf()/fallbackOf(); the evaluator entry points
 //   auto-unwrap, so passing a wrapper straight to resolveAst/evaluate/... works.
 //
 // Pure by design: this file walks data and knows nothing of the backend. That
@@ -71,7 +74,7 @@ _KNOWN_OPS := sets.fromSlice([
 ])
 
 // Comparison/logic ops. Rejected at the top level of a resource formula
-// (evaluateResource) — they are meaningful only inside f.if(...).
+// (evaluateResource) — they are meaningful only inside a f.when(...) branch.
 _BOOL_OPS := sets.fromSlice(["gt", "gte", "lt", "lte", "and", "or", "not"])
 
 // _unwrap strips a fluent wrapper down to its plain AST; a plain AST or an int
@@ -141,6 +144,8 @@ evaluate = func(node, resolver) {
 	if op == "div" {
 		b := evaluate(node.b, resolver)
 		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
+		// integer (truncating) division; toward zero, which for the non-negative
+		// resource-metric domain (sizes, line counts) is floor.
 		return evaluate(node.a, resolver) / b
 	}
 	if op == "divCeil" {
@@ -179,20 +184,20 @@ evaluate = func(node, resolver) {
 // evaluateResource evaluates a formula destined for a resource quota (ram / cpu /
 // gpu) and asserts the result is usable: a positive integer. It first rejects a
 // comparison/logic op at the top level — Tengo's && / || return the deciding
-// OPERAND (an int), so a top-level f.and/f.or of ints would otherwise pass the
-// is_int check; comparisons and logic belong only inside f.if(...). The
-// positive-int check then catches a non-positive result (an f.sub that
+// OPERAND (an int), so a top-level .and/.or of ints would otherwise pass the
+// is_int check; comparisons and logic belong only inside a f.when(...) branch. The
+// positive-int check then catches a non-positive result (a .minus that
 // underflows, or a metric that floored to 0) BEFORE it reaches the quota as an
 // opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu" /
 // "gpuMemory") names the offending dimension.
 evaluateResource := func(node, resolver, label) {
 	node = _unwrap(node)
 	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
-		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.if(...).",
+		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
 		label, node.op)
 	v := evaluate(node, resolver)
 	ll.assert(is_int(v) && v > 0,
-		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.between(...).",
+		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with .atLeast(...) or .between(...).",
 		label, v)
 	return v
 }
@@ -322,11 +327,14 @@ applyFormulaFallback := func(dims) {
 
 // ---- fluent wrapper factory ------------------------------------------------
 // _node wraps a plain AST in a chainable object. Every chain method returns a
-// NEW wrapper (immutable), carrying the accumulated { fallback } forward. The
-// arithmetic aliases read left-to-right — `f.size("x").times(12).plus(f.gib(8))`
-// composes mul(size, 12) then add(that, gib(8)). Bounds: .atLeast -> max,
-// .atMost -> min, .between(lo, hi) -> clamp. .staticFallback pins the value used
-// on backends that can't evaluate the formula.
+// NEW wrapper (immutable), carrying the accumulated { fallback } forward and
+// reading left-to-right — `f.size("x").times(12).plus(f.gib(8))` composes
+// mul(size, 12) then add(that, gib(8)). Arithmetic: .plus/.minus/.times ->
+// add/sub/mul; .dividedBy -> ceiling division, .dividedByFloor -> integer
+// (truncating) division. Bounds: .atLeast -> max, .atMost
+// -> min, .between(lo, hi) -> clamp. Comparisons (.gt/.gte/.lt/.lte) and logic
+// (.and/.or/.not) build boolean nodes for use inside a f.when(...) branch.
+// .staticFallback pins the value used on backends that can't evaluate the formula.
 _node := undefined
 _node = func(ast, fallback) {
 	self := {
@@ -334,14 +342,50 @@ _node = func(ast, fallback) {
 		__ast__:       ast,
 		__fallback__:  fallback
 	}
-	self.per     = func(x) { return _node(_bin("divCeil", ast, x), fallback) }
-	self.times   = func(x) { return _node(_bin("mul", ast, x), fallback) }
-	self.plus    = func(x) { return _node(_bin("add", ast, x), fallback) }
-	self.minus   = func(x) { return _node(_bin("sub", ast, x), fallback) }
-	self.atLeast = func(x) { return _node(_bin("max", ast, x), fallback) }
-	self.atMost  = func(x) { return _node(_bin("min", ast, x), fallback) }
-	self.between = func(lo, hi) { return _node({ op: "clamp", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
+	self.plus      = func(x) { return _node(_bin("add", ast, x), fallback) }
+	self.minus     = func(x) { return _node(_bin("sub", ast, x), fallback) }
+	self.times     = func(x) { return _node(_bin("mul", ast, x), fallback) }
+	self.dividedBy      = func(x) { return _node(_bin("divCeil", ast, x), fallback) }
+	self.dividedByFloor = func(x) { return _node(_bin("div", ast, x), fallback) }
+	self.atLeast   = func(x) { return _node(_bin("max", ast, x), fallback) }
+	self.atMost    = func(x) { return _node(_bin("min", ast, x), fallback) }
+	self.between   = func(lo, hi) { return _node({ op: "clamp", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
+	self.gt        = func(x) { return _node(_bin("gt", ast, x), fallback) }
+	self.gte       = func(x) { return _node(_bin("gte", ast, x), fallback) }
+	self.lt        = func(x) { return _node(_bin("lt", ast, x), fallback) }
+	self.lte       = func(x) { return _node(_bin("lte", ast, x), fallback) }
+	self.and       = func(x) { return _node(_bin("and", ast, x), fallback) }
+	self.or        = func(x) { return _node(_bin("or", ast, x), fallback) }
+	self.not       = func() { return _node({ op: "not", a: _wrap(ast) }, fallback) }
 	self.staticFallback = func(v) { return _node(ast, _staticValue(v)) }
+	return self
+}
+
+// _condBuilder accumulates when()-branches and folds them, right-to-left, into a
+// nested `if` AST on .otherwise(). It exposes ONLY .when / .otherwise — so a
+// conditional must be finished with .otherwise (there is no way to leak a
+// dangling boolean into a quota).
+_condBuilder := undefined
+_condBuilder = func(branches) {
+	self := {}
+	self.when = func(cond, value) {
+		// Copy `branches` before appending so sibling chains off the same builder
+		// never alias each other's branch list.
+		next := []
+		for br in branches { next = append(next, br) }
+		next = append(next, { cond: _wrap(cond), value: _wrap(value) })
+		return _condBuilder(next)
+	}
+	self.otherwise = func(dflt) {
+		node := _wrap(dflt)
+		i := len(branches) - 1
+		for i >= 0 {
+			b := branches[i]
+			node = { op: "if", cond: b.cond, then: b.value, "else": node }
+			i = i - 1
+		}
+		return _node(node, undefined)
+	}
 	return self
 }
 
@@ -365,30 +409,13 @@ export {
 
 	// const: a bare integer as a formula leaf (bytes / cores). Handy when a
 	// dimension is a plain number you still want to chain off of.
-	"const": func(n) { return _const(n) },
+	const: func(n) { return _const(n) },
 
-	add:     func(a, b) { return _node(_bin("add", a, b), undefined) },
-	sub:     func(a, b) { return _node(_bin("sub", a, b), undefined) },
-	mul:     func(a, b) { return _node(_bin("mul", a, b), undefined) },
-	div:     func(a, b) { return _node(_bin("div", a, b), undefined) },
-	// divCeil(a, b): ceiling of a/b. Assumes a >= 0 and b > 0 — the resource-metric
-	// domain (sizes, line counts, positive constants). A negative a (e.g. an
-	// underflowing f.sub) can be off by one; floor such inputs with f.max first.
-	divCeil: func(a, b) { return _node(_bin("divCeil", a, b), undefined) },
-
-	max:   func(a, b) { return _node(_bin("max", a, b), undefined) },
-	min:   func(a, b) { return _node(_bin("min", a, b), undefined) },
-	clamp: func(value, lo, hi) { return _node({ op: "clamp", value: _wrap(value), lo: _wrap(lo), hi: _wrap(hi) }, undefined) },
-
-	gt:  func(a, b) { return _node(_bin("gt", a, b), undefined) },
-	gte: func(a, b) { return _node(_bin("gte", a, b), undefined) },
-	lt:  func(a, b) { return _node(_bin("lt", a, b), undefined) },
-	lte: func(a, b) { return _node(_bin("lte", a, b), undefined) },
-	and: func(a, b) { return _node(_bin("and", a, b), undefined) },
-	or:  func(a, b) { return _node(_bin("or", a, b), undefined) },
-	not: func(a) { return _node({ op: "not", a: _wrap(a) }, undefined) },
-
-	"if": func(cond, then, els) { return _node({ op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) }, undefined) },
+	// when(cond, value): start a multi-branch conditional. Chain more .when(...)
+	// branches (evaluated in order), then finish with .otherwise(default). Compiles
+	// to a nested `if` — the first branch whose condition is truthy wins. Conditions
+	// come from the comparison/logic chain, e.g. f.size("input").gt(f.gib(1)).
+	when: func(cond, value) { return _condBuilder([]).when(cond, value) },
 
 	// ---- wrapper introspection (used by the exec builder) ------------------
 	// astOf: the plain AST behind a value (a wrapper -> its __ast__; a plain AST
