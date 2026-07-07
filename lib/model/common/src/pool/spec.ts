@@ -1,4 +1,3 @@
-import canonicalize from "canonicalize";
 import type { JoinEntry, PColumn, PColumnSpec } from "../drivers";
 import { assertNever } from "../util";
 import { PlRef } from "../ref";
@@ -66,7 +65,11 @@ export function isLocalPObjectKey(value: unknown): value is LocalPObjectKey {
 }
 
 export function createGlobalPObjectId(blockId: string, exportName: string): PObjectId {
-  return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
+  return canonicalizeJson({
+    __isRef: true,
+    blockId,
+    name: exportName,
+  } satisfies PlRef) as PObjectId;
 }
 
 export function isGlobalPObjectKey(value: unknown): value is GlobalPObjectKey {
@@ -113,7 +116,6 @@ export function ensurePColumn<T>(obj: PObject<T>): PColumn<T> {
   return obj;
 }
 
-export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
 export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
 export function mapPObjectData<D1, D2>(
   pObj: PColumn<D1> | undefined,

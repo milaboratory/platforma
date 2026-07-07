@@ -85,7 +85,10 @@ export function createColumnFilteredKey(props: {
   source: ColumnUniversalId;
   axisFilters: AxisFilterByIdx[];
 }): ColumnFilteredKey {
-  return { __isFiltered: true, ...props };
+  // `axisFilters` must be ordered by axis index so logically
+  // identical filtered columns produce one canonical id.
+  const axisFilters = props.axisFilters.toSorted((a, b) => a[0] - b[0]);
+  return { __isFiltered: true, source: props.source, axisFilters };
 }
 
 /**

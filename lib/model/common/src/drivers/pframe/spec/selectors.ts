@@ -64,6 +64,8 @@ export interface SingleAxisSelector {
   type?: AxisValueType;
   /** Domain requirements (optional) */
   domain?: Domain;
+  /** Context-domain requirements (optional) */
+  contextDomain?: Domain;
   /** Parent axes requirements (optional) */
   parentAxes?: SingleAxisSelector[];
 }

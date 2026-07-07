@@ -4,7 +4,7 @@ import {
   getAxisId,
   isColumnFilteredKey,
   isColumnOverriddenKey,
-  parseColumnIdSafety,
+  parseColumnIdSafely,
   parseColumnOverriddenId,
   type AxisSpec,
   type JsonPartitionedDataInfoEntries,
@@ -254,7 +254,7 @@ describe("expandByPartition", () => {
       expect(isColumnOverriddenKey(overridedKey)).toBe(true);
       // Inner is a stringified Filtered id
       expect(typeof overridedKey.source).toBe("string");
-      const innerParsed = parseColumnIdSafety(overridedKey.source);
+      const innerParsed = parseColumnIdSafely(overridedKey.source);
       expect(isColumnFilteredKey(innerParsed)).toBe(true);
     }
 

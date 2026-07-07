@@ -26,16 +26,17 @@ export interface FindFilterColumnsOptions {
 /**
  * Matches columns annotated `pl7.app/isSubset: "true"` whose axes ⊆ anchor axes.
  *
- * The axes-subset constraint is enforced by `mode: "enrichment"`, which sets
- * `allowFloatingHitAxes: false` — every axis of the matched column must be
- * present in the anchor's axes. See `matchingModeToConstraints()` in
- * `discover_columns.ts`.
+ * Filter-intent: only the dataset's own direct subset columns, no linker
+ * traversal — so this uses `.filter()` (pins `maxHops: 0`), not `.discover()`
+ * (which would default to 4 hops and surface subset columns from other,
+ * linker-reachable datasets). `.filter()` still applies the default
+ * `enrichment` matching mode (`allowFloatingHitAxes: false`), which enforces
+ * the axes-subset constraint. See `matchingModeToConstraints()`.
  */
 export function findFilterColumns(options: FindFilterColumnsOptions): ColumnRecipe[] {
   return ColumnsCollection([...options.sources], { driver: options.driver })
-    .discover({
+    .filter({
       anchors: { main: options.anchorSpec },
-      mode: "enrichment",
       include: { annotations: { [Annotation.IsSubset]: "true" } },
     })
     .getColumns();

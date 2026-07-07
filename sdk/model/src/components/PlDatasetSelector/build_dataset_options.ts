@@ -69,8 +69,6 @@ export function buildDatasetOptions(
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    // ResultPoolColumnsProvider's completeness is per-block; allowPartialColumnList
-    // tells discoverColumns to return partial results while pool entries flap.
     const filterMatches = findFilterColumns({
       sources: [filterSource],
       anchorSpec: datasetSpec,

@@ -1,6 +1,6 @@
 import { type Branded, throwError, type Mutable, Nil } from "@milaboratories/helpers";
 import { type CanonicalizedJson, canonicalizeJson } from "../../../json";
-import { AxisPatches, type ColumnUniversalId, parseColumnIdSafety } from "./ids";
+import { AxisPatches, type ColumnUniversalId, parseColumnIdSafely } from "./ids";
 import type { AxisSpec, PColumnSpec } from "./spec";
 import { isNil, isString } from "es-toolkit";
 
@@ -89,9 +89,9 @@ export function stringifyColumnOverriddenId(id: ColumnOverriddenKey): ColumnOver
  * the inner `source` is never itself an override-wrap. Anything else throws.
  */
 export function unwrapOverrides(id: ColumnUniversalId): ColumnOverriddenKey | undefined {
-  const parsed = parseColumnIdSafety(id);
+  const parsed = parseColumnIdSafely(id);
   if (parsed === undefined || !isColumnOverriddenKey(parsed)) return undefined;
-  const inner = parseColumnIdSafety(parsed.source);
+  const inner = parseColumnIdSafely(parsed.source);
   if (inner !== undefined && isColumnOverriddenKey(inner)) {
     throw new Error("nested override-wrap detected — invariant broken");
   }
