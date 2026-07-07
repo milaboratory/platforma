@@ -7,30 +7,28 @@ describe("parseScenario — knobs collapse to the supported set", () => {
     expect(parseScenario({ channel: "dev" })).toEqual({ kind: "legacy" });
   });
 
-  it("explicit location => a target cell with variant normalized to both kinds", () => {
+  it("explicit location => a target cell carrying the knobs as enums", () => {
     expect(parseScenario({ channel: "dev", variant: "binary", location: "remote" })).toEqual({
       kind: "target",
       channel: "dev",
-      docker: false,
-      binary: true,
-      remote: true,
+      variant: "binary",
+      location: "remote",
     });
+    // channel and variant default when unset.
     expect(parseScenario({ location: "local" })).toEqual({
       kind: "target",
       channel: "release",
-      docker: true,
-      binary: true,
-      remote: false,
+      variant: "all",
+      location: "local",
     });
   });
 
-  it("variant=all builds both kinds", () => {
+  it("variant=all is preserved on the target", () => {
     expect(parseScenario({ channel: "dev", variant: "all", location: "local" })).toEqual({
       kind: "target",
       channel: "dev",
-      docker: true,
-      binary: true,
-      remote: false,
+      variant: "all",
+      location: "local",
     });
   });
 
@@ -41,10 +39,14 @@ describe("parseScenario — knobs collapse to the supported set", () => {
     expect(parseScenario({ variant: "none" })).toEqual({ kind: "no-software" });
   });
 
-  it("use-published collapses everything but rejects docker", () => {
+  it("use-published collapses everything but rejects docker and all (binary-only)", () => {
     expect(parseScenario({ channel: "dev", usePublished: true })).toEqual({
       kind: "use-published",
     });
+    expect(parseScenario({ usePublished: true, variant: "binary" })).toEqual({
+      kind: "use-published",
+    });
     expect(() => parseScenario({ usePublished: true, variant: "docker" })).toThrow(/binary-only/);
+    expect(() => parseScenario({ usePublished: true, variant: "all" })).toThrow(/binary-only/);
   });
 });

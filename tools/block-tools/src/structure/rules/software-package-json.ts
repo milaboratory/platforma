@@ -12,6 +12,7 @@ import {
   ensureField,
   removeField,
   ensureScript,
+  removeScript,
   ensureDevDeps,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
@@ -22,11 +23,16 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 // Lifecycle scripts that build and pack the software module. The `block-tools software build` form
 // runs the per-target builder; `do-pack` packs the result for local install.
+//
+// No `prepublishOnly` in the software-build path: that hook existed for the old model where
+// `pl-pkg prepublish` was a separate publish-time upload step. Here build + push happen in one pass
+// during `build` (build:release pushes to the release registries), so re-running the builder at
+// `pnpm publish` time — with none of the PL_BUILD_* env set, i.e. the bare "legacy" scenario —
+// would be a redundant rebuild that never pushes the binary to the release channel.
 function buildScripts(softwareBuild: boolean): Record<string, string> {
   if (softwareBuild) {
     return {
       build: "block-tools software build",
-      prepublishOnly: "block-tools software build",
       "do-pack":
         "shx rm -f *.tgz && block-tools software build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
     };
@@ -100,6 +106,10 @@ export function softwarePackageJsonRules(ctx: RunContext): void {
   for (const [name, command] of Object.entries(buildScripts(ctx.softwareBuild))) {
     ensureScript(name, command);
   }
+  // Software-build blocks drop `prepublishOnly` (see buildScripts). Strip it here so a refresh
+  // heals blocks migrated from the old model — but only in this path: the legacy branch's
+  // ensureScript loop above legitimately sets `prepublishOnly: pl-pkg prepublish`.
+  if (ctx.softwareBuild) removeScript("prepublishOnly");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
 
