@@ -129,25 +129,41 @@ export function softwareBuildCommand(): Command {
       core.allPlatforms = Boolean(o.allPlatforms);
       core.fullDirHash = Boolean(o.fullDirHash);
 
-      await runBuild(
+      // Collapse the pl-pkg-parity --{docker,conda}-{,no-}* flag pairs to decisions here, at the CLI
+      // boundary, so runBuild receives resolved booleans (docker defaults to on in CI, push unless private).
+      const buildDocker = util.shouldDoAction({
+        default: envs.isCI(),
+        enable: o.dockerBuild,
+        disable: o.dockerNoBuild,
+      });
+      const pushDocker =
+        buildDocker &&
+        util.shouldDoAction({
+          default: envs.isCI() && !core.isPrivate,
+          enable: o.dockerAutopush,
+          disable: o.dockerNoAutopush,
+        });
+
+      await runBuild({
         core,
         scenario,
-        {
+        logger,
+        options: {
           ids: o.packageId,
           force: o.force,
           contentRoot: o.contentRoot,
           storageUrl: o.storageUrl,
           dockerRegistry: o.dockerRegistry,
           dockerPushTo: o.dockerPushTo,
-          dockerBuild: o.dockerBuild,
-          dockerNoBuild: o.dockerNoBuild,
-          dockerAutopush: o.dockerAutopush,
-          dockerNoAutopush: o.dockerNoAutopush,
-          condaBuild: o.condaBuild,
-          condaNoBuild: o.condaNoBuild,
+          buildDocker,
+          pushDocker,
+          condaBuild: util.shouldDoAction({
+            default: true,
+            enable: o.condaBuild,
+            disable: o.condaNoBuild,
+          }),
         },
-        logger,
-      );
+      });
     } catch (e) {
       logger.debug(e);
       if (e instanceof Error) logger.debug(e.stack);

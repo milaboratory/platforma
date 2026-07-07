@@ -48,11 +48,11 @@ export function buildAllCommand(name = "build"): Command {
       // slow cross-compile + push on each iteration. To publish dev images,
       // they invoke a separate script (template ships 'build:dev-remote')
       // that sets PL_DOCKER_BUILD=1 + PL_DOCKER_AUTOPUSH=1.
-      const buildDocker = cmdOpts.shouldDoAction(
-        envs.isCI(),
-        flags["docker-build"],
-        flags["docker-no-build"],
-      );
+      const buildDocker = cmdOpts.shouldDoAction({
+        default: envs.isCI(),
+        enable: flags["docker-build"],
+        disable: flags["docker-no-build"],
+      });
 
       // When dev-local explicitly opts into a docker build (--docker-build /
       // PL_DOCKER_BUILD=1) and no --docker-registry is set, fall back to the
@@ -78,7 +78,11 @@ export function buildAllCommand(name = "build"): Command {
         skipIfEmpty: flags["package-id"] ? false : true, // do not skip 'non-binary' packages if their IDs were set as args
 
         // Automated builds settings
-        condaBuild: cmdOpts.shouldDoAction(true, flags["conda-build"], flags["conda-no-build"]),
+        condaBuild: cmdOpts.shouldDoAction({
+          default: true,
+          enable: flags["conda-build"],
+          disable: flags["conda-no-build"],
+        }),
       });
 
       core.buildSwJsonFiles({
@@ -89,11 +93,11 @@ export function buildAllCommand(name = "build"): Command {
       // explicit opt-in via --docker-autopush / PL_DOCKER_AUTOPUSH=1 (which
       // 'build:dev-remote' sets) flips it. Private packages never push by
       // default — the dev ECR is public.
-      const autopush = cmdOpts.shouldDoAction(
-        envs.isCI() && !core.isPrivate,
-        flags["docker-autopush"],
-        flags["docker-no-autopush"],
-      );
+      const autopush = cmdOpts.shouldDoAction({
+        default: envs.isCI() && !core.isPrivate,
+        enable: flags["docker-autopush"],
+        disable: flags["docker-no-autopush"],
+      });
       if (buildDocker && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.

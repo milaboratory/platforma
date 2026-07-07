@@ -13,44 +13,19 @@ import {
   removeField,
   ensureScript,
   removeScript,
-  ensureDevDeps,
+  ensureDevDep,
+  removeDep,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
-  type DepVersion,
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
-// Lifecycle scripts that build and pack the software module. The `block-tools software build` form
-// runs the per-target builder; `do-pack` packs the result for local install.
-//
-// No `prepublishOnly` in the software-build path: that hook existed for the old model where
-// `pl-pkg prepublish` was a separate publish-time upload step. Here build + push happen in one pass
-// during `build` (build:release pushes to the release registries), so re-running the builder at
-// `pnpm publish` time — with none of the PL_BUILD_* env set, i.e. the bare "legacy" scenario —
-// would be a redundant rebuild that never pushes the binary to the release channel.
-function buildScripts(softwareBuild: boolean): Record<string, string> {
-  if (softwareBuild) {
-    return {
-      build: "block-tools software build",
-      "do-pack":
-        "shx rm -f *.tgz && block-tools software build && pnpm pack && shx mv platforma-open*.tgz package.tgz",
-    };
-  }
-  return {
-    build: "pl-pkg build",
-    prepublishOnly: "pl-pkg prepublish",
-  };
-}
-
-// `block-tools` provides the `software build` binary the build script invokes.
-function buildDevDeps(softwareBuild: boolean): Record<string, DepVersion> {
-  const base: Record<string, DepVersion> = {
-    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-    "@platforma-sdk/package-builder": "sdk:",
-  };
-  return softwareBuild ? { ...base, "@platforma-sdk/block-tools": "sdk:" } : base;
-}
+// The software-build build/pack commands, shared by the generator and the reconciler. block-tools
+// bundles the build engine, so these are the only build-tool commands a software-build block runs.
+const BUILD_CMD = "block-tools software build";
+const DO_PACK_CMD =
+  "shx rm -f *.tgz && block-tools software build && pnpm pack && shx mv platforma-open*.tgz package.tgz";
 
 /** The `block-software` package-builder descriptor for a python
  *  entrypoint. Kept opaque by the engine; rule authors edit it via
@@ -78,18 +53,41 @@ function pythonBlockSoftware(): Record<string, unknown> {
 
 export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
+
+  // The build tool differs by path: the software-build path builds/packs via block-tools and needs
+  // no pl-pkg; the legacy path shells out to pl-pkg and keeps its prepublish upload step.
+  const scripts = ctx.softwareBuild
+    ? {
+        build: BUILD_CMD,
+        "do-pack": DO_PACK_CMD,
+        changeset: "changeset",
+        "version-packages": "changeset version",
+      }
+    : {
+        build: "pl-pkg build",
+        prepublishOnly: "pl-pkg prepublish",
+        changeset: "changeset",
+        "version-packages": "changeset version",
+      };
+
+  const devDependencies = ctx.softwareBuild
+    ? {
+        "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+        "@platforma-sdk/block-tools": "sdk:",
+      }
+    : {
+        "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+        "@platforma-sdk/package-builder": "sdk:",
+      };
+
   return {
     name: `${v.facadeName}.software`,
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],
-    scripts: {
-      ...buildScripts(ctx.softwareBuild),
-      changeset: "changeset",
-      "version-packages": "changeset version",
-    },
+    scripts,
     "block-software": pythonBlockSoftware(),
-    devDependencies: buildDevDeps(ctx.softwareBuild),
+    devDependencies,
   };
 }
 
@@ -103,17 +101,29 @@ export function softwarePackageJsonRules(ctx: RunContext): void {
   ensureField("type", "module");
   ensureField("files", ["./dist/**/*"]);
 
-  for (const [name, command] of Object.entries(buildScripts(ctx.softwareBuild))) {
-    ensureScript(name, command);
+  // Lifecycle scripts. Each path declares exactly its own build/pack scripts and strips the other
+  // path's leftovers, so a block migrated between the two converges on refresh.
+  if (ctx.softwareBuild) {
+    ensureScript("build", BUILD_CMD);
+    ensureScript("do-pack", DO_PACK_CMD);
+    // build + push happen in `build`; the old `pl-pkg prepublish` upload step is gone.
+    removeScript("prepublishOnly");
+  } else {
+    ensureScript("build", "pl-pkg build");
+    ensureScript("prepublishOnly", "pl-pkg prepublish");
   }
-  // Software-build blocks drop `prepublishOnly` (see buildScripts). Strip it here so a refresh
-  // heals blocks migrated from the old model — but only in this path: the legacy branch's
-  // ensureScript loop above legitimately sets `prepublishOnly: pl-pkg prepublish`.
-  if (ctx.softwareBuild) removeScript("prepublishOnly");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
 
-  ensureDevDeps(buildDevDeps(ctx.softwareBuild));
+  // Canonical devDeps. The runenv is shared; the build tool differs by path. block-tools bundles the
+  // engine, so a software-build block drops the pl-pkg `@platforma-sdk/package-builder` dependency.
+  ensureDevDep("@platforma-open/milaboratories.runenv-python-3", "catalog:");
+  if (ctx.softwareBuild) {
+    ensureDevDep("@platforma-sdk/block-tools", "sdk:");
+    removeDep("@platforma-sdk/package-builder");
+  } else {
+    ensureDevDep("@platforma-sdk/package-builder", "sdk:");
+  }
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

@@ -28,11 +28,11 @@ export function buildDockerCommand(): Command {
       strictPlatformMatching: envs.isCI(),
     });
 
-    const autopush = cmdOpts.shouldDoAction(
-      envs.isCI() && !core.isPrivate, // do not push docker images of private packages
-      flags["docker-autopush"],
-      flags["docker-no-autopush"],
-    );
+    const autopush = cmdOpts.shouldDoAction({
+      default: envs.isCI() && !core.isPrivate, // do not push docker images of private packages
+      enable: flags["docker-autopush"],
+      disable: flags["docker-no-autopush"],
+    });
     if (autopush && !core.isPrivate) {
       core.publishDockerImages({
         ids: flags["package-id"],

@@ -9,12 +9,12 @@ export type Variant = (typeof variants)[number];
 export type Location = (typeof locations)[number];
 
 // Raw CLI flags, each independently optional; parseScenario narrows them to a supported Scenario.
-export interface Knobs {
+export type Knobs = {
   channel?: Channel;
   variant?: Variant;
   location?: Location;
   usePublished?: boolean;
-}
+};
 
 // The variant a resolved target actually builds — "none" is its own scenario, never a target.
 export type TargetVariant = Exclude<Variant, "none">;
