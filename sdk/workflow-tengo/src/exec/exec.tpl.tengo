@@ -85,18 +85,17 @@ inputSchema := {
 	}
 }
 
-// Optional resource-formula inputs (attached by the exec builder when a RAM /
-// CPU / VRAM formula is used), evaluated by the body below. The formula ASTs
-// __memFormula__/__cpuFormula__/__gpuFormula__ are JSON value resources on the
-// META rail — CID-transparent, yet readable as final in this pure body (same
-// mechanism as `quota`). __metric_lineCount__ is a COMPUTED map resource
-// (fileName -> content resource with that file's line count) on the REGULAR
-// rail, so this pure template's readiness gate deep-waits its per-file entries to
-// final before the body reads them. Keys come from execConstants so the
-// attach/read/validate sites share one source of truth. See analysis doc §4.
+// Optional resource-formula inputs (attached by the exec builder when
+// memFormula/cpuFormula are used), evaluated by the body below. The formula ASTs
+// __memFormula__/__cpuFormula__ are JSON value resources on the META rail —
+// CID-transparent, yet readable as final in this pure body (same mechanism as
+// `quota`). __metric_lineCount__ is a COMPUTED map resource (fileName -> content
+// resource with that file's line count) on the REGULAR rail, so this pure
+// template's readiness gate deep-waits its per-file entries to final before the
+// body reads them. Keys come from execConstants so the attach/read/validate sites
+// share one source of truth. See analysis doc §4.
 inputSchema[execConstants.META_INPUT_MEM_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
-inputSchema[execConstants.META_INPUT_GPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.REGULAR_INPUT_LINE_COUNT + ",?"] = "any"
 self.validateInputs(inputSchema)
 
@@ -119,8 +118,7 @@ self.body(func(inputs) {
 
 	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
 	cpuFormula := inputs[execConstants.META_INPUT_CPU_FORMULA]
-	gpuFormula := inputs[execConstants.META_INPUT_GPU_FORMULA]
-	if !is_undefined(memFormula) || !is_undefined(cpuFormula) || !is_undefined(gpuFormula) {
+	if !is_undefined(memFormula) || !is_undefined(cpuFormula) {
 		fileRefs := inputs.filesToAdd
 		lineCountMap := inputs[execConstants.REGULAR_INPUT_LINE_COUNT]
 		resolver := {
@@ -155,11 +153,6 @@ self.body(func(inputs) {
 		}
 		if !is_undefined(cpuFormula) {
 			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
-		}
-		if !is_undefined(gpuFormula) {
-			// VRAM bytes -> SizeUnit string (the quota's gpuMemory is a size string,
-			// parsed identically to ram). A positive integer is asserted, same as ram.
-			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory")) + "b"
 		}
 	}
 

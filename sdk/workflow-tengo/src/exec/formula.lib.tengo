@@ -1,12 +1,10 @@
-// exec.formula — compute an exec's RAM/CPU/GPU from its input data instead of
+// exec.formula — compute an exec's RAM/CPU from its input data instead of
 // hardcoding it. A formula is a pure AST of plain maps (see "AST node shapes"
 // below) that flows through two phases across the exec boundary:
 //
-// WORKFLOW RENDER TIME (in exec.builder().run(), before the exec exists):
+// BUILD TIME (in exec.builder().run(), before the exec exists):
 //   1. The author composes a formula from the exported constructors
-//      (size/lineCount, gib/..., add/mul/clamp/if) OR the fluent chain
-//      (.per/.times/.plus/.between/... + .staticFallback). Both build the SAME
-//      AST — the chain is sugar. Bare ints auto-wrap to const.
+//      (size/lineCount, gib/..., add/mul/clamp/if). Bare ints auto-wrap to const.
 //   2. resolveAst() turns each { op: "metric", tag } into a concrete
 //      { op: "metricSum", files } via the builder's tag -> files map (an empty
 //      tag collapses to its { default }), and rejects lineCount on a non-text file.
@@ -25,16 +23,7 @@
 //      integer, and override the quota.
 //
 // FALLBACK: a backend that can't evaluate formulas uses a static value instead
-//   (applyFormulaFallback) — an explicit .staticFallback()/{ fallback } or a
-//   static request set on the same dimension.
-//
-// FLUENT WRAPPERS: every constructor returns a chainable wrapper — a map
-//   { __isFormula__: true, __ast__: <plain AST>, __fallback__: <static?> } that
-//   also carries the chain methods. The plain AST is never contaminated: _wrap
-//   (used by every constructor when composing children) unwraps a wrapper back to
-//   its __ast__, so the tree stored and serialized is always plain maps. The
-//   builder reads a value with astOf()/fallbackOf(); the evaluator entry points
-//   auto-unwrap, so passing a wrapper straight to resolveAst/evaluate/... works.
+//   (applyFormulaFallback) — an explicit { fallback } or a static .mem()/.cpu().
 //
 // Pure by design: this file walks data and knows nothing of the backend. That
 // resolver injection (step 4) keeps it import-free — and is why lineCount runs a
@@ -74,15 +63,7 @@ _KNOWN_OPS := sets.fromSlice([
 // (evaluateResource) — they are meaningful only inside f.if(...).
 _BOOL_OPS := sets.fromSlice(["gt", "gte", "lt", "lte", "and", "or", "not"])
 
-// _unwrap strips a fluent wrapper down to its plain AST; a plain AST or an int
-// passes through untouched. Applied at every evaluator entry point and by _wrap,
-// so the plain AST tree never contains a wrapper.
-_unwrap := func(x) {
-	return is_map(x) && !is_undefined(x.__isFormula__) ? x.__ast__ : x
-}
-
 _wrap := func(x) {
-	x = _unwrap(x)
 	if is_map(x) && !is_undefined(x.op) {
 		ll.assert(sets.hasElement(_KNOWN_OPS, x.op), "exec.formula: not a valid expression node (unknown op %v)", x.op)
 		return x
@@ -111,22 +92,8 @@ _metric := func(metricName, args) {
 	return node
 }
 
-// _staticValue extracts the constant behind a .staticFallback() argument: a bare
-// number/string passes through; a pure-const wrapper (e.g. f.gib(64)) yields its
-// integer byte value. Anything else is rejected — a fallback must be static.
-_staticValue := func(v) {
-	if is_map(v) && !is_undefined(v.__isFormula__) {
-		a := v.__ast__
-		ll.assert(is_map(a) && a.op == "const",
-			"exec.formula.staticFallback: expected a constant (a number, a size string, or a pure unit like f.gib(64)), got a formula")
-		return a.value
-	}
-	return v
-}
-
 evaluate := undefined
 evaluate = func(node, resolver) {
-	node = _unwrap(node)
 	op := node.op
 	if op == "const" { return node.value }
 	if op == "metricSum" {
@@ -176,28 +143,27 @@ evaluate = func(node, resolver) {
 	ll.panic("exec.formula.evaluate: unknown op %q", op)
 }
 
-// evaluateResource evaluates a formula destined for a resource quota (ram / cpu /
-// gpu) and asserts the result is usable: a positive integer. It first rejects a
+// evaluateResource evaluates a formula destined for a resource quota (ram / cpu)
+// and asserts the result is usable: a positive integer. It first rejects a
 // comparison/logic op at the top level — Tengo's && / || return the deciding
 // OPERAND (an int), so a top-level f.and/f.or of ints would otherwise pass the
 // is_int check; comparisons and logic belong only inside f.if(...). The
 // positive-int check then catches a non-positive result (an f.sub that
 // underflows, or a metric that floored to 0) BEFORE it reaches the quota as an
-// opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu" /
-// "gpuMemory") names the offending dimension.
+// opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu") names
+// the offending dimension.
 evaluateResource := func(node, resolver, label) {
-	node = _unwrap(node)
 	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
 		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.if(...).",
 		label, node.op)
 	v := evaluate(node, resolver)
 	ll.assert(is_int(v) && v > 0,
-		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.between(...).",
+		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with f.max(...) or f.clamp(...).",
 		label, v)
 	return v
 }
 
-// ---- workflow-render-time resolution helpers -------------------------------
+// ---- builder-time resolution helpers ---------------------------------------
 
 // Line-oriented text extensions f.lineCount() supports, and the compression
 // suffixes it may carry. The line-counter binary infers the codec from the
@@ -226,7 +192,6 @@ _assertMetricCompatible := func(metric, fileName) {
 
 resolveAst := undefined
 resolveAst = func(node, tagMap, allFiles) {
-	node = _unwrap(node)
 	op := node.op
 	if op == "metric" {
 		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
@@ -256,7 +221,6 @@ resolveAst = func(node, tagMap, allFiles) {
 }
 
 referencedMetricFiles := func(resolvedNode) {
-	resolvedNode = _unwrap(resolvedNode)
 	acc := {}
 	walk := undefined
 	walk = func(n) {
@@ -279,73 +243,36 @@ referencedMetricFiles := func(resolvedNode) {
 	return acc
 }
 
-// applyFormulaFallback resolves the static ram/cpu/gpu to use when the backend
+// applyFormulaFallback resolves the static ram/cpu to use when the backend
 // cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
-// by dimension — { ram: { ast, fallback, static }, cpu: {...}, gpu?: {...} } —
-// where `ast` is the formula (if any), `static` the static request (if any), and
-// `fallback` the .staticFallback()/{ fallback } given on the formula. A formula
-// dimension needs SOME static value: a static request always wins (the formula
-// won't run on this backend) and doubles as the fallback, so `fallback` fills in
-// only when no static request was set; the sole error is a formula dimension with
-// NEITHER. Returns { ram, cpu, gpu, err } — err a message string or undefined;
-// the caller asserts err is undefined, then applies ram/cpu/gpu. (Field is `err`,
-// not `error`: `error` is a reserved word in Tengo.) The values are validated by
-// the builder before they reach here; this only picks among them. The gpu
-// dimension is optional in `dims` (omitted when no GPU is in play); res.gpu is
-// then undefined and the caller leaves the quota's gpuMemory unset.
+// by dimension — { ram: { ast, fallback, static }, cpu: { ast, fallback, static } }
+// — where `ast` is the formula (if any), `static` the .mem()/.cpu() request (if
+// any), and `fallback` the { fallback } given on the formula. A formula dimension
+// needs SOME static value: a static request always wins (the formula won't run on
+// this backend) and doubles as the fallback, so `fallback` fills in only when no
+// static request was set; the sole error is a formula dimension with NEITHER.
+// Returns { ram, cpu, err } — err a message string or undefined; the caller asserts
+// err is undefined, then applies ram/cpu. (Field is `err`, not `error`: `error` is
+// a reserved word in Tengo.) The ram/cpu values are validated by the builder before
+// they reach here; this only picks among them.
 applyFormulaFallback := func(dims) {
-	gpu := is_undefined(dims.gpu) ? {} : dims.gpu
-	res := { ram: dims.ram.static, cpu: dims.cpu.static, gpu: gpu.static, err: undefined }
-	if !is_undefined(_unwrap(dims.ram.ast)) && is_undefined(res.ram) {
+	res := { ram: dims.ram.static, cpu: dims.cpu.static, err: undefined }
+	if !is_undefined(dims.ram.ast) && is_undefined(res.ram) {
 		if is_undefined(dims.ram.fallback) {
-			res.err = "exec.builder: the RAM formula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide .staticFallback(...) on the RAM formula, set a static ram, or upgrade the backend."
+			res.err = "exec.builder: memFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on memFormula, set a static .mem(), or upgrade the backend."
 			return res
 		}
 		res.ram = dims.ram.fallback
 	}
-	if !is_undefined(_unwrap(dims.cpu.ast)) && is_undefined(res.cpu) {
+	if !is_undefined(dims.cpu.ast) && is_undefined(res.cpu) {
 		if is_undefined(dims.cpu.fallback) {
-			res.err = "exec.builder: the CPU formula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide .staticFallback(...) on the CPU formula, set a static cpu, or upgrade the backend."
+			res.err = "exec.builder: cpuFormula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide { fallback: ... } on cpuFormula, set a static .cpu(), or upgrade the backend."
 			return res
 		}
 		res.cpu = dims.cpu.fallback
 	}
-	if !is_undefined(_unwrap(gpu.ast)) && is_undefined(res.gpu) {
-		if is_undefined(gpu.fallback) {
-			res.err = "exec.builder: the VRAM formula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide .staticFallback(...) on the vram formula, set a static vram, or upgrade the backend."
-			return res
-		}
-		res.gpu = gpu.fallback
-	}
 	return res
 }
-
-// ---- fluent wrapper factory ------------------------------------------------
-// _node wraps a plain AST in a chainable object. Every chain method returns a
-// NEW wrapper (immutable), carrying the accumulated { fallback } forward. The
-// arithmetic aliases read left-to-right — `f.size("x").times(12).plus(f.gib(8))`
-// composes mul(size, 12) then add(that, gib(8)). Bounds: .atLeast -> max,
-// .atMost -> min, .between(lo, hi) -> clamp. .staticFallback pins the value used
-// on backends that can't evaluate the formula.
-_node := undefined
-_node = func(ast, fallback) {
-	self := {
-		__isFormula__: true,
-		__ast__:       ast,
-		__fallback__:  fallback
-	}
-	self.per     = func(x) { return _node(_bin("divCeil", ast, x), fallback) }
-	self.times   = func(x) { return _node(_bin("mul", ast, x), fallback) }
-	self.plus    = func(x) { return _node(_bin("add", ast, x), fallback) }
-	self.minus   = func(x) { return _node(_bin("sub", ast, x), fallback) }
-	self.atLeast = func(x) { return _node(_bin("max", ast, x), fallback) }
-	self.atMost  = func(x) { return _node(_bin("min", ast, x), fallback) }
-	self.between = func(lo, hi) { return _node({ op: "clamp", value: ast, lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
-	self.staticFallback = func(v) { return _node(ast, _staticValue(v)) }
-	return self
-}
-
-_const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an integer"); return _node({ op: "const", value: n }, undefined) }
 
 export {
 	// size: total bytes of the referenced input files (blob size; no pre-exec).
@@ -353,51 +280,38 @@ export {
 	//   with N newlines reports N, so a final line without a trailing newline is
 	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
 	//   only for line-oriented text formats (see _LINECOUNT_OK above).
-	size:      func(...args) { return _node(_metric("size", args), undefined) },
-	lineCount: func(...args) { return _node(_metric("lineCount", args), undefined) },
+	size:      func(...args) { return _metric("size", args) },
+	lineCount: func(...args) { return _metric("lineCount", args) },
 
-	gib: func(n) { return _const(n * units.GiB) },
-	mib: func(n) { return _const(n * units.MiB) },
-	kib: func(n) { return _const(n * units.KiB) },
-	gb:  func(n) { return _const(n * units.GB) },
-	mb:  func(n) { return _const(n * units.MB) },
-	kb:  func(n) { return _const(n * units.KB) },
+	gib: func(n) { ll.assert(is_int(n), "exec.formula.gib: n must be an integer"); return { op: "const", value: n * units.GiB } },
+	mib: func(n) { ll.assert(is_int(n), "exec.formula.mib: n must be an integer"); return { op: "const", value: n * units.MiB } },
+	kib: func(n) { ll.assert(is_int(n), "exec.formula.kib: n must be an integer"); return { op: "const", value: n * units.KiB } },
+	gb:  func(n) { ll.assert(is_int(n), "exec.formula.gb: n must be an integer");  return { op: "const", value: n * units.GB } },
+	mb:  func(n) { ll.assert(is_int(n), "exec.formula.mb: n must be an integer");  return { op: "const", value: n * units.MB } },
+	kb:  func(n) { ll.assert(is_int(n), "exec.formula.kb: n must be an integer");  return { op: "const", value: n * units.KB } },
 
-	// const: a bare integer as a formula leaf (bytes / cores). Handy when a
-	// dimension is a plain number you still want to chain off of.
-	"const": func(n) { return _const(n) },
-
-	add:     func(a, b) { return _node(_bin("add", a, b), undefined) },
-	sub:     func(a, b) { return _node(_bin("sub", a, b), undefined) },
-	mul:     func(a, b) { return _node(_bin("mul", a, b), undefined) },
-	div:     func(a, b) { return _node(_bin("div", a, b), undefined) },
+	add:     func(a, b) { return _bin("add", a, b) },
+	sub:     func(a, b) { return _bin("sub", a, b) },
+	mul:     func(a, b) { return _bin("mul", a, b) },
+	div:     func(a, b) { return _bin("div", a, b) },
 	// divCeil(a, b): ceiling of a/b. Assumes a >= 0 and b > 0 — the resource-metric
 	// domain (sizes, line counts, positive constants). A negative a (e.g. an
 	// underflowing f.sub) can be off by one; floor such inputs with f.max first.
-	divCeil: func(a, b) { return _node(_bin("divCeil", a, b), undefined) },
+	divCeil: func(a, b) { return _bin("divCeil", a, b) },
 
-	max:   func(a, b) { return _node(_bin("max", a, b), undefined) },
-	min:   func(a, b) { return _node(_bin("min", a, b), undefined) },
-	clamp: func(value, lo, hi) { return _node({ op: "clamp", value: _wrap(value), lo: _wrap(lo), hi: _wrap(hi) }, undefined) },
+	max:   func(a, b) { return _bin("max", a, b) },
+	min:   func(a, b) { return _bin("min", a, b) },
+	clamp: func(value, lo, hi) { return { op: "clamp", value: _wrap(value), lo: _wrap(lo), hi: _wrap(hi) } },
 
-	gt:  func(a, b) { return _node(_bin("gt", a, b), undefined) },
-	gte: func(a, b) { return _node(_bin("gte", a, b), undefined) },
-	lt:  func(a, b) { return _node(_bin("lt", a, b), undefined) },
-	lte: func(a, b) { return _node(_bin("lte", a, b), undefined) },
-	and: func(a, b) { return _node(_bin("and", a, b), undefined) },
-	or:  func(a, b) { return _node(_bin("or", a, b), undefined) },
-	not: func(a) { return _node({ op: "not", a: _wrap(a) }, undefined) },
+	gt:  func(a, b) { return _bin("gt", a, b) },
+	gte: func(a, b) { return _bin("gte", a, b) },
+	lt:  func(a, b) { return _bin("lt", a, b) },
+	lte: func(a, b) { return _bin("lte", a, b) },
+	and: func(a, b) { return _bin("and", a, b) },
+	or:  func(a, b) { return _bin("or", a, b) },
+	not: func(a) { return { op: "not", a: _wrap(a) } },
 
-	"if": func(cond, then, els) { return _node({ op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) }, undefined) },
-
-	// ---- wrapper introspection (used by the exec builder) ------------------
-	// astOf: the plain AST behind a value (a wrapper -> its __ast__; a plain AST
-	//   or int -> itself). fallbackOf: the .staticFallback() carried on a wrapper
-	//   (else undefined). isFormula: true for a wrapper or a plain AST node, false
-	//   for a bare number/string (i.e. a static request).
-	astOf:      func(x) { return _unwrap(x) },
-	fallbackOf: func(x) { return is_map(x) && !is_undefined(x.__isFormula__) ? x.__fallback__ : undefined },
-	isFormula:  func(x) { return is_map(x) && (!is_undefined(x.__isFormula__) || !is_undefined(x.op)) },
+	"if": func(cond, then, els) { return { op: "if", cond: _wrap(cond), then: _wrap(then), "else": _wrap(els) } },
 
 	evaluateResource:      evaluateResource,
 	resolveAst:            resolveAst,

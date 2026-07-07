@@ -320,14 +320,8 @@ const rejectCases = [
   {
     mode: "bam",
     needsFile: true,
-    pattern: /lineCount is not supported for file/, // unsupported lineCount format, rejected at workflow render time
-    desc: "f.lineCount() on a .bam file rejected at workflow render time",
-  },
-  {
-    mode: "gpuRequired",
-    needsFile: false,
-    pattern: /no GPU support/, // onGPU without onCPU on a GPU-less backend -> fail fast at workflow render time
-    desc: "resources({ onGPU }) alone fails fast on a GPU-less backend",
+    pattern: /lineCount is not supported for file/, // unsupported lineCount format, rejected at builder time
+    desc: "f.lineCount() on a .bam file rejected at builder time",
   },
 ] as const;
 
@@ -337,11 +331,10 @@ for (const tc of rejectCases) {
     async ({ helper, expect, driverKit }) => {
       const handle = tc.needsFile ? await libraryFileHandle(driverKit) : undefined;
 
-      // The render must fail. Positive-integer-guard rejections surface at run time,
-      // when the awaited output resolves (the ephemeral impl panics in
-      // evaluateResource); the format guard and the GPU-required guard fail the
-      // render directly (a workflow-render-time assert). Wrapping render + await in
-      // one thunk catches both timings.
+      // The render must fail. Positive-integer-guard rejections surface when the awaited
+      // output resolves (the ephemeral impl panics in evaluateResource); the format-guard
+      // rejection fails the render directly (builder-time assert). Wrapping
+      // render + await in one thunk catches both timings.
       await expect(async () => {
         const result = await helper.renderTemplate(
           false,

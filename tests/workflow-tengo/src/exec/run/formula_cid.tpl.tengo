@@ -29,7 +29,8 @@ self.body(func(inputs) {
 		inHeavyQueue().
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu},cid").
-		resources({ onCPU: { ram: f.gib(inputs.memGib), cpu: f.add(2, 1) } }).
+		memFormula(f.gib(inputs.memGib)).
+		cpuFormula(f.add(2, 1)).
 		saveStdoutContent().
 		run()
 

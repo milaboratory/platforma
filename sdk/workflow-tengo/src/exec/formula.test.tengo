@@ -2,36 +2,34 @@ test := import(":test")
 f := import(":exec.formula")
 text := import("text")
 
-// Constructors return a chainable wrapper; f.astOf(...) unwraps it to the plain
-// AST these assertions compare against.
 TestFormulaConstructors := func() {
-	test.isEqual({ op: "add", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.astOf(f.add(2, 3)))
-	test.isEqual({ op: "clamp", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.astOf(f.clamp(1, 2, 3)))
-	test.isEqual("divCeil", f.astOf(f.divCeil(10, 3)).op)
+	test.isEqual({ op: "add", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.add(2, 3))
+	test.isEqual({ op: "clamp", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.clamp(1, 2, 3))
+	test.isEqual("divCeil", f.divCeil(10, 3).op)
 }
 
 TestFormulaAutoWrap := func() {
-	node := f.astOf(f.mul(f.size("reads"), 4))
+	node := f.mul(f.size("reads"), 4)
 	test.isEqual("mul", node.op)
 	test.isEqual("metric", node.a.op)
 	test.isEqual({ op: "const", value: 4 }, node.b)
 }
 
 TestFormulaUnits := func() {
-	test.isEqual({ op: "const", value: 16 * 1073741824 }, f.astOf(f.gib(16)))
-	test.isEqual({ op: "const", value: 256 * 1048576 }, f.astOf(f.mib(256)))
-	test.isEqual({ op: "const", value: 2 * 1000000000 }, f.astOf(f.gb(2)))
+	test.isEqual({ op: "const", value: 16 * 1073741824 }, f.gib(16))
+	test.isEqual({ op: "const", value: 256 * 1048576 }, f.mib(256))
+	test.isEqual({ op: "const", value: 2 * 1000000000 }, f.gb(2))
 }
 
 TestFormulaMetricNodes := func() {
-	test.isEqual({ op: "metric", metric: "size" }, f.astOf(f.size()))
-	test.isEqual({ op: "metric", metric: "size", tag: "reads" }, f.astOf(f.size("reads")))
-	test.isEqual({ op: "metric", metric: "size", tag: "ref", default: 0 }, f.astOf(f.size("ref", { default: 0 })))
-	test.isEqual("lineCount", f.astOf(f.lineCount("reads")).metric)
+	test.isEqual({ op: "metric", metric: "size" }, f.size())
+	test.isEqual({ op: "metric", metric: "size", tag: "reads" }, f.size("reads"))
+	test.isEqual({ op: "metric", metric: "size", tag: "ref", default: 0 }, f.size("ref", { default: 0 }))
+	test.isEqual("lineCount", f.lineCount("reads").metric)
 }
 
 TestFormulaConditional := func() {
-	node := f.astOf(f["if"](f.gt(f.size(), 100), f.gib(16), f.gib(8)))
+	node := f["if"](f.gt(f.size(), 100), f.gib(16), f.gib(8))
 	test.isEqual("if", node.op)
 	test.isEqual("gt", node.cond.op)
 	test.isEqual(16 * 1073741824, node.then.value)
@@ -39,7 +37,7 @@ TestFormulaConditional := func() {
 }
 
 TestFormulaLogic := func() {
-	node := f.astOf(f.not(f.lt(1, 2)))
+	node := f.not(f.lt(1, 2))
 	test.isEqual("not", node.op)
 	test.isEqual("lt", node.a.op)
 }
@@ -254,16 +252,16 @@ TestFallbackStaticRequestWins := func() {
 }
 
 TestFallbackMissingMemFallbackErrors := func() {
-	// RAM formula present, no fallback, backend can't evaluate => error naming RAM.
+	// memFormula present, no fallback, backend can't evaluate => error naming mem.
 	res := f.applyFormulaFallback({ ram: { ast: f.size() }, cpu: {} })
-	test.isTrue(!is_undefined(res.err), "missing RAM formula fallback must error")
-	test.isTrue(text.contains(res.err, "RAM formula"))
+	test.isTrue(!is_undefined(res.err), "missing memFormula fallback must error")
+	test.isTrue(text.contains(res.err, "memFormula"))
 }
 
 TestFallbackMissingCpuFallbackErrors := func() {
 	res := f.applyFormulaFallback({ ram: {}, cpu: { ast: f.size() } })
-	test.isTrue(!is_undefined(res.err), "missing CPU formula fallback must error")
-	test.isTrue(text.contains(res.err, "CPU formula"))
+	test.isTrue(!is_undefined(res.err), "missing cpuFormula fallback must error")
+	test.isTrue(text.contains(res.err, "cpuFormula"))
 }
 
 TestFallbackNoFormulasIsPassthrough := func() {
@@ -357,77 +355,4 @@ TestResolveLineCountBz2Accepted := func() {
 	// The builder must strip .bz2 and accept the line-oriented base extension.
 	resolved := f.resolveAst(f.lineCount("reads"), { "reads": ["r1.fastq.bz2"] }, ["r1.fastq.bz2"])
 	test.isEqual({ op: "metricSum", metric: "lineCount", files: ["r1.fastq.bz2"] }, resolved)
-}
-
-// ---- fluent chain + wrapper introspection ----------------------------------
-// The chain methods are sugar: they must build the SAME AST as the equivalent
-// prefix constructors, so the evaluator/resolver code paths stay identical.
-
-TestFluentChainMatchesPrefixAst := func() {
-	// cpu: divCeil(size, gib(4)) clamped to [4, 16]
-	chain  := f.size("input").per(f.gib(4)).between(4, 16)
-	prefix := f.clamp(f.divCeil(f.size("input"), f.gib(4)), 4, 16)
-	test.isEqual(f.astOf(prefix), f.astOf(chain))
-
-	// ram: size*12 + gib(8), floored at gib(16)
-	chain2  := f.size("input").times(12).plus(f.gib(8)).atLeast(f.gib(16))
-	prefix2 := f.max(f.add(f.mul(f.size("input"), 12), f.gib(8)), f.gib(16))
-	test.isEqual(f.astOf(prefix2), f.astOf(chain2))
-
-	// .minus / .atMost complete the alias set (sub / min)
-	chain3  := f.size("input").minus(f.gib(1)).atMost(f.gib(8))
-	prefix3 := f.min(f.sub(f.size("input"), f.gib(1)), f.gib(8))
-	test.isEqual(f.astOf(prefix3), f.astOf(chain3))
-}
-
-TestFluentChainEvaluates := func() {
-	// The chain AST resolves + evaluates through the normal resolver: size("a")=100.
-	// divCeil(100, 40)=3 -> clamp to [4, 16] -> 4. resolveAst first, exactly as the
-	// builder does (metric -> metricSum) before the evaluator runs.
-	resolved := f.resolveAst(f.size("a").per(40).between(4, 16), { "a": ["a"] }, ["a"])
-	test.isEqual(4, f.evaluateResource(resolved, _fakeResolver, "cpu"))
-}
-
-TestStaticFallbackCaptured := func() {
-	// .staticFallback pins the value; fallbackOf reads it, astOf ignores it.
-	// A pure-unit wrapper (f.gib) is accepted and yields its byte value.
-	node := f.size("a").times(2).staticFallback(f.gib(64))
-	test.isEqual(64 * 1073741824, f.fallbackOf(node))
-	test.isEqual("mul", f.astOf(node).op)               // fallback does not alter the AST
-	test.isTrue(is_undefined(f.fallbackOf(f.size("a")))) // no fallback set -> undefined
-
-	// a bare number / string passes through unchanged
-	test.isEqual(8, f.fallbackOf(f.size("a").per(4).staticFallback(8)))
-	test.isEqual("16GiB", f.fallbackOf(f.size("a").per(4).staticFallback("16GiB")))
-}
-
-TestIsFormulaDiscriminatesStaticFromFormula := func() {
-	// isFormula distinguishes a data-driven value (wrapper or plain AST) from a
-	// static request (bare number / string). This is exactly how .resources()
-	// decides whether a dimension is a formula or a static request.
-	test.isTrue(f.isFormula(f.size("input")))               // wrapper
-	test.isTrue(f.isFormula(f.size("input").per(f.gib(4)))) // chained wrapper
-	test.isTrue(f.isFormula({ op: "const", value: 4 }))     // plain AST node
-	test.isFalse(f.isFormula(4))                            // static cores
-	test.isFalse(f.isFormula("16GiB"))                      // static size string
-}
-
-TestFallbackGpuDimension := func() {
-	// applyFormulaFallback now handles an optional gpu dimension symmetrically to
-	// ram/cpu: static wins, else the fallback, else an error naming VRAM.
-	ok := f.applyFormulaFallback({
-		ram: { ast: f.size(), fallback: "16GiB" },
-		cpu: { static: 4 },
-		gpu: { ast: f.size(), fallback: "48GiB" }
-	})
-	test.isEqual("48GiB", ok.gpu)
-	test.isTrue(is_undefined(ok.err))
-
-	missing := f.applyFormulaFallback({
-		ram: { static: "16GiB" },
-		cpu: { static: 4 },
-		gpu: { ast: f.size() }
-	})
-	test.isTrue(!is_undefined(missing.err), "missing VRAM fallback must error")
-	test.isTrue(text.contains(missing.err, "VRAM"))
 }
