@@ -53,10 +53,11 @@ _assertValidMemRequest := func(amount, ctx) {
 }
 // A VRAM request is a size string ("16GiB") or a number of bytes. The static
 // .gpuMemory() takes a string; a formula .staticFallback() may resolve to a
-// number of bytes (e.g. f.gib(48)) — both are accepted, mirroring _assertValidMemRequest.
+// number of bytes (e.g. f.gib(48)) — both are accepted, mirroring _assertValidMemRequest,
+// including the 16MiB floor that catches a bytes-where-GiB-was-meant mistake.
 _assertValidGpuRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": VRAM amount must be a number of bytes or a size string like '16GiB'")
-	ll.assert(is_string(amount) || amount > 0, ctx + ": VRAM amount in bytes should be greater than 0")
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": VRAM amount in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
 }
 
 /**
@@ -558,34 +559,51 @@ builder := func() {
 			// Per-dimension setters: a formula (exec.formula chain / AST) sets the
 			// *FormulaAst + its .staticFallback(); a bare number/string is a static
 			// request. Closure-assign the builder's resource state directly.
+			// Each setter is authoritative for its dimension: a formula clears any
+			// static request left from a prior .cpu()/.mem()/.gpuMemory() (or an earlier
+			// .resources()), and a static value clears any prior formula AST + fallback.
+			// Without this, a reused/reconfigured builder could keep stale state and let
+			// a leftover formula override a later static value (or vice versa) at finalize.
 			setCpu := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					cpuFormulaAst = execFormula.astOf(v)
+					cpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidCpuRequest(fb, ctx + " cpu fallback"); cpuFormulaFallback = fb }
+					cpuRequest = undefined
 				} else {
 					_assertValidCpuRequest(v, ctx + " cpu")
 					cpuRequest = v
+					cpuFormulaAst = undefined
+					cpuFormulaFallback = undefined
 				}
 			}
 			setRam := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					memFormulaAst = execFormula.astOf(v)
+					memFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidMemRequest(fb, ctx + " ram fallback"); memFormulaFallback = fb }
+					ramRequest = undefined
 				} else {
 					_assertValidMemRequest(v, ctx + " ram")
 					ramRequest = v
+					memFormulaAst = undefined
+					memFormulaFallback = undefined
 				}
 			}
 			setVram := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					gpuFormulaAst = execFormula.astOf(v)
+					gpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidGpuRequest(fb, ctx + " vram fallback"); gpuFormulaFallback = fb }
+					gpuMemory = undefined
 				} else {
 					_assertValidGpuRequest(v, ctx + " vram")
 					gpuMemory = v
+					gpuFormulaAst = undefined
+					gpuFormulaFallback = undefined
 				}
 			}
 
@@ -627,6 +645,11 @@ builder := func() {
 				c := spec.onCPU
 				setCpu(c.cpu, "resources.onCPU")
 				setRam(c.ram, "resources.onCPU")
+				// CPU-only mode: clear any GPU/VRAM state left from a prior .gpuMemory()
+				// or an earlier GPU-shaped .resources() so this spec doesn't leak a GPU request.
+				gpuMemory = undefined
+				gpuFormulaAst = undefined
+				gpuFormulaFallback = undefined
 			}
 			return self
 		},
