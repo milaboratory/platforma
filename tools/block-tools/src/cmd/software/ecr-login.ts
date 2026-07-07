@@ -29,8 +29,8 @@ function ssoLoginHint(): string {
   return `  aws sso login --profile ${profile}`;
 }
 
-// docker login to public ECR with an SDK-fetched token. Runs every time (idempotent): an expired
-// session fails here with a recoverable hint instead of opaquely at push.
+// docker login to public ECR with an SDK-fetched token. No cached-auth check — re-authenticates
+// every call, so an expired/absent session fails here with a recoverable hint, not opaquely at push.
 export async function ensureEcrLogin(registry: string, logger?: Logger): Promise<void> {
   const host = registryHost(registry);
   if (host !== PUBLIC_ECR_HOST) {
@@ -53,6 +53,7 @@ export async function ensureEcrLogin(registry: string, logger?: Logger): Promise
     // Token decodes to "AWS:<password>"; password may contain ':', so split on the first only.
     const decoded = Buffer.from(token, "base64").toString("utf8");
     const sep = decoded.indexOf(":");
+    if (sep < 0) throw new Error(`malformed authorization token (no ':' separator)`);
     user = decoded.slice(0, sep);
     password = decoded.slice(sep + 1);
   } catch (e) {

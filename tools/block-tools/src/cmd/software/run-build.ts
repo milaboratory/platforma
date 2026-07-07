@@ -24,9 +24,9 @@ export interface BuildOptions {
   condaNoBuild?: boolean;
 }
 
-// Build a scenario against the engine in one pass: build, push when the target is remote, then write
-// the descriptor last — "ready ⟺ the descriptor exists". The builder is injected (already configured
-// with version/platform); runBuild sets the scenario-derived build mode and drives the engine.
+// Build a scenario in one pass: build, push when remote, then write the descriptor last —
+// "ready ⟺ the descriptor exists". The pre-configured builder is injected; runBuild sets the
+// scenario's build mode and drives it.
 export async function runBuild(
   core: Builder,
   scenario: Scenario,
@@ -34,7 +34,7 @@ export async function runBuild(
   logger?: Logger,
 ): Promise<void> {
   const ids = opts.ids;
-  core.buildMode = buildModeFor(scenario);
+  core.buildMode = buildModeForScenario(scenario);
 
   const buildBinary = () =>
     core.buildSoftwareArchives({
@@ -48,7 +48,7 @@ export async function runBuild(
     });
 
   switch (scenario.kind) {
-    case "use-published":
+    case "binary-existing":
       // Descriptor points at an already-published release artifact; nothing is built or pushed.
       core.writePublishedArtifactInfo({ ids });
       break;
@@ -57,7 +57,7 @@ export async function runBuild(
       // Nothing built or pushed; the placeholder descriptor is written below.
       break;
 
-    case "legacy": {
+    case "bare": {
       // Bare pl-pkg-parity invocation: docker build/push follow the CI default + flags.
       const buildDocker = util.shouldDoAction(envs.isCI(), opts.dockerBuild, opts.dockerNoBuild);
       const pushDocker =
@@ -99,8 +99,9 @@ export async function runBuild(
       }
       if (binary) await buildBinary();
 
-      // PUSH when remote. Select the AWS credential chain once (docker login + S3 upload share it).
-      if (remote && (docker || binary)) ensureAwsProfile(logger);
+      // PUSH when remote. Pin the AWS credential chain once (docker login + S3 upload share it), but
+      // only for dev — the fallback profile is the dev SSO one.
+      if (remote && channel === "dev" && (docker || binary)) ensureAwsProfile(logger);
       if (docker && remote) {
         if (addr.autoLogin && addr.push) await ensureEcrLogin(addr.push, logger);
         core.publishDockerImages({ ids, pushTo: addr.push, strictPlatformMatching: envs.isCI() });
@@ -120,7 +121,7 @@ export async function runBuild(
   core.buildSwJsonFiles({ packageIds: ids, noSoftware: scenario.kind === "no-software" });
 }
 
-function buildModeFor(scenario: Scenario): util.BuildMode {
+function buildModeForScenario(scenario: Scenario): util.BuildMode {
   if (scenario.kind !== "target") return "release";
   if (scenario.channel === "release") return "release";
   // Only a remote binary build needs dev-remote (it uploads an archive). Docker-only, or any
@@ -141,9 +142,8 @@ function parsePushTarget(raw: string): { registry: string; autoLogin: boolean } 
   return { registry: stripScheme(raw), autoLogin: raw.startsWith("ecr://") };
 }
 
-// Docker push target + the descriptor's embedded pull address for a channel. Precedence: flag >
-// channel env > dev built-in default (release has none); pull defaults to push. `autoLogin` follows
-// the push target's ecr:// scheme.
+// Docker push target + the pull address embedded in the descriptor. Precedence flag > channel env >
+// dev default (release has none); pull defaults to push; autoLogin follows the push target's ecr://.
 function resolveDockerAddresses(
   channel: Channel,
   opts: BuildOptions,

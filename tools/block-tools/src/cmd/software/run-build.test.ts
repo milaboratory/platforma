@@ -175,7 +175,7 @@ describe("runBuild orchestration", () => {
       });
     });
 
-    it("legacy (pl-pkg parity) ignores channel overrides", async () => {
+    it("bare (pl-pkg parity) ignores channel overrides", async () => {
       process.env.CI = "true";
       process.env.PL_RELEASE_DOCKER_PUSH_URL = "quay.io/org/repo";
       // bare invocation: docker addresses stay unset (engine pushes to the embedded tag).
@@ -208,7 +208,7 @@ describe("runBuild orchestration", () => {
     });
   });
 
-  describe("legacy (no knobs) defers docker to the CI default", () => {
+  describe("bare (no knobs) defers docker to the CI default", () => {
     it("outside CI: build binary only, no docker, no push", async () => {
       delete process.env.CI;
       const { calls } = await run({});
@@ -250,10 +250,42 @@ describe("runBuild option pass-through", () => {
     });
   });
 
-  it("--docker-no-build wins over the CI default in legacy mode", async () => {
+  it("--docker-no-build wins over the CI default in bare mode", async () => {
     process.env.CI = "true";
     await runBuild(b.core, parseScenario({}), { dockerNoBuild: true });
     expect(b.spies.buildDockerImages).not.toHaveBeenCalled();
     expect(b.calls).toEqual(["buildSoftwareArchives", "buildSwJsonFiles"]);
+  });
+});
+
+// The core safety invariant: "ready ⟺ the descriptor exists". A failed build or push must leave no
+// descriptor, so nothing downstream ever sees a broken half-build.
+describe("descriptor-last: not written when a step fails", () => {
+  it("skips the descriptor when the binary build throws", async () => {
+    const b = fakeBuilder();
+    b.spies.buildSoftwareArchives.mockRejectedValueOnce(new Error("build boom"));
+    await expect(
+      runBuild(
+        b.core,
+        parseScenario({ channel: "dev", variant: "binary", location: "remote" }),
+        {},
+      ),
+    ).rejects.toThrow("build boom");
+    expect(b.spies.buildSwJsonFiles).not.toHaveBeenCalled();
+  });
+
+  it("skips the descriptor when the docker push throws", async () => {
+    const b = fakeBuilder();
+    b.spies.publishDockerImages.mockImplementationOnce(() => {
+      throw new Error("push boom");
+    });
+    await expect(
+      runBuild(
+        b.core,
+        parseScenario({ channel: "dev", variant: "docker", location: "remote" }),
+        {},
+      ),
+    ).rejects.toThrow("push boom");
+    expect(b.spies.buildSwJsonFiles).not.toHaveBeenCalled();
   });
 });

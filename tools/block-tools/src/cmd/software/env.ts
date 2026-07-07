@@ -6,9 +6,7 @@ export const PL_BUILD_VARIANT = "PL_BUILD_VARIANT";
 export const PL_BUILD_LOCATION = "PL_BUILD_LOCATION";
 export const PL_BUILD_USE_PUBLISHED = "PL_BUILD_USE_PUBLISHED";
 
-// Every env var that changes the output of `block-tools software build` and so must key the turbo
-// build cache. The structurer projects this list into each block's turbo.json (the one place it is
-// declared); software.test.ts fails if the template drifts from it.
+// Every env var that changes `block-tools software build` output, so must key the turbo build cache.
 export const softwareBuildCacheEnv: readonly string[] = [
   PL_BUILD_CHANNEL,
   PL_BUILD_VARIANT,

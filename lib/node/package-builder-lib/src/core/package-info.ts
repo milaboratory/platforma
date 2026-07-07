@@ -86,7 +86,7 @@ export class PackageInfo {
   private readonly pkgJson: packageJson;
   private _versionOverride: string | undefined;
 
-  /** Kept in sync with `Core.buildMode`; gates content-addressable dev naming. */
+  /** Backing store for `Core.buildMode` (Core delegates its accessor here); gates content-addressable dev naming. */
   public buildMode: util.BuildMode = "release";
 
   constructor(
@@ -503,7 +503,7 @@ export class PackageInfo {
     return util.trimPrefix(this.pkgJson.name, "@") + "/" + artifact.id;
   }
 
-  public artifactVersion(artifact: artifacts.anyArtifactType): string {
+  public artifactVersion(artifact: artifacts.withId<artifacts.anyArtifactType>): string {
     const base = this.baseArtifactVersion(artifact);
 
     if (util.isDevMode(this.buildMode) && artifact.type !== "docker") {
@@ -516,7 +516,7 @@ export class PackageInfo {
     return base;
   }
 
-  private baseArtifactVersion(artifact: artifacts.anyArtifactType): string {
+  private baseArtifactVersion(artifact: artifacts.withId<artifacts.anyArtifactType>): string {
     if (this._versionOverride) {
       return this._versionOverride;
     }
@@ -537,14 +537,16 @@ export class PackageInfo {
    */
   private readonly devContentHashCache = new Map<string, string | undefined>();
 
-  private devContentHash(artifact: artifacts.anyArtifactType): string | undefined {
-    const withId = artifact as artifacts.withId<artifacts.anyArtifactType>;
+  private devContentHash(
+    artifact: artifacts.withId<artifacts.anyArtifactType>,
+  ): string | undefined {
     // Content roots are stable for the lifetime of this builder, so hash each artifact once.
-    let hash = this.devContentHashCache.get(withId.id);
-    if (hash !== undefined) return hash;
+    if (this.devContentHashCache.has(artifact.id)) {
+      return this.devContentHashCache.get(artifact.id);
+    }
 
-    hash = this.computeDevContentHash(withId);
-    this.devContentHashCache.set(withId.id, hash);
+    const hash = this.computeDevContentHash(artifact);
+    this.devContentHashCache.set(artifact.id, hash);
     return hash;
   }
 
@@ -800,8 +802,9 @@ export class PackageInfo {
         hasErrors = true;
       }
 
-      const name = this.artifactName({ id: artifactID, ...artifact });
-      const version = this.artifactVersion(artifact);
+      const withId = { id: artifactID, ...artifact };
+      const name = this.artifactName(withId);
+      const version = this.artifactVersion(withId);
       const uniqueName = `${name}-${version}`;
       if (uniquePackageNames.has(uniqueName)) {
         this.logger.error(

@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { parseScenario } from "./knobs";
 
 describe("parseScenario — knobs collapse to the supported set", () => {
-  it("no location => legacy (bare invocation, pl-pkg parity)", () => {
-    expect(parseScenario({})).toEqual({ kind: "legacy" });
-    expect(parseScenario({ channel: "dev" })).toEqual({ kind: "legacy" });
+  it("no location => bare invocation (pl-pkg parity)", () => {
+    expect(parseScenario({})).toEqual({ kind: "bare" });
+    expect(parseScenario({ channel: "dev" })).toEqual({ kind: "bare" });
   });
 
   it("explicit location => a target cell carrying the knobs as enums", () => {
@@ -41,10 +41,10 @@ describe("parseScenario — knobs collapse to the supported set", () => {
 
   it("use-published collapses everything but rejects docker and all (binary-only)", () => {
     expect(parseScenario({ channel: "dev", usePublished: true })).toEqual({
-      kind: "use-published",
+      kind: "binary-existing",
     });
     expect(parseScenario({ usePublished: true, variant: "binary" })).toEqual({
-      kind: "use-published",
+      kind: "binary-existing",
     });
     expect(() => parseScenario({ usePublished: true, variant: "docker" })).toThrow(/binary-only/);
     expect(() => parseScenario({ usePublished: true, variant: "all" })).toThrow(/binary-only/);

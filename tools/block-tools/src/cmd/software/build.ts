@@ -23,7 +23,7 @@ export function softwareBuildCommand(): Command {
       .env(PL_BUILD_CHANNEL),
   );
   cmd.addOption(
-    new Option("--variant <variant>", "artifact kind to build (default: per entrypoint)")
+    new Option("--variant <variant>", "artifact kind to build (default: all declared)")
       .choices([...variants])
       .env(PL_BUILD_VARIANT),
   );
