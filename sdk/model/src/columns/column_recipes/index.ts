@@ -1,7 +1,7 @@
 import {
   isColumnDiscoveredKey,
   isColumnOverriddenKey,
-  parseColumnIdSafety,
+  parseColumnIdSafely,
   type ColumnUniversalId,
   type PObjectId,
   isPObjectKey,
@@ -53,7 +53,7 @@ function ColumnRecipeBuild(
   id: ColumnUniversalId,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): undefined | ColumnRecipe {
-  const parsed = parseColumnIdSafety(id);
+  const parsed = parseColumnIdSafely(id);
 
   if (isPObjectKey(parsed)) {
     return ColumnLazyImpl.fromId(id as PObjectId, opts);
@@ -97,7 +97,7 @@ function ColumnRecipeGetStatus(
   id: ColumnUniversalId,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): ColumnResolutionStatus {
-  const parsed = parseColumnIdSafety(id);
+  const parsed = parseColumnIdSafely(id);
   if (isPObjectKey(parsed)) return ColumnLazyImpl.getStatusById(id as PObjectId, opts);
   if (isColumnDiscoveredKey(parsed)) return ColumnDiscoveredRecipe.getStatusByKey(parsed, opts);
   if (isColumnOverriddenKey(parsed)) return ColumnOverriddenRecipe.getStatusByKey(parsed, opts);

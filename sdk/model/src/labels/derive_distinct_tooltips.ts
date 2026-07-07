@@ -42,7 +42,7 @@ function formatTooltip(entry: TooltipEntry): undefined | string {
   if (hit !== undefined) sections.push(hit);
 
   if (sections.length <= 1) return undefined;
-  return sections.join("\n\n");
+  return sections.filter((s) => s.length > 0).join("\n\n");
 }
 
 const BULLET_1 = "  • ";

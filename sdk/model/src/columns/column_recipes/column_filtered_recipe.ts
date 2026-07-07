@@ -177,5 +177,8 @@ function toAxisSelector(axis: AxisSpec): SingleAxisSelector {
   if (axis.domain !== undefined && Object.keys(axis.domain).length > 0) {
     selector.domain = axis.domain;
   }
+  if (axis.contextDomain !== undefined && Object.keys(axis.contextDomain).length > 0) {
+    selector.contextDomain = axis.contextDomain;
+  }
   return selector;
 }

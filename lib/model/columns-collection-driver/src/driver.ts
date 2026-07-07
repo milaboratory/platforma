@@ -169,7 +169,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     options: ColumnsFilterOptions,
     host: ColumnsCollectionDriverHost<A>,
   ): PoolEntry<CollectionHandle> {
-    return this.runDiscovery(handle, options, host);
+    return this.runDiscovery(handle, { ...options, maxHops: 0 }, host);
   }
 
   async dispose(): Promise<void> {

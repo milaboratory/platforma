@@ -77,7 +77,7 @@ export function createPTableDefV3(params: {
       sortBy: params.sorting.map((s) => ({
         expression: columnIdToExpr(s.column),
         ascending: s.ascending,
-        nullsFirst: !s.naAndAbsentAreLeastValues,
+        nullsFirst: s.naAndAbsentAreLeastValues,
       })),
     };
   }

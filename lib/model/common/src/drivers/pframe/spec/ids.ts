@@ -86,7 +86,7 @@ export function parseColumnId(str: ColumnUniversalId): ColumnUniversalKey {
   return JSON.parse(str) as ColumnUniversalKey;
 }
 
-export function parseColumnIdSafety(
+export function parseColumnIdSafely(
   str: ColumnUniversalId,
   fallback = undefined,
 ): ColumnUniversalKey | typeof fallback {
@@ -105,7 +105,7 @@ export function extractPObjectId(id: ColumnUniversalId | ColumnUniversalKey): PO
     if (isPObjectId(id)) return id;
 
     const parsed =
-      parseColumnIdSafety(id) ??
+      parseColumnIdSafely(id) ??
       throwError(`extractPObjectId: id "${id}" is not a valid canonical column id`);
     return extractPObjectId(parsed);
   }
@@ -140,7 +140,7 @@ export function reconstructSpecFromId(
     if (isPObjectId(id)) return baseSpec;
 
     const parsed =
-      parseColumnIdSafety(id) ??
+      parseColumnIdSafely(id) ??
       throwError(`reconstructSpecFromId: id "${id}" is not a valid canonical column id`);
     return reconstructSpecFromId(baseSpec, parsed);
   }

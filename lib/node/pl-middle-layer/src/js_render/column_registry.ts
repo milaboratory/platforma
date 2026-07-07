@@ -5,7 +5,6 @@ import {
   ColumnRegistry,
   extractPObjectId,
   PColumnValues,
-  reconstructSpecFromId,
   ResultPoolEntriesProvider,
   SpecOverrides,
   type ColumnEntriesProvider,
@@ -51,12 +50,16 @@ export function buildColumnRegistry(
 
 /**
  * Resolve a column id to a materialised {@link PColumn} backed by the
- * underlying {@link PlTreeNodeAccessor} for the `.data` resource. Reconstructs
- * the effective spec from the rich id (applying filters / overrides encoded in
- * it via {@link reconstructSpecFromId}), then folds in any extra `overrides`.
+ * underlying {@link PlTreeNodeAccessor} for the `.data` resource. Returns the
+ * bare leaf spec (via {@link extractPObjectId}): filters / overrides encoded in
+ * a rich id are NOT reconstructed here — they are applied by the query nodes
+ * (`sliceAxes` / `specOverride`) that wrap this leaf in the def, so reconstructing
+ * would double-apply them. Only the explicit `overrides` argument is folded in.
  *
- * Throws when the id is not in the registry, when the column has no spec, or
- * when its `.data` field has not yet appeared on the parent PFrame accessor.
+ * Throws when the id is not in the registry or the column has no resolved spec.
+ * A `.data` field that has not yet materialised yields an empty value list — the
+ * column refills on a later recomputation, mirroring the sandbox-side
+ * `finalizePColumnData` behaviour rather than blocking the whole PFrame.
  */
 export function resolvePColumnById(
   registry: ColumnRegistry<PlTreeNodeAccessor>,
@@ -86,7 +89,7 @@ export function resolvePColumnById(
 
   return {
     id: id as PObjectId,
-    spec: applySpecOverrides(reconstructSpecFromId(spec, id), overrides),
+    spec: applySpecOverrides(spec, overrides),
     data,
   };
 }

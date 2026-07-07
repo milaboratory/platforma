@@ -9,7 +9,7 @@ import {
   isFilteredPColumn,
   isColumnOverriddenKey,
   isColumnDiscoveredKey,
-  parseColumnIdSafety,
+  parseColumnIdSafely,
   parseColumnOverriddenId,
   stringifyColumnDiscoveredId,
   stringifyColumnFilteredId,
@@ -155,7 +155,7 @@ describe("ColumnOverriddenRecipe", () => {
     expect(parsed.specOverrides.annotations).toEqual({ x: "1", y: "2" });
 
     // and source itself is not an Overridden wrap
-    const innerParsed = parseColumnIdSafety(parsed.source);
+    const innerParsed = parseColumnIdSafely(parsed.source);
     expect(innerParsed === undefined || !isColumnOverriddenKey(innerParsed)).toBe(true);
   });
 
@@ -230,7 +230,7 @@ describe("ColumnFilteredRecipe", () => {
       ]),
     });
     const filtered = ColumnFilteredRecipe.wrap(inner, [[0, "v1"]]);
-    const parsed = parseColumnIdSafety(filtered.id);
+    const parsed = parseColumnIdSafely(filtered.id);
     expect(parsed && isFilteredPColumn(parsed)).toBe(true);
     if (parsed && isFilteredPColumn(parsed)) {
       expect(parsed.source).toBe(inner.id);
@@ -249,7 +249,7 @@ describe("ColumnFilteredRecipe", () => {
     });
     const a = ColumnFilteredRecipe.wrap(inner, [[0, "v1"]]);
     const b = ColumnFilteredRecipe.wrap(a, [[1, "v2"]]);
-    const parsed = parseColumnIdSafety(b.id);
+    const parsed = parseColumnIdSafely(b.id);
     expect(parsed && isFilteredPColumn(parsed)).toBe(true);
     if (parsed && isFilteredPColumn(parsed)) {
       expect(parsed.source).toBe(inner.id);
@@ -322,6 +322,28 @@ describe("ColumnFilteredRecipe", () => {
     ]);
   });
 
+  test("getQuery carries contextDomain to disambiguate same name+type+domain axes", () => {
+    const inner = stubInner({
+      spec: stubSpec([
+        { name: "g", type: "String", domain: { d: "x" }, contextDomain: { block: "A" } },
+        { name: "g", type: "String", domain: { d: "x" }, contextDomain: { block: "B" } },
+      ]),
+      query: leafQuery,
+    });
+    const filtered = ColumnFilteredRecipe.wrap(inner, [[1, "v"]]);
+    const q = filtered.getQuery() as {
+      axisFilters: { axisSelector: Record<string, unknown> }[];
+    };
+    // Without contextDomain the selector { name:"g", type:"String", domain:{d:"x"} }
+    // matches BOTH axes — the engine's findAxis then errors on the ambiguity.
+    expect(q.axisFilters[0].axisSelector).toEqual({
+      name: "g",
+      type: "String",
+      domain: { d: "x" },
+      contextDomain: { block: "B" },
+    });
+  });
+
   test("wrap throws on out-of-range axis index (validated at construction)", () => {
     const inner = stubInner({
       spec: stubSpec([{ name: "a", type: "String" }]),
@@ -340,10 +362,10 @@ describe("ColumnFilteredRecipe", () => {
     const filtered = ColumnFilteredRecipe.wrap(inner, [[0, "v"]]);
     const layered = filtered.withSpecs(overrides({ annotations: { a: "1" } }));
 
-    const parsedOuter = parseColumnIdSafety(layered.id);
+    const parsedOuter = parseColumnIdSafely(layered.id);
     expect(parsedOuter && isColumnOverriddenKey(parsedOuter)).toBe(true);
     if (parsedOuter && isColumnOverriddenKey(parsedOuter)) {
-      const parsedInner = parseColumnIdSafety(parsedOuter.source);
+      const parsedInner = parseColumnIdSafely(parsedOuter.source);
       expect(parsedInner && isFilteredPColumn(parsedInner)).toBe(true);
     }
   });
@@ -373,7 +395,7 @@ describe("ColumnDiscoveredRecipe", () => {
   const trivialKey: ColumnDiscoveredKey = createColumnDiscoveredKey({ column: baseLeaf });
 
   test("fromKey throws on an empty column id (unrecognized id variant)", () => {
-    // Empty string isn't a valid `ColumnUniversalId` — `parseColumnIdSafety`
+    // Empty string isn't a valid `ColumnUniversalId` — `parseColumnIdSafely`
     // returns undefined and the dispatcher falls through to the "unsupported
     // variant" throw rather than silently returning undefined.
     expect(() =>
@@ -392,7 +414,7 @@ describe("ColumnDiscoveredRecipe", () => {
     setupCtx({ [baseLeaf]: stubSpec() });
     const r =
       ColumnDiscoveredRecipe.fromKey(trivialKey) ?? throwError("fromKey returned undefined");
-    const parsed = parseColumnIdSafety(r.id);
+    const parsed = parseColumnIdSafely(r.id);
     expect(parsed && isColumnDiscoveredKey(parsed)).toBe(true);
     if (parsed && isColumnDiscoveredKey(parsed)) {
       expect(parsed.column).toBe(baseLeaf);
@@ -457,7 +479,7 @@ describe("ColumnDiscoveredRecipe", () => {
     expect(parsed.specOverrides.annotations).toEqual({ x: "1", y: "2" });
 
     // source must be Discovered, not Overridden
-    const inner = parseColumnIdSafety(parsed.source);
+    const inner = parseColumnIdSafely(parsed.source);
     expect(inner && isColumnDiscoveredKey(inner)).toBe(true);
   });
 });

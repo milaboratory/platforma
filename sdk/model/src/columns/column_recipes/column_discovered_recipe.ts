@@ -29,8 +29,10 @@ import { throwError } from "@milaboratories/helpers";
  *  - {@link getQuery} assembles the {@link SpecQuery} locally
  *    ({@link buildSpecQuery}) — the hit is inlined as its own recipe's query
  *    tree, linkers fold inside-out into nested `linkerJoin` nodes.
- *  - {@link getSpec} runs `createSpecFrame` + `evaluateQuery` over that query
- *    to project the final {@link PColumnSpec} after the linker chain.
+ *  - {@link getSpec} passes through to the hit column's own spec: the linker
+ *    chain only enables co-indexing and does not remap the hit's `axesSpec`, so
+ *    no engine round-trip is needed (mirrors the Discovered branch of
+ *    `reconstructSpecFromId` on the host side).
  */
 export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> {
   /**
