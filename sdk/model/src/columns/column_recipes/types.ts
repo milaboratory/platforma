@@ -10,7 +10,7 @@ export type { SpecQuery };
 
 /**
  * Stable identifier of a recipe: either the canonical {@link PObjectId} of a
- * leaf or a {@link ColumnUniversalId} encoding `Overrided / Discovered /
+ * leaf or a {@link ColumnUniversalId} encoding `Overridden / Discovered /
  * Filtered` layers on top of it.
  *
  * Recipes are equivalent as value-objects iff their `id`s match (structurally,
@@ -57,7 +57,7 @@ export type ColumnResolutionStatus = "present" | "resolving" | "absent";
  * or Filtered.
  *
  * Invariant: `withSpecs` never nests. A recipe is either bare or wrapped
- * in exactly one Overrided layer. Repeated `withSpecs` merges the new
+ * in exactly one Overridden layer. Repeated `withSpecs` merges the new
  * overrides into the existing ones, keeping the same depth.
  *
  * A recipe intentionally exposes no `getSpecOverrides / getDiscovery /
@@ -105,9 +105,9 @@ export interface ColumnRecipe<ID extends ColumnRecipeId = ColumnRecipeId> {
   /**
    * Apply overrides on the spec. Always returns a new recipe.
    *
-   * Flat-merge invariant: if `self` is already Overrided, the implementation
+   * Flat-merge invariant: if `self` is already Overridden, the implementation
    * merges `overrides` with the existing ones and returns the same depth
-   * (one Overrided wrapper). No `Overrided<Overrided<...>>`.
+   * (one Overridden wrapper). No `Overridden<Overridden<...>>`.
    */
   withSpecs(overrides: SpecOverrides): ColumnRecipe;
 }

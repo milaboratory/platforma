@@ -10,71 +10,76 @@ export type SpecOverrides = Pick<PColumnSpec, "domain" | "contextDomain" | "anno
 
 /**
  * `source` can reference a leaf or a Filtered/Discovered id, but never another
- * Overrided id — there is no `Overrided<Overrided<...>>`. Repeated overrides
+ * Overridden id — there is no `Overridden<Overridden<...>>`. Repeated overrides
  * merge at the outer wrapper via {@link mergeSpecOverrides}.
  */
-export interface ColumnOverridedKey {
-  __isOverrided: true;
-  source: Exclude<ColumnUniversalId, ColumnOverridedId>;
+export interface ColumnOverriddenKey {
+  __isOverridden: true;
+  source: Exclude<ColumnUniversalId, ColumnOverriddenId>;
   specOverrides: SpecOverrides;
 }
 
-export type ColumnOverridedId = Branded<CanonicalizedJson<ColumnOverridedKey>, "ColumnOverridedId">;
+export type ColumnOverriddenId = Branded<
+  CanonicalizedJson<ColumnOverriddenKey>,
+  "ColumnOverriddenId"
+>;
 
-export function isColumnOverridedKey(obj: unknown): obj is ColumnOverridedKey {
-  return typeof obj === "object" && obj !== null && "__isOverrided" in obj;
+export function isColumnOverriddenKey(obj: unknown): obj is ColumnOverriddenKey {
+  return typeof obj === "object" && obj !== null && "__isOverridden" in obj;
 }
 
-export function distillColumnOverridedKey(props: ColumnOverridedKey): ColumnOverridedKey {
+export function distillColumnOverriddenKey(props: ColumnOverriddenKey): ColumnOverriddenKey {
   return {
-    __isOverrided: true,
+    __isOverridden: true,
     source: props.source,
     specOverrides: props.specOverrides,
   };
 }
 
-export function createColumnOverridedId(props: {
+export function createColumnOverriddenId(props: {
   source: ColumnUniversalId;
   specOverrides: SpecOverrides;
-}): ColumnOverridedId {
-  return stringifyColumnOverridedId(createColumnOverridedKey(props));
+}): ColumnOverriddenId {
+  return stringifyColumnOverriddenId(createColumnOverriddenKey(props));
 }
 
-export function createColumnOverridedKey(props: {
+export function createColumnOverriddenKey(props: {
   source: ColumnUniversalId;
   specOverrides: SpecOverrides;
-}): ColumnOverridedKey {
+}): ColumnOverriddenKey {
   const { source, specOverrides } = props;
   const unwrapped = unwrapOverrides(source);
   const baseSource = unwrapped
     ? unwrapped.source
-    : (source as Exclude<ColumnUniversalId, ColumnOverridedId>);
+    : (source as Exclude<ColumnUniversalId, ColumnOverriddenId>);
   const mergedOverrides = unwrapped
     ? mergeSpecOverrides(unwrapped.specOverrides, specOverrides)
     : specOverrides;
 
   return {
-    __isOverrided: true,
+    __isOverridden: true,
     source: baseSource,
     specOverrides: mergedOverrides,
   };
 }
 
-export function parseColumnOverridedId(id: ColumnUniversalId): ColumnOverridedKey {
+export function parseColumnOverriddenId(id: ColumnUniversalId): ColumnOverriddenKey {
   try {
     const parsed = JSON.parse(id);
-    return isColumnOverridedKey(parsed)
+    return isColumnOverriddenKey(parsed)
       ? parsed
-      : throwError("Parsed object is not a valid OverridedPColumn");
+      : throwError("Parsed object is not a valid OverriddenPColumn");
   } catch {
     throw new Error(
-      "Invalid ColumnOverridedId: not a valid JSON or does not conform to OverridedPColumn structure",
+      "Invalid ColumnOverriddenId: not a valid JSON or does not conform to OverriddenPColumn structure",
     );
   }
 }
 
-export function stringifyColumnOverridedId(id: ColumnOverridedKey): ColumnOverridedId {
-  return canonicalizeJson<ColumnOverridedKey>(distillColumnOverridedKey(id)) as ColumnOverridedId;
+export function stringifyColumnOverriddenId(id: ColumnOverriddenKey): ColumnOverriddenId {
+  return canonicalizeJson<ColumnOverriddenKey>(
+    distillColumnOverriddenKey(id),
+  ) as ColumnOverriddenId;
 }
 
 /**
@@ -83,11 +88,11 @@ export function stringifyColumnOverridedId(id: ColumnOverridedKey): ColumnOverri
  * Invariant: `{source, specOverrides}` can only appear at the top level —
  * the inner `source` is never itself an override-wrap. Anything else throws.
  */
-export function unwrapOverrides(id: ColumnUniversalId): ColumnOverridedKey | undefined {
+export function unwrapOverrides(id: ColumnUniversalId): ColumnOverriddenKey | undefined {
   const parsed = parseColumnIdSafety(id);
-  if (parsed === undefined || !isColumnOverridedKey(parsed)) return undefined;
+  if (parsed === undefined || !isColumnOverriddenKey(parsed)) return undefined;
   const inner = parseColumnIdSafety(parsed.source);
-  if (inner !== undefined && isColumnOverridedKey(inner)) {
+  if (inner !== undefined && isColumnOverriddenKey(inner)) {
     throw new Error("nested override-wrap detected — invariant broken");
   }
   return parsed;

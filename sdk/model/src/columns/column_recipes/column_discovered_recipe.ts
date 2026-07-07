@@ -14,7 +14,7 @@ import {
 import type { GlobalCfgRenderCtx } from "../../render/internal";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
 import { ColumnRecipe } from "./index";
-import { ColumnOverridedRecipe } from "./column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { Column } from "../column";
 import { rebrandLeafId } from "./leaf_rebrand";
 import { throwError } from "@milaboratories/helpers";
@@ -89,7 +89,7 @@ export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> 
 
   /**
    * Universal id of the hit column (excluding path/qualifications on top).
-   * May itself be a wrapped id (Overrided / Filtered / nested Discovered) —
+   * May itself be a wrapped id (Overridden / Filtered / nested Discovered) —
    * preserves projections applied to the underlying column.
    */
   getHitId(): ColumnUniversalId {
@@ -163,12 +163,12 @@ export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> 
   }
 
   /**
-   * Discovered + overrides → Overrided<Discovered>. Delegates to the
-   * flat-merge factory of ColumnOverridedRecipe; subsequent `withSpecs`
-   * calls merge at the Overrided level (one wrapper, no nesting).
+   * Discovered + overrides → Overridden<Discovered>. Delegates to the
+   * flat-merge factory of ColumnOverriddenRecipe; subsequent `withSpecs`
+   * calls merge at the Overridden level (one wrapper, no nesting).
    */
   withSpecs(overrides: SpecOverrides): ColumnRecipe {
-    return ColumnOverridedRecipe.wrap(this, overrides);
+    return ColumnOverriddenRecipe.wrap(this, overrides);
   }
 
   /**
@@ -177,7 +177,7 @@ export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> 
    *
    * The hit (innermost) is built by inlining `columns[key.column].getQuery()`
    * — recursing into the hit's own recipe — so wrapping layers on the hit
-   * (Overrided / Filtered / nested Discovered) appear in the produced tree.
+   * (Overridden / Filtered / nested Discovered) appear in the produced tree.
    * The previous `pframeSpec.buildQuery` path was a flat
    * {@link PObjectId}-only call and could not express that.
    *

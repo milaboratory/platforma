@@ -1178,9 +1178,9 @@ export interface QueryTransformColumns<Q, E, SO> {
  * (`resolvePColumn`) before the query reaches pframe-engine. The engine
  * never sees this node.
  *
- * Emitted by `ColumnOverridedRecipe.getQuery()`; the only currently
+ * Emitted by `ColumnOverriddenRecipe.getQuery()`; the only currently
  * supported shape is `specOverride{ input: <plain column ref>, override }`
- * (i.e. `Overrided<Lazy>`). More complex projections under Overrided are
+ * (i.e. `Overridden<Lazy>`). More complex projections under Overridden are
  * a future engine work item.
  *
  * @template Q - Input query type

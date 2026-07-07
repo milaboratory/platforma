@@ -14,7 +14,7 @@ import {
 import type { GlobalCfgRenderCtx } from "../../render/internal";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
 import { ColumnRecipe } from "./index";
-import { ColumnOverridedRecipe } from "./column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { rebrandLeafId } from "./leaf_rebrand";
 
 /**
@@ -26,8 +26,8 @@ import { rebrandLeafId } from "./leaf_rebrand";
  * Repeated {@link wrap} concatenates `axisFilters` at the current level.
  *
  * Layering: `withSpecs` on a Filtered recipe yields
- * `Overrided<Filtered<inner>>` — Overrided is always the outermost layer.
- * The reverse layering (`Filtered<Overrided<...>>`) is not reachable via
+ * `Overridden<Filtered<inner>>` — Overridden is always the outermost layer.
+ * The reverse layering (`Filtered<Overridden<...>>`) is not reachable via
  * the public interface.
  */
 export class ColumnFilteredRecipe implements ColumnRecipe<ColumnFilteredId> {
@@ -164,11 +164,11 @@ export class ColumnFilteredRecipe implements ColumnRecipe<ColumnFilteredId> {
   }
 
   /**
-   * Filtered + overrides → Overrided<Filtered>. Overrided is always the
+   * Filtered + overrides → Overridden<Filtered>. Overridden is always the
    * outermost layer.
    */
   withSpecs(overrides: SpecOverrides): ColumnRecipe {
-    return ColumnOverridedRecipe.wrap(this, overrides);
+    return ColumnOverriddenRecipe.wrap(this, overrides);
   }
 }
 

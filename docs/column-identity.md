@@ -31,14 +31,14 @@ serialized as canonical JSON:
 - `LocalPObjectId` / `GlobalPObjectId` — bare physical id.
 - `ColumnFilteredId` — `{source, axisFilters}`.
 - `ColumnDiscoveredId` — `{column, path, qualifications}`.
-- `ColumnOverridedId` — `{source, specOverrides}`.
+- `ColumnOverriddenId` — `{source, specOverrides}`.
 
 Definitions: `lib/model/common/src/drivers/pframe/spec/ids.ts`.
 
 A logical id describes a contextualised view of a physical column: which
 linker chain you reached it through, which axes are sliced, which spec
 overrides are applied. Two `ColumnDiscoveredId`s sharing the same
-`column` but with different `path` are *different* logical columns even
+`column` but with different `path` are _different_ logical columns even
 though they point to the same stored data.
 
 Use it (and only it) everywhere else:
@@ -56,7 +56,7 @@ Use it (and only it) everywhere else:
 (`lib/model/common/src/drivers/pframe/spec/ids.ts:97`) is the **only**
 sanctioned way to drop from a logical id to its physical counterpart. It
 walks wrapper layers (`isColumnFilteredKey` → `source`,
-`isColumnOverridedKey` → `source`, `isColumnDiscoveredKey` → `column`)
+`isColumnOverriddenKey` → `source`, `isColumnDiscoveredKey` → `column`)
 until it reaches a bare `PObjectId`.
 
 Call it only at the boundary points listed above. Recipe internals and
@@ -73,7 +73,7 @@ Every concrete `ColumnRecipe` must satisfy:
 For leaf recipes (`ColumnLazyImpl`) this is trivial: `id` is the bare
 `PObjectId` and the query is `{type: "column", column: id}`.
 
-For wrapper recipes (Overrided / Filtered / Discovered) the inner recipe
+For wrapper recipes (Overridden / Filtered / Discovered) the inner recipe
 already produced a query whose leaf carries the **inner's** id. The
 wrapper must lift its own id onto that leaf while preserving everything
 else (linker chains, sliceAxes, specOverride wrappers). Use the shared

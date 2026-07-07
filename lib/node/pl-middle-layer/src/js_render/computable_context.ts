@@ -511,7 +511,7 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
    * mapping their `data` payload via {@link transformInputPData}), or resolve
    * a bare id through the host column registry. `resolvePColumnById` extracts
    * the underlying {@link PObjectId} from any id encoding
-   * ({@link ColumnOverridedId}, etc.).
+   * ({@link ColumnOverriddenId}, etc.).
    */
   private resolvePColumn(
     item: PObjectId | PColumn<string | PColumnValues | DataInfo<string>>,

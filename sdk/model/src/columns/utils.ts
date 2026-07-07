@@ -14,7 +14,7 @@ import { deriveDistinctLabels, type DeriveLabelsOptions } from "../labels/derive
 import { ColumnLazy, ColumnLazyImpl, type ColumnLazyData } from "./column_lazy";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
-import { ColumnOverridedRecipe } from "./column_recipes/column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import type { ColumnRecipe } from "./column_recipes/types";
 import { ColumnsCollection, isColumnsCollection } from "./columns_collection";
 import type { ColumnsSource } from "./column_providers/types";
@@ -65,7 +65,7 @@ export function collectLinkerColumns(
  * Hit-side axis qualifications for the recipe — the ones that should land on
  * the outer-join entry wrapping this column at the consumer boundary.
  *
- * Descends {@link ColumnOverridedRecipe} / {@link ColumnFilteredRecipe} via
+ * Descends {@link ColumnOverriddenRecipe} / {@link ColumnFilteredRecipe} via
  * `getInner()` until it finds a {@link ColumnDiscoveredRecipe}; otherwise
  * returns `[]`. Pure recipe walk — no query-tree introspection.
  */
@@ -130,9 +130,9 @@ function isLazyDataPresent(data: ColumnLazyData): boolean {
 }
 
 /**
- * Walk wrapper layers (Overrided, Filtered) until a {@link
+ * Walk wrapper layers (Overridden, Filtered) until a {@link
  * ColumnDiscoveredRecipe} is found. Returns `undefined` if the recipe chain
- * has no Discovered layer (bare leaves and Overrided-over-leaf cases).
+ * has no Discovered layer (bare leaves and Overridden-over-leaf cases).
  *
  * Invariant from the wrapper classes themselves: there is at most one
  * Discovered layer in any recipe chain — Discovered is constructed only via
@@ -142,7 +142,7 @@ function findDiscovered(recipe: ColumnRecipe): undefined | ColumnDiscoveredRecip
   let current: ColumnRecipe = recipe;
   while (true) {
     if (current instanceof ColumnDiscoveredRecipe) return current;
-    if (current instanceof ColumnOverridedRecipe || current instanceof ColumnFilteredRecipe) {
+    if (current instanceof ColumnOverriddenRecipe || current instanceof ColumnFilteredRecipe) {
       current = current.getInner();
       continue;
     }
@@ -154,8 +154,8 @@ function findDiscovered(recipe: ColumnRecipe): undefined | ColumnDiscoveredRecip
  * A recipe is a "leaf" (directly co-indexed on the anchor, reached without a
  * linker chain) iff its wrapper chain contains no {@link ColumnDiscoveredRecipe}.
  *
- * `Filtered` / `Overrided` over a bare leaf stay leaves; anything wrapping a
- * `Discovered` (e.g. `Overrided(Discovered(...))`) is linked. Use this — not an
+ * `Filtered` / `Overridden` over a bare leaf stay leaves; anything wrapping a
+ * `Discovered` (e.g. `Overridden(Discovered(...))`) is linked. Use this — not an
  * `instanceof ColumnLazyImpl` check — to split direct vs. linker-joined columns,
  * since projections over a plain leaf are still direct.
  */
@@ -178,7 +178,7 @@ export function getLeafColumnData(recipe: ColumnRecipe): ColumnLazyData {
 }
 
 /**
- * Walk wrapper layers (Overrided, Filtered) down to the bare {@link ColumnLazy}
+ * Walk wrapper layers (Overridden, Filtered) down to the bare {@link ColumnLazy}
  * leaf the chain bottoms out at. Returns `undefined` if the chain reaches a
  * {@link ColumnDiscoveredRecipe} instead — i.e. the recipe is not a leaf
  * ({@link isLeafColumn} would return `false`). Mirror of {@link findDiscovered}.
@@ -187,7 +187,7 @@ function extractLeafColumn(recipe: ColumnRecipe): undefined | ColumnLazy {
   let current: ColumnRecipe = recipe;
   while (true) {
     if (current instanceof ColumnLazyImpl) return current;
-    if (current instanceof ColumnOverridedRecipe || current instanceof ColumnFilteredRecipe) {
+    if (current instanceof ColumnOverriddenRecipe || current instanceof ColumnFilteredRecipe) {
       current = current.getInner();
       continue;
     }

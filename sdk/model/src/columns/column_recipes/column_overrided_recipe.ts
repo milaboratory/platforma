@@ -1,9 +1,9 @@
 import {
   applySpecOverrides,
-  createColumnOverridedId,
+  createColumnOverriddenId,
   mergeSpecOverrides,
-  type ColumnOverridedId,
-  type ColumnOverridedKey,
+  type ColumnOverriddenId,
+  type ColumnOverriddenKey,
   type ColumnUniversalId,
   type PColumnSpec,
   type PObjectId,
@@ -17,61 +17,61 @@ import { Column } from "../column";
 import { rebrandLeafId } from "./leaf_rebrand";
 
 /**
- * A recipe whose id is not an Overrided wrap — valid `source` for Overrided.
- * Mirrors the spec-level invariant on {@link ColumnOverridedKey.source}.
+ * A recipe whose id is not an Overridden wrap — valid `source` for Overridden.
+ * Mirrors the spec-level invariant on {@link ColumnOverriddenKey.source}.
  */
-type NonOverridedColumn = Column<Exclude<ColumnUniversalId, ColumnOverridedId>>;
+type NonOverriddenColumn = Column<Exclude<ColumnUniversalId, ColumnOverriddenId>>;
 
 /**
  * Recipe wrapper that overlays {@link SpecOverrides} on top of any other
- * recipe. The id is `ColumnOverridedKey { source: inner.id, specOverrides }`.
+ * recipe. The id is `ColumnOverriddenKey { source: inner.id, specOverrides }`.
  *
- * Flat-merge invariant: `inner` is never another {@link ColumnOverridedRecipe}.
+ * Flat-merge invariant: `inner` is never another {@link ColumnOverriddenRecipe}.
  * Repeated overrides go through {@link wrap} / {@link withSpecs}, which merge
  * `specOverrides` at the current level and keep wrapper depth constant.
  *
  * This invariant matches the one enforced inside `unwrapOverrides` from
  * pl-model-common: it explicitly throws on a nested override-wrap.
  */
-export class ColumnOverridedRecipe implements Column<ColumnOverridedId> {
+export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
   /**
    * Wrap any recipe with overrides. If `inner` is already a
-   * {@link ColumnOverridedRecipe}, merges `overrides` into the existing ones
-   * and returns a new Overrided sharing the original `inner`. No
-   * `Overrided<Overrided<X>>` is produced.
+   * {@link ColumnOverriddenRecipe}, merges `overrides` into the existing ones
+   * and returns a new Overridden sharing the original `inner`. No
+   * `Overridden<Overridden<X>>` is produced.
    */
-  static wrap(col: Column, overrides: SpecOverrides): ColumnOverridedRecipe {
-    if (col instanceof ColumnOverridedRecipe) {
-      return new ColumnOverridedRecipe(col.inner, mergeSpecOverrides(col.overrides, overrides));
+  static wrap(col: Column, overrides: SpecOverrides): ColumnOverriddenRecipe {
+    if (col instanceof ColumnOverriddenRecipe) {
+      return new ColumnOverriddenRecipe(col.inner, mergeSpecOverrides(col.overrides, overrides));
     }
-    // `inner` is not an Overrided wrap (the `instanceof` branch above handles
+    // `inner` is not an Overridden wrap (the `instanceof` branch above handles
     // that). Narrow the id union here so the constructor parameter stays
-    // honest with `ColumnOverridedKey.source`.
-    return new ColumnOverridedRecipe(col as NonOverridedColumn, overrides);
+    // honest with `ColumnOverriddenKey.source`.
+    return new ColumnOverriddenRecipe(col as NonOverriddenColumn, overrides);
   }
 
   /**
    * Static counterpart to {@link wrap}: returns the resolution status of a
-   * {@link ColumnOverridedKey} without constructing the recipe. Overrides
+   * {@link ColumnOverriddenKey} without constructing the recipe. Overrides
    * do not add references — status collapses to the source's status.
    */
   static getStatusByKey(
-    key: ColumnOverridedKey,
+    key: ColumnOverriddenKey,
     opts: { ctx?: GlobalCfgRenderCtx } = {},
   ): ColumnResolutionStatus {
     return ColumnRecipe.getStatus(key.source, opts);
   }
 
-  readonly id: ColumnOverridedId;
+  readonly id: ColumnOverriddenId;
   private specCache?: { readonly value: PColumnSpec };
   private queryCache?: { readonly value: SpecQuery };
   private dataStatusCache?: { readonly value: ColumnFieldStatus };
 
   private constructor(
-    private readonly inner: NonOverridedColumn,
+    private readonly inner: NonOverriddenColumn,
     private readonly overrides: SpecOverrides,
   ) {
-    this.id = createColumnOverridedId({
+    this.id = createColumnOverriddenId({
       source: inner.id,
       specOverrides: overrides,
     });
@@ -120,7 +120,7 @@ export class ColumnOverridedRecipe implements Column<ColumnOverridedId> {
    */
   getQuery(): SpecQuery {
     if (this.queryCache === undefined) {
-      // Rebrand the inner column leaf to this.id (rich Overrided id) so
+      // Rebrand the inner column leaf to this.id (rich Overridden id) so
       // filter/sort references emitted with this recipe's id match the
       // leaf the engine sees. The specOverride node still wraps the leaf
       // and is collapsed at the host boundary into a spec patch on the
@@ -138,9 +138,9 @@ export class ColumnOverridedRecipe implements Column<ColumnOverridedId> {
 
   /**
    * Flat merge: new overrides merge with existing ones; `inner` is unchanged.
-   * The result is an Overrided of the same depth.
+   * The result is an Overridden of the same depth.
    */
   withSpecs(overrides: SpecOverrides): Column {
-    return ColumnOverridedRecipe.wrap(this, overrides);
+    return ColumnOverriddenRecipe.wrap(this, overrides);
   }
 }

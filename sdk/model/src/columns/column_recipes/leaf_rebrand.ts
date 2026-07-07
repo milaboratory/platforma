@@ -7,7 +7,7 @@ import {
 /**
  * Replace every column leaf whose id equals `fromId` with `toId`, leaving
  * other column refs (linkers, sub-anchors) intact. Wrapper recipes
- * (Overrided / Filtered) and Discovered use this to lift their own id onto
+ * (Overridden / Filtered) and Discovered use this to lift their own id onto
  * the hit leaf, so per-variant uniqueness propagates to the engine and
  * resolver-emitted ids match leaves in the emitted SpecQuery.
  *

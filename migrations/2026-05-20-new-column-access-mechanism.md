@@ -107,18 +107,18 @@ recipe.getDataStatus(); // "present" | "absent" | "resolving" (worst across refe
 recipe.withSpecs(patch); // returns a new recipe with the patch baked into the id
 ```
 
-Note what's **not** there: there is no `getData()` on a recipe. Data is only meaningful at a leaf — `Overrided` / `Filtered` / `Discovered` recipes are descriptions whose data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`. Pulling data into the sandbox for a non-leaf recipe would defeat the whole point of the refactor.
+Note what's **not** there: there is no `getData()` on a recipe. Data is only meaningful at a leaf — `Overridden` / `Filtered` / `Discovered` recipes are descriptions whose data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`. Pulling data into the sandbox for a non-leaf recipe would defeat the whole point of the refactor.
 
 The id is the source of truth; the recipe is just a typed accessor over it. The id string encodes _how_ the column was produced, and each form has its own recipe class:
 
 | Id shape on the wire  | Recipe class             | What it represents                                                                                                      |
 | --------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | bare `PObjectId`      | `ColumnLazy`             | a plain upstream column — spec comes from the host accessor, data is reachable as `TreeNodeAccessor`                    |
-| `ColumnOverridedKey`  | `ColumnOverridedRecipe`  | "this other recipe, but with annotations/domain/axes patched" — `withSpecs()` builds these                              |
+| `ColumnOverriddenKey` | `ColumnOverriddenRecipe` | "this other recipe, but with annotations/domain/axes patched" — `withSpecs()` builds these                              |
 | `ColumnFilteredKey`   | `ColumnFilteredRecipe`   | "this recipe restricted to a subset of axes" — produced by `ColumnsCollection.filter`                                   |
 | `ColumnDiscoveredKey` | `ColumnDiscoveredRecipe` | the result of a `ColumnsCollection.discover` hit, carrying the join graph back to its anchor so the spec can be rebuilt |
 
-The `*Key` rows are the parsed JSON object shapes; the stringified-on-the-wire form for each is `Column*Id` (e.g. `ColumnOverridedId`).
+The `*Key` rows are the parsed JSON object shapes; the stringified-on-the-wire form for each is `Column*Id` (e.g. `ColumnOverriddenId`).
 
 **`ColumnLazy` is the only recipe class with `getData()`.** It is the _leaf_ — `implements ColumnRecipe<PObjectId>` — and is also the only recipe you ever construct from a `TreeNodeAccessor` / `PColumn` / `PlRef`. Everything else is a wrapper around a leaf id; you produce the wrappers by calling `discover` / `filter` / `withSpecs`, and you pass them around by `.id`.
 
@@ -162,7 +162,7 @@ Use `isColumnLazy` instead of `instanceof ColumnLazy`: `ColumnLazy` (the value) 
 **`isColumnLazy` vs `isLeafColumn` — pick by what you do with the result.**
 
 - `isColumnLazy(c)` — strict, type-narrowing predicate. Returns `true` only for the **bare leaf** (`ColumnLazy`). Use it when you need access to `getData()` directly, or when the type forces you to a bare leaf — e.g. `PColumnIdAndSpec.columnId` and `PColumn.id` are `PObjectId`, which only bare leaves carry; wrappers expose `ColumnUniversalId`.
-- `isLeafColumn(recipe)` — broader, boolean (not a type guard). Returns `true` for any recipe whose wrapper chain contains no `ColumnDiscoveredRecipe` — so `Overrided` / `Filtered` over a bare leaf still count. Use it for the **primary vs linker-joined** classification at the `createPlDataTableV3` boundary: anything that has no `Discovered` in its chain is a valid primary, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `isLeafColumn` for this split — mirror it in your block code.
+- `isLeafColumn(recipe)` — broader, boolean (not a type guard). Returns `true` for any recipe whose wrapper chain contains no `ColumnDiscoveredRecipe` — so `Overridden` / `Filtered` over a bare leaf still count. Use it for the **primary vs linker-joined** classification at the `createPlDataTableV3` boundary: anything that has no `Discovered` in its chain is a valid primary, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `isLeafColumn` for this split — mirror it in your block code.
 
 Counterpart for reading data without a strict `isColumnLazy` narrow: `getLeafColumnData(recipe)` walks the wrapper chain down to the bottom leaf and returns its data (throws when the chain reaches a `Discovered`).
 
@@ -218,7 +218,7 @@ A recipe factory returns `undefined` for `resolving` (try again on the next rend
 
 Previously columns were plain objects: callers spread/rewrote `col.spec` in place. That "worked" only locally — the mutation didn't survive a bridge crossing, and the original spec had already cost you bytes to fetch. Doing it in a loop over upstream columns was a frequent way to blow the 8 MB limit for nothing.
 
-No recipe has a spec field. The spec is derived from the id, lazily, on first `getSpec()`. To produce a column with a different spec, use `withSpecs(patch)`: the patch becomes part of the **id** (the recipe class for the result is `ColumnOverridedRecipe`, but you don't need to care — you still hold a `ColumnRecipe`), so the new column is a real, addressable thing — the override travels with the id, no extra bridge traffic needed to re-describe it elsewhere.
+No recipe has a spec field. The spec is derived from the id, lazily, on first `getSpec()`. To produce a column with a different spec, use `withSpecs(patch)`: the patch becomes part of the **id** (the recipe class for the result is `ColumnOverriddenRecipe`, but you don't need to care — you still hold a `ColumnRecipe`), so the new column is a real, addressable thing — the override travels with the id, no extra bridge traffic needed to re-describe it elsewhere.
 
 ```diff
 - // ad-hoc mutation — paid for the original spec, change was invisible to everyone else
@@ -250,7 +250,7 @@ When you already have a `ColumnsCollection`, skip the intermediate recipes entir
 ctx.createPFrame(collection.getColumnIds());
 ```
 
-This is also the canonical way to feed **wrapped recipes** (`ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` / `ColumnOverridedRecipe`) into a PFrame. They have no `getData()` — but `recipe.id` is a `ColumnUniversalId` that `createPFrame` accepts directly, and the host materialises it server-side. So instead of trying to narrow a recipe list to leaves before building a PFrame, pass `.id`:
+This is also the canonical way to feed **wrapped recipes** (`ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` / `ColumnOverriddenRecipe`) into a PFrame. They have no `getData()` — but `recipe.id` is a `ColumnUniversalId` that `createPFrame` accepts directly, and the host materialises it server-side. So instead of trying to narrow a recipe list to leaves before building a PFrame, pass `.id`:
 
 ```ts
 ctx.createPFrame(recipes.map((c) => c.id)); // works for any recipe — leaf or wrapped
@@ -298,7 +298,7 @@ A few helpers in `sdk/model/src/columns/utils.ts` cover the recipe-walk cases yo
 - **`hitQualifications(recipe): readonly AxisQualification[]`** — hit-side axis qualifications, pulled out of the inner `ColumnDiscoveredRecipe` (if any). Returns `[]` for plain leaves / overrided-over-leaf chains.
 - **`queriesQualifications(recipe): Readonly<Record<PObjectId, AxisQualification[]>>`** — per-primary-column qualifications, applied to outer primary anchors at the consumer boundary.
 
-Prefer these over walking the recipe class hierarchy yourself — they encapsulate the wrapper-peeling invariants (`Overrided` / `Filtered` over at most one `Discovered`) so they keep working as new wrappers are added.
+Prefer these over walking the recipe class hierarchy yourself — they encapsulate the wrapper-peeling invariants (`Overridden` / `Filtered` over at most one `Discovered`) so they keep working as new wrappers are added.
 
 ---
 
@@ -495,7 +495,7 @@ return createPlDataTableV3(ctx, {
   ];
   ```
 
-  Trade-off: each tagged recipe gets wrapped as `ColumnOverridedRecipe`, so its `id` changes — downstream resolvers must accept `ColumnUniversalId`. Use only when the `{ match: {} }` ordering approach can't express the rule.
+  Trade-off: each tagged recipe gets wrapped as `ColumnOverriddenRecipe`, so its `id` changes — downstream resolvers must accept `ColumnUniversalId`. Use only when the `{ match: {} }` ordering approach can't express the rule.
 
 - **Don't bet on regex negation** (`^(?!X$).*$`) for selector values until the WASM matcher's regex flavour and absent-key semantics are confirmed. The TS-side `MatcherMap` type is identical to the legacy form, but the active matcher is in `pframes-rs` — JS-side regex-negation behaviour may not transfer.
 
@@ -537,7 +537,7 @@ Changing the `BlockArgs` / `BlockData` field type from `PlRef` to `ColumnUnivers
 
 The two traps that catch this:
 
-1. **The `DataModelBuilder` chain typechecks even when no step touches the field.** A migration like `.migrate<BlockData>("vN+1", (prev) => ({ ...prev, ... }))` where `BlockData.inputAnchor` is now `ColumnUniversalId` will pass — but `prev.inputAnchor` is whatever was on disk, and the spread carries the `PlRef` object straight through. The type system can't catch this because the *previous* version was also annotated as `BlockData` (or `Omit<BlockData, …>`), which got dragged into the new type when `BlockData` itself changed.
+1. **The `DataModelBuilder` chain typechecks even when no step touches the field.** A migration like `.migrate<BlockData>("vN+1", (prev) => ({ ...prev, ... }))` where `BlockData.inputAnchor` is now `ColumnUniversalId` will pass — but `prev.inputAnchor` is whatever was on disk, and the spread carries the `PlRef` object straight through. The type system can't catch this because the _previous_ version was also annotated as `BlockData` (or `Omit<BlockData, …>`), which got dragged into the new type when `BlockData` itself changed.
 
 2. **Reusing the current `BlockData` for historical versions hides the conversion.** Anchor each migration's input/output type to the **shape persisted at that version**, not to a relative of the current `BlockData`. Otherwise the chain reads as if every step already handles the new field, and the only step where the actual `PlRef → ColumnUniversalId` conversion belongs is invisible.
 
@@ -563,7 +563,7 @@ type StoredV2 = Omit<StoredV1, "sampleTableState"> & {
 };
 
 // For a result-pool leaf, the canonical id is `createGlobalPObjectId(blockId, name)`
-// of the ref. Wrappers (Filtered/Overrided/Discovered) have no PlRef form —
+// of the ref. Wrappers (Filtered/Overridden/Discovered) have no PlRef form —
 // they only exist as ids, so they never need this conversion.
 function plRefToUniversalId(ref: PlRef | undefined): ColumnUniversalId | undefined {
   return ref ? createGlobalPObjectId(ref.blockId, ref.name) : undefined;
@@ -584,7 +584,9 @@ export const blockDataModel = new DataModelBuilder()
     ...prev,
     inputAnchor: plRefToUniversalId(prev.inputAnchor),
   }))
-  .init(() => ({ /* current shape */ }));
+  .init(() => ({
+    /* current shape */
+  }));
 ```
 
 Three things to check at review time:
@@ -688,11 +690,11 @@ const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
 return createPFrameForGraphs(ctx, pCols);
 ```
 
-Use strict `isColumnLazy` here, **not** the broader `isLeafColumn`. The `PColumn.id` slot is typed `PObjectId`, which only bare `ColumnLazy` carries — wrappers (`Overrided` / `Filtered`-over-leaf) expose `ColumnUniversalId`. Same reasoning applies to `PColumnIdAndSpec.columnId`. `isColumnLazy` is both a type guard and the canonical narrow — pass it straight to `Array.prototype.filter` (no manual predicate, no `ColumnLazyImpl` import).
+Use strict `isColumnLazy` here, **not** the broader `isLeafColumn`. The `PColumn.id` slot is typed `PObjectId`, which only bare `ColumnLazy` carries — wrappers (`Overridden` / `Filtered`-over-leaf) expose `ColumnUniversalId`. Same reasoning applies to `PColumnIdAndSpec.columnId`. `isColumnLazy` is both a type guard and the canonical narrow — pass it straight to `Array.prototype.filter` (no manual predicate, no `ColumnLazyImpl` import).
 
 Notes:
 
-- This **only works for `ColumnLazy`**. `ColumnOverridedRecipe` / `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` have no `getData()` — there is no "materialise this recipe to a PColumn" path in the sandbox. If your discovery emits any wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
+- This **only works for `ColumnLazy`**. `ColumnOverriddenRecipe` / `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` have no `getData()` — there is no "materialise this recipe to a PColumn" path in the sandbox. If your discovery emits any wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
 - `PColumnIdAndSpec.columnId: PObjectId` — same constraint by the same logic. Only `ColumnLazy.id` (bare `PObjectId`) goes there; never a `ColumnUniversalId` from a wrapper recipe.
 - The `{ anchor: 'main', idx: 1 }` axis-binding from legacy `getAnchoredPColumns` has no `RelaxedAxisSelector` form. Workaround: read the anchor's `axesSpec[i].name` and pass it as `axes: [{ name }]` in the new selector — the axis-name match is enough for the common case.
 
@@ -704,7 +706,7 @@ The legacy "snapshot to N synthetic PColumns" pattern (read `data` accessor, fan
 
 2. **You cannot embed a foreign canonical id inside `LocalPObjectId.resolvePath` either.** `createLocalPObjectId([col.id, ...], value)` parses and passes `extractPObjectId`, but it abuses the semantics of `LocalPObjectKey` (a path inside a _block's own_ local tree) by stuffing a `GlobalPObjectId` JSON in as a path element. Nested canonical ids are not how this layer composes.
 
-**Use the SDK helper `expandByPartition`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverridedRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverridedId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
+**Use the SDK helper `expandByPartition`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverriddenRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverriddenId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
 
 For human-readable axis-value labels in the trace annotation, pair it with `deriveAxisValuesLabels()` — the modern replacement for the legacy `ctx.resultPool.findLabels(axisId)`. It reads all label columns in scope and returns a `(axisId) => Record<value, label>` resolver.
 
@@ -726,7 +728,7 @@ import {
   // reached via a linker); those belong in secondary, not in the join's primary
   // side. Mirrors what `discoverTableColumns` does internally for the
   // selector-form path. `isLeafColumn` accepts bare `ColumnLazy` plus
-  // `Overrided` / `Filtered` over a leaf — anything whose chain reaches a
+  // `Overridden` / `Filtered` over a leaf — anything whose chain reaches a
   // `Discovered` is rejected.
   const primary = ColumnsCollection()
     .discover({ anchors: { main: valueAnchor }, mode: "exact" })
@@ -761,15 +763,15 @@ import {
 });
 ```
 
-What you gain over hand-rolling Filtered/Overrided yourself:
+What you gain over hand-rolling Filtered/Overridden yourself:
 
 - **No data materialisation in the sandbox** — partition inspection reads `getUniquePartitionKeys` once; the actual slicing moves into the engine via the `sliceAxes` node generated by `ColumnFilteredRecipe.getQuery()`.
-- **No synthetic ids** — each split's `ColumnOverridedId` is canonical and uniquely keyed by the override patch.
-- **Spec correctness for free** — `ColumnFilteredRecipe.getSpec()` removes the pinned axis from `axesSpec` automatically; `domain[axisName]` and the `pl7.app/trace` entry (used by `deriveDistinctLabels` for human-readable disambiguation) land in the outer `ColumnOverridedRecipe`.
+- **No synthetic ids** — each split's `ColumnOverriddenId` is canonical and uniquely keyed by the override patch.
+- **Spec correctness for free** — `ColumnFilteredRecipe.getSpec()` removes the pinned axis from `axesSpec` automatically; `domain[axisName]` and the `pl7.app/trace` entry (used by `deriveDistinctLabels` for human-readable disambiguation) land in the outer `ColumnOverriddenRecipe`.
 - **Linker discovery still works** — the recipe's `getQuery()` references the inner via the rebrand-leaf-id mechanism, so `collectLinkerIds` resolves correctly.
 
 Two architectural invariants worth remembering when reading or extending this path:
 
-- **`ColumnOverridedRecipe` is always the outermost wrap.** `ColumnFilteredRecipe.withSpecs(overrides)` yields `Overrided<Filtered<inner>>` automatically. Do not try to construct `Filtered<Overrided<...>>` — the SDK has no public path to that layering and the invariant is enforced inside `unwrapOverrides`.
+- **`ColumnOverriddenRecipe` is always the outermost wrap.** `ColumnFilteredRecipe.withSpecs(overrides)` yields `Overridden<Filtered<inner>>` automatically. Do not try to construct `Filtered<Overridden<...>>` — the SDK has no public path to that layering and the invariant is enforced inside `unwrapOverrides`.
 
-- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `ColumnLazy` (direct anchor hits), `Overrided` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `isLeafColumn`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(isLeafColumn)` on the discover result — **not** `isColumnLazy`, which is stricter and drops valid `Filtered` / `Overrided`-over-leaf primaries.
+- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `ColumnLazy` (direct anchor hits), `Overridden` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `isLeafColumn`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(isLeafColumn)` on the discover result — **not** `isColumnLazy`, which is stricter and drops valid `Filtered` / `Overridden`-over-leaf primaries.

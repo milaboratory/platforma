@@ -1,6 +1,6 @@
 import {
   isColumnDiscoveredKey,
-  isColumnOverridedKey,
+  isColumnOverriddenKey,
   parseColumnIdSafety,
   type ColumnUniversalId,
   type PObjectId,
@@ -11,7 +11,7 @@ import type { GlobalCfgRenderCtx } from "../../render/internal";
 import { ColumnLazyImpl } from "../column_lazy";
 import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
-import { ColumnOverridedRecipe } from "./column_overrided_recipe";
+import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import type {
   ColumnRecipe as ColumnRecipeBase,
   ColumnRecipeId,
@@ -22,7 +22,7 @@ export type { ColumnFieldStatus, ColumnRecipeId, ColumnResolutionStatus, SpecQue
 export { ColumnAbsentError } from "../column_lazy";
 export { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 export { ColumnFilteredRecipe } from "./column_filtered_recipe";
-export { ColumnOverridedRecipe } from "./column_overrided_recipe";
+export { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 
 // Re-declare the interface locally so the name can merge with the dispatcher
 // value declared below: a single name `ColumnRecipe` resolves to the
@@ -40,8 +40,8 @@ export interface ColumnRecipe<
  *
  *   - bare {@link PObjectId} (non-JSON)               → `ColumnLazy.fromId`
  *   - `ColumnDiscoveredKey`                          → {@link ColumnDiscoveredRecipe}
- *   - `ColumnOverridedKey { source, specOverrides }` → recurse on `source`,
- *                                                       then {@link ColumnOverridedRecipe.wrap}
+ *   - `ColumnOverriddenKey { source, specOverrides }` → recurse on `source`,
+ *                                                       then {@link ColumnOverriddenRecipe.wrap}
  *   - `ColumnFilteredKey { source, axisFilters }`     → recurse on `source`,
  *                                                       then {@link ColumnFilteredRecipe.wrap}
  *
@@ -63,10 +63,10 @@ function ColumnRecipeBuild(
     return ColumnDiscoveredRecipe.fromKey(parsed, opts);
   }
 
-  if (isColumnOverridedKey(parsed)) {
+  if (isColumnOverriddenKey(parsed)) {
     const inner = ColumnRecipe(parsed.source, opts);
     if (inner === undefined) return undefined;
-    return ColumnOverridedRecipe.wrap(inner, parsed.specOverrides);
+    return ColumnOverriddenRecipe.wrap(inner, parsed.specOverrides);
   }
 
   if (isColumnFilteredKey(parsed)) {
@@ -100,7 +100,7 @@ function ColumnRecipeGetStatus(
   const parsed = parseColumnIdSafety(id);
   if (isPObjectKey(parsed)) return ColumnLazyImpl.getStatusById(id as PObjectId, opts);
   if (isColumnDiscoveredKey(parsed)) return ColumnDiscoveredRecipe.getStatusByKey(parsed, opts);
-  if (isColumnOverridedKey(parsed)) return ColumnOverridedRecipe.getStatusByKey(parsed, opts);
+  if (isColumnOverriddenKey(parsed)) return ColumnOverriddenRecipe.getStatusByKey(parsed, opts);
   if (isColumnFilteredKey(parsed)) return ColumnFilteredRecipe.getStatusByKey(parsed, opts);
   throw new Error(`Unsupported ColumnRecipe id variant: ${id}`);
 }
@@ -114,7 +114,7 @@ export const ColumnRecipe: typeof ColumnRecipeBuild & {
 /**
  * Type-guard for any recipe class — leaf {@link ColumnLazyImpl} or any of the
  * wrapper recipes ({@link ColumnDiscoveredRecipe}, {@link ColumnFilteredRecipe},
- * {@link ColumnOverridedRecipe}). Use when a value may be a raw id, a `PColumn`,
+ * {@link ColumnOverriddenRecipe}). Use when a value may be a raw id, a `PColumn`,
  * or a recipe and you want to branch on the recipe case.
  */
 export function isColumnRecipe(value: unknown): value is ColumnRecipe {
@@ -122,6 +122,6 @@ export function isColumnRecipe(value: unknown): value is ColumnRecipe {
     value instanceof ColumnLazyImpl ||
     value instanceof ColumnDiscoveredRecipe ||
     value instanceof ColumnFilteredRecipe ||
-    value instanceof ColumnOverridedRecipe
+    value instanceof ColumnOverriddenRecipe
   );
 }
