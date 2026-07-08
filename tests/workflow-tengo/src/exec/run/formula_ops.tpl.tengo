@@ -25,8 +25,7 @@ self.body(func(inputs) {
 		inHeavyQueue().
 		software(sw).
 		argWithVar("{system.ram.bytes},{system.cpu},ops").
-		memFormula(f.clamp(f.gib(8), f.gib(1), f.gib(4))).
-		cpuFormula(f["if"](f.gt(f.gib(8), f.gib(4)), 2, 1)).
+		resources({ onCPU: { ram: f.gib(8).between(f.gib(1), f.gib(4)), cpu: f.when(f.gib(8).gt(f.gib(4)), 2).otherwise(1) } }).
 		saveStdoutContent().
 		run()
 
