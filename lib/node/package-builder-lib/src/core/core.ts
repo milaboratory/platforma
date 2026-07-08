@@ -23,7 +23,6 @@ export class Core {
   private _renderer: SwJsonRenderer | undefined;
 
   public readonly pkgInfo: PackageInfo;
-  public buildMode: util.BuildMode;
   public targetPlatform: util.PlatformType | undefined;
   public allPlatforms: boolean = false;
   public fullDirHash: boolean;
@@ -38,9 +37,15 @@ export class Core {
     this.logger = logger;
     this.pkgInfo = opts?.pkgInfo ?? new PackageInfo(logger, { packageRoot: opts?.packageRoot });
 
-    this.buildMode = "release";
-
     this.fullDirHash = false;
+  }
+
+  public get buildMode(): util.BuildMode {
+    return this.pkgInfo.buildMode;
+  }
+
+  public set buildMode(mode: util.BuildMode) {
+    this.pkgInfo.buildMode = mode;
   }
 
   public set version(v: string | undefined) {
@@ -200,6 +205,7 @@ export class Core {
     entrypoints?: string[];
     sources?: util.SoftwareSource[];
     requireAllArtifacts?: boolean;
+    noSoftware?: boolean;
   }) {
     const index = this.packageEntrypointsIndex;
 
@@ -222,10 +228,12 @@ export class Core {
       entrypoints = entrypoints.filter(([epName, _]) => entrypointNames.includes(epName));
     }
 
-    const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
-      requireAllArtifacts: options?.requireAllArtifacts,
-      fullDirHash: this.fullDirHash,
-    });
+    const infos = options?.noSoftware
+      ? this.renderer.renderPlaceholderEntrypoints(new Map(entrypoints))
+      : this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
+          requireAllArtifacts: options?.requireAllArtifacts,
+          fullDirHash: this.fullDirHash,
+        });
 
     for (const swJson of infos.values()) {
       this.renderer.writeSwJson(swJson);
@@ -236,6 +244,29 @@ export class Core {
         const srcPath = this.pkgInfo.resolveReference(epName, ep);
         this.renderer.copySwJson(epName, srcPath);
       }
+    }
+  }
+
+  // Point artifact-info at the already-published, version-derived artifact without building or
+  // uploading, so buildSwJsonFiles renders a registry descriptor for it. Release mode, binary only.
+  public writePublishedArtifactInfo(options?: { ids?: string[] }) {
+    const platform = util.currentPlatform();
+    for (const [id, artifact] of this.buildablePackages) {
+      if (options?.ids && !options.ids.includes(id)) continue;
+
+      // Cross-platform archives are stored under a platform-agnostic key; this is the key
+      // renderBinaryInfo reads back from.
+      const locationKey = artifacts.isCrossPlatform(artifact.type) ? undefined : platform;
+      const registry = this.pkgInfo.artifactRegistrySettings(artifact);
+
+      writeBuiltArtifactInfo(this.pkgInfo.artifactInfoLocation(id, "archive", locationKey), {
+        type: artifact.type,
+        platform,
+        registryURL: registry.downloadURL,
+        registryName: registry.name,
+        remoteArtifactLocation: this.pkgInfo.artifactArchiveAddressPattern(artifact),
+        uploadPath: this.pkgInfo.artifactArchiveFullName(artifact, platform),
+      });
     }
   }
 
@@ -344,7 +375,7 @@ export class Core {
       }
     }
 
-    if (util.isDevLocalMode(this.buildMode)) {
+    if (!util.producesRegistryDescriptor(this.buildMode)) {
       this.logger.info(
         `  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`,
       );
@@ -389,6 +420,15 @@ export class Core {
           );
           continue;
         }
+      }
+
+      // Docker software is built as linux/amd64 only (Platforma's K8s target). An explicit
+      // non-x64 target cannot be honored — fail clearly instead of silently emitting amd64.
+      if (this.targetPlatform && util.splitPlatform(this.targetPlatform).arch !== "x64") {
+        throw util.CLIError(
+          `cannot build docker image '${artifact.id}' for target '${this.targetPlatform}': ` +
+            `docker software is built as ${defaults.DOCKER_BUILD_PLATFORM} only`,
+        );
       }
 
       this.buildDockerImage(artifact.id, artifact, options?.registry);

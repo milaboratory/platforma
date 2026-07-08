@@ -49,7 +49,7 @@ export function legacyCleanup(): void {
     remove(".prettierrc");
     managed(
       "package.json",
-      generate((ctx) => rootPackageJsonInitial(ctx)),
+      generate(() => rootPackageJsonInitial()),
       () => {
         // `pretty` (prettier) is superseded by `fmt` (oxfmt); the standalone
         // deps-updater is now part of block-tools.

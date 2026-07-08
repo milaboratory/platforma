@@ -12,12 +12,20 @@ import {
   ensureField,
   removeField,
   ensureScript,
-  ensureDevDeps,
+  removeScript,
+  ensureDevDep,
+  removeDep,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+
+// The software-build build/pack commands, shared by the generator and the reconciler. block-tools
+// bundles the build engine, so these are the only build-tool commands a software-build block runs.
+const BUILD_CMD = "block-tools software build";
+const DO_PACK_CMD =
+  "shx rm -f *.tgz && block-tools software build && pnpm pack && shx mv platforma-open*.tgz package.tgz";
 
 /** The `block-software` package-builder descriptor for a python
  *  entrypoint. Kept opaque by the engine; rule authors edit it via
@@ -45,21 +53,22 @@ function pythonBlockSoftware(): Record<string, unknown> {
 
 export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
+
   return {
     name: `${v.facadeName}.software`,
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],
     scripts: {
-      build: "pl-pkg build",
-      prepublishOnly: "pl-pkg prepublish",
+      build: BUILD_CMD,
+      "do-pack": DO_PACK_CMD,
       changeset: "changeset",
       "version-packages": "changeset version",
     },
     "block-software": pythonBlockSoftware(),
     devDependencies: {
       "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-      "@platforma-sdk/package-builder": "sdk:",
+      "@platforma-sdk/block-tools": "sdk:",
     },
   };
 }
@@ -74,15 +83,19 @@ export function softwarePackageJsonRules(): void {
   ensureField("type", "module");
   ensureField("files", ["./dist/**/*"]);
 
-  ensureScript("build", "pl-pkg build");
-  ensureScript("prepublishOnly", "pl-pkg prepublish");
+  // Lifecycle scripts. block-tools builds and packs; a block migrated off pl-pkg converges on
+  // refresh — the old `pl-pkg prepublish` upload step is dropped (build + push happen in `build`).
+  ensureScript("build", BUILD_CMD);
+  ensureScript("do-pack", DO_PACK_CMD);
+  removeScript("prepublishOnly");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
 
-  ensureDevDeps({
-    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-    "@platforma-sdk/package-builder": "sdk:",
-  });
+  // Canonical devDeps. block-tools bundles the build engine, so the pl-pkg
+  // `@platforma-sdk/package-builder` dependency is dropped.
+  ensureDevDep("@platforma-open/milaboratories.runenv-python-3", "catalog:");
+  ensureDevDep("@platforma-sdk/block-tools", "sdk:");
+  removeDep("@platforma-sdk/package-builder");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

@@ -27,7 +27,6 @@
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
       "env": [
-        "PL_PKG_DEV",
         "PL_PKG_FULL_HASH",
         "PL_PKG_VERSION",
         "PL_DOCKER_REGISTRY"
@@ -69,7 +68,6 @@
       "dependsOn": ["build"],
       "outputs": ["package.tgz"],
       "env": [
-        "PL_PKG_DEV",
         "PL_PKG_FULL_HASH",
         "PL_PKG_VERSION",
         "PL_DOCKER_REGISTRY"

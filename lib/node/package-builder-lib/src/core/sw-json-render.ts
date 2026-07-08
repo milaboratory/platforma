@@ -58,12 +58,12 @@ export class SwJsonRenderer {
         throw util.CLIError(`Entrypoint ${epName} not found in result`);
       }
 
-      if (mode !== "release") {
+      if (util.isDevMode(mode)) {
         info.isDev = true;
       }
 
       const pkg = ep.artifact;
-      if (util.isDevLocalMode(mode)) {
+      if (!util.producesRegistryDescriptor(mode)) {
         switch (pkg.type) {
           case "docker": {
             info.docker = this.renderDockerInfo(epName, ep, options?.requireAllArtifacts);
@@ -119,6 +119,31 @@ export class SwJsonRenderer {
       throw util.CLIError("no entrypoint descriptors were rendered");
     }
 
+    return result;
+  }
+
+  // One minimal `binary` placeholder per entrypoint, so a block builds, loads, and renders without
+  // any software; only executing it fails, against the sentinel registry. References are copied
+  // through by the caller, so they are skipped here.
+  public renderPlaceholderEntrypoints(
+    entrypoints: Map<string, entrypoint.Entrypoint>,
+  ): Map<string, swJson.swJsonType> {
+    const result = new Map<string, swJson.swJsonType>();
+    for (const [epName, ep] of entrypoints.entries()) {
+      if (ep.type === "reference") continue;
+      const originEpName = docker.entrypointNameToOrigin(epName);
+      if (result.has(originEpName)) continue;
+      result.set(originEpName, {
+        id: { package: this.pkgInfo.packageName, name: originEpName },
+        isDev: true,
+        binary: {
+          type: "binary",
+          registry: defaults.NO_SOFTWARE_PLACEHOLDER,
+          package: defaults.NO_SOFTWARE_PLACEHOLDER,
+          cmd: ["true"],
+        },
+      });
+    }
     return result;
   }
 
@@ -297,6 +322,7 @@ export class SwJsonRenderer {
   ): swJson.remoteSoftwareType | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":
@@ -433,6 +459,7 @@ export class SwJsonRenderer {
   ): swJson.runEnvInfo | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":
@@ -482,6 +509,7 @@ export class SwJsonRenderer {
   ): swJson.assetInfo | undefined {
     switch (mode) {
       case "release":
+      case "dev-remote":
         break;
 
       case "dev-local":
