@@ -156,6 +156,29 @@ describe("Renderer tests", () => {
     expect(javaDescriptor.docker!.cmd).toEqual(["java", "-jar", "hello.jar"]);
   });
 
+  test("render no-software placeholder", () => {
+    const sw = new SwJsonRenderer(l, i);
+
+    // No artifact info written — placeholders need nothing built. A docker+binary pair collapses
+    // to a single placeholder for their shared origin entrypoint.
+    const epName = test_assets.EPNameJava;
+    const eps = new Map([
+      [docker.entrypointName(epName), i.getMainEntrypoint(docker.entrypointName(epName))],
+      [epName, i.getMainEntrypoint(epName)],
+    ]);
+    const result = sw.renderPlaceholderEntrypoints(eps);
+
+    expect(result.size).toBe(1);
+    const descriptor = result.get(epName)!;
+    expect(descriptor.isDev).toBe(true);
+    expect(descriptor.binary).toEqual({
+      type: "binary",
+      registry: defaults.NO_SOFTWARE_PLACEHOLDER,
+      package: defaults.NO_SOFTWARE_PLACEHOLDER,
+      cmd: ["true"],
+    });
+  });
+
   test("render docker indinvidual entrypoint", () => {
     const dockerEpName = test_assets.EPNameDocker;
     const dockerPkg = i.getArtifact(dockerEpName, "docker");

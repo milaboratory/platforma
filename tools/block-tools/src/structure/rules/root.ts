@@ -18,7 +18,7 @@ export function rootRules(): void {
 
         managed(
           "package.json",
-          generate((ctx) => rootPackageJsonInitial(ctx)),
+          generate(() => rootPackageJsonInitial()),
           () => {
             rootPackageJsonRules();
           },

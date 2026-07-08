@@ -3,16 +3,15 @@
   "version": "1.2.2",
   "description": "Text processing utilities for platforma",
   "scripts": {
-    "build": "rm -rf ./dist && pl-pkg build",
-    "prepublishOnly": "pl-pkg prepublish",
-    "do-pack": "rm -f *.tgz && pl-pkg build && pnpm pack && mv platforma-open-milaboratories.software-ptexter-*.tgz package.tgz"
+    "build": "rm -rf ./dist && block-tools software build",
+    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-ptexter-*.tgz package.tgz"
   },
   "files": [
     "./dist/**/*"
   ],
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:",
+    "@platforma-sdk/block-tools": "workspace:*",
     "@platforma-open/milaboratories.runenv-python-3": "catalog:"
   },
   "block-software": {

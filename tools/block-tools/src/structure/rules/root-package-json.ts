@@ -13,11 +13,32 @@ import {
   pruneKeysMatching,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
-  type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 
-export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown> {
+// `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
+// choice. `no-software` builds placeholder software for validators.
+
+const BUILD_SCRIPTS: Record<string, string> = {
+  "build:dev-local":
+    "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run build",
+  "build:dev-remote":
+    "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
+  "build:dev-no-software": "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none turbo run build",
+  "build:dev-binary-existing":
+    "env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
+  "build:release":
+    "env PL_BUILD_CHANNEL=release PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
+};
+
+// `test` / `test:dry-run` run the build-then-test DAG in the dev-binary-local target; the live
+// backend's env reaches the integration tests via the turbo `test` task's passThroughEnv.
+const TEST_SCRIPTS: Record<string, string> = {
+  test: `env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --concurrency 1`,
+  "test:dry-run": `env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --dry-run=json`,
+};
+
+export function rootPackageJsonInitial(): Record<string, unknown> {
   // No `name`: the root is never published. Body rules re-assert
   // (removeField("name")) as a drift-corrector.
   return {
@@ -26,10 +47,8 @@ export function rootPackageJsonInitial(_ctx: RunContext): Record<string, unknown
     scripts: {
       fmt: "turbo run fmt",
       check: "turbo run check",
-      build: "turbo run build",
-      "build:dev": "env PL_PKG_DEV=local turbo run build",
-      test: "env PL_PKG_DEV=local turbo run test --concurrency 1",
-      "test:dry-run": "env PL_PKG_DEV=local turbo run test --dry-run=json",
+      ...BUILD_SCRIPTS,
+      ...TEST_SCRIPTS,
       "mark-stable": "turbo run mark-stable",
       "do-pack": "turbo run do-pack",
       watch: "turbo watch build",
@@ -61,16 +80,21 @@ export function rootPackageJsonRules(): void {
   // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");
 
-  // Canonical lifecycle script set. `test` / `test:dry-run` carry the
-  // PL_PKG_DEV wrapper; the live backend's env reaches the integration
-  // tests via the turbo `test` task's passThroughEnv (no --env-mode=loose
-  // needed).
+  // Canonical lifecycle script set. The live backend's env reaches the
+  // integration tests via the turbo `test` task's passThroughEnv (no
+  // --env-mode=loose needed).
   ensureScript("fmt", "turbo run fmt");
   ensureScript("check", "turbo run check");
-  ensureScript("build", "turbo run build");
-  ensureScript("build:dev", "env PL_PKG_DEV=local turbo run build");
-  ensureScript("test", "env PL_PKG_DEV=local turbo run test --concurrency 1");
-  ensureScript("test:dry-run", "env PL_PKG_DEV=local turbo run test --dry-run=json");
+  for (const [name, command] of Object.entries(BUILD_SCRIPTS)) {
+    ensureScript(name, command);
+  }
+  for (const [name, command] of Object.entries(TEST_SCRIPTS)) {
+    ensureScript(name, command);
+  }
+  // No bare `build` — a developer must pick a scenario (`build:dev-local`, `build:release`,
+  // …). Drop the legacy plain `build` and the old single `build:dev` so migrated blocks converge.
+  removeScript("build");
+  removeScript("build:dev");
   ensureScript("mark-stable", "turbo run mark-stable");
   ensureScript("do-pack", "turbo run do-pack");
   ensureScript("watch", "turbo watch build");

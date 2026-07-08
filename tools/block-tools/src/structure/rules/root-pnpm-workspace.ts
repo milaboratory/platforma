@@ -75,9 +75,16 @@ export const INFRA_CATALOG_FLOOR: Record<string, string> = {
  *  3.5.x than ui-vue's, yielding two vue instances and a SdkPluginV3-vs-Plugin
  *  type clash in `main.ts`. Deriving the pin from ui-vue's declared dep keeps
  *  the block in lockstep with whatever vue ui-vue's npm-latest pins, with no
- *  hand-maintained version here. */
+ *  hand-maintained version here.
+ *
+ *  `@milaboratories/helpers`: the block's model/ui depend on it (catalog:) and
+ *  `@platforma-sdk/model` pins it as an EXACT regular dependency. A hand-pinned
+ *  floor that lags a model bump yields two helpers instances — the model's
+ *  inferred `platforma` type then references the SDK's copy, not the block's,
+ *  failing `tsc` with TS2742. Deriving from model keeps them in lockstep. */
 export const DERIVED_CATALOG_PINS: readonly DerivedCatalogPin[] = [
   { entry: "vue", of: "@platforma-sdk/ui-vue" },
+  { entry: "@milaboratories/helpers", of: "@platforma-sdk/model" },
 ];
 
 /** Catalog name of the python runenv. Added to a block's catalog only when
