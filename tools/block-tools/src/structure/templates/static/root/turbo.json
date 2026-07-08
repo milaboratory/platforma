@@ -13,7 +13,6 @@
       "dependsOn": ["^build", "check"],
       "inputs": ["$TURBO_DEFAULT$"],
       "env": [
-        "PL_PKG_DEV",
         "PL_DOCKER_REGISTRY_PUSH_TO",
         "PL_BUILD_CHANNEL",
         "PL_BUILD_VARIANT",
