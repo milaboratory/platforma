@@ -12,6 +12,7 @@ export const softwareBuildCacheEnv: readonly string[] = [
   PL_BUILD_VARIANT,
   PL_BUILD_LOCATION,
   PL_BUILD_USE_PUBLISHED,
+  envs.PL_DOCKER_REGISTRY_PUSH_TO,
   envs.PL_DEV_DOCKER_PUSH_URL,
   envs.PL_DEV_DOCKER_PULL_URL,
   envs.PL_DEV_BINARY_UPLOAD_URL,

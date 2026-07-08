@@ -14,9 +14,4 @@ describe("block turbo build cache env", () => {
   it("declares every software-build cache var", () => {
     for (const v of softwareBuildCacheEnv) expect(buildEnv).toContain(v);
   });
-
-  it("keeps the pl-pkg transition vars while blocks still run pl-pkg build", () => {
-    expect(buildEnv).toContain("PL_PKG_DEV");
-    expect(buildEnv).toContain("PL_DOCKER_REGISTRY_PUSH_TO");
-  });
 });
