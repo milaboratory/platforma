@@ -54,44 +54,26 @@ function pythonBlockSoftware(): Record<string, unknown> {
 export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
 
-  // The build tool differs by path: the software-build path builds/packs via block-tools and needs
-  // no pl-pkg; the legacy path shells out to pl-pkg and keeps its prepublish upload step.
-  const scripts = ctx.softwareBuild
-    ? {
-        build: BUILD_CMD,
-        "do-pack": DO_PACK_CMD,
-        changeset: "changeset",
-        "version-packages": "changeset version",
-      }
-    : {
-        build: "pl-pkg build",
-        prepublishOnly: "pl-pkg prepublish",
-        changeset: "changeset",
-        "version-packages": "changeset version",
-      };
-
-  const devDependencies = ctx.softwareBuild
-    ? {
-        "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-        "@platforma-sdk/block-tools": "sdk:",
-      }
-    : {
-        "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-        "@platforma-sdk/package-builder": "sdk:",
-      };
-
   return {
     name: `${v.facadeName}.software`,
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],
-    scripts,
+    scripts: {
+      build: BUILD_CMD,
+      "do-pack": DO_PACK_CMD,
+      changeset: "changeset",
+      "version-packages": "changeset version",
+    },
     "block-software": pythonBlockSoftware(),
-    devDependencies,
+    devDependencies: {
+      "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+      "@platforma-sdk/block-tools": "sdk:",
+    },
   };
 }
 
-export function softwarePackageJsonRules(ctx: RunContext): void {
+export function softwarePackageJsonRules(): void {
   // Software packages must never be private: `pl-pkg` gates docker image
   // auto-push on `!isPrivate`, so a private software package builds its image
   // but never pushes it — the block then 404s pulling it at runtime. Strip it
@@ -101,29 +83,19 @@ export function softwarePackageJsonRules(ctx: RunContext): void {
   ensureField("type", "module");
   ensureField("files", ["./dist/**/*"]);
 
-  // Lifecycle scripts. Each path declares exactly its own build/pack scripts and strips the other
-  // path's leftovers, so a block migrated between the two converges on refresh.
-  if (ctx.softwareBuild) {
-    ensureScript("build", BUILD_CMD);
-    ensureScript("do-pack", DO_PACK_CMD);
-    // build + push happen in `build`; the old `pl-pkg prepublish` upload step is gone.
-    removeScript("prepublishOnly");
-  } else {
-    ensureScript("build", "pl-pkg build");
-    ensureScript("prepublishOnly", "pl-pkg prepublish");
-  }
+  // Lifecycle scripts. block-tools builds and packs; a block migrated off pl-pkg converges on
+  // refresh — the old `pl-pkg prepublish` upload step is dropped (build + push happen in `build`).
+  ensureScript("build", BUILD_CMD);
+  ensureScript("do-pack", DO_PACK_CMD);
+  removeScript("prepublishOnly");
   ensureScript("changeset", "changeset");
   ensureScript("version-packages", "changeset version");
 
-  // Canonical devDeps. The runenv is shared; the build tool differs by path. block-tools bundles the
-  // engine, so a software-build block drops the pl-pkg `@platforma-sdk/package-builder` dependency.
+  // Canonical devDeps. block-tools bundles the build engine, so the pl-pkg
+  // `@platforma-sdk/package-builder` dependency is dropped.
   ensureDevDep("@platforma-open/milaboratories.runenv-python-3", "catalog:");
-  if (ctx.softwareBuild) {
-    ensureDevDep("@platforma-sdk/block-tools", "sdk:");
-    removeDep("@platforma-sdk/package-builder");
-  } else {
-    ensureDevDep("@platforma-sdk/package-builder", "sdk:");
-  }
+  ensureDevDep("@platforma-sdk/block-tools", "sdk:");
+  removeDep("@platforma-sdk/package-builder");
 
   enforceAlphabeticalOrder("dependencies");
   enforceAlphabeticalOrder("devDependencies");

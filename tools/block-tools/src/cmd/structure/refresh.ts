@@ -9,7 +9,6 @@ export async function runRefresh(opts: {
   paths: string[];
   isSdkInternal: boolean;
   updateDepsOnly: boolean;
-  softwareBuild?: boolean;
   templatesRoot: string;
   logger: MiLogger;
 }): Promise<void> {
@@ -18,7 +17,6 @@ export async function runRefresh(opts: {
       blockPath: p,
       isSdkInternal: opts.isSdkInternal,
       updateDepsOnly: opts.updateDepsOnly,
-      softwareBuild: opts.softwareBuild,
       mode: "refresh",
       templatesRoot: opts.templatesRoot,
       log: (m) => opts.logger.info(m),
@@ -38,10 +36,6 @@ export function structureRefreshCommand(packageRoot: string): Command {
     "--update-deps-only",
     "fire ONLY catalog-bump rules (npm network). Follow with `pnpm install` then a plain refresh.",
   );
-  cmd.option(
-    "--software-build",
-    "build the block's software with `block-tools software build`; the choice persists in `.structure`.",
-  );
 
   cmd.action(async (argv: string[], flags) => {
     const paths = argv.length > 0 ? argv : ["."];
@@ -50,7 +44,6 @@ export function structureRefreshCommand(packageRoot: string): Command {
       paths,
       isSdkInternal: Boolean(flags.sdkInternal),
       updateDepsOnly: Boolean(flags.updateDepsOnly),
-      softwareBuild: Boolean(flags.softwareBuild),
       templatesRoot,
       logger: new ConsoleLoggerAdapter(),
     });
