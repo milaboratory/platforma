@@ -498,8 +498,8 @@ export function run(
     const isRefreshDefault = !ctx.dryRun && !ctx.updateDepsOnly && !initMode;
 
     if (isRefreshDefault) {
-      // version bump + persist the software-build marker
-      writeStructureMeta(fs, { version: STRUCTURE_VERSION, softwareBuild: ctx.softwareBuild });
+      // version bump
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION });
 
       // post-run recheck. Fresh discovery → fresh flatten →
       // dry-run. Any change list emits RecheckError on the first item.
@@ -527,7 +527,7 @@ export function run(
     // Init mode: write .structure so the resulting tree carries the
     // current version (matches what `init` ships to disk).
     if (initMode && !ctx.dryRun) {
-      writeStructureMeta(fs, { version: STRUCTURE_VERSION, softwareBuild: ctx.softwareBuild });
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION });
     }
 
     return { changes };

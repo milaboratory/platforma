@@ -153,8 +153,6 @@ export type DiscoverInput = {
   fs: FileSystem;
   isSdkInternal: boolean;
   updateDepsOnly?: boolean;
-  /** Turn the per-block software-build marker on for this run; it then persists in `.structure`. */
-  softwareBuild?: boolean;
   dryRun?: boolean;
 };
 
@@ -179,8 +177,6 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
 
   const meta = readStructureMeta(fs);
   assertVersionAboveFloor(meta.version, STRUCTURE_MIN_SUPPORTED);
-  // The marker sticks once written; passing it for this run also turns it on.
-  const softwareBuild = meta.softwareBuild === true || input.softwareBuild === true;
 
   // BlockVars from the block-scope module's name (facade). Fall back to
   // the root module if a block has the root-as-block shape.
@@ -207,7 +203,6 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
     modules,
     blockVars,
     version: meta.version,
-    softwareBuild,
     dryRun: input.dryRun ?? false,
   });
 }
