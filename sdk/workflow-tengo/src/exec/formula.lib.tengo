@@ -52,14 +52,17 @@ units := import(":units")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
-// arithmetic: { op: "add"|"sub"|"mul"|"div"|"divCeil", a: <node>, b: <node> }
-// bounds:     { op: "max"|"min", a, b } | { op: "clamp", value, lo, hi }
+// arithmetic: { op: "plus"|"minus"|"times"|"dividedBy"|"dividedByFloor", a: <node>, b: <node> }
+//             ("dividedBy" is ceiling division; "dividedByFloor" is truncating)
+// bounds:     { op: "atLeast"|"atMost", a, b } | { op: "between", value, lo, hi }
 // compare:    { op: "gt"|"gte"|"lt"|"lte", a, b }
 // logic:      { op: "and"|"or", a, b } | { op: "not", a }
-// cond:       { op: "if", cond, then, else }
+// cond:       { op: "when", cond, then, else }
 // metric:     { op: "metric", metric: "size"|"lineCount", "tag,?": <string>, "default,?": <int> }
 //             (the builder later resolves "metric" -> "metricSum" with concrete files)
-// Note: if.cond and not.a may be const-wrapped if given a bare int; the
+// The op strings mirror the fluent chain method names (.plus/.dividedBy/.between/
+// .when/...), so a raw AST dump reads like the source formula.
+// Note: when.cond and not.a may be const-wrapped if given a bare int; the
 // evaluator treats any nonzero const as truthy.
 
 // Ops _wrap accepts as valid expression nodes. "metricSum" is builder-internal
@@ -67,10 +70,10 @@ units := import(":units")
 // never emits it directly.
 _KNOWN_OPS := sets.fromSlice([
 	"const", "metric", "metricSum",
-	"add", "sub", "mul", "div", "divCeil",
-	"max", "min", "clamp",
+	"plus", "minus", "times", "dividedBy", "dividedByFloor",
+	"atLeast", "atMost", "between",
 	"gt", "gte", "lt", "lte", "and", "or", "not",
-	"if"
+	"when"
 ])
 
 // Comparison/logic ops. Rejected at the top level of a resource formula
@@ -138,17 +141,17 @@ evaluate = func(node, resolver) {
 		return fn(node.files)
 	}
 
-	if op == "add" { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
-	if op == "sub" { return evaluate(node.a, resolver) - evaluate(node.b, resolver) }
-	if op == "mul" { return evaluate(node.a, resolver) * evaluate(node.b, resolver) }
-	if op == "div" {
+	if op == "plus"  { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
+	if op == "minus" { return evaluate(node.a, resolver) - evaluate(node.b, resolver) }
+	if op == "times" { return evaluate(node.a, resolver) * evaluate(node.b, resolver) }
+	if op == "dividedByFloor" {
 		b := evaluate(node.b, resolver)
 		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
 		// integer (truncating) division; toward zero, which for the non-negative
 		// resource-metric domain (sizes, line counts) is floor.
 		return evaluate(node.a, resolver) / b
 	}
-	if op == "divCeil" {
+	if op == "dividedBy" {
 		b := evaluate(node.b, resolver)
 		ll.assert(b != 0, "exec.formula.evaluate: division by zero")
 		a := evaluate(node.a, resolver)
@@ -156,13 +159,13 @@ evaluate = func(node, resolver) {
 		return (a + b - 1) / b
 	}
 
-	if op == "max" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a > b ? a : b }
-	if op == "min" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a < b ? a : b }
-	if op == "clamp" {
+	if op == "atLeast" { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a > b ? a : b }
+	if op == "atMost"  { a := evaluate(node.a, resolver); b := evaluate(node.b, resolver); return a < b ? a : b }
+	if op == "between" {
 		v := evaluate(node.value, resolver)
 		lo := evaluate(node.lo, resolver)
 		hi := evaluate(node.hi, resolver)
-		ll.assert(lo <= hi, "exec.formula.clamp: lo (%v) must be <= hi (%v) — inverted bounds collapse every input to hi", lo, hi)
+		ll.assert(lo <= hi, "exec.formula.between: lo (%v) must be <= hi (%v) — inverted bounds collapse every input to hi", lo, hi)
 		if v < lo { v = lo }
 		if v > hi { v = hi }
 		return v
@@ -176,7 +179,7 @@ evaluate = func(node, resolver) {
 	if op == "or"  { return evaluate(node.a, resolver) || evaluate(node.b, resolver) }
 	if op == "not" { return !evaluate(node.a, resolver) }
 
-	if op == "if" { return evaluate(node.cond, resolver) ? evaluate(node.then, resolver) : evaluate(node["else"], resolver) }
+	if op == "when" { return evaluate(node.cond, resolver) ? evaluate(node.then, resolver) : evaluate(node["else"], resolver) }
 
 	ll.panic("exec.formula.evaluate: unknown op %q", op)
 }
@@ -270,7 +273,7 @@ referencedMetricFiles := func(resolvedNode) {
 				existing := is_undefined(acc[n.metric]) ? [] : acc[n.metric]
 				for fn in n.files { existing = append(existing, fn) }
 				// slices.unique dedups while preserving first-seen order (a file may be
-				// referenced by more than one metricSum node — e.g. an if cond and a
+				// referenced by more than one metricSum node — e.g. a when cond and a
 				// branch — but needs only one line-counter pre-exec).
 				acc[n.metric] = slices.unique(existing)
 			}
@@ -329,11 +332,11 @@ applyFormulaFallback := func(dims) {
 // _node wraps a plain AST in a chainable object. Every chain method returns a
 // NEW wrapper (immutable), carrying the accumulated { fallback } forward and
 // reading left-to-right — `f.size("x").times(12).plus(f.gib(8))` composes
-// mul(size, 12) then add(that, gib(8)). Arithmetic: .plus/.minus/.times ->
-// add/sub/mul; .dividedBy -> ceiling division, .dividedByFloor -> integer
-// (truncating) division. Bounds: .atLeast -> max, .atMost
-// -> min, .between(lo, hi) -> clamp. Comparisons (.gt/.gte/.lt/.lte) and logic
-// (.and/.or/.not) build boolean nodes for use inside a f.when(...) branch.
+// times(size, 12) then plus(that, gib(8)). Arithmetic: .plus/.minus/.times;
+// .dividedBy -> ceiling division, .dividedByFloor -> integer (truncating)
+// division. Bounds: .atLeast/.atMost/.between(lo, hi). Comparisons
+// (.gt/.gte/.lt/.lte) and logic (.and/.or/.not) build boolean nodes for use
+// inside a f.when(...) branch. Each method's op string equals its name.
 // .staticFallback pins the value used on backends that can't evaluate the formula.
 _node := undefined
 _node = func(ast, fallback) {
@@ -342,14 +345,14 @@ _node = func(ast, fallback) {
 		__ast__:       ast,
 		__fallback__:  fallback
 	}
-	self.plus      = func(x) { return _node(_bin("add", ast, x), fallback) }
-	self.minus     = func(x) { return _node(_bin("sub", ast, x), fallback) }
-	self.times     = func(x) { return _node(_bin("mul", ast, x), fallback) }
-	self.dividedBy      = func(x) { return _node(_bin("divCeil", ast, x), fallback) }
-	self.dividedByFloor = func(x) { return _node(_bin("div", ast, x), fallback) }
-	self.atLeast   = func(x) { return _node(_bin("max", ast, x), fallback) }
-	self.atMost    = func(x) { return _node(_bin("min", ast, x), fallback) }
-	self.between   = func(lo, hi) { return _node({ op: "clamp", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
+	self.plus      = func(x) { return _node(_bin("plus", ast, x), fallback) }
+	self.minus     = func(x) { return _node(_bin("minus", ast, x), fallback) }
+	self.times     = func(x) { return _node(_bin("times", ast, x), fallback) }
+	self.dividedBy      = func(x) { return _node(_bin("dividedBy", ast, x), fallback) }
+	self.dividedByFloor = func(x) { return _node(_bin("dividedByFloor", ast, x), fallback) }
+	self.atLeast   = func(x) { return _node(_bin("atLeast", ast, x), fallback) }
+	self.atMost    = func(x) { return _node(_bin("atMost", ast, x), fallback) }
+	self.between   = func(lo, hi) { return _node({ op: "between", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
 	self.gt        = func(x) { return _node(_bin("gt", ast, x), fallback) }
 	self.gte       = func(x) { return _node(_bin("gte", ast, x), fallback) }
 	self.lt        = func(x) { return _node(_bin("lt", ast, x), fallback) }
@@ -362,7 +365,7 @@ _node = func(ast, fallback) {
 }
 
 // _condBuilder accumulates when()-branches and folds them, right-to-left, into a
-// nested `if` AST on .otherwise(). It exposes ONLY .when / .otherwise — so a
+// nested `when` AST on .otherwise(). It exposes ONLY .when / .otherwise — so a
 // conditional must be finished with .otherwise (there is no way to leak a
 // dangling boolean into a quota).
 _condBuilder := undefined
@@ -381,7 +384,7 @@ _condBuilder = func(branches) {
 		i := len(branches) - 1
 		for i >= 0 {
 			b := branches[i]
-			node = { op: "if", cond: b.cond, then: b.value, "else": node }
+			node = { op: "when", cond: b.cond, then: b.value, "else": node }
 			i = i - 1
 		}
 		return _node(node, undefined)
@@ -413,7 +416,7 @@ export {
 
 	// when(cond, value): start a multi-branch conditional. Chain more .when(...)
 	// branches (evaluated in order), then finish with .otherwise(default). Compiles
-	// to a nested `if` — the first branch whose condition is truthy wins. Conditions
+	// to a nested `when` — the first branch whose condition is truthy wins. Conditions
 	// come from the comparison/logic chain, e.g. f.size("input").gt(f.gib(1)).
 	when: func(cond, value) { return _condBuilder([]).when(cond, value) },
 

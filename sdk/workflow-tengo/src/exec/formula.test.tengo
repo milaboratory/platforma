@@ -7,16 +7,16 @@ text := import("text")
 // wrapper to the plain AST these structural assertions compare against.
 
 TestFluentArithmetic := func() {
-	test.isEqual({ op: "add", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.astOf(f.const(2).plus(3)))
-	test.isEqual({ op: "sub", a: { op: "const", value: 7 }, b: { op: "const", value: 2 } }, f.astOf(f.const(7).minus(2)))
-	test.isEqual({ op: "mul", a: { op: "const", value: 4 }, b: { op: "const", value: 5 } }, f.astOf(f.const(4).times(5)))
-	test.isEqual("divCeil", f.astOf(f.const(10).dividedBy(3)).op)
+	test.isEqual({ op: "plus", a: { op: "const", value: 2 }, b: { op: "const", value: 3 } }, f.astOf(f.const(2).plus(3)))
+	test.isEqual({ op: "minus", a: { op: "const", value: 7 }, b: { op: "const", value: 2 } }, f.astOf(f.const(7).minus(2)))
+	test.isEqual({ op: "times", a: { op: "const", value: 4 }, b: { op: "const", value: 5 } }, f.astOf(f.const(4).times(5)))
+	test.isEqual("dividedBy", f.astOf(f.const(10).dividedBy(3)).op)
 }
 
 TestFluentBounds := func() {
-	test.isEqual({ op: "clamp", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.astOf(f.const(1).between(2, 3)))
-	test.isEqual("max", f.astOf(f.const(1).atLeast(2)).op)
-	test.isEqual("min", f.astOf(f.const(9).atMost(4)).op)
+	test.isEqual({ op: "between", value: { op: "const", value: 1 }, lo: { op: "const", value: 2 }, hi: { op: "const", value: 3 } }, f.astOf(f.const(1).between(2, 3)))
+	test.isEqual("atLeast", f.astOf(f.const(1).atLeast(2)).op)
+	test.isEqual("atMost", f.astOf(f.const(9).atMost(4)).op)
 }
 
 TestFluentComparisonsAndLogic := func() {
@@ -38,8 +38,8 @@ TestFluentComparisonsAndLogic := func() {
 TestFluentChainComposesLeftToRight := func() {
 	// size/4GiB (ceil) bounded to [4,16] — the canonical CPU-cores shape.
 	node := f.astOf(f.size("reads").dividedBy(f.gib(4)).between(4, 16))
-	test.isEqual("clamp", node.op)
-	test.isEqual("divCeil", node.value.op)
+	test.isEqual("between", node.op)
+	test.isEqual("dividedBy", node.value.op)
 	test.isEqual("metric", node.value.a.op)             // size("reads")
 	test.isEqual(4 * 1073741824, node.value.b.value)    // 4 GiB divisor
 	test.isEqual({ op: "const", value: 4 }, node.lo)
@@ -64,7 +64,7 @@ TestFluentMetricNodes := func() {
 
 TestWhenSingleBranch := func() {
 	node := f.astOf(f.when(f.const(5).gt(2), 1).otherwise(0))
-	test.isEqual("if", node.op)
+	test.isEqual("when", node.op)
 	test.isEqual("gt", node.cond.op)
 	test.isEqual({ op: "const", value: 1 }, node.then)
 	test.isEqual({ op: "const", value: 0 }, node["else"])
@@ -76,9 +76,9 @@ TestWhenMultiBranchNestsInOrder := func() {
 	node := f.astOf(f.when(f.size("reads").gt(f.gib(10)), f.gib(64)).
 		when(f.size("reads").gt(f.gib(1)), f.gib(32)).
 		otherwise(f.gib(16)))
-	test.isEqual("if", node.op)
+	test.isEqual("when", node.op)
 	test.isEqual(64 * 1073741824, node.then.value)      // first branch value
-	test.isEqual("if", node["else"].op)                 // nested second branch
+	test.isEqual("when", node["else"].op)                 // nested second branch
 	test.isEqual(32 * 1073741824, node["else"].then.value)
 	test.isEqual(16 * 1073741824, node["else"]["else"].value) // default
 }
@@ -139,7 +139,7 @@ TestEvaluateDividedByExactAndInexact := func() {
 
 TestFluentDividedByFloorTruncates := func() {
 	// .dividedByFloor -> truncating integer division (contrast .dividedBy = ceiling).
-	test.isEqual("div", f.astOf(f.const(10).dividedByFloor(3)).op)
+	test.isEqual("dividedByFloor", f.astOf(f.const(10).dividedByFloor(3)).op)
 	test.isEqual(3, f._internal.evaluate(f.const(10).dividedByFloor(3), _fakeResolver))  // 10/3 -> 3
 	test.isEqual(4, f._internal.evaluate(f.const(10).dividedBy(3), _fakeResolver))       // 10/3 -> 4
 	test.isEqual(0, f._internal.evaluate(f.const(2).dividedByFloor(3), _fakeResolver))   // 2/3 -> 0
@@ -211,7 +211,7 @@ TestResolveRecursesInPlace := func() {
 	allFiles := ["r1.fastq", "r2.fastq"]
 	// size("reads")*4 + lineCount("reads")
 	resolved := f.resolveAst(f.size("reads").times(4).plus(f.lineCount("reads")), tagMap, allFiles)
-	test.isEqual("add", resolved.op)
+	test.isEqual("plus", resolved.op)
 	test.isEqual("metricSum", resolved.a.a.op)   // size("reads") inside mul
 	test.isEqual("size", resolved.a.a.metric)
 	test.isEqual({ op: "const", value: 4 }, resolved.a.b)
@@ -225,7 +225,7 @@ TestResolveRecursesIntoBetweenAndWhen := func() {
 
 	// .between -> clamp: metric resolves in `value`, bounds preserved.
 	resolvedClamp := f.resolveAst(f.size("reads").between(f.gib(1), f.gib(4)), tagMap, allFiles)
-	test.isEqual("clamp", resolvedClamp.op)
+	test.isEqual("between", resolvedClamp.op)
 	test.isEqual("metricSum", resolvedClamp.value.op)
 	test.isEqual(["r1.fastq", "r2.fastq"], resolvedClamp.value.files)
 	test.isEqual(1073741824, resolvedClamp.lo.value)
@@ -234,7 +234,7 @@ TestResolveRecursesIntoBetweenAndWhen := func() {
 	// f.when(...).otherwise(...) -> if: metric inside the condition resolves.
 	resolvedIf := f.resolveAst(
 		f.when(f.lineCount("reads").gt(100), f.gib(16)).otherwise(f.gib(8)), tagMap, allFiles)
-	test.isEqual("if", resolvedIf.op)
+	test.isEqual("when", resolvedIf.op)
 	test.isEqual("metricSum", resolvedIf.cond.a.op)
 	test.isEqual("lineCount", resolvedIf.cond.a.metric)
 	test.isEqual(16 * 1073741824, resolvedIf.then.value)
@@ -298,7 +298,7 @@ TestResolveLineCountBz2AndZstAccepted := func() {
 TestStaticFallbackCaptured := func() {
 	node := f.size("a").times(2).staticFallback(f.gib(64))
 	test.isEqual(64 * 1073741824, f.fallbackOf(node))
-	test.isEqual("mul", f.astOf(node).op)                // fallback does not alter the AST
+	test.isEqual("times", f.astOf(node).op)                // fallback does not alter the AST
 	test.isTrue(is_undefined(f.fallbackOf(f.size("a")))) // none set -> undefined
 	test.isEqual(8, f.fallbackOf(f.size("a").dividedBy(4).staticFallback(8)))
 	test.isEqual("16GiB", f.fallbackOf(f.size("a").dividedBy(4).staticFallback("16GiB")))
