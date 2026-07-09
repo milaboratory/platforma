@@ -1,5 +1,37 @@
 # @platforma-sdk/package-builder
 
+## 3.14.1
+
+### Patch Changes
+
+- a89523d: Add the `block-tools software build` command: the single-pass software builder driven by
+  three knobs — `--channel`/`PL_BUILD_CHANNEL` (dev|release), `--variant`/`PL_BUILD_VARIANT`
+  (docker|binary|all|none), `--location`/`PL_BUILD_LOCATION` (local|remote) — plus
+  `--use-published`/`PL_BUILD_USE_PUBLISHED` (build-against-existing). It builds the artifact,
+  pushes it when the target is remote, then writes the `.sw.json` descriptor last (ready ⟺ the
+  descriptor exists).
+
+  `variant=all` builds every variant the software declares; `variant=none` builds no software and
+  emits a minimal `binary` placeholder descriptor per entrypoint, so a block can be built, loaded,
+  and rendered without any software (only executing it fails). With no knobs the command reproduces
+  `pl-pkg build` (release, version-derived, per-entrypoint variant, docker push only in CI, no
+  binary upload). Dev binary remote uploads a content-addressed archive to the dev binary registry
+  (endpoint via `PL_DEV_BINARY_UPLOAD_URL`). `location=ssh` and `ecr://` auto docker-login are not
+  yet implemented. The command is additive — no block is retargeted to it yet, and `pl-pkg` is
+  unchanged.
+
+  The `--do`/`--no-do` tri-state flag resolver (`shouldDoAction`) moves to `package-builder-lib`'s
+  `util` and is shared by both `pl-pkg` and the new command instead of being duplicated.
+
+- Updated dependencies [6890c99]
+- Updated dependencies [a89523d]
+- Updated dependencies [0f7045a]
+- Updated dependencies [232ddef]
+- Updated dependencies [51c230a]
+- Updated dependencies [a6f7e3e]
+- Updated dependencies [a89523d]
+  - @platforma-sdk/package-builder-lib@1.2.0
+
 ## 3.14.0
 
 ### Minor Changes

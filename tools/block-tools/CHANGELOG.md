@@ -1,5 +1,77 @@
 # @platforma-sdk/block-tools
 
+## 2.12.0
+
+### Minor Changes
+
+- 232ddef: Add per-channel docker address overrides to `block-tools software build`: `PL_DEV_DOCKER_PUSH_URL`
+  / `PL_DEV_DOCKER_PULL_URL` and `PL_RELEASE_DOCKER_PUSH_URL` / `PL_RELEASE_DOCKER_PULL_URL`. The
+  push URL is where the image is pushed (dev defaults to the built-in dev registry, release to the
+  artifact's own registry); the pull URL is the address embedded in the descriptor and defaults to the
+  push URL. Explicit `--docker-registry`/`--docker-push-to` still win, and the bare pl-pkg-parity
+  invocation is unchanged. `ecr://`-scheme auto docker-login is handled separately.
+- 51c230a: Automate the dev docker login for `block-tools software build` (A-0044). A push target written as
+  `ecr://<host>/<repo>` triggers an automatic ECR `docker login` before the push; a plain `https://`
+  or bare host opts out. The built-in dev default push target now uses the `ecr://` form, so dev push
+  logs in by default. The scheme is stripped for the actual tag/push and for the descriptor's embedded
+  pull address.
+
+  The login token is fetched via the AWS SDK (`@aws-sdk/client-ecr-public`), reusing the same default
+  credential chain as the S3 binary upload — environment variables first (CI), else the SSO profile
+  (local). `AWS_PROFILE` is selected once, process-wide (`PL_AWS_PROFILE` override, default
+  `research-poweruser`), so docker login and S3 upload use identical credentials. Login runs
+  unconditionally (idempotent, ~1s): an expired or absent session fails at login with a clear
+  `aws sso login` hint rather than surfacing an opaque error at push time. Public ECR is the only
+  auto-login target. The build engine and `pl-pkg` are untouched — login lives in the block-tools
+  layer.
+
+- a89523d: Add the `block-tools software build` command: the single-pass software builder driven by
+  three knobs — `--channel`/`PL_BUILD_CHANNEL` (dev|release), `--variant`/`PL_BUILD_VARIANT`
+  (docker|binary|all|none), `--location`/`PL_BUILD_LOCATION` (local|remote) — plus
+  `--use-published`/`PL_BUILD_USE_PUBLISHED` (build-against-existing). It builds the artifact,
+  pushes it when the target is remote, then writes the `.sw.json` descriptor last (ready ⟺ the
+  descriptor exists).
+
+  `variant=all` builds every variant the software declares; `variant=none` builds no software and
+  emits a minimal `binary` placeholder descriptor per entrypoint, so a block can be built, loaded,
+  and rendered without any software (only executing it fails). With no knobs the command reproduces
+  `pl-pkg build` (release, version-derived, per-entrypoint variant, docker push only in CI, no
+  binary upload). Dev binary remote uploads a content-addressed archive to the dev binary registry
+  (endpoint via `PL_DEV_BINARY_UPLOAD_URL`). `location=ssh` and `ecr://` auto docker-login are not
+  yet implemented. The command is additive — no block is retargeted to it yet, and `pl-pkg` is
+  unchanged.
+
+  The `--do`/`--no-do` tri-state flag resolver (`shouldDoAction`) moves to `package-builder-lib`'s
+  `util` and is shared by both `pl-pkg` and the new command instead of being duplicated.
+
+- 7c66be8: Add a per-block `softwareBuild` rollout marker to the structurer. `block-tools structure refresh
+--software-build` retargets a block's software leaf from `pl-pkg` to `block-tools software build`
+  (plus `do-pack`) and replaces the single `build:dev` script with the scenario set
+  (`build:dev-local`, `build:dev-remote`, `build:dev-no-software`, `build:dev-binary-existing`,
+  `build:release`) plus a dev-binary-local `test`. The dev-local/remote scripts build every variant
+  the software declares (`PL_BUILD_VARIANT=all`); docker-vs-binary is not a per-script choice. The
+  choice persists in `.structure`, so later plain refreshes keep the block migrated. Without the
+  flag, blocks keep building via `pl-pkg` — no change.
+- 1163eb4: Declare the `software build` env vars in the block's turbo `build` task. The root `turbo.json`
+  template now cache-keys the build on `PL_BUILD_CHANNEL`/`PL_BUILD_VARIANT`/`PL_BUILD_LOCATION`/
+  `PL_BUILD_USE_PUBLISHED` and the `PL_DEV_*`/`PL_RELEASE_*` docker/binary overrides, so a
+  channel/scenario switch invalidates the cache for every package's build — including the workflow
+  package that embeds the descriptor. The list is declared once (`softwareBuildCacheEnv`) and a test
+  guards the template against drift. `PL_PKG_DEV` is retained for the pl-pkg transition.
+
+### Patch Changes
+
+- 45706c3: Fix release publishing: declare `AWS_*`/`PL_AWS_*` in the `build`/`do-pack` `passThroughEnv` of the ptexter and ptabler `turbo.json`, and in the structurer's root `turbo.json` template (`build`) so generated block repos get them too. The S3 upload now runs inside the turbo-cached `build` task under strict env mode, which strips any env var not declared in `env`/`passThroughEnv`. The AWS credentials set by CI were being stripped, so the package builder's S3 storage driver could not load credentials and publish failed with "Could not load credentials from any providers". Uses `passThroughEnv` (not `env`) because session tokens rotate per run and must not enter the cache key.
+- 25ae090: Fix release publishing: declare `PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL` in the `build`/`do-pack` `env` of the ptexter and ptabler `turbo.json`, and in the structurer's root `turbo.json` template (`build` env) so generated block repos get it too. Software upload now runs inside the turbo-cached `build` task under strict env mode, which strips any env var not declared in `env`/`passThroughEnv`. The registry-scoped upload URL set by CI was being stripped, leaving `registry.storageURL` empty and failing publish with "no storage URL is set for registry platforma-open".
+- Updated dependencies [6890c99]
+- Updated dependencies [a89523d]
+- Updated dependencies [0f7045a]
+- Updated dependencies [232ddef]
+- Updated dependencies [51c230a]
+- Updated dependencies [a6f7e3e]
+- Updated dependencies [a89523d]
+  - @platforma-sdk/package-builder-lib@1.2.0
+
 ## 2.11.10
 
 ### Patch Changes
