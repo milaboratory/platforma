@@ -1,12 +1,11 @@
 import type {
   AxisId,
-  CanonicalizedJson,
   ColumnUniversalId,
   PObjectId,
   PTableColumnId,
   PTableColumnIdColumn,
 } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, extractPObjectId, getAxisId } from "@milaboratories/pl-model-common";
+import { extractPObjectId, getAxisId, matchAxisId } from "@milaboratories/pl-model-common";
 import type { ColumnRecipe } from "../../columns";
 
 /**
@@ -25,10 +24,10 @@ export function createColumnResolver(
   columns: ColumnRecipe[],
   deps?: { warn?: (msg: string) => void },
 ): ColumnResolver {
-  const axisSet = new Set<CanonicalizedJson<AxisId>>();
+  const axisIds: AxisId[] = [];
   for (const c of columns) {
     for (const ax of c.getSpec().axesSpec) {
-      axisSet.add(canonicalizeJson<AxisId>(getAxisId(ax)));
+      axisIds.push(getAxisId(ax));
     }
   }
 
@@ -49,8 +48,7 @@ export function createColumnResolver(
 
   return (ref: PTableColumnId): PTableColumnId | undefined => {
     if (ref.type === "axis") {
-      const key = canonicalizeJson<AxisId>(ref.id);
-      return axisSet.has(key) ? ref : undefined;
+      return axisIds.some((a) => matchAxisId(ref.id, a)) ? ref : undefined;
     }
     const hit = byFullId.get(ref.id) ?? byPObjectId.get(extractPObjectId(ref.id));
     if (hit === undefined) return undefined;
