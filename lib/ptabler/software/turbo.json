@@ -18,7 +18,15 @@
         "PL_RELEASE_BINARY_UPLOAD_URL",
         "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL"
       ],
-      "passThroughEnv": ["AWS_*", "PL_AWS_*"]
+      "passThroughEnv": [
+        "AWS_*",
+        "PL_AWS_*",
+        "PL_DOCKER_REGISTRY_PUSH_TO",
+        "PL_DOCKER_BUILD",
+        "PL_DOCKER_NO_BUILD",
+        "PL_DOCKER_AUTOPUSH",
+        "PL_DOCKER_NO_AUTOPUSH"
+      ]
     },
     "do-pack": {
       "env": [
@@ -37,7 +45,15 @@
         "PL_RELEASE_BINARY_UPLOAD_URL",
         "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL"
       ],
-      "passThroughEnv": ["AWS_*", "PL_AWS_*"]
+      "passThroughEnv": [
+        "AWS_*",
+        "PL_AWS_*",
+        "PL_DOCKER_REGISTRY_PUSH_TO",
+        "PL_DOCKER_BUILD",
+        "PL_DOCKER_NO_BUILD",
+        "PL_DOCKER_AUTOPUSH",
+        "PL_DOCKER_NO_AUTOPUSH"
+      ]
     }
   }
 }
