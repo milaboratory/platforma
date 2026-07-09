@@ -17,6 +17,7 @@ import type {
   SUniversalPColumnId,
 } from "@platforma-sdk/model";
 import {
+  canonicalizeJson,
   isFilteredPColumn,
   parseColumnId,
   stringifyColumnId,
@@ -200,7 +201,7 @@ function getColumnAsSourceAndFixedAxes(
 function columnIdEquals(a: PlAdvancedFilterColumnId, b: PlAdvancedFilterColumnId): boolean {
   if (a === b) return true;
   if (typeof a === "object" && typeof b === "object" && a !== null && b !== null) {
-    return JSON.stringify(a) === JSON.stringify(b);
+    return canonicalizeJson(a) === canonicalizeJson(b);
   }
   return false;
 }
