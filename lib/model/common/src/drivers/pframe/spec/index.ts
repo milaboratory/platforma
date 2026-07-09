@@ -5,4 +5,4 @@ export * from "./spec";
 export * from "./selectors";
 export * from "./native_id";
 export * from "./discovered_column";
-export * from "./overrided";
+export * from "./overridden";
