@@ -27,7 +27,7 @@ import {
   isColumnOverriddenKey,
   type ColumnOverriddenId,
   type ColumnOverriddenKey,
-} from "./overrided";
+} from "./overridden";
 import { canonicalizeJson } from "../../../json";
 import { AxisSpec, PColumnSpec } from "./spec";
 import { isString } from "es-toolkit";

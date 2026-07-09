@@ -34,7 +34,7 @@ import type {
   QueryTransformColumns,
 } from "./query_common";
 import type { Domain, PColumnIdAndSpec, SingleAxisSelector } from "../spec";
-import type { SpecOverrides } from "../spec/overrided";
+import type { SpecOverrides } from "../spec/overridden";
 
 /**
  * Join entry for spec-layer queries — the base join entry extended with
