@@ -37,6 +37,11 @@ describe("root CI workflows (fixed, generated)", () => {
     // Shared constants.
     expect(build).toContain("team-id: 'ciplopen'");
     expect(build).toContain("test: true");
+    // No bare `build` script exists (root-package-json removes it), so both
+    // build legs must name scenario flavors: PR/test validates locally, the
+    // publish leg builds the release channel.
+    expect(build).toContain("build-script-name: 'build:dev-local'");
+    expect(build).toContain("build-before-publish-script-name: 'build:release'");
     // The reusable-workflow pins — the whole point of engine-owning the file.
     expect(build).toContain(
       "uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4",

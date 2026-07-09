@@ -25,7 +25,8 @@ jobs:
       app-name: '${appName}'
       app-name-slug: '${appNameSlug}'
       node-version: '20.x'
-      build-script-name: 'build'
+      build-script-name: 'build:dev-local'
+      build-before-publish-script-name: 'build:release'
       pnpm-recursive-build: false
 
       test: true
