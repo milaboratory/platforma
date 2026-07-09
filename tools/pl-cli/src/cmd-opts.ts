@@ -9,12 +9,15 @@ export function addOptions(cmd: Command, ...optionGroups: Option[][]): Command {
   return cmd;
 }
 
-export const GlobalOptions = (formatDefault: OutputFormat = "text"): Option[] => [
+export const GlobalOptions = (
+  formatDefault: OutputFormat = "text",
+  allowedFormats: OutputFormat[] = ["text", "json"],
+): Option[] => [
   new Option("-a, --address <url>", "Platforma server address")
     .env("PL_ADDRESS")
     .makeOptionMandatory(),
   new Option("-f, --format <format>", "Output format")
-    .choices(["text", "json", "csv"])
+    .choices(allowedFormats)
     .default(formatDefault),
 ];
 
