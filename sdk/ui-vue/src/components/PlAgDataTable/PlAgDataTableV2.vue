@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { promiseTimeout, isJsonEqual } from "@milaboratories/helpers";
+import { promiseTimeout, isJsonEqual, deepClone } from "@milaboratories/helpers";
 import type {
   AxisId,
   PlDataTableGridStateCore,
@@ -281,7 +281,9 @@ watch(
       // match it → reloading again would repeat forever. Break the loop; the
       // guard resets automatically once the desired state actually changes.
       if (isJsonEqual(gridState, lastReloadTriggerState)) return;
-      lastReloadTriggerState = gridState;
+      // Snapshot (not a live reference) so the guard is independent of the
+      // reactive state graph and cannot be defeated by an in-place mutation.
+      lastReloadTriggerState = deepClone(gridState);
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
