@@ -23,7 +23,8 @@
         "PL_DEV_BINARY_UPLOAD_URL",
         "PL_RELEASE_DOCKER_PUSH_URL",
         "PL_RELEASE_DOCKER_PULL_URL",
-        "PL_RELEASE_BINARY_UPLOAD_URL"
+        "PL_RELEASE_BINARY_UPLOAD_URL",
+        "PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL"
       ],
       "outputs": ["./dist/**", "./block-pack/**", "./pkg-*.tgz"]
     },
