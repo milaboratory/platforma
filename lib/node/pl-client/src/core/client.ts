@@ -18,6 +18,7 @@ import type { PlDriver, PlDriverDefinition } from "./driver";
 import type {
   MaintenanceAPI_Ping_Response,
   MaintenanceAPI_License_Response,
+  AuthAPI_User,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { MaintenanceAPI_Ping_Response_Compression } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import * as tp from "node:timers/promises";
@@ -190,6 +191,11 @@ export class PlClient {
 
   public async license(): Promise<MaintenanceAPI_License_Response> {
     return await this.ll.license();
+  }
+
+  /** Lists the users known to the server (login only on the wire). See {@link LLPlClient.listUsers}. */
+  public async listUsers(): Promise<AuthAPI_User[]> {
+    return await this.ll.listUsers();
   }
 
   /**
