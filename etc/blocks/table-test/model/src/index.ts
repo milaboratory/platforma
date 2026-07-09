@@ -3,7 +3,6 @@ import {
   ColumnUniversalId,
   ColumnsCollection,
   DataModelBuilder,
-  PObjectId,
   PlDataTableFilters,
   createPlDataTableStateV2,
   createPlDataTableV3,
@@ -50,16 +49,22 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .title((ctx) => ctx.args?.label || "Table Test")
 
   .outputWithStatus("tableV3", (ctx) => {
+    const valueAnchor = { name: "value", axes: [{ name: "name" }] };
+
+    // Intended way to reference a column for sorting/filtering: discover it and
+    // read the id off the recipe. Real blocks never hardcode the id literal —
+    // they pull it from the same collection the table is built from.
+    const valueColumn = ColumnsCollection()
+      .discover({ anchors: { main: valueAnchor }, mode: "exact" })
+      .getColumns()
+      .find((c) => c.getSpec().name === "value");
+    if (valueColumn === undefined) return undefined;
+
     return createPlDataTableV3(ctx, {
       tableState: ctx.data.tableState,
 
       columns: {
-        anchors: {
-          main: {
-            name: "value",
-            axes: [{ name: "name" }],
-          },
-        },
+        anchors: { main: valueAnchor },
         selector: {
           mode: "enrichment",
           maxHops: 4,
@@ -70,7 +75,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
         {
           column: {
             type: "column",
-            id: '{"name":"value","resolvePath":["main","tableFrame"]}' as PObjectId,
+            id: valueColumn.id,
           },
           ascending: true,
           naAndAbsentAreLeastValues: true,
@@ -83,7 +88,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
             type: "greaterThan",
             column: {
               type: "column",
-              id: '{"name":"value","resolvePath":["main","tableFrame"]}' as PObjectId,
+              id: valueColumn.id,
             },
             x: 11,
           },
