@@ -12,7 +12,7 @@ export function outputJson(data: unknown): void {
 
 /** Outputs a header row + data rows as RFC-4180-ish CSV to stdout. */
 export function outputCsv(headers: string[], rows: string[][]): void {
-  const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const esc = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [headers, ...rows].map((r) => r.map(esc).join(","));
   console.log(lines.join("\n"));
 }

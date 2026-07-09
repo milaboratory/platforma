@@ -8,7 +8,7 @@ export default function adminUserListCommand(): Command {
     "List all known users' logins from a live server. Requires admin/controller credentials.",
   );
 
-  addOptions(cmd, GlobalOptions("csv"), AdminAuthOptions());
+  addOptions(cmd, GlobalOptions("csv", ["text", "json", "csv"]), AdminAuthOptions());
 
   cmd.action(async (flags) => {
     const pl = await connectClient(flags);
