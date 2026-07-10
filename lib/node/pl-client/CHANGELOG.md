@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.14.0
+
+### Minor Changes
+
+- dbe7fdb: Add `pl-cli admin user-list`: lists all known users' logins from a live server (admin-authenticated), CSV by default (`--format text|json` also supported). Adds `PlClient.listUsers()`.
+
 ## 3.13.2
 
 ### Patch Changes
