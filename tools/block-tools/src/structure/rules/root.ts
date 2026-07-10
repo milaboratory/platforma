@@ -5,6 +5,7 @@
 
 import { scope, when, fixed, managed, file, generate } from "../engine/api";
 import { rootPackageJsonInitial, rootPackageJsonRules } from "./root-package-json";
+import { rootTurboJsonInitial, rootTurboJsonRules } from "./root-turbo-json";
 import { rootPnpmWorkspaceInitial, rootPnpmWorkspaceRules } from "./root-pnpm-workspace";
 import { rootGitignoreRules } from "./root-gitignore";
 
@@ -13,7 +14,13 @@ export function rootRules(): void {
     when(
       ({ ctx }) => !ctx.isSdkInternal,
       () => {
-        fixed("turbo.json", file("root/turbo.json"));
+        managed(
+          "turbo.json",
+          generate(() => rootTurboJsonInitial()),
+          () => {
+            rootTurboJsonRules();
+          },
+        );
         fixed(".vscode/settings.json", file("root/.vscode/settings.json"));
 
         managed(
