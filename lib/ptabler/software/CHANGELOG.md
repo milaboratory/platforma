@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 2.1.5
+
+### Patch Changes
+
+- 26f1dbb: polars-pf version bump
+
 ## 2.1.4
 
 ### Patch Changes
