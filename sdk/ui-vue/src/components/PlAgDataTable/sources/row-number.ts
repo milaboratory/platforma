@@ -83,6 +83,7 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
   cellFake.innerHTML = WidestDigit.repeat(lastDisplayedRowNumberDigitCount);
 
   nextTick(() => {
+    if (gridApi.isDestroyed()) return;
     gridApi.applyColumnState({
       state: [
         {
