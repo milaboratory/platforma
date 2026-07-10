@@ -12,10 +12,15 @@ import {
 /**
  * Alternative to `computed`, but triggering only on actual data changes.
  * Always `deep` as the plain `computed` is.
+ *
+ * With `writeThrough`, a set updates the cache synchronously, so a read reflects
+ * the write immediately even when `set` defers its work (e.g. debounced); the
+ * getter must then map set values to themselves (`get(x)` deep-equals `x`).
  */
 export function computedCached<T>(options: {
   get: ComputedGetter<T>;
   set: ComputedSetter<T>;
+  writeThrough?: boolean;
 }): WritableComputedRef<T>;
 export function computedCached<T>(getter: ComputedGetter<T>): ComputedRef<T>;
 export function computedCached<T>(
@@ -24,15 +29,18 @@ export function computedCached<T>(
     | {
         get: ComputedGetter<T>;
         set: ComputedSetter<T>;
+        writeThrough?: boolean;
       },
 ) {
   let getter: ComputedGetter<T>;
   let setter: ComputedSetter<T> | undefined = undefined;
+  let writeThrough = false;
   if (typeof arg === "function") {
     getter = arg;
   } else {
     getter = arg.get;
     setter = arg.set;
+    writeThrough = arg.writeThrough ?? false;
   }
 
   const cachedValue = ref<T>(getter());
@@ -51,7 +59,13 @@ export function computedCached<T>(
   if (setter) {
     return computed({
       get: () => cachedValue.value,
-      set: setter,
+      set: writeThrough
+        ? (newValue) => {
+            // Reflect the value in the cache now; `set` itself may defer its work.
+            if (!isJsonEqual(newValue, cachedValue.value)) cachedValue.value = deepClone(newValue);
+            setter(newValue);
+          }
+        : setter,
     });
   } else {
     return cachedValue;
