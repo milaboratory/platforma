@@ -1,14 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { softwareBuildCacheEnv } from "./env";
+import { rootTurboJsonInitial } from "../../structure/rules/root-turbo-json";
 
 // The block's turbo build task must cache-key on every software-build env var, declared once in the
-// structurer template. This guards against the template drifting from softwareBuildCacheEnv.
-const turboPath = fileURLToPath(
-  new URL("../../structure/templates/static/root/turbo.json", import.meta.url),
-);
-const buildEnv: string[] = JSON.parse(readFileSync(turboPath, "utf8")).tasks.build.env;
+// structurer's turbo.json rule. This guards against the rule drifting from softwareBuildCacheEnv.
+const buildEnv = (rootTurboJsonInitial().tasks as { build: { env: string[] } }).build.env;
 
 describe("block turbo build cache env", () => {
   it("declares every software-build cache var", () => {
