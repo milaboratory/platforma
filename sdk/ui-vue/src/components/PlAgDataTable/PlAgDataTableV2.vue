@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { promiseTimeout, isJsonEqual, deepClone } from "@milaboratories/helpers";
+import { promiseTimeout, isJsonEqual } from "@milaboratories/helpers";
 import type {
   AxisId,
   PlDataTableGridStateCore,
@@ -258,16 +258,6 @@ function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGrid
 
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
-// Loop guard: bumping reloadKey destroys and recreates the grid (via
-// `:key="reloadKey"`), which re-fires this watch through the new `gridApi.value`.
-// `gridState` is read through a debounced cache (see useTableState), so right
-// after a reload it can still report the pre-reload value while the fresh grid
-// already reports the state AgGrid normalized it to. If that normalized state is
-// not a fixed point of the stored one, the two never converge and the grid
-// remounts on every frame (observed as strobing column headers). We therefore
-// reload at most once per distinct desired state: reloading again for a state we
-// already reloaded for — with the grid still not matching — can only loop.
-let lastReloadTriggerState: PlDataTableGridStateCore | null = null;
 watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
@@ -277,13 +267,6 @@ watch(
       !isJsonEqual(gridState, {}) &&
       !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
     ) {
-      // Already reloaded for this exact desired state and the grid still doesn't
-      // match it → reloading again would repeat forever. Break the loop; the
-      // guard resets automatically once the desired state actually changes.
-      if (isJsonEqual(gridState, lastReloadTriggerState)) return;
-      // Snapshot (not a live reference) so the guard is independent of the
-      // reactive state graph and cannot be defeated by an in-place mutation.
-      lastReloadTriggerState = deepClone(gridState);
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
