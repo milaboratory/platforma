@@ -13,6 +13,7 @@ describe("root turbo.json rules", () => {
       $schema: "https://turbo.build/schema.json",
       tasks: {
         build: { env: ["ONLY_ONE"] }, // engine task, drifted
+        "build:dev": { dependsOn: ["build"], outputs: ["./dist/**"] }, // legacy, must go
         "software:reqs": { cache: false, outputs: ["./src/requirements.txt"] }, // author task
       },
     };
@@ -23,15 +24,18 @@ describe("root turbo.json rules", () => {
     // Engine task re-asserted to canonical.
     expect(tasks.build.env).toContain("PL_BUILD_CHANNEL");
     expect(tasks.build.outputs).toEqual(["./dist/**", "./block-pack/**", "./pkg-*.tgz"]);
+    // Legacy task pruned.
+    expect(tasks["build:dev"]).toBeUndefined();
     // Author task left exactly as it was.
     expect(tasks["software:reqs"]).toEqual({ cache: false, outputs: ["./src/requirements.txt"] });
     expect(out.globalDependencies).toEqual(["tsconfig.json"]);
   });
 
-  test("initial owns the engine tasks but not software:reqs", () => {
+  test("initial owns the engine tasks but not software:reqs or legacy build:dev", () => {
     const keys = Object.keys(rootTurboJsonInitial().tasks as Record<string, unknown>);
     expect(keys).toContain("build");
     expect(keys).toContain("test");
     expect(keys).not.toContain("software:reqs");
+    expect(keys).not.toContain("build:dev");
   });
 });

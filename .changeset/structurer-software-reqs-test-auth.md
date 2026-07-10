@@ -14,6 +14,9 @@ Two regressions hit structurer-migrated Python-software blocks:
   `feature-integration`). `turbo.json` is now `managed`: the engine re-asserts
   its own tasks (`ensureFieldEntries("tasks", …)`) but leaves author-added
   tasks like `software:reqs` untouched. Output stays oxfmt-clean and idempotent.
+  Also drops the dead `build:dev` turbo task (superseded by the
+  env-parameterised `build` task + `build:dev-*` scripts), matching the root
+  package.json rule that already drops the `build:dev` script.
 - The live test lane writes `.test_auth.json` into `test/`, which the
   pre-publish `ts-builder check --target block-test` oxfmt pass then failed on.
   Added `.test_auth.json` to the test-scope `.oxfmtrc.json` `ignorePatterns`

@@ -11,7 +11,7 @@
 // is deliberately NOT in the engine-owned set below — it (and any custom task)
 // is author-owned and survives refresh via the merge.
 
-import { ensureField, ensureFieldEntries, enforceFieldOrder } from "../engine/api";
+import { ensureField, ensureFieldEntries, removeField, enforceFieldOrder } from "../engine/api";
 
 const SCHEMA = "https://turbo.build/schema.json";
 const GLOBAL_DEPENDENCIES = ["tsconfig.json"];
@@ -41,7 +41,6 @@ const ENGINE_TASKS: Record<string, unknown> = {
     passThroughEnv: ["AWS_*", "PL_AWS_*"],
     outputs: ["./dist/**", "./block-pack/**", "./pkg-*.tgz"],
   },
-  "build:dev": { dependsOn: ["build"], outputs: ["./dist/**"] },
   "do-pack": { dependsOn: ["build"], outputs: ["package.tgz"] },
   test: {
     dependsOn: ["build", "check"],
@@ -63,5 +62,10 @@ export function rootTurboJsonRules(): void {
   ensureField("globalDependencies", GLOBAL_DEPENDENCIES);
   // Merge the engine tasks, preserving any author task (software:reqs, …).
   ensureFieldEntries("tasks", ENGINE_TASKS);
+  // Legacy single-dev-build task, superseded by the env-parameterised `build`
+  // task + `build:dev-*` package scripts (software-build spec). The
+  // root package.json rule likewise drops the `build:dev` script; drop the
+  // matching turbo task so migrated blocks converge.
+  removeField("tasks.build:dev");
   enforceFieldOrder(["$schema", "globalDependencies", "tasks"]);
 }
