@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import type { OutputFormat } from "./output";
 
 /** Add one or more groups of options to a command, preserving group order. */
 export function addOptions(cmd: Command, ...optionGroups: Option[][]): Command {
@@ -8,11 +9,16 @@ export function addOptions(cmd: Command, ...optionGroups: Option[][]): Command {
   return cmd;
 }
 
-export const GlobalOptions = (): Option[] => [
+export const GlobalOptions = (
+  formatDefault: OutputFormat = "text",
+  allowedFormats: OutputFormat[] = ["text", "json"],
+): Option[] => [
   new Option("-a, --address <url>", "Platforma server address")
     .env("PL_ADDRESS")
     .makeOptionMandatory(),
-  new Option("-f, --format <format>", "Output format").choices(["text", "json"]).default("text"),
+  new Option("-f, --format <format>", "Output format")
+    .choices(allowedFormats)
+    .default(formatDefault),
 ];
 
 export const UserAuthOptions = (): Option[] => [
