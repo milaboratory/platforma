@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.12.3
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.14
+
 ## 2.12.2
 
 ### Patch Changes
