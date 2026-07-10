@@ -1,4 +1,4 @@
-export type OutputFormat = "text" | "json";
+export type OutputFormat = "text" | "json" | "csv";
 
 /** Outputs a line of text to stdout. */
 export function outputText(message: string): void {
@@ -8,6 +8,13 @@ export function outputText(message: string): void {
 /** Outputs data as formatted JSON to stdout. */
 export function outputJson(data: unknown): void {
   console.log(JSON.stringify(data, null, 2));
+}
+
+/** Outputs a header row + data rows as RFC-4180-ish CSV to stdout. */
+export function outputCsv(headers: string[], rows: string[][]): void {
+  const esc = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  const lines = [headers, ...rows].map((r) => r.map(esc).join(","));
+  console.log(lines.join("\n"));
 }
 
 /** Formats a table as aligned text columns. */

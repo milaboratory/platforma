@@ -5,6 +5,7 @@ import projectDuplicateCommand from "./cmd/project/duplicate";
 import projectRenameCommand from "./cmd/project/rename";
 import projectDeleteCommand from "./cmd/project/delete";
 import adminCopyProjectCommand from "./cmd/admin/copy-project";
+import adminUserListCommand from "./cmd/admin/user-list";
 
 export function buildProgram(): Command {
   const program = new Command();
@@ -22,6 +23,7 @@ export function buildProgram(): Command {
     "Admin operations (requires controller credentials)",
   );
   admin.addCommand(adminCopyProjectCommand());
+  admin.addCommand(adminUserListCommand());
   program.addCommand(admin);
 
   return program;
