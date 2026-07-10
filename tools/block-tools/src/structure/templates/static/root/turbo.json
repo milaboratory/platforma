@@ -37,6 +37,10 @@
       "dependsOn": ["build"],
       "outputs": ["package.tgz"]
     },
+    "software:reqs": {
+      "cache": false,
+      "outputs": ["./src/requirements.txt"]
+    },
     "test": {
       "dependsOn": ["build", "check"],
       "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
