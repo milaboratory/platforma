@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 3.14.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.47.1
+- @milaboratories/ts-helpers@1.8.5
+
 ## 3.14.1
 
 ### Patch Changes

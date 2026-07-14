@@ -1,5 +1,14 @@
 # @milaboratories/pl-local
 
+## 3.0.12
+
+### Patch Changes
+
+- @milaboratories/pl-model-common@1.47.1
+- @milaboratories/ts-helpers@1.8.5
+- @milaboratories/pl-config@1.8.4
+- @milaboratories/pl-healthcheck@1.0.3
+
 ## 3.0.11
 
 ### Patch Changes
