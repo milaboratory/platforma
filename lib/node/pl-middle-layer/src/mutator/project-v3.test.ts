@@ -553,3 +553,70 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
     });
   });
 });
+
+// Regression: MILAB-6621. Updating a block whose args() returns undefined (the
+// standard "inputs incomplete/invalid" contract, e.g. `if (!Valid.safeParse(data).success)
+// return undefined`) must not crash. Previously applyStorageAndDeriveArgs passed the
+// undefined value straight to createJsonFieldValue -> Buffer.from(undefined) -> ERR_INVALID_ARG_TYPE,
+// aborting the update-block-pack task (reported by AstraZeneca on mixcr-clonotyping 2.14 -> 2.20).
+// The sentinel input [777] makes the enter-numbers-v3 model's args() return undefined without throwing.
+test("v3 blocks: migrateBlockPack does not crash when args() returns undefined", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    // Add block and set the sentinel state: args() returns undefined (no error).
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        {
+          storageMode: "fromModel",
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+        },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [777] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // Update the block pack — re-derives args from storage. Must NOT throw even though
+    // args() returns undefined (previously crashed inside createJsonFieldValue).
+    await pl.withWriteTx("MigrateBlockPack", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.save();
+      await tx.commit();
+    });
+
+    // Verify: currentArgs cleared (args() undefined), storage preserved, prerunArgs still derived.
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+
+      const currentArgsField = prjR.data.fields.find(
+        (f) => f.name === projectFieldName("enter1", "currentArgs"),
+      );
+      expect(currentArgsField).toBeUndefined();
+
+      const blockStorage = await prjR.get(projectFieldName("enter1", "blockStorage"));
+      const storageData = JSON.parse(Buffer.from(blockStorage.data.data!).toString());
+      expect(storageData.__data).toStrictEqual({ numbers: [777] });
+
+      const currentPrerunArgs = await prjR.get(projectFieldName("enter1", "currentPrerunArgs"));
+      const prerunData = JSON.parse(Buffer.from(currentPrerunArgs.data.data!).toString());
+      expect(prerunData).toStrictEqual({ evenNumbers: [] });
+    });
+  });
+});

@@ -45,6 +45,12 @@ export const platforma = BlockModelV3.create(dataModel)
     if (data.numbers.length === 0) {
       throw new Error("Numbers are required!");
     }
+    // Test sentinel: args() returns undefined (without throwing) to exercise the
+    // "derivation succeeds but value is undefined" contract used by real blocks
+    // (e.g. `if (!Valid.safeParse(data).success) return undefined`).
+    if (data.numbers.length === 1 && data.numbers[0] === 777) {
+      return undefined;
+    }
     return { numbers: data.numbers.toSorted() };
   })
 
