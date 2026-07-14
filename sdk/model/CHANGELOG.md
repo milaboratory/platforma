@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.80.0
+
+### Minor Changes
+
+- 881d6ba: ColumnLazy / ColumnsCollection API that bring new way to work with columns in model part
+
+### Patch Changes
+
+- Updated dependencies [881d6ba]
+  - @milaboratories/pl-model-common@1.47.0
+  - @milaboratories/pl-model-middle-layer@1.30.12
+  - @milaboratories/ptabler-expression-js@1.2.34
+
 ## 1.79.27
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.47.0
+
+### Minor Changes
+
+- 881d6ba: ColumnLazy / ColumnsCollection API that bring new way to work with columns in model part
+
 ## 1.46.4
 
 ### Patch Changes

@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.0
+
+### Minor Changes
+
+- 881d6ba: ColumnLazy / ColumnsCollection API that bring new way to work with columns in model part
+
+### Patch Changes
+
+- Updated dependencies [881d6ba]
+  - @milaboratories/columns-collection-driver@0.2.0
+  - @milaboratories/pf-driver@1.8.0
+  - @milaboratories/pl-model-common@1.47.0
+  - @milaboratories/pl-tree@1.13.0
+  - @platforma-sdk/model@1.80.0
+  - @milaboratories/pl-model-middle-layer@1.30.12
+  - @milaboratories/pf-spec-driver@1.4.19
+  - @milaboratories/pl-client@3.14.1
+  - @milaboratories/pl-deployments@3.0.11
+  - @milaboratories/pl-drivers@1.16.9
+  - @platforma-sdk/block-tools@2.12.5
+  - @milaboratories/pl-model-backend@1.4.15
+  - @milaboratories/pl-errors@1.4.30
+  - @platforma-sdk/workflow-tengo@6.7.1
+
 ## 1.65.9
 
 ### Patch Changes
