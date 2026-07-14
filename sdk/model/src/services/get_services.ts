@@ -9,8 +9,11 @@ const cachedServices = new WeakMap<
   Map<keyof ModelServices, ValueOf<ModelServices>>
 >();
 
-export function getService<T extends keyof ModelServices>(name: T): ModelServices[T] {
-  const ctx = getCfgRenderCtx();
+export function getService<T extends keyof ModelServices>(
+  name: T,
+  deps?: { ctx?: GlobalCfgRenderCtx },
+): ModelServices[T] {
+  const ctx = deps?.ctx ?? getCfgRenderCtx();
 
   const map = cachedServices.has(ctx)
     ? cachedServices.get(ctx)!

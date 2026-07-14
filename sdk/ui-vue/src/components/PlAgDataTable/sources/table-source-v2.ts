@@ -1,5 +1,7 @@
 import type {
+  AnnotationDataStatus,
   AxesSpec,
+  PlDataTableColumnsMeta,
   PTableColumnId,
   PTableColumnSpecAxis,
   PTableColumnSpecColumn,
@@ -50,10 +52,6 @@ import { isJsonEqual } from "@milaboratories/helpers";
 import type { DeferredCircular } from "./focus-row";
 import { isNil, uniq } from "es-toolkit";
 
-export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
-  return column.type === "column" && isLabelColumnSpec(column.spec);
-}
-
 /** Convert columnar data from the driver to rows, used by ag-grid */
 function columns2rows(
   fields: number[],
@@ -88,6 +86,7 @@ export async function calculateGridOptions({
   sheets,
   fullTableHandle,
   visibleTableHandle,
+  columnsMeta,
   dataRenderedTracker,
   hiddenColIds,
   cellButtonAxisParams,
@@ -97,6 +96,8 @@ export async function calculateGridOptions({
   generation: Ref<number>;
   fullTableHandle: PTableHandle;
   visibleTableHandle: PTableHandle;
+  /** Sidecar display metadata (label/visibility/order/status/hidden axes) from the model. */
+  columnsMeta?: PlDataTableColumnsMeta;
   dataRenderedTracker: DeferredCircular<GridApi<PlAgDataTableV2Row>>;
   hiddenColIds?: PlTableColumnIdJson[];
   cellButtonAxisParams?: PlAgCellButtonAxisParams;
@@ -108,12 +109,18 @@ export async function calculateGridOptions({
   const stateGeneration = generation.value;
 
   // get specs of the full table
-  const [tableSpecs, visibleTableSpecs] = await Promise.all([
+  const [rawTableSpecs, rawVisibleTableSpecs] = await Promise.all([
     pfDriver.getSpec(fullTableHandle),
     pfDriver.getSpec(visibleTableHandle),
   ]);
 
   if (stateGeneration !== generation.value) throw new Error("table state generation changed");
+
+  // Engine specs flow through untouched; readers below merge `columnsMeta` at
+  // their use sites via the `effective*` helpers — keeps spec === what the
+  // engine produced (matters for `colDef.context` consumers).
+  const tableSpecs = rawTableSpecs;
+  const visibleTableSpecs = rawVisibleTableSpecs;
 
   // index mapping from full specs to visible subset (hidden columns → -1)
   const specsToVisibleSpecsMapping = buildSpecsToVisibleSpecsMapping(tableSpecs, visibleTableSpecs);
@@ -125,18 +132,33 @@ export async function calculateGridOptions({
 
   // displayable column indices ordered: axes first, then columns by OrderPriority
   const fields = sortIndicesByTypeAndPriority(
-    selectDisplayableIndices(tableSpecs, isPartitionedAxis, getLabelColumnIndex),
+    selectDisplayableIndices(tableSpecs, isPartitionedAxis, getLabelColumnIndex, columnsMeta),
     tableSpecs,
+    columnsMeta,
   );
 
   // default hidden columns derived from Optional annotation when no saved state
-  const resolvedHiddenColIds = hiddenColIds ?? computeDefaultHiddenColIds(fields, tableSpecs);
+  const resolvedHiddenColIds =
+    hiddenColIds ?? computeDefaultHiddenColIds(fields, tableSpecs, columnsMeta);
 
   const columnDefs: ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden>[] = [
     makeRowNumberColDef(),
-    ...fields.map((field) =>
-      makeColDef(field, tableSpecs[field], resolvedHiddenColIds, cellButtonAxisParams),
-    ),
+    ...fields.map((field) => {
+      const spec = tableSpecs[field];
+      // Only visible columns get a status (hidden columns → undefined → no
+      // "computing/absent" placeholder rendering).
+      const visible = (specsToVisibleSpecsMapping.get(field) ?? -1) >= 0;
+      const status =
+        visible && spec.type === "column" ? columnsMeta?.columns[spec.id]?.status : undefined;
+      return makeColDef({
+        iCol: field,
+        spec,
+        dataStatus: status,
+        hiddenColIds: resolvedHiddenColIds,
+        cellButtonAxisParams,
+        columnsMeta,
+      });
+    }),
   ];
 
   // axes — taken directly from visible table (always present as part of join)
@@ -229,15 +251,26 @@ export type PlAgCellButtonAxisParams = {
 /**
  * Calculates column definition for a given p-table column
  */
-export function makeColDef(
-  iCol: number,
-  spec: PTableColumnSpec,
-  hiddenColIds: PlTableColumnIdJson[] | undefined,
-  cellButtonAxisParams?: PlAgCellButtonAxisParams,
-): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
+export function makeColDef({
+  iCol,
+  spec,
+  dataStatus,
+  hiddenColIds,
+  cellButtonAxisParams,
+  columnsMeta,
+}: {
+  iCol: number;
+  spec: PTableColumnSpec;
+  /** Per-column rendering status from the model; `undefined` for hidden cols. */
+  dataStatus: AnnotationDataStatus | undefined;
+  hiddenColIds: PlTableColumnIdJson[] | undefined;
+  cellButtonAxisParams?: PlAgCellButtonAxisParams;
+  /** Sidecar meta used to resolve the effective header label. */
+  columnsMeta?: PlDataTableColumnsMeta;
+}): ColDef<PlAgDataTableV2Row, PTableValue | PTableHidden> {
   const colId = canonicalizeJson<PTableColumnId>(getPTableColumnId(spec));
   const valueType = spec.type === "axis" ? spec.spec.type : spec.spec.valueType;
-  const columnRenderingSpec = getColumnRenderingSpec(spec);
+  const columnRenderingSpec = getColumnRenderingSpec(spec, dataStatus);
   const cellStyle: CellStyle = {};
   if (columnRenderingSpec.fontFamily) {
     if (columnRenderingSpec.fontFamily === "monospace") {
@@ -247,8 +280,7 @@ export function makeColDef(
       cellStyle.fontFamily = columnRenderingSpec.fontFamily;
     }
   }
-  const headerName =
-    readAnnotation(spec.spec, Annotation.Label)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`;
+  const headerName = effectiveLabel(spec, columnsMeta)?.trim() ?? `Unlabeled ${spec.type} ${iCol}`;
 
   return {
     colId,
@@ -318,6 +350,70 @@ export function makeColDef(
   };
 }
 
+export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
+  return column.type === "column" && isLabelColumnSpec(column.spec);
+}
+
+/**
+ * Effective column label: sidecar override wins over intrinsic spec
+ * annotation. Axes have no label override in the sidecar — they fall through
+ * to `pl7.app/label` on the axis spec.
+ */
+export function effectiveLabel(
+  spec: PTableColumnSpec,
+  meta: PlDataTableColumnsMeta | undefined,
+): string | undefined {
+  if (spec.type === "column") {
+    const override = meta?.columns[spec.id]?.label;
+    if (override !== undefined) return override;
+  }
+  return readAnnotation(spec.spec, Annotation.Label);
+}
+
+/**
+ * Effective visibility. For columns: sidecar override wins over the intrinsic
+ * `pl7.app/table/visibility` annotation. For axes: `meta.axes[id].hidden`
+ * forces hidden; otherwise the intrinsic axis annotation rules.
+ *
+ * Kept out of the spec on purpose — baking visibility into a column spec via
+ * override changes its `ColumnUniversalId`, so the same physical column reached
+ * two ways (e.g. as primary and as a discovered label) would diverge into two
+ * ids and render twice. The sidecar preserves identity; readers apply this at
+ * use sites.
+ */
+export function effectiveVisibility(
+  spec: PTableColumnSpec,
+  meta: PlDataTableColumnsMeta | undefined,
+): "default" | "optional" | "hidden" {
+  if (spec.type === "axis") {
+    if (meta?.axes[canonicalizeJson<AxisId>(getAxisId(spec.id))]?.hidden === true) return "hidden";
+  } else {
+    const override = meta?.columns[spec.id]?.visibility;
+    if (override !== undefined) return override;
+  }
+  if (isColumnHidden(spec.spec)) return "hidden";
+  if (isColumnOptional(spec.spec)) return "optional";
+  return "default";
+}
+
+/**
+ * Effective order priority — number suitable for left-to-right comparison
+ * (higher = further left). Sidecar override on columns wins over the
+ * intrinsic `pl7.app/table/orderPriority`; axes have no override.
+ * `undefined` when neither source supplied a value (consumer decides default).
+ */
+export function effectiveOrder(
+  spec: PTableColumnSpec,
+  meta: PlDataTableColumnsMeta | undefined,
+): number | undefined {
+  if (spec.type === "column") {
+    const override = meta?.columns[spec.id]?.order;
+    if (override !== undefined) return override;
+  }
+  const raw = readAnnotationJson(spec.spec, Annotation.Table.OrderPriority);
+  return raw as number | undefined;
+}
+
 /** Build index mapping from full tableSpecs to their position in visibleTableSpecs (missing → -1). */
 function buildSpecsToVisibleSpecsMapping(
   tableSpecs: PTableColumnSpec[],
@@ -370,6 +466,7 @@ function selectDisplayableIndices(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
   getLabelColumnIndex: (axisId: AxisId) => number,
+  meta: PlDataTableColumnsMeta | undefined,
 ): number[] {
   return tableSpecs
     .entries()
@@ -377,11 +474,12 @@ function selectDisplayableIndices(
       switch (spec.type) {
         case "axis":
           return (
-            !(getLabelColumnIndex(spec.id) > -1 ? true : isColumnHidden(spec.spec)) &&
-            !isPartitionedAxis(spec.id)
+            !(getLabelColumnIndex(spec.id) > -1
+              ? true
+              : effectiveVisibility(spec, meta) === "hidden") && !isPartitionedAxis(spec.id)
           );
         case "column":
-          return !isColumnHidden(spec.spec) && !isLinkerColumnSpec(spec.spec);
+          return effectiveVisibility(spec, meta) !== "hidden" && !isLinkerColumnSpec(spec.spec);
       }
     })
     .map(([i]) => i)
@@ -389,14 +487,15 @@ function selectDisplayableIndices(
 }
 
 /** Sort: axes first, then columns by OrderPriority annotation (higher priority = further left). */
-function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColumnSpec[]): number[] {
+function sortIndicesByTypeAndPriority(
+  indices: number[],
+  tableSpecs: PTableColumnSpec[],
+  meta: PlDataTableColumnsMeta | undefined,
+): number[] {
   const priorityOf = (i: number): number => {
     const spec = tableSpecs[i];
-    const prior =
-      spec.type === "axis" || isLabelColumnSpec(spec.spec)
-        ? Infinity
-        : Number(readAnnotationJson(spec.spec, Annotation.Table.OrderPriority));
-
+    if (spec.type === "axis" || isLabelColumnSpec(spec.spec)) return Infinity;
+    const prior = Number(effectiveOrder(spec, meta));
     return isNaN(prior) ? 0 : prior;
   };
   return [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
@@ -406,12 +505,14 @@ function sortIndicesByTypeAndPriority(indices: number[], tableSpecs: PTableColum
 function computeDefaultHiddenColIds(
   fields: number[],
   tableSpecs: PTableColumnSpec[],
+  meta: PlDataTableColumnsMeta | undefined,
 ): PlTableColumnIdJson[] {
   return fields.reduce<PlTableColumnIdJson[]>((acc, field) => {
     const spec = tableSpecs[field];
-    return spec.type === "column" && isColumnOptional(spec.spec)
-      ? [...acc, canonicalizeJson<PTableColumnId>(getPTableColumnId(spec))]
-      : acc;
+    if (spec.type === "column" && effectiveVisibility(spec, meta) === "optional") {
+      acc.push(canonicalizeJson<PTableColumnId>(getPTableColumnId(spec)));
+    }
+    return acc;
   }, []);
 }
 

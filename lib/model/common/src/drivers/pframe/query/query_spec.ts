@@ -1,4 +1,5 @@
 import type { PObjectId } from "../../../pool";
+import type { ColumnUniversalId } from "../spec/ids";
 import type {
   ExprAxisRef,
   ExprCast,
@@ -28,10 +29,12 @@ import type {
   QuerySliceAxes,
   QuerySort,
   QuerySparseToDenseColumn,
+  QuerySpecOverride,
   QuerySymmetricJoin,
   QueryTransformColumns,
 } from "./query_common";
 import type { Domain, PColumnIdAndSpec, SingleAxisSelector } from "../spec";
+import type { SpecOverrides } from "../spec/overridden";
 
 /**
  * Join entry for spec-layer queries — the base join entry extended with
@@ -43,8 +46,8 @@ import type { Domain, PColumnIdAndSpec, SingleAxisSelector } from "../spec";
  *   qualifications: [{ axis: { name: 'sample' }, contextDomain: { ... } }]
  * }
  */
-export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
-  qualifications?: {
+export type SpecQueryJoinEntry<C = ColumnUniversalId> = QueryJoinEntry<SpecQuery<C>> & {
+  qualifications?: readonly {
     /** Axis to qualify. */
     axis: SingleAxisSelector;
     /** Additional domain constraints for this axis. */
@@ -53,45 +56,53 @@ export type SpecQueryJoinEntry<C = PObjectId> = QueryJoinEntry<SpecQuery<C>> & {
 };
 
 /** @see QueryColumn */
-export type SpecQueryColumn<C = PObjectId> = QueryColumn<C>;
+export type SpecQueryColumn<C = ColumnUniversalId> = QueryColumn<C>;
 /** @see QueryInlineColumn */
 export type SpecQueryInlineColumn = QueryInlineColumn<PColumnIdAndSpec>;
 /** @see QuerySparseToDenseColumn */
-export type SpecQuerySparseToDenseColumn<C = PObjectId> = QuerySparseToDenseColumn<
+export type SpecQuerySparseToDenseColumn<C = ColumnUniversalId> = QuerySparseToDenseColumn<
   C,
   SingleAxisSelector,
   PColumnIdAndSpec
 >;
 /** @see QuerySymmetricJoin */
-export type SpecQuerySymmetricJoin<C = PObjectId> = QuerySymmetricJoin<SpecQueryJoinEntry<C>>;
+export type SpecQuerySymmetricJoin<C = ColumnUniversalId> = QuerySymmetricJoin<
+  SpecQueryJoinEntry<C>
+>;
 /** @see QueryOuterJoin */
-export type SpecQueryOuterJoin<C = PObjectId> = QueryOuterJoin<SpecQueryJoinEntry<C>>;
-/**
- * Linker side of a spec-layer linker-join.
- *
- * At the spec layer the linker is just a column reference — integration artifacts
- * (axes mapping, one-side indices) are derived during spec→data conversion.
- */
-export type SpecQueryLinkerJoinLinker<C = PObjectId> = {
-  /** Linker column reference. */
-  column: C;
-};
+export type SpecQueryOuterJoin<C = ColumnUniversalId> = QueryOuterJoin<SpecQueryJoinEntry<C>>;
 /** @see QueryLinkerJoin */
-export type SpecQueryLinkerJoin<C = PObjectId> = QueryLinkerJoin<
-  SpecQueryLinkerJoinLinker<C>,
+export type SpecQueryLinkerJoin<C = ColumnUniversalId> = QueryLinkerJoin<
+  SpecQuery<C>,
   SpecQueryJoinEntry<C>
 >;
 /** @see QuerySliceAxes */
-export type SpecQuerySliceAxes<C = PObjectId> = QuerySliceAxes<SpecQuery<C>, SingleAxisSelector>;
+export type SpecQuerySliceAxes<C = ColumnUniversalId> = QuerySliceAxes<
+  SpecQuery<C>,
+  SingleAxisSelector
+>;
 /** @see QuerySort */
-export type SpecQuerySort<C = PObjectId> = QuerySort<SpecQuery<C>, SpecQueryExpression>;
+export type SpecQuerySort<C = ColumnUniversalId> = QuerySort<SpecQuery<C>, SpecQueryExpression>;
 /** @see QueryFilter */
-export type SpecQueryFilter<C = PObjectId> = QueryFilter<SpecQuery<C>, SpecQueryBooleanExpression>;
+export type SpecQueryFilter<C = ColumnUniversalId> = QueryFilter<
+  SpecQuery<C>,
+  SpecQueryBooleanExpression
+>;
 /** @see QueryTransformColumns */
-export type SpecQueryTransformColumns<C = PObjectId> = QueryTransformColumns<
+export type SpecQueryTransformColumns<C = ColumnUniversalId> = QueryTransformColumns<
   SpecQuery<C>,
   SpecQueryExpression,
   PColumnIdAndSpec
+>;
+/**
+ * Client-side spec-override node — collapsed at the host boundary, never
+ * sent to pframe-engine.
+ *
+ * @see QuerySpecOverride
+ */
+export type SpecQuerySpecOverride<C = ColumnUniversalId> = QuerySpecOverride<
+  SpecQuery<C>,
+  SpecOverrides
 >;
 
 /**
@@ -108,8 +119,9 @@ export type SpecQueryTransformColumns<C = PObjectId> = QueryTransformColumns<
  * - Leaf nodes: column, inlineColumn, sparseToDenseColumn
  * - Join operations: innerJoin, fullJoin, outerJoin, linkerJoin
  * - Transformations: sliceAxes, sort, filter, transformColumns
+ * - Client-side overlays: specOverride (collapsed before reaching the engine)
  */
-export type SpecQuery<C = PObjectId> =
+export type SpecQuery<C = ColumnUniversalId> =
   | SpecQueryColumn<C>
   | SpecQueryInlineColumn
   | SpecQuerySparseToDenseColumn<C>
@@ -119,12 +131,13 @@ export type SpecQuery<C = PObjectId> =
   | SpecQuerySliceAxes<C>
   | SpecQuerySort<C>
   | SpecQueryFilter<C>
-  | SpecQueryTransformColumns<C>;
+  | SpecQueryTransformColumns<C>
+  | SpecQuerySpecOverride<C>;
 
 /** @see ExprAxisRef */
 export type SpecExprAxisRef = ExprAxisRef<SingleAxisSelector>;
 /** @see ExprColumnRef */
-export type SpecExprColumnRef = ExprColumnRef<PObjectId>;
+export type SpecExprColumnRef = ExprColumnRef<ColumnUniversalId>;
 
 export type SpecQueryExpression =
   | SpecExprColumnRef

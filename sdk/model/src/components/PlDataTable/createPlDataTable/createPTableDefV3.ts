@@ -1,6 +1,7 @@
 import type {
   AxisQualification,
-  PColumn,
+  ColumnUniversalId,
+  PObjectId,
   PTableColumnId,
   PTableSorting,
   PTableDefV2,
@@ -8,53 +9,33 @@ import type {
   SpecQuery,
   SpecQueryExpression,
   SpecQueryJoinEntry,
-  PObjectId,
 } from "@milaboratories/pl-model-common";
 import { isBooleanExpression } from "@milaboratories/pl-model-common";
-import type { PColumnDataUniversal } from "../../../render";
 import { isNil } from "es-toolkit";
-import type { PlDataTableFilters } from "../typesV7";
+import type { PlDataTableFilters } from "../typesV8";
 import { distillFilterSpec, filterSpecToSpecQueryExpr } from "../../../filters";
 import type { Nil } from "@milaboratories/helpers";
+import type { ColumnRecipe } from "../../..";
+import { hitQualifications, queriesQualifications } from "../../../columns";
 
-/** Primary side — base row grid. */
-export type PrimaryEntry<Data> = {
-  column: PColumn<Data>;
-};
-
-/** Secondary side leaf — the hit column or a label column, optionally reached via a linker chain. */
-export type SecondaryEntry<Data> = {
-  column: PColumn<Data>;
-  /** For hit: `forHit`. For label/direct: omit. Applied to the outermost emitted join entry. */
-  qualifications?: AxisQualification[];
-  /**
-   * Linker chain leading to `column`, ordered from outermost to innermost.
-   * When present, the entry is emitted as nested `linkerJoin` operators —
-   * one per linker — wrapping the hit column. Binds this hit to this exact
-   * chain so the engine cannot reuse a sibling chain that happens to share
-   * axis name + domain.
-   */
-  linkers?: PColumn<Data>[];
-};
-
-/** Secondary group — one join subtree outer-joined onto primary. */
-export type SecondaryGroup<Data> = {
-  entries: SecondaryEntry<Data>[];
-  /** Per-variant qualifications applied to the cloned primary anchors on this group's side.
-   *  Keyed by `PrimaryEntry.column.id`. Omit → base primary used unqualified (labels, non-variant columns). */
-  primaryQualifications?: Record<PObjectId, AxisQualification[]>;
-};
-
-export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
+/**
+ * Assemble a ptable def directly from recipes. Each secondary recipe is its own
+ * outer-joined subtree: `getQuery()` encodes its linker chain, and its
+ * hit-/queries-qualifications are derived on the spot via {@link hitQualifications}
+ * / {@link queriesQualifications} — no pre-extracted DTO. Bare leaves yield empty
+ * qualifications, so plain {@link ColumnRecipe} arrays (e.g. label columns) work
+ * unchanged.
+ */
+export function createPTableDefV3(params: {
   primaryJoinType: "inner" | "full";
-  primary: PrimaryEntry<Data>[];
-  secondary: SecondaryGroup<Data>[];
+  primary: ColumnRecipe[];
+  secondary: ColumnRecipe[];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
-}): PTableDefV2<PColumn<Data>> {
-  let query: SpecQuery<PColumn<Data>> = {
+}): PTableDefV2<ColumnUniversalId> {
+  let query: SpecQuery = {
     type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
-    entries: params.primary.map((a) => toLeaf(a.column, [])),
+    entries: params.primary.map((c) => columnToJoinEntry(c, [])),
   };
 
   if (params.secondary.length > 0) {
@@ -62,11 +43,12 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
       type: "outerJoin",
       primary: {
         entry: query,
-        qualifications: params.secondary.flatMap((g) =>
-          params.primary.flatMap((p) => g.primaryQualifications?.[p.column.id] ?? []),
-        ),
+        qualifications: params.secondary.flatMap((s) => {
+          const quals = queriesQualifications(s);
+          return params.primary.flatMap((p) => quals[p.id as PObjectId] ?? []);
+        }),
       },
-      secondary: params.secondary.flatMap((g) => g.entries.map((e) => toJoinEntry(e))),
+      secondary: params.secondary.map((c) => columnToJoinEntry(c, hitQualifications(c))),
     };
   }
 
@@ -95,7 +77,7 @@ export function createPTableDefV3<Data = PColumnDataUniversal>(params: {
       sortBy: params.sorting.map((s) => ({
         expression: columnIdToExpr(s.column),
         ascending: s.ascending,
-        nullsFirst: !s.naAndAbsentAreLeastValues,
+        nullsFirst: s.naAndAbsentAreLeastValues,
       })),
     };
   }
@@ -109,26 +91,12 @@ function columnIdToExpr(col: PTableColumnId): SpecQueryExpression {
     : { type: "columnRef", value: col.id };
 }
 
-function toLeaf<Data>(
-  col: PColumn<Data>,
-  qs: AxisQualification[],
-): SpecQueryJoinEntry<PColumn<Data>> {
+function columnToJoinEntry(
+  col: ColumnRecipe,
+  qualifications: readonly AxisQualification[],
+): SpecQueryJoinEntry {
   return {
-    entry: { type: "column", column: col },
-    qualifications: qs,
+    entry: col.getQuery(),
+    qualifications,
   };
-}
-
-function toJoinEntry<Data>(e: SecondaryEntry<Data>): SpecQueryJoinEntry<PColumn<Data>> {
-  const qs = e.qualifications ?? [];
-  if (isNil(e.linkers) || e.linkers.length === 0) return toLeaf(e.column, qs);
-
-  const folded = e.linkers.reduceRight<SpecQueryJoinEntry<PColumn<Data>>>(
-    (inner, linker) => ({
-      entry: { type: "linkerJoin", linker: { column: linker }, secondary: [inner] },
-      qualifications: [],
-    }),
-    toLeaf(e.column, []),
-  );
-  return { ...folded, qualifications: qs };
 }

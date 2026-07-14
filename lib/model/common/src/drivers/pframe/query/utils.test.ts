@@ -85,13 +85,13 @@ describe("traverseQuerySpec", () => {
   it("transforms columns inside linkerJoin", () => {
     const q: Q = {
       type: "linkerJoin",
-      linker: { column: "l" },
+      linker: col("l"),
       secondary: [entry(col("a")), entry(col("b"))],
     };
     const result = traverseQuerySpec(q, { column: (c) => c.toUpperCase() });
     expect(result).toEqual({
       type: "linkerJoin",
-      linker: { column: "L" },
+      linker: { type: "column", column: "L" },
       secondary: [entry({ type: "column", column: "A" }), entry({ type: "column", column: "B" })],
     });
   });
@@ -180,7 +180,7 @@ describe("mapSpecQueryColumns", () => {
       primary: entry(col("a")),
       secondary: [entry(col("b"))],
     };
-    const result = mapSpecQueryColumns(q, (c) => c.toUpperCase());
+    const result = mapSpecQueryColumns(q, { column: (c) => c.toUpperCase() });
     expect(collectSpecQueryColumns(result)).toEqual(["A", "B"]);
   });
 });
@@ -229,7 +229,7 @@ describe("collectSpecQueryColumns", () => {
   it("collects linker and secondary columns from linkerJoin", () => {
     const q: Q = {
       type: "linkerJoin",
-      linker: { column: "l" },
+      linker: col("l"),
       secondary: [entry(col("a")), entry(col("b"))],
     };
     expect(collectSpecQueryColumns(q)).toEqual(["l", "a", "b"]);
@@ -263,13 +263,13 @@ describe("sortSpecQuery", () => {
   it("sorts linkerJoin secondary entries (linker column unchanged)", () => {
     const q: SpecQuery = {
       type: "linkerJoin",
-      linker: { column: pid("l") },
+      linker: pcol("l"),
       secondary: [pentry(pcol("c")), pentry(pcol("a")), pentry(pcol("b"))],
     };
     const result = sortSpecQuery(q);
     expect(result).toEqual({
       type: "linkerJoin",
-      linker: { column: "l" },
+      linker: pcol("l"),
       secondary: [pentry(pcol("a")), pentry(pcol("b")), pentry(pcol("c"))],
     });
   });

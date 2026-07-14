@@ -4,9 +4,9 @@ import type {
   MultiAxisSelector,
   MultiColumnSelector,
   StringMatcher,
-} from "@milaboratories/pl-model-common";
+} from "../drivers/pframe";
 
-export type { StringMatcher } from "@milaboratories/pl-model-common";
+export type { StringMatcher } from "../drivers/pframe";
 
 // --- Relaxed types ---
 

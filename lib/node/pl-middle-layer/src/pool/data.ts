@@ -1,11 +1,12 @@
 import {
+  createGlobalPObjectId,
+  createLocalPObjectId,
   PFrameDriverError,
   type BinaryChunk,
   type ParquetChunk,
   type ParquetChunkMapping,
   type ParquetChunkMetadata,
   type PColumnValue,
-  type PlRef,
   type PObjectId,
   type PObjectSpec,
 } from "@platforma-sdk/model";
@@ -331,9 +332,9 @@ export function deriveLegacyPObjectId(spec: PObjectSpec, data: PlTreeNodeAccesso
 }
 
 export function deriveGlobalPObjectId(blockId: string, exportName: string): PObjectId {
-  return canonicalize({ __isRef: true, blockId, name: exportName } satisfies PlRef)! as PObjectId;
+  return createGlobalPObjectId(blockId, exportName);
 }
 
 export function deriveLocalPObjectId(resolvePath: string[], outputName: string): PObjectId {
-  return canonicalize({ resolvePath, name: outputName })! as PObjectId;
+  return createLocalPObjectId(resolvePath, outputName);
 }

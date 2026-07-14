@@ -17,6 +17,11 @@ import {
 } from "@platforma-sdk/ui-vue";
 import { ref, watch } from "vue";
 
+/** Coerce a PlAdvancedFilterColumnId to a string key for Record lookup. */
+function columnIdKey(id: PlAdvancedFilterColumnId): string {
+  return typeof id === "string" ? id : JSON.stringify(id);
+}
+
 const column1Id = stringifyColumnId({ name: "1", axes: [] }) as SUniversalPColumnId;
 const column2Id = stringifyColumnId({ name: "2", axes: [] }) as SUniversalPColumnId;
 const column3Id = stringifyColumnId({ name: "3", axes: [] }) as SUniversalPColumnId;
@@ -88,12 +93,11 @@ async function getSuggestOptions({
   searchStr: string;
   axisIdx?: number;
 }) {
+  const key = columnIdKey(columnId);
   if (axisIdx !== undefined) {
-    return (uniqueValuesByAxisIdx[columnId]?.[axisIdx] || []).filter((v) =>
-      v.label.includes(searchStr),
-    );
+    return (uniqueValuesByAxisIdx[key]?.[axisIdx] || []).filter((v) => v.label.includes(searchStr));
   }
-  return (uniqueValuesByColumnOrAxisId[columnId] || []).filter((v) => v.label.includes(searchStr));
+  return (uniqueValuesByColumnOrAxisId[key] || []).filter((v) => v.label.includes(searchStr));
 }
 async function getSuggestModel({
   columnId,
@@ -104,8 +108,9 @@ async function getSuggestModel({
   searchStr: string;
   axisIdx?: number;
 }) {
+  const key = columnIdKey(columnId);
   if (axisIdx !== undefined) {
-    const axisValues = uniqueValuesByAxisIdx[columnId]?.[axisIdx];
+    const axisValues = uniqueValuesByAxisIdx[key]?.[axisIdx];
     return (
       axisValues.find((v) => v.value === searchStr) || {
         value: searchStr,
@@ -113,7 +118,7 @@ async function getSuggestModel({
       }
     );
   }
-  const columnValues = uniqueValuesByColumnOrAxisId[columnId];
+  const columnValues = uniqueValuesByColumnOrAxisId[key];
   return (
     columnValues.find((v) => v.value === searchStr) || {
       value: searchStr,
@@ -256,10 +261,10 @@ watch(
       <div v-if="enableDnd" :class="$style.leftColumn">
         <div
           v-for="option in options"
-          :key="option.id"
+          :key="columnIdKey(option.id)"
           :draggable="enableDnd ? 'true' : undefined"
           :class="$style.columnChip"
-          @dragstart="(e) => e?.dataTransfer?.setData('text/plain', option.id)"
+          @dragstart="(e) => e?.dataTransfer?.setData('text/plain', columnIdKey(option.id))"
         >
           {{ option.label }}
         </div>

@@ -310,7 +310,7 @@ export async function getColumnsFull(
 export async function getColumnOrAxisValueLabelsId(
   handle: PFrameHandle,
   strAxisId: CanonicalizedJson<AxisId>,
-): Promise<PObjectId | undefined> {
+): Promise<undefined | PObjectId> {
   const labelColumns = await getColumnsFull(handle, {
     selectedSources: [],
     strictlyCompatible: false,

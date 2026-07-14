@@ -79,17 +79,25 @@ export function traverseQuerySpec<C1, C2>(
         secondary: query.secondary.map(traverseEntry),
       };
       break;
-    case "linkerJoin":
+    case "linkerJoin": {
+      // Back-compat: pre-#c7309fc8 blocks emit `linker` as `{ column }` without
+      // a `type` — tag it as a `column` node so recursion handles it normally.
+      const linker =
+        "type" in query.linker
+          ? query.linker
+          : ({ type: "column", column: (query.linker as { column: C1 }).column } as SpecQuery<C1>);
       result = {
         ...query,
-        linker: { ...query.linker, column: visitor.column(query.linker.column) },
+        linker: traverseQuerySpec(linker, visitor),
         secondary: query.secondary.map(traverseEntry),
       };
       break;
+    }
     case "filter":
     case "sort":
     case "sliceAxes":
     case "transformColumns":
+    case "specOverride":
       result = { ...query, input: traverseQuerySpec(query.input, visitor) };
       break;
     default:
@@ -102,9 +110,16 @@ export function traverseQuerySpec<C1, C2>(
 /** Recursively maps all column references in a SpecQuery tree. */
 export function mapSpecQueryColumns<C1, C2>(
   query: SpecQuery<C1>,
-  cb: (c: C1) => C2,
+  visitor: {
+    /** Transform column references in leaf nodes (column, sparseToDenseColumn). */
+    column: (c: C1) => C2;
+    /** Visit a node after its children have been traversed. */
+    node?: (node: SpecQuery<C2>) => SpecQuery<C2>;
+    /** Visit a join entry after its inner query has been traversed. */
+    joinEntry?: (entry: SpecQueryJoinEntry<C2>) => SpecQueryJoinEntry<C2>;
+  },
 ): SpecQuery<C2> {
-  return traverseQuerySpec(query, { column: cb });
+  return traverseQuerySpec(query, visitor);
 }
 
 /** Collects all column references from a SpecQuery tree. */
@@ -227,9 +242,8 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
     }
     case "linkerJoin": {
       const rhsLinker = rhs as typeof lhs;
-      if (lhs.linker.column !== rhsLinker.linker.column) {
-        return lhs.linker.column < rhsLinker.linker.column ? -1 : 1;
-      }
+      const cmp = cmpQuerySpec(lhs.linker, rhsLinker.linker);
+      if (cmp !== 0) return cmp;
       if (lhs.secondary.length !== rhsLinker.secondary.length) {
         return lhs.secondary.length - rhsLinker.secondary.length;
       }
@@ -245,6 +259,12 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "filter":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
+    case "specOverride": {
+      const rhsSo = rhs as typeof lhs;
+      const cmp = cmpQuerySpec(lhs.input, rhsSo.input);
+      if (cmp !== 0) return cmp;
+      return canonicalizeJson(lhs.override).localeCompare(canonicalizeJson(rhsSo.override));
+    }
     case "transformColumns": {
       const rhsTc = rhs as typeof lhs;
       const cmp = cmpQuerySpec(lhs.input, rhsTc.input);

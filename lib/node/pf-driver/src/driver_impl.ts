@@ -250,7 +250,7 @@ export class AbstractPFrameDriver<
     const columns = uniqueBy(collectSpecQueryColumns(def.query), (c) => c.id);
     using pFrameGuard = new PoolEntryGuard(this.createPFrame(columns));
     const pFrameSpec = this.pFrames.getByKey(pFrameGuard.key).pFrameSpec;
-    const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, (c) => c.id));
+    const sortedQuery = sortSpecQuery(mapSpecQueryColumns(def.query, { column: (c) => c.id }));
     const { tableSpec, dataQuery } = pFrameSpec.evaluateQuery(
       embedInlineColumnTypeSpecs(sortedQuery),
     );

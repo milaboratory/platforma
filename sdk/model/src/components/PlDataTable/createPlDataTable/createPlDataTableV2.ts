@@ -1,20 +1,14 @@
 import type {
-  AxisId,
+  ColumnUniversalId,
+  FilterSpecNode,
   PColumn,
-  PObjectId,
-  PTableColumnId,
-  PTableColumnIdAxis,
   PTableColumnIdColumn,
-  CanonicalizedJson,
+  PTableSorting,
 } from "@milaboratories/pl-model-common";
 import {
   Annotation,
-  canonicalizeJson,
-  getAxisId,
   getColumnIdAndSpec,
   isLinkerColumn,
-  uniqueBy,
-  parseJson,
   PColumnName,
 } from "@milaboratories/pl-model-common";
 import type {
@@ -25,14 +19,21 @@ import type {
 } from "../../../render";
 import { allPColumnsReady, deriveLabels, PColumnCollection } from "../../../render";
 import { identity } from "es-toolkit";
-import type { CreatePlDataTableOps, PlDataTableModel } from "../typesV7";
+import type {
+  CreatePlDataTableOps,
+  PlDataTableFilters,
+  PlDataTableFilterSpecLeaf,
+  PlDataTableModel,
+} from "../typesV8";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import { getMatchingLabelColumns } from "../labels";
-import { collectFilterSpecColumns } from "../../../filters/traverse";
-import { isEmpty } from "es-toolkit/compat";
+import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import { createPTableDefV2 } from "./createPTableDefV2";
 import { isColumnOptional } from "./utils";
+import { ColumnLazyImpl } from "../../../columns";
+import { createColumnResolver, type ColumnResolver } from "../columnResolver";
+import { isNil, type Nil } from "@milaboratories/helpers";
 
 /**
  * @deprecated This function is deprecated and will be removed in future. Please migrate to createPlDataTable with v3 options for improved column discovery and display configuration. See createPlDataTableOptionsV3 for details on the new options format and migration guidance.
@@ -81,52 +82,32 @@ export function createPlDataTableV2<A, U>(
 
   const fullColumns = [...columns, ...fullLabelColumns];
 
-  const fullColumnsAxes = uniqueBy(
-    fullColumns.flatMap((c) => c.spec.axesSpec.map((a) => getAxisId(a))),
-    (a) => canonicalizeJson<AxisId>(a),
+  const resolver = createColumnResolver(
+    fullColumns.map((c) => ColumnLazyImpl.fromColumn(c)),
+    { warn: ctx.logWarn.bind(ctx) },
   );
-  const fullColumnsIds: PTableColumnId[] = [
-    ...fullColumnsAxes.map((a) => ({ type: "axis", id: a }) satisfies PTableColumnIdAxis),
-    ...fullColumns.map((c) => ({ type: "column", id: c.id }) satisfies PTableColumnIdColumn),
-  ];
-  const fullColumnsIdsSet = new Set(fullColumnsIds.map((c) => canonicalizeJson<PTableColumnId>(c)));
-  const isValidColumnId = (id: string): boolean =>
-    fullColumnsIdsSet.has(id as CanonicalizedJson<PTableColumnId>);
 
-  // -- Filtering validation --
-  const filters = tableStateNormalized.pTableParams.filters;
-  const defaultFilters = options?.filters ?? undefined;
-  const filterColumns = filters !== null ? collectFilterSpecColumns(filters) : [];
-  const firstInvalidFilterColumn = filterColumns.find((col) => !isValidColumnId(col));
-  if (firstInvalidFilterColumn)
-    throw new Error(
-      `Invalid filter column ${firstInvalidFilterColumn}: column reference does not match the table columns`,
-    );
-  const defaultFilterColumns =
-    defaultFilters !== undefined ? collectFilterSpecColumns(defaultFilters) : [];
-  const firstInvalidDefaultFilterColumn = defaultFilterColumns.find((col) => !isValidColumnId(col));
-  if (firstInvalidDefaultFilterColumn)
-    throw new Error(
-      `Invalid default filter column ${firstInvalidDefaultFilterColumn}: column reference does not match the table columns`,
-    );
+  // -- Filtering: rewrite via resolver, throw if any reference is unresolved --
+  const rawFilters = tableStateNormalized.pTableParams.filters;
+  const rawDefaultFilters = options?.filters ?? undefined;
+  const filters = remapFiltersThrowing(rawFilters, resolver, "filter");
+  const defaultFilters = remapFiltersThrowing(
+    rawDefaultFilters ?? null,
+    resolver,
+    "default filter",
+  );
 
-  // -- Sorting validation --
+  // -- Sorting: rewrite via resolver, throw if any reference is unresolved --
   const userSorting = tableStateNormalized.pTableParams.sorting;
-  const sorting = (isEmpty(userSorting) ? options?.sorting : userSorting) ?? [];
-  const firstInvalidSortingColumn = sorting.find(
-    (s) => !isValidColumnId(canonicalizeJson<PTableColumnId>(s.column)),
-  );
-  if (firstInvalidSortingColumn)
-    throw new Error(
-      `Invalid sorting column ${JSON.stringify(firstInvalidSortingColumn.column)}: column reference does not match the table columns`,
-    );
+  const rawSorting = (isNil(userSorting) ? options?.sorting : userSorting) ?? [];
+  const sorting = remapSortingThrowing(rawSorting, resolver);
 
   const coreJoinType = options?.coreJoinType ?? "full";
   const fullDef = createPTableDefV2({
     columns,
     labelColumns: fullLabelColumns,
     coreJoinType,
-    filters,
+    filters: filters ?? null,
     sorting,
     coreColumnPredicate: options?.coreColumnPredicate,
   });
@@ -135,8 +116,8 @@ export function createPlDataTableV2<A, U>(
   const pframeHandle = ctx.createPFrame(fullColumns);
   if (!fullHandle || !pframeHandle) return undefined;
 
-  const hiddenColumns = new Set<PObjectId>(
-    ((): PObjectId[] => {
+  const hiddenColumns = new Set<ColumnUniversalId>(
+    ((): ColumnUniversalId[] => {
       // Inner join works as a filter - all columns must be present
       if (coreJoinType === "inner") return [];
 
@@ -172,10 +153,7 @@ export function createPlDataTableV2<A, U>(
   // Preserve filter columns from being hidden
   if (filters) {
     collectFilterSpecColumns(filters)
-      .flatMap((c) => {
-        const obj = parseJson(c);
-        return obj.type === "column" ? [obj.id] : [];
-      })
+      .flatMap((c) => (c.type === "column" ? [c.id] : []))
       .forEach((c) => hiddenColumns.delete(c));
   }
 
@@ -192,7 +170,7 @@ export function createPlDataTableV2<A, U>(
     columns: visibleColumns,
     labelColumns: visibleLabelColumns,
     coreJoinType,
-    filters,
+    filters: filters ?? null,
     sorting,
     coreColumnPredicate,
   });
@@ -205,13 +183,62 @@ export function createPlDataTableV2<A, U>(
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
-    defaultFilters,
+    defaultFilters: defaultFilters ?? undefined,
   } satisfies PlDataTableModel;
+}
+
+/** Rewrite filter column refs through the resolver; throw on any unresolved ref. */
+function remapFiltersThrowing(
+  filters: Nil | PlDataTableFilters,
+  resolver: ColumnResolver,
+  label: string,
+): Nil | PlDataTableFilters {
+  if (isNil(filters)) return filters;
+
+  type Node = FilterSpecNode<PlDataTableFilterSpecLeaf>;
+  return traverseFilterSpec(filters, {
+    leaf: (leaf): Node => {
+      if (leaf.type === undefined) return leaf;
+      const result = { ...leaf };
+      if ("column" in result) {
+        const c = resolver(result.column);
+        if (isNil(c))
+          throw new Error(
+            `Invalid ${label} column ${JSON.stringify(result.column)}: column reference does not match the table columns`,
+          );
+        result.column = c;
+      }
+      if ("rhs" in result) {
+        const c = resolver(result.rhs);
+        if (isNil(c))
+          throw new Error(
+            `Invalid ${label} column ${JSON.stringify(result.rhs)}: column reference does not match the table columns`,
+          );
+        result.rhs = c;
+      }
+      return result;
+    },
+    and: (results): Node => ({ type: "and", filters: results }),
+    or: (results): Node => ({ type: "or", filters: results }),
+    not: (result): Node => ({ type: "not", filter: result }),
+  }) as PlDataTableFilters;
+}
+
+/** Rewrite sorting column refs through the resolver; throw on any unresolved ref. */
+function remapSortingThrowing(sorting: PTableSorting[], resolver: ColumnResolver): PTableSorting[] {
+  return sorting.map((s) => {
+    const c = resolver(s.column);
+    if (isNil(c))
+      throw new Error(
+        `Invalid sorting column ${JSON.stringify(s.column)}: column reference does not match the table columns`,
+      );
+    return { ...s, column: c };
+  });
 }
 
 function getAllLabelColumns(
   resultPool: AxisLabelProvider & ColumnProvider,
-): PColumn<PColumnDataUniversal>[] | undefined {
+): undefined | PColumn<undefined | PColumnDataUniversal>[] {
   return new PColumnCollection()
     .addAxisLabelProvider(resultPool)
     .addColumnProvider(resultPool)

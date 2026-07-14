@@ -13,11 +13,12 @@ import { PartialBy, RequiredBy } from "@milaboratories/helpers";
 
 export type Operand = "or" | "and";
 
-// Can be any of string type, but for better type safety we use union of specific types
+// Either a string column id (SUniversalPColumnId / canonicalized axis JSON) or
+// a structured PTableColumnId object (axis | column ref).
 export type PlAdvancedFilterColumnId =
   | SUniversalPColumnId
   | CanonicalizedJson<AxisId>
-  | CanonicalizedJson<PTableColumnId>;
+  | PTableColumnId;
 
 export type RequiredMeta = {
   id: number;

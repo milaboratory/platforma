@@ -1,7 +1,6 @@
 import {
   createDefaultPTableParams,
   parseJson,
-  canonicalizeJson,
   upgradePlDataTableStateV2,
   type FilterSpec,
   type FilterSpecLeaf,
@@ -20,7 +19,6 @@ import {
   distillFilterSpec,
   PlDataTableFiltersWithMeta,
   getPTableColumnId,
-  CanonicalizedJson,
 } from "@platforma-sdk/model";
 import { computed, type Ref, type WritableComputedRef } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
@@ -334,16 +332,16 @@ function stripSuppressedFilters(node: PlDataTableFiltersWithMeta): PlDataTableFi
 function createSearchFilterNode(
   columns: PTableColumnSpec[],
   search: null | undefined | string,
-): null | FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>> {
+): null | FilterSpec<FilterSpecLeaf<PTableColumnId>> {
   const trimmed = search?.trim();
   if (isNil(trimmed) || trimmed.length === 0) return null;
 
-  const parts: FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>[] = [];
+  const parts: FilterSpec<FilterSpecLeaf<PTableColumnId>>[] = [];
   const numericValue = Number(trimmed);
   const isValidNumber = trimmed.length > 0 && !isNaN(numericValue) && isFinite(numericValue);
 
   for (const col of columns) {
-    const column = canonicalizeJson<PTableColumnId>(getPTableColumnId(col));
+    const column = getPTableColumnId(col);
     const spec = col.spec;
 
     if (isStringValueType(spec)) {
@@ -406,9 +404,9 @@ function annotateNodeWithIds(
 
 function convertPartitionFiltersToFilterSpec(
   sheetsState: PlDataTableSheetState[],
-): FilterSpec<FilterSpecLeaf<CanonicalizedJson<PTableColumnId>>>[] {
+): FilterSpec<FilterSpecLeaf<PTableColumnId>>[] {
   return sheetsState.map((s) => {
-    const column = canonicalizeJson<PTableColumnId>({ type: "axis", id: s.axisId });
+    const column: PTableColumnId = { type: "axis", id: s.axisId };
     return typeof s.value === "number"
       ? { type: "equal" as const, column, x: s.value }
       : { type: "patternEquals" as const, column, value: s.value };

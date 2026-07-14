@@ -71,7 +71,7 @@ function getKeysCombinations(idsLists: AxisId[][]) {
 }
 
 export function getAvailableWithLinkersAxes(
-  linkerColumns: PColumn<PColumnDataUniversal>[],
+  linkerColumns: PColumn<undefined | PColumnDataUniversal>[],
   blockAxes: AxesVault,
 ): AxesVault {
   const linkerMap = LinkerMap.fromColumns(linkerColumns.map(getColumnIdAndSpec));
@@ -89,7 +89,7 @@ export function getAvailableWithLinkersAxes(
 }
 
 /** Add columns with fully compatible axes created from partial compatible ones */
-export function enrichCompatible<T extends Omit<PColumn<PColumnDataUniversal>, "data">>(
+export function enrichCompatible<T extends Omit<PColumn<undefined | PColumnDataUniversal>, "data">>(
   blockAxes: AxesVault,
   columns: T[],
 ): T[] {

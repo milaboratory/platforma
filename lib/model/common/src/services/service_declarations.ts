@@ -24,6 +24,10 @@
  */
 
 import type { DialogService } from "../dialog";
+import type {
+  ColumnsCollectionDriver,
+  ColumnsCollectionDriverModel,
+} from "../drivers/columns/columns_collection_driver";
 import type { PFrameDriver, PFrameModelDriver } from "../drivers/pframe/driver";
 import type { PFrameSpecDriver } from "../drivers/pframe/spec_driver";
 import { service } from "./service_types";
@@ -81,5 +85,32 @@ export const Services = {
     name: "dialog",
     modelMethods: [] as const,
     uiMethods: ["showSaveDialog"] as const,
+  }),
+  ColumnsCollection: service<
+    ColumnsCollectionDriverModel,
+    ColumnsCollectionDriverModel,
+    ColumnsCollectionDriver,
+    ColumnsCollectionDriver
+  >()({
+    type: "wasm",
+    name: "columnsCollection",
+    modelMethods: [
+      "create",
+      "isEmpty",
+      "isFinal",
+      "getColumns",
+      "addSource",
+      "discover",
+      "filter",
+    ] as const,
+    uiMethods: [
+      "create",
+      "isEmpty",
+      "isFinal",
+      "getColumns",
+      "addSource",
+      "discover",
+      "filter",
+    ] as const,
   }),
 };

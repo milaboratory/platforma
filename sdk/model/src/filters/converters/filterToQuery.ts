@@ -1,23 +1,36 @@
 import { assertNever } from "@milaboratories/pl-model-common";
 import type {
+  AxisId,
+  ColumnUniversalId,
   FilterSpec,
   FilterSpecLeaf,
-  PTableColumnId,
   SingleAxisSelector,
   SpecQueryExpression,
 } from "@milaboratories/pl-model-common";
 import { traverseFilterSpec } from "../traverse";
 
-/** Parses a CanonicalizedJson<PTableColumnId> string into a SpecQueryExpression reference. */
-function resolveColumnRef(columnStr: string): SpecQueryExpression {
-  const parsed = JSON.parse(columnStr) as PTableColumnId;
-  return parsed.type === "axis"
-    ? { type: "axisRef", value: parsed.id as SingleAxisSelector }
-    : { type: "columnRef", value: parsed.id };
+export type QueryColumnIdAxis = {
+  type: "axis";
+  id: AxisId;
+};
+
+export type QueryColumnIdColumn = {
+  type: "column";
+  /** May be a rich {@link ColumnUniversalId} (Discovered / Overridden / Filtered) or bare PObjectId. */
+  id: ColumnUniversalId;
+};
+
+export type QueryColumnId = QueryColumnIdAxis | QueryColumnIdColumn;
+
+/** Converts a QueryColumnId object into a SpecQueryExpression reference. */
+function resolveColumnRef(col: QueryColumnId): SpecQueryExpression {
+  return col.type === "axis"
+    ? { type: "axisRef", value: col.id as SingleAxisSelector }
+    : { type: "columnRef", value: col.id };
 }
 
 /** Converts a FilterSpec tree into a SpecQueryExpression. */
-export function filterSpecToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
+export function filterSpecToSpecQueryExpr<Leaf extends FilterSpecLeaf<QueryColumnId>>(
   filter: FilterSpec<Leaf>,
 ): SpecQueryExpression {
   return traverseFilterSpec(filter, {
@@ -38,7 +51,7 @@ export function filterSpecToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
   });
 }
 
-function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<string>>(
+function leafToSpecQueryExpr<Leaf extends FilterSpecLeaf<QueryColumnId>>(
   filter: Leaf,
 ): SpecQueryExpression {
   switch (filter.type) {

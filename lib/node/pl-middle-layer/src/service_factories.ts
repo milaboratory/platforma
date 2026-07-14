@@ -8,6 +8,7 @@
 
 import { ModelServiceRegistry, Services } from "@milaboratories/pl-model-common";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
+import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import { type MiLogger } from "@milaboratories/ts-helpers";
 
 export type ModelServiceOptions = {
@@ -19,5 +20,6 @@ export function createModelServiceRegistry(options: ModelServiceOptions) {
     PFrameSpec: () => new SpecDriver({ logger: options.logger }),
     PFrame: null,
     Dialog: null,
+    ColumnsCollection: () => new ColumnsCollectionDriverImpl(),
   });
 }

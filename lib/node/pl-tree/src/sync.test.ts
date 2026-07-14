@@ -284,8 +284,6 @@ test("load resources", async () => {
   });
 });
 
-// ─── TraversalMode tests ──────────────────────────────────────────────────────
-
 /** Build a minimal mock tx that records whether resourceTree / getResourceDataIfExists
  * was called.  Both surfaces are instrumented so we can assert which path ran. */
 function buildMockTx(opts: { capable: boolean }): {
@@ -389,8 +387,6 @@ test("traversalMode=auto default regression: streaming on capable, BFS on incapa
   expect(callsNoCap.bfs).toBeGreaterThan(0);
   expect(callsNoCap.streaming).toBe(0);
 });
-
-// ─── Stop-marker handling tests ───────────────────────────────────────────────
 
 /** Capabilities for backends that support streaming traversal. */
 const stopMarkerCaps = ["treeFilter:v2"] as const;

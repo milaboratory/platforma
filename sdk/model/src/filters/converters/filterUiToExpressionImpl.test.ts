@@ -1,4 +1,3 @@
-import type { SUniversalPColumnId } from "@milaboratories/pl-model-common";
 import { describe, expect, it } from "vitest";
 import { convertFilterUiToExpressions } from "./filterUiToExpressionImpl";
 import { FilterSpec } from "../types";
@@ -8,8 +7,8 @@ describe("convertFilterUiToExpressions", () => {
     const uiFilter: FilterSpec = {
       type: "or",
       filters: [
-        { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
-        { type: "patternEquals", column: "colB" as unknown as SUniversalPColumnId, value: "test" },
+        { type: "isNA", column: "colA" },
+        { type: "patternEquals", column: "colB", value: "test" },
       ],
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -23,8 +22,8 @@ describe("convertFilterUiToExpressions", () => {
     const uiFilter: FilterSpec = {
       type: "and",
       filters: [
-        { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
-        { type: "greaterThan", column: "colNum" as unknown as SUniversalPColumnId, x: 10 },
+        { type: "isNA", column: "colA" },
+        { type: "greaterThan", column: "colNum", x: 10 },
       ],
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -37,7 +36,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "not" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "not",
-      filter: { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+      filter: { type: "isNA", column: "colA" },
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result.type).toBe("not");
@@ -47,7 +46,7 @@ describe("convertFilterUiToExpressions", () => {
   });
 
   it('should compile "isNA" filter to ptabler expression', () => {
-    const uiFilter: FilterSpec = { type: "isNA", column: "colA" as unknown as SUniversalPColumnId };
+    const uiFilter: FilterSpec = { type: "isNA", column: "colA" };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
       type: "is_na",
@@ -58,7 +57,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "isNotNA" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "isNotNA",
-      column: "colA" as unknown as SUniversalPColumnId,
+      column: "colA",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -70,7 +69,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "patternEquals" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "patternEquals",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       value: "abc",
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -84,7 +83,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "patternNotEquals" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "patternNotEquals",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       value: "abc",
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -98,7 +97,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "patternContainSubsequence" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "patternContainSubsequence",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       value: "sub",
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -110,7 +109,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "patternNotContainSubsequence" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "patternNotContainSubsequence",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       value: "sub",
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -132,7 +131,7 @@ describe("convertFilterUiToExpressions", () => {
     testCases.forEach(({ type, expected }) => {
       const uiFilter: FilterSpec = {
         type,
-        column: "colNum" as unknown as SUniversalPColumnId,
+        column: "colNum",
         x: 10,
       };
       const result = convertFilterUiToExpressions(uiFilter);
@@ -147,8 +146,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "lessThanColumn" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "lessThanColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -161,8 +160,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "lessThanColumn" filter with minDiff to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "lessThanColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 5,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -180,8 +179,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "greaterThanColumn" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "greaterThanColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -194,8 +193,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "greaterThanColumn" filter with minDiff to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "greaterThanColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 7,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -213,8 +212,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "equalToColumn" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "equalToColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -227,8 +226,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "greaterThanColumnOrEqual" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "greaterThanColumnOrEqual",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -241,8 +240,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "greaterThanColumnOrEqual" filter with minDiff to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "greaterThanColumnOrEqual",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 2,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -260,8 +259,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "lessThanColumnOrEqual" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "lessThanColumnOrEqual",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
     };
     const result = convertFilterUiToExpressions(uiFilter);
     expect(result as any).toEqual({
@@ -274,8 +273,8 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "lessThanColumnOrEqual" filter with minDiff to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "lessThanColumnOrEqual",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 3,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -293,7 +292,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "topN" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "topN",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       n: 5,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -312,7 +311,7 @@ describe("convertFilterUiToExpressions", () => {
   it('should compile "bottomN" filter to ptabler expression', () => {
     const uiFilter: FilterSpec = {
       type: "bottomN",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       n: 3,
     };
     const result = convertFilterUiToExpressions(uiFilter);
@@ -335,15 +334,15 @@ describe("convertFilterUiToExpressions", () => {
         {
           type: "or",
           filters: [
-            { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+            { type: "isNA", column: "colA" },
             {
               type: "patternEquals",
-              column: "colB" as unknown as SUniversalPColumnId,
+              column: "colB",
               value: "test",
             },
           ],
         },
-        { type: "greaterThan", column: "colNum" as unknown as SUniversalPColumnId, x: 10 },
+        { type: "greaterThan", column: "colNum", x: 10 },
       ],
     };
     const result = convertFilterUiToExpressions(uiFilter);

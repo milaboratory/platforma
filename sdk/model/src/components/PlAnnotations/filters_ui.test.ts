@@ -1,5 +1,4 @@
 // @DEPRECATED - use sdk/model/src/filters + sdk/model/src/annotations
-import type { SUniversalPColumnId } from "@milaboratories/pl-model-common";
 import { describe, expect, it, test } from "vitest";
 import type {
   AnnotationFilter,
@@ -37,10 +36,10 @@ describe("compileAnnotationScript", () => {
           filter: {
             type: "and",
             filters: [
-              { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+              { type: "isNA", column: "colA" },
               {
                 type: "patternEquals",
-                column: "colB" as unknown as SUniversalPColumnId,
+                column: "colB",
                 value: "abc",
               },
             ],
@@ -57,10 +56,10 @@ describe("compileAnnotationScript", () => {
           filter: {
             type: "and",
             filters: [
-              { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+              { type: "isNA", column: "colA" },
               {
                 type: "pattern",
-                column: "colB" as unknown as SUniversalPColumnId,
+                column: "colB",
                 predicate: { type: "equals", value: "abc" },
               },
             ],
@@ -77,11 +76,11 @@ describe("compileFilter", () => {
   it('should compile "or" filter', () => {
     const uiFilter: FilterUi = {
       type: "or",
-      filters: [{ type: "isNA", column: "colA" as unknown as SUniversalPColumnId }],
+      filters: [{ type: "isNA", column: "colA" }],
     };
     const expectedFilter: AnnotationFilter = {
       type: "or",
-      filters: [{ type: "isNA", column: "colA" as unknown as SUniversalPColumnId }],
+      filters: [{ type: "isNA", column: "colA" }],
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
   });
@@ -89,11 +88,11 @@ describe("compileFilter", () => {
   it('should compile "and" filter', () => {
     const uiFilter: FilterUi = {
       type: "and",
-      filters: [{ type: "isNA", column: "colA" as unknown as SUniversalPColumnId }],
+      filters: [{ type: "isNA", column: "colA" }],
     };
     const expectedFilter: AnnotationFilter = {
       type: "and",
-      filters: [{ type: "isNA", column: "colA" as unknown as SUniversalPColumnId }],
+      filters: [{ type: "isNA", column: "colA" }],
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
   });
@@ -102,13 +101,13 @@ describe("compileFilter", () => {
     const uiFilter: FilterUi = {
       type: "and",
       filters: [
-        { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+        { type: "isNA", column: "colA" },
         {
           type: "or",
           filters: [
             {
               type: "patternEquals",
-              column: "colB" as unknown as SUniversalPColumnId,
+              column: "colB",
               value: "test",
             },
           ],
@@ -118,13 +117,13 @@ describe("compileFilter", () => {
     const expectedFilter: AnnotationFilter = {
       type: "and",
       filters: [
-        { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+        { type: "isNA", column: "colA" },
         {
           type: "or",
           filters: [
             {
               type: "pattern",
-              column: "colB" as unknown as SUniversalPColumnId,
+              column: "colB",
               predicate: { type: "equals", value: "test" },
             },
           ],
@@ -137,20 +136,20 @@ describe("compileFilter", () => {
   it('should compile "not" filter', () => {
     const uiFilter: FilterUi = {
       type: "not",
-      filter: { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+      filter: { type: "isNA", column: "colA" },
     };
     const expectedFilter: AnnotationFilter = {
       type: "not",
-      filter: { type: "isNA", column: "colA" as unknown as SUniversalPColumnId },
+      filter: { type: "isNA", column: "colA" },
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
   });
 
   it('should compile "isNA" filter', () => {
-    const uiFilter: FilterUi = { type: "isNA", column: "colA" as unknown as SUniversalPColumnId };
+    const uiFilter: FilterUi = { type: "isNA", column: "colA" };
     const expectedFilter: AnnotationFilter = {
       type: "isNA",
-      column: "colA" as unknown as SUniversalPColumnId,
+      column: "colA",
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
   });
@@ -158,9 +157,9 @@ describe("compileFilter", () => {
   it('should compile "isNotNA" filter', () => {
     const uiFilter: FilterUi = {
       type: "isNotNA",
-      column: "colA" as unknown as SUniversalPColumnId,
+      column: "colA",
     };
-    const expectedIsNA: IsNA = { type: "isNA", column: "colA" as unknown as SUniversalPColumnId };
+    const expectedIsNA: IsNA = { type: "isNA", column: "colA" };
     const expectedFilter: NotFilter = { type: "not", filter: expectedIsNA };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
   });
@@ -168,12 +167,12 @@ describe("compileFilter", () => {
   it('should compile "patternEquals" filter', () => {
     const uiFilter: FilterUi = {
       type: "patternEquals",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       value: "abc",
     };
     const expectedFilter: AnnotationFilter = {
       type: "pattern",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       predicate: { type: "equals", value: "abc" },
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
@@ -182,12 +181,12 @@ describe("compileFilter", () => {
   it('should compile "patternNotEquals" filter', () => {
     const uiFilter: FilterUi = {
       type: "patternNotEquals",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       value: "abc",
     };
     const expectedPatternFilter: PatternFilter = {
       type: "pattern",
-      column: "colB" as unknown as SUniversalPColumnId,
+      column: "colB",
       predicate: { type: "equals", value: "abc" },
     };
     const expectedFilter: NotFilter = { type: "not", filter: expectedPatternFilter };
@@ -197,12 +196,12 @@ describe("compileFilter", () => {
   it('should compile "patternContainSubsequence" filter', () => {
     const uiFilter: FilterUi = {
       type: "patternContainSubsequence",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       value: "sub",
     };
     const expectedFilter: AnnotationFilter = {
       type: "pattern",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       predicate: { type: "containSubsequence", value: "sub" },
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
@@ -211,12 +210,12 @@ describe("compileFilter", () => {
   it('should compile "patternNotContainSubsequence" filter', () => {
     const uiFilter: FilterUi = {
       type: "patternNotContainSubsequence",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       value: "sub",
     };
     const expectedPatternFilter: PatternFilter = {
       type: "pattern",
-      column: "colC" as unknown as SUniversalPColumnId,
+      column: "colC",
       predicate: { type: "containSubsequence", value: "sub" },
     };
     const expectedFilter: NotFilter = { type: "not", filter: expectedPatternFilter };
@@ -226,12 +225,12 @@ describe("compileFilter", () => {
   it('should compile "topN" filter (Top 5)', () => {
     const uiFilter: FilterUi = {
       type: "topN",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       n: 5,
     };
     const expectedRank: ValueRank = {
       transformer: "rank",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       descending: true,
     };
     const expectedFilter: NumericalComparisonFilter = {
@@ -246,12 +245,12 @@ describe("compileFilter", () => {
   it('should compile "topN" filter (Bottom 3)', () => {
     const uiFilter: FilterUi = {
       type: "bottomN",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       n: 3,
     };
     const expectedRank: ValueRank = {
       transformer: "rank",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
     };
     const expectedFilter: NumericalComparisonFilter = {
       type: "numericalComparison",
@@ -265,12 +264,12 @@ describe("compileFilter", () => {
   it('should compile "lessThan" filter', () => {
     const uiFilter: FilterUi = {
       type: "lessThan",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       x: 10,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      lhs: "colNum" as unknown as SUniversalPColumnId,
+      lhs: "colNum",
       rhs: 10,
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
@@ -279,12 +278,12 @@ describe("compileFilter", () => {
   it('should compile "greaterThan" filter', () => {
     const uiFilter: FilterUi = {
       type: "greaterThan",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       x: 5,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      rhs: "colNum" as unknown as SUniversalPColumnId,
+      rhs: "colNum",
       lhs: 5,
     };
     expect(compileFilter(uiFilter)).toEqual(expectedFilter);
@@ -293,12 +292,12 @@ describe("compileFilter", () => {
   it('should compile "lessThanOrEqual" filter', () => {
     const uiFilter: FilterUi = {
       type: "lessThanOrEqual",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       x: 20,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      lhs: "colNum" as unknown as SUniversalPColumnId,
+      lhs: "colNum",
       rhs: 20,
       allowEqual: true,
     };
@@ -308,12 +307,12 @@ describe("compileFilter", () => {
   it('should compile "greaterThanOrEqual" filter', () => {
     const uiFilter: FilterUi = {
       type: "greaterThanOrEqual",
-      column: "colNum" as unknown as SUniversalPColumnId,
+      column: "colNum",
       x: 0,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      rhs: "colNum" as unknown as SUniversalPColumnId,
+      rhs: "colNum",
       lhs: 0,
       allowEqual: true,
     };
@@ -323,14 +322,14 @@ describe("compileFilter", () => {
   it('should compile "lessThanColumn" filter', () => {
     const uiFilter: FilterUi = {
       type: "lessThanColumn",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 5,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      lhs: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      lhs: "colNum1",
+      rhs: "colNum2",
       minDiff: 5,
       allowEqual: undefined,
     };
@@ -340,14 +339,14 @@ describe("compileFilter", () => {
   it('should compile "lessThanColumnOrEqual" filter', () => {
     const uiFilter: FilterUi = {
       type: "lessThanColumnOrEqual",
-      column: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      column: "colNum1",
+      rhs: "colNum2",
       minDiff: 6,
     };
     const expectedFilter: AnnotationFilter = {
       type: "numericalComparison",
-      lhs: "colNum1" as unknown as SUniversalPColumnId,
-      rhs: "colNum2" as unknown as SUniversalPColumnId,
+      lhs: "colNum1",
+      rhs: "colNum2",
       minDiff: 6,
       allowEqual: true,
     };
