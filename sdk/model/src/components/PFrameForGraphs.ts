@@ -27,8 +27,10 @@ export function isHiddenFromUIColumn(column: PColumnSpec): boolean {
  */
 export function createPFrameForGraphs<A, U>(
   ctx: RenderCtxBase<A, U>,
-  blockColumns?: PColumn<PColumnDataUniversal>[],
+  blockColumns?: PColumn<undefined | PColumnDataUniversal>[],
 ): PFrameHandle | undefined {
+  if (blockColumns?.some((v) => v.data === undefined)) return undefined;
+
   const suitableSpec = (spec: PColumnSpec) =>
     !isHiddenFromUIColumn(spec) && !isHiddenFromGraphColumn(spec);
   // if current block doesn't produce own columns then use all columns from result pool

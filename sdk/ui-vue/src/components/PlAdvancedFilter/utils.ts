@@ -29,7 +29,7 @@ export function getNewId() {
   return Date.now();
 }
 
-export function createNewGroup(selectedSourceId: string): NodeFilter {
+export function createNewGroup(selectedSourceId: PlAdvancedFilterColumnId): NodeFilter {
   return {
     id: getNewId(),
     isExpanded: true,

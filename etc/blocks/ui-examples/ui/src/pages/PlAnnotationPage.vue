@@ -14,6 +14,11 @@ import type {
 import { PlAnnotationsModal } from "@platforma-sdk/ui-vue";
 import { ref, watch } from "vue";
 
+/** Coerce a PlAdvancedFilterColumnId to a string key for Record lookup. */
+function columnIdKey(id: PlAdvancedFilterColumnId): string {
+  return typeof id === "string" ? id : JSON.stringify(id);
+}
+
 const showModal = ref(true);
 watch(showModal, (value) => {
   if (!value) {
@@ -141,7 +146,7 @@ async function getSuggestOptions({
   searchStr: string;
   axisIdx?: number;
 }) {
-  return (uniqueValuesByColumnId[columnId] || []).filter((v) =>
+  return (uniqueValuesByColumnId[columnIdKey(columnId)] || []).filter((v) =>
     v.label.toLowerCase().includes(searchStr.toLowerCase()),
   );
 }
@@ -154,7 +159,7 @@ async function getSuggestModel({
   searchStr: string;
   axisIdx?: number;
 }) {
-  const columnValues = uniqueValuesByColumnId[columnId];
+  const columnValues = uniqueValuesByColumnId[columnIdKey(columnId)];
   return (
     columnValues?.find((v) => v.value === searchStr) || {
       value: searchStr,

@@ -2,20 +2,22 @@ import type {
   AxisFilterByIdx,
   AxisFilterValue,
   AxisId,
-  PartitionedDataInfoEntries,
-  PObjectId,
+  TraceEntry,
 } from "@milaboratories/pl-model-common";
 import {
+  Annotation,
   canonicalizeAxisId,
-  entriesToDataInfo,
   getAxisId,
-  isPartitionedDataInfoEntries,
+  isDataInfoEntries,
+  readAnnotation,
 } from "@milaboratories/pl-model-common";
-import type { TreeNodeAccessor } from "../render/accessor";
-import { filterDataInfoEntries } from "../render/util/axis_filtering";
-import { convertOrParsePColumnData, getUniquePartitionKeys } from "../render/util/pcolumn_data";
-import type { ColumnSnapshot } from "./column_snapshot";
-import { createReadyColumnData } from "./column_snapshot";
+import { TreeNodeAccessor } from "../render/accessor";
+import { getUniquePartitionKeys } from "../render/util/pcolumn_data";
+import type { ColumnRecipe } from "./column_recipes";
+import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
+import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
+import { Column } from "./column";
+import { getLeafColumnData } from "./utils";
 
 // --- Types ---
 
@@ -26,127 +28,113 @@ export interface SplitAxis {
 
 export interface ExpandByPartitionOpts {
   /** Resolve axis values to human-readable labels. */
-  axisLabels?: (axisId: AxisId) => undefined | Record<string | number, string>;
-}
-
-export interface ExpandByPartitionResult {
-  /** Expanded snapshots (one per key combination per original snapshot). */
-  readonly items: ColumnSnapshot<PObjectId>[];
-  /** False if any column's data was not ready for splitting. */
-  readonly complete: boolean;
+  axisValuesLabels?: (axisId: AxisId) => undefined | Record<string | number, string>;
 }
 
 // --- Implementation ---
 
+const MAX_KEY_COMBINATIONS = 10_000;
+
 /**
- * Expand snapshots by splitting along partition axes.
+ * Expand each input column along the requested partition axes into one
+ * {@link ColumnRecipe} per Cartesian combination of unique partition values.
  *
- * For each snapshot, reads partition data, enumerates unique keys on the
- * split axes, and produces one output snapshot per key combination —
- * with the split axes removed from `axesSpec` and a `pl7.app/trace`
- * annotation recording the split origin.
+ * Each split is produced as `ColumnOverriddenRecipe.wrap(ColumnFilteredRecipe.wrap(inner, axisFilters), { domain, annotations })`:
+ *   - `ColumnFilteredRecipe` pins all split axes at once (one wrap call with
+ *     every `[idx, value]` pair) and removes them from `axesSpec`. The
+ *     engine performs the data slicing via the `sliceAxes` query node.
+ *   - `ColumnOverriddenRecipe` overlays a `domain[axisName] = String(value)`
+ *     entry per split axis and appends a `split:<canonicalAxisId>` trace
+ *     entry per split axis to the existing `pl7.app/trace` annotation.
  *
- * Returns `{ items: [], complete: false }` when any snapshot's data
- * is not ready (status !== 'ready' or partition data unavailable).
+ * The recipe id is a canonical
+ * `ColumnOverriddenId(source: ColumnFilteredId(source: inner.id, axisFilters), specOverrides)`
+ * — distinct per split combination, parseable by `extractPObjectId`, and
+ * traversable by recipe walkers.
+ *
+ * Returns `undefined` when any input's `getData()` is not a
+ * {@link TreeNodeAccessor} — partition inspection is not yet possible.
  */
 export function expandByPartition(
-  snapshots: ColumnSnapshot<PObjectId>[],
+  inputs: Column[],
   splitAxes: SplitAxis[],
   opts?: ExpandByPartitionOpts,
-): ExpandByPartitionResult {
+): ColumnRecipe[] | undefined {
   if (splitAxes.length === 0) {
-    return { items: snapshots, complete: true };
+    return [...inputs];
   }
 
   const splitAxisIdxs = splitAxes.map((a) => a.idx).sort((a, b) => a - b);
-  const result: ColumnSnapshot<PObjectId>[] = [];
+  const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1];
 
-  for (const snapshot of snapshots) {
-    if (snapshot.dataStatus !== "ready" || snapshot.data === undefined) {
-      return { items: [], complete: false };
+  const result: ColumnRecipe[] = [];
+
+  for (const inner of inputs) {
+    const data = getLeafColumnData(inner);
+    // Partition inspection requires either a live tree-accessor or already
+    // parsed DataInfoEntries. Anything else means the input is not yet ready.
+    if (!(data instanceof TreeNodeAccessor) && !isDataInfoEntries(data)) {
+      return undefined;
     }
 
-    const rawData = snapshot.data.get();
-    const dataEntries = convertOrParsePColumnData(rawData as TreeNodeAccessor | undefined);
+    const uniqueKeys = getUniquePartitionKeys(data);
+    if (uniqueKeys === undefined) return undefined;
 
-    if (dataEntries === undefined) {
-      return { items: [], complete: false };
-    }
-
-    if (!isPartitionedDataInfoEntries(dataEntries)) {
+    if (maxSplitIdx >= uniqueKeys.length) {
       throw new Error(
-        `Splitting requires Partitioned DataInfoEntries, but got ${dataEntries.type} for column ${String(snapshot.id)}`,
+        `Not enough partition keys (${uniqueKeys.length}) for requested split axes (max index ${maxSplitIdx}) in column ${inner.getSpec().name}`,
       );
     }
 
-    const uniqueKeys = getUniquePartitionKeys(dataEntries);
+    const spec = inner.getSpec();
+    const axesSpec = spec.axesSpec;
+    const splitAxisSpecs = splitAxisIdxs.map((idx) => axesSpec[idx]);
+    const splitAxisIds = splitAxisSpecs.map((axisSpec) => getAxisId(axisSpec));
+    const axesLabels = splitAxisIds.map((axisId) => opts?.axisValuesLabels?.(axisId));
 
-    const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1];
-    if (maxSplitIdx >= dataEntries.partitionKeyLength) {
-      throw new Error(
-        `Not enough partition keys (${dataEntries.partitionKeyLength}) for requested split axes (max index ${maxSplitIdx}) in column ${snapshot.spec.name}`,
-      );
-    }
+    const existingTraceRaw = readAnnotation(spec, Annotation.Trace);
+    const baseTrace: TraceEntry[] = existingTraceRaw
+      ? ((JSON.parse(existingTraceRaw) as TraceEntry[]) ?? [])
+      : [];
 
-    // Resolve labels for each split axis
-    const axesLabels: (undefined | Record<string | number, string>)[] = splitAxisIdxs.map((idx) =>
-      opts?.axisLabels?.(getAxisId(snapshot.spec.axesSpec[idx])),
-    );
-
-    // Generate all key combinations across split axes
     const keyCombinations = generateKeyCombinations(uniqueKeys, splitAxisIdxs);
     if (keyCombinations.length === 0) continue;
-
-    // Build adjusted axesSpec (remove split axes in reverse order)
-    const newAxesSpec = [...snapshot.spec.axesSpec];
-    for (let i = splitAxisIdxs.length - 1; i >= 0; i--) {
-      newAxesSpec.splice(splitAxisIdxs[i], 1);
-    }
 
     for (const keyCombo of keyCombinations) {
       const axisFilters: AxisFilterByIdx[] = keyCombo.map(
         (value, sAxisIdx): AxisFilterByIdx => [splitAxisIdxs[sAxisIdx], value as AxisFilterValue],
       );
 
-      const traceEntries = keyCombo.map((value, sAxisIdx) => {
-        const axisIdx = splitAxisIdxs[sAxisIdx];
-        const axisId = getAxisId(snapshot.spec.axesSpec[axisIdx]);
+      const domain: Record<string, string> = {};
+      const traceEntries: TraceEntry[] = [];
+      for (let sAxisIdx = 0; sAxisIdx < keyCombo.length; sAxisIdx++) {
+        const value = keyCombo[sAxisIdx];
+        const axisSpec = splitAxisSpecs[sAxisIdx];
+        const axisId = splitAxisIds[sAxisIdx];
         const labelMap = axesLabels[sAxisIdx];
         const label = labelMap?.[value] ?? String(value);
-        return {
+        domain[axisSpec.name] = String(value);
+        traceEntries.push({
           type: `split:${canonicalizeAxisId(axisId)}`,
           label,
           importance: 1_000_000,
-        };
-      });
+        });
+      }
 
-      const filteredData = filterDataInfoEntries(
-        dataEntries as PartitionedDataInfoEntries<TreeNodeAccessor>,
-        axisFilters,
-      );
-
-      const adjustedSpec = {
-        ...snapshot.spec,
-        axesSpec: newAxesSpec,
+      const filtered = ColumnFilteredRecipe.wrap(inner, axisFilters);
+      const overrided = ColumnOverriddenRecipe.wrap(filtered, {
+        domain,
         annotations: {
-          ...snapshot.spec.annotations,
-          "pl7.app/trace": JSON.stringify(traceEntries),
+          [Annotation.Trace]: JSON.stringify([...baseTrace, ...traceEntries]),
         },
-      };
-
-      result.push({
-        id: snapshot.id,
-        spec: adjustedSpec,
-        dataStatus: "ready",
-        data: createReadyColumnData(() => entriesToDataInfo(filteredData)),
       });
+
+      result.push(overrided);
     }
   }
 
-  return { items: result, complete: true };
+  return result;
 }
-
-const MAX_KEY_COMBINATIONS = 10_000;
 
 function generateKeyCombinations(
   uniqueKeys: (string | number)[][],

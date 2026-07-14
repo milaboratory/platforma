@@ -31,6 +31,7 @@
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/pl-error-like": "workspace:*",
     "canonicalize": "catalog:",
+    "es-toolkit": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

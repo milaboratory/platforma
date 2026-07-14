@@ -2,15 +2,10 @@ import type { MultiColumnSelector, Option, PObjectSpec } from "@milaboratories/p
 import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
-import type { AnchoredColumnCollection } from "../../columns/column_collection_builder";
-import { ColumnCollectionBuilder } from "../../columns/column_collection_builder";
-import {
-  ResultPoolColumnSnapshotProvider,
-  collectCtxColumnSnapshotProviders,
-} from "../../columns/ctx_column_sources";
 import type { DatasetOption } from "./dataset_selection";
 import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
+import { ColumnsProvider, getCtxProviders } from "../../columns";
 
 type SpecPredicateOption =
   | MultiColumnSelector
@@ -63,70 +58,50 @@ export function buildDatasetOptions(
   if (options.length === 0) return [];
 
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
-  const pframeSpec = ctx.getService("pframeSpec");
 
   const withEnrichments = opts?.withEnrichments ?? false;
-  const filterSource = new ResultPoolColumnSnapshotProvider(ctx.resultPool);
-  // Hoisted out of the per-option loop: collectCtxColumnSnapshotProviders
-  // walks the entire output tree, so calling it once per dataset option would
-  // be O(N × tree).
-  const enrichmentSources = withEnrichments ? collectCtxColumnSnapshotProviders(ctx) : undefined;
+  const filterSource = ColumnsProvider(ctx.ctx.getUpstreamBlockCtx());
+  // Hoist providers once: getCtxProviders walks the full output tree, so
+  // calling it per dataset option would be O(N × tree).
+  const enrichmentSources = withEnrichments ? getCtxProviders(ctx) : undefined;
 
   return options.map((primary: Option): DatasetOption => {
     const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
     if (!datasetSpec) return { primary };
 
-    // Allocations happen inside try so a throw on the second build()
-    // still disposes the first collection.
-    let filterCollection: AnchoredColumnCollection | undefined;
-    let enrichmentCollection: AnchoredColumnCollection | undefined;
-    try {
-      // ResultPoolColumnSnapshotProvider is always complete;
-      // allowPartialColumnList narrows the return type to non-undefined.
-      filterCollection = new ColumnCollectionBuilder(pframeSpec)
-        .addSource(filterSource)
-        .build({ anchors: { main: datasetSpec }, allowPartialColumnList: true });
+    const filterMatches = findFilterColumns({
+      sources: [filterSource],
+      anchorSpec: datasetSpec,
+    }).filter((m) => filterPredicate(m.getSpec()!));
 
-      enrichmentCollection =
-        enrichmentSources !== undefined
-          ? new ColumnCollectionBuilder(pframeSpec)
-              .addSources(enrichmentSources)
-              .build({ anchors: { main: datasetSpec } })
-          : undefined;
+    const filters =
+      filterMatches.length === 0
+        ? undefined
+        : filterMatchesToOptions(filterMatches, {
+            refsByObjectId: refMap,
+            datasetSpec,
+            labelOptions: opts?.labelOptions,
+          });
 
-      const filterMatches = findFilterColumns(filterCollection).filter((m) =>
-        filterPredicate(m.column.spec),
-      );
-      const filters =
-        filterMatches.length === 0
-          ? undefined
-          : filterMatchesToOptions(filterMatches, {
-              refsByObjectId: refMap,
-              datasetSpec,
-              labelOptions: opts?.labelOptions,
-            });
-
-      let enrichments;
-      if (enrichmentCollection && withEnrichments) {
-        const enrichmentVariants = findEnrichmentColumns(enrichmentCollection, {
-          maxHops: opts?.enrichmentMaxHops,
-          ...(typeof withEnrichments === "function"
-            ? { predicate: withEnrichments }
-            : { include: withEnrichments }),
-        });
-        if (enrichmentVariants.length > 0) {
-          enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts?.labelOptions);
-        }
+    let enrichments;
+    if (enrichmentSources && withEnrichments) {
+      const enrichmentVariants = findEnrichmentColumns({
+        sources: enrichmentSources,
+        anchorSpec: datasetSpec,
+        maxHops: opts?.enrichmentMaxHops,
+        ...(typeof withEnrichments === "function"
+          ? { predicate: withEnrichments }
+          : { include: withEnrichments }),
+      });
+      if (enrichmentVariants.length > 0) {
+        enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts?.labelOptions);
       }
-
-      return {
-        primary,
-        ...(filters !== undefined && filters.length > 0 ? { filters } : {}),
-        ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
-      };
-    } finally {
-      filterCollection?.dispose();
-      enrichmentCollection?.dispose();
     }
+
+    return {
+      primary,
+      ...(filters !== undefined && filters.length > 0 ? { filters } : {}),
+      ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
+    };
   });
 }

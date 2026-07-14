@@ -48,6 +48,21 @@ wf.body(func(args) {
 		"G1\tR1\t1\n" +
 		"G2\tR2\t1\n"
 
+	// --- Multi-axis column for split-by-partition demo ---
+	// Axes: [group, name]; partitionKeyLength=1 => partitioned by group.
+	// Used in tableSplitV3 output to demonstrate expandByPartition fan-out.
+	countTsv := "group\tname\tcount\n" +
+		"G1\tA\t100\n" +
+		"G2\tA\t50\n" +
+		"G1\tB\t200\n" +
+		"G2\tB\t150\n" +
+		"G1\tC\t10\n" +
+		"G2\tC\t300\n" +
+		"G1\tD\t25\n" +
+		"G2\tD\t75\n" +
+		"G1\tE\t5\n" +
+		"G2\tE\t1000\n"
+
 	// --- Label columns: axis value -> human-readable label ---
 	// participate in getMatchingLabelColumns / deriveAllLabels (createPlDataTableV3.ts#L106-110)
 	// each has single axis and column name "pl7.app/label"
@@ -78,6 +93,7 @@ wf.body(func(args) {
 		writeFile("nameLabel.tsv", nameLabelTsv).
 		writeFile("groupLabel.tsv", groupLabelTsv).
 		writeFile("regionLabel.tsv", regionLabelTsv).
+		writeFile("count.tsv", countTsv).
 		saveFile("main.tsv").
 		saveFile("group.tsv").
 		saveFile("linker.tsv").
@@ -87,6 +103,7 @@ wf.body(func(args) {
 		saveFile("nameLabel.tsv").
 		saveFile("groupLabel.tsv").
 		saveFile("regionLabel.tsv").
+		saveFile("count.tsv").
 		run()
 
 	mainFile := e.getFile("main.tsv")
@@ -98,6 +115,7 @@ wf.body(func(args) {
 	nameLabelFile := e.getFile("nameLabel.tsv")
 	groupLabelFile := e.getFile("groupLabel.tsv")
 	regionLabelFile := e.getFile("regionLabel.tsv")
+	countFile := e.getFile("count.tsv")
 
 	nameAxisSpec := {
 		name: "name",
@@ -392,7 +410,7 @@ wf.body(func(args) {
 				}
 			}
 		}],
-		storageFormat: "Binary",
+		storageFormat: "Json",
 		partitionKeyLength: 0
 	}
 
@@ -412,7 +430,7 @@ wf.body(func(args) {
 				}
 			}
 		}],
-		storageFormat: "Binary",
+		storageFormat: "Json",
 		partitionKeyLength: 0
 	}
 
@@ -432,8 +450,34 @@ wf.body(func(args) {
 				}
 			}
 		}],
-		storageFormat: "Binary",
+		storageFormat: "Json",
 		partitionKeyLength: 0
+	}
+
+	// `count` carries (group, name) -> Int. `group` is the partition axis
+	// (partitionKeyLength=1) so getUniquePartitionKeys returns group values,
+	// which expandByPartition consumes to fan out into per-group columns.
+	countSpec := {
+		axes: [{
+			column: "group",
+			spec: groupAxisSpec
+		}, {
+			column: "name",
+			spec: nameAxisSpec
+		}],
+		columns: [{
+			column: "count",
+			id: "count",
+			spec: {
+				name: "count",
+				valueType: "Int",
+				annotations: {
+					"pl7.app/label": "Count"
+				}
+			}
+		}],
+		storageFormat: "Binary",
+		partitionKeyLength: 1
 	}
 
 	importOps := { inputCache: times.second, splitDataAndSpec: true }
@@ -446,6 +490,7 @@ wf.body(func(args) {
 	nameLabelPf := xsv.importFile(nameLabelFile, "tsv", nameLabelSpec, importOps)
 	groupLabelPf := xsv.importFile(groupLabelFile, "tsv", groupLabelSpec, importOps)
 	regionLabelPf := xsv.importFile(regionLabelFile, "tsv", regionLabelSpec, importOps)
+	countPf := xsv.importFile(countFile, "tsv", countSpec, importOps)
 
 	// Republish every column as a block export so downstream blocks
 	// can discover the linker chain through the result pool.
@@ -458,7 +503,7 @@ wf.body(func(args) {
 		}
 	}
 	addAll(mainPf, groupPf, linkerPf, linkerAltPf, regionPf, linker2Pf,
-		nameLabelPf, groupLabelPf, regionLabelPf)
+		nameLabelPf, groupLabelPf, regionLabelPf, countPf)
 	pf = pf.build()
 
 	return {

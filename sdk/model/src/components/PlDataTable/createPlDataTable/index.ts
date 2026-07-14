@@ -1,5 +1,5 @@
 import type { RenderCtxBase } from "../../../render";
-import type { PlDataTableModel } from "../typesV7";
+import type { PlDataTableModel } from "../typesV8";
 import { createPlDataTableOptionsV2, createPlDataTableV2 } from "./createPlDataTableV2";
 import { createPlDataTableV3 } from "./createPlDataTableV3";
 import type { createPlDataTableOptionsV3 } from "./createPlDataTableV3";
@@ -26,4 +26,4 @@ export function createPlDataTable<A, U>(
   }
 }
 
-export { discoverTableColumnSnaphots } from "./discoverColumns";
+export { discoverTableColumns as discoverTableColumnSnaphots } from "./discoverColumns";

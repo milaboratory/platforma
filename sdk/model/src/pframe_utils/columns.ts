@@ -1,10 +1,4 @@
-import type {
-  PColumn,
-  PColumnSpec,
-  PColumnLazy,
-  PFrameDef,
-  PObjectId,
-} from "@milaboratories/pl-model-common";
+import type { PColumn, PColumnSpec, PFrameDef, PObjectId } from "@milaboratories/pl-model-common";
 import {
   getNormalizedAxesList,
   getAxisId,
@@ -12,18 +6,18 @@ import {
   isLinkerColumn,
   matchAxisId,
   isLabelColumn,
+  extractPObjectId,
 } from "@milaboratories/pl-model-common";
 import type { AxesVault } from "./axes";
 import { enrichCompatible, getAvailableWithLinkersAxes } from "./axes";
 import type { RenderCtxBase, PColumnDataUniversal } from "../render";
 import { PColumnCollection } from "../render";
-import { ColumnCollectionBuilder } from "../columns";
-import { collectCtxColumnSnapshotProviders } from "../columns/ctx_column_sources";
+import { ColumnsCollection } from "../columns";
 
 export function getAllRelatedColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   predicate: (spec: PColumnSpec) => boolean,
-): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
+): PFrameDef<PColumn<undefined | PColumnDataUniversal>> {
   // if current block doesn't produce own columns then use all columns from result pool
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
@@ -54,10 +48,10 @@ export function getRelatedColumns<A, U>(
     columns: rootColumns,
     predicate,
   }: {
-    columns: PColumn<PColumnDataUniversal>[];
+    columns: PColumn<undefined | PColumnDataUniversal>[];
     predicate: (spec: PColumnSpec) => boolean;
   },
-): PFrameDef<PColumn<PColumnDataUniversal> | PColumnLazy<undefined | PColumnDataUniversal>> {
+): PFrameDef<PColumn<undefined | PColumnDataUniversal>> {
   // if current block has its own columns then take from result pool only compatible with them
   const columns = new PColumnCollection();
   columns.addColumnProvider(ctx.resultPool);
@@ -161,7 +155,7 @@ export function getRelatedColumns<A, U>(
 /** Column ids that discovery confirms integrate with the block, or `undefined` when it can't decide. */
 function discoverIntegrableColumnIds<A, U>(
   ctx: RenderCtxBase<A, U>,
-  rootColumns: PColumn<PColumnDataUniversal>[],
+  rootColumns: PColumn<undefined | PColumnDataUniversal>[],
 ): Set<PObjectId> | undefined {
   const anchorSpecs = Array.from(
     new Map(rootColumns.map((c) => [canonicalizeJson(c.spec), c.spec])).values(),
@@ -169,17 +163,14 @@ function discoverIntegrableColumnIds<A, U>(
   if (anchorSpecs.length === 0) return undefined;
 
   try {
-    const collection = new ColumnCollectionBuilder()
-      .addSources(collectCtxColumnSnapshotProviders(ctx))
-      .build({
-        allowPartialColumnList: true,
+    const columns = ColumnsCollection(undefined, { ctx: ctx.ctx })
+      .discover({
+        mode: "enrichment",
+        maxHops: 4,
         anchors: Object.fromEntries(anchorSpecs.map((spec, i) => [`anchor_${i}`, spec])),
-      });
-    try {
-      return new Set(collection.findColumns({ mode: "enrichment" }).map((m) => m.column.id));
-    } finally {
-      collection.dispose();
-    }
+      })
+      .getColumns();
+    return new Set(columns.map((c) => extractPObjectId(c.id)));
   } catch {
     return undefined;
   }

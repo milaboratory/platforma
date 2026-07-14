@@ -2,6 +2,7 @@
 import { promiseTimeout, isJsonEqual } from "@milaboratories/helpers";
 import type {
   AxisId,
+  PlDataTableColumnsMeta,
   PlDataTableGridStateCore,
   PlDataTableStateV2,
   PlSelectionModel,
@@ -16,7 +17,6 @@ import {
   getAxisId,
   canonicalizeJson,
   isAbortError,
-  isColumnOptional,
 } from "@platforma-sdk/model";
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
@@ -30,7 +30,7 @@ import PlAgRowCount from "./PlAgRowCount.vue";
 import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
-import { calculateGridOptions } from "./sources/table-source-v2";
+import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -133,6 +133,7 @@ gridOptions.value.onGridPreDestroyed = (event) => {
       makePartialState(event.api.getState()),
       gridState.value,
       event.api,
+      currentColumnsMeta(),
     );
   }
   gridApi.value = null;
@@ -145,6 +146,7 @@ gridOptions.value.onStateUpdated = (event) => {
     makePartialState(event.state),
     gridState.value,
     event.api,
+    currentColumnsMeta(),
   );
   // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
   gridOptions.value.initialState = gridState.value = partialState;
@@ -219,6 +221,7 @@ function normalizeColumnVisibility(
   partialState: PlDataTableGridStateCore,
   prevState: PlDataTableGridStateCore,
   api: GridApi<PlAgDataTableV2Row>,
+  columnsMeta: PlDataTableColumnsMeta | undefined,
 ): PlDataTableGridStateCore {
   if (partialState.columnVisibility !== undefined) return partialState;
 
@@ -229,7 +232,7 @@ function normalizeColumnVisibility(
 
   // No previous explicit state → compute defaults from current columns
   // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
-  const defaultHidden = getDefaultHiddenColIds(api);
+  const defaultHidden = getDefaultHiddenColIds(api, columnsMeta);
   if (defaultHidden.length > 0) {
     return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
   }
@@ -237,14 +240,26 @@ function normalizeColumnVisibility(
   return partialState;
 }
 
-function getDefaultHiddenColIds(api: GridApi<PlAgDataTableV2Row>): PlTableColumnIdJson[] {
+/** Sidecar display meta is only on the `model` branch of the settings union. */
+function currentColumnsMeta(): PlDataTableColumnsMeta | undefined {
+  return "model" in props.settings ? props.settings.model?.columnsMeta : undefined;
+}
+
+function getDefaultHiddenColIds(
+  api: GridApi<PlAgDataTableV2Row>,
+  columnsMeta: PlDataTableColumnsMeta | undefined,
+): PlTableColumnIdJson[] {
   const cols = api.getAllGridColumns();
   if (!cols) return [];
 
   return cols
     .filter((col) => {
       const spec = col.getColDef().context as PTableColumnSpec | undefined;
-      return spec !== undefined && spec.type === "column" && isColumnOptional(spec.spec);
+      return (
+        spec !== undefined &&
+        spec.type === "column" &&
+        effectiveVisibility(spec, columnsMeta) === "optional"
+      );
     })
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
@@ -426,6 +441,7 @@ watch(
         pfDriver: getRawPlatformaInstance().pFrameDriver,
         fullTableHandle: settings.model?.fullTableHandle,
         visibleTableHandle: settings.model?.visibleTableHandle,
+        columnsMeta: settings.model?.columnsMeta,
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
         hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,

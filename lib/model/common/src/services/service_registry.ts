@@ -1,7 +1,7 @@
 import type {
   ServiceTypesLike,
-  InferServiceModel,
-  InferServiceUi,
+  InferServiceModelHost,
+  InferServiceUiHost,
   ServiceName,
   ModelServiceFactoryMap,
   UiServiceFactoryMap,
@@ -71,7 +71,9 @@ export class ModelServiceRegistry<
   get<S extends ServiceTypesLike>(
     id: ServiceName<S>,
   ):
-    | ([unknown] extends [InferServiceModel<S>] ? Record<string, Function> : InferServiceModel<S>)
+    | ([unknown] extends [InferServiceModelHost<S>]
+        ? Record<string, Function>
+        : InferServiceModelHost<S>)
     | null;
   get(id: ServiceName): Record<string, Function> | null {
     return this.getById(id);
@@ -87,7 +89,9 @@ export class UiServiceRegistry<
 
   get<S extends ServiceTypesLike>(
     id: ServiceName<S>,
-  ): ([unknown] extends [InferServiceUi<S>] ? Record<string, Function> : InferServiceUi<S>) | null;
+  ):
+    | ([unknown] extends [InferServiceUiHost<S>] ? Record<string, Function> : InferServiceUiHost<S>)
+    | null;
   get(id: ServiceName): Record<string, Function> | null {
     return this.getById(id);
   }
