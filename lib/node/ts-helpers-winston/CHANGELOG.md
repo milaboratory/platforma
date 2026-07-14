@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers-winston
 
+## 1.0.44
+
+### Patch Changes
+
+- @milaboratories/ts-helpers@1.8.5
+
 ## 1.0.43
 
 ### Patch Changes
