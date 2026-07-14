@@ -769,7 +769,9 @@ export class ProjectMutator {
       blockConfig,
       initialStorageJson,
     );
-    if (!deriveArgsResult.error) {
+    // args() legitimately returns undefined when inputs are incomplete/invalid;
+    // treat that like a derivation failure and clear the field (never JSON-encode undefined).
+    if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
       this.setBlockFieldObj(
         blockId,
         "currentArgs",
@@ -1408,7 +1410,9 @@ export class ProjectMutator {
       }
 
       const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
-      if (!deriveArgsResult.error) {
+      // args() legitimately returns undefined when inputs are incomplete/invalid;
+      // treat that like a derivation failure and clear the field (never JSON-encode undefined).
+      if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
         this.setBlockFieldObj(
           blockId,
           "currentArgs",
