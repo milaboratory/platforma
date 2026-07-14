@@ -1,5 +1,20 @@
 # @platforma-sdk/ui-vue
 
+## 1.80.0
+
+### Minor Changes
+
+- 881d6ba: ColumnLazy / ColumnsCollection API that bring new way to work with columns in model part
+
+### Patch Changes
+
+- Updated dependencies [881d6ba]
+  - @milaboratories/columns-collection-driver@0.2.0
+  - @milaboratories/pl-model-common@1.47.0
+  - @platforma-sdk/model@1.80.0
+  - @milaboratories/pf-spec-driver@1.4.19
+  - @milaboratories/uikit@2.15.15
+
 ## 1.79.34
 
 ### Patch Changes

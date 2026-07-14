@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.13.0
+
+### Minor Changes
+
+- 881d6ba: ColumnLazy / ColumnsCollection API that bring new way to work with columns in model part
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.14.1
+- @milaboratories/pl-errors@1.4.30
+
 ## 1.12.19
 
 ### Patch Changes
