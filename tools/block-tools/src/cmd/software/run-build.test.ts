@@ -127,14 +127,14 @@ describe("runBuild orchestration", () => {
     ]);
   });
 
-  it("dev docker build targets the built-in dev registry; release does not", async () => {
+  it("dev docker build targets the built-in dev registry; release the production registry", async () => {
     const dev = await run({ channel: "dev", variant: "docker", location: "remote" });
     expect(dev.spies.buildDockerImages).toHaveBeenCalledWith(
       expect.objectContaining({ registry: defaults.DEV_DOCKER_REGISTRY }),
     );
     const rel = await run({ channel: "release", variant: "docker", location: "remote" });
     expect(rel.spies.buildDockerImages).toHaveBeenCalledWith(
-      expect.objectContaining({ registry: undefined }),
+      expect.objectContaining({ registry: defaults.DOCKER_REGISTRY }),
     );
   });
 
@@ -166,11 +166,26 @@ describe("runBuild orchestration", () => {
       });
     });
 
-    it("release override targets the configured release registry, no built-in default", async () => {
-      expect(await dockerAddresses(releaseRemote)).toEqual({ pull: undefined, push: undefined });
+    it("release pull defaults to the built-in registry, independent of the push target", async () => {
+      // No push override: nothing pushed, pull embeds the built-in production registry.
+      expect(await dockerAddresses(releaseRemote)).toEqual({
+        pull: defaults.DOCKER_REGISTRY,
+        push: undefined,
+      });
+      // Push to quay, but the descriptor still embeds containers.pl-open.science (GA-fronted proxy).
+      // quay is not reachable from corporate deployments, so pull must NOT inherit the push target.
       process.env.PL_RELEASE_DOCKER_PUSH_URL = "quay.io/org/repo";
       expect(await dockerAddresses(releaseRemote)).toEqual({
-        pull: "quay.io/org/repo",
+        pull: defaults.DOCKER_REGISTRY,
+        push: "quay.io/org/repo",
+      });
+    });
+
+    it("PL_RELEASE_DOCKER_PULL_URL overrides the built-in release pull default", async () => {
+      process.env.PL_RELEASE_DOCKER_PUSH_URL = "quay.io/org/repo";
+      process.env.PL_RELEASE_DOCKER_PULL_URL = "cdn.example/release";
+      expect(await dockerAddresses(releaseRemote)).toEqual({
+        pull: "cdn.example/release",
         push: "quay.io/org/repo",
       });
     });
