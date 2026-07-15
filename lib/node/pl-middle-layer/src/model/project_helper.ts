@@ -7,7 +7,7 @@ import {
   BLOCK_STORAGE_FACADE_VERSION,
 } from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
-import type { QuickJSWASMModule } from "quickjs-emscripten";
+import { getQuickJS, type QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
@@ -56,6 +56,12 @@ export class ProjectHelper {
     private readonly quickJs: QuickJSWASMModule,
     public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
+
+  /** Convenience factory that initializes the QuickJS runtime itself. Prefer this in callers
+   * (e.g. CLIs) that only need a standalone helper and don't already have a QuickJS module. */
+  static async create(logger?: MiLogger): Promise<ProjectHelper> {
+    return new ProjectHelper(await getQuickJS(), logger);
+  }
 
   // =============================================================================
   // Args Derivation from Storage (V3+)
