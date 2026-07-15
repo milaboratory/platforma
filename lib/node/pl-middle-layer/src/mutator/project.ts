@@ -1980,53 +1980,23 @@ export async function duplicateProject(
   const newPrj = tx.createEphemeral(ProjectResourceType);
   tx.lock(newPrj);
 
-  // Copy KV pairs with adjustments
-  const ts = String(Date.now());
-  const kvSkipPrefixes = [BlockArgsAuthorKeyPrefix];
-  const kvSkipKeys = new Set([
-    ProjectCreatedTimestamp,
-    ProjectLastModifiedTimestamp,
-    ProjectStructureAuthorKey,
-  ]);
-
-  for (const { key, value } of sourceKVs) {
-    // Skip author markers
-    if (kvSkipKeys.has(key)) continue;
-    if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
-
-    if (key === ProjectMetaKey && options?.label !== undefined) {
-      // Override label
-      const meta: ProjectMeta = JSON.parse(value);
-      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
-    } else {
-      // Copy as-is
-      tx.setKValue(newPrj, key, value);
-    }
-  }
-
-  // Set fresh timestamps
-  tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
-  tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
-
-  // Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs) are copied by reference, so the
-  // copy's fields point at the SAME backend resources as the source. That is safe only when the
-  // production is Ready (immutable, complete). A NotReady prodOutput means the source is
-  // mid-computation; sharing it would tie the copy to the source's live computation. So we copy
-  // prod* only for blocks whose production is Ready, and skip it otherwise → the copy re-derives
-  // independently. Mirrors duplicateBlock's getFieldNamesToDuplicate / resetOrLimboProduction.
-  const prodFieldsRequiringReadiness = new Set<ProjectField["fieldName"]>([
-    "prodOutput",
-    "prodCtx",
-    "prodUiCtx",
-    "prodArgs",
-  ]);
-
-  // A field's readiness is a property of its target resource, not of the field entry, so we read
-  // each block's prodOutput/prodCtx targets. Ready == the target is a complete/immutable result
-  // (matches the mutator's own field-status rule: resourceReady or deduplicated, and not errored).
+  // Decide whether to copy production. Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs)
+  // are copied by reference, so the copy's fields point at the SAME backend resources as the
+  // source. Sharing is safe only for Ready (immutable, complete) production; a NotReady prodOutput
+  // means the source is mid-computation and sharing it would tie the copy to the source's live
+  // computation.
+  //
+  // The decision is ALL-OR-NOTHING across the whole project. The core relies on the invariant that
+  // a finished (Ready) block has a consistent upstream chain: createProdCtx() reads each upstream's
+  // prodCtx and throws if it is missing. Dropping one running block's production while keeping a
+  // finished downstream block would leave that downstream referencing an absent upstream context —
+  // a broken chain that check() does not catch. So if ANY block's production is not cleanly Ready,
+  // we copy NO production at all and let the copy re-derive from scratch. (Mirrors duplicateBlock's
+  // readiness gate, applied project-wide.)
   const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
     if (rid === undefined || isNullSignedResourceId(rid)) return false;
     const r = await tx.getResourceData(rid, false);
+    // Matches the mutator's own field-status rule: resourceReady or deduplicated, and not errored.
     return (
       (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
       isNullSignedResourceId(r.error)
@@ -2049,14 +2019,53 @@ export async function duplicateProject(
     }
   }
 
-  // A block's production is shareable only when BOTH core fields are Ready.
-  const readyBlocks = new Set<string>();
-  await Promise.all(
-    [...prodCoreByBlock].map(async ([blockId, core]) => {
-      if ((await isTargetReady(core.prodOutput)) && (await isTargetReady(core.prodCtx)))
-        readyBlocks.add(blockId);
-    }),
+  // Production is shareable only when every block that has production is fully Ready (both core
+  // fields). A single not-Ready (running / errored / partial) block makes it non-shareable.
+  const perBlockReady = await Promise.all(
+    [...prodCoreByBlock.values()].map(
+      async (core) => (await isTargetReady(core.prodOutput)) && (await isTargetReady(core.prodCtx)),
+    ),
   );
+  const shareProduction = perBlockReady.every((ready) => ready);
+  const prodFields = new Set<ProjectField["fieldName"]>([
+    "prodOutput",
+    "prodCtx",
+    "prodUiCtx",
+    "prodArgs",
+  ]);
+
+  // Copy KV pairs with adjustments
+  const ts = String(Date.now());
+  const kvSkipPrefixes = [BlockArgsAuthorKeyPrefix];
+  const kvSkipKeys = new Set([
+    ProjectCreatedTimestamp,
+    ProjectLastModifiedTimestamp,
+    ProjectStructureAuthorKey,
+  ]);
+
+  for (const { key, value } of sourceKVs) {
+    // Skip author markers
+    if (kvSkipKeys.has(key)) continue;
+    if (kvSkipPrefixes.some((prefix) => key.startsWith(prefix))) continue;
+
+    if (key === ProjectMetaKey && options?.label !== undefined) {
+      // Override label
+      const meta: ProjectMeta = JSON.parse(value);
+      tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
+    } else if (key === BlockRenderingStateKey && !shareProduction) {
+      // Production is not copied → nothing can be in limbo (limbo means "has Ready production but
+      // stale"). Clear it so the copy starts from a consistent rendering state.
+      const state: ProjectRenderingState = JSON.parse(value);
+      tx.setKValue(newPrj, key, JSON.stringify({ ...state, blocksInLimbo: [] }));
+    } else {
+      // Copy as-is
+      tx.setKValue(newPrj, key, value);
+    }
+  }
+
+  // Set fresh timestamps
+  tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
+  tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
 
   // Copy only persistent block fields (FieldsToDuplicate).
   // Transient fields (prodChainCtx, staging*, *Previous) are rebuilt on project open
@@ -2067,13 +2076,8 @@ export async function duplicateProject(
     if (isNullSignedResourceId(f.value)) continue;
     const parsed = parseProjectField(f.name);
     if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
-    // Skip in-flight production: do not share the source's live computation.
-    if (
-      parsed !== undefined &&
-      prodFieldsRequiringReadiness.has(parsed.fieldName) &&
-      !readyBlocks.has(parsed.blockId)
-    )
-      continue;
+    // In-flight production somewhere in the project → copy no production at all (see above).
+    if (parsed !== undefined && !shareProduction && prodFields.has(parsed.fieldName)) continue;
     tx.createField(field(newPrj, f.name), "Dynamic", f.value);
   }
 
