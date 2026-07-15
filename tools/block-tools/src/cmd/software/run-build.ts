@@ -134,7 +134,10 @@ function parsePushTarget(raw: string): { registry: string; autoLogin: boolean } 
 }
 
 // Docker push target + the pull address embedded in the descriptor. Precedence flag > channel env >
-// dev default (release has none); pull defaults to push; autoLogin follows the push target's ecr://.
+// dev default (release has none). Pull default is channel-specific: dev pulls from where it pushed
+// (one ECR host), but release push (quay) and pull (containers.pl-open.science, GA-fronted proxy) are
+// different locations by design, so release pull defaults to the built-in registry, NOT the push
+// target. autoLogin follows the push target's ecr://.
 function resolveDockerAddresses(
   channel: Channel,
   opts: BuildOptions,
@@ -149,7 +152,8 @@ function resolveDockerAddresses(
     opts.dockerPushTo ?? channelPush ?? (isDev ? defaults.DEV_DOCKER_PUSH_TARGET : undefined);
   const parsed = rawPush ? parsePushTarget(rawPush) : { registry: undefined, autoLogin: false };
 
-  const rawPull = opts.dockerRegistry ?? channelPull ?? rawPush;
+  const rawPull =
+    opts.dockerRegistry ?? channelPull ?? (isDev ? rawPush : defaults.DOCKER_REGISTRY);
   const pull = rawPull ? stripScheme(rawPull) : undefined;
 
   return { pull, push: parsed.registry, autoLogin: parsed.autoLogin };
