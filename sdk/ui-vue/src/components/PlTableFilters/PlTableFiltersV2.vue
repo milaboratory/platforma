@@ -4,6 +4,7 @@ import type {
   PlDataTableFiltersWithMeta,
   PFrameHandle,
   PTableColumnId,
+  PColumnSpec,
 } from "@platforma-sdk/model";
 import {
   Annotation,
@@ -13,6 +14,7 @@ import {
   getUniqueSourceValuesWithLabels,
   extractPObjectId,
   getPTableColumnId,
+  deriveDistinctLabels,
 } from "@platforma-sdk/model";
 import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
@@ -65,10 +67,22 @@ const onUpdateFilters = (_value: PlAdvancedFilter) => {
 };
 
 const options = computed<PlAdvancedFilterItem[]>(() => {
+  const columnEntries: { idx: number; spec: PColumnSpec }[] = [];
+  props.columns.forEach((col, idx) => {
+    if (col.type === "column") columnEntries.push({ idx, spec: col.spec });
+  });
+  const distinctLabelByIdx = new Map<number, string>();
+  deriveDistinctLabels(
+    columnEntries.map((e) => e.spec),
+    {},
+  ).forEach((label, i) => distinctLabelByIdx.set(columnEntries[i].idx, label));
+
   return props.columns.map((col, idx) => {
     const id = getPTableColumnId(col);
     const label =
-      readAnnotation(col.spec, Annotation.Label)?.trim() ?? `Unlabeled ${col.type} ${idx}`;
+      distinctLabelByIdx.get(idx)?.trim() ||
+      readAnnotation(col.spec, Annotation.Label)?.trim() ||
+      `Unlabeled ${col.type} ${idx}`;
     const alphabet =
       readDomain(col.spec, Domain.Alphabet) ?? readAnnotation(col.spec, Annotation.Alphabet);
     return {
