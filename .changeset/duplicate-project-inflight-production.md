@@ -7,16 +7,16 @@ project was duplicated or shared while a block was still computing, the copy's
 `prod*` fields were copied by reference, tying the copy to the source's live
 computation.
 
-The copy now drops production for every block that is not cleanly `Ready`
-(running, errored, or partial) **and its whole downstream closure**, clearing
-those blocks from `blocksInLimbo`. Ready blocks that are not downstream of an
-in-flight block keep their production, so duplicating an idle or fully-finished
-project is unaffected. The downstream closure is required to preserve the core
-invariant that a finished block has a consistent upstream chain: a finished
-block's `prodCtx` is built from its upstreams' `prodCtx`, so dropping a running
-upstream while keeping a finished downstream would leave the downstream
-referencing an absent upstream context.
+Duplication now decides what production to copy by a cheap resource-level
+readiness scan:
 
-Readiness and the dependency graph are read from the source project's mutator,
-so `duplicateProject` now takes a `ProjectHelper` (threaded through
-`buildShareEnvelope` and `copyEnvelopeProjectsIntoList`).
+- nothing in flight (the common case) → copy all production as before;
+- something in flight, with model access (an optional `ProjectHelper`, current
+  schema) → drop the in-flight blocks **and their downstream closure**, so no
+  finished block is left referencing a dropped upstream context;
+- something in flight, without model access (sharing, CLI, or an unmigrated
+  schema) → drop all production. Conservative but always chain-consistent.
+
+Dropped blocks are also removed from `blocksInLimbo`. Callers that want the
+precise closure (interactive duplicate / duplicate-to-user) pass their
+`ProjectHelper`; others omit it and get the safe fallback.

@@ -1989,8 +1989,15 @@ export async function createProject(
 export async function duplicateProject(
   tx: PlTransaction,
   sourceRid: SignedResourceId,
-  projectHelper: ProjectHelper,
   options?: { label?: string },
+  /**
+   * Optional model access used only to compute a precise "which production to drop" set when the
+   * source has in-flight production (see below). When omitted, or when the source is not on the
+   * current schema, duplication falls back to a conservative all-or-nothing drop — still correct,
+   * just less selective. Callers pass it to opt into precision (interactive duplicate); callers
+   * where conservative recompute is fine or a helper isn't handy (sharing, CLI) omit it.
+   */
+  projectHelper?: ProjectHelper,
 ): Promise<ResourceRef> {
   // Read source resource data (with fields) and all KV pairs
   const sourceDataP = tx.getResourceData(sourceRid, true);
@@ -2019,20 +2026,69 @@ export async function duplicateProject(
   // Ready (immutable, complete) production; a NotReady prodOutput means the source is
   // mid-computation and sharing it would tie the copy to the source's live computation.
   //
-  // We drop production for every block that is not cleanly Ready AND its whole downstream closure
-  // (a finished downstream references its upstreams' prodCtx — dropping the upstream alone would
-  // break the chain). Ready blocks not downstream of an in-flight one keep their production, so an
-  // idle/finished duplicate is unaffected. Load the source as a mutator to reuse its per-block
-  // readiness and dependency graph; the copy shares the source's block ids, so the set applies
-  // directly. `dropProduction` is empty in the common case (nothing in flight).
-  const srcMutator = await ProjectMutator.load(projectHelper, tx, sourceRid);
-  const dropProduction = srcMutator.productionBlocksToDropForCopy();
+  // We drop production for in-flight blocks. To keep the chain consistent (a finished block's
+  // prodCtx is built from its upstreams' prodCtx — see createProdCtx), dropping an in-flight block
+  // also requires dropping everything downstream of it. The downstream closure needs the project's
+  // dependency graph, which lives in the model layer (ProjectHelper + current schema). So:
+  //   - fast path: a cheap resource-level readiness scan; nothing in flight → copy all production;
+  //   - precise path: something in flight AND the graph is available → drop the in-flight blocks
+  //     plus their downstream closure;
+  //   - fallback: something in flight but no graph (no helper, or an unmigrated schema the model
+  //     layer would reject) → drop ALL production. Conservative, but always chain-consistent.
   const prodFields = new Set<ProjectField["fieldName"]>([
     "prodOutput",
     "prodCtx",
     "prodUiCtx",
     "prodArgs",
   ]);
+
+  // Resource-level readiness (schema-agnostic; no model layer). Ready == complete/immutable result,
+  // matching the mutator's own field-status rule: resourceReady or deduplicated, and not errored.
+  const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
+    if (rid === undefined || isNullSignedResourceId(rid)) return false;
+    const r = await tx.getResourceData(rid, false);
+    return (
+      (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
+      isNullSignedResourceId(r.error)
+    );
+  };
+
+  // Collect each block's prodOutput/prodCtx targets (the blocks that have production).
+  const prodCoreByBlock = new Map<
+    string,
+    { prodOutput?: SignedResourceId; prodCtx?: SignedResourceId }
+  >();
+  for (const f of sourceData.fields) {
+    if (isNullSignedResourceId(f.value)) continue;
+    const parsed = parseProjectField(f.name);
+    if (parsed === undefined) continue;
+    if (parsed.fieldName === "prodOutput" || parsed.fieldName === "prodCtx") {
+      const core = prodCoreByBlock.get(parsed.blockId) ?? {};
+      core[parsed.fieldName] = f.value;
+      prodCoreByBlock.set(parsed.blockId, core);
+    }
+  }
+  const anyInFlight = (
+    await Promise.all(
+      [...prodCoreByBlock.values()].map(
+        async (core) =>
+          !((await isTargetReady(core.prodOutput)) && (await isTargetReady(core.prodCtx))),
+      ),
+    )
+  ).some((inFlight) => inFlight);
+
+  let dropProduction: ReadonlySet<string>;
+  if (!anyInFlight) {
+    dropProduction = new Set(); // fast path: all production is Ready → copy as-is
+  } else if (projectHelper !== undefined && schema === SchemaVersionCurrent) {
+    // Precise path: drop in-flight blocks + their downstream closure, computed from the source's
+    // dependency graph. The copy shares the source's block ids, so the set applies directly.
+    const srcMutator = await ProjectMutator.load(projectHelper, tx, sourceRid);
+    dropProduction = srcMutator.productionBlocksToDropForCopy();
+  } else {
+    // Fallback: no graph available → drop all production (every block that has any).
+    dropProduction = new Set(prodCoreByBlock.keys());
+  }
 
   // Copy KV pairs with adjustments
   const ts = String(Date.now());
