@@ -521,6 +521,39 @@ export class ProjectMutator {
     return this.actualProductionGraph;
   }
 
+  /**
+   * Blocks whose production must NOT be shared with an independent copy of the project: every
+   * block whose production is not cleanly `Ready` (running / errored / partial), plus every block
+   * downstream of them. The downstream closure is required to keep the chain consistent — a
+   * finished block's `prodCtx` is built from its upstreams' `prodCtx` (see {@link createProdCtx}),
+   * so keeping a finished block while dropping an upstream it depends on would leave it referencing
+   * an absent upstream context, a broken state {@link check} does not catch.
+   *
+   * Blocks with no production at all are ignored (nothing to drop, and no finished block can
+   * depend on them). Returns an empty set when the whole project's production is Ready.
+   */
+  public productionBlocksToDropForCopy(): Set<string> {
+    const notReady: string[] = [];
+    for (const [blockId, info] of this.blockInfos) {
+      const hasProduction =
+        info.fields.prodOutput !== undefined || info.fields.prodCtx !== undefined;
+      if (!hasProduction) continue;
+      const ready =
+        info.fields.prodOutput?.status === "Ready" && info.fields.prodCtx?.status === "Ready";
+      if (!ready) notReady.push(blockId);
+    }
+    if (notReady.length === 0) return new Set<string>();
+
+    // Always drop the not-ready blocks themselves; add the downstream closure of those present in
+    // the actual production graph (a partial block may lack prodArgs and thus not be a graph node —
+    // traverse() would throw on such a root, so we only seed graph-present blocks).
+    const graph = this.getActualProductionGraph();
+    const dropSet = new Set<string>(notReady);
+    const seeds = notReady.filter((id) => graph.nodes.has(id));
+    for (const id of graph.traverseIds("downstream", ...seeds)) dropSet.add(id);
+    return dropSet;
+  }
+
   //
   // Generic helpers to interact with project state
   //
@@ -1956,6 +1989,7 @@ export async function createProject(
 export async function duplicateProject(
   tx: PlTransaction,
   sourceRid: SignedResourceId,
+  projectHelper: ProjectHelper,
   options?: { label?: string },
 ): Promise<ResourceRef> {
   // Read source resource data (with fields) and all KV pairs
@@ -1980,53 +2014,19 @@ export async function duplicateProject(
   const newPrj = tx.createEphemeral(ProjectResourceType);
   tx.lock(newPrj);
 
-  // Decide whether to copy production. Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs)
-  // are copied by reference, so the copy's fields point at the SAME backend resources as the
-  // source. Sharing is safe only for Ready (immutable, complete) production; a NotReady prodOutput
-  // means the source is mid-computation and sharing it would tie the copy to the source's live
-  // computation.
+  // Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs) are copied by reference, so the
+  // copy's fields point at the SAME backend resources as the source. Sharing is safe only for
+  // Ready (immutable, complete) production; a NotReady prodOutput means the source is
+  // mid-computation and sharing it would tie the copy to the source's live computation.
   //
-  // The decision is ALL-OR-NOTHING across the whole project. The core relies on the invariant that
-  // a finished (Ready) block has a consistent upstream chain: createProdCtx() reads each upstream's
-  // prodCtx and throws if it is missing. Dropping one running block's production while keeping a
-  // finished downstream block would leave that downstream referencing an absent upstream context —
-  // a broken chain that check() does not catch. So if ANY block's production is not cleanly Ready,
-  // we copy NO production at all and let the copy re-derive from scratch. (Mirrors duplicateBlock's
-  // readiness gate, applied project-wide.)
-  const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
-    if (rid === undefined || isNullSignedResourceId(rid)) return false;
-    const r = await tx.getResourceData(rid, false);
-    // Matches the mutator's own field-status rule: resourceReady or deduplicated, and not errored.
-    return (
-      (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
-      isNullSignedResourceId(r.error)
-    );
-  };
-
-  // Collect each block's prodOutput/prodCtx target ids to test readiness.
-  const prodCoreByBlock = new Map<
-    string,
-    { prodOutput?: SignedResourceId; prodCtx?: SignedResourceId }
-  >();
-  for (const f of sourceData.fields) {
-    if (isNullSignedResourceId(f.value)) continue;
-    const parsed = parseProjectField(f.name);
-    if (parsed === undefined) continue;
-    if (parsed.fieldName === "prodOutput" || parsed.fieldName === "prodCtx") {
-      const core = prodCoreByBlock.get(parsed.blockId) ?? {};
-      core[parsed.fieldName] = f.value;
-      prodCoreByBlock.set(parsed.blockId, core);
-    }
-  }
-
-  // Production is shareable only when every block that has production is fully Ready (both core
-  // fields). A single not-Ready (running / errored / partial) block makes it non-shareable.
-  const perBlockReady = await Promise.all(
-    [...prodCoreByBlock.values()].map(
-      async (core) => (await isTargetReady(core.prodOutput)) && (await isTargetReady(core.prodCtx)),
-    ),
-  );
-  const shareProduction = perBlockReady.every((ready) => ready);
+  // We drop production for every block that is not cleanly Ready AND its whole downstream closure
+  // (a finished downstream references its upstreams' prodCtx — dropping the upstream alone would
+  // break the chain). Ready blocks not downstream of an in-flight one keep their production, so an
+  // idle/finished duplicate is unaffected. Load the source as a mutator to reuse its per-block
+  // readiness and dependency graph; the copy shares the source's block ids, so the set applies
+  // directly. `dropProduction` is empty in the common case (nothing in flight).
+  const srcMutator = await ProjectMutator.load(projectHelper, tx, sourceRid);
+  const dropProduction = srcMutator.productionBlocksToDropForCopy();
   const prodFields = new Set<ProjectField["fieldName"]>([
     "prodOutput",
     "prodCtx",
@@ -2052,11 +2052,18 @@ export async function duplicateProject(
       // Override label
       const meta: ProjectMeta = JSON.parse(value);
       tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
-    } else if (key === BlockRenderingStateKey && !shareProduction) {
-      // Production is not copied → nothing can be in limbo (limbo means "has Ready production but
-      // stale"). Clear it so the copy starts from a consistent rendering state.
+    } else if (key === BlockRenderingStateKey && dropProduction.size > 0) {
+      // A block whose production we drop can no longer be in limbo (limbo means "has Ready
+      // production but stale"); keep limbo entries only for blocks that retain their production.
       const state: ProjectRenderingState = JSON.parse(value);
-      tx.setKValue(newPrj, key, JSON.stringify({ ...state, blocksInLimbo: [] }));
+      tx.setKValue(
+        newPrj,
+        key,
+        JSON.stringify({
+          ...state,
+          blocksInLimbo: state.blocksInLimbo.filter((id) => !dropProduction.has(id)),
+        }),
+      );
     } else {
       // Copy as-is
       tx.setKValue(newPrj, key, value);
@@ -2076,8 +2083,13 @@ export async function duplicateProject(
     if (isNullSignedResourceId(f.value)) continue;
     const parsed = parseProjectField(f.name);
     if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
-    // In-flight production somewhere in the project → copy no production at all (see above).
-    if (parsed !== undefined && !shareProduction && prodFields.has(parsed.fieldName)) continue;
+    // Drop production for in-flight blocks and their downstream closure (see above).
+    if (
+      parsed !== undefined &&
+      prodFields.has(parsed.fieldName) &&
+      dropProduction.has(parsed.blockId)
+    )
+      continue;
     tx.createField(field(newPrj, f.name), "Dynamic", f.value);
   }
 

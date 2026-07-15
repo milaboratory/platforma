@@ -378,7 +378,9 @@ export class MiddleLayer {
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
       // Create the duplicate
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(tx, sourceRid, this.env.projectHelper, {
+        label: newLabel,
+      });
 
       // Attach to project list with a random UUID field name
       tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", newPrj);
@@ -433,7 +435,9 @@ export class MiddleLayer {
       ).map((m) => m.label);
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(tx, sourceRid, this.env.projectHelper, {
+        label: newLabel,
+      });
       tx.createField(field(targetProjectListRid, randomUUID()), "Dynamic", newPrj);
       await tx.commit();
     });
@@ -530,12 +534,18 @@ export class MiddleLayer {
         }
       }
 
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
-        mode: options.mode,
-        sender,
-        title: options.title,
-        expiresAt,
-      });
+      const { envelope } = await buildShareEnvelope(
+        tx,
+        this.sharingOutboxResourceId,
+        sources,
+        {
+          mode: options.mode,
+          sender,
+          title: options.title,
+          expiresAt,
+        },
+        this.env.projectHelper,
+      );
 
       // Grant in the same transaction (writable: the cross-color accept rule demands a writable
       // grant on the envelope). Atomic with the create.
@@ -659,13 +669,19 @@ export class MiddleLayer {
       // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
       tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
 
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
-        mode: old.data.mode,
-        sender: self,
-        title,
-        expiresAt,
-        shareId, // SAME shareId — the essence of change
-      });
+      const { envelope } = await buildShareEnvelope(
+        tx,
+        this.sharingOutboxResourceId,
+        sources,
+        {
+          mode: old.data.mode,
+          sender: self,
+          title,
+          expiresAt,
+          shareId, // SAME shareId — the essence of change
+        },
+        this.env.projectHelper,
+      );
 
       // Transfer the decided users' records onto the new envelope (donor-written copies).
       for (const { login, acc } of acceptances) {
@@ -816,6 +832,7 @@ export class MiddleLayer {
             tx,
             envelope.rid,
             this.projectListResourceId,
+            this.env.projectHelper,
             rename,
           );
 
