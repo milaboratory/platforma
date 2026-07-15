@@ -5,6 +5,7 @@ import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
 import type { ProjectId } from "@milaboratories/pl-model-common";
 import { ProjectMetaKey } from "../model/project_model";
 import { duplicateProject } from "./project";
+import type { ProjectHelper } from "../model/project_helper";
 import type {
   EnvelopeData,
   EnvelopeAcceptance,
@@ -78,6 +79,7 @@ export async function buildShareEnvelope(
     shareId?: ShareId;
     sharedAt?: number;
   },
+  projectHelper: ProjectHelper,
 ): Promise<{ envelope: ResourceRef; data: EnvelopeData }> {
   const shareId = params.shareId ?? newShareId();
   const sharedAt = params.sharedAt ?? Date.now();
@@ -89,7 +91,7 @@ export async function buildShareEnvelope(
     const uuid = randomUUID() as ProjectFieldUuid;
     if (src.kind === "fresh") {
       const meta = await tx.getKValueJson<ProjectMeta>(src.sourceRid, ProjectMetaKey);
-      const ref = await duplicateProject(tx, src.sourceRid, { label: meta.label });
+      const ref = await duplicateProject(tx, src.sourceRid, projectHelper, { label: meta.label });
       projects[uuid] = { label: meta.label, source: src.projectId, updatedAt: sharedAt }; // (re)snapshotted now
       snapshots.push({ uuid, ref });
     } else {
@@ -175,6 +177,7 @@ export async function copyEnvelopeProjectsIntoList(
   tx: PlTransaction,
   envelopeRid: SignedResourceId,
   projectListRid: SignedResourceId,
+  projectHelper: ProjectHelper,
   rename?: (previousLabel: string, existingLabels: string[]) => string,
 ): Promise<SignedResourceId[]> {
   // Read the acceptor's existing project labels once (own color, no relaxation).
@@ -200,7 +203,7 @@ export async function copyEnvelopeProjectsIntoList(
     // Cross-color attach: a new UserProject in the acceptor's color whose fields point at
     // envelope-colored resources. Fails with PermissionDenied: color mismatch on a backend
     // that lacks crossTreeRefs:v1.
-    const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+    const newPrj = await duplicateProject(tx, sourceRid, projectHelper, { label: newLabel });
     tx.createField(field(projectListRid, randomUUID()), "Dynamic", newPrj);
 
     const signedRid = await newPrj.globalId;
