@@ -1,6 +1,6 @@
 import { Command, Option } from "commander";
 import { field, resourceIdToString } from "@milaboratories/pl-client";
-import { ProjectMetaKey, ProjectHelper } from "@milaboratories/pl-middle-layer";
+import { ProjectMetaKey } from "@milaboratories/pl-middle-layer";
 import { randomUUID } from "node:crypto";
 import { connectClient } from "../../base_command";
 import { addOptions, GlobalOptions, AdminAuthOptions } from "../../cmd-opts";
@@ -54,7 +54,6 @@ export default function adminCopyProjectCommand(): Command {
         targetUser === flags.sourceUser ? source : await navigateToUserRoot(pl, targetUser);
 
       const newId = randomUUID();
-      const projectHelper = await ProjectHelper.create();
 
       const result = await pl.withWriteTx("adminCopyProject", async (tx) => {
         const sourceMetaStr = await tx.getKValueString(sourceRid, ProjectMetaKey);
@@ -72,7 +71,7 @@ export default function adminCopyProjectCommand(): Command {
           newLabel = deduplicateName(flags.name ?? sourceLabel, existingLabels);
         }
 
-        const newPrj = await duplicateProject(tx, sourceRid, projectHelper, { label: newLabel });
+        const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
         tx.createField(field(target.projectListRid, newId), "Dynamic", newPrj);
         await tx.commit();
 
