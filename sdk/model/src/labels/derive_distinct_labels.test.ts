@@ -1,5 +1,6 @@
 import {
   Annotation,
+  type AxisId,
   type AxisQualification,
   type PColumnSpec,
   type PObjectId,
@@ -920,6 +921,127 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     expect(deriveDistinctLabels(entries)).toEqual([
       "Counts [anchor-main: sample]",
       "Counts [anchor-main: gene]",
+    ]);
+  });
+});
+
+describe("deriveDistinctLabels — linker step labeled by source axis", () => {
+  function labeledSpec(label: string, name = "col"): PColumnSpec {
+    return {
+      kind: "PColumn",
+      name,
+      valueType: "Int",
+      axesSpec: [],
+      annotations: { [Annotation.Label]: label },
+    } as PColumnSpec;
+  }
+
+  // A column carrying an axis with a human label. The axis is what a linker step references; its
+  // label is read from whatever column in `values` happens to carry it.
+  function specWithAxis(
+    label: string,
+    axisName: string,
+    axisLabel: string,
+    name = label,
+  ): PColumnSpec {
+    return {
+      kind: "PColumn",
+      name,
+      valueType: "Int",
+      axesSpec: [
+        { type: "String", name: axisName, annotations: { [Annotation.Label]: axisLabel } },
+      ],
+      annotations: { [Annotation.Label]: label },
+    } as PColumnSpec;
+  }
+
+  const axisRef = (name: string): AxisId => ({ type: "String", name });
+
+  test("collision resolved by the difference between source axes", () => {
+    const counts = labeledSpec("Counts");
+    const entries: Entry[] = [
+      { spec: counts, linkerPath: [{ axis: axisRef("sampleId") }] },
+      { spec: counts, linkerPath: [{ axis: axisRef("cloneId") }] },
+      // sources living elsewhere in the same value set — they carry the labeled axes
+      { spec: specWithAxis("Samples", "sampleId", "Sample") },
+      { spec: specWithAxis("Clones", "cloneId", "Clone") },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual([
+      "Counts via Sample",
+      "Counts via Clone",
+      "Samples",
+      "Clones",
+    ]);
+  });
+
+  test("source axis label is read from the hit column's own axesSpec", () => {
+    // No separate source column; the axis is present on the linked columns themselves.
+    const a = specWithAxis("Counts", "sampleId", "Sample", "counts_by_sample");
+    const b = specWithAxis("Counts", "cloneId", "Clone", "counts_by_clone");
+    const entries: Entry[] = [
+      { spec: a, linkerPath: [{ axis: axisRef("sampleId") }] },
+      { spec: b, linkerPath: [{ axis: axisRef("cloneId") }] },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual(["Counts via Sample", "Counts via Clone"]);
+  });
+
+  test("source-axis suffix appended only where needed for uniqueness", () => {
+    const entries: Entry[] = [
+      { spec: labeledSpec("Read counts") },
+      { spec: labeledSpec("Read counts"), linkerPath: [{ axis: axisRef("sampleId") }] },
+      { spec: specWithAxis("Samples", "sampleId", "Sample") },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual([
+      "Read counts",
+      "Read counts via Sample",
+      "Samples",
+    ]);
+  });
+
+  test("step is dropped when its source axis is not present in any value", () => {
+    const counts = labeledSpec("Counts");
+    const entries: Entry[] = [
+      { spec: counts, linkerPath: [{ axis: axisRef("missingA") }] },
+      { spec: counts, linkerPath: [{ axis: axisRef("missingB") }] },
+    ];
+    // Neither axis resolves → no linker zone → nothing left to disambiguate with.
+    expect(deriveDistinctLabels(entries)).toEqual(["Counts", "Counts"]);
+  });
+
+  test("step is dropped when the matched axis carries no label", () => {
+    const counts = labeledSpec("Counts");
+    const unlabeledAxisSrc: PColumnSpec = {
+      kind: "PColumn",
+      name: "src",
+      valueType: "Int",
+      axesSpec: [{ type: "String", name: "sampleId" }],
+      annotations: { [Annotation.Label]: "Src" },
+    } as PColumnSpec;
+    const entries: Entry[] = [
+      { spec: counts, linkerPath: [{ axis: axisRef("sampleId") }] },
+      { spec: unlabeledAxisSrc },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual(["Counts", "Src"]);
+  });
+
+  test("multi-step path collapses to the joined source-axis labels", () => {
+    const counts = labeledSpec("Counts");
+    const entries: Entry[] = [
+      {
+        spec: counts,
+        linkerPath: [{ axis: axisRef("hubId") }, { axis: axisRef("sampleId") }],
+      },
+      {
+        spec: counts,
+        linkerPath: [{ axis: axisRef("hubId") }, { axis: axisRef("cloneId") }],
+      },
+      { spec: specWithAxis("Hub", "hubId", "Hub") },
+      { spec: specWithAxis("Samples", "sampleId", "Sample") },
+      { spec: specWithAxis("Clones", "cloneId", "Clone") },
+    ];
+    expect(deriveDistinctLabels(entries).slice(0, 2)).toEqual([
+      "Counts via Hub > Sample",
+      "Counts via Hub > Clone",
     ]);
   });
 });
