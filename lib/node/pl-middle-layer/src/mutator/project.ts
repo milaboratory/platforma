@@ -2046,11 +2046,17 @@ export async function duplicateProject(
   // matching the mutator's own field-status rule: resourceReady or deduplicated, and not errored.
   const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
     if (rid === undefined || isNullSignedResourceId(rid)) return false;
-    const r = await tx.getResourceData(rid, false);
-    return (
-      (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
-      isNullSignedResourceId(r.error)
-    );
+    try {
+      const r = await tx.getResourceData(rid, false);
+      return (
+        (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
+        isNullSignedResourceId(r.error)
+      );
+    } catch {
+      // Resource gone/inaccessible: treat as not-ready so its production is dropped and
+      // re-derived in the copy, rather than failing the whole duplicate.
+      return false;
+    }
   };
 
   // Collect each block's prodOutput/prodCtx targets (the blocks that have production).
