@@ -17,7 +17,7 @@ export type FinalResourceDataPredicate = (
   resourceData: Optional<ResourceData, "fields">,
 ) => boolean;
 
-function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): boolean {
+export function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): boolean {
   return (
     r.resourceReady ||
     isNotNullSignedResourceId(r.originalResourceId) ||
