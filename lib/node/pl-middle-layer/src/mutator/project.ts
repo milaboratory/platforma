@@ -88,6 +88,16 @@ import type { BlockPackInfo } from "../model/block_pack";
 
 type FieldStatus = "NotReady" | "Ready" | "Error";
 
+/**
+ * A production core field is "settled" once its result is immutable — `Ready` or a finished
+ * `Error`. `NotReady` (still computing) is the only unsettled status; a missing field is unsettled.
+ * Settled production is safe to keep/share; only running production is dropped. The resource-level
+ * equivalent is {@link readyOrDuplicateOrError}.
+ */
+function isProductionFieldSettled(status: FieldStatus | undefined): boolean {
+  return status === "Ready" || status === "Error";
+}
+
 interface BlockFieldState {
   modCount: number;
   ref?: AnyRef;
@@ -523,15 +533,18 @@ export class ProjectMutator {
   }
 
   /**
-   * Blocks whose production must NOT be shared with an independent copy of the project: every
-   * block whose production is not cleanly `Ready` (running / errored / partial), plus every block
-   * downstream of them. The downstream closure is required to keep the chain consistent — a
-   * finished block's `prodCtx` is built from its upstreams' `prodCtx` (see {@link createProdCtx}),
-   * so keeping a finished block while dropping an upstream it depends on would leave it referencing
-   * an absent upstream context, a broken state {@link check} does not catch.
+   * Blocks whose production must NOT be shared with a copy of the project: those still computing
+   * ("NotReady"), plus their downstream closure. Settled production — `Ready` or a finished
+   * `Error` — is kept: it is immutable, so sharing by reference is safe, and sharing an errored
+   * project (to show it failed) is a valid use-case. Only running production would tie the copy to
+   * the source's live computation.
    *
-   * Blocks with no production at all are ignored (nothing to drop, and no finished block can
-   * depend on them). Returns an empty set when the whole project's production is Ready.
+   * The closure keeps the chain consistent: a finished block's `prodCtx` is built from its
+   * upstreams' `prodCtx` (see {@link createProdCtx}), so keeping it while dropping a running
+   * upstream would leave it referencing an absent context — a break {@link check} misses. Settled
+   * blocks are never seeds, so their downstream is retained.
+   *
+   * Blocks without production are ignored. Returns empty when nothing is running.
    */
   public productionBlocksToDropForCopy(): Set<string> {
     const dropSet = new Set<string>();
@@ -539,16 +552,17 @@ export class ProjectMutator {
       const hasProduction =
         info.fields.prodOutput !== undefined || info.fields.prodCtx !== undefined;
       if (!hasProduction) continue;
-      const ready =
-        info.fields.prodOutput?.status === "Ready" && info.fields.prodCtx?.status === "Ready";
-      if (!ready) dropSet.add(blockId);
+      // Drop only running production; keep both settled states (Ready and Error).
+      const running =
+        !isProductionFieldSettled(info.fields.prodOutput?.status) ||
+        !isProductionFieldSettled(info.fields.prodCtx?.status);
+      if (running) dropSet.add(blockId);
     }
     if (dropSet.size === 0) return dropSet;
 
-    // Snapshot the not-ready blocks before we expand dropSet with their downstream closure. Only
-    // seed blocks present in the actual production graph (a partial block may lack prodArgs and thus
-    // not be a graph node — traverse() would throw on such a root, so we only seed graph-present
-    // blocks). The snapshot means expanding dropSet can't feed back into the traversal roots.
+    // Snapshot before expanding, so the closure can't re-seed from its own additions. Seed only
+    // graph-present blocks: a partial block may lack prodArgs and not be a graph node, and
+    // traverse() throws on a missing root.
     const graph = this.getActualProductionGraph();
     const seeds = [...dropSet].filter((id) => graph.nodes.has(id));
     for (const id of graph.traverseIds("downstream", ...seeds)) dropSet.add(id);
@@ -695,19 +709,23 @@ export class ProjectMutator {
     this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
   }
 
-  /** Running blocks are reset, already computed moved to limbo. Returns if
+  /** Running blocks are reset, settled ones (Ready or finished Error) moved to limbo. Returns if
    * either of the actions were actually performed.
    * This method ensures the block is left in a consistent state that passes check() constraints. */
   private resetOrLimboProduction(blockId: string): boolean {
     const fields = this.getBlockInfo(blockId).fields;
 
-    // Check if we can safely move to limbo (both core production fields are ready)
-    if (fields.prodOutput?.status === "Ready" && fields.prodCtx?.status === "Ready") {
+    // Move to limbo only if both core production fields have settled (a finished Error is kept, not
+    // reset — sharing/keeping a failed block is valid); otherwise reset.
+    if (
+      isProductionFieldSettled(fields.prodOutput?.status) &&
+      isProductionFieldSettled(fields.prodCtx?.status)
+    ) {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return false;
 
-      // limbo - keep the ready production results but clean up cache
+      // limbo - keep the settled production results but clean up cache
       this.blocksInLimbo.add(blockId);
       this.renderingStateChanged = true;
 
@@ -1198,8 +1216,11 @@ export class ProjectMutator {
     const diff = <T>(setA: Set<T>, setB: Set<T>): Set<T> =>
       new Set([...setA].filter((x) => !setB.has(x)));
 
-    // Check if we can safely move to limbo (both core production fields are ready)
-    if (fields.prodOutput?.status === "Ready" && fields.prodCtx?.status === "Ready") {
+    // Keep settled production (Ready or finished Error); drop it only while still running.
+    if (
+      isProductionFieldSettled(fields.prodOutput?.status) &&
+      isProductionFieldSettled(fields.prodCtx?.status)
+    ) {
       if (this.blocksInLimbo.has(blockId))
         // we are already in limbo
         return FieldsToDuplicate;
@@ -1992,11 +2013,10 @@ export async function duplicateProject(
   sourceRid: SignedResourceId,
   options?: { label?: string },
   /**
-   * Optional model access used only to compute a precise "which production to drop" set when the
-   * source has in-flight production (see below). When omitted, or when the source is not on the
-   * current schema, duplication falls back to a conservative all-or-nothing drop — still correct,
-   * just less selective. Callers pass it to opt into precision (interactive duplicate); callers
-   * where conservative recompute is fine or a helper isn't handy (sharing, CLI) omit it.
+   * Optional model access, used only to compute the precise drop set when the source has running
+   * production (see below). Omitted, or a non-current schema → conservative all-or-nothing drop
+   * (still correct, less selective). Interactive callers pass it for precision; callers without a
+   * handy helper (sharing, CLI) omit it.
    */
   projectHelper?: ProjectHelper,
 ): Promise<ResourceRef> {
@@ -2022,20 +2042,18 @@ export async function duplicateProject(
   const newPrj = tx.createEphemeral(ProjectResourceType);
   tx.lock(newPrj);
 
-  // Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs) are copied by reference, so the
-  // copy's fields point at the SAME backend resources as the source. Sharing is safe only for
-  // Ready (immutable, complete) production; a NotReady prodOutput means the source is
-  // mid-computation and sharing it would tie the copy to the source's live computation.
+  // Production fields (prodOutput/prodCtx/prodUiCtx/prodArgs) are copied by reference — the copy
+  // points at the SAME backend resources. Safe only for *settled* production (Ready or finished
+  // Error, both immutable); a running (NotReady) block would tie the copy to the source's live
+  // computation. Errored production is kept on purpose — sharing a failed project is a valid case.
   //
-  // We drop production for in-flight blocks. To keep the chain consistent (a finished block's
-  // prodCtx is built from its upstreams' prodCtx — see createProdCtx), dropping an in-flight block
-  // also requires dropping everything downstream of it. The downstream closure needs the project's
-  // dependency graph, which lives in the model layer (ProjectHelper + current schema). So:
-  //   - fast path: a cheap resource-level readiness scan; nothing in flight → copy all production;
-  //   - precise path: something in flight AND the graph is available → drop the in-flight blocks
-  //     plus their downstream closure;
-  //   - fallback: something in flight but no graph (no helper, or an unmigrated schema the model
-  //     layer would reject) → drop ALL production. Conservative, but always chain-consistent.
+  // Drop running blocks plus their downstream closure (a finished block's prodCtx is built from its
+  // upstreams' — see createProdCtx — so keeping it while dropping a running upstream breaks the
+  // chain). The closure needs the model-layer dependency graph (ProjectHelper + current schema):
+  //   - fast path: cheap resource-level scan; nothing running → copy all production;
+  //   - precise path: something running, graph available → drop running blocks + downstream closure;
+  //   - fallback: something running, no graph (no helper / unmigrated schema) → drop ALL production.
+  //     Conservative, but always chain-consistent.
   const prodFields = new Set<ProjectField["fieldName"]>([
     "prodOutput",
     "prodCtx",
@@ -2043,18 +2061,17 @@ export async function duplicateProject(
     "prodArgs",
   ]);
 
-  // Resource-level readiness (schema-agnostic; no model layer). Ready == complete/immutable and
-  // not errored: the canonical readyOrDuplicateOrError predicate (resourceReady or deduplicated or
-  // errored) with the error case excluded — so an errored production is dropped and recomputed in
-  // the copy. Matches the mutator's own field-status rule (see ProjectMutator.load).
-  const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
+  // Has this target settled (data will no longer change: Ready, deduplicated, or finished-error)?
+  // Schema-agnostic, no model layer. Exactly the canonical readyOrDuplicateOrError predicate, which
+  // matches the field-status rule in ProjectMutator.load (NotReady iff none of those hold).
+  const isTargetSettled = async (rid: SignedResourceId | undefined): Promise<boolean> => {
     if (rid === undefined || isNullSignedResourceId(rid)) return false;
     try {
       const r = await tx.getResourceData(rid, false);
-      return readyOrDuplicateOrError(r) && isNullSignedResourceId(r.error);
+      return readyOrDuplicateOrError(r);
     } catch {
-      // Resource gone/inaccessible: treat as not-ready so its production is dropped and
-      // re-derived in the copy, rather than failing the whole duplicate.
+      // Gone/inaccessible → not settled: drop and re-derive in the copy rather than fail the whole
+      // duplicate.
       return false;
     }
   };
@@ -2074,20 +2091,20 @@ export async function duplicateProject(
       prodCoreByBlock.set(parsed.blockId, core);
     }
   }
-  const anyInFlight = (
+  const anyRunning = (
     await Promise.all(
       [...prodCoreByBlock.values()].map(
         async (core) =>
-          !((await isTargetReady(core.prodOutput)) && (await isTargetReady(core.prodCtx))),
+          !((await isTargetSettled(core.prodOutput)) && (await isTargetSettled(core.prodCtx))),
       ),
     )
-  ).some((inFlight) => inFlight);
+  ).some((running) => running);
 
   let dropProduction: ReadonlySet<string>;
-  if (!anyInFlight) {
-    dropProduction = new Set(); // fast path: all production is Ready → copy as-is
+  if (!anyRunning) {
+    dropProduction = new Set(); // fast path: all production settled (Ready/error) → copy as-is
   } else if (projectHelper !== undefined && schema === SchemaVersionCurrent) {
-    // Precise path: drop in-flight blocks + their downstream closure, computed from the source's
+    // Precise path: drop running blocks + their downstream closure, computed from the source's
     // dependency graph. The copy shares the source's block ids, so the set applies directly.
     const srcMutator = await ProjectMutator.load(projectHelper, tx, sourceRid);
     dropProduction = srcMutator.productionBlocksToDropForCopy();
@@ -2114,20 +2131,9 @@ export async function duplicateProject(
       // Override label
       const meta: ProjectMeta = JSON.parse(value);
       tx.setKValue(newPrj, key, JSON.stringify({ ...meta, label: options.label }));
-    } else if (key === BlockRenderingStateKey && dropProduction.size > 0) {
-      // A block whose production we drop can no longer be in limbo (limbo means "has Ready
-      // production but stale"); keep limbo entries only for blocks that retain their production.
-      const state: ProjectRenderingState = JSON.parse(value);
-      tx.setKValue(
-        newPrj,
-        key,
-        JSON.stringify({
-          ...state,
-          blocksInLimbo: state.blocksInLimbo.filter((id) => !dropProduction.has(id)),
-        }),
-      );
     } else {
-      // Copy as-is
+      // Copy as-is. Limbo entries are left untouched: a limbo block's production is Ready (kept, so
+      // never dropped), and a stale entry self-heals when the copy is opened.
       tx.setKValue(newPrj, key, value);
     }
   }
@@ -2145,7 +2151,7 @@ export async function duplicateProject(
     if (isNullSignedResourceId(f.value)) continue;
     const parsed = parseProjectField(f.name);
     if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
-    // Drop production for in-flight blocks and their downstream closure (see above).
+    // Drop production for running blocks and their downstream closure (see above).
     if (
       parsed !== undefined &&
       prodFields.has(parsed.fieldName) &&
