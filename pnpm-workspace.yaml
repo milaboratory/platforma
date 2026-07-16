@@ -78,6 +78,12 @@ packages:
   - etc/blocks/sum-numbers/ui
   - etc/blocks/sum-numbers/block
 
+  - etc/blocks/nonpure-output/workflow
+  - etc/blocks/nonpure-output/model
+  - etc/blocks/nonpure-output/ui
+  - etc/blocks/nonpure-output/block
+  - etc/blocks/nonpure-output/software/random-gen
+
   - etc/blocks/sum-numbers-v3/workflow
   - etc/blocks/sum-numbers-v3/model
   - etc/blocks/sum-numbers-v3/ui
