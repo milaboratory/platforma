@@ -1,8 +1,12 @@
 import {
   Annotation,
+  getAxisId,
+  matchAxisId,
   parseJson,
   readAnnotation,
+  type AxisId,
   type AxisQualification,
+  type AxisSpec,
   type MatchQualifications,
   type PObjectId,
   type PObjectSpec,
@@ -37,7 +41,14 @@ type ExtendedTraceEntry = Trace[number] & {
 };
 
 export type LinkerStep = {
-  spec: PObjectSpec;
+  /**
+   * Axis the link traverses ("the source"). When set, the step is labeled by the difference
+   * between sources: we look up this axis in the `axesSpec` of the columns in `values` and render
+   * that axis's `Annotation.Label`. If the axis can't be resolved to a label, the step is dropped.
+   */
+  axis?: AxisId;
+  /** Legacy: linker column spec. Used only when `axis` is absent; labeled by its `LinkLabel`/`Label`. */
+  spec?: PObjectSpec;
   qualifications?: AxisQualification[];
 };
 
@@ -68,7 +79,7 @@ export type DeriveLabelsFormatters = {
   linkerStepQualification?: (
     qualifications: AxisQualification[],
     stepIndex: number,
-    stepSpec: PObjectSpec,
+    stepSpec: PObjectSpec | undefined,
   ) => string | undefined;
   /** Hit-axis qualifications block. Default: `[${formatQualifications(qs)}]`. */
   hitQualification?: (
@@ -105,7 +116,8 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
       : undefined;
   const separator = options.separator ?? " / ";
 
-  const records = values.map((v, i) => enrichRecord(v, i, options));
+  const axisLabels = collectAxisLabels(values.map((v) => extractEntryParts(v).spec));
+  const records = values.map((v, i) => enrichRecord(v, i, options, axisLabels));
   const stats = collectTypeStats(records);
 
   const hasAnySynthetic = records.some((r) => r.fullTrace.some((ft) => isSyntheticType(ft.type)));
@@ -233,14 +245,53 @@ function formatQualifications(qs: AxisQualification[]): string {
   return qs.map(formatQualification).join("; ");
 }
 
+/**
+ * Index of labeled axes drawn from every spec in `values`. Used to label a linker step by its
+ * source axis: we match the step's `AxisId` against the axes carried by the columns and render the
+ * matched axis's `Annotation.Label`. The "difference between sources" then falls out of the normal
+ * minimization — only source axes that actually differ end up in the rendered label.
+ */
+type AxisLabelIndex = { id: AxisId; label: string }[];
+
+function collectAxisLabels(specs: PObjectSpec[]): AxisLabelIndex {
+  const index: AxisLabelIndex = [];
+  const seen = new Set<string>();
+  for (const spec of specs) {
+    const axesSpec = (spec as { axesSpec?: AxisSpec[] }).axesSpec;
+    if (axesSpec === undefined) continue;
+    for (const axis of axesSpec) {
+      const label = readAnnotation(axis, Annotation.Label)?.trim();
+      if (isNil(label) || label.length === 0) continue;
+      const id = getAxisId(axis);
+      const key = `${id.name} ${label}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      index.push({ id, label });
+    }
+  }
+  return index;
+}
+
+function resolveAxisLabel(axis: AxisId, axisLabels: AxisLabelIndex): string | undefined {
+  // `matchAxisId(query, target)` treats the query domain as a subset requirement, so the step's
+  // axis matches any column axis whose identity contains it.
+  const hit = axisLabels.find((entry) => matchAxisId(axis, entry.id));
+  return hit?.label;
+}
+
 function computeStepLabel(
   step: LinkerStep,
   stepIndex: number,
   formatters: DeriveLabelsFormatters | undefined,
+  axisLabels: AxisLabelIndex,
 ): string | undefined {
-  const base = (
-    readAnnotation(step.spec, Annotation.LinkLabel) ?? readAnnotation(step.spec, Annotation.Label)
-  )?.trim();
+  const base =
+    step.axis !== undefined
+      ? resolveAxisLabel(step.axis, axisLabels)
+      : (
+          readAnnotation(step.spec, Annotation.LinkLabel) ??
+          readAnnotation(step.spec, Annotation.Label)
+        )?.trim();
   if (isNil(base) || base.length === 0) return undefined;
   if (step.qualifications === undefined || step.qualifications.length === 0) return base;
   const qualText = isFunction(formatters?.linkerStepQualification)
@@ -268,7 +319,12 @@ function buildFullTrace(trace: ExtendedTraceEntry[]): FullTraceEntry[] {
   return result;
 }
 
-function enrichRecord(value: Entry, index: number, options: DeriveLabelsOptions): EnrichedRecord {
+function enrichRecord(
+  value: Entry,
+  index: number,
+  options: DeriveLabelsOptions,
+  axisLabels: AxisLabelIndex,
+): EnrichedRecord {
   const { spec, extraTrace, linkerPath, qualifications } = extractEntryParts(value);
   const formatters = options.formatters;
 
@@ -294,7 +350,7 @@ function enrichRecord(value: Entry, index: number, options: DeriveLabelsOptions)
 
   if (linkerPath !== undefined && linkerPath.length > 0) {
     const stepLabels = linkerPath
-      .map((step, i) => computeStepLabel(step, i, formatters))
+      .map((step, i) => computeStepLabel(step, i, formatters, axisLabels))
       .filter((s): s is string => !isNil(s));
     if (stepLabels.length > 0) {
       const linkerText = isFunction(formatters?.linker)
