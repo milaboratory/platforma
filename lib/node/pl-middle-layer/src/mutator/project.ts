@@ -18,6 +18,7 @@ import {
   isResourceRef,
   Pl,
   PlClient,
+  readyOrDuplicateOrError,
 } from "@milaboratories/pl-client";
 import {
   createRenderHeavyBlock,
@@ -533,23 +534,23 @@ export class ProjectMutator {
    * depend on them). Returns an empty set when the whole project's production is Ready.
    */
   public productionBlocksToDropForCopy(): Set<string> {
-    const notReady: string[] = [];
+    const dropSet = new Set<string>();
     for (const [blockId, info] of this.blockInfos) {
       const hasProduction =
         info.fields.prodOutput !== undefined || info.fields.prodCtx !== undefined;
       if (!hasProduction) continue;
       const ready =
         info.fields.prodOutput?.status === "Ready" && info.fields.prodCtx?.status === "Ready";
-      if (!ready) notReady.push(blockId);
+      if (!ready) dropSet.add(blockId);
     }
-    if (notReady.length === 0) return new Set<string>();
+    if (dropSet.size === 0) return dropSet;
 
-    // Always drop the not-ready blocks themselves; add the downstream closure of those present in
-    // the actual production graph (a partial block may lack prodArgs and thus not be a graph node —
-    // traverse() would throw on such a root, so we only seed graph-present blocks).
+    // Snapshot the not-ready blocks before we expand dropSet with their downstream closure. Only
+    // seed blocks present in the actual production graph (a partial block may lack prodArgs and thus
+    // not be a graph node — traverse() would throw on such a root, so we only seed graph-present
+    // blocks). The snapshot means expanding dropSet can't feed back into the traversal roots.
     const graph = this.getActualProductionGraph();
-    const dropSet = new Set<string>(notReady);
-    const seeds = notReady.filter((id) => graph.nodes.has(id));
+    const seeds = [...dropSet].filter((id) => graph.nodes.has(id));
     for (const id of graph.traverseIds("downstream", ...seeds)) dropSet.add(id);
     return dropSet;
   }
@@ -2042,16 +2043,15 @@ export async function duplicateProject(
     "prodArgs",
   ]);
 
-  // Resource-level readiness (schema-agnostic; no model layer). Ready == complete/immutable result,
-  // matching the mutator's own field-status rule: resourceReady or deduplicated, and not errored.
+  // Resource-level readiness (schema-agnostic; no model layer). Ready == complete/immutable and
+  // not errored: the canonical readyOrDuplicateOrError predicate (resourceReady or deduplicated or
+  // errored) with the error case excluded — so an errored production is dropped and recomputed in
+  // the copy. Matches the mutator's own field-status rule (see ProjectMutator.load).
   const isTargetReady = async (rid: SignedResourceId | undefined): Promise<boolean> => {
     if (rid === undefined || isNullSignedResourceId(rid)) return false;
     try {
       const r = await tx.getResourceData(rid, false);
-      return (
-        (r.resourceReady || isNotNullSignedResourceId(r.originalResourceId)) &&
-        isNullSignedResourceId(r.error)
-      );
+      return readyOrDuplicateOrError(r) && isNullSignedResourceId(r.error);
     } catch {
       // Resource gone/inaccessible: treat as not-ready so its production is dropped and
       // re-derived in the copy, rather than failing the whole duplicate.
