@@ -378,7 +378,12 @@ export class MiddleLayer {
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
       // Create the duplicate
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(
+        tx,
+        sourceRid,
+        { label: newLabel },
+        this.env.projectHelper,
+      );
 
       // Attach to project list with a random UUID field name
       tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", newPrj);
@@ -433,7 +438,12 @@ export class MiddleLayer {
       ).map((m) => m.label);
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
-      const newPrj = await duplicateProject(tx, sourceRid, { label: newLabel });
+      const newPrj = await duplicateProject(
+        tx,
+        sourceRid,
+        { label: newLabel },
+        this.env.projectHelper,
+      );
       tx.createField(field(targetProjectListRid, randomUUID()), "Dynamic", newPrj);
       await tx.commit();
     });
