@@ -12,6 +12,7 @@ import {
   canonicalizeAxisId,
   dedupColumns,
   extractPObjectId,
+  isLabelColumn,
   uniqueBy,
 } from "@milaboratories/pl-model-common";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
@@ -227,11 +228,22 @@ type ResolvedColumns = {
 function resolveInputColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
+): undefined | ResolvedColumns {
+  const result = resolvePrimaryAndSecondaryColumns(ctx, options);
+  if (isNil(result)) return undefined;
+  const { primary, secondary } = result;
+  const filteredSecondary = excludeNotPrimaryLabelColumns(primary, secondary);
+  return { primary, secondary: filteredSecondary };
+}
+
+function resolvePrimaryAndSecondaryColumns<A, U>(
+  ctx: RenderCtxBase<A, U>,
+  options: createPlDataTableOptionsV3,
 ): ResolvedColumns | undefined {
   if ("primaryColumns" in options) {
     const primary = options.primaryColumns;
     const secondary = options.columns ?? [];
-    const labels = discoverLabelColumns(ctx, primary, [...primary, ...secondary]);
+    const labels = discoverLabelColumns(ctx, primary);
     // Exclude from secondary anything already present in primary: a label
     // column the block hands in as primary can be re-discovered here as a
     // label for that same axis, landing in the table twice with the same id.
@@ -251,6 +263,20 @@ function resolveInputColumns<A, U>(
   }
 
   return undefined;
+}
+
+function excludeNotPrimaryLabelColumns(
+  primary: ColumnRecipe[],
+  secondary: ColumnRecipe[],
+): ColumnRecipe[] {
+  const primaryAxisKeys = new Set(
+    primary.flatMap((c) => c.getSpec().axesSpec.map((a) => canonicalizeAxisId(a))),
+  );
+  return secondary.filter((c) => {
+    const spec = c.getSpec();
+    if (!isLabelColumn(spec)) return true;
+    return primaryAxisKeys.has(canonicalizeAxisId(spec.axesSpec[0]));
+  });
 }
 
 /** Split secondary recipes by query topology: leaves (no linker chain) vs joined. */

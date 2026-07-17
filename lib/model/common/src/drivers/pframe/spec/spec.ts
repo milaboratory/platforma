@@ -514,7 +514,7 @@ function hasCycleOfParents(axisSpec: AxisSpecNormalized) {
 
 /** Create list of normalized axisSpec (parents are in array of specs, not indexes) */
 export function getNormalizedAxesList(axes: AxisSpec[]): AxisSpecNormalized[] {
-  if (!axes.length) {
+  if (axes.length === 0) {
     return [];
   }
   const modifiedAxes: AxisSpecNormalized[] = axes.map((axis) => {

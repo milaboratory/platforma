@@ -1,9 +1,9 @@
-import type {
-  ColumnUniversalId,
-  LeafEntry,
-  PColumn,
-  PlRef,
-  PObjectId,
+import {
+  type ColumnUniversalId,
+  type LeafEntry,
+  type PColumn,
+  type PlRef,
+  type PObjectId,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import type { TreeNodeAccessor } from "../render";
