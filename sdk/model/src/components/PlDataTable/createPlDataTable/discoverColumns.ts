@@ -7,7 +7,7 @@ import type {
 import { PColumnName } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type { ColumnRecipe, ColumnsSource } from "../../../columns";
-import { ColumnsCollection, collectLinkerIds, isLeafColumn } from "../../../columns";
+import { ColumnsCollection, isLeafColumn } from "../../../columns";
 import type { ColumnsSelectorConfig } from "./createPlDataTableV3";
 
 export type DiscoverTableColumnOptions = {
@@ -30,7 +30,7 @@ export type DiscoveredTableColumns = {
 export function discoverTableColumns(
   ctx: RenderCtxBase,
   options: DiscoverTableColumnOptions,
-): undefined | DiscoveredTableColumns {
+): DiscoveredTableColumns {
   const discoveredColumns = ColumnsCollection(options.sources, { ctx: ctx.ctx })
     .discover({ ...options.selector, anchors: options.anchors })
     .getColumns();
@@ -54,22 +54,18 @@ export function discoverTableColumns(
 export function discoverLabelColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   primary: ColumnRecipe[],
-  columns: ColumnRecipe[],
 ): ColumnRecipe[] {
-  if (columns.length === 0) return [];
+  if (primary.length === 0) return [];
 
-  const axes = columns.flatMap((col) => col.getSpec().axesSpec);
-  return (
-    ColumnsCollection(undefined, { ctx: ctx.ctx })
-      // .addSource({ columns, isFinal: true })
-      .discover({
-        include: axes.map((a) => ({
-          name: { type: "exact", value: PColumnName.Label },
-          axes: [{ name: { type: "exact", value: a.name } }],
-        })),
-        anchors: Object.fromEntries(primary.map((col, i) => [`anchor_${i}`, col.getSpec()])),
-        maxHops: columns.reduce((acc, c) => Math.max(acc, collectLinkerIds(c).length), 0),
-      })
-      .getColumns()
-  );
+  const axes = primary.flatMap((col) => col.getSpec().axesSpec);
+  return ColumnsCollection(undefined, { ctx: ctx.ctx })
+    .discover({
+      include: axes.map((a) => ({
+        name: { type: "exact", value: PColumnName.Label },
+        axes: [{ name: { type: "exact", value: a.name } }],
+      })),
+      anchors: Object.fromEntries(primary.map((col, i) => [`anchor_${i}`, col.getSpec()])),
+      maxHops: 0,
+    })
+    .getColumns();
 }
