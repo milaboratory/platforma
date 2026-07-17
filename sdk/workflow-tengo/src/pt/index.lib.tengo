@@ -860,6 +860,9 @@ workflow := func() {
 		/**
 		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
+		 * If not set, the CPU request is sized from the input data volume:
+		 * `between(2 + size / 16 GiB, 2, 8)`. Setting an explicit value overrides this.
+		 *
 		 * @param amount: number - number of cores requested for command.
 		 */
 		cpu: func(amount) {
@@ -875,6 +878,9 @@ workflow := func() {
 		 *                                    Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (powers of 1024)
 		 *                                  when operating with bytes, you may use 'units' package for convenience:
 		 *                                    120 * units.GiB
+		 *
+		 * If not set, the RAM request is sized from the input data volume:
+		 * `between(2 GiB + 4 × size, 2 GiB, 64 GiB)`. Setting an explicit value overrides this.
 		 *
 		 * @return builder
 		 */

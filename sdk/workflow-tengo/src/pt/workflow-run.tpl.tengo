@@ -41,12 +41,35 @@ self.body(func(inputs) {
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").arg(spillFolder).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    if !is_undefined(cpu) {
-        ptCmd.cpu(cpu)
+    // Size the ptabler (Polars) run from the total input data volume, unless the
+    // block author set an explicit cpu/mem (an explicit request always wins).
+    // ptabler runs Polars in lazy + streaming mode with disk spill (--spill-dir),
+    // so peak RAM stays a modest multiple of the input size rather than the whole
+    // dataset. f.size() sums the stored (parquet) blob size of all input files via
+    // getBlobSize (a metadata read, no pre-exec). Both dimensions carry a
+    // .staticFallback so the run also resolves on backends that cannot evaluate
+    // resource formulas (no getBlobSize).
+    //     ram = between(2 GiB + 4 * size, 2 GiB, 64 GiB)
+    //     cpu = between(2 + size / 16 GiB, 2, 8)
+    f := exec.formula
+    ramReq := mem
+    if is_undefined(ramReq) {
+        ramReq = f.size({ default: 0 }).times(4).plus(f.gib(2)).
+            between(f.gib(2), f.gib(64)).
+            staticFallback("4GiB")
     }
-    if !is_undefined(mem) {
-        ptCmd.mem(mem)
+    cpuReq := cpu
+    if is_undefined(cpuReq) {
+        cpuReq = f.size({ default: 0 }).dividedByFloor(f.gib(16)).plus(f.const(2)).
+            between(f.const(2), f.const(8)).
+            staticFallback(2)
     }
+    ptCmd.resources({
+        onCPU: {
+            cpu: cpuReq,
+            ram: ramReq
+        }
+    })
     if !is_undefined(inputCache) {
         ptCmd.cacheInputs(inputCache)
     }
