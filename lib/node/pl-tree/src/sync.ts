@@ -8,7 +8,7 @@ import type {
 } from "@milaboratories/pl-client";
 import Denque from "denque";
 import { hasCapability, isNullSignedResourceId } from "@milaboratories/pl-client";
-import type { ExtendedResourceData, PlTreeState } from "./state";
+import type { ExtendedResourceData, PlTreeState, ResourceUpdateStat } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
 /** Applied to list of fields in resource data. */
@@ -70,7 +70,7 @@ export function constructTreeLoadingRequest(
   };
 }
 
-export type TreeLoadingStat = {
+export type TreeLoadingStat = ResourceUpdateStat & {
   requests: number;
   roundTrips: number;
   retrievedResources: number;
@@ -101,6 +101,13 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     millisSpent: 0,
     stopMarkersSkipped: 0,
     stopMarkerFollowUpRoundTrips: 0,
+    resourcesNew: 0,
+    resourcesChanged: 0,
+    resourcesUnchanged: 0,
+    bytesUnchanged: 0,
+    metadataStableChanged: 0,
+    bfsRequestsWasted: 0,
+    usedStreaming: false,
   };
 }
 
@@ -116,7 +123,14 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   result += `Pruned fields: ${stat.prunedFields}\n`;
   result += `Final resources skipped: ${stat.finalResourcesSkipped}\n`;
   result += `Stop markers skipped: ${stat.stopMarkersSkipped}\n`;
-  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}`;
+  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}\n`;
+  result += `New resources: ${stat.resourcesNew}\n`;
+  result += `Changed resources: ${stat.resourcesChanged}\n`;
+  result += `Unchanged (duplicate re-fetch) resources: ${stat.resourcesUnchanged}\n`;
+  result += `Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}\n`;
+  result += `Changed with stable metadata: ${stat.metadataStableChanged}\n`;
+  result += `BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}\n`;
+  result += `Used streaming: ${stat.usedStreaming}`;
   return result;
 }
 
@@ -363,6 +377,8 @@ export async function loadTreeState(
     const wantsStreaming =
       mode === "backend-streaming" ||
       (mode === "auto" && supportsResourceTreeTraversal(capabilities));
+
+    if (stats) stats.usedStreaming = wantsStreaming && supportsResourceTreeTraversal(capabilities);
 
     if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
       const msg =
