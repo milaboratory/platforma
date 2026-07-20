@@ -168,7 +168,16 @@ function deriveStems(values: Entry[], options: DeriveLabelsOptions): string[] {
         forcedSet,
         separator,
       );
-      return build(minimized, false) ?? throwError("Failed to derive unique labels");
+      const rendered = build(minimized, false) ?? throwError("Failed to derive unique labels");
+      return repairBareByPresence(
+        rendered,
+        minimized,
+        records,
+        stats,
+        forcedSet,
+        forceTraceElements,
+        separator,
+      );
     }
 
     additionalType++;
@@ -187,7 +196,16 @@ function deriveStems(values: Entry[], options: DeriveLabelsOptions): string[] {
     forcedSet,
     separator,
   );
-  return build(minimized, true) ?? throwError("Failed to derive unique labels");
+  const rendered = build(minimized, true) ?? throwError("Failed to derive unique labels");
+  return repairBareByPresence(
+    rendered,
+    minimized,
+    records,
+    stats,
+    forcedSet,
+    forceTraceElements,
+    separator,
+  );
 }
 
 // --- Pure helpers ---
@@ -431,4 +449,95 @@ function minimizeTypeSet(
   }
 
   return result;
+}
+
+const ABSENT_VALUE = " absent"; // sentinel value for "row has no entry of this type"
+
+/** Whether `fullType`'s rendered value differs across the group (absence counts as a value). */
+function typeDistinguishes(records: EnrichedRecord[], group: number[], fullType: string): boolean {
+  const values = new Set<string>();
+  for (const i of group) {
+    const ft = records[i].fullTrace.find((e) => e.fullType === fullType);
+    values.add(ft?.label ?? ABSENT_VALUE);
+    if (values.size > 1) return true;
+  }
+  return false;
+}
+
+/** The highest-importance trace type this row HAS (outside `typeSet`) that sets it apart from its
+ *  group peers. `undefined` when the row carries nothing distinguishing of its own. */
+function bestDistinguishingType(
+  records: EnrichedRecord[],
+  group: number[],
+  row: number,
+  typeSet: Set<string>,
+  forcedSet: Set<string>,
+  forceTraceElements: Set<string> | undefined,
+  stats: TypeStats,
+): string | undefined {
+  return records[row].fullTrace.reduce<{ type: string; imp: number } | undefined>((best, ft) => {
+    if (typeSet.has(ft.fullType) || forcedSet.has(ft.fullType) || forceTraceElements?.has(ft.type))
+      return best;
+    if (!typeDistinguishes(records, group, ft.fullType)) return best;
+    const imp = stats.importances.get(ft.fullType) ?? 0;
+    return best === undefined || imp > best.imp ? { type: ft.fullType, imp } : best;
+  }, undefined)?.type;
+}
+
+/**
+ * Un-bare columns distinguished only "by absence". After minimization a column can end up with a
+ * bare trace zone (only the forced native label) while a peer sharing that same base renders extra
+ * tokens — the column reads as unique purely because it LACKS what the peer has. For each such bare
+ * column this re-renders JUST that column's label with the highest-importance trace type it actually
+ * carries that tells it apart from its peers, so every colliding column is distinguished by a token
+ * it HAS rather than by omission.
+ *
+ * Patches individual labels rather than the shared type set on purpose: the set is global, so adding
+ * a type there would also decorate unrelated columns in other groups that happen to carry it. Only
+ * bare columns' labels grow (a superset of their previous value), so uniqueness is preserved. Groups
+ * are keyed by the base = the label rendered from the forced types alone.
+ */
+function repairBareByPresence(
+  labels: string[],
+  minimized: Set<string>,
+  records: EnrichedRecord[],
+  stats: TypeStats,
+  forcedSet: Set<string>,
+  forceTraceElements: Set<string> | undefined,
+  separator: string,
+): string[] {
+  const base = records.map((r) => renderRecordLabel(r, forcedSet, forceTraceElements, separator));
+  const isBare = records.map(
+    (r, i) => renderRecordLabel(r, minimized, forceTraceElements, separator) === base[i],
+  );
+
+  const groups = records.reduce<Map<string, number[]>>(
+    (acc, _, i) => acc.set(base[i] ?? "", [...(acc.get(base[i] ?? "") ?? []), i]),
+    new Map(),
+  );
+
+  const patched = [...labels];
+  for (const group of groups.values()) {
+    // Only asymmetric groups need repair: a bare column beside a richer peer. When every column is
+    // equally bare there is nothing to un-hide (they carry no distinguishing token of their own).
+    if (!group.some((i) => !isBare[i])) continue;
+    for (const i of group) {
+      if (!isBare[i]) continue;
+      const chosen = bestDistinguishingType(
+        records,
+        group,
+        i,
+        minimized,
+        forcedSet,
+        forceTraceElements,
+        stats,
+      );
+      if (chosen === undefined) continue;
+      const withToken = new Set([...minimized, chosen]);
+      patched[i] =
+        renderRecordLabel(records[i], withToken, forceTraceElements, separator) ?? patched[i];
+    }
+  }
+
+  return patched;
 }

@@ -213,6 +213,96 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
   expect(deriveDistinctLabels(tracesToSpecs(traces))).toEqual(labels);
 });
 
+// Preset distilled from a real PlDataTable "all columns" dump: three columns whose native label is
+// "Cluster Id", produced by two different clustering analyses (foldseek 3D-structure clustering and
+// mmseqs2 clonotype clustering). The two foldseek columns carry a byte-identical trace, so phase 1
+// cannot tell them apart (a linker "via …" postfix does in the real pipeline); the mmseqs2 column
+// differs by its last trace step. Regression guard for "distinguish by absence": minimization used
+// to keep only ONE clustering type, leaving the other column a bare "Cluster Id" — unique only
+// because it LACKED the peer's clustering step. Each column must instead surface its OWN step.
+test("cluster-id preset: colliding columns are distinguished by a token they have, not by absence", () => {
+  const clusterId = (trace: Trace): PColumnSpec => ({
+    kind: "PColumn",
+    name: "name",
+    valueType: "String",
+    annotations: { [Annotation.Trace]: JSON.stringify(trace), [Annotation.Label]: "Cluster Id" },
+    axesSpec: [],
+  });
+
+  const provenance: Trace = [
+    { type: "milaboratories.samples-and-data", importance: 10, label: "Samples & Data" },
+    {
+      type: "milaboratories.samples-and-data/dataset",
+      importance: 100,
+      label: "MB135 + Podocytes",
+    },
+    {
+      type: "milaboratories.mixcr-amplicon-alignment",
+      importance: 20,
+      label: "MiXCR generic amplicon",
+    },
+    { type: "milaboratories.redefine-clonotypes", importance: 30, label: "Imputed VDJRegion aa" },
+  ];
+  const foldseek: Trace = [
+    ...provenance,
+    { type: "milaboratories.antibody-tcr-lead-selection", importance: 30, label: "Selected Leads" },
+    {
+      type: "milaboratories.3d-structure-prediction",
+      importance: 20,
+      label: "Camelid (VHH/nanobody) NBB2, CDRH3 ≤ 2.5 Å",
+    },
+    {
+      type: "milaboratories.3d-structure-clustering.clustering",
+      importance: 30,
+      label: "Full Structure+AA, TM≥0.95, cov≥0.95",
+    },
+  ];
+  const mmseqs2: Trace = [
+    ...provenance,
+    {
+      type: "milaboratories.clonotype-clustering.clustering",
+      importance: 30,
+      label: "Imputed VDJRegion aa, BLOSUM62, ident:0.95, cov:0.95",
+    },
+  ];
+
+  const entries: Entry[] = [clusterId(foldseek), clusterId(mmseqs2), clusterId(foldseek)];
+
+  expect(deriveDistinctLabels(entries, { includeNativeLabel: true })).toEqual([
+    "Cluster Id / Full Structure+AA, TM≥0.95, cov≥0.95",
+    "Cluster Id / Imputed VDJRegion aa, BLOSUM62, ident:0.95, cov:0.95",
+    "Cluster Id / Full Structure+AA, TM≥0.95, cov≥0.95",
+  ]);
+});
+
+// The by-presence repair must patch ONLY the bare column's own label — never the shared global type
+// set. Otherwise the token it adds for one group ("X2" needs "t") leaks onto every column that
+// carries that type, including "Y" in an unrelated group, which should stay a bare "Y".
+test("by-presence repair does not leak its token into other groups sharing that type", () => {
+  const spec = (label: string, trace: Trace): PColumnSpec => ({
+    kind: "PColumn",
+    name: "name",
+    valueType: "Int",
+    annotations: { [Annotation.Trace]: JSON.stringify(trace), [Annotation.Label]: label },
+    axesSpec: [],
+  });
+
+  const entries: Entry[] = [
+    // Group X: minimization separates the two by the higher-importance "a" (X2 ends up bare),
+    // then repair un-bares X2 with the token it actually has — "t".
+    spec("X", [{ type: "a", importance: 10, label: "A1" }]),
+    spec("X", [{ type: "t", importance: 1, label: "TX" }]),
+    // Group Y: sole "Y" column, also carries "t". Must NOT inherit X2's repair token.
+    spec("Y", [{ type: "t", importance: 1, label: "TY" }]),
+  ];
+
+  expect(deriveDistinctLabels(entries, { includeNativeLabel: true })).toEqual([
+    "X / A1",
+    "X / TX",
+    "Y",
+  ]);
+});
+
 test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements: string[] }>([
   {
     name: "force one element",

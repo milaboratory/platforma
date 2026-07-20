@@ -12,7 +12,6 @@ import {
   canonicalizeAxisId,
   dedupColumns,
   extractPObjectId,
-  isLabelColumn,
   uniqueBy,
 } from "@milaboratories/pl-model-common";
 import { collectFilterSpecColumns } from "../../../filters/traverse";
@@ -229,17 +228,6 @@ function resolveInputColumns<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): undefined | ResolvedColumns {
-  const result = resolvePrimaryAndSecondaryColumns(ctx, options);
-  if (isNil(result)) return undefined;
-  const { primary, secondary } = result;
-  const filteredSecondary = excludeNotPrimaryLabelColumns(primary, secondary);
-  return { primary, secondary: filteredSecondary };
-}
-
-function resolvePrimaryAndSecondaryColumns<A, U>(
-  ctx: RenderCtxBase<A, U>,
-  options: createPlDataTableOptionsV3,
-): ResolvedColumns | undefined {
   if ("primaryColumns" in options) {
     const primary = options.primaryColumns;
     const secondary = options.columns ?? [];
@@ -263,20 +251,6 @@ function resolvePrimaryAndSecondaryColumns<A, U>(
   }
 
   return undefined;
-}
-
-function excludeNotPrimaryLabelColumns(
-  primary: ColumnRecipe[],
-  secondary: ColumnRecipe[],
-): ColumnRecipe[] {
-  const primaryAxisKeys = new Set(
-    primary.flatMap((c) => c.getSpec().axesSpec.map((a) => canonicalizeAxisId(a))),
-  );
-  return secondary.filter((c) => {
-    const spec = c.getSpec();
-    if (!isLabelColumn(spec)) return true;
-    return primaryAxisKeys.has(canonicalizeAxisId(spec.axesSpec[0]));
-  });
 }
 
 /** Split secondary recipes by query topology: leaves (no linker chain) vs joined. */
@@ -551,3 +525,111 @@ function remapFilterColumnIds(
 
   return prune(filters) as Nil | PlDataTableFilters;
 }
+
+const _ = [
+  {
+    type: "column",
+    id: '{"__isRef":true,"blockId":"6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07","name":"clusters.assign.clusterLabel"}',
+    spec: {
+      kind: "PColumn",
+      axesSpec: [
+        {
+          name: "pl7.app/vdj/clonotypeKey",
+          type: "String",
+          domain: {
+            "pl7.app/redefined-by": "aabfc81f-0fc9-4699-84e8-6e749a3e384d",
+            "pl7.app/vdj/chain": "IGHeavy",
+            "pl7.app/vdj/clonotypeKey/structure":
+              '[["pl7.app/vdj/sequence",["pl7.app/alphabet","aminoacid"],["pl7.app/vdj/feature","VDJRegion"]]]',
+            "pl7.app/vdj/clonotypingRunId": "6cfab875-649e-4c52-bb69-fe976c2b57a0",
+          },
+          annotations: {
+            "pl7.app/label": "Clonotype ID",
+            "pl7.app/segmentedBy": '["pl7.app/vdj/clonotypingRunId"]',
+            "pl7.app/table/fontFamily": "monospace",
+            "pl7.app/table/orderPriority": "110000",
+            "pl7.app/table/visibility": "default",
+          },
+        },
+      ],
+      name: "pl7.app/clusterId",
+      valueType: "String",
+      domain: {
+        "pl7.app/clustering/algorithm": "foldseek",
+        "pl7.app/clustering/blockId": "6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07",
+      },
+      annotations: {
+        "pl7.app/label": "Cluster Id",
+        "pl7.app/structure/clusteringSource": "foldseek",
+        "pl7.app/trace":
+          '[{"type":"milaboratories.samples-and-data","id":"0189e23b-5e8d-4648-8c6d-70caa5c26958","importance":10,"label":"Samples & Data"},{"type":"milaboratories.samples-and-data/dataset","id":"34U3GEP5PGJF45UG3A2WZ3JO","importance":100,"label":"MB135 + Podocytes"},{"label":"MiXCR generic amplicon","type":"milaboratories.mixcr-amplicon-alignment","id":"6cfab875-649e-4c52-bb69-fe976c2b57a0","importance":20},{"type":"milaboratories.redefine-clonotypes","importance":30,"label":"Imputed VDJRegion aa"},{"type":"milaboratories.antibody-tcr-lead-selection","importance":30,"label":"Selected Leads"},{"type":"milaboratories.3d-structure-prediction","id":"d204391a-e7dd-434d-9c24-ef77b5da81e0","importance":20,"label":"Camelid (VHH/nanobody) NBB2, CDRH3 ≤ 2.5 Å"},{"type":"milaboratories.3d-structure-clustering.clustering","id":"6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07","importance":30,"label":"Full Structure+AA, TM≥0.95, cov≥0.95"}]',
+      },
+    },
+  },
+  {
+    type: "column",
+    id: '{"__isDiscovered":true,"column":"{\\"__isRef\\":true,\\"blockId\\":\\"440a489a-8ae8-4982-9d1e-6297e7b8b8d0\\",\\"name\\":\\"pf.clusterLabel4\\"}","path":[{"column":"{\\"__isRef\\":true,\\"blockId\\":\\"440a489a-8ae8-4982-9d1e-6297e7b8b8d0\\",\\"name\\":\\"pf.link3\\"}","type":"linker"}]}',
+    spec: {
+      kind: "PColumn",
+      axesSpec: [
+        {
+          name: "pl7.app/clusterId",
+          type: "String",
+          domain: {
+            "pl7.app/clustering/algorithm": "mmseqs2",
+            "pl7.app/clustering/blockId": "440a489a-8ae8-4982-9d1e-6297e7b8b8d0",
+            "pl7.app/redefined-by": "aabfc81f-0fc9-4699-84e8-6e749a3e384d",
+            "pl7.app/vdj/chain": "IGHeavy",
+            "pl7.app/vdj/clonotypeKey/structure":
+              '[["pl7.app/vdj/sequence",["pl7.app/alphabet","aminoacid"],["pl7.app/vdj/feature","VDJRegion"]]]',
+            "pl7.app/vdj/clonotypingRunId": "6cfab875-649e-4c52-bb69-fe976c2b57a0",
+          },
+          annotations: {
+            "pl7.app/label": "Cluster Id",
+            "pl7.app/table/orderPriority": "990000",
+            "pl7.app/table/visibility": "default",
+          },
+        },
+      ],
+      name: "pl7.app/label",
+      valueType: "String",
+      annotations: {
+        "pl7.app/label": "Cluster Id",
+        "pl7.app/table/visibility": "default",
+        "pl7.app/trace":
+          '[{"importance":10,"label":"Samples & Data","type":"milaboratories.samples-and-data","id":"0189e23b-5e8d-4648-8c6d-70caa5c26958"},{"id":"34U3GEP5PGJF45UG3A2WZ3JO","importance":100,"label":"MB135 + Podocytes","type":"milaboratories.samples-and-data/dataset"},{"label":"MiXCR generic amplicon","type":"milaboratories.mixcr-amplicon-alignment","id":"6cfab875-649e-4c52-bb69-fe976c2b57a0","importance":20},{"type":"milaboratories.redefine-clonotypes","importance":30,"label":"Imputed VDJRegion aa"},{"type":"milaboratories.clonotype-clustering.clustering","importance":30,"label":"Imputed VDJRegion aa, BLOSUM62, ident:0.95, cov:0.95"}]',
+      },
+    },
+  },
+  {
+    type: "column",
+    id: '{"__isDiscovered":true,"column":"{\\"__isRef\\":true,\\"blockId\\":\\"6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07\\",\\"name\\":\\"clusters.summary.clusterLabel\\"}","path":[{"column":"{\\"__isRef\\":true,\\"blockId\\":\\"6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07\\",\\"name\\":\\"clusters.link.isCentroid\\"}","type":"linker"}]}',
+    spec: {
+      kind: "PColumn",
+      axesSpec: [
+        {
+          name: "pl7.app/clusterId",
+          type: "String",
+          domain: {
+            "pl7.app/clustering/algorithm": "foldseek",
+            "pl7.app/clustering/blockId": "6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07",
+          },
+          annotations: {
+            "pl7.app/label": "Cluster Id",
+            "pl7.app/table/orderPriority": "990000",
+            "pl7.app/table/visibility": "default",
+          },
+        },
+      ],
+      name: "pl7.app/label",
+      valueType: "String",
+      annotations: {
+        "pl7.app/label": "Cluster Id",
+        "pl7.app/table/orderPriority": "990000",
+        "pl7.app/table/visibility": "default",
+        "pl7.app/trace":
+          '[{"type":"milaboratories.samples-and-data","id":"0189e23b-5e8d-4648-8c6d-70caa5c26958","importance":10,"label":"Samples & Data"},{"type":"milaboratories.samples-and-data/dataset","id":"34U3GEP5PGJF45UG3A2WZ3JO","importance":100,"label":"MB135 + Podocytes"},{"label":"MiXCR generic amplicon","type":"milaboratories.mixcr-amplicon-alignment","id":"6cfab875-649e-4c52-bb69-fe976c2b57a0","importance":20},{"type":"milaboratories.redefine-clonotypes","importance":30,"label":"Imputed VDJRegion aa"},{"type":"milaboratories.antibody-tcr-lead-selection","importance":30,"label":"Selected Leads"},{"type":"milaboratories.3d-structure-prediction","id":"d204391a-e7dd-434d-9c24-ef77b5da81e0","importance":20,"label":"Camelid (VHH/nanobody) NBB2, CDRH3 ≤ 2.5 Å"},{"type":"milaboratories.3d-structure-clustering.clustering","id":"6b2ae9f7-526d-4fd9-8a28-c0e3756c0b07","importance":30,"label":"Full Structure+AA, TM≥0.95, cov≥0.95"}]',
+      },
+    },
+  },
+];
