@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.9.8
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-error-like@1.12.10
+
 ## 2.9.7
 
 ### Patch Changes

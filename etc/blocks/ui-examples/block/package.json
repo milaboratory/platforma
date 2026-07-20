@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "files": [
     "dist",
     "block-pack"

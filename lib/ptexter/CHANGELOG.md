@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.4
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.2.3
 
 ### Patch Changes

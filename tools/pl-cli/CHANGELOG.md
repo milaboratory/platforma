@@ -1,5 +1,14 @@
 # @platforma-sdk/pl-cli
 
+## 0.8.9
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-middle-layer@1.66.7
+  - @milaboratories/pl-client@3.14.3
+
 ## 0.8.8
 
 ### Patch Changes

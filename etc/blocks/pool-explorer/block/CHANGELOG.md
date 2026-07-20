@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.2.66
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.2.65
 
 ### Patch Changes

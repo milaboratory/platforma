@@ -1,5 +1,14 @@
 # @milaboratories/pl-errors
 
+## 1.4.32
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-client@3.14.3
+
 ## 1.4.31
 
 ### Patch Changes

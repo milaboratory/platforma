@@ -1,5 +1,14 @@
 # @milaboratories/columns-collection-driver
 
+## 0.2.2
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/helpers@1.14.5
+
 ## 0.2.1
 
 ### Patch Changes

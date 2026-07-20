@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.80.8
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/columns-collection-driver@0.2.2
+  - @milaboratories/pf-spec-driver@1.4.22
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/uikit@2.15.17
+  - @platforma-sdk/model@1.80.8
+
 ## 1.80.4
 
 ### Patch Changes

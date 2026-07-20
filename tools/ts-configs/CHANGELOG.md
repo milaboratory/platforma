@@ -1,5 +1,11 @@
 # @milaboratories/ts-configs
 
+## 1.3.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.3.0
 
 ### Minor Changes

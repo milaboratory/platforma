@@ -1,5 +1,13 @@
 # @milaboratories/test-helpers
 
+## 1.2.5
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/helpers@1.14.5
+
 ## 1.2.4
 
 ### Patch Changes

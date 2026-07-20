@@ -1,5 +1,31 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.7
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/columns-collection-driver@0.2.2
+  - @milaboratories/pf-spec-driver@1.4.22
+  - @milaboratories/pl-deployments@3.0.13
+  - @milaboratories/pl-model-middle-layer@1.30.14
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pl-drivers@1.16.11
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pf-driver@1.8.3
+  - @milaboratories/pl-client@3.14.3
+  - @milaboratories/pl-errors@1.4.32
+  - @platforma-sdk/workflow-tengo@6.8.1
+  - @milaboratories/pl-model-backend@1.4.17
+  - @platforma-sdk/block-tools@2.12.8
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/pl-tree@1.13.2
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.80.8
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 1.66.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.14.5
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.14.4
 
 ### Patch Changes

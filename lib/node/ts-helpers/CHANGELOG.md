@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers
 
+## 1.8.6
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/helpers@1.14.5
+
 ## 1.8.5
 
 ### Patch Changes

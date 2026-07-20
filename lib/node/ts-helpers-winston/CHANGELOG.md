@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers-winston
 
+## 1.0.45
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-helpers@1.8.6
+
 ## 1.0.44
 
 ### Patch Changes

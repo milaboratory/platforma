@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.80.8
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-middle-layer@1.66.7
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pl-client@3.14.3
+  - @milaboratories/pl-tree@1.13.2
+  - @platforma-sdk/model@1.80.8
+
 ## 1.80.7
 
 ### Patch Changes

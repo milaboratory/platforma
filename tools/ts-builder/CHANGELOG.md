@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.6.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-configs@1.3.1
+
 ## 1.6.0
 
 ### Minor Changes

@@ -1,5 +1,17 @@
 # @platforma-sdk/model
 
+## 1.80.8
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-model-middle-layer@1.30.14
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/helpers@1.14.5
+  - @milaboratories/ptabler-expression-js@1.2.36
+  - @milaboratories/pl-error-like@1.12.10
+
 ## 1.80.2
 
 ### Patch Changes
