@@ -96,9 +96,13 @@ export const platforma = BlockModelV3.create(blockDataModel)
       } as PlDataTableFilters,
 
       labelsOptions: {
-        // Custom linker label formatter to verify linker path labels in the UI.
-        // Default would produce "via L1 > L2"; this makes it "[L1 > L2]" for easy visual identification.
-        formatters: { linker: (linkerLabels) => `[${linkerLabels.join(" > ")}]` },
+        // Custom linker postfix formatter to verify linker path labels in the UI.
+        // Default would produce "via <root> L1 > L2"; this makes it "[root, L1, L2]" for easy visual
+        // identification. Each piece carries its full spec plus the computed distinguishing `text`.
+        formatters: {
+          linker: ({ root, linkers }) =>
+            `[${[root?.text, ...linkers.map((l) => l.text)].filter(Boolean).join(" > ")}]`,
+        },
       },
       displayOptions: {
         ordering: [
@@ -158,7 +162,10 @@ export const platforma = BlockModelV3.create(blockDataModel)
 
       tableState: ctx.data.tableSplitState,
       labelsOptions: {
-        formatters: { linker: (linkerLabels) => `[${linkerLabels.join(" > ")}]` },
+        formatters: {
+          linker: ({ root, linkers }) =>
+            `[${[root?.text, ...linkers.map((l) => l.text)].filter(Boolean).join(" > ")}]`,
+        },
       },
     });
   })
