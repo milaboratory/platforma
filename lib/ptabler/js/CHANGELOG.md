@@ -1,5 +1,13 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.36
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.15.20
+
 ## 1.2.35
 
 ### Patch Changes

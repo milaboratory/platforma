@@ -1,5 +1,14 @@
 # @milaboratories/pl-mcp-server
 
+## 21.0.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-middle-layer@1.66.7
+  - @platforma-sdk/model@1.80.8
+
 ## 21.0.0
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.3.41
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-deployments@3.0.13
+
 ## 5.3.40
 
 ### Patch Changes

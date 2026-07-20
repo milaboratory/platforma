@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.17
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-client@3.14.3
+
 ## 1.4.16
 
 ### Patch Changes

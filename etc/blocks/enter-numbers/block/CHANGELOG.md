@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.1.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.1.0
 
 ### Minor Changes

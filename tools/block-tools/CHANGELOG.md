@@ -1,5 +1,20 @@
 # @platforma-sdk/block-tools
 
+## 2.12.8
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @platforma-sdk/package-builder-lib@1.2.1
+  - @milaboratories/pl-model-middle-layer@1.30.14
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-model-backend@1.4.17
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/pl-http@1.2.4
+  - @platforma-sdk/blocks-deps-updater@2.2.0
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 2.12.7
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.pool-explorer",
-  "version": "1.2.65",
+  "version": "1.2.66",
   "files": [
     "dist",
     "block-pack"

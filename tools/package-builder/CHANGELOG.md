@@ -1,5 +1,13 @@
 # @platforma-sdk/package-builder
 
+## 3.14.2
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @platforma-sdk/package-builder-lib@1.2.1
+
 ## 3.14.1
 
 ### Patch Changes

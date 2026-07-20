@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder-lib
 
+## 1.2.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 1.2.0
 
 ### Minor Changes

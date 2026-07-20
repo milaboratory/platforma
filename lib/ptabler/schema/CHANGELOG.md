@@ -1,5 +1,13 @@
 # @platforma-open/software-ptabler.types
 
+## 1.15.20
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-model-common@1.47.2
+
 ## 1.15.19
 
 ### Patch Changes

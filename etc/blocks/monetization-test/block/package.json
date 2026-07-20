@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.4.65",
+  "version": "1.4.66",
   "files": [
     "dist",
     "block-pack"

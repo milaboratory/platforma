@@ -1,5 +1,13 @@
 # @milaboratories/pl-healthcheck
 
+## 1.0.4
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-helpers@1.8.6
+
 ## 1.0.3
 
 ### Patch Changes

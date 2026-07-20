@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers-winston",
-  "version": "1.0.44",
+  "version": "1.0.45",
   "description": "Useful helpers for our TS projects (winston-specific)",
   "files": [
     "dist/**/*",

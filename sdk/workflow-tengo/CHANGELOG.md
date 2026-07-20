@@ -1,5 +1,14 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.8.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @platforma-open/milaboratories.software-ptabler@2.1.7
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
 ## 6.8.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 2.1.7
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 2.1.6
 
 ### Patch Changes

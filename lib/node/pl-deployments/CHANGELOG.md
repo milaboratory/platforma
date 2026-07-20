@@ -1,5 +1,17 @@
 # @milaboratories/pl-local
 
+## 3.0.13
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-healthcheck@1.0.4
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-config@1.8.5
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/pl-http@1.2.4
+
 ## 3.0.12
 
 ### Patch Changes

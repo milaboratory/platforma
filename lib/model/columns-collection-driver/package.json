@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/columns-collection-driver",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Host-side ColumnsCollectionDriver implementation: column-collection state ownership, refcounted handles, source serialisation",
   "keywords": [],
   "license": "UNLICENSED",

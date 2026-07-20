@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 4.0.19
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-model-backend@1.4.17
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 4.0.18
 
 ### Patch Changes

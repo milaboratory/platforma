@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.15.17
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.80.8
+
 ## 2.15.16
 
 ### Patch Changes

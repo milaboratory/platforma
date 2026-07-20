@@ -1,5 +1,16 @@
 # @milaboratories/pf-driver
 
+## 1.8.3
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+- Updated dependencies [27600c3]
+  - @milaboratories/pl-model-middle-layer@1.30.14
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/pl-model-common@1.47.2
+  - @milaboratories/helpers@1.14.5
+
 ## 1.8.2
 
 ### Patch Changes

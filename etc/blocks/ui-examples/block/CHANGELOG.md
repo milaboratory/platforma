@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.4.1
+
+### Patch Changes
+
+- 27600c3: Escape including label columns for non primary columns
+
 ## 1.4.0
 
 ### Minor Changes
