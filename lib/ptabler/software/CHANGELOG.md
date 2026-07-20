@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 2.1.8
+
+### Patch Changes
+
+- db6bbfa: PFrames bump
+
 ## 2.1.7
 
 ### Patch Changes

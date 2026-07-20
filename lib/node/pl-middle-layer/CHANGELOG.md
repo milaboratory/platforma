@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.8
+
+### Patch Changes
+
+- Updated dependencies [db6bbfa]
+  - @milaboratories/pf-spec-driver@1.4.23
+  - @milaboratories/pf-driver@1.8.4
+  - @platforma-sdk/workflow-tengo@6.8.2
+  - @platforma-sdk/model@1.80.8
+
 ## 1.66.7
 
 ### Patch Changes
