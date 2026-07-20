@@ -258,9 +258,9 @@ catalog:
   # in case the changes are not backward-compatible. When adding new functionality - bump pframes-rs
   # and then `REQUIRES_PFRAMES_VERSION` after a week or two, to give the users time to update desktop
   # before SDK starts requiring a newer version of desktop.
-  "@milaboratories/pframes-rs-node": 1.1.55
-  "@milaboratories/pframes-rs-wasip2": 1.1.55
-  "@milaboratories/pframes-rs-wasm": 1.1.55
+  "@milaboratories/pframes-rs-node": 1.1.56
+  "@milaboratories/pframes-rs-wasip2": 1.1.56
+  "@milaboratories/pframes-rs-wasm": 1.1.56
 
   "quickjs-emscripten": 0.31.0
 
@@ -303,7 +303,7 @@ catalog:
   "@platforma-open/milaboratories.software-small-binaries": ^2.1.1
   "@platforma-open/milaboratories.software-test-utils": ^1.1.6
   "@platforma-open/milaboratories.software-conda-empty": ^1.0.1
-  "@platforma-open/milaboratories.runenv-python-3": 1.11.2
+  "@platforma-open/milaboratories.runenv-python-3": 1.11.4
 
   "shx": ^0.4.0
 
