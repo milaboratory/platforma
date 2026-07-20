@@ -276,7 +276,7 @@ export class SynchronizedTreeState {
       },
       txOps,
     );
-    this.state.updateFromResourceData(data, true);
+    this.state.updateFromResourceData(data, true, stats);
   }
 
   /** Discovery sync for shared-type seeds: re-polls `ListUserResources` (gRPC-only) and
