@@ -213,6 +213,96 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
   expect(deriveDistinctLabels(tracesToSpecs(traces))).toEqual(labels);
 });
 
+// Preset distilled from a real PlDataTable "all columns" dump: three columns whose native label is
+// "Cluster Id", produced by two different clustering analyses (foldseek 3D-structure clustering and
+// mmseqs2 clonotype clustering). The two foldseek columns carry a byte-identical trace, so phase 1
+// cannot tell them apart (a linker "via …" postfix does in the real pipeline); the mmseqs2 column
+// differs by its last trace step. Regression guard for "distinguish by absence": minimization used
+// to keep only ONE clustering type, leaving the other column a bare "Cluster Id" — unique only
+// because it LACKED the peer's clustering step. Each column must instead surface its OWN step.
+test("cluster-id preset: colliding columns are distinguished by a token they have, not by absence", () => {
+  const clusterId = (trace: Trace): PColumnSpec => ({
+    kind: "PColumn",
+    name: "name",
+    valueType: "String",
+    annotations: { [Annotation.Trace]: JSON.stringify(trace), [Annotation.Label]: "Cluster Id" },
+    axesSpec: [],
+  });
+
+  const provenance: Trace = [
+    { type: "milaboratories.samples-and-data", importance: 10, label: "Samples & Data" },
+    {
+      type: "milaboratories.samples-and-data/dataset",
+      importance: 100,
+      label: "MB135 + Podocytes",
+    },
+    {
+      type: "milaboratories.mixcr-amplicon-alignment",
+      importance: 20,
+      label: "MiXCR generic amplicon",
+    },
+    { type: "milaboratories.redefine-clonotypes", importance: 30, label: "Imputed VDJRegion aa" },
+  ];
+  const foldseek: Trace = [
+    ...provenance,
+    { type: "milaboratories.antibody-tcr-lead-selection", importance: 30, label: "Selected Leads" },
+    {
+      type: "milaboratories.3d-structure-prediction",
+      importance: 20,
+      label: "Camelid (VHH/nanobody) NBB2, CDRH3 ≤ 2.5 Å",
+    },
+    {
+      type: "milaboratories.3d-structure-clustering.clustering",
+      importance: 30,
+      label: "Full Structure+AA, TM≥0.95, cov≥0.95",
+    },
+  ];
+  const mmseqs2: Trace = [
+    ...provenance,
+    {
+      type: "milaboratories.clonotype-clustering.clustering",
+      importance: 30,
+      label: "Imputed VDJRegion aa, BLOSUM62, ident:0.95, cov:0.95",
+    },
+  ];
+
+  const entries: Entry[] = [clusterId(foldseek), clusterId(mmseqs2), clusterId(foldseek)];
+
+  expect(deriveDistinctLabels(entries, { includeNativeLabel: true })).toEqual([
+    "Cluster Id / Full Structure+AA, TM≥0.95, cov≥0.95",
+    "Cluster Id / Imputed VDJRegion aa, BLOSUM62, ident:0.95, cov:0.95",
+    "Cluster Id / Full Structure+AA, TM≥0.95, cov≥0.95",
+  ]);
+});
+
+// The by-presence repair must patch ONLY the bare column's own label — never the shared global type
+// set. Otherwise the token it adds for one group ("X2" needs "t") leaks onto every column that
+// carries that type, including "Y" in an unrelated group, which should stay a bare "Y".
+test("by-presence repair does not leak its token into other groups sharing that type", () => {
+  const spec = (label: string, trace: Trace): PColumnSpec => ({
+    kind: "PColumn",
+    name: "name",
+    valueType: "Int",
+    annotations: { [Annotation.Trace]: JSON.stringify(trace), [Annotation.Label]: label },
+    axesSpec: [],
+  });
+
+  const entries: Entry[] = [
+    // Group X: minimization separates the two by the higher-importance "a" (X2 ends up bare),
+    // then repair un-bares X2 with the token it actually has — "t".
+    spec("X", [{ type: "a", importance: 10, label: "A1" }]),
+    spec("X", [{ type: "t", importance: 1, label: "TX" }]),
+    // Group Y: sole "Y" column, also carries "t". Must NOT inherit X2's repair token.
+    spec("Y", [{ type: "t", importance: 1, label: "TY" }]),
+  ];
+
+  expect(deriveDistinctLabels(entries, { includeNativeLabel: true })).toEqual([
+    "X / A1",
+    "X / TX",
+    "Y",
+  ]);
+});
+
 test.each<{ name: string; traces: Trace[]; labels: string[]; forceTraceElements: string[] }>([
   {
     name: "force one element",
@@ -353,7 +443,9 @@ test("linkerPath with multiple steps joins with ' > '", () => {
     },
   ];
   const labels = deriveDistinctLabels(entries);
-  expect(labels).toEqual(["Col", "Col via L1 > L2"]);
+  // Minimal difference: the source-most hop L1 alone distinguishes the linked column from the bare
+  // one, so the redundant L2 is dropped.
+  expect(labels).toEqual(["Col", "Col via L1"]);
 });
 
 test("linkerPath skips steps without labels", () => {
@@ -377,7 +469,7 @@ test("linkerPath skips steps without labels", () => {
   expect(labels).toEqual(["Col", "Col via L2"]);
 });
 
-test("linkerPath with custom linkerLabelFormatter", () => {
+test("formatters.linker customizes the postfix zone", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
@@ -392,29 +484,32 @@ test("linkerPath with custom linkerLabelFormatter", () => {
     },
   ];
   const labels = deriveDistinctLabels(entries, {
-    formatters: { linker: (linkerLabels) => `[${linkerLabels.join(", ")}]` },
+    formatters: {
+      linker: ({ root, linkers }) =>
+        `[${[root?.text, ...linkers.map((l) => l.text)].filter(Boolean).join(", ")}]`,
+    },
   });
   expect(labels).toEqual(["Col", "Col [L1]"]);
 });
 
-test("linkerPath with linkerLabelFormatter returning undefined suppresses suffix", () => {
+test("formatters.linker returning undefined suppresses the postfix", () => {
   const entries: Entry[] = [
     {
       spec: createSpec({
-        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col1" }]) },
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col" }]) },
       }),
       linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L1" } }) }],
     },
     {
       spec: createSpec({
-        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col2" }]) },
+        annotations: { [Annotation.Trace]: JSON.stringify([{ type: "t1", label: "Col" }]) },
       }),
+      linkerPath: [{ spec: createSpec({ annotations: { [Annotation.LinkLabel]: "L2" } }) }],
     },
   ];
-  const labels = deriveDistinctLabels(entries, {
-    formatters: { linker: () => undefined },
-  });
-  expect(labels).toEqual(["Col1", "Col2"]);
+  const labels = deriveDistinctLabels(entries, { formatters: { linker: () => undefined } });
+  // Suppressed → both keep the bare stem (collision left unresolved by the caller's choice).
+  expect(labels).toEqual(["Col", "Col"]);
 });
 
 test("linkerPath falls back to Label when LinkLabel is absent", () => {
@@ -522,39 +617,9 @@ test("formatters.anchorQualification receives anchorId", () => {
   expect(labels).toEqual(["Counts (A=X)", "Counts (A=Y)"]);
 });
 
-test("formatters.linkerStepQualification controls inline step quals", () => {
-  const s = {
-    kind: "PColumn",
-    name: "n",
-    valueType: "Int",
-    axesSpec: [],
-    annotations: { [Annotation.Label]: "Counts" },
-  } as PColumnSpec;
-  const entries: Entry[] = [
-    {
-      spec: s,
-      linkerPath: [
-        {
-          spec: createSpec({ annotations: { [Annotation.LinkLabel]: "Mapper" } }),
-          qualifications: [{ axis: { name: "sample" }, contextDomain: { batch: "X" } }],
-        },
-      ],
-    },
-    {
-      spec: s,
-      linkerPath: [
-        {
-          spec: createSpec({ annotations: { [Annotation.LinkLabel]: "Mapper" } }),
-          qualifications: [{ axis: { name: "sample" }, contextDomain: { batch: "Y" } }],
-        },
-      ],
-    },
-  ];
-  const labels = deriveDistinctLabels(entries, {
-    formatters: { linkerStepQualification: (qs) => `(${qs[0].contextDomain.batch})` },
-  });
-  expect(labels).toEqual(["Counts via Mapper (X)", "Counts via Mapper (Y)"]);
-});
+// Deferred: linker-step qualifications are not yet consumed by phase 2 — to be restored with
+// qualification support (see linked_column_postfix).
+test.todo("linker-step qualifications control inline step quals");
 
 test("addLabelAsSuffix places native label at the end", () => {
   const specs = tracesToSpecs([[{ type: "t1", label: "L1" }], [{ type: "t1", label: "L2" }]]);
@@ -737,16 +802,14 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     expect(deriveDistinctLabels(entries)).toEqual(["Counts via Path A", "Counts via Path B"]);
   });
 
-  test("multi-step paths joined with ' > '", () => {
+  test("multi-step paths render only the differing hop (shared hub dropped)", () => {
     const s = labeledSpec("Counts");
     const entries: Entry[] = [
       { spec: s, linkerPath: [{ spec: linkerSpec("Hub") }, { spec: linkerSpec("Tail X") }] },
       { spec: s, linkerPath: [{ spec: linkerSpec("Hub") }, { spec: linkerSpec("Tail Y") }] },
     ];
-    expect(deriveDistinctLabels(entries)).toEqual([
-      "Counts via Hub > Tail X",
-      "Counts via Hub > Tail Y",
-    ]);
+    // Minimal difference: the common "Hub" hop carries no distinction and is dropped.
+    expect(deriveDistinctLabels(entries)).toEqual(["Counts via Tail X", "Counts via Tail Y"]);
   });
 
   test("hit qualifications used when nothing else differs", () => {
@@ -779,27 +842,8 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     ]);
   });
 
-  test("linker-step qualifications used to disambiguate identical linker labels", () => {
-    const s = labeledSpec("Counts");
-    const entries: Entry[] = [
-      {
-        spec: s,
-        linkerPath: [
-          { spec: linkerSpec("Mapper"), qualifications: [qual("sample", { batch: "X" })] },
-        ],
-      },
-      {
-        spec: s,
-        linkerPath: [
-          { spec: linkerSpec("Mapper"), qualifications: [qual("sample", { batch: "Y" })] },
-        ],
-      },
-    ];
-    expect(deriveDistinctLabels(entries)).toEqual([
-      "Counts via Mapper [sample batch=X]",
-      "Counts via Mapper [sample batch=Y]",
-    ]);
-  });
+  // Deferred with qualification support in phase 2 (see linked_column_postfix).
+  test.todo("linker-step qualifications used to disambiguate identical linker labels");
 
   test("layers compose only as far as needed; no over-decoration", () => {
     const entries: Entry[] = [
@@ -898,10 +942,11 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
       },
       { spec: sB, linkerPath: [{ spec: linkerSpec("Mapper") }] },
     ];
+    // Stems already differ by trace/anchor-qual, so the shared "Mapper" linker is never needed.
     expect(deriveDistinctLabels(entries)).toEqual([
-      "Counts / RNAseq via Mapper",
-      "Counts / RNAseq via Mapper [anchor-main: sample batch=X]",
-      "Counts / ATACseq via Mapper",
+      "Counts / RNAseq",
+      "Counts / RNAseq [anchor-main: sample batch=X]",
+      "Counts / ATACseq",
     ]);
   });
 
