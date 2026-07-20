@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.8.2
+
+### Patch Changes
+
+- db6bbfa: PFrames bump
+- Updated dependencies [db6bbfa]
+  - @platforma-open/milaboratories.software-ptabler@2.1.8
+
 ## 6.8.1
 
 ### Patch Changes

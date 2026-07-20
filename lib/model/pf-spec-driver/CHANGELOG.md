@@ -1,5 +1,11 @@
 # @milaboratories/pf-spec-driver
 
+## 1.4.23
+
+### Patch Changes
+
+- db6bbfa: PFrames bump
+
 ## 1.4.22
 
 ### Patch Changes
