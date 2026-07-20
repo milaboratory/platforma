@@ -47,7 +47,8 @@ export type LinkerParts = {
 /**
  * Renders the postfix zone from the distinguishing sources. Default:
  * `via ${[root, linkers.join(" > ")].filter(Boolean).join(" ")}` (using each piece's `text`).
- * Returning `undefined` suppresses the postfix entirely (the column keeps just its stem).
+ * Returning `undefined` — or the empty string `""` — suppresses the postfix entirely (the column
+ * keeps just its stem); the two are treated identically.
  */
 export type LinkerFormatter = (
   parts: LinkerParts,
@@ -61,16 +62,9 @@ function defaultLinkerFormatter(parts: LinkerParts): string {
   return pieces.length === 0 ? "" : `via ${pieces.join(" ")}`;
 }
 
-// --- Node identity & minimal token (level 2: WHAT differs) -------------------
+type AxisIdentity = { label?: string } & Pick<AxisSpec, "name" | "domain" | "contextDomain">;
 
-type Identity = {
-  label?: string;
-  name: string;
-  domain?: Record<string, string>;
-  contextDomain?: Record<string, string>;
-};
-
-function axisIdentity(axis: AxisSpec): Identity {
+function extractAxisIdentity(axis: AxisSpec): AxisIdentity {
   const id = getAxisId(axis);
   return {
     label: readAnnotation(axis, Annotation.Label)?.trim() || undefined,
@@ -85,7 +79,7 @@ function axisIdentity(axis: AxisSpec): Identity {
  * name. Returns `undefined` for an unlabeled linker, which callers treat as "not renderable": such a
  * step is skipped, and disambiguation falls to another step or the root.
  */
-function linkerIdentity(linker: PColumnSpec): Identity | undefined {
+function extractLinkerIdentity(linker: PColumnSpec): AxisIdentity | undefined {
   const label = (
     readAnnotation(linker, Annotation.LinkLabel) ?? readAnnotation(linker, Annotation.Label)
   )?.trim();
@@ -98,15 +92,21 @@ function differingKeys(
   others: (Record<string, string> | undefined)[],
 ): string[] {
   const my = mine ?? {};
-  return [
-    ...others.reduce<Set<string>>((keys, o) => {
-      const od = o ?? {};
-      return [...new Set([...Object.keys(my), ...Object.keys(od)])].reduce(
-        (acc, k) => (my[k] !== od[k] ? acc.add(k) : acc),
-        keys,
-      );
-    }, new Set<string>()),
-  ];
+  const diffKeys = new Set<string>();
+  for (const o of others) {
+    const od = o ?? {};
+    for (const k of Object.keys(my)) {
+      if (my[k] !== od[k]) {
+        diffKeys.add(k);
+      }
+    }
+    for (const k of Object.keys(od)) {
+      if (my[k] !== od[k]) {
+        diffKeys.add(k);
+      }
+    }
+  }
+  return [...diffKeys];
 }
 
 function renderWithDomain(
@@ -124,7 +124,7 @@ function renderWithDomain(
  * Minimal token distinguishing `mine` from `others`: label → name → only the differing domain keys.
  * Falls back to the bare label/name when indistinguishable at this dimension (another one covers it).
  */
-function token(mine: Identity, others: Identity[]): string {
+function deriveToken(mine: AxisIdentity, others: AxisIdentity[]): string {
   const base = mine.label ?? mine.name;
   if (mine.label !== undefined && others.every((o) => o.label !== mine.label)) return mine.label;
   if (others.every((o) => o.name !== mine.name)) return base;
@@ -141,8 +141,6 @@ function token(mine: Identity, others: Identity[]): string {
   return base;
 }
 
-// --- Root extraction ---------------------------------------------------------
-
 /**
  * The chain's single root: the source-side axis of `linkers[0]`. A linker bridges two axis groups;
  * the side facing the next hop (`linkers[1]`, or the hit for a single-linker chain) is the target,
@@ -158,8 +156,6 @@ export function extractRoot(hit: PColumnSpec, linkers: PColumnSpec[]): AxisSpec 
   return axes.find((a) => !second.axesSpec.some((b) => b.name === a.name));
 }
 
-// --- Structural diff (level 1: WHERE it differs) -----------------------------
-
 type Slot = { kind: "root" } | { kind: "linker"; i: number };
 
 const ABSENT = "__ABSENT__"; // sentinel for "this row has no value at this slot"
@@ -172,44 +168,46 @@ type Group = {
   format: LinkerFormatter;
 };
 
-function slotKey(group: Group, slot: Slot, row: number): string {
+function deriveSlotKey(group: Group, slot: Slot, row: number): string {
   if (slot.kind === "root") {
     const r = group.roots[row];
     return r === undefined ? ABSENT : canonicalizeJson(getAxisId(r));
   } else {
     const l = group.entries[row].linkers?.[slot.i];
-    const id = l && linkerIdentity(l);
+    const id = l && extractLinkerIdentity(l);
     return isNil(id) ? ABSENT : canonicalizeJson(id);
   }
 }
 
-function slotToken(group: Group, slot: Slot, row: number): string | undefined {
+function deriveSlotToken(group: Group, slot: Slot, row: number): string | undefined {
   if (slot.kind === "root") {
     const r = group.roots[row];
     if (r === undefined) return undefined;
-    const comp = group.roots.filter((o, j) => j !== row && !isNil(o)).map((o) => axisIdentity(o!));
-    return token(axisIdentity(r), comp);
+    const comp = group.roots
+      .filter((o, j) => j !== row && !isNil(o))
+      .map((o) => extractAxisIdentity(o!));
+    return deriveToken(extractAxisIdentity(r), comp);
   }
   const l = group.entries[row].linkers?.[slot.i];
-  const id = l && linkerIdentity(l);
+  const id = l && extractLinkerIdentity(l);
   if (isNil(id)) return undefined; // unlabeled / absent linker → not renderable, skip
   const comp = group.entries
     .filter((_, j) => j !== row)
     .map((e) => e.linkers?.[slot.i])
-    .map((x) => (x ? linkerIdentity(x) : undefined))
-    .filter((x): x is Identity => !isNil(x));
-  return token(id, comp);
+    .map((x) => (x ? extractLinkerIdentity(x) : undefined))
+    .filter((x): x is AxisIdentity => !isNil(x));
+  return deriveToken(id, comp);
 }
 
-function discriminates(group: Group, slot: Slot): boolean {
-  return new Set(group.entries.map((_, r) => slotKey(group, slot, r))).size > 1;
+function getDiscriminates(group: Group, slot: Slot): boolean {
+  return new Set(group.entries.map((_, r) => deriveSlotKey(group, slot, r))).size > 1;
 }
 
 /** Render one row against a chosen slot set: the distinguishing root + linker pieces, formatted. */
 function renderRow(group: Group, slots: Slot[], row: number): string {
   const rootSpec = group.roots[row];
   const rootText = slots.some((s) => s.kind === "root")
-    ? slotToken(group, { kind: "root" }, row)
+    ? deriveSlotToken(group, { kind: "root" }, row)
     : undefined;
   const root: LinkerPart<AxisSpec> | undefined =
     rootSpec !== undefined && rootText !== undefined
@@ -221,14 +219,16 @@ function renderRow(group: Group, slots: Slot[], row: number): string {
     .sort((a, b) => a.i - b.i)
     .map((s) => {
       const spec = group.entries[row].linkers?.[s.i];
-      const text = slotToken(group, s, row);
+      const text = deriveSlotToken(group, s, row);
       return spec !== undefined && text !== undefined ? { spec, text } : undefined;
     })
     .filter((l): l is LinkerPart<PColumnSpec> => !isNil(l));
 
   // No distinguishing pieces for this row → no postfix (don't invoke the formatter with empties).
   if (root === undefined && linkers.length === 0) return "";
-  return group.format({ root, linkers }, group.entries[row].hit, group.indices[row]) ?? "";
+  // A formatter may suppress the postfix by returning `undefined` or `""`; `|| ""` collapses both
+  // to the same empty value so neither counts as a distinguishing token during slot escalation.
+  return group.format({ root, linkers }, group.entries[row].hit, group.indices[row]) || "";
 }
 
 function renderAll(group: Group, slots: Slot[]): string[] {
@@ -269,7 +269,9 @@ function resolveGroup(
 
   const escalated = slots.reduce<Slot[]>(
     (acc, slot) =>
-      allUnique(renderAll(group, acc)) || !discriminates(group, slot) ? acc : (acc.push(slot), acc),
+      allUnique(renderAll(group, acc)) || !getDiscriminates(group, slot)
+        ? acc
+        : (acc.push(slot), acc),
     [],
   );
   const chosen = escalated.reduce<Slot[]>((acc, slot) => {
