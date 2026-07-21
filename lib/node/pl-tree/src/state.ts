@@ -90,6 +90,25 @@ export interface ResourceUpdateStat {
   /** Whether the current load used backend streaming; set by the loader, read here to
    * attribute {@link bfsRequestsWasted}. */
   usedStreaming: boolean;
+  // Breakdown of what changed among resourcesChanged (a resource can bump several).
+  /** New fields appeared on a held resource. */
+  fieldsAdded: number;
+  /** Dynamic fields disappeared from a held resource. */
+  fieldsRemoved: number;
+  /** Existing field value pointer changed (a new value/result was attached). */
+  fieldsChanged: number;
+  /** KV entries added, changed, or deleted. */
+  kvChanged: number;
+  /** resourceReady flipped. */
+  readyFlips: number;
+  /** inputsLocked or outputsLocked transitioned. */
+  locksChanged: number;
+  /** An error resource was attached. */
+  errorsAttached: number;
+  /** originalResourceId resolved (duplicate -> original). */
+  duplicatesResolved: number;
+  /** Held resources that transitioned to final this update. */
+  resourcesMarkedFinal: number;
 }
 
 /** Never store instances of this class, always get fresh instance from {@link PlTreeState} */
@@ -526,6 +545,7 @@ export class PlTreeState {
             `originalResourceId changed for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.duplicatesResolved++;
         }
 
         // error
@@ -538,6 +558,7 @@ export class PlTreeState {
             `error changed for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.errorsAttached++;
         }
 
         // updating fields
@@ -585,6 +606,7 @@ export class PlTreeState {
 
             changed = true;
             metadataChanged = true;
+            if (stat) stat.fieldsAdded++;
           } else {
             // change of old field
 
@@ -629,6 +651,7 @@ export class PlTreeState {
                 `field ${fd.name} value changed in ${resourceIdToString(resource.id)}`,
               );
               changed = true;
+              if (stat) stat.fieldsChanged++;
             }
 
             // field error
@@ -674,6 +697,7 @@ export class PlTreeState {
             );
             fields.delete(fieldName);
             metadataChanged = true;
+            if (stat) stat.fieldsRemoved++;
 
             if (isNotNullSignedResourceId(field.value)) decrementRefs.push(field.value);
             if (isNotNullSignedResourceId(field.error)) decrementRefs.push(field.error);
@@ -692,6 +716,7 @@ export class PlTreeState {
             `inputs locked for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.locksChanged++;
         }
 
         // outputsLocked
@@ -703,6 +728,7 @@ export class PlTreeState {
             `outputs locked for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.locksChanged++;
         }
 
         // ready flag
@@ -718,6 +744,7 @@ export class PlTreeState {
             `ready flag changed to ${rd.resourceReady} for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.readyFlips++;
         }
 
         // syncing kv
@@ -729,12 +756,14 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
             resource.kv.set(kv.key, kv.value);
             notEmpty(resource.kvChangedPerKey).markChanged(
               kv.key,
               `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            if (stat) stat.kvChanged++;
           }
         }
 
@@ -750,6 +779,7 @@ export class PlTreeState {
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
+              if (stat) stat.kvChanged++;
             }
           });
         }
@@ -757,7 +787,10 @@ export class PlTreeState {
         if (changed) {
           // if resource was changed, updating resource data version
           resource.dataVersion = resource.version;
-          if (this.isFinalPredicate(resource)) resource.markFinal();
+          if (this.isFinalPredicate(resource)) {
+            resource.markFinal();
+            if (stat) stat.resourcesMarkedFinal++;
+          }
         }
       } else {
         // creating new resource
