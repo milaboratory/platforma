@@ -2,4 +2,4 @@
 "@milaboratories/pl-tree": patch
 ---
 
-Add cross-cycle duplication counters to tree-sync stats (MI_LOG_TREE_STAT): new/changed/unchanged resources, wasted downlink bytes, BFS fetches spent on unchanged resources, and changes that re-streamed stable metadata. Quantifies how much of each poll re-fetches resources the client already holds.
+Instrument tree-sync stats (MI_LOG_TREE_STAT) for full introspection: cross-cycle duplication (new/changed/unchanged resources, wasted downlink bytes, stable-metadata re-streams), per-path detail (streaming rounds/frames/stop-markers, BFS requests and not-found), and a breakdown of what changed each cycle (fields, kv, ready, locks, finalization). Also fixes the resourceTree stop-marker follow-up to propagate traverseStopRules so the retry stops at the same boundaries instead of traversing unbounded, and asserts that one follow-up round resolves every stop marker.

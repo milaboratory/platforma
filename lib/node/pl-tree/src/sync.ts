@@ -85,6 +85,20 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   stopMarkersSkipped: number;
   /** Number of follow-up resourceTree() calls issued to resolve unknown stop markers. */
   stopMarkerFollowUpRoundTrips: number;
+  /** Streaming (resourceTree) path: resourceTree() streams consumed (1, or 2 with a follow-up). */
+  streamRounds: number;
+  /** Streaming path: resource frames received. */
+  resourceFrames: number;
+  /** Streaming path: stopMarker frames received (both skipped and follow-up). */
+  stopMarkerFrames: number;
+  /** Streaming path: stop markers that were not final locally and triggered a follow-up fetch. */
+  stopMarkersFollowUp: number;
+  /** Streaming path: frames where the backend stopped traversal (final or traverseWasStopped). */
+  traverseWasStoppedCount: number;
+  /** BFS path: resource states actually requested from the backend this cycle (after intra-cycle dedup). */
+  bfsResourcesRequested: number;
+  /** BFS path: requested resources that no longer exist (undefined reply). */
+  bfsResourcesNotFound: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -101,6 +115,13 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     millisSpent: 0,
     stopMarkersSkipped: 0,
     stopMarkerFollowUpRoundTrips: 0,
+    streamRounds: 0,
+    resourceFrames: 0,
+    stopMarkerFrames: 0,
+    stopMarkersFollowUp: 0,
+    traverseWasStoppedCount: 0,
+    bfsResourcesRequested: 0,
+    bfsResourcesNotFound: 0,
     resourcesNew: 0,
     resourcesChanged: 0,
     resourcesUnchanged: 0,
@@ -108,6 +129,15 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     metadataStableChanged: 0,
     bfsRequestsWasted: 0,
     usedStreaming: false,
+    fieldsAdded: 0,
+    fieldsRemoved: 0,
+    fieldsChanged: 0,
+    kvChanged: 0,
+    readyFlips: 0,
+    locksChanged: 0,
+    errorsAttached: 0,
+    duplicatesResolved: 0,
+    resourcesMarkedFinal: 0,
   };
 }
 
@@ -130,7 +160,9 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   result += `Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}\n`;
   result += `Changed with stable metadata: ${stat.metadataStableChanged}\n`;
   result += `BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}\n`;
-  result += `Used streaming: ${stat.usedStreaming}`;
+  result += `Used streaming: ${stat.usedStreaming}\n`;
+  result += `[streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}\n`;
+  result += `[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}`;
   return result;
 }
 
@@ -178,6 +210,7 @@ async function loadTreeStateViaBfs(
     }
 
     requested.add(rid);
+    if (stats) stats.bfsResourcesRequested++;
 
     pending.push(
       limiter.run(async () => {
@@ -197,7 +230,10 @@ async function loadTreeStateViaBfs(
           roundTripToggle = true;
         }
 
-        if (resource === undefined) return undefined;
+        if (resource === undefined) {
+          if (stats) stats.bfsResourcesNotFound++;
+          return undefined;
+        }
         if (kv === undefined) throw new Error("Inconsistent replies");
 
         return { ...resource, kv };
@@ -261,15 +297,21 @@ async function processResourceTreeStream(
   // should make a decision: has it already loaded the resource or should it be requested for get the latest state?
   for await (const frame of treeItems) {
     if (frame.frameKind === "stopMarker") {
+      if (stats) stats.stopMarkerFrames++;
       if (finalResources.has(frame.id)) {
         if (stats) stats.stopMarkersSkipped++;
         continue;
       }
+      if (stats) stats.stopMarkersFollowUp++;
       followUpSeeds.push(frame.id);
       continue;
     }
 
     // Normal resource frame.
+    if (stats) {
+      stats.resourceFrames++;
+      if (frame.traverseWasStopped) stats.traverseWasStoppedCount++;
+    }
     if (finalResources.has(frame.id)) {
       if (stats) stats.finalResourcesSkipped++;
       continue;
@@ -331,7 +373,10 @@ async function loadTreeStateViaResourceTree(
     pruningFunction,
     stats,
   );
-  if (stats) stats.roundTrips++;
+  if (stats) {
+    stats.roundTrips++;
+    stats.streamRounds++;
+  }
 
   // Client must request full resource tree in case when stop-marker seeds are returned,
   // to ensure all resources are loaded and stop-marker frames are processed.
@@ -339,19 +384,23 @@ async function loadTreeStateViaResourceTree(
     const followUpItems = tx.resourceTree(followUpSeeds, {
       includeKv: true,
       fieldFilter,
+      traverseStopRules,
     });
-    const { result: followUpResult } = await processResourceTreeStream(
-      followUpItems,
-      finalResources,
-      pruningFunction,
-      stats,
-    );
+    const { result: followUpResult, followUpSeeds: unresolvedSeeds } =
+      await processResourceTreeStream(followUpItems, finalResources, pruningFunction, stats);
+    // Invariant: one follow-up round resolves every stop marker. Stop markers in the
+    // follow-up stream mean a deeper stop-marker chain than the two-round design handles.
+    if (unresolvedSeeds.length > 0)
+      throw new Error(
+        `resourceTree follow-up left ${unresolvedSeeds.length} unresolved stop-marker seeds: ${JSON.stringify(unresolvedSeeds)}`,
+      );
     result.push(...followUpResult);
     if (stats) {
       logger?.info?.(
         `loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`,
       );
       stats.roundTrips++;
+      stats.streamRounds++;
       stats.stopMarkerFollowUpRoundTrips++;
     }
   }
