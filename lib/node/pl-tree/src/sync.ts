@@ -378,11 +378,10 @@ async function loadTreeStateViaResourceTree(
     stats.streamRounds++;
   }
 
-  // Resolve stop-marker seeds. Each follow-up round applies the same traverseStopRules, so a
-  // deep tree can surface a further layer of stop markers; loop until none remain. Otherwise
-  // resources referenced by loaded ones stay unloaded and updateFromResourceData throws
-  // "orphan resource". Dedup fetched ids so shared refs / diamonds cannot loop forever
-  // (the id set is finite, so the loop terminates).
+  // Resolve stop-marker seeds by fetching them (see the note below on why the stop rule is not
+  // reapplied). Loop in case a fetch still yields stop markers; dedup fetched ids so shared refs
+  // or diamonds cannot loop forever (the id set is finite, so the loop terminates). A referenced
+  // resource left unloaded would make updateFromResourceData throw "orphan resource".
   let pendingSeeds = followUpSeeds;
   const fetchedSeeds = new Set<SignedResourceId>();
   while (pendingSeeds.length > 0) {
@@ -390,10 +389,12 @@ async function loadTreeStateViaResourceTree(
     if (roundSeeds.length === 0) break;
     for (const id of roundSeeds) fetchedSeeds.add(id);
 
+    // No traverseStopRules here on purpose: the seeds are the stop-marked resources, and the
+    // stop rule (finality-based) would re-flag them as stop markers instead of loading their
+    // state, leaving resources that reference them as orphans. The retry must fetch them plainly.
     const followUpItems = tx.resourceTree(roundSeeds, {
       includeKv: true,
       fieldFilter,
-      traverseStopRules,
     });
     const { result: followUpResult, followUpSeeds: nextSeeds } = await processResourceTreeStream(
       followUpItems,
