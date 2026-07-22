@@ -4,6 +4,7 @@ import type {
   PTableHandle,
   PTableColumnSpec,
   PFrameSpecDriver,
+  PlDataTableColumnsMeta,
   WritePTableToFsResult,
 } from "@platforma-sdk/model";
 import { getPTableColumnId, XLSX_MAX_ROWS_PER_SHEET } from "@platforma-sdk/model";
@@ -11,11 +12,18 @@ import { isNil } from "es-toolkit";
 import { Nil } from "@milaboratories/helpers";
 import { getServices } from "../../internal/getServices";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable";
+import { effectiveLabel } from "../PlAgDataTable/sources/table-source-v2";
 
 /** Options for the native table export. */
 export interface ExportOptions {
   tableHandle: PTableHandle;
   defaultFileName?: string;
+  /**
+   * Sidecar display metadata for the visible table. Supplies the disambiguated
+   * header labels the UI shows — the ones the spec's intrinsic `pl7.app/label`
+   * may not carry — so the export reproduces exactly what the user sees.
+   */
+  columnsMeta?: PlDataTableColumnsMeta;
 }
 
 /** Save-dialog file-type filters for the native `exportPTable` path. */
@@ -80,10 +88,20 @@ export async function exportCsv(
   }
 
   const specs = await pframe.getSpec(nativeOptions.tableHandle);
-  const columnIndices = collectVisibleColumnIndices(gridApi, specs, pframeSpec);
-  if (isNil(columnIndices)) {
+  const visibleColumns = collectVisibleColumns(
+    gridApi,
+    specs,
+    pframeSpec,
+    nativeOptions.columnsMeta,
+  );
+  if (isNil(visibleColumns)) {
     return undefined;
   }
+  // `columnIndices` is the long-standing field every runtime understands;
+  // `headerNames` is additive so a newer UI still works against an older
+  // desktop-app runtime (which ignores it and derives labels from the spec).
+  const columnIndices = visibleColumns.map(([index]) => index);
+  const headerNames = visibleColumns.map(([, name]) => name);
 
   const baseFileName = nativeOptions.defaultFileName ?? `table_${formatTimestamp(new Date())}`;
 
@@ -102,7 +120,7 @@ export async function exportCsv(
       return undefined;
     }
 
-    await pframe.exportPTable(nativeOptions.tableHandle, { path, columnIndices });
+    await pframe.exportPTable(nativeOptions.tableHandle, { path, columnIndices, headerNames });
     return undefined;
   }
 
@@ -123,6 +141,7 @@ export async function exportCsv(
     path,
     format,
     columnIndices,
+    headerNames,
     ...(path.toLowerCase().endsWith(".gz") && { compression: { type: "gzip" } }),
   });
 }
@@ -150,16 +169,22 @@ export function isCsvExportAvailable(): boolean {
 }
 
 /**
- * Collect unified column indices for visible (non-hidden) columns from the
- * ag-grid column defs, remapped onto the provided PTable spec array so the
- * indices match the current table handle (ColDef.field indices may be stale
+ * Collect `[unified index, header name]` pairs for visible (non-hidden) columns
+ * from the ag-grid column defs, remapped onto the provided PTable spec array so
+ * the indices match the current table handle (ColDef.field indices may be stale
  * or diverge from the spec order).
+ *
+ * The header name is the disambiguated label the UI shows — sidecar override
+ * (`columnsMeta`) wins over the spec's intrinsic `pl7.app/label`, falling back
+ * to the spec name — so the export reproduces exactly the visible headers and
+ * avoids the duplicate-label collisions that break the native export path.
  */
-export function collectVisibleColumnIndices(
+export function collectVisibleColumns(
   gridApi: GridApi,
   specs: PTableColumnSpec[],
   pframeSpec: PFrameSpecDriver,
-): Nil | number[] {
+  columnsMeta: PlDataTableColumnsMeta | undefined,
+): Nil | [number, string][] {
   const columnDefs = gridApi.getColumnDefs();
   if (isNil(columnDefs)) {
     return;
@@ -176,5 +201,11 @@ export function collectVisibleColumnIndices(
     return [def.context as PTableColumnSpec];
   };
 
-  return [...new Set(columnDefs.flatMap(specsForDef).map(findIndex))].filter((idx) => idx !== -1);
+  const byIndex = new Map<number, string>();
+  for (const spec of columnDefs.flatMap(specsForDef)) {
+    const index = findIndex(spec);
+    if (index === -1 || byIndex.has(index)) continue;
+    byIndex.set(index, effectiveLabel(spec, columnsMeta)?.trim() ?? spec.spec.name);
+  }
+  return [...byIndex];
 }

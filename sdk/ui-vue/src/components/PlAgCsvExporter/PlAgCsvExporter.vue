@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { GridApi } from "ag-grid-enterprise";
-import type { PTableHandle } from "@platforma-sdk/model";
+import type { PTableHandle, PlDataTableColumnsMeta } from "@platforma-sdk/model";
 import { PlBtnGhost, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import { shallowRef, toRefs } from "vue";
 import { isNil } from "es-toolkit";
@@ -10,6 +10,7 @@ import type { ExportOptions } from "./export-csv";
 const props = defineProps<{
   api: GridApi;
   tableHandle?: PTableHandle;
+  columnsMeta?: PlDataTableColumnsMeta;
 }>();
 const { api: gridApi } = toRefs(props);
 const csvExportAvailable = isCsvExportAvailable();
@@ -17,7 +18,7 @@ const csvExportAvailable = isCsvExportAvailable();
 const exporting = shallowRef(false);
 const initiateExport = () => {
   const nativeOptions: ExportOptions | undefined = !isNil(props.tableHandle)
-    ? { tableHandle: props.tableHandle }
+    ? { tableHandle: props.tableHandle, columnsMeta: props.columnsMeta }
     : undefined;
 
   if (isNil(nativeOptions)) {
