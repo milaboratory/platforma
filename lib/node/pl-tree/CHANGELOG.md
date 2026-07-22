@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.13.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.14.4
+- @milaboratories/pl-errors@1.4.33
+
 ## 1.13.2
 
 ### Patch Changes
