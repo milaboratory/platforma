@@ -124,6 +124,26 @@ describe("formatRow", () => {
 // ── streamPTableRows ─────────────────────────────────────────────────
 
 describe("streamPTableRows", () => {
+  it("throws when headerNames length differs from columnIndices", async () => {
+    const specs = [makeAxisSpec("id", "ID"), makeColumnSpec("v", "Value")];
+    const pTable = makeMockPTable([]);
+    await expect(
+      collectStream(
+        streamPTableRows({
+          pTable,
+          columnIndices: [0, 1],
+          headerNames: ["only one"],
+          range: undefined,
+          chunkSize: 100,
+          separator: ",",
+          specs,
+          includeHeader: true,
+          bom: false,
+        }),
+      ),
+    ).rejects.toThrow(/headerNames length/);
+  });
+
   it("emits BOM when requested", async () => {
     const pTable = makeMockPTable([]);
     const result = await collectStream(
