@@ -596,3 +596,57 @@ test("exportPTable writes caller-supplied header names verbatim", async ({ expec
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test("writePTableToFs writes caller-supplied header names verbatim", async ({ expect }) => {
+  await using driver = await createPFrameDriverDouble({});
+
+  const columnId = "column1" as PObjectId;
+  const column = {
+    id: columnId,
+    spec: {
+      kind: "PColumn" as const,
+      axesSpec: [
+        {
+          name: "axis1",
+          type: "String" as const,
+          annotations: { "pl7.app/label": "Sample" },
+        },
+      ],
+      name: "column1",
+      valueType: "Int" as const,
+      annotations: { "pl7.app/label": "Score" },
+    },
+    data: [
+      { key: ["a"], val: 10 },
+      { key: ["b"], val: 20 },
+      { key: ["c"], val: 30 },
+    ],
+  };
+
+  const uiDriver: PFrameDriver = driver;
+
+  using pTable = driver.createPTableV2({ query: { type: "column", column } });
+
+  const tempDir = fs.mkdtempSync(join(os.tmpdir(), "pf-export-"));
+  try {
+    const filePath = join(tempDir, "table.csv");
+
+    // Fallback path (writePTableToFs): caller-supplied names win over the spec
+    // labels, mirroring the native exportPTable path.
+    await uiDriver.writePTableToFs(pTable.key, {
+      path: filePath,
+      format: "csv",
+      columnIndices: [0, 1],
+      headerNames: ["Sample id", "Score (disambiguated)"],
+    });
+
+    // Strip the leading BOM the CSV writer emits by default.
+    const content = fs.readFileSync(filePath, "utf-8").replace(/^﻿/, "");
+    const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
+
+    expect(lines[0]).toBe("Sample id,Score (disambiguated)");
+    expect(lines.slice(1)).toEqual(["a,10", "b,20", "c,30"]);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

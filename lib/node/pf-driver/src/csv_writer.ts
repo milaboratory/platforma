@@ -65,6 +65,12 @@ export async function* streamPTableRows(options: StreamPTableRowsOptions): Async
     options;
   const { includeHeader, bom } = options;
 
+  if (headerNames !== undefined && headerNames.length !== columnIndices.length) {
+    throw new Error(
+      `headerNames length (${headerNames.length}) must match columnIndices length (${columnIndices.length})`,
+    );
+  }
+
   if (bom) {
     yield "\uFEFF";
   }
