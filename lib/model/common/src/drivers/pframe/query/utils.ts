@@ -95,6 +95,7 @@ export function traverseQuerySpec<C1, C2>(
     }
     case "filter":
     case "sort":
+    case "limit":
     case "sliceAxes":
     case "transformColumns":
     case "specOverride":
@@ -259,6 +260,12 @@ function cmpQuerySpec(lhs: SpecQuery, rhs: SpecQuery): number {
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
     case "filter":
       return cmpQuerySpec(lhs.input, (rhs as typeof lhs).input);
+    case "limit": {
+      const rhsLimit = rhs as typeof lhs;
+      const cmp = cmpQuerySpec(lhs.input, rhsLimit.input);
+      if (cmp !== 0) return cmp;
+      return lhs.fetch - rhsLimit.fetch;
+    }
     case "specOverride": {
       const rhsSo = rhs as typeof lhs;
       const cmp = cmpQuerySpec(lhs.input, rhsSo.input);

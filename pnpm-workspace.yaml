@@ -258,9 +258,9 @@ catalog:
   # in case the changes are not backward-compatible. When adding new functionality - bump pframes-rs
   # and then `REQUIRES_PFRAMES_VERSION` after a week or two, to give the users time to update desktop
   # before SDK starts requiring a newer version of desktop.
-  "@milaboratories/pframes-rs-node": 1.1.56
-  "@milaboratories/pframes-rs-wasip2": 1.1.56
-  "@milaboratories/pframes-rs-wasm": 1.1.56
+  "@milaboratories/pframes-rs-node": 1.1.57
+  "@milaboratories/pframes-rs-wasip2": 1.1.57
+  "@milaboratories/pframes-rs-wasm": 1.1.57
 
   "quickjs-emscripten": 0.31.0
 

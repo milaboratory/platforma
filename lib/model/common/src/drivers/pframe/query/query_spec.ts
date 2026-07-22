@@ -24,6 +24,7 @@ import type {
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
+  QueryLimit,
   QueryLinkerJoin,
   QueryOuterJoin,
   QuerySliceAxes,
@@ -88,6 +89,8 @@ export type SpecQueryFilter<C = ColumnUniversalId> = QueryFilter<
   SpecQuery<C>,
   SpecQueryBooleanExpression
 >;
+/** @see QueryLimit */
+export type SpecQueryLimit<C = ColumnUniversalId> = QueryLimit<SpecQuery<C>>;
 /** @see QueryTransformColumns */
 export type SpecQueryTransformColumns<C = ColumnUniversalId> = QueryTransformColumns<
   SpecQuery<C>,
@@ -131,6 +134,7 @@ export type SpecQuery<C = ColumnUniversalId> =
   | SpecQuerySliceAxes<C>
   | SpecQuerySort<C>
   | SpecQueryFilter<C>
+  | SpecQueryLimit<C>
   | SpecQueryTransformColumns<C>
   | SpecQuerySpecOverride<C>;
 
