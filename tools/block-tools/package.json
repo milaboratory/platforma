@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.12.8",
+  "version": "2.12.9",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "license": "UNLICENSED",
   "bin": {
