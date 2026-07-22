@@ -378,35 +378,39 @@ async function loadTreeStateViaResourceTree(
     stats.streamRounds++;
   }
 
-  // Client must request full resource tree in case when stop-marker seeds are returned,
-  // to ensure all resources are loaded and stop-marker frames are processed.
-  if (followUpSeeds.length > 0) {
-    const followUpItems = tx.resourceTree(followUpSeeds, {
+  // Resolve stop-marker seeds. Each follow-up round applies the same traverseStopRules, so a
+  // deep tree can surface a further layer of stop markers; loop until none remain. Otherwise
+  // resources referenced by loaded ones stay unloaded and updateFromResourceData throws
+  // "orphan resource". Dedup fetched ids so shared refs / diamonds cannot loop forever
+  // (the id set is finite, so the loop terminates).
+  let pendingSeeds = followUpSeeds;
+  const fetchedSeeds = new Set<SignedResourceId>();
+  while (pendingSeeds.length > 0) {
+    const roundSeeds = pendingSeeds.filter((id) => !fetchedSeeds.has(id));
+    if (roundSeeds.length === 0) break;
+    for (const id of roundSeeds) fetchedSeeds.add(id);
+
+    const followUpItems = tx.resourceTree(roundSeeds, {
       includeKv: true,
       fieldFilter,
       traverseStopRules,
     });
-    const { result: followUpResult } = await processResourceTreeStream(
+    const { result: followUpResult, followUpSeeds: nextSeeds } = await processResourceTreeStream(
       followUpItems,
       finalResources,
       pruningFunction,
       stats,
     );
-    // Invariant (disabled, under investigation): one follow-up round should resolve every
-    // stop marker; a stop marker in the follow-up stream means a deeper chain than the
-    // two-round design handles. Re-enable by capturing followUpSeeds above and throwing:
-    //   const { followUpSeeds: unresolvedSeeds } = await processResourceTreeStream(...);
-    //   if (unresolvedSeeds.length > 0)
-    //     throw new Error(`resourceTree follow-up left ${unresolvedSeeds.length} unresolved stop-marker seeds: ${JSON.stringify(unresolvedSeeds)}`);
     result.push(...followUpResult);
     if (stats) {
       logger?.info?.(
-        `loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`,
+        `loadTreeStateViaResourceTree: follow-up request for ${roundSeeds.length} stop-marker seeds: ${JSON.stringify(roundSeeds)}`,
       );
       stats.roundTrips++;
       stats.streamRounds++;
       stats.stopMarkerFollowUpRoundTrips++;
     }
+    pendingSeeds = nextSeeds;
   }
 
   return result;
