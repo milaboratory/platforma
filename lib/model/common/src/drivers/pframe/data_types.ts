@@ -248,6 +248,18 @@ export interface WritePTableToFsOptions {
   path: string;
   format: PTableDownloadFormat;
   columnIndices: number[];
+  /**
+   * Optional header names aligned 1:1 with {@link columnIndices}. When provided,
+   * each is written verbatim — letting callers supply disambiguated labels the
+   * spec's intrinsic `pl7.app/label` may not carry. When omitted (or an
+   * individual entry is empty), the header falls back to the column's
+   * spec-derived label.
+   *
+   * Additive on purpose: the UI (ui-vue) and the desktop-app runtime version
+   * independently, so a newer UI must not send a shape an older runtime cannot
+   * read. Older runtimes ignore this field and use {@link columnIndices} alone.
+   */
+  headerNames?: string[];
   range?: TableRange;
   chunkSize?: number;
   includeHeader?: boolean;
@@ -281,4 +293,16 @@ export interface ExportPTableOptions {
   /** Unified indices of the columns to export, in output order
    * (axes first, then data columns). */
   columnIndices: number[];
+  /**
+   * Optional header names aligned 1:1 with {@link columnIndices}. When provided,
+   * each is written verbatim — letting callers supply disambiguated labels the
+   * spec's intrinsic `pl7.app/label` may not carry. When omitted (or an
+   * individual entry is empty), the header falls back to the column's
+   * spec-derived label.
+   *
+   * Additive on purpose: the UI (ui-vue) and the desktop-app runtime version
+   * independently, so a newer UI must not send a shape an older runtime cannot
+   * read. Older runtimes ignore this field and use {@link columnIndices} alone.
+   */
+  headerNames?: string[];
 }
