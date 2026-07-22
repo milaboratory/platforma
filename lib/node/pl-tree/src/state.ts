@@ -756,6 +756,7 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            changed = true;
             if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
             resource.kv.set(kv.key, kv.value);
@@ -763,6 +764,7 @@ export class PlTreeState {
               kv.key,
               `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            changed = true;
             if (stat) stat.kvChanged++;
           }
         }
@@ -779,6 +781,7 @@ export class PlTreeState {
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
+              changed = true;
               if (stat) stat.kvChanged++;
             }
           });
