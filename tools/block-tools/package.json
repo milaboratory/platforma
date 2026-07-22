@@ -46,6 +46,7 @@
     "@platforma-sdk/package-builder-lib": "workspace:*",
     "canonicalize": "catalog:",
     "commander": "catalog:",
+    "fd-lock": "catalog:",
     "lru-cache": "catalog:",
     "mime-types": "catalog:",
     "tar": "catalog:",
