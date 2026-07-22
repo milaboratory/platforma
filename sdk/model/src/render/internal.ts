@@ -214,6 +214,7 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
   lazyColumnStatusSupport: true as const,
+  pFrameQueryLimitSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
