@@ -32,6 +32,7 @@ export function createPTableDefV3(params: {
   secondary: ColumnRecipe[];
   filters?: Nil | PlDataTableFilters;
   sorting?: Nil | PTableSorting[];
+  limit?: Nil | number;
 }): PTableDefV2<ColumnUniversalId> {
   let query: SpecQuery = {
     type: params.primaryJoinType === "inner" ? "innerJoin" : "fullJoin",
@@ -80,6 +81,10 @@ export function createPTableDefV3(params: {
         nullsFirst: s.naAndAbsentAreLeastValues,
       })),
     };
+  }
+
+  if (!isNil(params.limit)) {
+    query = { type: "limit", input: query, fetch: params.limit };
   }
 
   return { query };
