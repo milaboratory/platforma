@@ -50,7 +50,7 @@ import * as fs from "node:fs";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import * as zlib from "node:zlib";
-import { columnLabel, streamPTableRows } from "./csv_writer";
+import { getNativeColumnLabel, streamPTableRows } from "./csv_writer";
 import type {
   AbstractInternalPFrameDriver,
   WritePTableToFsOptions,
@@ -297,6 +297,14 @@ export class AbstractPFrameDriver<
     const { pTablePromise, disposeSignal } = tableGuard.resource;
     const pTable = await pTablePromise;
 
+    // Caller-supplied header names win (they carry the disambiguated labels the
+    // UI shows); a missing or empty name falls back to the spec-derived label.
+    const { columnIndices } = options;
+    const headerNames = columnIndices.map((index, i) => {
+      const name = options.headerNames?.[i];
+      return name !== undefined && name !== "" ? name : getNativeColumnLabel(def.tableSpec[index]);
+    });
+
     const combinedSignal = AbortSignal.any(
       [options.signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
@@ -316,7 +324,8 @@ export class AbstractPFrameDriver<
       const iterable = streamPTableRows({
         pTable,
         specs,
-        columnIndices: options.columnIndices,
+        columnIndices,
+        headerNames,
         range: clippedRange,
         chunkSize: options.chunkSize ?? 50_000,
         separator,
@@ -354,7 +363,7 @@ export class AbstractPFrameDriver<
         const durationMs = Math.round(performance.now() - startTime);
         this.logger(
           "info",
-          `[WritePTableToFs] complete (handle = ${handle}, columns = ${options.columnIndices.length}, rows = ${rowsWritten}, bytes = ${bytesWritten}, duration = ${durationMs}ms)`,
+          `[WritePTableToFs] complete (handle = ${handle}, columns = ${columnIndices.length}, rows = ${rowsWritten}, bytes = ${bytesWritten}, duration = ${durationMs}ms)`,
         );
       }
 
@@ -384,10 +393,15 @@ export class AbstractPFrameDriver<
       [signal, disposeSignal].filter((s): s is AbortSignal => !isNil(s)),
     );
 
-    const headers: [number, string][] = columnIndices.map((index): [number, string] => [
-      index,
-      columnLabel(def.tableSpec[index]),
-    ]);
+    // Caller-supplied header names win (they carry the disambiguated labels the
+    // UI shows); a missing or empty name falls back to the spec-derived label.
+    const headers: [number, string][] = columnIndices.map((index, i): [number, string] => {
+      const name = options.headerNames?.[i];
+      return [
+        index,
+        name !== undefined && name !== "" ? name : getNativeColumnLabel(def.tableSpec[index]),
+      ];
+    });
 
     // keep()/cache live outside the limiter task: on abort `run` rejects and they are
     // skipped, so an abandoned (detached) operation never caches its result nor touches

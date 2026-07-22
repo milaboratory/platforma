@@ -133,7 +133,7 @@ gridOptions.value.onGridPreDestroyed = (event) => {
       makePartialState(event.api.getState()),
       gridState.value,
       event.api,
-      currentColumnsMeta(),
+      getColumnsMeta(),
     );
   }
   gridApi.value = null;
@@ -146,7 +146,7 @@ gridOptions.value.onStateUpdated = (event) => {
     makePartialState(event.state),
     gridState.value,
     event.api,
-    currentColumnsMeta(),
+    getColumnsMeta(),
   );
   // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
   gridOptions.value.initialState = gridState.value = partialState;
@@ -241,7 +241,7 @@ function normalizeColumnVisibility(
 }
 
 /** Sidecar display meta is only on the `model` branch of the settings union. */
-function currentColumnsMeta(): PlDataTableColumnsMeta | undefined {
+function getColumnsMeta(): PlDataTableColumnsMeta | undefined {
   return "model" in props.settings ? props.settings.model?.columnsMeta : undefined;
 }
 
@@ -576,6 +576,7 @@ watchEffect(() => {
       v-if="gridApi && showExportButton"
       :api="gridApi"
       :table-handle="'model' in settings ? settings?.model?.visibleTableHandle : undefined"
+      :columns-meta="getColumnsMeta()"
     />
     <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">
       <template v-if="$slots['before-sheets']" #before>

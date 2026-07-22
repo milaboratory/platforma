@@ -21,7 +21,9 @@ export interface PTableDataSource {
 
 /** Format a CSV/TSV header row from column specs. Line ending is CRLF. */
 export function formatHeader(specs: PTableColumnSpec[], separator: string): string {
-  return specs.map((spec) => escapeField(columnLabel(spec), separator)).join(separator) + "\r\n";
+  return (
+    specs.map((spec) => escapeField(getNativeColumnLabel(spec), separator)).join(separator) + "\r\n"
+  );
 }
 
 /** Format a single data row from parallel vectors. Line ending is CRLF. */
@@ -44,6 +46,13 @@ export interface StreamPTableRowsOptions {
   pTable: PTableDataSource;
   specs: PTableColumnSpec[];
   columnIndices: number[];
+  /**
+   * Header names aligned 1:1 with `columnIndices`. When provided they are
+   * written verbatim, letting callers supply disambiguated labels the spec's
+   * intrinsic `pl7.app/label` may not carry. When omitted the header is derived
+   * from `specs` via {@link getNativeColumnLabel}.
+   */
+  headerNames?: string[];
   range?: TableRange;
   chunkSize: number;
   separator: string;
@@ -52,16 +61,27 @@ export interface StreamPTableRowsOptions {
   signal?: AbortSignal;
 }
 export async function* streamPTableRows(options: StreamPTableRowsOptions): AsyncIterable<string> {
-  const { pTable, columnIndices, range, chunkSize, separator, signal, specs, includeHeader, bom } =
+  const { pTable, columnIndices, headerNames, range, chunkSize, separator, signal, specs } =
     options;
+  const { includeHeader, bom } = options;
+
+  if (headerNames !== undefined && headerNames.length !== columnIndices.length) {
+    throw new Error(
+      `headerNames length (${headerNames.length}) must match columnIndices length (${columnIndices.length})`,
+    );
+  }
 
   if (bom) {
     yield "\uFEFF";
   }
 
   if (includeHeader) {
-    const selectedSpecs = columnIndices.map((index) => specs[index]);
-    yield formatHeader(selectedSpecs, separator);
+    yield headerNames !== undefined
+      ? headerNames.map((name) => escapeField(name, separator)).join(separator) + "\r\n"
+      : formatHeader(
+          columnIndices.map((index) => specs[index]),
+          separator,
+        );
   }
 
   if (isNil(range)) {
@@ -89,7 +109,7 @@ export async function* streamPTableRows(options: StreamPTableRowsOptions): Async
 // ── Helpers (low-level) ──────────────────────────────────────────────
 
 /** Extract a human-readable label from a PTableColumnSpec. */
-export function columnLabel(spec: PTableColumnSpec): string {
+export function getNativeColumnLabel(spec: PTableColumnSpec): string {
   const annotation = readAnnotation(spec.spec, Annotation.Label);
   return isNil(annotation) ? spec.spec.name : annotation.trim();
 }
