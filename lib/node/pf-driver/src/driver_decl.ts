@@ -105,8 +105,9 @@ export interface AbstractInternalPFrameDriver<PColumnData> extends PFrameDriver,
   /**
    * Export the table to a file, selecting the format from the extension of
    * `options.path` (`csv`/`tsv`/`parquet`/`xlsx`). `options.columnIndices`
-   * selects the columns to export (output order); headers are derived from
-   * each field's label annotation (falling back to the spec name).
+   * selects the columns to export (output order); optional
+   * `options.headerNames` (aligned 1:1) names them, with a missing or empty
+   * entry falling back to the field's label annotation (then the spec name).
    */
   exportPTable(
     handle: PTableHandle,
