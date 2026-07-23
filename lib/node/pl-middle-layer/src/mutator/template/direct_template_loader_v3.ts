@@ -71,13 +71,15 @@ type Creator = <T>(
 ) => AnyResourceRef;
 
 const LibRenderer: Renderer<TemplateLibDataV3> = {
-  updateCacheKey(resource, hash, sources) {
+  updateCacheKey(resource, hash, _sources) {
+    // sourceHash is already the sha256 of this source (the hashToSource key), so hash it
+    // directly instead of streaming the full source through sha256 again.
     hash
       .update(PlTemplateLibV1.type.name)
       .update(PlTemplateLibV1.type.version)
       .update(resource.name)
       .update(resource.version)
-      .update(getSourceCode(resource.name, sources, resource.sourceHash));
+      .update(resource.sourceHash);
   },
   render(resource, tx, _creator, sources) {
     return tx.createValue(
@@ -93,13 +95,13 @@ const LibRenderer: Renderer<TemplateLibDataV3> = {
 };
 
 const WasmRenderer: Renderer<TemplateWasmDataV3> = {
-  updateCacheKey(resource, hash, sources) {
+  updateCacheKey(resource, hash, _sources) {
     hash
       .update(PlWasmV1.type.name)
       .update(PlWasmV1.type.version)
       .update(resource.name)
       .update(resource.version)
-      .update(getSourceCode(resource.name, sources, resource.sourceHash));
+      .update(resource.sourceHash);
   },
   render(resource, tx, _creator, sources) {
     return tx.createValue(
@@ -113,13 +115,13 @@ const WasmRenderer: Renderer<TemplateWasmDataV3> = {
 };
 
 const SoftwareInfoRenderer: Renderer<TemplateSoftwareDataV3> = {
-  updateCacheKey(resource, hash, sources) {
+  updateCacheKey(resource, hash, _sources) {
     hash
       .update(PlTemplateSoftwareV1.type.name)
       .update(PlTemplateSoftwareV1.type.version)
       .update(resource.name)
       .update(resource.version)
-      .update(getSourceCode(resource.name, sources, resource.sourceHash));
+      .update(resource.sourceHash);
   },
   render(resource, tx, _creator, sources) {
     const sw = PlTemplateSoftwareV1.fromV3Data(
@@ -141,7 +143,7 @@ const TemplateRenderer: Renderer<TemplateDataV3> = {
       .update(resource.hashOverride ?? "no-override")
       .update(resource.name)
       .update(resource.version)
-      .update(getSourceCode(resource.name, sources, resource.sourceHash));
+      .update(resource.sourceHash);
 
     const srt = <T>(entries: [string, T][]): [string, T][] => {
       entries.sort((a, b) => (a[0] === b[0] ? 0 : a[0] < b[0] ? -1 : 1));
