@@ -408,3 +408,147 @@ tplTest.concurrent(
     expect(lines.length).toBe(4); // header + 3 data rows
   },
 );
+
+// keys-only column: an enrichment whose key space is unioned into the output
+// (its keys appear as rows) but whose value column is NOT written to the file.
+// `extra` carries id rows A, C, D — primary carries A, B, C. The full-join
+// surfaces D (a key only the keys-only column knows about) while its value
+// stays out of the table.
+const extraCsv = dedent`
+  id,extra
+  A,111
+  C,333
+  D,444
+`;
+const extraSpec = specWithLong("extra", "pl7.app/extra", "Extra");
+
+tplTest.concurrent(
+  "tableBuilder: keysOnly column expands key space without emitting a value column",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      format: "tsv",
+      imports: {
+        main: { csv: primaryCsv, spec: primarySpec },
+        extra: { csv: extraCsv, spec: extraSpec },
+      },
+      primaries: [{ name: "main", sourceImport: "main" }],
+      columns: [{ mode: "single", sourceImport: "extra", opts: { keysOnly: true } }],
+    });
+    const lines = content.trim().split("\n");
+
+    // Header has ONLY the primary's axis + value column — the keys-only
+    // column's value ("Extra") is absent. This is the core assertion.
+    expect(lines[0]).toBe("ID\tScore");
+
+    // Union of keys {A,B,C} ∪ {A,C,D} = {A,B,C,D}. D comes solely from the
+    // keys-only column, proving its key space was unioned into the output.
+    // (Assert on the key column rather than full rows: D's Score cell is
+    // empty, and content.trim() would strip that trailing tab.)
+    const dataLines = lines.slice(1);
+    const ids = dataLines.map((l) => l.split("\t")[0]).sort();
+    expect(ids).toEqual(["A", "B", "C", "D"]);
+
+    // D carries no Score value (empty cell) — it contributed only its key.
+    const dRow = dataLines.find((l) => l.split("\t")[0] === "D")!;
+    expect(dRow.split("\t")[1] ?? "").toBe("");
+    // Existing keys keep their primary value.
+    expect(dataLines.find((l) => l.split("\t")[0] === "A")).toBe("A\t10");
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: same column without keysOnly emits its value column (contrast)",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      format: "tsv",
+      imports: {
+        main: { csv: primaryCsv, spec: primarySpec },
+        extra: { csv: extraCsv, spec: extraSpec },
+      },
+      primaries: [{ name: "main", sourceImport: "main" }],
+      columns: [{ mode: "single", sourceImport: "extra", opts: { header: "Extra" } }],
+    });
+    const lines = content.trim().split("\n");
+
+    // Without keysOnly the value column IS written, proving the flag is what
+    // suppresses it (not some unrelated join behaviour).
+    expect(lines[0]).toBe("ID\tScore\tExtra");
+    expect(lines.slice(1).sort()).toEqual(["A\t10\t111", "B\t20\t", "C\t30\t333", "D\t\t444"]);
+  },
+);
+
+// keys-only column that introduces a NEW axis. The primary is keyed by `id`
+// only; the keys-only `byRegion` column is keyed by (id, region). The full-join
+// surfaces `region` as a new output column (its keys expand the rows) while the
+// column's own value is NOT written. This guards the "new axes are surfaced"
+// half of the feature — distinct from the shared-axis case above, this test
+// fails if the axis-collection loop skipped keys-only columns.
+const byRegionCsv = dedent`
+  id,region,rv
+  A,north,1
+  A,south,2
+  B,north,3
+`;
+const byRegionSpec = {
+  axes: [
+    {
+      column: "id",
+      spec: {
+        name: "pl7.app/id",
+        type: "String",
+        annotations: { [Annotation.Label]: "ID" } satisfies Annotation,
+      },
+    },
+    {
+      column: "region",
+      spec: {
+        name: "pl7.app/region",
+        type: "String",
+        annotations: { [Annotation.Label]: "Region" } satisfies Annotation,
+      },
+    },
+  ],
+  columns: [
+    {
+      column: "rv",
+      id: "rv",
+      spec: {
+        valueType: "Long",
+        name: "pl7.app/region-value",
+        annotations: { [Annotation.Label]: "RegionValue" } satisfies Annotation,
+      },
+    },
+  ],
+  storageFormat: "Json",
+  partitionKeyLength: 0,
+};
+
+tplTest.concurrent(
+  "tableBuilder: keysOnly column surfaces a new axis without emitting its value",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      format: "tsv",
+      imports: {
+        main: { csv: primaryCsv, spec: primarySpec },
+        byRegion: { csv: byRegionCsv, spec: byRegionSpec },
+      },
+      primaries: [{ name: "main", sourceImport: "main" }],
+      columns: [{ mode: "single", sourceImport: "byRegion", opts: { keysOnly: true } }],
+    });
+    const lines = content.trim().split("\n");
+
+    // New axis "Region" is surfaced (between the primary axis and value), but
+    // the keys-only column's own value ("RegionValue") is NOT in the header.
+    expect(lines[0]).toBe("ID\tRegion\tScore");
+
+    // Full-join over the (id, region) key space: A expands to north+south
+    // (Score broadcast = 10), B to north (20), C has no region row so its
+    // Region cell is empty (Score 30). Every row keeps its primary Score.
+    expect(lines.slice(1).sort()).toEqual([
+      "A\tnorth\t10",
+      "A\tsouth\t10",
+      "B\tnorth\t20",
+      "C\t\t30",
+    ]);
+  },
+);
