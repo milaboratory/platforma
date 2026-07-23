@@ -603,10 +603,9 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return getService(name);
   }
 
-  // /** Can be used to determine features provided by the desktop instance. */
-  // public get featureFlags() {
-  //   return this.ctx.featureFlags;
-  // }
+  public get featureFlags() {
+    return this.ctx.featureFlags;
+  }
 
   private getNamedAccessor(name: string): TreeNodeAccessor | undefined {
     return ifDef(

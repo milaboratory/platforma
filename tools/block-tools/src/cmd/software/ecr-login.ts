@@ -1,9 +1,12 @@
 import { spawnSync } from "node:child_process";
+import * as fs from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 import {
   ECRPUBLICClient as EcrPublicClient,
   GetAuthorizationTokenCommand,
 } from "@aws-sdk/client-ecr-public";
+import FDLock from "fd-lock";
 import { util, defaults, type Logger } from "@platforma-sdk/package-builder-lib";
 
 const PUBLIC_ECR_HOST = "public.ecr.aws";
@@ -27,6 +30,19 @@ function registryHost(registry: string): string {
 function ssoLoginHint(): string {
   const profile = process.env.AWS_PROFILE ?? process.env.PL_AWS_PROFILE ?? defaults.AWS_DEV_PROFILE;
   return `  aws sso login --profile ${profile}`;
+}
+
+// Serialize `docker login` across processes: turbo logs every package in at once, and concurrent
+// writes to the shared per-host credential store race (macOS keychain fails with -25299).
+async function withHostLoginLock<T>(host: string, fn: () => T): Promise<T> {
+  const fd = fs.openSync(path.join(os.tmpdir(), `pl-ecr-login-${host}.lock`), "w");
+  const lock = new FDLock(fd, { wait: true });
+  await lock.ready();
+  try {
+    return fn();
+  } finally {
+    await lock.close(); // releases the flock and closes the fd
+  }
 }
 
 // docker login to public ECR with an SDK-fetched token. No cached-auth check — re-authenticates
@@ -64,11 +80,13 @@ export async function ensureEcrLogin(registry: string, logger?: Logger): Promise
     );
   }
 
-  const login = spawnSync("docker", ["login", "--username", user, "--password-stdin", host], {
-    input: password,
-    stdio: ["pipe", "inherit", "inherit"],
-    env: { ...process.env, HOME: process.env.HOME || os.homedir() },
-  });
+  const login = await withHostLoginLock(host, () =>
+    spawnSync("docker", ["login", "--username", user, "--password-stdin", host], {
+      input: password,
+      stdio: ["pipe", "inherit", "inherit"],
+      env: { ...process.env, HOME: process.env.HOME || os.homedir() },
+    }),
+  );
   if (login.error || login.status !== 0) {
     throw util.CLIError(`'docker login ${host}' failed`);
   }
