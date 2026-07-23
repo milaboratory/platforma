@@ -68,6 +68,49 @@ export type ResourceDataWithFinalState = ResourceData & {
   finalState: boolean;
 };
 
+/** Cross-cycle re-fetch duplication counters, populated by {@link PlTreeState.updateFromResourceData}.
+ * Separates genuinely new/changed resources from redundant re-fetches of unchanged ones
+ * (the delta-skip opportunity: intra-cycle dedup already happens in the loader, so all waste here
+ * is cross-cycle). */
+export interface ResourceUpdateStat {
+  /** Resources seen for the first time in this update. */
+  resourcesNew: number;
+  /** Resources already held whose state actually changed. */
+  resourcesChanged: number;
+  /** Resources already held that came back unchanged: a pure duplicate re-fetch. */
+  resourcesUnchanged: number;
+  /** data + KV bytes of the unchanged bucket: wasted downlink. */
+  bytesUnchanged: number;
+  /** Changed resources whose immutable metadata (type, kind, field set) did not change,
+   * i.e. metadata re-streamed even though only a value or flag flipped. */
+  metadataStableChanged: number;
+  /** Per-resource fetches spent on unchanged resources (BFS only; streaming re-sends them
+   * inside one stream, so this stays 0). */
+  bfsRequestsWasted: number;
+  /** Whether the current load used backend streaming; set by the loader, read here to
+   * attribute {@link bfsRequestsWasted}. */
+  usedStreaming: boolean;
+  // Breakdown of what changed among resourcesChanged (a resource can bump several).
+  /** New fields appeared on a held resource. */
+  fieldsAdded: number;
+  /** Dynamic fields disappeared from a held resource. */
+  fieldsRemoved: number;
+  /** Existing field value pointer changed (a new value/result was attached). */
+  fieldsChanged: number;
+  /** KV entries added, changed, or deleted. */
+  kvChanged: number;
+  /** resourceReady flipped. */
+  readyFlips: number;
+  /** inputsLocked or outputsLocked transitioned. */
+  locksChanged: number;
+  /** An error resource was attached. */
+  errorsAttached: number;
+  /** originalResourceId resolved (duplicate -> original). */
+  duplicatesResolved: number;
+  /** Held resources that transitioned to final this update. */
+  resourcesMarkedFinal: number;
+}
+
 /** Never store instances of this class, always get fresh instance from {@link PlTreeState} */
 export class PlTreeResource implements ResourceDataWithFinalState {
   /** Tracks number of other resources referencing this resource. Used to perform garbage collection in tree patching procedure */
@@ -451,7 +494,11 @@ export class PlTreeState {
     return res;
   }
 
-  updateFromResourceData(resourceData: ExtendedResourceData[], allowOrphanInputs: boolean = false) {
+  updateFromResourceData(
+    resourceData: ExtendedResourceData[],
+    allowOrphanInputs: boolean = false,
+    stat?: ResourceUpdateStat,
+  ) {
     this.checkValid();
 
     // All resources for which recount should be incremented, first are aggregated in this list
@@ -461,6 +508,11 @@ export class PlTreeState {
     // patching / creating resources
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
+      const held = resource !== undefined;
+      let changed = false;
+      // Structural/metadata change (new or removed field). type and kind are readonly, so
+      // they never change; this flag isolates value/flag-only changes from real metadata churn.
+      let metadataChanged = false;
 
       const statBeforeMutation = resource?.basicState;
       const unexpectedTransitionError = (reason: string): never => {
@@ -480,7 +532,6 @@ export class PlTreeState {
         if (resource.finalState)
           unexpectedTransitionError("resource state can\t be updated after it is marked as final");
 
-        let changed = false;
         // updating resource version, even if it was not changed
         resource.version += 1;
 
@@ -494,6 +545,7 @@ export class PlTreeState {
             `originalResourceId changed for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.duplicatesResolved++;
         }
 
         // error
@@ -506,6 +558,7 @@ export class PlTreeState {
             `error changed for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.errorsAttached++;
         }
 
         // updating fields
@@ -552,6 +605,8 @@ export class PlTreeState {
             resource.fieldsMap.set(fd.name, field);
 
             changed = true;
+            metadataChanged = true;
+            if (stat) stat.fieldsAdded++;
           } else {
             // change of old field
 
@@ -596,6 +651,7 @@ export class PlTreeState {
                 `field ${fd.name} value changed in ${resourceIdToString(resource.id)}`,
               );
               changed = true;
+              if (stat) stat.fieldsChanged++;
             }
 
             // field error
@@ -640,6 +696,8 @@ export class PlTreeState {
               `dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`,
             );
             fields.delete(fieldName);
+            metadataChanged = true;
+            if (stat) stat.fieldsRemoved++;
 
             if (isNotNullSignedResourceId(field.value)) decrementRefs.push(field.value);
             if (isNotNullSignedResourceId(field.error)) decrementRefs.push(field.error);
@@ -658,6 +716,7 @@ export class PlTreeState {
             `inputs locked for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.locksChanged++;
         }
 
         // outputsLocked
@@ -669,6 +728,7 @@ export class PlTreeState {
             `outputs locked for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.locksChanged++;
         }
 
         // ready flag
@@ -684,6 +744,7 @@ export class PlTreeState {
             `ready flag changed to ${rd.resourceReady} for ${resourceIdToString(resource.id)}`,
           );
           changed = true;
+          if (stat) stat.readyFlips++;
         }
 
         // syncing kv
@@ -695,12 +756,16 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            changed = true;
+            if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
             resource.kv.set(kv.key, kv.value);
             notEmpty(resource.kvChangedPerKey).markChanged(
               kv.key,
               `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            changed = true;
+            if (stat) stat.kvChanged++;
           }
         }
 
@@ -716,6 +781,8 @@ export class PlTreeState {
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
+              changed = true;
+              if (stat) stat.kvChanged++;
             }
           });
         }
@@ -723,7 +790,10 @@ export class PlTreeState {
         if (changed) {
           // if resource was changed, updating resource data version
           resource.dataVersion = resource.version;
-          if (this.isFinalPredicate(resource)) resource.markFinal();
+          if (this.isFinalPredicate(resource)) {
+            resource.markFinal();
+            if (stat) stat.resourcesMarkedFinal++;
+          }
         }
       } else {
         // creating new resource
@@ -755,6 +825,19 @@ export class PlTreeState {
         // adding the resource to the heap
         this.resources.set(resource.id, resource);
         this.resourcesAdded.markChanged(`new resource ${resourceIdToString(resource.id)} added`);
+      }
+
+      if (stat) {
+        if (!held) stat.resourcesNew++;
+        else if (changed) {
+          stat.resourcesChanged++;
+          if (!metadataChanged) stat.metadataStableChanged++;
+        } else {
+          stat.resourcesUnchanged++;
+          stat.bytesUnchanged += rd.data?.length ?? 0;
+          for (const kv of rd.kv) stat.bytesUnchanged += kv.value.length;
+          if (!stat.usedStreaming) stat.bfsRequestsWasted++;
+        }
       }
     }
 
