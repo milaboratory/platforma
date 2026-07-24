@@ -55,6 +55,7 @@
     "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-kind": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
     "fast-json-patch": "catalog:",
     "typescript": "catalog:",

@@ -9,6 +9,7 @@ import {
 } from "@milaboratories/pl-model-middle-layer";
 import { storageByUrl } from "../io/storage";
 import { BlockRegistryV2 } from "../v2/registry/registry";
+import { publishBlock } from "../v2/publish-block";
 import { buildPublishedCoords, writePublishedCoords } from "../v2/resolve_to_registry";
 import path from "node:path";
 
@@ -90,7 +91,9 @@ export function publishCommand(): Command {
     const storage = storageByUrl(flags.registry);
     const registry = new BlockRegistryV2(storage, logger);
 
-    await registry.publishPackage(manifest, async (file) =>
+    // Kind-first publish: resolve refs -> version-match gate (before any S3
+    // write) -> publishKind (if the block declares a kind) -> publishPackage.
+    await publishBlock(registry, manifest, manifestRoot, async (file) =>
       Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file))),
     );
 

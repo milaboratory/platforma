@@ -60,6 +60,7 @@ packages:
   - sdk/test
   - sdk/ui-vue
   - sdk/eslint-config
+  - sdk/block-kind
 
   # Test blocks
 

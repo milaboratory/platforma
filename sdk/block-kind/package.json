@@ -1,0 +1,42 @@
+{
+  "name": "@platforma-sdk/block-kind",
+  "version": "1.80.11",
+  "description": "Block kind definition SDK",
+  "license": "UNLICENSED",
+  "files": [
+    "dist/**/*"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target node",
+    "watch": "ts-builder build --target node --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

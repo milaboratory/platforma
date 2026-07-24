@@ -6,12 +6,15 @@ import type {
   UpdateSuggestions,
   SingleBlockPackOverview,
   BlockPackOverviewNoRegistryId,
+  BlockPackFromRegistryV2,
 } from "@milaboratories/pl-model-middle-layer";
 import {
   blockPackIdNoVersionEquals,
   BlockPackManifest,
   AnyChannel,
 } from "@milaboratories/pl-model-middle-layer";
+import type { BlockKindReference } from "@milaboratories/pl-model-common";
+import { parseKindRef } from "@milaboratories/pl-model-common";
 import type { FolderReader } from "../../io";
 import canonicalize from "canonicalize";
 import {
@@ -22,6 +25,8 @@ import {
   packageContentPrefixInsideV2,
   parseGlobalOverviewReg,
 } from "./schema_public";
+import { KindsPrefix, KindOverview, KindOverviewFileName, npmNameToKindPath } from "./schema_kinds";
+import { resolveKind as resolveKindOverview, KindResolutionError } from "./kind_resolver";
 import type { BlockComponentsAbsoluteUrl } from "../model";
 import { blockComponentsManifestToAbsoluteUrl, embedBlockPackMetaBytes } from "../model";
 import { LRUCache } from "lru-cache";
@@ -65,6 +70,8 @@ export function inferUpdateSuggestions(currentVersion: string, availableVersions
 
 export class RegistryV2Reader {
   private readonly v2RootFolderReader: FolderReader;
+  /** Rooted at `kinds/`, a sibling of `v2/` — the kind projection tree. */
+  private readonly kindsRootFolderReader: FolderReader;
   private readonly ops: RegistryV2ReaderOps;
 
   constructor(
@@ -72,6 +79,7 @@ export class RegistryV2Reader {
     ops?: Partial<RegistryV2ReaderOps>,
   ) {
     this.v2RootFolderReader = registryReader.relativeReader(MainPrefix);
+    this.kindsRootFolderReader = registryReader.relativeReader(KindsPrefix);
     this.ops = { ...DefaultRegistryV2ReaderOps, ...ops };
   }
 
@@ -258,5 +266,65 @@ export class RegistryV2Reader {
 
   public async getComponents(id: BlockPackId): Promise<BlockComponentsAbsoluteUrl> {
     return await this.componentsCache.forceFetch(canonicalize(id)!, { context: id });
+  }
+
+  /**
+   * Read the kind projection at `kinds/{org}/{name}/overview.json` for a kind
+   * npm package name. Single, no-LIST read against the `kinds/` sibling tree
+   * (rooted separately from `v2/`). Returns `undefined` when the overview is
+   * absent — a kind with zero implementing blocks has no overview by design.
+   *
+   * Client-side selector→version resolution is left to the §6 resolution
+   * concern; this method only fetches and parses.
+   */
+  public async getKindOverview(
+    kindNpmName: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<KindOverview | undefined> {
+    const { org, name } = npmNameToKindPath(kindNpmName);
+    const relPath = `${org}/${name}/${KindOverviewFileName}`;
+    try {
+      return await retry(async () => {
+        const bytes = await this.kindsRootFolderReader.readFile(relPath, {
+          signal: options?.signal,
+        });
+        return KindOverview.parse(JSON.parse(Buffer.from(bytes).toString()));
+      }, Retry2TimesWithDelay);
+    } catch {
+      // Absent overview (or unreadable) → treat as "no such kind projection".
+      return undefined;
+    }
+  }
+
+  /**
+   * Resolve a kind reference (`{name}@{selector}`) to a concrete implementing
+   * block, returning the **byte-identical** `from-registry-v2` spec shape that
+   * {@link getSpecificOverview} emits — so the resolved block flows through the
+   * unchanged add-block / `getComponents` / `prepareBlockPack` path.
+   *
+   * One projection read ({@link getKindOverview}) + client-side semver
+   * ({@link resolveKindOverview}); kind and its implementing blocks share this
+   * one registry, so no cross-registry intersection is needed. Throws a typed
+   * {@link KindResolutionError} on any failure (absent projection or no
+   * satisfying version/implementation) — the caller maps it to a spec error.
+   */
+  public async resolveKind(
+    ref: BlockKindReference,
+    { allowUnstable }: { allowUnstable: boolean },
+    options?: { signal?: AbortSignal },
+  ): Promise<BlockPackFromRegistryV2> {
+    const { name, version } = parseKindRef(ref);
+    const overview = await this.getKindOverview(name, options);
+    if (overview === undefined) throw new KindResolutionError("no-matching-kind-version", ref);
+
+    const r = resolveKindOverview(overview, version, { allowUnstable });
+    if (!r.ok) throw new KindResolutionError(r.reason, ref);
+
+    return {
+      type: "from-registry-v2",
+      id: r.blockId,
+      registryUrl: this.registryReader.rootUrl.toString(),
+      channel: r.channel,
+    };
   }
 }

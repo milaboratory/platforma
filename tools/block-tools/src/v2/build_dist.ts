@@ -3,6 +3,7 @@ import type {
   ManifestFileInfo,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
+import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import { consolidateBlockPackDescription } from "./model";
@@ -41,6 +42,33 @@ async function workflowRequiredCapabilities(
   return pack.template.requiredCapabilities;
 }
 
+/**
+ * Returns the block-kind reference the model config declares (baked at the
+ * container level by `BlockModelV3.done()`), or `undefined` for kind-less
+ * blocks or malformed model files — fail-safe, mirroring
+ * {@link workflowRequiredCapabilities}.
+ *
+ * Note: `build-model` writes `JSON.stringify(config)` where `config` is the
+ * `BlockConfigContainer` itself, so `kind` sits at the top level of
+ * `model.json` (not nested under a `config` key).
+ */
+async function modelKindReference(
+  descriptionRelative: BlockPackDescriptionManifest,
+  dst: string,
+): Promise<BlockKindReference | undefined> {
+  // After consolidateBlockPackDescription runs, components.model is always a
+  // `{type: "relative", path: ...}` reference into `dst`.
+  const model = descriptionRelative.components.model;
+  try {
+    const cfg = JSON.parse(await fsp.readFile(path.resolve(dst, model.path), "utf-8")) as {
+      kind?: BlockKindReference;
+    };
+    return cfg.kind ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function buildBlockPackDist(
   description: BlockPackDescriptionAbsolute,
   dst: string,
@@ -70,6 +98,13 @@ export async function buildBlockPackDist(
       requiredCapabilities: workflowCapabilities,
     };
   }
+
+  // Lift the model's container-level block-kind reference onto the manifest
+  // description (top-level, like featureFlags), so the published manifest
+  // advertises which kind the block implements. Fail-safe undefined leaves
+  // kind-less blocks unprojected.
+  const kindRef = await modelKindReference(descriptionRelative, dst);
+  if (kindRef) descriptionRelative.kind = kindRef;
 
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {

@@ -5,10 +5,11 @@ import type {
   PlRef,
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
+  BlockKindReference,
 } from "@milaboratories/pl-model-common";
-import { REQUIRES_PFRAMES_VERSION } from "@milaboratories/pl-model-common";
+import { REQUIRES_PFRAMES_VERSION, formatKindRef } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
-import type { DataModel } from "./block_migrations";
+import type { BlockKind, DataModel } from "./block_migrations";
 import type { PlatformaV3 } from "./platforma";
 import type { BlockDefaultUiServices } from "./services/service_resolve";
 import { BLOCK_SERVICE_FLAGS } from "./services/block_services";
@@ -110,7 +111,10 @@ interface BlockModelV3Config<
   Transfers extends Record<string, unknown> = {},
 > {
   renderingMode: BlockRenderingMode;
-  dataModel: DataModel<Data, Transfers>;
+  dataModel: DataModel<Data, unknown, Transfers>;
+  /** Reference to the block kind this model implements, in `{name}@{version}` form. */
+  // @todo: use blockKind, `kind` super comman word
+  kind: BlockKindReference | undefined;
   outputs: OutputsCfg;
   sections: ConfigRenderLambda;
   title: ConfigRenderLambda | undefined;
@@ -153,27 +157,75 @@ export class BlockModelV3<
   public static readonly INITIAL_BLOCK_FEATURE_FLAGS = BlockModelV3.FEATURE_FLAGS;
 
   /**
-   * Creates a new BlockModelV3 builder with the specified data model.
+   * Creates a new BlockModelV3 builder bound to a data model and a block kind.
+   *
+   * The `kind` argument is cross-checked against the kind handed to the
+   * builder: its `Params` type must match at compile time (via
+   * `BlockKind<Params>`), and its reference value must match at runtime. The
+   * reference is baked into the config so the published manifest can advertise
+   * which kind the block implements.
    *
    * @example
-   * const dataModel = new DataModelBuilder()
+   * const dataModel = new DataModelBuilder(kind)
    *   .from<BlockData>("v1")
-   *   .init(() => ({ numbers: [], labels: [] }));
+   *   .init(({ params }) => params ?? { numbers: [], labels: [] });
    *
-   * BlockModelV3.create(dataModel)
+   * BlockModelV3.create({ dataModel, kind })
    *   .args((data) => ({ numbers: data.numbers }))
    *   .sections(() => [{ type: 'link', href: '/', label: 'Main' }])
    *   .done();
-   *
-   * @param dataModel The data model that defines initial data and migrations
+   */
+  public static create<
+    Data extends Record<string, unknown>,
+    Params = never,
+    Transfers extends Record<string, unknown> = {},
+  >(args: {
+    dataModel: DataModel<Data, Params, Transfers>;
+    kind: BlockKind<Params>;
+  }): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>;
+  /**
+   * @deprecated Transition-window overload for kind-less blocks. Prefer
+   * `create({ dataModel, kind })`; this form will be removed once every V3
+   * block declares its kind (see Q-0005).
    */
   public static create<
     Data extends Record<string, unknown>,
     Transfers extends Record<string, unknown> = {},
-  >(dataModel: DataModel<Data, Transfers>): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers> {
+  >(
+    dataModel: DataModel<Data, unknown, Transfers>,
+  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>;
+  public static create<
+    Data extends Record<string, unknown>,
+    Params = never,
+    Transfers extends Record<string, unknown> = {},
+  >(
+    arg:
+      | { dataModel: DataModel<Data, Params, Transfers>; kind: BlockKind<Params> }
+      | DataModel<Data, unknown, Transfers>,
+  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers> {
+    // Discriminate the two overloads: the object form has a `dataModel`
+    // property; a DataModel instance does not.
+    const isObjectArg = "dataModel" in arg;
+    const dataModel = (isObjectArg ? arg.dataModel : arg) as DataModel<Data, unknown, Transfers>;
+    const kind = isObjectArg ? arg.kind : undefined;
+    // Derive the on-wire reference from the compiled kind; the kind object has
+    // no reference field of its own.
+    const kindRef = kind ? formatKindRef(kind) : undefined;
+
+    // Runtime guard: the kind handed to the builder must match the kind handed
+    // to create() (they are two separately-passed objects — see doc §3).
+    if (kindRef && dataModel.kindRef && dataModel.kindRef !== kindRef) {
+      throw new Error(
+        `Block kind mismatch: data model built for '${dataModel.kindRef}' but create() got '${kindRef}'`,
+      );
+    }
+
     return new BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>({
       renderingMode: "Heavy",
       dataModel,
+      // The container-level kind reference: the one create() was given, or the
+      // one the data model was built with (they are cross-checked above).
+      kind: kindRef ?? dataModel.kindRef,
       outputs: {},
       sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
@@ -620,6 +672,11 @@ export class BlockModelV3<
           blockLifecycleCallbacks: { ...BlockStorageFacadeHandles },
         },
 
+        // Block-kind identity, baked at the container level beside `code`
+        // (orthogonal to which render envelope applies). Rides into model.json
+        // via the JSON.stringify(config) in build-model.ts — no write-path change.
+        kind: this.config.kind,
+
         // fields below are added to allow previous desktop versions read generated configs
         sdkVersion: PlatformaSDKVersion,
         renderingMode: this.config.renderingMode,
@@ -700,7 +757,8 @@ type _ConfigTest = Expect<
       renderingMode: BlockRenderingMode;
       argsFunction: ((data: unknown) => unknown) | undefined;
       prerunArgsFunction: ((data: unknown) => unknown) | undefined;
-      dataModel: DataModel<_TestData, {}>;
+      dataModel: DataModel<_TestData, unknown, {}>;
+      kind: BlockKindReference | undefined;
       outputs: _TestOutputs;
       sections: ConfigRenderLambda;
       title: ConfigRenderLambda | undefined;
