@@ -7,7 +7,6 @@ import { createViteDevConfig } from "./createViteDevConfig";
 import { sanitizeVueOutputPlugin } from "./sanitizeVueOutputPlugin";
 
 // typescript ModuleResolutionKind constants (avoid importing typescript at runtime)
-const ModuleResolutionKind_NodeJs = 2;
 const ModuleResolutionKind_Bundler = 100;
 
 export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
@@ -23,9 +22,7 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
             compilerOptions: {
               declaration: true,
               declarationMap: true,
-              moduleResolution: useSources
-                ? ModuleResolutionKind_Bundler
-                : ModuleResolutionKind_NodeJs,
+              moduleResolution: ModuleResolutionKind_Bundler,
               customConditions: useSources ? ["sources"] : [],
             },
           }),

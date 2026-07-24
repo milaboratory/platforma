@@ -164,7 +164,11 @@ packages:
 
 catalog:
   # Build
-  "typescript": ~5.9.3
+  "typescript": 7.0.2
+  # TS7 is the native compiler and no longer ships the classic JS Compiler API.
+  # Tools that need that API (vite-plugin-dts/unplugin-dts, api-extractor) load this
+  # official bridge package (classic API packaged from typescript@6) as a fallback.
+  "@typescript/typescript6": 6.0.2
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
   "vite": ^8.0.6
@@ -176,7 +180,7 @@ catalog:
   "@rollup/plugin-json": ^6.1.0
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
-  "vite-plugin-dts": ^4.5.3
+  "vite-plugin-dts": ^5.0.3
   "vite-plugin-lib-inject-css": ^2.2.2
   "vite-plugin-externalize-deps": ^0.10.0
   "vite-plugin-commonjs": ^0.10.4
@@ -186,7 +190,7 @@ catalog:
   # Build util / linters
 
   "@protobuf-ts/plugin": &protobuf-ts 2.11.1
-  "openapi-typescript": "^7.10.0"
+  "openapi-typescript": "^7.13.0"
   "openapi-fetch": "^0.15.0"
 
   "@changesets/cli": ^2.29.5
@@ -269,7 +273,7 @@ catalog:
   "vue": 3.5.24
   "@vueuse/core": ^13.3.0
   "@vueuse/integrations": ^13.3.0
-  "vue-tsc": 3.3.5
+  "vue-tsc": 3.3.8
   "immer": 11.1.4
   "sass": ~1.83.4
   "vitepress": "1.5.0"

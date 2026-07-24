@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@milaboratories/ts-configs": "workspace:*",
+    "@typescript/typescript6": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "commander": "catalog:",
     "jsonc-parser": "catalog:",
@@ -31,7 +32,7 @@
     "oxlint": "1.63.0",
     "oxlint-plugin-eslint": "1.63.0",
     "rolldown": "^1.1.2",
-    "rolldown-plugin-dts": "^0.26.0",
+    "rolldown-plugin-dts": "^0.27.13",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
