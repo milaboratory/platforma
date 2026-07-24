@@ -43,16 +43,23 @@ describe("kind reference / path derivation round-trip", () => {
     expect(contentPrefix).toBe(`kinds/${loc.org}/${loc.name}/${version}`);
   });
 
-  test("npmNameToKindPath splits both the scoped and the dotted npm form", () => {
-    // Scoped form: `@org/rest.kind`.
+  test("npmNameToKindPath delegates to parsePackageName (scope dropped, 1st dotted segment = org, 2nd = name, .kind ignored)", () => {
+    // Scoped form: the npm scope (`@platforma-open/`) is dropped, then the dotted
+    // body yields org = 1st segment, name = 2nd, and the trailing `.kind` marker
+    // is simply not matched by the canonical parser.
     expect(npmNameToKindPath("@platforma-open/milaboratories.mixcr-clonotyping.kind")).toEqual({
       org: "milaboratories",
       name: "mixcr-clonotyping",
     });
-    // Dotted form: `org.rest.kind`.
+    // Bare dotted form: org = 1st segment, name = 2nd, `.kind` ignored.
     expect(npmNameToKindPath("platforma-open.mixcr-clonotyping.kind")).toEqual({
       org: "platforma-open",
       name: "mixcr-clonotyping",
     });
+    // Delegation means the derivation is identical whether or not the `.kind`
+    // marker is present — the trailing segment never participates in the split.
+    expect(npmNameToKindPath("@platforma-open/milaboratories.mixcr-clonotyping")).toEqual(
+      npmNameToKindPath("@platforma-open/milaboratories.mixcr-clonotyping.kind"),
+    );
   });
 });

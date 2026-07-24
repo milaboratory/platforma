@@ -1,6 +1,7 @@
 import { BlockPackId, SemVer, Sha256Schema } from "@milaboratories/pl-model-middle-layer";
 // @todo: don't use zod
 import { z } from "zod";
+import { parsePackageName } from "../source_package";
 
 /**
  * Registry tree for block *kinds*, a sibling of {@link MainPrefix} (`v2/`).
@@ -54,41 +55,22 @@ export const KindOverviewPathPattern = new RegExp(
 /**
  * Kind npm package name → `{org, name}` path segments.
  *
- * Convention (net-new — see Q-0005): a kind package name ends in a trailing
- * `.kind`, which is stripped, and the remainder is split into an organization
- * segment and a name segment. The npm scope (`@platforma-open/`) is dropped —
- * it is NOT the org; the org is the first segment of the dotted body. Both the
- * scoped and the bare dotted form are accepted:
+ * DELEGATES to {@link parsePackageName} — the canonical block npm-name parser
+ * (`source_package.ts`) — so kind registry paths (`kinds/{org}/{name}/…`) mirror
+ * block paths (`v2/{org}/{name}/…`) byte-for-byte and cannot drift. That parser
+ * drops the npm scope (`@platforma-open/`), takes the 1st dotted segment as the
+ * organization and the 2nd as the name, and ignores any trailing segment (the
+ * kind's `.kind` marker simply is not matched):
  *   - `@platforma-open/milaboratories.mixcr-clonotyping.kind` → `{ org: "milaboratories", name: "mixcr-clonotyping" }`
  *   - `milaboratories.mixcr-clonotyping.kind`                 → `{ org: "milaboratories", name: "mixcr-clonotyping" }`
  *
  * This helper is DISTINCT from `parseKindRef` (the `{name}@{version}` reference
  * codec in `block_kind_ref.ts`): `parseKindRef` splits a reference into
  * name/version; `npmNameToKindPath` splits the *name* half into path segments.
- *
- * NOTE: a wrong split silently misfiles both content (publishKind) and
- * projection (reconciler). Pin against the real npm-naming convention before
- * shipping beyond the prototype.
  */
 export function npmNameToKindPath(npmName: string): KindPathLocation {
-  // Strip the trailing ".kind" marker.
-  let dotted = npmName.endsWith(".kind") ? npmName.slice(0, -".kind".length) : npmName;
-
-  // Drop the npm scope prefix ("@platforma-open/") if present — the scope is NOT the org.
-  if (dotted.startsWith("@")) {
-    const slash = dotted.indexOf("/");
-    if (slash > 0) dotted = dotted.slice(slash + 1);
-  }
-
-  // Dotted body: first segment = org, the remaining segments (joined by ".") = name.
-  // e.g. "milaboratories.mixcr-clonotyping" -> { org: "milaboratories", name: "mixcr-clonotyping" }
-  const dot = dotted.indexOf(".");
-  if (dot > 0) {
-    return { org: dotted.slice(0, dot), name: dotted.slice(dot + 1) };
-  }
-
-  // no separator: treat the whole (stripped) name as the name under an empty org
-  return { org: "", name: dotted };
+  const { organization, name } = parsePackageName(npmName);
+  return { org: organization, name };
 }
 
 /**
