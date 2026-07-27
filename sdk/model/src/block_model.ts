@@ -166,7 +166,7 @@ export class BlockModelV3<
    * which kind the block implements.
    *
    * @example
-   * const dataModel = new DataModelBuilder(kind)
+   * const dataModel = new DataModelBuilder({ kind })
    *   .from<BlockData>("v1")
    *   .init(({ params }) => params ?? { numbers: [], labels: [] });
    *

@@ -1727,6 +1727,9 @@ importers:
 
   etc/blocks/table-test/block:
     devDependencies:
+      '@milaboratories/milaboratories.test-block-table.kind':
+        specifier: workspace:*
+        version: link:../kind
       '@milaboratories/milaboratories.test-block-table.model':
         specifier: workspace:*
         version: link:../model
@@ -1755,8 +1758,30 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  etc/blocks/table-test/kind:
+    dependencies:
+      '@platforma-sdk/block-kind':
+        specifier: workspace:*
+        version: link:../../../../sdk/block-kind
+    devDependencies:
+      '@milaboratories/ts-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-builder
+      '@milaboratories/ts-configs':
+        specifier: workspace:*
+        version: link:../../../../tools/ts-configs
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   etc/blocks/table-test/model:
     dependencies:
+      '@milaboratories/milaboratories.test-block-table.kind':
+        specifier: workspace:*
+        version: link:../kind
       '@platforma-sdk/model':
         specifier: workspace:*
         version: link:../../../../sdk/model
@@ -3761,6 +3786,9 @@ importers:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/milaboratories.test-block-table':
+        specifier: workspace:*
+        version: link:../../etc/blocks/table-test/block
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/block

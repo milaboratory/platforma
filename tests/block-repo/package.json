@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/milaboratories.test-block-table": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",

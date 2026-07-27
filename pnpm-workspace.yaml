@@ -131,6 +131,7 @@ packages:
   - etc/blocks/table-test/ui
   - etc/blocks/table-test/block
   - etc/blocks/table-test/test
+  - etc/blocks/table-test/kind
 
   - etc/blocks/pool-explorer/workflow
   - etc/blocks/pool-explorer/model

@@ -543,17 +543,18 @@ export class DataModelBuilder<Params = never> {
   readonly #kindRef?: BlockKindReference;
 
   /**
-   * @param kind - The block kind this data model implements. Its reference is
-   *   captured and baked into the config so the manifest can advertise which
+   * @param opts.kind - The block kind this data model implements. Its reference
+   *   is captured and baked into the config so the manifest can advertise which
    *   kind the block satisfies, and its `Params` type flows into `.init()`.
    *   Optional during the transition window while existing V3 blocks are
-   *   migrated to kind-carrying builders (see Q-0005); a kind-less builder
-   *   simply carries no reference and the reconciler can't project it yet.
+   *   migrated to kind-carrying builders; a kind-less builder simply carries no
+   *   reference and the reconciler can't project it yet. Object form mirrors
+   *   `BlockModelV3.create({ dataModel, kind })`.
    */
-  constructor(kind?: BlockKind<Params>) {
+  constructor(opts?: { kind?: BlockKind<Params> }) {
     // Derive the on-wire `{name}@{version}` reference from the compiled kind;
     // the kind object itself has no reference field.
-    this.#kindRef = kind ? formatKindRef(kind) : undefined;
+    this.#kindRef = opts?.kind ? formatKindRef(opts.kind) : undefined;
   }
 
   /**

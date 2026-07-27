@@ -13,6 +13,7 @@ import {
   type InferOutputsType,
   type PlDataTableStateV2,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-block-table.kind";
 
 export type BlockData = {
   label: string;
@@ -20,7 +21,7 @@ export type BlockData = {
   tableSplitState: PlDataTableStateV2;
 };
 
-const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
+const blockDataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(() => ({
   label: "Table Test",
   tableState: createPlDataTableStateV2(),
   tableSplitState: createPlDataTableStateV2(),
@@ -28,7 +29,7 @@ const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => (
 
 export type BlockArgs = BlockData;
 
-export const platforma = BlockModelV3.create(blockDataModel)
+export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
 
   .sections(() => {
