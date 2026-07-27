@@ -8,7 +8,7 @@ import type {
 } from "@milaboratories/pl-client";
 import Denque from "denque";
 import { hasCapability, isNullSignedResourceId } from "@milaboratories/pl-client";
-import type { ExtendedResourceData, PlTreeState } from "./state";
+import type { ExtendedResourceData, PlTreeState, ResourceUpdateStat } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
 
 /** Applied to list of fields in resource data. */
@@ -70,7 +70,7 @@ export function constructTreeLoadingRequest(
   };
 }
 
-export type TreeLoadingStat = {
+export type TreeLoadingStat = ResourceUpdateStat & {
   requests: number;
   roundTrips: number;
   retrievedResources: number;
@@ -85,6 +85,20 @@ export type TreeLoadingStat = {
   stopMarkersSkipped: number;
   /** Number of follow-up resourceTree() calls issued to resolve unknown stop markers. */
   stopMarkerFollowUpRoundTrips: number;
+  /** Streaming (resourceTree) path: resourceTree() streams consumed (1, or 2 with a follow-up). */
+  streamRounds: number;
+  /** Streaming path: resource frames received. */
+  resourceFrames: number;
+  /** Streaming path: stopMarker frames received (both skipped and follow-up). */
+  stopMarkerFrames: number;
+  /** Streaming path: stop markers that were not final locally and triggered a follow-up fetch. */
+  stopMarkersFollowUp: number;
+  /** Streaming path: frames where the backend stopped traversal (final or traverseWasStopped). */
+  traverseWasStoppedCount: number;
+  /** BFS path: resource states actually requested from the backend this cycle (after intra-cycle dedup). */
+  bfsResourcesRequested: number;
+  /** BFS path: requested resources that no longer exist (undefined reply). */
+  bfsResourcesNotFound: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -101,23 +115,54 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     millisSpent: 0,
     stopMarkersSkipped: 0,
     stopMarkerFollowUpRoundTrips: 0,
+    streamRounds: 0,
+    resourceFrames: 0,
+    stopMarkerFrames: 0,
+    stopMarkersFollowUp: 0,
+    traverseWasStoppedCount: 0,
+    bfsResourcesRequested: 0,
+    bfsResourcesNotFound: 0,
+    resourcesNew: 0,
+    resourcesChanged: 0,
+    resourcesUnchanged: 0,
+    bytesUnchanged: 0,
+    metadataStableChanged: 0,
+    bfsRequestsWasted: 0,
+    usedStreaming: false,
+    fieldsAdded: 0,
+    fieldsRemoved: 0,
+    fieldsChanged: 0,
+    kvChanged: 0,
+    readyFlips: 0,
+    locksChanged: 0,
+    errorsAttached: 0,
+    duplicatesResolved: 0,
+    resourcesMarkedFinal: 0,
   };
 }
 
 export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
-  let result = `Requests: ${stat.requests}\n`;
-  result += `Total time: ${msToHumanReadable(stat.millisSpent)}\n`;
-  result += `Round-trips: ${stat.roundTrips}\n`;
-  result += `Resources: ${stat.retrievedResources}\n`;
-  result += `Fields: ${stat.retrievedFields}\n`;
-  result += `KV: ${stat.retrievedKeyValues}\n`;
-  result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
-  result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
-  result += `Pruned fields: ${stat.prunedFields}\n`;
-  result += `Final resources skipped: ${stat.finalResourcesSkipped}\n`;
-  result += `Stop markers skipped: ${stat.stopMarkersSkipped}\n`;
-  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}`;
-  return result;
+  return `Requests: ${stat.requests}
+Total time: ${msToHumanReadable(stat.millisSpent)}
+Round-trips: ${stat.roundTrips}
+Resources: ${stat.retrievedResources}
+Fields: ${stat.retrievedFields}
+KV: ${stat.retrievedKeyValues}
+Data Bytes: ${stat.retrievedResourceDataBytes}
+KV Bytes: ${stat.retrievedKeyValueBytes}
+Pruned fields: ${stat.prunedFields}
+Final resources skipped: ${stat.finalResourcesSkipped}
+Stop markers skipped: ${stat.stopMarkersSkipped}
+Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}
+New resources: ${stat.resourcesNew}
+Changed resources: ${stat.resourcesChanged}
+Unchanged (duplicate re-fetch) resources: ${stat.resourcesUnchanged}
+Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}
+Changed with stable metadata: ${stat.metadataStableChanged}
+BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}
+Used streaming: ${stat.usedStreaming}
+[streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
+[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}`;
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
@@ -164,6 +209,7 @@ async function loadTreeStateViaBfs(
     }
 
     requested.add(rid);
+    if (stats) stats.bfsResourcesRequested++;
 
     pending.push(
       limiter.run(async () => {
@@ -183,7 +229,10 @@ async function loadTreeStateViaBfs(
           roundTripToggle = true;
         }
 
-        if (resource === undefined) return undefined;
+        if (resource === undefined) {
+          if (stats) stats.bfsResourcesNotFound++;
+          return undefined;
+        }
         if (kv === undefined) throw new Error("Inconsistent replies");
 
         return { ...resource, kv };
@@ -247,15 +296,21 @@ async function processResourceTreeStream(
   // should make a decision: has it already loaded the resource or should it be requested for get the latest state?
   for await (const frame of treeItems) {
     if (frame.frameKind === "stopMarker") {
+      if (stats) stats.stopMarkerFrames++;
       if (finalResources.has(frame.id)) {
         if (stats) stats.stopMarkersSkipped++;
         continue;
       }
+      if (stats) stats.stopMarkersFollowUp++;
       followUpSeeds.push(frame.id);
       continue;
     }
 
     // Normal resource frame.
+    if (stats) {
+      stats.resourceFrames++;
+      if (frame.traverseWasStopped) stats.traverseWasStoppedCount++;
+    }
     if (finalResources.has(frame.id)) {
       if (stats) stats.finalResourcesSkipped++;
       continue;
@@ -317,16 +372,30 @@ async function loadTreeStateViaResourceTree(
     pruningFunction,
     stats,
   );
-  if (stats) stats.roundTrips++;
+  if (stats) {
+    stats.roundTrips++;
+    stats.streamRounds++;
+  }
 
-  // Client must request full resource tree in case when stop-marker seeds are returned,
-  // to ensure all resources are loaded and stop-marker frames are processed.
-  if (followUpSeeds.length > 0) {
-    const followUpItems = tx.resourceTree(followUpSeeds, {
+  // Resolve stop-marker seeds by fetching them (see the note below on why the stop rule is not
+  // reapplied). Loop in case a fetch still yields stop markers; dedup fetched ids so shared refs
+  // or diamonds cannot loop forever (the id set is finite, so the loop terminates). A referenced
+  // resource left unloaded would make updateFromResourceData throw "orphan resource".
+  let pendingSeeds = followUpSeeds;
+  const fetchedSeeds = new Set<SignedResourceId>();
+  while (pendingSeeds.length > 0) {
+    const roundSeeds = pendingSeeds.filter((id) => !fetchedSeeds.has(id));
+    if (roundSeeds.length === 0) break;
+    for (const id of roundSeeds) fetchedSeeds.add(id);
+
+    // No traverseStopRules here on purpose: the seeds are the stop-marked resources, and the
+    // stop rule (finality-based) would re-flag them as stop markers instead of loading their
+    // state, leaving resources that reference them as orphans. The retry must fetch them plainly.
+    const followUpItems = tx.resourceTree(roundSeeds, {
       includeKv: true,
       fieldFilter,
     });
-    const { result: followUpResult } = await processResourceTreeStream(
+    const { result: followUpResult, followUpSeeds: nextSeeds } = await processResourceTreeStream(
       followUpItems,
       finalResources,
       pruningFunction,
@@ -335,11 +404,13 @@ async function loadTreeStateViaResourceTree(
     result.push(...followUpResult);
     if (stats) {
       logger?.info?.(
-        `loadTreeStateViaResourceTree: follow-up request for ${followUpSeeds.length} stop-marker seeds: ${JSON.stringify(followUpSeeds)}`,
+        `loadTreeStateViaResourceTree: follow-up request for ${roundSeeds.length} stop-marker seeds: ${JSON.stringify(roundSeeds)}`,
       );
       stats.roundTrips++;
+      stats.streamRounds++;
       stats.stopMarkerFollowUpRoundTrips++;
     }
+    pendingSeeds = nextSeeds;
   }
 
   return result;
@@ -363,6 +434,8 @@ export async function loadTreeState(
     const wantsStreaming =
       mode === "backend-streaming" ||
       (mode === "auto" && supportsResourceTreeTraversal(capabilities));
+
+    if (stats) stats.usedStreaming = wantsStreaming && supportsResourceTreeTraversal(capabilities);
 
     if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
       const msg =
