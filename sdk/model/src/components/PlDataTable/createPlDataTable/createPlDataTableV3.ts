@@ -393,7 +393,13 @@ function concatFilters(
 ): Nil | PlDataTableFilters {
   if (isNil(a)) return b;
   if (isNil(b)) return a;
-  return { ...a, filters: [...a.filters, ...b.filters] };
+  // AND-combine: spread the children of an "and" root, and treat anything else
+  // (a bare leaf, a "not", or an "or" root) as a single operand. The persisted
+  // `filters` state can be a bare leaf (e.g. a lone sheet selection) even though
+  // the type says it is a root group, so we must not assume `.filters` exists.
+  const operands = (f: PlDataTableFilters): PlDataTableFilterNode[] =>
+    f.type === "and" ? f.filters : [f as PlDataTableFilterNode];
+  return { type: "and", filters: [...operands(a), ...operands(b)] };
 }
 
 /** Pick user sorting from state if set, otherwise fall back to options default.
