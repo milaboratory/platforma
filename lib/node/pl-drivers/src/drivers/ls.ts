@@ -1,6 +1,6 @@
 import type { PlClient, UserResources } from "@milaboratories/pl-client";
 import type * as sdk from "@milaboratories/pl-model-common";
-import { isImportFileHandleIndex } from "@milaboratories/pl-model-common";
+import { collectListFiles, isImportFileHandleIndex } from "@milaboratories/pl-model-common";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
@@ -14,11 +14,11 @@ import {
   parseIndexHandle,
   parseUploadHandle,
 } from "./helpers/ls_remote_import_handle";
+import type { LocalStorageHandleData, RemoteStorageHandleData } from "./helpers/ls_storage_entry";
 import {
   createLocalStorageHandle,
   createRemoteStorageHandle,
   parseStorageHandle,
-  RemoteStorageHandleData,
 } from "./helpers/ls_storage_entry";
 import type { LocalStorageProjection, VirtualLocalStorageSpec } from "./types";
 import { DefaultVirtualLocalStorages } from "./virtual_storages";
@@ -206,47 +206,64 @@ export class LsDriver implements InternalLsDriver {
   public async listFiles(
     storageHandle: sdk.StorageHandle,
     fullPath: string,
+    ops?: sdk.ListFilesOps,
   ): Promise<sdk.ListFilesResult> {
     const storageData = parseStorageHandle(storageHandle);
 
-    if (storageData.isRemote) {
-      const rInfo = await this.resolveRemoteStorageResourceInfo(storageData);
-      const response = await this.lsClient.list(rInfo, fullPath);
-      return {
-        entries: response.items.map((e) => ({
-          type: e.isDir ? "dir" : "file",
-          name: e.name,
-          fullPath: e.fullName,
-          handle: createIndexImportHandle(storageData.storageId, e.fullName, e.additionalInfo),
-        })),
-      };
-    }
+    const listDir: (dirPath: string) => Promise<sdk.LsEntry[]> = storageData.isRemote
+      ? await this.remoteDirLister(storageData)
+      : this.localDirLister(storageData);
 
-    if (path.sep === "/" && fullPath === "") fullPath = "/";
+    return await collectListFiles(fullPath, listDir, ops);
+  }
 
-    if (storageData.rootPath === "") {
-      validateAbsolute(fullPath);
-    }
-    const lsRoot = path.isAbsolute(fullPath) ? fullPath : path.join(storageData.rootPath, fullPath);
+  /** Lists exactly one remote directory, resolving the storage resource once. */
+  private async remoteDirLister(
+    storageData: RemoteStorageHandleData,
+  ): Promise<(dirPath: string) => Promise<sdk.LsEntry[]>> {
+    const rInfo = await this.resolveRemoteStorageResourceInfo(storageData);
+    return async (dirPath: string) => {
+      const response = await this.lsClient.list(rInfo, dirPath);
+      return response.items.map((e) => ({
+        type: e.isDir ? "dir" : "file",
+        name: e.name,
+        fullPath: e.fullName,
+        handle: createIndexImportHandle(storageData.storageId, e.fullName, e.additionalInfo),
+      }));
+    };
+  }
 
-    const entries: sdk.LsEntry[] = [];
-    for await (const dirent of await fsp.opendir(lsRoot)) {
-      if (!dirent.isFile() && !dirent.isDirectory()) continue;
+  /** Lists exactly one local directory. */
+  private localDirLister(
+    storageData: LocalStorageHandleData,
+  ): (dirPath: string) => Promise<sdk.LsEntry[]> {
+    return async (dirPath: string) => {
+      if (path.sep === "/" && dirPath === "") dirPath = "/";
 
-      // We cannot use no dirent.fullPath no dirent.parentPath,
-      // since the former is deprecated
-      // and the later works differently on different versions.
-      const absolutePath = path.join(lsRoot, dirent.name);
+      if (storageData.rootPath === "") {
+        validateAbsolute(dirPath);
+      }
+      const lsRoot = path.isAbsolute(dirPath) ? dirPath : path.join(storageData.rootPath, dirPath);
 
-      entries.push({
-        type: dirent.isFile() ? "file" : "dir",
-        name: dirent.name,
-        fullPath: absolutePath,
-        handle: await this.getLocalFileHandle(absolutePath),
-      });
-    }
+      const entries: sdk.LsEntry[] = [];
+      for await (const dirent of await fsp.opendir(lsRoot)) {
+        if (!dirent.isFile() && !dirent.isDirectory()) continue;
 
-    return { entries };
+        // We cannot use no dirent.fullPath no dirent.parentPath,
+        // since the former is deprecated
+        // and the later works differently on different versions.
+        const absolutePath = path.join(lsRoot, dirent.name);
+
+        entries.push({
+          type: dirent.isFile() ? "file" : "dir",
+          name: dirent.name,
+          fullPath: absolutePath,
+          handle: await this.getLocalFileHandle(absolutePath),
+        });
+      }
+
+      return entries;
+    };
   }
 
   public async listRemoteFilesWithFileStats(

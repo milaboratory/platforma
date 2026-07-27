@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useEventListener } from "../../composition/useEventListener";
-import type { ImportedFiles } from "../../types";
+import type { ImportedFiles, SimpleOption } from "../../types";
 import { between, notEmpty, tapIf } from "@milaboratories/helpers";
 import { getRawPlatformaInstance, type StorageHandle } from "@platforma-sdk/model";
 import { computed, onMounted, reactive, ref, toRef, watch } from "vue";
@@ -39,11 +39,19 @@ const props = withDefaults(
 
 const data = reactive(defaultData());
 
-const resetData = () => {
+/**
+ * Resets everything tied to the directory currently on screen. Deliberately
+ * leaves `data.selection` alone: picks made in other folders must survive
+ * navigation. `lastSelected` is a per-listing row index, so shift-ranges never
+ * span two directories.
+ */
+const resetView = () => {
   data.search = "";
   data.error = "";
   data.lastSelected = undefined;
 };
+
+const clearSelection = () => data.selection.clear();
 
 const extensions = computed(() => normalizeExtensions(props.extensions));
 
@@ -62,18 +70,24 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
     return;
   }
 
-  if (data.currentLoadingPath === dirPath) {
+  const depth = data.depth;
+
+  if (data.currentLoadingPath === dirPath && data.currentLoadingDepth === depth) {
     return;
   }
 
   data.currentLoadingPath = dirPath;
+  data.currentLoadingDepth = depth;
 
   getRawPlatformaInstance()
-    .lsDriver.listFiles(storageHandle, dirPath)
+    .lsDriver.listFiles(storageHandle, dirPath, { depth })
     .then((res) => {
-      if (dirPath !== data.dirPath) {
+      if (dirPath !== data.dirPath || depth !== data.depth) {
         return;
       }
+
+      data.truncated = res.truncated ?? false;
+      data.unreadableDirs = res.unreadableDirs ?? 0;
 
       data.items = notEmpty(res)
         .entries.map((item) => ({
@@ -84,7 +98,6 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
             item.type === "file" &&
             (!extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext))),
           handle: item.type === "file" ? item.handle : undefined,
-          selected: false,
         }))
         .sort((a, b) => {
           if (a.isDir && !b.isDir) return -1;
@@ -99,11 +112,12 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
     .catch((err) => (data.error = String(err)))
     .finally(() => {
       data.currentLoadingPath = undefined;
+      data.currentLoadingDepth = undefined;
     });
 };
 
 const load = () => {
-  resetData();
+  resetView();
   const { storageHandle, dirPath, modelValue } = lookup.value;
   if (storageHandle && modelValue) {
     query(storageHandle, dirPath);
@@ -112,22 +126,63 @@ const load = () => {
 
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
 
-const selectedFiles = computed(() =>
-  data.items.filter((f) => f.canBeSelected && f.selected && !f.isDir),
-);
+const selectedCount = computed(() => data.selection.size);
 
-const isReady = computed(() => selectedFiles.value.length > 0 && data.storageEntry?.handle);
+const isSelected = (item: FileDialogItem) => data.selection.has(item.path);
+
+const depthOptions: SimpleOption<number>[] = [
+  { text: "This folder only", value: 1 },
+  { text: "+ 1 level", value: 2 },
+  { text: "+ 2 levels", value: 3 },
+];
+
+/**
+ * What to print for a row. With a deeper listing, `name` alone is ambiguous —
+ * every per-sample folder can hold an `R1.fastq.gz` — so nested rows are
+ * labelled by their path below the folder being browsed. Done by prefix
+ * stripping rather than by splitting, because remote storages do not guarantee
+ * `/` as their separator.
+ */
+const rowLabel = (item: FileDialogItem) => {
+  const base = data.dirPath;
+  if (base && item.path.length > base.length && item.path.startsWith(base))
+    return item.path.slice(base.length).replace(/^[/\\]+/, "");
+  return item.name;
+};
+
+/**
+ * A folder holding nothing but folders is the one-folder-per-sample case; offer
+ * to pull their contents up instead of making the user descend one at a time.
+ */
+const deeperSuggestion = computed(() => {
+  if (data.depth > 1) return undefined;
+  const items = visibleItems.value;
+  if (items.length === 0 || items.some((it) => it.canBeSelected)) return undefined;
+  const dirs = items.filter((it) => it.isDir).length;
+  if (dirs === 0) return undefined;
+  return `No files here. Show the files inside ${dirs === 1 ? "this folder" : `these ${dirs} folders`}`;
+});
+
+const isReady = computed(() => data.selection.size > 0 && data.storageEntry?.handle);
 
 const getFilesToImport = () => ({
   storageHandle: notEmpty(data.storageEntry?.handle),
-  files: selectedFiles.value.map((f) => f.handle!),
+  files: [...data.selection.values()],
 });
+
+const setSelected = (item: FileDialogItem, selected: boolean) => {
+  if (!item.canBeSelected || item.isDir || !item.handle) return;
+  if (selected) data.selection.set(item.path, item.handle);
+  else data.selection.delete(item.path);
+};
 
 const setDirPath = (dirPath: string) => {
   data.dirPath = dirPath;
 };
 
 const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
+  if (!file.canBeSelected) return;
+
   const { shiftKey } = ev;
 
   const ctrlOrMetaKey = isCtrlOrMeta(ev);
@@ -138,37 +193,33 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
 
   const items = visibleItems.value;
 
-  if (file.canBeSelected) {
-    if (!props.multi) {
-      items.forEach((f) => (f.selected = false));
-    }
-
-    file.selected = !file.selected;
-
-    if (!props.multi) {
-      return;
-    }
-
-    if (!ctrlOrMetaKey && !shiftKey) {
-      items.forEach((f) => {
-        if (f.id !== file.id) {
-          f.selected = false;
-        }
-      });
-    }
-
-    if (shiftKey && lastSelected !== undefined) {
-      items.forEach((f) => {
-        if (between(f.id, lastSelected, file.id)) {
-          f.selected = true;
-        }
-      });
-    }
-
-    if (file.selected) {
-      data.lastSelected = file.id;
-    }
+  if (!props.multi) {
+    clearSelection();
+    setSelected(file, true);
+    return;
   }
+
+  // A plain click restarts the selection *within the directory on screen* and
+  // leaves picks made in other folders in place — accumulating across folders
+  // is the whole point. Use the header's Clear to drop everything.
+  if (!ctrlOrMetaKey && !shiftKey) {
+    items.forEach((f) => setSelected(f, false));
+    setSelected(file, true);
+    data.lastSelected = file.id;
+    return;
+  }
+
+  if (shiftKey && lastSelected !== undefined) {
+    items.forEach((f) => {
+      if (between(f.id, lastSelected, file.id)) setSelected(f, true);
+    });
+    data.lastSelected = file.id;
+    return;
+  }
+
+  const nowSelected = !isSelected(file);
+  setSelected(file, nowSelected);
+  if (nowSelected) data.lastSelected = file.id;
 };
 
 const changeAll = (selected: boolean) => {
@@ -176,20 +227,17 @@ const changeAll = (selected: boolean) => {
     return;
   }
 
-  visibleItems.value
-    .filter((f) => f.canBeSelected)
-    .forEach((file) => {
-      file.selected = selected;
-    });
+  visibleItems.value.forEach((file) => setSelected(file, selected));
 };
 
+/** Additive by design: descend, ⌘A, descend, ⌘A builds one selection. */
 const selectAll = () => changeAll(true);
 
 const deselectAll = () => changeAll(false);
 
 const loadAvailableStorages = () => {
-  resetData();
-  deselectAll();
+  resetView();
+  clearSelection();
   if (!getRawPlatformaInstance()) {
     console.warn("platforma API is not found");
     return;
@@ -219,13 +267,19 @@ const loadAvailableStorages = () => {
 watch(
   toRef(data, "storageEntry"),
   (entry) => {
-    resetData();
+    resetView();
+    // An import carries a single storage handle, so a selection cannot span
+    // storages — drop it when the storage changes.
+    clearSelection();
+    // Back to one level: an unfamiliar tree should not be walked deeply on the
+    // strength of a choice made for a different storage.
+    data.depth = 1;
     data.dirPath = entry?.initialFullPath ?? "";
   },
   { immediate: true },
 );
 
-watch([() => data.dirPath, () => data.storageEntry], () => {
+watch([() => data.dirPath, () => data.storageEntry, () => data.depth], () => {
   load();
 });
 
@@ -290,6 +344,9 @@ const lsContainerRef = ref<HTMLElement | undefined>();
       <div>
         <PlSearchField v-model="data.search" label="Search in folder" clearable />
       </div>
+      <div :class="style.depth">
+        <PlDropdown v-model="data.depth" label="Include subfolders" :options="depthOptions" />
+      </div>
     </div>
     <div :class="style['ls-container']" ref="lsContainerRef">
       <div :class="style['ls-head']">
@@ -300,7 +357,14 @@ const lsContainerRef = ref<HTMLElement | undefined>();
           </template>
         </div>
         <div :class="style.selected">
-          <span>Selected: {{ selectedFiles.length }}</span>
+          <span>Selected: {{ selectedCount }}</span>
+          <span
+            v-if="selectedCount > 0"
+            :class="style.clear"
+            title="Clear the selection in every folder"
+            @click.stop="clearSelection"
+            >Clear</span
+          >
           <Shortcuts :container="lsContainerRef" />
         </div>
       </div>
@@ -315,22 +379,43 @@ const lsContainerRef = ref<HTMLElement | undefined>();
         <div :class="style.cat" />
         <div :class="style.message">{{ data.error }}</div>
       </div>
-      <div v-else :class="style['ls-body']">
-        <template v-for="file in visibleItems" :key="file.id">
-          <div v-if="file.isDir" :class="style.isDir" @click="setDirPath(file.path)">
-            <PlIcon16 name="chevron-right" />
-            <span v-text-overflown :title="file.name">{{ file.name }}</span>
-          </div>
-          <div
-            v-else
-            :class="{ [style.canBeSelected]: file.canBeSelected, [style.selected]: file.selected }"
-            @click.stop="(ev) => selectFile(ev, file)"
+      <!-- Hints sit above the listing, never in place of it: a truncated
+           listing still shows everything it did manage to read, and a folder of
+           folders still shows those folders to descend into. -->
+      <template v-else>
+        <div v-if="deeperSuggestion" :class="style['ls-hint']">
+          <span :class="style.action" @click.stop="data.depth = 2">{{ deeperSuggestion }}</span>
+        </div>
+        <div v-else-if="data.truncated" :class="style['ls-hint']">
+          <span
+            >Showing the first {{ data.items.length }} entries — this listing is incomplete.</span
           >
-            <PlMaskIcon16 name="box" :class="style.isFile" />
-            <span v-text-overflown :title="file.name">{{ file.name }}</span>
-          </div>
-        </template>
-      </div>
+        </div>
+        <div v-else-if="data.unreadableDirs > 0" :class="style['ls-hint']">
+          <span>{{ data.unreadableDirs }} folder(s) could not be read, and were skipped.</span>
+        </div>
+        <div :class="style['ls-body']">
+          <template v-for="file in visibleItems" :key="file.path">
+            <!-- .stop matters: the container's click handler deselects, and
+                 entering a folder must not drop what is already selected. -->
+            <div v-if="file.isDir" :class="style.isDir" @click.stop="setDirPath(file.path)">
+              <PlIcon16 name="chevron-right" />
+              <span v-text-overflown :title="file.path">{{ rowLabel(file) }}</span>
+            </div>
+            <div
+              v-else
+              :class="{
+                [style.canBeSelected]: file.canBeSelected,
+                [style.selected]: isSelected(file),
+              }"
+              @click.stop="(ev) => selectFile(ev, file)"
+            >
+              <PlMaskIcon16 name="box" :class="style.isFile" />
+              <span v-text-overflown :title="file.path">{{ rowLabel(file) }}</span>
+            </div>
+          </template>
+        </div>
+      </template>
     </div>
   </div>
 </template>

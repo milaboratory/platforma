@@ -40,9 +40,38 @@ export type StorageEntry = {
   initialFullPath: string;
 };
 
+/** Default cap on entries returned by one recursive {@link LsDriver.listFiles}. */
+export const DefaultListFilesLimit = 5000;
+
+export type ListFilesOps = {
+  /**
+   * How many directory levels to descend. `1` lists the given directory alone,
+   * which is both the default and the historical behaviour.
+   *
+   * Deeper listings exist for one-folder-per-sample layouts, where the files a
+   * user wants to pick together sit in sibling folders. Directories are still
+   * reported for the level being browsed, so navigation keeps working; the ones
+   * below it are walked, not listed.
+   */
+  readonly depth?: number;
+  /**
+   * Stop after this many entries. Guards against a deep walk of a large shared
+   * storage; when it bites, the result is flagged {@link ListFilesResult.truncated}.
+   */
+  readonly limit?: number;
+};
+
 export type ListFilesResult = {
   parent?: string;
   entries: LsEntry[];
+  /**
+   * Set when {@link ListFilesOps.limit} cut the walk short, so callers can say
+   * so rather than presenting a partial listing as complete. Reaching the
+   * requested `depth` is not truncation — that bound was asked for.
+   */
+  truncated?: boolean;
+  /** Number of directories skipped because they could not be read. */
+  unreadableDirs?: number;
 };
 
 export type LsEntry =
@@ -59,6 +88,75 @@ export type LsEntry =
       /** This handle should be set to args... */
       handle: ImportFileHandle;
     };
+
+/**
+ * Flattens a directory tree into a single listing, breadth-first.
+ *
+ * The one definition of what `depth` means, shared by every {@link LsDriver}
+ * implementation so they cannot drift:
+ *
+ * - files from every visited level are reported;
+ * - directories are reported only for the level being browsed — deeper ones are
+ *   the frontier of the walk, and a row for a folder whose contents are not on
+ *   screen is not something a user can act on;
+ * - breadth-first, so when `limit` bites the caller keeps the shallowest and
+ *   most predictable slice of the tree rather than one arbitrary deep branch;
+ * - a directory that cannot be read is counted and stepped over, never fatal.
+ *
+ * @param root directory to start from
+ * @param listDir lists exactly one directory; the only I/O this performs
+ */
+export async function collectListFiles(
+  root: string,
+  listDir: (dirPath: string) => Promise<LsEntry[]>,
+  ops?: ListFilesOps,
+): Promise<ListFilesResult> {
+  const depth = Math.max(1, Math.trunc(ops?.depth ?? 1));
+  if (depth === 1) return { entries: await listDir(root) };
+
+  const limit = Math.max(1, Math.trunc(ops?.limit ?? DefaultListFilesLimit));
+
+  const entries: LsEntry[] = [];
+  let frontier = [root];
+  let truncated = false;
+  let unreadableDirs = 0;
+
+  for (let level = 0; level < depth && frontier.length > 0 && !truncated; level++) {
+    const nextFrontier: string[] = [];
+
+    for (const dir of frontier) {
+      let listing: LsEntry[];
+      try {
+        listing = await listDir(dir);
+      } catch {
+        unreadableDirs++;
+        continue;
+      }
+
+      for (const entry of listing) {
+        if (entry.type === "dir") {
+          nextFrontier.push(entry.fullPath);
+          if (level > 0) continue;
+        }
+        if (entries.length >= limit) {
+          truncated = true;
+          break;
+        }
+        entries.push(entry);
+      }
+
+      if (truncated) break;
+    }
+
+    frontier = nextFrontier;
+  }
+
+  return {
+    entries,
+    ...(truncated ? { truncated } : {}),
+    ...(unreadableDirs > 0 ? { unreadableDirs } : {}),
+  };
+}
 
 export type OpenDialogFilter = {
   /** Human-readable file type name */
@@ -100,7 +198,7 @@ export interface LsDriver {
   /** remote and local storages */
   getStorageList(): Promise<StorageEntry[]>;
 
-  listFiles(storage: StorageHandle, fullPath: string): Promise<ListFilesResult>;
+  listFiles(storage: StorageHandle, fullPath: string, ops?: ListFilesOps): Promise<ListFilesResult>;
 
   /** Opens system file open dialog allowing to select single file and awaits user action */
   showOpenSingleFileDialog(ops: OpenDialogOps): Promise<OpenSingleFileResponse>;

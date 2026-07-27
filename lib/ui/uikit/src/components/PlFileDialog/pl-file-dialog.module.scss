@@ -56,6 +56,31 @@
       > div {
         flex: 1;
       }
+
+      > .depth {
+        flex: 0 0 200px;
+      }
+    }
+
+    .ls-hint {
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 24px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      color: var(--txt-03);
+      border-bottom: 1px solid var(--border-color-div-grey);
+
+      .action {
+        color: var(--txt-link);
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
     .ls-container {
@@ -91,6 +116,15 @@
         display: flex;
         align-items: center;
         gap: 12px;
+
+        .clear {
+          color: var(--txt-link);
+          cursor: pointer;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
       }
 
       > div {

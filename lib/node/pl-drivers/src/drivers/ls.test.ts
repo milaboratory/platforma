@@ -39,8 +39,6 @@ test("should ok when list files from remote storage in ls driver", async () => {
       throw Error();
     });
 
-    const universalPath = (path: string) => (path.startsWith("/") ? path.slice(1) : path);
-
     const storages = await driver.getStorageList();
     const library = storages.find((se) => se.id == env.libraryStorage)!.handle;
 
@@ -72,6 +70,92 @@ test("should ok when list files from remote storage in ls driver", async () => {
     expect(universalPath(f.entries[0].fullPath)).toEqual("ls_dir_structure_test/abc/42.txt");
     expect(f.entries[0].name).toEqual("42.txt");
     expect((f.entries[0] as any).handle).toContain("index://index/");
+  });
+});
+
+// ls_dir_structure_test is {abc/42.txt, abc2/.gitkeep} — a folder per "sample",
+// which is the layout `depth` exists for: the files a user wants to pick
+// together sit in sibling folders, one level down.
+const nestedFixture = "ls_dir_structure_test";
+
+const universalPath = (p: string) => (p.startsWith("/") ? p.slice(1) : p);
+
+const sortedPaths = (entries: { type: string; fullPath: string }[], type: "dir" | "file") =>
+  entries
+    .filter((e) => e.type === type)
+    .map((e) => universalPath(e.fullPath))
+    .sort();
+
+test("should list nested files in one call when depth is given", async () => {
+  const signer = new HmacSha256Signer("abc");
+  const logger = new ConsoleLoggerAdapter();
+  await TestHelpers.withTempRoot(async (client) => {
+    const driver = await LsDriver.init(logger, client, signer, [], () => {
+      throw Error();
+    });
+
+    const storages = await driver.getStorageList();
+    const library = storages.find((se) => se.id == env.libraryStorage)!.handle;
+
+    const root = (await driver.listFiles(library, "")).entries.find((d) =>
+      d.name.includes(nestedFixture),
+    )!.fullPath;
+
+    const deep = await driver.listFiles(library, root, { depth: 2 });
+    expect(sortedPaths(deep.entries, "file")).toEqual([
+      `${nestedFixture}/abc/42.txt`,
+      `${nestedFixture}/abc2/.gitkeep`,
+    ]);
+    // Directories of the browsed level stay listed, so navigation keeps working.
+    expect(sortedPaths(deep.entries, "dir")).toEqual([
+      `${nestedFixture}/abc`,
+      `${nestedFixture}/abc2`,
+    ]);
+    expect(deep.truncated).toBeUndefined();
+
+    // depth 1 — and no ops at all — is the historical single-level listing.
+    for (const shallow of [
+      await driver.listFiles(library, root, { depth: 1 }),
+      await driver.listFiles(library, root),
+    ]) {
+      expect(sortedPaths(shallow.entries, "file")).toEqual([]);
+      expect(sortedPaths(shallow.entries, "dir")).toEqual([
+        `${nestedFixture}/abc`,
+        `${nestedFixture}/abc2`,
+      ]);
+      expect(shallow.truncated).toBeUndefined();
+    }
+
+    // The entry cap is reported, never silently applied.
+    const capped = await driver.listFiles(library, root, { depth: 2, limit: 3 });
+    expect(capped.entries).toHaveLength(3);
+    expect(capped.truncated).toBe(true);
+  });
+});
+
+test("should list nested files from local storage when depth is given", async () => {
+  const signer = new HmacSha256Signer("abc");
+  const logger = new ConsoleLoggerAdapter();
+  await TestHelpers.withTempRoot(async (client) => {
+    const driver = await LsDriver.init(logger, client, signer, [], () => {
+      throw Error();
+    });
+
+    const storages = await driver.getStorageList();
+    const local = storages.find((se) => se.id == "local")!;
+    const root = path.join(assetsPath, nestedFixture);
+
+    const deep = await driver.listFiles(local.handle, root, { depth: 2 });
+    const files = deep.entries
+      .filter((e) => e.type === "file")
+      .map((e) => path.relative(root, e.fullPath).split(path.sep).join("/"))
+      .sort();
+    expect(files).toEqual(["abc/42.txt", "abc2/.gitkeep"]);
+    expect(deep.entries.filter((e) => e.type === "dir")).toHaveLength(2);
+    expect(deep.unreadableDirs).toBeUndefined();
+
+    const shallow = await driver.listFiles(local.handle, root);
+    expect(shallow.entries.filter((e) => e.type === "file")).toHaveLength(0);
   });
 });
 

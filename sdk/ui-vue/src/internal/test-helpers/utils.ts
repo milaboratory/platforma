@@ -1,6 +1,12 @@
 import { randomRangeInt, range, times, toList } from "@milaboratories/helpers";
 import { faker } from "@faker-js/faker";
-import type { ImportFileHandleUpload, ListFilesResult, LsEntry } from "@platforma-sdk/model";
+import type {
+  ImportFileHandleUpload,
+  ListFilesOps,
+  ListFilesResult,
+  LsEntry,
+} from "@platforma-sdk/model";
+import { collectListFiles } from "@platforma-sdk/model";
 
 export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -8,7 +14,8 @@ export const capitalizeFirstLetter = (str: string) => {
 
 const d = new Map<string, LsEntry[]>();
 
-export const getLsFilesResult = (path: string): ListFilesResult => {
+/** Generates one directory of the fake tree, memoized so it stays stable. */
+const listOneDir = (path: string): LsEntry[] => {
   const length = randomRangeInt(1, 1000);
 
   if (path.endsWith("11")) {
@@ -58,8 +65,17 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
     );
   }
 
-  return {
-    parent: "/",
-    entries: d.get(path)!,
-  };
+  return d.get(path)!;
 };
+
+/**
+ * Fake listing for dev/preview harnesses. Goes through the same traversal the
+ * real driver uses, so the dialog's depth control behaves here too.
+ */
+export const getLsFilesResult = async (
+  path: string,
+  ops?: ListFilesOps,
+): Promise<ListFilesResult> => ({
+  parent: "/",
+  ...(await collectListFiles(path, async (dirPath) => listOneDir(dirPath), ops)),
+});

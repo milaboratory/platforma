@@ -5,6 +5,7 @@ import type {
   BlockState,
   FileLike,
   ImportFileHandle,
+  ListFilesOps,
   ListFilesResult,
   LocalImportFileHandle,
   NavigationState,
@@ -78,9 +79,13 @@ export function createMockApi<
           },
         ];
       },
-      async listFiles(_storage: StorageHandle, fullPath: string): Promise<ListFilesResult> {
+      async listFiles(
+        _storage: StorageHandle,
+        fullPath: string,
+        ops?: ListFilesOps,
+      ): Promise<ListFilesResult> {
         await delay(10);
-        return getLsFilesResult(fullPath);
+        return await getLsFilesResult(fullPath, ops);
       },
       async getLocalFileContent(_file: LocalImportFileHandle): Promise<Uint8Array> {
         return Uint8Array.of(0, 1);
