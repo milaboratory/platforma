@@ -386,14 +386,17 @@ function filterFilters(
   return prune(filters) as Nil | PlDataTableFilters;
 }
 
-/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil. */
-function concatFilters(
+/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil.
+ *  Exported for unit testing. */
+export function concatFilters(
   a: Nil | PlDataTableFilters,
   b: Nil | PlDataTableFilters,
 ): Nil | PlDataTableFilters {
   if (isNil(a)) return b;
   if (isNil(b)) return a;
-  return { ...a, filters: [...a.filters, ...b.filters] };
+  const operands = (f: PlDataTableFilters): PlDataTableFilterNode[] =>
+    f.type === "and" ? f.filters : [f as PlDataTableFilterNode];
+  return { type: "and", filters: [...operands(a), ...operands(b)] };
 }
 
 /** Pick user sorting from state if set, otherwise fall back to options default.

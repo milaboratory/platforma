@@ -125,7 +125,9 @@ function addColumnToGroup(groupIdx: number, selectedSourceId: PlAdvancedFilterCo
 function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
   produceFiltersUpdate((draft: RootFilter) => {
     const group = getDraftGroupContent(draft, groupIdx);
-    if (group.filters.length === 1 && filterIdx === 0) {
+    const removingLastLeaf = group.filters.length === 1 && filterIdx === 0;
+
+    if (removingLastLeaf && props.isRemovable(draft.filters[groupIdx], groupIdx)) {
       draft.filters.splice(groupIdx, 1);
     } else {
       group.filters.splice(filterIdx, 1);
