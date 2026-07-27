@@ -1,11 +1,18 @@
-import { expectTypeOf, test } from "vitest";
+import { expect, expectTypeOf, test } from "vitest";
 import { defineBlockKind, type InferBlockParams, type PlRef } from "./index";
 
 test("InferBlockParams recovers the declared params", () => {
+  // Identity is the `{ name, version }` the caller passes — a real kind sources
+  // these from its own package.json (`import { name, version } from
+  // "../package.json"`), so the descriptor cannot drift from what npm publishes.
   const k = defineBlockKind<{ ref: PlRef; n: number }>({
     name: "@platforma-open/milaboratories.demo.kind",
     version: "1.0.0",
   });
+
+  expect(k.kindSchema).toBe("v1");
+  expect(k.name).toBe("@platforma-open/milaboratories.demo.kind");
+  expect(k.version).toBe("1.0.0");
 
   // Locks the contract the future init/create wiring relies on.
   expectTypeOf<InferBlockParams<typeof k>>().toEqualTypeOf<{

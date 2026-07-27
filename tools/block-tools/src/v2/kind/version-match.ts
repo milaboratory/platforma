@@ -35,7 +35,8 @@ export function checkKindVersionMatch(
 
   // Version is the load-bearing comparison. Exact-match, no semver range: the
   // facade reference is already normalized to a concrete version by resolve-refs
-  // (a range would spuriously fail — see doc §4 "Exact-match vs. range").
+  // (which resolves `workspace:*`/`catalog:` via the kind's built manifest), so
+  // a range never reaches here.
   if (m.version !== f.version) {
     throw new KindVersionMismatchError(
       `Kind version mismatch: model compiled against ${modelKindRef}, ` +
@@ -43,13 +44,9 @@ export function checkKindVersionMatch(
     );
   }
 
-  // Name check across two name spaces (model logical name vs facade npm package
-  // name): compare the terminal name segment via `npmNameToKindPath`. The exact
-  // org-qualification equivalence is unsettled (Q-0004/Q-0005), so the org half
-  // is intentionally not compared here — see blockedOn.
-  const mName = npmNameToKindPath(m.name).name;
-  const fName = npmNameToKindPath(f.name).name;
-  if (mName !== fName) {
+  const mLoc = npmNameToKindPath(m.name);
+  const fLoc = npmNameToKindPath(f.name);
+  if (mLoc.org !== fLoc.org || mLoc.name !== fLoc.name) {
     throw new KindVersionMismatchError(
       `Kind name mismatch: model compiled against ${modelKindRef}, ` +
         `facade declares ${facadeKindDep}.`,

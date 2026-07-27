@@ -16,11 +16,11 @@ The six concerns form a mostly linear pipeline; each depends on the artifact the
 
 ```
 1. sdk-kind          @platforma-sdk/block-kind + defineBlockKind
-                     → produces the compiled kind object (org/name/version + phantom BlockParams type)
+                     → produces the compiled kind object (name/version imported from its package.json + phantom BlockParams type)
                           │
 2. kind-build        ts-builder "block-kind" target + block-tools build-kind-manifest
-                     → bundles the kind, bakes org/name/version, computes src/ sourceHash, writes manifest.json
-                          │  (reads the compiled kind export shape from #1)
+                     → bundles the kind, reads name/version from the kind's package.json for the manifest, computes src/ sourceHash, writes manifest.json
+                          │  (reads the kind's package.json; the bundler inlines the same import into kind.js)
                           │
 3. model-wiring      DataModelBuilder(kind) + BlockModelV3.create({dataModel, kind})
                      → bakes the {name}@X.Y.Z reference into model.json (container level) and the block manifest
@@ -41,7 +41,7 @@ The six concerns form a mostly linear pipeline; each depends on the artifact the
 ```
 
 Key cross-links:
-- **#1 → #2, #3**: the compiled kind object's runtime shape (`organization`/`name`/`version`) is the contract both the build target and the model wiring read. This shape is gated by **Q-0005** and is the single largest open dependency across the path.
+- **#1 → #2, #3**: the compiled kind object's runtime shape — the full npm `name` + `version` (imported from the kind package's `package.json`; **no** separate `organization` field, per **A-0052**) — is the contract both the build target and the model wiring read. The `{org,name}` registry path is derived from the npm name via `parsePackageName`. This shape is now settled, not an open dependency.
 - **#3 → #4, #5**: the reference type and its `{name}@X.Y.Z` string form live in one shared module (`block_kind_ref.ts`); the publish gate and the reconciler both read the baked reference (from `model.json`/manifest), never re-derive it.
 - **#5 → #6**: the `kinds/{org}/{name}/overview.json` schema is **co-designed** — the reconciler (#5) is the sole writer, the resolver (#6) the sole reader; they must stay in lockstep.
 - **#2, #4, #5** all share the **source-hash convention** (one sha256 over the sorted `src/` tree) and the **manifest-written-last commit-marker** pattern; the case convention (`.toUpperCase()`) is a live correctness seam across them.
@@ -54,19 +54,19 @@ Key cross-links:
 
 - `core/platforma/sdk/block-kind/package.json` **(NEW)** — mirror `sdk/test/package.json:1-46` (verified: `name`, `files:["dist/**/*"]`, `main`/`module`/`types` + single-arm `exports` map `types|require|import → dist/index.{d.ts,cjs,js}`, full ts-builder script block `build/watch/check/formatter:check/linter:check/types:check/do-pack/fmt`). Runtime `dependencies`: **exactly one** — `@milaboratories/pl-model-common: workspace:*`. `devDependencies`: `@milaboratories/build-configs`, `@milaboratories/ts-builder`, `@milaboratories/ts-configs` (workspace:*), `typescript`, `@types/node`, plus `vitest` + `@vitest/coverage-istanbul` (catalog:) for the type-level test. **Explicitly omit** `@platforma-sdk/model`, `@milaboratories/pl-middle-layer`, `pl-client`, `pl-tree`, `computable` — every heavy dep `sdk/test` carries.
 - `core/platforma/sdk/block-kind/tsconfig.json` **(NEW)** — copy `sdk/test/tsconfig.json` verbatim (verified: extends `@milaboratories/ts-configs/tsconfig.node.json`, `outDir ./dist`, `rootDir ./src`, `include:["src"]`).
-- `core/platforma/sdk/block-kind/src/descriptor.ts` **(NEW)** — the compiled type surface: `unique symbol` phantom brand, `CompiledBlockKind<BlockParams>` discriminated-union envelope (`kindSchema:"v1"` + runtime `organization`/`name`/`version` + contravariant phantom slot), `InferBlockParams<K>` extractor.
+- `core/platforma/sdk/block-kind/src/descriptor.ts` **(NEW)** — the compiled type surface: `unique symbol` phantom brand, `CompiledBlockKind<BlockParams>` discriminated-union envelope (`kindSchema:"v1"` + runtime `name`/`version` + contravariant phantom slot), `InferBlockParams<K>` extractor.
 - `core/platforma/sdk/block-kind/src/index.ts` **(NEW)** — public surface: `defineBlockKind`, the `CompiledBlockKind`/`InferBlockParams` types, and `export type { PlRef } from "@milaboratories/pl-model-common"`. (PlRef grounded at `lib/model/common/src/ref.ts:5,26`, surfaced from that package's `index.ts:15` — verified.)
 - `core/platforma/sdk/block-kind/src/index.test.ts` **(NEW)** — type-level test locking `InferBlockParams`.
 - `core/platforma/pnpm-workspace.yaml:62` — add `- sdk/block-kind` immediately after `- sdk/eslint-config` (verified: sdk block is lines 58-62). The **only** edit to a pre-existing file.
 
 **Chosen path** — **Hybrid, leaning Proposal 2 on the type surface, Proposal 1 on file economy.**
 
-Both proposals are structurally identical (new `sdk/block-kind` sibling, trimmed-to-one-dep `sdk/test` skeleton, type-only PlRef re-export, phantom-generic descriptor, explicit `meta` args deferring Q-0005, one workspace-list line). I adopt:
+Both proposals are structurally identical (new `sdk/block-kind` sibling, trimmed-to-one-dep `sdk/test` skeleton, type-only PlRef re-export, phantom-generic descriptor, an explicit `meta` argument carrying `{ name, version }` — the final form settled by **A-0052**, see below — and one workspace-list line). I adopt:
 
 - **Proposal 2's contravariant phantom brand** (`readonly [BLOCK_PARAMS]?: (p: BlockParams) => void`) over Proposal 1's covariant `[BLOCK_PARAMS]?: BlockParams`. The function-parameter slot makes `BlockParams` contravariant under `strictFunctionTypes`, so a kind typed for `{ ref: PlRef; k: number }` is **not** silently assignable to one typed for `{ ref: PlRef }`. Zero runtime cost, strictly more type-safe. `InferBlockParams<K>` still recovers the declared params (single inference candidate).
 - **Proposal 2's discriminated-union envelope** (`kindSchema:"v1"`). The tag is one string field at near-zero cost and is the exact hook the deferred template-engine / sandbox phases use: they add a `CompiledBlockKindV2` union arm and consumers narrow on `kindSchema`, so v1 kinds keep compiling untouched. This reuses the schema-versioning pattern the code map flags for the workflow envelope.
 - **Proposal 1's file economy** over Proposal 2's four-file split. `refs.ts` holding a single `export type` line is pointless indirection. Land it as `descriptor.ts` (type surface + version union) + `index.ts` (`defineBlockKind` + re-exports). Two files, not four.
-- **Explicit `meta` argument** (both proposals) — `defineBlockKind` takes `{ organization, name, version }`. This makes the package build, test, and ship **today**, fully independent of Q-0005 (baking metadata from package.json). A later ts-builder target can synthesize the argument without changing the public type contract.
+- **`defineBlockKind<BlockParams>({ name, version })` takes a `{ name, version }` argument, sourced from the kind's own `package.json`** (settled by **A-0052** / Q-0005) — the kind's `src/index.ts` imports `{ name, version }` from `../package.json` (`with { type: "json" }`) and passes them straight in: `export const kind = defineBlockKind<Params>({ name, version })`. The bundler (rolldown, `external: () => false`) inlines that JSON import — tree-shaking it to just the two strings — into the compiled `kind.js`; there is **no** build-time injection and **no** rolldown/oxc `define`. The pseudocode below (the `meta: { name, version }` signature) is the **final** form, not an interim baseline. The anti-drift essence is preserved: identity comes from `package.json` (imported, never hand-typed literals).
 
 **Decisive rejection of the "inline PlRef" fork** that Proposal 1 floats as its main open con: do **not** inline the ~20-line PlRef type for a zero-dep package. That would fork the reference type and violate the spec's explicit "introduces no reference type of its own / reuse the existing PlRef." Keep `@milaboratories/pl-model-common` as the single runtime dependency, consumed **type-only** — see Risks for why "one dependency" holds despite its transitive tree.
 
@@ -81,8 +81,7 @@ declare const BLOCK_PARAMS: unique symbol;
 // narrow on `kindSchema`, so v1 descriptors never break.
 export interface CompiledBlockKindV1<BlockParams> {
   readonly kindSchema: "v1";
-  readonly organization: string;
-  readonly name: string;
+  readonly name: string;      // full npm package name; no separate organization field
   readonly version: string;
   // Contravariant phantom: carries BlockParams as a TYPE only, no runtime bytes,
   // and blocks structural widening between kinds of different param shapes.
@@ -106,18 +105,26 @@ export type { CompiledBlockKind, InferBlockParams } from "./descriptor";
 export type { PlRef } from "@milaboratories/pl-model-common";
 
 export function defineBlockKind<BlockParams>(meta: {
-  organization: string;
-  name: string;
+  name: string;      // full npm package name
   version: string;
 }): CompiledBlockKind<BlockParams> {
   // Frozen, serializable v1 descriptor. Phantom slot is never assigned.
   return Object.freeze({
     kindSchema: "v1" as const,
-    organization: meta.organization,
     name: meta.name,
     version: meta.version,
   });
 }
+```
+
+a kind author's own `src/index.ts` (usage — identity comes from `package.json`, never literals):
+```ts
+import { defineBlockKind, type PlRef } from "@platforma-sdk/block-kind";
+// The bundler (rolldown, external: () => false) inlines this JSON import — tree-shaken
+// to just the two strings — into the compiled kind.js. No build-time injection.
+import { name, version } from "../package.json" with { type: "json" };
+
+export const kind = defineBlockKind<{ ref: PlRef; n: number }>({ name, version });
 ```
 
 `src/index.test.ts` (NEW):
@@ -126,7 +133,7 @@ import { expectTypeOf } from "vitest";
 import { defineBlockKind, type InferBlockParams, type PlRef } from "./index";
 
 const k = defineBlockKind<{ ref: PlRef; n: number }>({
-  organization: "milab", name: "demo", version: "1.0.0",
+  name: "@platforma-open/milaboratories.demo.kind", version: "1.0.0",
 });
 // Locks the contract the future init/create wiring relies on.
 expectTypeOf<InferBlockParams<typeof k>>().toEqualTypeOf<{ ref: PlRef; n: number }>();
@@ -160,8 +167,8 @@ Blast radius: 4 new files + 1 workspace line. Nothing existing changes behavior.
 
 - **"One dependency" — literal vs. transitive.** `@milaboratories/pl-model-common` brings a moderate transitive tree (verified: `helpers`, `pl-error-like`, `canonicalize`, `es-toolkit`, `zod`) but **crucially not** `@platforma-sdk/model` or `pl-middle-layer`. Because PlRef is consumed via `export type`, ts-builder erases it — the emitted `dist/index.js`/`.cjs` import **nothing** external, so the runtime footprint is just the `defineBlockKind` factory. The dependency must stay a real `dependencies` entry (not `devDependencies`) because PlRef appears in block-kind's public `.d.ts`, so downstream consumers need it for type resolution. "Never pulls in the full SDK" holds structurally; "one dependency" holds as one direct runtime dep with zero emitted runtime imports.
 - **Type-only contract is convention, not enforced.** A careless future edit could `import { PlRef }` (value) and silently pull `zod`/`es-toolkit` into runtime. Mitigation: rely on `verbatimModuleSyntax` (from the shared `ts-configs`) + an `@typescript-eslint/consistent-type-imports` lint rule. **Open:** confirm the shared `ts-configs.node.json` / eslint-config already enforces type-only imports before treating this as guaranteed rather than conventional.
-- **Kind-reference string format is unverified.** Whether the recorded reference is `{name}@X.Y.Z` or `{organization}/{name}@X.Y.Z` is not settled against the model.json / manifest schema. Deliberately kept `organization`/`name`/`version` as three separate source-of-truth fields; the formatter belongs to the `BlockModelV3.create` / manifest wiring concern, not here. Do not guess it in this package.
-- **Q-0005 (kind build mechanism) stays open.** How org/name/version get baked (from package.json?) and the exact ts-builder target that emits a hand-readable `.d.ts` are deferred. The explicit-`meta` baseline ships on stock `ts-builder build --target node` (verified as the sdk-wide toolchain) with no new tooling; auto-baking is a later, additive ts-builder target that leaves the public type contract unchanged.
+- **Kind-reference string format is unverified.** Whether the recorded reference is `{name}@X.Y.Z` or `{organization}/{name}@X.Y.Z` is not settled against the model.json / manifest schema. Deliberately kept `name`/`version` as the source-of-truth fields (no separate `organization` field — the full npm name encodes org, per A-0052); the formatter belongs to the `BlockModelV3.create` / manifest wiring concern, not here. Do not guess it in this package.
+- **Q-0005 (kind build mechanism) — RESOLVED (A-0052).** `defineBlockKind<BlockParams>({ name, version })` takes a `{ name, version }` argument; the kind's `src/index.ts` imports `{ name, version }` from its own `package.json` (`with { type: "json" }`) and passes them in. The bundler (rolldown, `external: () => false`) inlines that JSON import — tree-shaken to the two strings — into the compiled `kind.js`; there is no build-time injection and no rolldown/oxc `define`. The `block-kind` build target needs no metadata knowledge and emits a hand-readable `.d.ts` on the stock `ts-builder build` toolchain with no new tooling; the public type contract is unchanged.
 - **Phantom is compile-time only.** No runtime guarantee that declared `BlockParams` matches actual usage — the `index.test.ts` type-level assertion is the guard that locks `InferBlockParams` inference against regression.
 
 ---
@@ -180,10 +187,10 @@ Verdict: **hybrid**. Take Proposal 1's minimal ts-builder half and its verified 
 - `core/platforma/tools/ts-builder/src/configs/rolldown/block-kind.config.ts` — NEW. `export default defineConfig(createRolldownBlockKindConfig())` (sibling of `block-facade.config.ts`).
 - `core/platforma/tools/ts-builder/src/configs/tsconfig.block-kind.json` — NEW. Mirror `tsconfig.block-facade.json`.
 - `core/platforma/tools/ts-builder/src/commands/build.ts:36` — NO change. `block-kind` is not a vite target, so it falls through to `buildWithRolldown` automatically. Verify only.
-- `core/platforma/tools/block-tools/src/v2/build_kind_dist.ts` — NEW. Commander-free `buildKindDist(opts)` core: dynamic-`import()` the compiled kind export, read `org/name/version`, compute one sha256 over `src/` via the **reused** `util.hashDirSync`, assemble the manifest, write `manifest.json` **last** (build_dist.ts:82-90 commit-marker pattern). Beside `build_dist.ts`.
+- `core/platforma/tools/block-tools/src/v2/build_kind_dist.ts` — NEW. Commander-free `buildKindDist(opts)` core: read `name`/`version` from the kind package's `package.json`, compute one sha256 over `src/` via the **reused** `util.hashDirSync`, assemble the manifest, write `manifest.json` **last** (build_dist.ts:82-90 commit-marker pattern). Beside `build_dist.ts`.
 - `core/platforma/tools/block-tools/src/cmd/build-kind-manifest.ts` — NEW. Thin commander wrapper (build-model.ts shape) delegating to `buildKindDist`.
 - `core/platforma/tools/block-tools/src/cli.ts:27` — import and `program.addCommand(buildKindManifestCommand())` alongside `buildModelCommand`/`packCommand`.
-- `core/platforma/tools/block-tools/src/structure/rules/block-package-json.ts:79` — **GATED on Q-0004** (is kind a discovered block component?). When it lands, assert `build: "ts-builder build --target block-kind && block-tools build-kind-manifest"`, `check: "ts-builder type-check --target block-kind"`, plus a `blockComponents` mapping. Do not touch until then — keep this concern build-only.
+- `core/platforma/tools/block-tools/src/structure/rules/block-package-json.ts:79` — **ACTIVATED (A-0053: kind is a confirmed block component).** The structurer discovers `kind/` alongside `model/`/`workflow/`/`ui/`, so this rule asserts `build: "ts-builder build --target block-kind && block-tools build-kind-manifest"`, `check: "ts-builder type-check --target block-kind"`, plus the `blockComponents` mapping for the kind.
 
 **Chosen path** — prose.
 
@@ -191,7 +198,7 @@ The ts-builder half is Proposal 1 verbatim: a near-copy of the `block-facade` ro
 
 The block-tools half reuses `hashDirSync` from `@platforma-sdk/package-builder-lib` (confirmed already a `workspace:*` dependency at block-tools/package.json:46; exported as `util.hashDirSync` via index.ts:4) — **no port, no new dependency, no drift risk**. But the manifest logic is structured as Proposal 2 argued: a commander-free `buildKindDist()` core plus a thin `build-kind-manifest` command wrapper, because the deferred publish-time source-hash guard (a separate concern) must recompute and compare this exact hash and read this exact manifest shape. Embedding it in the command action (build-model.ts style) would force that concern to duplicate the logic; a commander-free core (build_dist.ts style) lets it `import` directly.
 
-Metadata is baked by reading `org/name/version` off the **compiled kind export** (build-model.ts:31-36 single-source-of-truth pattern), not from package.json — with a deliberate deviation: the kind bundle is ESM (`format: "es"`), so use `await import()`, not `require()`. The src-tree hash is written **upper-case** (`hashDirSync(src).digest("hex").toUpperCase()`) to match block-tools' `calculateSha256` convention (util.ts:33) so the future publish-side comparator never fails on a case mismatch.
+Identity is read from the kind package's `package.json` — its `name` and `version` (no separate `org` field; the registry `{org,name}` path is derived downstream from the full npm name via `parsePackageName`). `buildKindDist` no longer imports the compiled bundle, so there is no ESM `await import()` deviation. The src-tree hash is written **upper-case** (`hashDirSync(src).digest("hex").toUpperCase()`) to match block-tools' `calculateSha256` convention (util.ts:33) so the future publish-side comparator never fails on a case mismatch.
 
 **Pseudocode.**
 
@@ -227,12 +234,11 @@ export default defineConfig(createRolldownBlockKindConfig());
 // block-tools/src/v2/build_kind_dist.ts  (commander-free core)
 import { util } from "@platforma-sdk/package-builder-lib";   // hashDirSync already available
 export async function buildKindDist({ modulePath = ".", srcDir = "src", dst = "dist" }) {
-  const mod = await import(resolveCompiledEntry(modulePath));  // ESM => import(), not require()
-  const kind = mod.kind ?? mod.default;
-  if (!kind?.org || !kind?.name || !kind?.version)            // shape is Q-0005-dependent (see risks)
-    throw new Error('kind export missing org/name/version');
+  const pkg = JSON.parse(await readFile(join(modulePath, "package.json"), "utf-8")); // read identity from package.json, not the bundle
+  if (!pkg?.name || !pkg?.version)                            // shape settled by A-0052: full npm name + version, no org field
+    throw new Error('kind package.json missing name/version');
   const sourceHash = util.hashDirSync(srcDir).digest("hex").toUpperCase();  // match calculateSha256 case
-  const manifest = { schema, kind: { org: kind.org, name: kind.name, version: kind.version },
+  const manifest = { schema, kind: { name: pkg.name, version: pkg.version }, // full npm name; {org,name} derived downstream via parsePackageName
                      sourceHash, timestamp: Date.now() };
   // ... (optionally per-artifact sha256 of kind.js/kind.d.ts via calculateSha256) ...
   await writeFile(join(dst, "manifest.json"), JSON.stringify(manifest));    // LAST = commit marker
@@ -254,14 +260,13 @@ export function buildKindManifestCommand() {
 - **Reject Proposal 2's `hashDirSync` port.** Its stated rationale — "block-tools is a low-level published tool; depending on package-builder-lib inverts layering" — is refuted by block-tools/package.json:46: the dependency **already exists**. There is no layering to invert. Porting therefore only creates a second copy of a 30-line security-relevant algorithm that must be kept bit-identical to the canonical one (the publish-time guard compares against it), guarded by a "shared test vector + doc comment" maintenance obligation that reuse eliminates outright. Proposal 1's reuse is strictly lower blast radius and zero drift risk.
 - **Reject Proposal 2's `entries[]` parameterization.** Its claim that parameterizing avoids "re-opening the target registry" for deferred phases is false: the registry maps target -> config filename; adding entrypoints later means editing `createRolldownBlockKindConfig.ts`'s returned array, never the registry, regardless of whether an `entries` param exists. Nothing calls the factory with a custom entry set today, so the param is pure YAGNI. The facade itself hardcodes its entries — following that established pattern (hardcode, extend by editing the factory) is the lower-surface choice.
 - **Adopt Proposal 2's commander-free core.** This is its one substantive win. `buildBlockPackDist` (build_dist.ts) already establishes the commander-free-core precedent in this very package, and the deferred publish-time guard genuinely needs to reuse the hash computation and manifest shape without CLI coupling. Splitting `buildKindDist` (core) from `build-kind-manifest` (wrapper) costs one extra file and pays off directly at the next phase.
-- **Both proposals' shared choices are correct and kept:** single closed-registry edit (reviewable in one diff), no `build.ts` dispatch branch (non-vite -> rolldown fallback confirmed), `external:()=>false` + `dts({emitDtsOnly:false})` for the self-contained `kind.d.ts`, manifest-written-last commit marker, structurer gated behind Q-0004.
+- **Both proposals' shared choices are correct and kept:** single closed-registry edit (reviewable in one diff), no `build.ts` dispatch branch (non-vite -> rolldown fallback confirmed), `external:()=>false` + `dts({emitDtsOnly:false})` for the self-contained `kind.d.ts`, manifest-written-last commit marker, structurer activated (A-0053: kind is a confirmed block component).
 
 **Risks & open.**
 
-- **Q-0005 (kind build mechanism / metadata injection) — the field layout of the compiled kind export does not exist yet.** `grep` for `defineBlockKind` / `kind/` returns nothing in tools or sdk. The `kind.org/name/version` read in `buildKindDist` is written against an assumed shape (modelled on `model.config`). Direction is settled (rolldown + rolldown-plugin-dts, bake org/name/version, emit readable `kind.d.ts`); the exact export shape is a hard prerequisite this concern consumes but does not define. Treat the metadata-read block as a decision point pinned to whenever `defineBlockKind` lands. **Note the shape mismatch to reconcile:** concern #1's descriptor uses `organization`/`name`/`version`; this concern's pseudocode reads `org`/`name`/`version`. The field name must be unified when Q-0005 is settled.
+- **Q-0005 (kind build mechanism) — RESOLVED (A-0052).** `defineBlockKind<BlockParams>({ name, version })` takes a `{ name, version }` argument; the kind's `src/index.ts` imports `{ name, version }` from its own `package.json` (`with { type: "json" }`) and passes them in, and the bundler (rolldown + rolldown-plugin-dts, `external: () => false`) inlines that JSON import into the compiled `kind.js` — no build-time injection, no `define`. `buildKindDist` reads `name`/`version` directly from the kind package's `package.json` (not off the compiled bundle), so its manifest identity is written against a settled shape. **The earlier `organization`-vs-`org` field-name mismatch is resolved by elimination:** the compiled descriptor carries no separate organization/org field at all — only the full npm `name` + `version` — and the registry `{org,name}` path is derived from that npm name via the existing `parsePackageName` parser (`core/platforma/tools/block-tools/src/v2/source_package.ts`).
 - **Case convention is a live correctness seam.** `hashDirSync(...).digest("hex")` is lowercase; block-tools' `calculateSha256` is upper-case (util.ts:33). If the publish-time comparator (separate concern) hashes with one convention and compares against the other, the guard reports "different" on every run. Mitigation baked in: `.toUpperCase()` at the manifest-write site, documented there.
 - **Compiled-config filename mapping unverified end-to-end.** `TARGET_CONFIG_MAP` expects the flat `rolldown.block-kind.config.js`, but the source lives at `configs/rolldown/block-kind.config.ts`. The facade's identical convention works, so this is low-risk, but verify the ts-builder self-build emits the flat name before relying on it (`getConfigPath(filename)` resolution).
-- **ESM `require()` -> `import()` deviation.** `build-model` uses `require(modulePath)` on a package dir (resolves via package.json main). The kind bundle is ESM; `require()` on a pure-ESM main fails. `buildKindDist` must dynamic-`import()` the compiled entry and handle the async path + its own error handling — not a verbatim `build-model` copy.
 - **Scope boundary (honored):** this concern produces the bundle, `kind.d.ts`, and `manifest.json` with its computed hash. The publish-time source-hash comparison (absent->store / equal->no-op / differ->hard-fail) and the S3 upload are the publication-lifecycle concern; the commander-free `buildKindDist` is shaped so that concern imports the hash + manifest shape without duplicating logic.
 
 ---
@@ -271,7 +276,7 @@ export function buildKindManifestCommand() {
 **Entry points** — grounded path:line, what to modify or add.
 
 - `core/platforma/lib/model/common/src/bmodel/block_kind_ref.ts` **(NEW)** — single shared home for the reference type + codecs: `BlockKindReference` (branded string, the on-wire form), `formatKindRef(kind) → "{name}@{version}"`, `parseKindRef(ref) → { name, version }`, and a `z.string()` schema. Export from the bmodel index. Every reader (model.json runtime path, manifest reconciler, future template engine) imports from here — the one place that decides whether the name segment is org-qualified.
-- `core/platforma/sdk/model/src/block_model.ts` (new local type) — `BlockKind<Params> = { reference: BlockKindReference; readonly __params?: Params }`. Minimal interface the SDK consumes so nothing here depends on the unbuilt `@platforma-sdk/block-kind` package (Q-0005).
+- `core/platforma/sdk/model/src/block_model.ts` (new local type) — `BlockKind<Params> = { reference: BlockKindReference; readonly __params?: Params }`. Minimal interface the SDK consumes so `sdk/model` stays decoupled from the `@platforma-sdk/block-kind` package (whose build mechanism is settled by A-0052 / Q-0005).
 - `core/platforma/sdk/model/src/block_migrations.ts:5` — `DataCreateFn<T> = () => T` → `DataCreateFn<T, Params = never> = (args: { params?: Params }) => T`. Object-arg so future fields (services, resolved refs) extend without a signature break.
 - `core/platforma/sdk/model/src/block_migrations.ts:181` (`MigrationChainBase.init`) — parameter becomes `DataCreateFn<Current, Params>`; thread a third `Params` generic through `MigrationChainBase` and its two subclasses + `DataModelInitialChain` (the same mechanism that already carries `Current`/`Transfers`).
 - `core/platforma/sdk/model/src/block_migrations.ts:498` (`DataModelBuilder`) — add `<Params>` generic + `constructor(kind: BlockKind<Params>)`. Store `kind.reference` on the builder; `from<T>()` seeds `Params` into the chain. Update the two JSDoc examples.
@@ -305,7 +310,7 @@ Three corrections to Proposal 2:
 // NEW: lib/model/common/src/bmodel/block_kind_ref.ts
 export type BlockKindReference = string & { readonly __kindRef: unique symbol };
 export const BlockKindReferenceSchema = z.string();
-// single place that decides org-qualification of the name segment (see Q-0005)
+// single composition point for the {fullNpmName}@{version} reference (A-0052): the full npm name already encodes org, derived downstream via parsePackageName
 export const formatKindRef = (k: { name: string; version: string }) =>
   `${k.name}@${k.version}` as BlockKindReference;
 export const parseKindRef = (r: BlockKindReference) => {
@@ -393,12 +398,12 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
 
 **Risks & open**
 
-- **Q-0005 (kind build mechanism / kind object shape).** This concern assumes the compiled kind object exposes runtime `{ name, version }` (the code map notes also mention `organization`) plus a phantom `Params` type. If the reference must be org-qualified for global uniqueness, a bare `{name}@{version}` string drops `organization`. Mitigation: `formatKindRef` is the single function that composes the reference, so qualifying the name segment is a one-line change once Q-0005 lands. **Do not lock the string format until then.**
+- **Q-0005 (kind build mechanism / kind object shape) — RESOLVED (A-0052).** The compiled kind object exposes runtime `{ name, version }` — the full npm `name` + `version` imported from the kind package's `package.json` (via `defineBlockKind({ name, version })`) — plus a phantom `Params` type; there is no separate `organization` field. The reference format is settled as `{fullNpmName}@X.Y.Z`: the full npm name already encodes org, so no separate org-qualification segment is needed, and the `{org,name}` path is derived downstream via `parsePackageName`. `formatKindRef` remains the single composition point for the reference string.
 - **Runtime reader coupling — NEEDS VERIFICATION.** Container-level placement assumes the runtime reader (templateEntry / `extractConfigGeneric`) can read `config.kind` off the container. If that reader is hard-wired to descend into `v4`, fall back to `BlockConfigV4Generic.kind` (Proposal 1's location). Verify before implementing; it decides one line in two files.
 - **Migration sequencing.** Making `DataModelBuilder`'s constructor kind **required** breaks every existing V3 block at once (create's object-destructure is likewise breaking). Options: (a) required + one codemod sweep across all V3 blocks; (b) a transition window with `constructor(kind?)` and fail-safe `undefined` reference (reconciler simply can't project kind-less blocks yet, matching the workflowCapabilities fail-safe). Legacy V1 blocks (block_model_legacy.ts) must reach V3 first — prerequisite, out of scope (see Cross-Cutting).
 - **Generic threading needs a compile check, not just a read.** Adding `Params` across `MigrationChainBase`, both subclasses, `DataModelInitialChain`, `DataModel`, and `create` must be verified to infer through `.from().migrate().transfer().init()` end to end.
 - **Two copies cannot actually drift** in the current build: `build_dist` reads the manifest reference *out of* the already-baked `model.json`, so there is one value source (done()'s container.kind). The cross-check guards the distinct risk of a block author passing two different kind objects (builder vs create), not copy divergence.
-- Out of scope (respected): PlRef / template-local→concrete rewrite of init params (template engine); the `@platforma-sdk/block-kind` package itself (Q-0005); facade↔kind direct dependency (Q-0004).
+- Out of scope (respected): PlRef / template-local→concrete rewrite of init params (template engine); the `@platforma-sdk/block-kind` package build itself (settled by A-0052, owned by #1/#2); the facade↔kind direct dependency (settled by A-0053 — kind is a fourth block component — owned by #4's `resolve-refs` and #2's structurer).
 
 ---
 
@@ -409,11 +414,11 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
 - `core/platforma/tools/block-tools/src/cmd/publish.ts:93` — MODIFY. Replace the single `await registry.publishPackage(manifest, fileReader)` call with `await publishBlock(registry, manifest, manifestRoot, fileReader)`. `manifestRoot` (already resolved at :84) is the facade cwd — the read root for the facade's declared kind dep. The channel marker (:97-100), coords write (:106-111) and refresh (:113) tail stays UNCHANGED and still runs only after `publishBlock` resolves. The action shrinks to flag-parse + adapter.
 - `core/platforma/tools/block-tools/src/v2/publish-block.ts` — NEW. Orchestrator `publishBlock(registry, manifest, facadeDir, fileReader)`: (1) resolve both refs, (2) run pure gate — throws before any I/O, (3) `registry.publishKind(...)` — S3 `kinds/` tree, idempotent, (4) `registry.publishPackage(...)` — facade, unchanged. This is the single forward-compat seam the deferred phases extend.
 - `core/platforma/tools/block-tools/src/v2/kind/version-match.ts` — NEW. Pure `checkKindVersionMatch(modelKindRef, facadeKindDep): void` throwing a typed `KindVersionMismatchError`; it **imports** `parseKindRef` (the `{name}@{version}` codec, §3) rather than redefining it. No I/O. Directly unit-tested with the `exitOverride`/`mkdtemp` harness already in `publish.test.ts` — and, being pure, tested with zero registry I/O.
-- `core/platforma/tools/block-tools/src/v2/kind/resolve-refs.ts` — NEW. `readModelCompiledKindRef(manifest)` reads `manifest.description.components.model`'s recorded kind ref (the field the record-kind-ref concern adds; no `model.json` re-read — same field the reconciler consumes). `readFacadeKindDependency(facadeDir)` reads the facade-side kind dep from `package.json`. This module is the sole quarantine for OPEN Q-0004.
+- `core/platforma/tools/block-tools/src/v2/kind/resolve-refs.ts` — NEW. `readModelCompiledKindRef(manifest)` reads `manifest.description.components.model`'s recorded kind ref (the field the record-kind-ref concern adds; no `model.json` re-read — same field the reconciler consumes). `readFacadeKindDependency(facadeDir)` reads the facade-side kind dep from `package.json`. This module is the single reader of the facade's **direct** kind dependency (A-0053: the kind is a fourth block component, so the facade declares the kind directly in its `dependencies`, not transitively through the model).
 - `core/platforma/tools/block-tools/src/v2/registry/registry.ts:474` — DEPENDENCY (owned by the S3-kinds concern, not authored here). `publishPackage` stays byte-for-byte unchanged. A sibling `publishKind(kindManifest, fileReader)` mirrors the content-first / manifest-last / `marchChanged` pattern PLUS a source-hash guard modeled on `addPackageToChannel:397-408` read-then-decide (absent → write; equal `sourceHash` → idempotent no-op; different → throw for immutability). This concern only CALLS it, kind-first.
 - `core/platforma/tools/block-tools/src/v2/registry/schema_public.ts:22` + `src/util.ts:28` — DEPENDENCY (S3-kinds concern). `kinds/` path-helper analogs of `packageContentPrefix`/`packageUpdateSeedPath`, and `hashSourceTree(srcDir)` folding one `calculateSha256` over the sorted src tree. Consumed by `publishKind`, not written here.
 
-**Chosen path** — Proposal 2 wins, with one blast-radius trim. The three-layer split (pure gate + Q-0004 resolver + orchestrator seam) is adopted because the two things that actually hurt here are (a) an OPEN question about where the facade's kind dep lives, and (b) a spec with deferred phases that will add more publishable artifacts and more pre-publish gates. Proposal 2 quarantines (a) in one function and gives (b) a seam that is not a commander action. Proposal 1's inline approach couples the gate to the command harness and buries the Q-0004 resolution inside `cmd.action`, making the load-bearing check testable only through a full command build.
+**Chosen path** — Proposal 2 wins, with one blast-radius trim. The three-layer split (pure gate + facade-dep reader + orchestrator seam) is adopted because (a) the facade→kind dependency read deserves a single home — settled by A-0053 as a **direct** facade dependency, so any future change to how that read works stays in one place — and (b) the spec has deferred phases that will add more publishable artifacts and more pre-publish gates. Proposal 2 isolates (a) in one function and gives (b) a seam that is not a commander action. Proposal 1's inline approach couples the gate to the command harness and buries the facade-dep read inside `cmd.action`, making the load-bearing check testable only through a full command build.
 
 The trim vs. literal Proposal 2: `publishBlock` sequences only the two publishes and the gate. The channel marker, coords write and refresh tail stay in `publish.ts` unchanged — Proposal 2 folded them into the orchestrator, which is needless churn on code unrelated to kinds. `publishBlock` takes no `opts` bag yet (YAGNI — add parameters when a deferred phase needs one).
 
@@ -436,7 +441,7 @@ await publishBlock(
 `publish-block.ts` (NEW):
 ```ts
 export async function publishBlock(registry, manifest, facadeDir, fileReader) {
-  // 1. resolve both refs (Q-0004 hidden inside resolve-refs)
+  // 1. resolve both refs (facade's direct kind dep read inside resolve-refs)
   const modelKindRef  = readModelCompiledKindRef(manifest);        // components.model field
   const facadeKindDep = readFacadeKindDependency(facadeDir);       // facade package.json
 
@@ -471,7 +476,7 @@ export function checkKindVersionMatch(modelKindRef, facadeKindDep) {
 }
 ```
 
-`resolve-refs.ts` (NEW — Q-0004 quarantine):
+`resolve-refs.ts` (NEW — reads the facade's direct kind dependency):
 ```ts
 export function readModelCompiledKindRef(manifest) {
   const ref = manifest.description.components.model?.kindRef;   // field from record-kind-ref concern
@@ -481,9 +486,9 @@ export function readModelCompiledKindRef(manifest) {
 
 export function readFacadeKindDependency(facadeDir) {
   const pkg = JSON.parse(read(path.join(facadeDir, "package.json")));
-  // Q-0004: if kind is NOT a direct facade dep, resolve transitively via model/package.json.
-  // Single edit site if the authoritative location flips.
-  const dep = pkg.dependencies?.[KIND_PACKAGE_NAME] /* ?? transitiveFromModel(...) */;
+  // A-0053: the facade depends on the kind DIRECTLY (kind is a fourth block component),
+  // so read the direct dependency — no transitive-through-model fallback.
+  const dep = pkg.dependencies?.[KIND_PACKAGE_NAME];
   if (!dep) throw new Error("facade declares no kind dependency");
   return `${KIND_PACKAGE_NAME}@${normalizeRange(dep)}`;
 }
@@ -505,15 +510,15 @@ public async publishKind(kindManifest, fileReader) {
 }
 ```
 
-**Why this over the alternatives** — Rejected Proposal 1 (inline into `cmd.action`) on two counts. Testability: it claims coverage via the `publish.test.ts` harness, but that forces the load-bearing version comparison through a full commander build + `mkdtemp` + a synthesized facade `package.json` — the pure `checkKindVersionMatch` is a far cleaner and cheaper test target, and the comparison is exactly the part most worth isolating. Change-locality under an OPEN question: Proposal 1's `resolveFacadeKindDep` lives inside the action; when Q-0004 resolves (direct dep vs. transitive through `model/package.json`), Proposal 2 changes one quarantined function while gate and orchestrator do not move. Proposal 1's only genuine win — fewer files — is marginal: the net-new logic (gate, resolver, orchestrator call) is nearly identical LOC either way; Proposal 2 just files it behind seams. Blast radius is equivalent for the risky part: both leave `publishPackage` untouched, both delegate `publishKind`/source-hash/`hashSourceTree`/`kinds/` path helpers to the S3-kinds concern. On correctness both are equal — linear `await` ordering gives kind-before-facade, a plain `throw` gives hard-fail, purity gives idempotency for the gate. The tie-breakers (isolable pure gate, quarantined open question, non-command forward-compat seam matching the spec's deferred phases) all favor Proposal 2.
+**Why this over the alternatives** — Rejected Proposal 1 (inline into `cmd.action`) on two counts. Testability: it claims coverage via the `publish.test.ts` harness, but that forces the load-bearing version comparison through a full commander build + `mkdtemp` + a synthesized facade `package.json` — the pure `checkKindVersionMatch` is a far cleaner and cheaper test target, and the comparison is exactly the part most worth isolating. Change-locality: Proposal 1's `resolveFacadeKindDep` lives inside the action, whereas Proposal 2 keeps the facade-dep read in one isolated function — so with A-0053 settling that read as a **direct** facade dependency (and for any later tweak to it), the gate and orchestrator do not move. Proposal 1's only genuine win — fewer files — is marginal: the net-new logic (gate, resolver, orchestrator call) is nearly identical LOC either way; Proposal 2 just files it behind seams. Blast radius is equivalent for the risky part: both leave `publishPackage` untouched, both delegate `publishKind`/source-hash/`hashSourceTree`/`kinds/` path helpers to the S3-kinds concern. On correctness both are equal — linear `await` ordering gives kind-before-facade, a plain `throw` gives hard-fail, purity gives idempotency for the gate. The tie-breakers (isolable pure gate, single isolated facade-dep reader, non-command forward-compat seam matching the spec's deferred phases) all favor Proposal 2.
 
 **Risks & open**
-- **Q-0004 (facade↔kind direct dependency) — OPEN and blocking the comparison.** The facade's `dependencies` is empty today (model/ui/workflow sit under `devDependencies`, confirmed in `clonotype-browser/block/package.json`). Until it is confirmed whether the authoritative facade-side kind dep is a direct facade dep or resolves transitively through `model/package.json`, `readFacadeKindDependency` cannot be finalized. Quarantining it in `resolve-refs.ts` bounds the fallout to one function, but the comparison string cannot be written before the answer lands.
+- **Q-0004 (facade↔kind direct dependency) — RESOLVED (A-0053, "the tetrad").** The kind is a fourth block component, and the published facade depends on the kind **directly** — a direct entry in the facade package's `dependencies`, not a transitive resolution through `model/package.json`. `readFacadeKindDependency` reads that direct dep (isolated in `resolve-refs.ts`), and the version-match compares it against the model's recorded kind reference. (The facade's `dependencies` was empty in the pre-decision blocks; the structurer now wires the kind dep in — see #2.)
 - **Hard dependency on the record-kind-ref concern (#3).** `readModelCompiledKindRef` reads `manifest.description.components.model.kindRef`, a field that does not exist yet (added by the build-model.ts / build_dist.ts record-kind-ref concern). This concern cannot land until that field is present; the gate has nothing to read otherwise.
 - **Hard dependency on the S3-kinds concern (#5).** `registry.publishKind`, the `kinds/` path helpers, the source-hash guard, and `hashSourceTree` are owned there. This concern owns only: (a) kind-before-facade call order, (b) the gate throwing before any write, (c) plain hard-fail, (d) idempotency delegated to `publishKind`'s guard.
-- **Q-0005 (kind build mechanism) — OPEN.** How the kind package's `src/` tree is produced/built determines what `hashSourceTree` folds over and what the npm half publishes. npm publish of the kind rides `pnpm -r publish` topological order over the workspace (a new workspace package), NOT block-tools — block-tools owns only the S3 `kinds/` tree side. If the kind build shape shifts under Q-0005, the source-hash input (owned by the sibling concern) shifts with it; the gate and orchestrator are unaffected.
+- **Q-0005 (kind build mechanism) — RESOLVED (A-0052).** `sourceHash` is a deterministic content hash over the kind's sorted `src/` tree, computed by a single producer at build time — this is what `hashSourceTree` folds over. npm publish of the kind rides `pnpm -r publish` topological order over the workspace (a new workspace package), NOT block-tools — block-tools owns only the S3 `kinds/` tree side. The source-hash input is now pinned; the gate and orchestrator are unaffected either way.
 - **Facade same-version overwrite remains unguarded.** `publishPackage:474-503` still does plain `PutObject` with no immutability guard. Only the `kinds/` tree gets the source-hash guard here; a reader expecting full block immutability from this concern will be surprised. Out of scope, flagged.
-- **Exact-match vs. range.** `checkKindVersionMatch` assumes both refs are pinned `{name}@X.Y.Z`. If the facade dep is a semver range (npm norm), `readFacadeKindDependency` must normalize/resolve to the concrete version before the exact-equality gate — otherwise a legitimate range would spuriously hard-fail. Tied to how Q-0004 exposes the dep.
+- **Exact-match vs. range.** `checkKindVersionMatch` compares pinned `{name}@X.Y.Z` refs. In the workspace/monorepo case the facade→kind dep is a `workspace:*` (or `workspace:^`, etc.) spec; `readFacadeKindDependency` resolves it to the kind package's concrete `package.json` version before the gate, so the comparison is exact-equality on concrete versions. A raw semver range would likewise be normalized/resolved to a concrete version first — otherwise a legitimate range would spuriously hard-fail.
 
 ---
 
@@ -644,7 +649,7 @@ async getKindOverview(kindNpmName, kindSpecifier) {
 
 - **RMW correctness rests on block-version immutability of the kind ref.** Blocks have no same-version overwrite guard today (`publishPackage` 474-503). A same-version block republish that changes or drops its kind ref orphans the old kind's entry until a force reconcile. Mitigation adopted: force-mode LIST + full rebuild self-heals. Stronger fix (out of scope here, sibling concern): add a same-version block guard mirroring the new `publishKind` sourceHash guard.
 - **Normal-mode staleness window** for kindA→kindB switches / dropped refs is inherent to no-LIST incremental derivation. How often the force backstop runs is governed by **Q-0008 (overview-refresh trigger, implementation.md:354)** — settle with the operator; it directly sets the staleness bound.
-- **Source-hash guard stability depends on the kind build mechanism (Q-0005).** The guard's equal / differ / absent decision is only well-defined once the sorted-tree digest over `src/` is pinned (spec is explicit it is NOT the per-file `calculateSha256` at util.ts:28). Until Q-0005 lands, the guard is coded but its comparand is unspecified.
+- **Source-hash guard is well-defined under A-0052 (Q-0005).** `sourceHash` is a deterministic content hash over the sorted `src/` tree, produced once at build time (explicitly NOT the per-file `calculateSha256` at util.ts:28). With that input pinned, the guard's absent / equal / differ decision is well-defined.
 - **Kind is invisible until it has an implementer** — `publishKind` drops no ticket, so `getKindOverview` 404s (no `overview.json`) for a kind with zero implementing blocks. Correct per the block-derived projection model, but confirm it is intended UX.
 - **Reader rooting unverified** — `registry_reader` is rooted at `MainPrefix='v2/'` (74); `kinds/` is a sibling. `getKindOverview` needs an absolute read or a second kinds-rooted reader. Quick check at implementation time.
 - **Empty vs delete on orphan** — pseudocode deletes the overview when no implementers remain (cleanest for the no-LIST reader: 404 ⇒ unresolvable). Writing an empty file is the alternative. Low-stakes; confirm preference.
@@ -772,7 +777,7 @@ public async resolveKind(registryId, ref, {allowUnstable}) {
 - **Pre-1.0 caret/tilde quirk (correctness, not raised by either proposal):** `semver` treats `^0.2.3` as `>=0.2.3 <0.3.0` (caret behaves like tilde below 1.0) and `~0.2.3` as `>=0.2.3 <0.3.0` as well — so for `0.x` kinds, `^` and `~` collapse to the same range. If the spec's "minor floats" tier must span `0.2 → 0.3` for pre-1.0 kinds, stock semver ranges will **not** deliver it. **Verify against the spec whether kinds are guaranteed `>=1.0.0`;** if not, `selectorToRange` needs an explicit range for the `0.x` minor case rather than `^`.
 - **Prerelease policy (open):** `semver.maxSatisfying` excludes prereleases (e.g. `1.2.0-rc.1`) from `^`/`~` ranges unless `{includePrerelease:true}`. Decide whether prerelease kind versions are eligible; wire the option in `selectorToRange`/`resolveKindVersion` accordingly. Default (exclude) is the safe assumption pending confirmation.
 - **Schema authored blind (co-design):** the `KindOverview` shape is *produced* by the block-overview reconciler/writer (concern #5, `tools/block-tools/src/v2/registry/registry.ts` ~line 250). `.passthrough()`+normalize tolerates additive drift but **not field renames**. Lock the reader schema against the reconciler's emitted JSON (or the spec's canonical example at implementation.md:116-131) before finalizing field names; reader and writer must stay in lockstep.
-- **Q-0005 (kind build mechanism):** the projection this concern reads only exists once kinds are built/registered and the reconciler emits `kinds/{org}/{name}/overview.json`. If Q-0005 changes *how* kinds are built (and thus what a "kind version" and its "implementing blocks" grouping mean), the `KindOverview` schema and the channel-grouping assumption in `pickImplementingBlock` are the first things to move. This resolver is a pure *consumer* of that shape — cheap to re-point, but its correctness is downstream of Q-0005 being settled.
+- **Q-0005 (kind build mechanism) — RESOLVED (A-0052):** the projection this concern reads exists once kinds are built/registered and the reconciler emits `kinds/{org}/{name}/overview.json`. The build mechanism is now settled (`defineBlockKind<BlockParams>({ name, version })` takes a `{ name, version }` argument imported from the kind's `package.json`, deterministic `src/`-tree `sourceHash`), so the `KindOverview` schema and the channel-grouping assumption in `pickImplementingBlock` rest on a fixed shape. This resolver stays a pure *consumer* of that shape; its correctness now depends only on staying in lockstep with the reconciler (co-design, see above), not on any open build question.
 - **Deferred-phase reuse (unverified benefit):** the sandbox phase reusing the pure core unchanged is asserted, not proven; treat as a nice-to-have, not a design constraint.
 
 ---
@@ -787,7 +792,7 @@ public async resolveKind(registryId, ref, {allowUnstable}) {
 - **Registry tree:** `kinds/{org}/{name}/` parallel to `v2/` in the **same** registry (`implementation.md:113-121`). Per-version content at `kinds/{org}/{name}/{version}/` (`manifest.json` + `kind.d.ts`); the reconciler-maintained projection at `kinds/{org}/{name}/overview.json`.
 - **npm-name → path convention:** `@platforma-open/milaboratories.mixcr-clonotyping.kind` → dotted name `milaboratories.mixcr-clonotyping.kind`; first segment = org, middle = block name, strip trailing `.kind` → `kinds/milaboratories/mixcr-clonotyping/{version}/` (`implementation.md:131`). Encapsulated in `npmNameToKindPath` (distinct from the `{name}@{version}` reference codec `parseKindRef`); **unverified** — pin before shipping.
 - **Build target name:** `block-kind` in the ts-builder `TargetType` registry (parallel to `block-facade`); config files `rolldown.block-kind.config.js` / `tsconfig.block-kind.json`.
-- **Field-name mismatch to reconcile:** concern #1's descriptor exposes `organization`/`name`/`version`; concerns #2's build read uses `org`/`name`/`version`. Unify when Q-0005 fixes the compiled kind export shape.
+- **Field-name mismatch — RESOLVED by elimination (A-0052 / Q-0005):** the compiled kind descriptor carries no separate `organization`/`org` field — only the full npm `name` + `version`. The registry `{org,name}` path is derived from that npm name via the existing `parsePackageName` parser (`core/platforma/tools/block-tools/src/v2/source_package.ts`), so there is no `organization`-vs-`org` naming to reconcile.
 
 ### Versioning of `@platforma-sdk/block-kind`
 
@@ -802,7 +807,7 @@ A block must be on **`BlockModelV3` + `DataModelBuilder`** to carry a kind: the 
 The path is grounded against `docs/text/work/projects/block-kind-and-templates/decisions.md` and `.../implementation.md`. Key alignments:
 
 - **TypeScript-only, no backend** (`decisions.md:15`, `implementation.md:7`) — every concern lands in the SDK / block-tools / middle-layer; `core/pl` is untouched. The resolver facade (#6) is the deepest the path reaches into the middle layer, and it is thin (`decisions.md:15`).
-- **Kind recorded in the model, not a fourth component** (`decisions.md:19-33`) — #3 bakes the reference at container level and surfaces it into the manifest; whether the facade depends on the kind directly is **Q-0004**, quarantined in #4's `resolve-refs.ts`.
+- **Kind is a fourth block component; the facade depends on it directly** (A-0053, reversing note A-0013's earlier v4.0.0 "recorded in the model, not a fourth component" conclusion) — #3 still bakes the reference at the `model.json` container level for the runtime/export path, but the facade's **direct** build-time dependency on the kind is what the publish-time version-match reads (#4's `resolve-refs.ts`), and the structurer discovers `kind/` alongside `model/`/`workflow/`/`ui/` (#2).
 - **Kind-first publish, version-match gate, hard-fail** (`decisions.md:57-83`) — #4 sequences `checkKindVersionMatch` → `publishKind` → `publishPackage`, with the gate before *any* S3 write (a confirmed-acceptable strict superset of "abort before facade").
 - **Source-hash guard: one sha256 over the sorted `src/` tree, stored in the kind manifest, `absent→store / equal→no-op / differ→hard-fail`** (`decisions.md:73-83`, `implementation.md:273-283`) — computed at build (#2), enforced at publish (#4/#5). Explicitly **not** npm `dist.integrity`, `npm pack` bytes, or the Turbo hash.
 - **Projection is derived from block manifests, single source of truth, no `_updates_kinds`, no kind-side markers** (`decisions.md:103-107`, `implementation.md:123-129`) — #5 rides the block ticket via `marchChanged`; `publishKind` drops no ticket.
@@ -813,10 +818,13 @@ The path is grounded against `docs/text/work/projects/block-kind-and-templates/d
 
 ## Open Risks and Spec Open-Question Dependencies
 
-The path's correctness is gated on several **decided-to-be-undecided** open questions (`implementation.md:345-354`). Ordered by how much of the path each blocks:
+Two questions that gated this path when the draft was written are now **decided in the spec** and are no longer open:
 
-- **Q-0005 (kind build mechanism)** — *blocks the most.* The concrete build that compiles a kind package: target, `package.json` fields, and how org/name/version metadata is injected. Every concern that reads the compiled kind export shape (#2's `buildKindDist` metadata read, #3's `BlockKind<Params>` object shape) or the source-hash input (#4/#5's `hashSourceTree`) is downstream of it. Direction is **settled** (rolldown + rolldown-plugin-dts; bake org/name/version; emit readable `kind.d.ts`); the exact export field layout and the src-tree digest input are the hard prerequisites. Concern #1 ships **today** on stock `ts-builder` with an explicit `meta` argument, deliberately independent of Q-0005 — the auto-baking target is additive and leaves the public type contract unchanged. The `organization` vs `org` field-name mismatch between #1 and #2 is reconciled here.
-- **Q-0004 (facade↔kind direct dependency)** — *blocks the version-match comparison (#4).* Whether the published facade depends on the kind directly (kind as a fourth block component) or receives it through the model. The facade's `dependencies` is empty today. Quarantined in #4's `readFacadeKindDependency` (`resolve-refs.ts`) and gates #2's structurer rule (`block-package-json.ts`, kept untouched until Q-0004 lands). Spec guidance: make the link direct if easy; otherwise the model carries it.
+- **Q-0004 (facade↔kind direct dependency) — RESOLVED (decision A-0053, "the tetrad").** The kind is a fourth block component; the published facade depends on the kind **directly** (a direct entry in the facade package's `dependencies`), not transitively through the model. #4's `readFacadeKindDependency` (`resolve-refs.ts`) reads that direct dep and compares it against the model's recorded kind reference; #2's structurer rule (`block-package-json.ts`) is activated to discover `kind/` and wire/assert the kind build/check plus the `blockComponents` mapping.
+- **Q-0005 (kind build mechanism & identity) — RESOLVED (decision A-0052).** `defineBlockKind<BlockParams>({ name, version })` takes a `{ name, version }` argument; the kind's `src/index.ts` imports `{ name, version }` from its own `package.json` (`with { type: "json" }`) and passes them in, and the bundler (rolldown + rolldown-plugin-dts, `external: () => false`) inlines that JSON import — tree-shaken to the two strings — into the compiled `kind.js`, emitting a readable `kind.d.ts`. There is no build-time injection and no `define`. Identity carries no separate `organization`/`org` field — the registry `{org,name}` path is derived from the full npm name via the existing `parsePackageName` parser. `sourceHash` is a deterministic content hash over the sorted `src/` tree, produced once at build time (not the per-file `calculateSha256`), which makes the source-hash guard's absent/equal/differ decision well-defined. (This reverses note A-0013's earlier v4.0.0 "recorded in the model, not a fourth component" framing; the `model.json` reference is retained for the runtime/export path.)
+
+The remaining open questions the path's correctness is still gated on (`implementation.md:345-354`), ordered by how much of the path each blocks:
+
 - **Q-0008 (overview-refresh trigger)** — *sets the staleness bound on #5.* How the kind overview refresh is triggered in production (cron / on-publish / manual). The reconciler's normal mode is incremental-additive; kindA→kindB switches and dropped refs self-heal only on a force run, so the refresh cadence directly bounds the projection's staleness window. Settle with the operator.
 - **Q-0007 (engine add-block API)** — *does not block this path; it is the entry point of the deferred template-engine document.* The resolver (#6) emits a `from-registry-v2` spec that the existing add-block path (`prepareBlockPack`/`getComponents`) consumes unchanged; how the fixed native YAML lambda then threads params and resolved references through to the init lambda is engine detail resolved in the template doc, not here.
 - **Q-0009 (apply-time params validation)** — *deferred to the template document.* A block's init is compile-time typed against its kind, but a hand-authored YAML's `params` are untyped; what validates them at apply time is a template-engine concern, out of scope for the KIND subsystem.

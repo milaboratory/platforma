@@ -10,10 +10,6 @@ export function createRolldownBlockKindConfig(
 ): RolldownOptions[] {
   const output = props?.output ?? "dist";
 
-  // A block-kind has a single entry (`src/index.ts`) — the compiled kind
-  // descriptor produced by `defineBlockKind`. Unlike the facade (index + AGENTS,
-  // built in two passes to keep each `.d.ts` self-contained), one entry needs
-  // only one pass, so the facade's index/AGENTS split is dropped here.
   return [
     {
       input: { kind: "src/index.ts" },

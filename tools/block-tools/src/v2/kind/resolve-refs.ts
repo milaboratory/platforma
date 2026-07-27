@@ -8,11 +8,12 @@ import { KindManifest } from "../registry/schema_kinds";
 import type { RelativeContentReader } from "../model";
 
 /**
- * Kind → block ref resolution — the SOLE quarantine for the OPEN Q-0004
- * (where does the facade declare its kind dependency?) and part of Q-0005
- * (how the kind package is built / named). Every assumption about the shape
- * or location of a kind dependency that could still flip lives here, so a
- * later reconciliation edits one file, not the gate or the orchestrator.
+ * Kind → block ref resolution. The single reader of the facade's kind
+ * dependency: the kind is a fourth block component the facade depends on
+ * DIRECTLY (A-0053, the tetrad), and its concrete version is resolved through
+ * the kind's built manifest (A-0052). Keeping every "how the facade names and
+ * locates its kind" assumption in this one module means the gate and the
+ * orchestrator never touch dependency-shape details.
  */
 
 /** npm package-name suffix marking a package as a block kind (schema_kinds convention). */
@@ -46,12 +47,14 @@ export interface FacadeKindDependency {
 /**
  * The facade-side kind dependency, read from the facade's `package.json`.
  *
- * Q-0004 (OPEN): whether the authoritative facade-side kind dep is a DIRECT
- * facade dependency or resolves transitively through `model/package.json` is
- * unsettled — the facade's `dependencies` is empty today (model/ui/workflow sit
- * under `devDependencies`). We scan `dependencies` + `devDependencies` for the
- * single `.kind`-suffixed entry. If Q-0004 flips to the transitive form, this is
- * the one function that changes.
+ * The facade depends on its kind DIRECTLY (A-0053): the `.kind`-suffixed entry
+ * is a direct dependency of the facade, not something reached transitively
+ * through `model/package.json`. We scan both `dependencies` and
+ * `devDependencies` for the single `.kind` entry — the slim facade keeps the
+ * kind (like its model/ui/workflow siblings) as a build-time `workspace:*`
+ * devDep, and its concrete version is resolved from the kind's built manifest
+ * downstream, so the range written here (`workspace:*`/`catalog:`/a semver
+ * range) is not load-bearing.
  *
  * Returns `undefined` when no kind dependency is declared.
  */
@@ -88,10 +91,11 @@ export interface ResolvedFacadeKind {
  * `package.json` range may be `workspace:*`/`catalog:` and carry no concrete
  * version), and returns a `dist/`-rooted file reader for `publishKind`.
  *
- * Q-0004/Q-0005 seam: how the kind package is located and how its dist is laid
- * out are not finalized. This best-effort resolution uses standard node
- * resolution from the facade dir; if the package or its manifest cannot be
- * found it throws with a pointed message rather than silently skipping.
+ * The concrete version comes from the built manifest (A-0052), so a
+ * `workspace:*`/`catalog:` range in the facade's `package.json` resolves
+ * cleanly. Resolution uses standard node resolution from the facade dir; if the
+ * package or its manifest cannot be found it throws with a pointed message
+ * rather than silently skipping.
  */
 export async function resolveFacadeKind(
   facadeDir: string,

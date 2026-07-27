@@ -1,24 +1,7 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { util } from "@platforma-sdk/package-builder-lib";
 import { calculateSha256 } from "../util";
-
-/**
- * Compiled kind descriptor shape read off the built bundle. Mirrors the runtime
- * fields `defineBlockKind` bakes into the frozen v1 descriptor
- * (`@platforma-sdk/block-kind`, `src/descriptor.ts`):
- * `{ kindSchema: "v1", name, version }`.
- *
- * `name` is the FULL npm package name; there is no separate `organization`
- * field. The S3 `{org, name}` path is derived from `name` downstream via
- * `npmNameToKindPath`.
- */
-interface CompiledKindExport {
-  kindSchema?: string;
-  name?: string;
-  version?: string;
-}
 
 export interface BuildKindDistOptions {
   /** Kind package directory (the dir containing `package.json`, `src/`, `dist/`). */
@@ -44,21 +27,34 @@ import type { KindManifest, KindManifestFileInfo } from "./registry/schema_kinds
 export const KindManifestFile = "manifest.json";
 
 /**
- * Resolve, load, and read the compiled kind descriptor. The bundle is ESM
- * (rolldown `format: "es"`), so it is loaded via `import()` — a `require()` on a
- * pure-ESM main would throw.
+ * Read the kind's identity from its own `package.json` — the SINGLE source of
+ * truth. The block-kind build bakes the SAME `{name, version}` into the emitted
+ * bundle (via `define`), so the manifest identity here and the runtime
+ * descriptor's identity are guaranteed to agree. Reading package.json directly
+ * (rather than importing the ESM bundle) keeps this authoritative and free of a
+ * dynamic-import dependency on the compiled output.
  */
-async function readCompiledKind(entryPath: string): Promise<CompiledKindExport> {
-  const mod = (await import(pathToFileURL(entryPath).href)) as Record<string, unknown>;
-  // A kind package may name the export or default it; accept both.
-  const kind = (mod.kind ?? mod.default ?? mod) as CompiledKindExport;
-  return kind;
+async function readKindPackageIdentity(
+  modulePath: string,
+): Promise<{ name: string; version: string }> {
+  const pkgPath = path.resolve(modulePath, "package.json");
+  let raw: string;
+  try {
+    raw = await fsp.readFile(pkgPath, "utf-8");
+  } catch {
+    throw new Error(`Cannot read kind package.json at ${pkgPath}.`);
+  }
+  const pkg = JSON.parse(raw) as { name?: unknown; version?: unknown };
+  if (typeof pkg.name !== "string" || typeof pkg.version !== "string") {
+    throw new Error(`Kind package.json at ${pkgPath} must declare string "name" and "version".`);
+  }
+  return { name: pkg.name, version: pkg.version };
 }
 
 /**
- * Commander-free core: bundle-in, manifest-out. Reads the compiled kind's
- * npm package `name`/`version`, computes one sha256 over the `src/` tree
- * (upper-case), and writes `manifest.json` LAST as the commit marker (the
+ * Commander-free core: bundle-in, manifest-out. Reads the kind's npm package
+ * `name`/`version` from its `package.json`, computes one sha256 over the `src/`
+ * tree (upper-case), and writes `manifest.json` LAST as the commit marker (the
  * build_dist.ts convention: readers treat the manifest's presence as "the dist
  * is complete").
  *
@@ -72,16 +68,7 @@ export async function buildKindDist(opts: BuildKindDistOptions = {}): Promise<Ki
   const dst = path.resolve(modulePath, opts.dst ?? "dist");
   const entryFileName = opts.entryFileName ?? "kind.js";
 
-  const entryPath = path.resolve(dst, entryFileName);
-  const kind = await readCompiledKind(entryPath);
-
-  const { name, version } = kind;
-  if (!name || !version) {
-    throw new Error(
-      `Compiled kind export is missing name/version ` +
-        `(read from ${entryPath}). Got: ${JSON.stringify({ name, version })}.`,
-    );
-  }
+  const { name, version } = await readKindPackageIdentity(modulePath);
 
   // One sha256 over the sorted src/ tree. `hashDirSync` digests lower-case;
   // `.toUpperCase()` matches block-tools' `calculateSha256` (util.ts) so the
