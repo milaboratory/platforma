@@ -386,8 +386,9 @@ function filterFilters(
   return prune(filters) as Nil | PlDataTableFilters;
 }
 
-/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil. */
-function concatFilters(
+/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil.
+ *  Exported for unit testing. */
+export function concatFilters(
   a: Nil | PlDataTableFilters,
   b: Nil | PlDataTableFilters,
 ): Nil | PlDataTableFilters {
