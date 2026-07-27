@@ -126,11 +126,7 @@ function removeFilterFromGroup(groupIdx: number, filterIdx: number) {
   produceFiltersUpdate((draft: RootFilter) => {
     const group = getDraftGroupContent(draft, groupIdx);
     const removingLastLeaf = group.filters.length === 1 && filterIdx === 0;
-    // Auto-remove the whole group when its last leaf is deleted — but only if the
-    // group is removable. A non-removable group (e.g. a pinned default-filters
-    // group) must persist as an empty group instead of being spliced out, so the
-    // consumer keeps a stable group it can distinguish as "emptied" (and reset),
-    // rather than "deleted".
+
     if (removingLastLeaf && props.isRemovable(draft.filters[groupIdx], groupIdx)) {
       draft.filters.splice(groupIdx, 1);
     } else {
