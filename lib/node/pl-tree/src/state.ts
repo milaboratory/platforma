@@ -496,9 +496,9 @@ export class PlTreeState {
 
   updateFromResourceData(
     resourceData: ExtendedResourceData[],
-    allowOrphanInputs: boolean = false,
-    stat?: ResourceUpdateStat,
+    opts: { allowOrphanInputs?: boolean; stat?: ResourceUpdateStat } = {},
   ) {
+    const { allowOrphanInputs = false, stat } = opts;
     this.checkValid();
 
     // All resources for which recount should be incremented, first are aggregated in this list

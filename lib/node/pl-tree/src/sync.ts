@@ -142,28 +142,27 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
 }
 
 export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
-  let result = `Requests: ${stat.requests}\n`;
-  result += `Total time: ${msToHumanReadable(stat.millisSpent)}\n`;
-  result += `Round-trips: ${stat.roundTrips}\n`;
-  result += `Resources: ${stat.retrievedResources}\n`;
-  result += `Fields: ${stat.retrievedFields}\n`;
-  result += `KV: ${stat.retrievedKeyValues}\n`;
-  result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
-  result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
-  result += `Pruned fields: ${stat.prunedFields}\n`;
-  result += `Final resources skipped: ${stat.finalResourcesSkipped}\n`;
-  result += `Stop markers skipped: ${stat.stopMarkersSkipped}\n`;
-  result += `Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}\n`;
-  result += `New resources: ${stat.resourcesNew}\n`;
-  result += `Changed resources: ${stat.resourcesChanged}\n`;
-  result += `Unchanged (duplicate re-fetch) resources: ${stat.resourcesUnchanged}\n`;
-  result += `Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}\n`;
-  result += `Changed with stable metadata: ${stat.metadataStableChanged}\n`;
-  result += `BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}\n`;
-  result += `Used streaming: ${stat.usedStreaming}\n`;
-  result += `[streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}\n`;
-  result += `[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}`;
-  return result;
+  return `Requests: ${stat.requests}
+Total time: ${msToHumanReadable(stat.millisSpent)}
+Round-trips: ${stat.roundTrips}
+Resources: ${stat.retrievedResources}
+Fields: ${stat.retrievedFields}
+KV: ${stat.retrievedKeyValues}
+Data Bytes: ${stat.retrievedResourceDataBytes}
+KV Bytes: ${stat.retrievedKeyValueBytes}
+Pruned fields: ${stat.prunedFields}
+Final resources skipped: ${stat.finalResourcesSkipped}
+Stop markers skipped: ${stat.stopMarkersSkipped}
+Stop marker follow-up round-trips: ${stat.stopMarkerFollowUpRoundTrips}
+New resources: ${stat.resourcesNew}
+Changed resources: ${stat.resourcesChanged}
+Unchanged (duplicate re-fetch) resources: ${stat.resourcesUnchanged}
+Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}
+Changed with stable metadata: ${stat.metadataStableChanged}
+BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}
+Used streaming: ${stat.usedStreaming}
+[streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
+[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}`;
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
