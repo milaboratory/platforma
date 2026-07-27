@@ -2,7 +2,17 @@
 // `src/index.ts` seed is dropped by `init` and never touched again
 // (block author owns it).
 
-import { scope, fixed, managed, seed, file, generate, when, whenFilesExist } from "../engine/api";
+import {
+  scope,
+  fixed,
+  managed,
+  seed,
+  file,
+  tpl,
+  generate,
+  when,
+  whenFilesExist,
+} from "../engine/api";
 import { modelPackageJsonInitial, modelPackageJsonRules } from "./model-package-json";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 
@@ -21,13 +31,17 @@ export function modelRules(): void {
     fixed(".oxlintrc.json", file("model/.oxlintrc.json"));
     fixed(".oxfmtrc.json", file("model/.oxfmtrc.json"));
 
-    // A minimal-but-REAL BlockModelV3: `build-model` rejects a non-model
-    // export ("Malformed model object"), and a bare `.create(dataModel)`
-    // still errors ("Args rendering function not set"). This seed is the
-    // smallest chain that produces a valid `dist/model.json` — empty data
-    // model, identity args, a single "Main" section. The block author owns
+    // A minimal-but-REAL BlockModelV3 wired to the block's kind (mandatory):
+    // `build-model` rejects a non-model export, and `.create` without args
+    // errors ("Args rendering function not set"). This seed is the smallest
+    // chain that produces a valid `dist/model.json` — a kind-carrying data
+    // model, identity args, a single "Main" section. The kind package name is
+    // per-block, so this is a `tpl` (not a static `file`). The block author owns
     // and extends it after init.
-    seed("src/index.ts", file("model/src/index.ts"));
+    seed(
+      "src/index.ts",
+      tpl("model/src/index.tpl.ts", (ctx) => ({ kindPkg: `${ctx.blockVars.facadeName}.kind` })),
+    );
 
     managed(
       "package.json",
