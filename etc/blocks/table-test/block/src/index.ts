@@ -1,7 +1,7 @@
 // This file is managed by `block-tools structure`. Do not edit by hand.
 // Author content lives in ./block-extra.ts.
 
-import { platforma } from "..";
+import { platforma } from "@milaboratories/milaboratories.test-block-table.model";
 import { InferOutputsType, InferDataType, InferHrefType } from "@platforma-sdk/model";
 
 export { platforma };
