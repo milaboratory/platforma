@@ -65,6 +65,17 @@ export type ListFilesResult = {
   parent?: string;
   entries: LsEntry[];
   /**
+   * The depth actually applied.
+   *
+   * This is the capability signal for {@link ListFilesOps}, and it is why the
+   * field is always set rather than only when interesting. A block bundles its
+   * own copy of the file dialog but calls the *host's* `lsDriver`, so a new
+   * dialog routinely runs against a host that predates these options and drops
+   * them on the floor. Such a host returns no `depth`, which lets the caller
+   * hide a control it cannot honour instead of offering a silent no-op.
+   */
+  depth?: number;
+  /**
    * Set when {@link ListFilesOps.limit} cut the walk short, so callers can say
    * so rather than presenting a partial listing as complete. Reaching the
    * requested `depth` is not truncation — that bound was asked for.
@@ -112,7 +123,7 @@ export async function collectListFiles(
   ops?: ListFilesOps,
 ): Promise<ListFilesResult> {
   const depth = Math.max(1, Math.trunc(ops?.depth ?? 1));
-  if (depth === 1) return { entries: await listDir(root) };
+  if (depth === 1) return { entries: await listDir(root), depth };
 
   const limit = Math.max(1, Math.trunc(ops?.limit ?? DefaultListFilesLimit));
 
@@ -153,6 +164,7 @@ export async function collectListFiles(
 
   return {
     entries,
+    depth,
     ...(truncated ? { truncated } : {}),
     ...(unreadableDirs > 0 ? { unreadableDirs } : {}),
   };

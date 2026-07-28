@@ -55,6 +55,9 @@ describe("collectListFiles", () => {
     expect(visited).toEqual(["run"]);
     expect(result.truncated).toBeUndefined();
     expect(result.unreadableDirs).toBeUndefined();
+    // Always echoed, so a caller can tell a host that honours the options from
+    // one that silently drops them.
+    expect(result.depth).toBe(1);
   });
 
   test("an absent depth behaves exactly like depth 1", async () => {
@@ -78,6 +81,14 @@ describe("collectListFiles", () => {
     // Only the browsed level's directories are listed: run/deep/inner sits a
     // level below and is not something the user could act on here.
     expect(paths(result.entries, "dir")).toEqual(["run/A/", "run/B/", "run/deep/"]);
+  });
+
+  test("the applied depth is always echoed back", async () => {
+    const { listDir } = lister();
+    expect((await collectListFiles("run", listDir, { depth: 3 })).depth).toBe(3);
+    // Clamped values report what was actually applied, not what was asked.
+    expect((await collectListFiles("run", lister().listDir, { depth: 0 })).depth).toBe(1);
+    expect((await collectListFiles("run", lister().listDir, { depth: 2.7 })).depth).toBe(2);
   });
 
   test("depth 3 reaches the level depth 2 cut off", async () => {

@@ -30,9 +30,25 @@ defineProps<{
         <div>Hold Command (⌘), click each file</div>
         <div>Hold Ctrl, click each file</div>
 
-        <div>All files</div>
+        <div>All files in this folder</div>
         <div>Press Command (⌘) + A</div>
         <div>Press Ctrl + A</div>
+
+        <div>Files across folders</div>
+        <div>Select, open another folder, select again</div>
+        <div>Select, open another folder, select again</div>
+
+        <div>Unselect one file</div>
+        <div>Hold Command (⌘), click the file</div>
+        <div>Hold Ctrl, click the file</div>
+
+        <div>Unselect this folder</div>
+        <div>Click empty space in the list</div>
+        <div>Click empty space in the list</div>
+
+        <div>Unselect everything</div>
+        <div>Click Clear, above the list</div>
+        <div>Click Clear, above the list</div>
       </div>
     </template>
   </PlTooltip>

@@ -86,6 +86,11 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
         return;
       }
 
+      // A host that predates ListFilesOps echoes no depth back. Learn that from
+      // the first listing, so the control is never offered where it does nothing.
+      data.depthSupported = res.depth !== undefined;
+      if (!data.depthSupported && data.depth !== 1) data.depth = 1;
+
       data.truncated = res.truncated ?? false;
       data.unreadableDirs = res.unreadableDirs ?? 0;
 
@@ -155,7 +160,7 @@ const rowLabel = (item: FileDialogItem) => {
  * to pull their contents up instead of making the user descend one at a time.
  */
 const deeperSuggestion = computed(() => {
-  if (data.depth > 1) return undefined;
+  if (data.depth > 1 || data.depthSupported === false) return undefined;
   const items = visibleItems.value;
   if (items.length === 0 || items.some((it) => it.canBeSelected)) return undefined;
   const dirs = items.filter((it) => it.isDir).length;
@@ -344,7 +349,7 @@ const lsContainerRef = ref<HTMLElement | undefined>();
       <div>
         <PlSearchField v-model="data.search" label="Search in folder" clearable />
       </div>
-      <div :class="style.depth">
+      <div v-if="data.depthSupported !== false" :class="style.depth">
         <PlDropdown v-model="data.depth" label="Include subfolders" :options="depthOptions" />
       </div>
     </div>
@@ -352,11 +357,14 @@ const lsContainerRef = ref<HTMLElement | undefined>();
       <div :class="style['ls-head']">
         <div :class="style['breadcrumbs']">
           <template v-for="(s, i) in breadcrumbs" :key="i">
-            <div :title="s.path" @click="setDirPath(s.path)">{{ s.name }}</div>
+            <!-- .stop, like the directory rows: navigating must not reach the
+                 container's deselect handler and drop this folder's picks. -->
+            <div :title="s.path" @click.stop="setDirPath(s.path)">{{ s.name }}</div>
             <PlIcon16 v-if="s.index !== breadcrumbs.length - 1" name="chevron-right" />
           </template>
         </div>
-        <div :class="style.selected">
+        <!-- Same reason: reading the shortcuts tooltip is not a deselect. -->
+        <div :class="style.selected" @click.stop>
           <span>Selected: {{ selectedCount }}</span>
           <span
             v-if="selectedCount > 0"

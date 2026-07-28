@@ -27,6 +27,15 @@ export const defaultData = () => ({
    * tree can be selected in a single pass.
    */
   depth: 1,
+  /**
+   * Whether the host's `lsDriver` honours {@link ListFilesOps}.
+   *
+   * A block bundles its own copy of this dialog but calls the host's driver, so
+   * a new dialog frequently runs against an older host that ignores the option.
+   * `undefined` until the first listing answers; once known to be false the
+   * depth control is hidden rather than left as a silent no-op.
+   */
+  depthSupported: undefined as boolean | undefined,
   /** The last listing hit the entry cap and is incomplete. */
   truncated: false,
   /** Directories the last listing could not read. */
