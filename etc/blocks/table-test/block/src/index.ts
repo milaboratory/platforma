@@ -2,18 +2,22 @@
 // Author content lives in ./block-extra.ts.
 
 import { platforma } from "@milaboratories/milaboratories.test-block-table.model";
-import { InferOutputsType, InferDataType, InferHrefType } from "@platforma-sdk/model";
+import {
+  InferOutputsType,
+  InferDataType,
+  InferHrefType,
+} from "@platforma-sdk/model";
 
 export { platforma };
 
 export type BlockContract = {
   outputs: InferOutputsType<typeof platforma>;
-  data: InferDataType<typeof platforma>;
-  href: InferHrefType<typeof platforma>;
+  data:    InferDataType<typeof platforma>;
+  href:    InferHrefType<typeof platforma>;
 };
 
 export type BlockOutputs = BlockContract["outputs"];
-export type BlockData = BlockContract["data"];
+export type BlockData    = BlockContract["data"];
 
 // import.meta.url is a file: URL (always forward-slash, even on Windows:
 // file:///C:/…). We expose URLs, NOT paths — the facade stays dependency-free
@@ -31,7 +35,7 @@ export type BlockData = BlockContract["data"];
 // `dist/index.d.ts` and clash with `@types/node`'s `ImportMeta` in full-Node
 // consumers (test packages, the Middle Layer).
 const selfUrl = (import.meta as ImportMeta & { url: string }).url;
-const dirUrl = selfUrl.slice(0, selfUrl.lastIndexOf("/"));
+const dirUrl  = selfUrl.slice(0, selfUrl.lastIndexOf("/"));
 const rootUrl = dirUrl.slice(0, dirUrl.lastIndexOf("/"));
 
 export const BlockPointer = {
@@ -44,8 +48,8 @@ export const BlockPointer = {
 // consumer code. Same types / same runtime value as the universal
 // names above; the aliases avoid `as`-renames at the import site.
 export type TestBlockTableBlockContract = BlockContract;
-export type TestBlockTableBlockOutputs = BlockOutputs;
-export type TestBlockTableBlockData = BlockData;
+export type TestBlockTableBlockOutputs  = BlockOutputs;
+export type TestBlockTableBlockData     = BlockData;
 export const TestBlockTableBlockPointer = BlockPointer;
 
 export * from "./block-extra";

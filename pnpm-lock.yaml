@@ -1794,6 +1794,12 @@ importers:
       '@platforma-sdk/block-kind':
         specifier: workspace:*
         version: link:../../../../sdk/block-kind
+      '@types/node':
+        specifier: '*'
+        version: 24.5.2
+      typescript:
+        specifier: '*'
+        version: 5.9.3
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1804,9 +1810,6 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../../tools/block-tools
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   etc/blocks/table-test/model:
     dependencies:
