@@ -6,6 +6,7 @@ import {
   PlRef,
   readAnnotation,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-sum-numbers-v3.kind";
 import { z } from "zod";
 
 export const BlockData = z.object({
@@ -14,9 +15,13 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({ sources: undefined }));
+// `params` is optional — a block may be created without a template supplying
+// them — so every kind-declared field keeps a fallback default.
+const dataModel = new DataModelBuilder({ kind })
+  .from<BlockData>("v1")
+  .init(({ params }) => ({ sources: params?.sources ?? undefined }));
 
-export const platforma = BlockModelV3.create(dataModel)
+export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<BlockData>((data) => {
     if (data.sources === undefined || data.sources.length === 0) {

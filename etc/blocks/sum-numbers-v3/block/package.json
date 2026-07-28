@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-sum-numbers-v3.kind": "workspace:*",
     "@milaboratories/milaboratories.test-sum-numbers-v3.model": "workspace:*",
     "@milaboratories/milaboratories.test-sum-numbers-v3.ui": "workspace:*",
     "@milaboratories/milaboratories.test-sum-numbers-v3.workflow": "workspace:*",

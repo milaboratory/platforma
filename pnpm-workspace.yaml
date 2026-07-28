@@ -83,6 +83,7 @@ packages:
   - etc/blocks/sum-numbers-v3/model
   - etc/blocks/sum-numbers-v3/ui
   - etc/blocks/sum-numbers-v3/block
+  - etc/blocks/sum-numbers-v3/kind
 
   - etc/blocks/filter-column-test/workflow
   - etc/blocks/filter-column-test/model
