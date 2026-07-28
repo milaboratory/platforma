@@ -1,6 +1,3 @@
-// Phantom brand — declared as a type-level marker, never assigned at runtime.
-declare const BLOCK_PARAMS: unique symbol;
-
 /**
  * Compiled block-kind descriptor, schema version 1.
  *
@@ -23,7 +20,7 @@ export interface CompiledBlockKindV1<BlockParams> {
   readonly kindSchema: "v1";
   readonly name: string;
   readonly version: string;
-  readonly [BLOCK_PARAMS]?: (p: BlockParams) => void;
+  readonly __PHANTOM_BLOCK_PARAMS__?: (p: BlockParams) => void;
 }
 
 /** Current compiled-kind envelope. A discriminated union once later schemas land. */
