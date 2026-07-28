@@ -1,5 +1,6 @@
 import { expect, expectTypeOf, test } from "vitest";
-import { defineBlockKind, type InferBlockParams, type PlRef } from "./index";
+import type { PlRef } from "@milaboratories/pl-model-common";
+import { defineBlockKind, type InferBlockParams } from "./index";
 
 test("InferBlockParams recovers the declared params", () => {
   // Identity is the `{ name, version }` the caller passes — a real kind sources

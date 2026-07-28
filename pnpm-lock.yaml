@@ -3513,14 +3513,13 @@ importers:
         version: 5.9.3
 
   sdk/block-kind:
-    dependencies:
-      '@milaboratories/pl-model-common':
-        specifier: workspace:*
-        version: link:../../lib/model/common
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../tools/build-configs
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../lib/model/common
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../tools/ts-builder

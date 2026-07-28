@@ -27,11 +27,9 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
-  "dependencies": {
-    "@milaboratories/pl-model-common": "workspace:*"
-  },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",

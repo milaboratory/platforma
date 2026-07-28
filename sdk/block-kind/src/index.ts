@@ -2,12 +2,6 @@ import type { CompiledBlockKind } from "./descriptor";
 
 export type { CompiledBlockKind, InferBlockParams } from "./descriptor";
 
-// Reuse the canonical reference type from its lightest owner — this package
-// introduces no reference type of its own. Consumed type-only, so ts-builder
-// erases the import and the emitted runtime bundle depends on nothing external.
-// @todo: never make reexports from already created packages
-export type { PlRef } from "@milaboratories/pl-model-common";
-
 /** A kind's identity, as declared in its own `package.json`. */
 export interface BlockKindMeta {
   /**
