@@ -314,3 +314,100 @@ describe("Linker columns", () => {
     expect(linkerMap.getReachableByLinkersAxesFromAxes([axisA])).toEqual([]);
   });
 });
+
+/**
+ * MILAB-6651 — side assignment for the real `pl7.app/sc/cellLinker`.
+ *
+ * In the data, many cells map to ONE clonotype, so the clonotype is the linker's
+ * one-side and the sample/cell pair is its many-side. `mixcr-clonotyping` authors
+ * the axes as `[sampleId, cellId <- sampleId, scClonotypeKey]`, and side assignment
+ * is purely positional — `getAxesGroups` returns groups ordered by their smallest
+ * contained index and `fromColumns` destructures `const [left, right] = groups`
+ * (`linker_columns.ts:53`). So the engine reads the sides backwards.
+ *
+ * These are characterization tests: they assert the WRONG behaviour that exists
+ * today. When explicit sides land, they must flip — and that flip is the proof.
+ */
+describe("MILAB-6651 cellLinker side assignment", () => {
+  const axisSampleId = makeTestAxis({ name: "sampleId" });
+  const axisCellId = makeTestAxis({ name: "cellId", parents: [axisSampleId] });
+  const axisClonotype = makeTestAxis({ name: "scClonotypeKey" });
+
+  /** `[sampleId, cellId <- sampleId, scClonotypeKey]` — the layout as authored. */
+  const asAuthored = makeLinkerColumn({
+    name: "cellLinker",
+    from: [axisSampleId, axisCellId],
+    to: [axisClonotype],
+  });
+
+  /** The same linker with the clonotype component authored first. */
+  const corrected = makeLinkerColumn({
+    name: "cellLinker",
+    from: [axisClonotype],
+    to: [axisSampleId, axisCellId],
+  });
+
+  test("grouping order puts the sample/cell component first, so it becomes the one-side", () => {
+    const groups = LinkerMap.getAxesGroups(
+      getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]),
+    );
+
+    expect(groups.length).toBe(2);
+    // groups[0] is destructured as `left` — the one-side. This is inverted:
+    // {sampleId, cellId} is the many-side in reality.
+    expect(groups[0].map((a) => a.name)).toEqual(["sampleId", "cellId"]);
+    expect(groups[1].map((a) => a.name)).toEqual(["scClonotypeKey"]);
+  });
+
+  test("a clonotype-keyed source reaches cell-level axes today (the leakage)", () => {
+    const linkerMap = LinkerMap.fromColumns([asAuthored]);
+
+    // Edges are stored many-side -> one-side (`linker_columns.ts:91`), so with the
+    // sides inverted a clonotype-keyed table can traverse down to per-cell axes.
+    // This is what puts cell-level columns into a clonotype-keyed p-frame.
+    expect(
+      new Set(linkerMap.getReachableByLinkersAxesFromAxes([axisClonotype]).map((a) => a.name)),
+    ).toEqual(new Set(["cellId", "sampleId"]));
+  });
+
+  test("a cell-keyed source cannot reach the clonotype today (the lost capability)", () => {
+    // The trunk must carry the whole parent tree. Linker map keys are built from
+    // `getArrayFromAxisTree`, so the cell trunk's key is [cellId, sampleId]; passing
+    // cellId alone yields the key [cellId] and misses for an unrelated reason.
+    const cellTrunk = [axisSampleId, axisCellId];
+
+    const asAuthoredMap = LinkerMap.fromColumns([asAuthored]);
+    expect(asAuthoredMap.getReachableByLinkersAxesFromAxes(cellTrunk)).toEqual([]);
+
+    // Authoring the same linker with correct sides makes the intended cell ->
+    // clonotype enrichment appear, and removes the reverse traversal.
+    const correctedMap = LinkerMap.fromColumns([corrected]);
+    expect(correctedMap.getReachableByLinkersAxesFromAxes(cellTrunk).map((a) => a.name)).toEqual([
+      "scClonotypeKey",
+    ]);
+    expect(correctedMap.getReachableByLinkersAxesFromAxes([axisClonotype])).toEqual([]);
+  });
+
+  /**
+   * H3 (partial) — cross-engine parity.
+   *
+   * The Rust `LinkerIndex` and this TS `LinkerMap` are independent implementations
+   * of the same convention. Rust gets its component ordering from
+   * `disjoint::DisjointSet::sets()`; TS derives it from its own index scan
+   * (`getAxesGroups`, `linker_columns.ts:304,330`). Nothing links the two, and they
+   * have already drifted twice (malformed-linker handling, `excludeColumns`).
+   *
+   * This asserts the TS half of the shared expectation. The Rust half is
+   * `cell_linker_sides_are_inverted_today` in `linker_index.rs`. Keeping them in
+   * sync is manual — a genuine shared fixture would need a generated contract.
+   */
+  test("parity: TS groups the real cellLinker the same way Rust splits it", () => {
+    const groups = LinkerMap.getAxesGroups(
+      getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]),
+    );
+
+    // Mirrors Rust: one_side_axes_ids().len() == 2, many_side_axes() == [scClonotypeKey].
+    expect(groups[0].length).toBe(2);
+    expect(groups[1].map((a) => a.name)).toEqual(["scClonotypeKey"]);
+  });
+});
