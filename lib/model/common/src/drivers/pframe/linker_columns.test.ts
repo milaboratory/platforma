@@ -347,16 +347,25 @@ describe("MILAB-6651 cellLinker side assignment", () => {
     to: [axisSampleId, axisCellId],
   });
 
+  /**
+   * Group membership as a sorted set. `getAxesGroups` documents "There are no order
+   * inside every group" (`linker_columns.ts:271`), so asserting a particular order
+   * *within* a group would pin an implementation detail the source explicitly
+   * disclaims. Which group comes *first* is what side assignment reads, and that is
+   * asserted positionally.
+   */
+  const names = (axes: AxisSpecNormalized[]) => axes.map((a) => a.name).sort();
+
   test("grouping order puts the sample/cell component first, so it becomes the one-side", () => {
     const groups = LinkerMap.getAxesGroups(
       getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]),
     );
 
     expect(groups.length).toBe(2);
-    // groups[0] is destructured as `left` — the one-side. This is inverted:
+    // groups[0] is destructured as `left` — the one-side. That is inverted:
     // {sampleId, cellId} is the many-side in reality.
-    expect(groups[0].map((a) => a.name)).toEqual(["sampleId", "cellId"]);
-    expect(groups[1].map((a) => a.name)).toEqual(["scClonotypeKey"]);
+    expect(names(groups[0])).toEqual(["cellId", "sampleId"]);
+    expect(names(groups[1])).toEqual(["scClonotypeKey"]);
   });
 
   test("a clonotype-keyed source reaches cell-level axes today (the leakage)", () => {
@@ -389,25 +398,40 @@ describe("MILAB-6651 cellLinker side assignment", () => {
   });
 
   /**
-   * H3 (partial) — cross-engine parity.
+   * Exhaustive companion to the ordering test above, and the TS mirror of
+   * `split_component_order_follows_authoring_order_for_every_permutation` in
+   * pframes-rs `axes_spec.rs`.
    *
-   * The Rust `LinkerIndex` and this TS `LinkerMap` are independent implementations
-   * of the same convention. Rust gets its component ordering from
-   * `disjoint::DisjointSet::sets()`; TS derives it from its own index scan
-   * (`getAxesGroups`, `linker_columns.ts:304,330`). Nothing links the two, and they
-   * have already drifted twice (malformed-linker handling, `excludeColumns`).
+   * Group *membership* must not depend on authoring order; which group comes *first*
+   * must. That distinction is the whole of MILAB-6651 — the cellLinker's axes group
+   * correctly however they are written down, and it is purely their position that
+   * decides which component gets treated as the one-side. So no structural rule can
+   * recover the intended direction; it has to be declared or read from data.
    *
-   * This asserts the TS half of the shared expectation. The Rust half is
-   * `cell_linker_sides_are_inverted_today` in `linker_index.rs`. Keeping them in
-   * sync is manual — a genuine shared fixture would need a generated contract.
+   * Note the two engines reach this ordering independently: Rust via
+   * `disjoint::DisjointSet::sets()`, TS via its own index scan (`linker_columns.ts:304,330`).
+   * Nothing couples them, and they have already drifted twice (malformed-linker
+   * handling, `excludeColumns` support), so both sides assert it separately. A real
+   * shared fixture would need a generated cross-repo contract.
    */
-  test("parity: TS groups the real cellLinker the same way Rust splits it", () => {
-    const groups = LinkerMap.getAxesGroups(
-      getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]),
-    );
+  test("grouping is authoring-order independent, but group position is not", () => {
+    const normalized = getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]);
 
-    // Mirrors Rust: one_side_axes_ids().len() == 2, many_side_axes() == [scClonotypeKey].
-    expect(groups[0].length).toBe(2);
-    expect(groups[1].map((a) => a.name)).toEqual(["scClonotypeKey"]);
+    for (const order of allPermutations(normalized)) {
+      const groups = LinkerMap.getAxesGroups(order);
+      expect(groups.length).toBe(2);
+
+      // Membership is invariant across all 6 orderings.
+      expect(groups.map(names).sort((a, b) => a[0].localeCompare(b[0]))).toEqual([
+        ["cellId", "sampleId"],
+        ["scClonotypeKey"],
+      ]);
+
+      // Position tracks the earliest-written member of each group — which is exactly
+      // why a mis-authored linker inverts its own sides.
+      const earliest = (group: AxisSpecNormalized[]) =>
+        Math.min(...group.map((a) => order.findIndex((o) => o.name === a.name)));
+      expect(earliest(groups[0])).toBeLessThan(earliest(groups[1]));
+    }
   });
 });
