@@ -1,17 +1,37 @@
 import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
-import { Annotation, BlockModel, PlRef, readAnnotation } from "@platforma-sdk/model";
+import {
+  Annotation,
+  BlockModelV3,
+  DataModelBuilder,
+  PlRef,
+  readAnnotation,
+} from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-sum-numbers-v3.kind";
 import { z } from "zod";
 
-export const BlockArgs = z.object({
+export const BlockData = z.object({
   sources: z.array(PlRef).optional(),
 });
 
-export type BlockArgs = z.infer<typeof BlockArgs>;
+export type BlockData = z.infer<typeof BlockData>;
 
-export const platforma = BlockModel.create("Heavy")
+// `params` is optional — a block may be created without a template supplying
+// them — so every kind-declared field keeps a fallback default.
+const dataModel = new DataModelBuilder({ kind })
+  .from<BlockData>("v1")
+  .init(({ params }) => ({ sources: params?.sources ?? undefined }));
 
-  .withArgs<BlockArgs>({
-    sources: undefined,
+export const platforma = BlockModelV3.create({ dataModel, kind })
+
+  .args<BlockData>((data) => {
+    if (data.sources === undefined || data.sources.length === 0) {
+      throw new Error("Sources are required");
+    }
+    return { sources: data.sources };
+  })
+
+  .prerunArgs((data) => {
+    return { sources: data.sources ?? [] };
   })
 
   .output("opts", (ctx) =>
@@ -42,9 +62,9 @@ export const platforma = BlockModel.create("Heavy")
 
   .output("sum", (ctx) => ctx.outputs?.resolve("sum")?.getDataAsJson<number>())
 
-  .output("uiState", (ctx) => ctx.uiState)
-
-  .argsValid((ctx) => ctx.args.sources !== undefined && ctx.args.sources.length > 0)
+  .output("prerunArgsJson", (ctx) =>
+    ctx.prerun?.resolve("prerunArgsJson")?.getDataAsJson<Record<string, unknown>>(),
+  )
 
   .enriches((args) =>
     args.sources !== undefined && args.sources.length > 0 ? [args.sources[0]] : [],
@@ -54,7 +74,7 @@ export const platforma = BlockModel.create("Heavy")
     return [{ type: "link", href: "/", label: "Main" }];
   })
 
-  .done(2); // ui api version 2
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

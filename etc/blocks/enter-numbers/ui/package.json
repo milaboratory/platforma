@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/milaboratories.test-enter-numbers.ui",
-  "version": "1.0.239",
+  "name": "@milaboratories/milaboratories.test-enter-numbers-v3.ui",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
     "vue": "catalog:"
   },

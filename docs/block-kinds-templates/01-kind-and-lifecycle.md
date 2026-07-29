@@ -8,6 +8,63 @@ branch `feat/kind-publish-with-facade`, not yet on main), which replaced the ear
 read-back/address-verify and `implementations.json` model. Citations use **atom IDs**
 (e.g. `A-0011`) because rendered line numbers shift.
 
+## Progress Tracker
+
+> **Where we are:** the kind machinery is largely **built and committed** — SDK
+> descriptor, model wiring, reference codec, publish + version-match, registry
+> projection + resolution, and structurer enforcement all exist. The prose below
+> is written in target/"pseudocode" tense and predates that landing; read it as
+> the *design rationale*, and this tracker as the *current state*. Remaining work
+> is fixture migration, `sdk/block-kind` package hardening, and one open cadence
+> question.
+>
+> **Status legend** — implementation: `[x]` done · `[~]` partial · `[ ]` not
+> started/open. Design tags: `DECIDED`/`RESOLVED` (settled), `OPEN` (undecided),
+> `VERIFY` (implemented but not confirmed in the last status pass).
+
+**Kind machinery (in scope)**
+
+- [x] **Kind = 4th component (tetrad), structurer-enforced** — `structure/rules/kind.ts`, `block-package-json.ts` mandatory-kind check (throws if `kindModules.length !== 1`). · DECIDED `Q-0004` (variant B)
+  - [~] **Facade↔kind link — design evolved, prose stale.** Shipped as a **direct facade `dependencies` entry** + the reference on `description.kind`; `block_components.ts` was intentionally left unchanged. The preamble's "`block.components: { kind, model, workflow, ui }`" wording (below) no longer matches the code. · VERIFY (`A-0053`)
+- [x] **Model wiring** — `DataModelBuilder({ kind })`, `BlockModelV3.create({ dataModel, kind })`, params-carrying `DataCreateFn<T, Params>`, container-level bake — `sdk/model/src/block_migrations.ts`, `block_model.ts`.
+- [x] **Reference carrier** — `lib/model/common/src/bmodel/block_kind_ref.ts` (`formatKindRef`/`parseKindRef`), `container.kind`, `description.kind`, `modelKindReference` reader in `build_dist.ts`.
+- [x] **Publish flow — kind-first + version-match gate** — `v2/publish-block.ts`, `v2/kind/version-match.ts`, `v2/kind/resolve-refs.ts`, `registry.publishKind`; wired in `cmd/publish.ts`.
+- [x] **Source-hash guard** — `buildKindDist` hashes `kind/src/`; `publishKind` enforces immutability (absent→write / equal→no-op / differ→abort).
+- [x] **Registry layout + resolution** — `v2/registry/schema_kinds.ts` (`npmNameToKindPath`, `overview.json` projection), `kind_resolver.ts` (`resolveKind`), middle-layer `resolveKind` facade (`pl-middle-layer/src/block_registry/registry.ts`).
+- [x] **Version selectors `@`/`~`/`^`** — `kind_resolver.ts` (`parseSelector`/`selectorToRange`).
+- [~] **Channels** (`stable` marker; unstable = its absence; `any` = derived newest) — reuses the existing registry channel mechanism; not re-confirmed in the last status pass. · VERIFY
+
+**Kind artifact (decided)**
+
+- [x] `BlockParams` is a pure TS type, no zod — `descriptor.ts` (phantom `InferBlockParams`).
+- [x] Named export, no default — `defineBlockKind`.
+- [x] Reference `{name}@{version}` derived; registry address never stored.
+- [x] Per-version manifest = sourceHash + first-upload ts — `buildKindDist`. · RESOLVED `A-0052`/`Q-0005` (name+version imported from the kind's own `package.json`; rolldown inlines the JSON import)
+
+**`sdk/block-kind` package (hardening)**
+
+- [~] Package exists, workspace-listed (`pnpm-workspace.yaml:63`); `defineBlockKind` + `descriptor.ts` + type-level test present.
+  - [ ] `@milaboratories/pl-model-common` is a **devDependency** — spec wants a single runtime `dependencies` entry.
+  - [ ] No `PlRef` re-export (only referenced in comments).
+  - [ ] Build script still uses `--target node`, not `--target block-kind` (the target exists but this package doesn't opt in).
+
+**Fixture migration (`etc/blocks`)**
+
+- [x] Structurer seed is a non-building `NEEDS_BLOCK_PARAMS` sentinel that gates unmigrated blocks — `templates/static/kind/src/index.ts`.
+- [~] Migrated with real params: `sum-numbers-v3` (`{ sources?: PlRef[] }`), `table-test` (`{ label: string }`).
+- [ ] Not migrated: `enter-numbers-v3`, `filter-column-test`, `model-test`, `pool-explorer`, `ui-examples` (their `kind/` dirs hold only stray untracked build artifacts).
+
+**Open questions & follow-ups**
+
+- [x] `Q-0004` — DECIDED (tetrad, variant B).
+- [x] `Q-0005` — RESOLVED (`A-0052`).
+- [ ] `Q-0008` — production trigger/cadence for the overview-projection refresh. · OPEN
+- [ ] Migration path for legacy `BlockModel` (V1) blocks → `BlockModelV3` before they can carry a kind. · TODO
+- [ ] Backward-compat for the breaking `create()` / `DataModelBuilder` signature — overload vs. atomic sweep of all V3 blocks. · TODO
+- Out of scope (unchanged): bump-validator, lockfile, yank/deprecation, template engine (tracks 2 & 3).
+
+**Testing** — informational; see "Testing strategy" below. The local `file:`-registry loop is the primary bed. Test-coverage state was not audited for this tracker. · VERIFY
+
 ## Goal
 
 A block kind can be declared, wired into a block's model, published as part of the

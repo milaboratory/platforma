@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/milaboratories.test-sum-numbers",
-  "version": "1.0.127",
+  "name": "@milaboratories/milaboratories.test-sum-numbers-v3",
+  "version": "1.0.0",
   "private": true,
   "files": [
     "dist",
@@ -25,9 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
-    "@milaboratories/milaboratories.test-sum-numbers.ui": "workspace:*",
-    "@milaboratories/milaboratories.test-sum-numbers.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers-v3.kind": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers-v3.model": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers-v3.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers-v3.workflow": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
@@ -37,13 +38,13 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-sum-numbers.workflow/dist/tengo/tpl/main.plj.gz",
-      "model": "@milaboratories/milaboratories.test-sum-numbers.model/dist/model.json",
-      "ui": "@milaboratories/milaboratories.test-sum-numbers.ui/dist"
+      "workflow": "@milaboratories/milaboratories.test-sum-numbers-v3.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-sum-numbers-v3.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-sum-numbers-v3.ui/dist"
     },
     "meta": {
-      "title": "Sum Numbers (old api)",
-      "description": "Sum Numbers (old api)",
+      "title": "Sum Numbers (new api)",
+      "description": "Sum Numbers",
       "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",
