@@ -1,4 +1,4 @@
-import { platforma } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
+import { platforma } from "@milaboratories/milaboratories.test-enter-numbers.model";
 import MainPage from "./MainPage.vue";
 import { defineAppV3, ensureError } from "@platforma-sdk/ui-vue";
 import type { Component } from "vue";

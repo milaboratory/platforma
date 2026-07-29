@@ -1,10 +1,6 @@
 import type { ImportFileHandle, InferHrefType, InferOutputsType } from "@platforma-sdk/model";
-import {
-  BlockModel,
-  getResourceField,
-  getResourceValueAsJson,
-  MainOutputs,
-} from "@platforma-sdk/model";
+import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-upload-file.kind";
 import { z } from "zod";
 
 export const ImportFileHandleSchema = z
@@ -14,19 +10,29 @@ export const ImportFileHandleSchema = z
     ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
   );
 
-export const BlockArgs = z.object({
+export const BlockData = z.object({
   inputHandle: ImportFileHandleSchema,
 });
 
-export type BlockArgs = z.infer<typeof BlockArgs>;
+export type BlockData = z.infer<typeof BlockData>;
 
-export const platforma = BlockModel.create("Heavy")
+/** What the workflow consumes — projected from {@link BlockData} by the args lambda. */
+export type BlockArgs = {
+  inputHandle: ImportFileHandle | undefined;
+};
 
-  .withArgs({
-    inputHandle: undefined,
-  })
+// The kind declares no init params — the signed path in `inputHandle` can only
+// come from a real desktop file-dialog gesture, so there is nothing a creator or
+// a template could seed it with. `init` always returns the unset default.
+const dataModel = new DataModelBuilder({ kind })
+  .from<BlockData>("v1")
+  .init(() => ({ inputHandle: undefined }));
 
-  .output("blob", getResourceValueAsJson()(getResourceField(MainOutputs, "blob")))
+export const platforma = BlockModelV3.create({ dataModel, kind })
+
+  .args<BlockArgs>((data) => ({ inputHandle: data.inputHandle }))
+
+  .output("blob", (ctx) => ctx.outputs?.resolve("blob")?.getDataAsJsonOrUndefined<unknown>())
 
   .output("handle", (ctx) => ctx.outputs?.resolve("handle")?.getImportProgress())
 

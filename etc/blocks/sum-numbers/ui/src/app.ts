@@ -1,4 +1,4 @@
-import { platforma } from "@milaboratories/milaboratories.test-sum-numbers-v3.model";
+import { platforma } from "@milaboratories/milaboratories.test-sum-numbers.model";
 import MainPage from "./MainPage.vue";
 import { defineAppV3 } from "@platforma-sdk/ui-vue";
 import type { Component } from "vue";

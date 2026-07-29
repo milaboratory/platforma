@@ -14,7 +14,7 @@ read-back/address-verify and `implementations.json` model. Citations use **atom 
 > descriptor, model wiring, reference codec, publish + version-match, registry
 > projection + resolution, and structurer enforcement all exist. The prose below
 > is written in target/"pseudocode" tense and predates that landing; read it as
-> the *design rationale*, and this tracker as the *current state*. Remaining work
+> the _design rationale_, and this tracker as the _current state_. Remaining work
 > is fixture migration, `sdk/block-kind` package hardening, and one open cadence
 > question.
 >
@@ -25,7 +25,7 @@ read-back/address-verify and `implementations.json` model. Citations use **atom 
 **Kind machinery (in scope)**
 
 - [x] **Kind = 4th component (tetrad), structurer-enforced** — `structure/rules/kind.ts`, `block-package-json.ts` mandatory-kind check (throws if `kindModules.length !== 1`). · DECIDED `Q-0004` (variant B)
-  - [~] **Facade↔kind link — design evolved, prose stale.** Shipped as a **direct facade `dependencies` entry** + the reference on `description.kind`; `block_components.ts` was intentionally left unchanged. The preamble's "`block.components: { kind, model, workflow, ui }`" wording (below) no longer matches the code. · VERIFY (`A-0053`)
+  - [~] **Facade↔kind link — design evolved, prose stale.** Shipped as a **direct facade dependency** (normally a `workspace:*` **devDep**, `.kind`-suffixed — `resolve-refs.ts:61` scans both dep maps) with the reference carried at top-level **`description.kind`** (`resolve-refs.ts:36`); there is no `block.components.kind` map, and `block_components.ts` was intentionally left unchanged. The preamble's "`block.components: { kind, model, workflow, ui }`" wording (below) no longer matches the code. · VERIFY (`A-0053`)
 - [x] **Model wiring** — `DataModelBuilder({ kind })`, `BlockModelV3.create({ dataModel, kind })`, params-carrying `DataCreateFn<T, Params>`, container-level bake — `sdk/model/src/block_migrations.ts`, `block_model.ts`.
 - [x] **Reference carrier** — `lib/model/common/src/bmodel/block_kind_ref.ts` (`formatKindRef`/`parseKindRef`), `container.kind`, `description.kind`, `modelKindReference` reader in `build_dist.ts`.
 - [x] **Publish flow — kind-first + version-match gate** — `v2/publish-block.ts`, `v2/kind/version-match.ts`, `v2/kind/resolve-refs.ts`, `registry.publishKind`; wired in `cmd/publish.ts`.
@@ -43,16 +43,14 @@ read-back/address-verify and `implementations.json` model. Citations use **atom 
 
 **`sdk/block-kind` package (hardening)**
 
-- [~] Package exists, workspace-listed (`pnpm-workspace.yaml:63`); `defineBlockKind` + `descriptor.ts` + type-level test present.
-  - [ ] `@milaboratories/pl-model-common` is a **devDependency** — spec wants a single runtime `dependencies` entry.
-  - [ ] No `PlRef` re-export (only referenced in comments).
-  - [ ] Build script still uses `--target node`, not `--target block-kind` (the target exists but this package doesn't opt in).
+- [x] **Complete for v1** — `defineBlockKind`, `descriptor.ts` (`CompiledBlockKind`/`InferBlockParams`), type-level test; workspace-listed (`pnpm-workspace.yaml:63`).
+  - [~] **Deliberately diverges from impl-path §1 — confirm intent.** The package imports nothing from `@milaboratories/pl-model-common` (the descriptor is fully generic over `BlockParams`), so it does **not** re-export `PlRef`, keeps `pl-model-common` as a devDep, and builds with `--target node`. Impl-path §1 planned a `PlRef` re-export + runtime dep; since `PlRef` never enters the emitted `.d.ts`, the leaner shape is self-consistent — a defensible simplification, not an oversight, but worth confirming as intentional. · VERIFY
 
 **Fixture migration (`etc/blocks`)**
 
 - [x] Structurer seed is a non-building `NEEDS_BLOCK_PARAMS` sentinel that gates unmigrated blocks — `templates/static/kind/src/index.ts`.
-- [~] Migrated with real params: `sum-numbers-v3` (`{ sources?: PlRef[] }`), `table-test` (`{ label: string }`).
-- [ ] Not migrated: `enter-numbers-v3`, `filter-column-test`, `model-test`, `pool-explorer`, `ui-examples` (their `kind/` dirs hold only stray untracked build artifacts).
+- [~] Migrated with real params: `sum-numbers` (`{ sources?: PlRef[] }`), `table-test` (`{ label: string }`).
+- [ ] Not migrated: `enter-numbers`, `filter-column-test`, `model-test`, `pool-explorer`, `ui-examples` (their `kind/` dirs hold only stray untracked build artifacts).
 
 **Open questions & follow-ups**
 
@@ -77,8 +75,8 @@ block's publish flow, and resolved from the registry — entirely in the TypeScr
   version; scaffold generates it. The facade declares it directly in
   `package.json`'s `block.components: { kind, model, workflow, ui }`, so the facade↔kind
   link does not route through the model. **Decided: variant B (`Q-0004`).** Note the
-  model *still imports* the kind for its **types** (`DataModelBuilder({ kind })` needs
-  `BlockParams`) — B decouples the *component/publish* linkage, not the compile-time
+  model _still imports_ the kind for its **types** (`DataModelBuilder({ kind })` needs
+  `BlockParams`) — B decouples the _component/publish_ linkage, not the compile-time
   type dependency.
 - **Model wiring** — `DataModelBuilder<Data>({ kind })` and
   `BlockModelV3.create({ dataModel, kind })` take the compiled kind object via an
@@ -94,10 +92,10 @@ block's publish flow, and resolved from the registry — entirely in the TypeScr
   deterministic from the reference. `model.json` still carries **its own copy** of the
   reference (the version the model was compiled against), used for the version-match
   check and read at runtime for export (`A-0013`). So the copy in `model.json` is no
-  longer what *publish* consumes — it is the counterpart the check validates against.
+  longer what _publish_ consumes — it is the counterpart the check validates against.
 - **Publish flow — kind-first, one version-match check** — the kind publishes as an
   ordered first step of the block's publish flow (kind-first, reading the reference from
-  the facade component list); the *kind-before-block* invariant holds **by construction**
+  the facade component list); the _kind-before-block_ invariant holds **by construction**
   of that ordering (publish kind → if it fails, abort → then facade). The single
   publish-time check is a **version match**: the kind version `model.json` was compiled
   against must equal the kind version the facade declares as a component — mismatch →
@@ -113,10 +111,10 @@ block's publish flow, and resolved from the registry — entirely in the TypeScr
   plus a per-kind **`overview.json` projection**. There is **no `implementations/` tree
   and no kind-side reconciler**: the kind→implementing-blocks map (with channel) is a
   **projection of block-overview reconciliation**, derived by the existing block
-  reconciler from block manifests + channel markers. Resolution = **one projection read
-  + client-side semver** → newest **stable** by default, or the derived **`any`** when
-  apply-time allow-unstable is set → fetch the block from `v2/`. No cross-registry
-  intersection (`A-0031`, `A-0050`, `A-0051`).
+  reconciler from block manifests + channel markers. Resolution = \*\*one projection read
+  - client-side semver** → newest **stable** by default, or the derived **`any`\*\* when
+    apply-time allow-unstable is set → fetch the block from `v2/`. No cross-registry
+    intersection (`A-0031`, `A-0050`, `A-0051`).
 - **Version selectors** — `@X.Y.Z` (exact), `~X.Y.Z` (patch floor — behavior frozen),
   `^X.Y.Z` (minor floor — behavior floats). The `.x` forms are **replaced**. Redefined
   semver: major = params-break, minor = behavior, patch = added-optional-param (`A-0034`).
@@ -173,7 +171,7 @@ matter here:
 
 - The cron is only a **scheduler** around a reconciler function that already exists:
   `BlockRegistryV2.updateIfNeeded` / `updateRegistry`, exposed as `block-tools
-  refresh-registry` and run inline by `block-tools publish` (`--refresh`, default on).
+refresh-registry` and run inline by `block-tools publish` (`--refresh`, default on).
 - The per-kind `overview.json` projection is produced by that **same block reconciler
   pass** — there is **no separate kind-side reconciler** (`A-0050`). The kind→blocks map
   falls out of block-overview reconciliation.
@@ -185,13 +183,13 @@ refresh-trigger cadence is a separate open question (`Q-0008`).
 
 ### The loop, step by step
 
-| # | Step | Exercises | Invasiveness |
-|---|------|-----------|--------------|
-| 1 | Add a `kind/` package to an existing `etc/` block | package shape, workspace wiring | ~zero (new folder + workspace entry) |
-| 2 | Build locally | `model.json` records the kind **reference** `{name}@X.Y.Z`; `BlockParams` types flow into `init` and type-check | **medium** — the breaking `DataModelBuilder({ kind })` / `create({ dataModel, kind })` signature change; only `etc/` fixtures updated, not the 47 bio blocks |
-| 3 | `block-tools publish -r file:/tmp/reg` | the new kind-first publish + **version-match check** | low — a step added to `cmd/publish.ts`; storage layer untouched (already driver-based) |
-| 4 | Headless tests read the `file:` registry back (vitest, modeled on `simple.test.ts`) | **core of the mechanism**: source-hash guard (same version + different `kind/src/` → hard fail), idempotent republish, resolution (single per-kind `overview.json` projection read + client-side semver → newest `stable`, or `any`), version selectors `@X.Y.Z` / `~X.Y.Z` / `^X.Y.Z` | ~zero (new test files) |
-| 5 | Point a local desktop build at the registry via a small static HTTP server + one dev `config.json` line | block still installs and materializes after the kind package + kind-first publish were added | ~zero (config only, no code) |
+| #   | Step                                                                                                    | Exercises                                                                                                                                                                                                                                                                              | Invasiveness                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Add a `kind/` package to an existing `etc/` block                                                       | package shape, workspace wiring                                                                                                                                                                                                                                                        | ~zero (new folder + workspace entry)                                                                                                                         |
+| 2   | Build locally                                                                                           | `model.json` records the kind **reference** `{name}@X.Y.Z`; `BlockParams` types flow into `init` and type-check                                                                                                                                                                        | **medium** — the breaking `DataModelBuilder({ kind })` / `create({ dataModel, kind })` signature change; only `etc/` fixtures updated, not the 47 bio blocks |
+| 3   | `block-tools publish -r file:/tmp/reg`                                                                  | the new kind-first publish + **version-match check**                                                                                                                                                                                                                                   | low — a step added to `cmd/publish.ts`; storage layer untouched (already driver-based)                                                                       |
+| 4   | Headless tests read the `file:` registry back (vitest, modeled on `simple.test.ts`)                     | **core of the mechanism**: source-hash guard (same version + different `kind/src/` → hard fail), idempotent republish, resolution (single per-kind `overview.json` projection read + client-side semver → newest `stable`, or `any`), version selectors `@X.Y.Z` / `~X.Y.Z` / `^X.Y.Z` | ~zero (new test files)                                                                                                                                       |
+| 5   | Point a local desktop build at the registry via a small static HTTP server + one dev `config.json` line | block still installs and materializes after the kind package + kind-first publish were added                                                                                                                                                                                           | ~zero (config only, no code)                                                                                                                                 |
 
 ### Test layers
 
@@ -201,7 +199,7 @@ refresh-trigger cadence is a separate open question (`Q-0008`).
   `kind/` packages via the pnpm workspace; `DataModelBuilder({ kind })` type-checks and
   `block-tools build-model` records the kind reference. No registry involved.
 - **L3 — Desktop end-to-end.** Step 5. **Lighter for track 1 than it looks** — full kind
-  *resolution* (projection read + client-side semver, newest-block selection) is a
+  _resolution_ (projection read + client-side semver, newest-block selection) is a
   template engine / import concern (track 3). Track 1's L3 mainly proves a single block
   still installs/materializes (it reads the kind reference from `model.json`). Do not
   over-invest here for track 1.

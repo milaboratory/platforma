@@ -11,6 +11,7 @@ import {
   type InferOutputsType,
   type InferPluginNames,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-block-model.kind";
 
 // =============================================================================
 // Block Data Model
@@ -25,12 +26,15 @@ export type BlockData = {
   tableState: PlDataTableStateV2;
 };
 
-const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
-  titleArg: "The title",
-  subtitleArg: "The subtitle",
-  badgeArg: "The badge",
-  tagToWorkflow: "workflow-tag",
-  tagArgs: [],
+// Every field the kind declares as an init param is optional — a block may be
+// created without a template supplying them — so each keeps a fallback default.
+// `tableState` is UI view state: not a param, always freshly initialized.
+const blockDataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(({ params }) => ({
+  titleArg: params?.titleArg ?? "The title",
+  subtitleArg: params?.subtitleArg ?? "The subtitle",
+  badgeArg: params?.badgeArg ?? "The badge",
+  tagToWorkflow: params?.tagToWorkflow ?? "workflow-tag",
+  tagArgs: params?.tagArgs ?? [],
   tableState: createPlDataTableStateV2(),
 }));
 
@@ -99,7 +103,7 @@ export type CounterPlugin = typeof counterPlugin;
 
 const counter = counterPlugin.create({ pluginId: "counter", config: { defaultCount: 10 } });
 
-export const platforma = BlockModelV3.create(blockDataModel)
+export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
 
   .plugin(counter, {

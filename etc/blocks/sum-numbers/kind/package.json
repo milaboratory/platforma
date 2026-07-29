@@ -1,8 +1,8 @@
 {
-  "name": "@milaboratories/milaboratories.test-sum-numbers-v3.kind",
+  "name": "@milaboratories/milaboratories.test-sum-numbers.kind",
   "version": "1.0.0",
   "private": true,
-  "description": "Block kind for the sum-numbers-v3 block",
+  "description": "Block kind for the sum-numbers block",
   "files": [
     "dist/**/*"
   ],

@@ -1,7 +1,7 @@
 // This file is managed by `block-tools structure`. Do not edit by hand.
 // Author content lives in ./block-extra.ts.
 
-import { platforma } from "@milaboratories/milaboratories.test-enter-numbers-v3.model";
+import { platforma } from "@milaboratories/milaboratories.test-enter-numbers.model";
 import {
   InferOutputsType,
   InferDataType,
@@ -47,9 +47,9 @@ export const BlockPointer = {
 // Block-named aliases for readable cross-block imports in tests and
 // consumer code. Same types / same runtime value as the universal
 // names above; the aliases avoid `as`-renames at the import site.
-export type TestEnterNumbersV3BlockContract = BlockContract;
-export type TestEnterNumbersV3BlockOutputs  = BlockOutputs;
-export type TestEnterNumbersV3BlockData     = BlockData;
-export const TestEnterNumbersV3BlockPointer = BlockPointer;
+export type TestEnterNumbersBlockContract = BlockContract;
+export type TestEnterNumbersBlockOutputs  = BlockOutputs;
+export type TestEnterNumbersBlockData     = BlockData;
+export const TestEnterNumbersBlockPointer = BlockPointer;
 
 export * from "./block-extra";

@@ -1,1 +1,1 @@
-# @milaboratories/milaboratories.test-sum-numbers-v3.model
+# @milaboratories/milaboratories.test-sum-numbers.model

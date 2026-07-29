@@ -6,7 +6,7 @@ import {
   PlRef,
   readAnnotation,
 } from "@platforma-sdk/model";
-import { kind } from "@milaboratories/milaboratories.test-sum-numbers-v3.kind";
+import { kind } from "@milaboratories/milaboratories.test-sum-numbers.kind";
 import { z } from "zod";
 
 export const BlockData = z.object({

@@ -1,12 +1,5 @@
-import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers";
 import { fileURLToPath } from "node:url";
-
-// Every migration test exercises the block-pack update flow (triggerBlockPackUpdate
-// touches the dev-folder model.json), which needs the dev-folder watcher — a static
-// from-pack-v2 pack can't drive it. Build a dev-v2 pointer from the facade root the
-// from-pack-v2 BlockPointer exposes as `rootUrl` (exactly the dev block folder); dev-v2
-// `folder` is a path, so convert the file: URL at this edge.
-const enterNumberSpec = { type: "dev-v2" as const, folder: fileURLToPath(BlockPointer.rootUrl) };
 import type { Project, StorageDebugView } from "@milaboratories/pl-middle-layer";
 import { parseJson } from "@milaboratories/pl-model-common";
 import { createBlockStorage, isBlockStorage, deriveDataFromStorage } from "@platforma-sdk/model";
@@ -17,6 +10,13 @@ import { withMl } from "./with-ml";
 import { createProjectWatcher } from "./test-helpers";
 import type { BlockDumpUnified } from "./unified-state-schema";
 import { BlockDumpArraySchemaUnified } from "./unified-state-schema";
+
+// Every migration test exercises the block-pack update flow (triggerBlockPackUpdate
+// touches the dev-folder model.json), which needs the dev-folder watcher — a static
+// from-pack-v2 pack can't drive it. Build a dev-v2 pointer from the facade root the
+// from-pack-v2 BlockPointer exposes as `rootUrl` (exactly the dev block folder); dev-v2
+// `folder` is a path, so convert the file: URL at this edge.
+const enterNumberSpec = { type: "dev-v2" as const, folder: fileURLToPath(BlockPointer.rootUrl) };
 
 /**
  * Creates a raw BlockStorage JSON string with the given data and version.
@@ -32,14 +32,14 @@ function createRawBlockStorage(data: unknown, dataVersion: string): string {
  */
 async function triggerBlockPackUpdate(prj: Project): Promise<void> {
   await fs.promises.appendFile(
-    path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
+    path.resolve("..", "..", "etc", "blocks", "enter-numbers", "model", "dist", "model.json"),
     " ",
   );
   await prj.overview.refreshState();
 }
 
 // =============================================================================
-// Migration Tests for enter-numbers-v3 block
+// Migration Tests for enter-numbers block
 //
 // Block has 2 migrations:
 //   - migration[0]: v1 → v2 (adds labels field)
@@ -354,7 +354,7 @@ test("v3: migration failure prevents block pack update", async ({ expect }) => {
   // This test verifies that when a migration throws an exception,
   // the block pack update is rejected — the block stays on the old version
   // and user data is preserved.
-  // The enter-numbers-v3 migration[0] throws if numbers contain 666.
+  // The enter-numbers migration[0] throws if numbers contain 666.
   await withMl(async (ml, workFolder) => {
     const prj1Id = await ml.createProject({ label: "Migration Failure Test" });
     await ml.openProject(prj1Id);

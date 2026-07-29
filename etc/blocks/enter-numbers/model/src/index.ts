@@ -1,5 +1,6 @@
 import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-enter-numbers.kind";
 import { z } from "zod";
 
 // Data version 1: just numbers
@@ -23,7 +24,7 @@ export const $BlockData = z.object({
 export type BlockData = z.infer<typeof $BlockData>;
 
 // Define data model with migrations from v1 to current
-const dataModel = new DataModelBuilder()
+const dataModel = new DataModelBuilder({ kind })
   .from<BlockDataV1>("v1")
   // Migration v1 → v2: sort numbers and add labels
   // Throws if numbers contain 666 (for testing migration failure recovery)
@@ -37,9 +38,13 @@ const dataModel = new DataModelBuilder()
   .migrate<BlockData>("v3", (data) => {
     return { ...data, description: `Migrated: ${data.labels.join(", ")}` };
   })
-  .init(() => ({ numbers: [], labels: [], description: "" }));
+  // `numbers` is the kind's only init param; `labels` / `description` are
+  // populated by the migrations above and always start empty. `params` is
+  // optional — a block may be created without a template — so it keeps a
+  // fallback default.
+  .init(({ params }) => ({ numbers: params?.numbers ?? [], labels: [], description: "" }));
 
-export const platforma = BlockModelV3.create(dataModel)
+export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args((data) => {
     if (data.numbers.length === 0) {

@@ -4,22 +4,22 @@ import {
   type InferHrefType,
   type InferOutputsType,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.pool-explorer.kind";
 
-export type BlockData = {
-  titleArgs: string;
-};
+/**
+ * Pool Explorer persists nothing: the page renders whatever the result pool
+ * currently exposes, and its filter controls are local Vue state. The kind's
+ * `BlockParams` is empty for the same reason, so `init` takes no params.
+ */
+export type BlockData = Record<string, never>;
 
 export type BlockArgs = BlockData;
 
-const dataModel = new DataModelBuilder()
-  .from<BlockData>("v1")
-  .init(() => ({ titleArgs: "The title" }));
+const dataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(() => ({}));
 
-export const platforma = BlockModelV3.create(dataModel)
+export const platforma = BlockModelV3.create({ dataModel, kind })
 
-  .args<BlockArgs>((data) => {
-    return { titleArgs: data.titleArgs };
-  })
+  .args<BlockArgs>(() => ({}))
 
   .output("allSpecs", (ctx) => ctx.resultPool.getSpecs())
 

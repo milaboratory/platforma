@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/milaboratories.test-sum-numbers-v3.ui",
+  "name": "@milaboratories/milaboratories.test-sum-numbers.ui",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/milaboratories.test-sum-numbers-v3.model": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
     "@platforma-sdk/ui-vue": "workspace:*",
     "vue": "catalog:"
   },

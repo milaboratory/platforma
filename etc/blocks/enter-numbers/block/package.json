@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/milaboratories.test-enter-numbers-v3",
+  "name": "@milaboratories/milaboratories.test-enter-numbers",
   "version": "1.0.0",
   "private": true,
   "files": [
@@ -25,9 +25,10 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@milaboratories/milaboratories.test-enter-numbers-v3.model": "workspace:*",
-    "@milaboratories/milaboratories.test-enter-numbers-v3.ui": "workspace:*",
-    "@milaboratories/milaboratories.test-enter-numbers-v3.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.kind": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.workflow": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
@@ -37,9 +38,9 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-enter-numbers-v3.workflow/dist/tengo/tpl/main.plj.gz",
-      "model": "@milaboratories/milaboratories.test-enter-numbers-v3.model/dist/model.json",
-      "ui": "@milaboratories/milaboratories.test-enter-numbers-v3.ui/dist"
+      "workflow": "@milaboratories/milaboratories.test-enter-numbers.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-enter-numbers.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-enter-numbers.ui/dist"
     },
     "meta": {
       "title": "Enter Numbers (new api)",

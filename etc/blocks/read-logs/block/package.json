@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-read-logs.kind": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs.ui": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs.workflow": "workspace:*",
