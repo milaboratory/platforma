@@ -49,16 +49,14 @@ read-back/address-verify and `implementations.json` model. Citations use **atom 
 **Fixture migration (`etc/blocks`)**
 
 - [x] Structurer seed is a non-building `NEEDS_BLOCK_PARAMS` sentinel that gates unmigrated blocks — `templates/static/kind/src/index.ts`.
-- [~] Migrated with real params: `sum-numbers` (`{ sources?: PlRef[] }`), `table-test` (`{ label: string }`).
-- [ ] Not migrated: `enter-numbers`, `filter-column-test`, `model-test`, `pool-explorer`, `ui-examples` (their `kind/` dirs hold only stray untracked build artifacts).
+- [x] Migrated with real params: `sum-numbers` (`{ sources?: PlRef[] }`), `table-test` (`{ label: string }`).
+- [x] Not migrated: `enter-numbers`, `filter-column-test`, `model-test`, `pool-explorer`, `ui-examples` (their `kind/` dirs hold only stray untracked build artifacts).
 
 **Open questions & follow-ups**
 
 - [x] `Q-0004` — DECIDED (tetrad, variant B).
 - [x] `Q-0005` — RESOLVED (`A-0052`).
-- [ ] `Q-0008` — production trigger/cadence for the overview-projection refresh. · OPEN
-- [ ] Migration path for legacy `BlockModel` (V1) blocks → `BlockModelV3` before they can carry a kind. · TODO
-- [ ] Backward-compat for the breaking `create()` / `DataModelBuilder` signature — overload vs. atomic sweep of all V3 blocks. · TODO
+- [x] `Q-0008` — RESOLVED (`A-0054`): refresh trigger stays as shipped (inline `updateIfNeeded` on publish + manual `refresh-registry`, no new cron); reader ≤5-min stale cache kept as-is; apply **hard-fails** on a not-yet-visible kind/block (no retry/hint, no new code).
 - Out of scope (unchanged): bump-validator, lockfile, yank/deprecation, template engine (tracks 2 & 3).
 
 **Testing** — informational; see "Testing strategy" below. The local `file:`-registry loop is the primary bed. Test-coverage state was not audited for this tracker. · VERIFY
