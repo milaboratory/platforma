@@ -8,7 +8,7 @@ import {
   createPlDataTableV3,
   deriveAxisValuesLabels,
   expandByPartition,
-  isSelfContained,
+  hasSingleDataColumn,
   hasReachableData,
   type InferHrefType,
   type InferOutputsType,
@@ -138,7 +138,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
     const primary = ColumnsCollection()
       .discover({ anchors: { main: valueAnchor }, mode: "exact" })
       .getColumns()
-      .filter(isSelfContained);
+      .filter(hasSingleDataColumn);
     if (primary.length === 0) return undefined;
 
     const countLeaves = ColumnsCollection()

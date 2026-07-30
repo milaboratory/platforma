@@ -7,7 +7,7 @@ import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../../render/inte
 import { getCfgRenderCtx } from "../../internal";
 import { MainAccessorName, StagingAccessorName } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
-import { DataColumn } from "../data_column";
+import { DataColumnRecipe } from "../data_column";
 import type { ColumnsSource } from "./types";
 import { ArrayColumnsProvider, ColumnsProvider } from "./providers";
 
@@ -74,7 +74,7 @@ export function toColumnProvider(source: ColumnsSource): ColumnsProvider {
 
 function isColumnArray(source: unknown): source is {
   readonly columns: ReadonlyArray<
-    PColumn<undefined | PColumnDataUniversal> | DataColumn<PObjectId>
+    PColumn<undefined | PColumnDataUniversal> | DataColumnRecipe<PObjectId>
   >;
   readonly isFinal: boolean;
 } {

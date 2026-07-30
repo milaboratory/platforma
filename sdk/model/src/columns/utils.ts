@@ -11,7 +11,7 @@ import { throwError } from "@milaboratories/helpers";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import { TreeNodeAccessor } from "../render";
 import { deriveDistinctLabels, type DeriveLabelsOptions } from "../labels/derive_distinct_labels";
-import { DataColumnImpl, type DataColumn, type ColumnData } from "./data_column";
+import { DataColumnRecipe, DataColumnImpl, type ColumnData } from "./data_column";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
 import {
@@ -29,7 +29,7 @@ import type { ColumnsSource } from "./column_providers/types";
  * other engine-consumed column.
  *
  * Pure query walk — no registry access. Use {@link collectLinkerColumns} for
- * the resolved {@link DataColumn} variant.
+ * the resolved {@link DataColumnRecipe} variant.
  */
 export function collectLinkerIds(recipe: ColumnRecipe): PObjectId[] {
   const hit = extractPObjectId(recipe.id);
@@ -50,13 +50,13 @@ export function collectLinkerIds(recipe: ColumnRecipe): PObjectId[] {
 
 /**
  * {@link collectLinkerIds} resolved against the ambient context as
- * {@link DataColumn} leaves. Throws if any id fails to resolve —
+ * {@link DataColumnRecipe} leaves. Throws if any id fails to resolve —
  * matches the contract of the legacy `resolveLinkers` it replaces.
  */
 export function collectLinkerColumns(
   recipe: ColumnRecipe,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
-): DataColumn<PObjectId>[] {
+): DataColumnRecipe<PObjectId>[] {
   return collectLinkerIds(recipe).map(
     (id) =>
       DataColumnImpl.fromId(id, opts) ??
@@ -98,7 +98,7 @@ export function queriesQualifications(
  *
  * Walks every physical leaf the recipe depends on via
  * {@link ColumnRecipe.getReferencedIds} (resolves each id back to a
- * {@link DataColumn} through the ambient ctx) and ANDs `hasData()` across
+ * {@link DataColumnRecipe} through the ambient ctx) and ANDs `hasData()` across
  * all of them. Inline {@link PColumnValues} payloads count as present.
  *
  * Returns `false` if any leaf cannot be re-resolved in `opts.ctx` (treat as
@@ -154,31 +154,38 @@ function findDiscovered(recipe: ColumnRecipe): undefined | ColumnDiscoveredRecip
 }
 
 /**
- * Whether the recipe resolves on its own, without pulling in other columns.
+ * Whether the recipe reads exactly one data column — its own — rather than
+ * reaching through others.
  *
- * A self-contained column is described entirely by its own source column plus
- * projections over it (spec overrides, axis slicing). A column that is *not*
- * self-contained reaches its data through other columns, so it only becomes
- * co-indexed after they are joined in — which is why it brings axes into a
- * join that its own spec does not mention, and cannot serve as a primary
- * column.
+ * True for a bare leaf and for projections over one (spec overrides, axis
+ * slicing): those add layers but no new columns. False when the recipe gets at
+ * its data through further columns, which happens when discovery reached it via
+ * a linker chain.
  *
- * The check walks the whole wrapper chain, not just the outermost layer.
+ * **Why callers care.** A recipe over a single data column is co-indexed by its
+ * own axes, so its spec is the whole truth about them. One that needs other
+ * columns only lines up after they are joined in, and therefore drags axes into
+ * the join that its own spec never mentions — which is why it cannot serve as a
+ * primary column, and why `createPlDataTableV3` splits on this.
+ *
+ * The count comes from {@link ColumnRecipe.getReferencedIds}, which resolves
+ * through the whole wrapper chain, so no class walk is involved and foreign
+ * `ColumnRecipe` implementations are handled too.
  */
-export function isSelfContained(recipe: ColumnRecipe): boolean {
-  return findDiscovered(recipe) === undefined;
+export function hasSingleDataColumn(recipe: ColumnRecipe): boolean {
+  return recipe.getReferencedIds().length === 1;
 }
 
 /**
- * @deprecated Renamed to {@link isSelfContained} — "leaf" read as "you can get
- * data out of it", which is a different question (see {@link hasReachableData}).
- * Same semantics.
+ * @deprecated Renamed to {@link hasSingleDataColumn} — "leaf" read as "you can
+ * get data out of it", which is a different question (see
+ * {@link hasReachableData}). Same semantics.
  */
-export const isLeafColumn = isSelfContained;
+export const isLeafColumn = hasSingleDataColumn;
 
 /**
  * Whether the column's data can be read here and now, consistent with its
- * spec — narrows to {@link DataColumn}, which exposes `getData()`.
+ * spec — narrows to {@link DataColumnRecipe}, which exposes `getData()`.
  *
  * True for a bare leaf and for a spec-override over a bare leaf. False for an
  * axis-filtered recipe (its spec has dropped axes the underlying data still
@@ -192,21 +199,8 @@ export const isLeafColumn = isSelfContained;
  * result narrows to a value that really has the method, and there is no
  * throwing path behind the guard.
  */
-export function hasReachableData(recipe: ColumnRecipe): recipe is DataColumn {
+export function hasReachableData(recipe: ColumnRecipe): recipe is DataColumnRecipe {
   return recipe instanceof DataColumnImpl || recipe instanceof DataColumnOverriddenRecipe;
-}
-
-/**
- * @deprecated Use {@link hasReachableData} and call `getData()` on the narrowed
- * column.
- *
- * Behaviour change: this used to walk past an axis-filtered layer and hand
- * back the *unsliced* data of the underlying leaf, which does not match the
- * recipe's spec. It now returns `undefined` for anything
- * {@link hasReachableData} rejects.
- */
-export function getLeafColumnData(recipe: ColumnRecipe): ColumnData {
-  return hasReachableData(recipe) ? recipe.getData() : undefined;
 }
 
 /** Drop-down option built over a {@link ColumnsCollection} — universal-id valued. */

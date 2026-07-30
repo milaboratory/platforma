@@ -10,7 +10,7 @@
  * Calling {@link TestCollectionDriverHandle.installAmbientCtx} additionally
  * installs a minimal `globalThis.cfgRenderCtx` AND plants a stub
  * `ColumnEntriesProvider` into the ctx-providers cache so registered specs
- * are reachable via `DataColumn.fromId` (and therefore via
+ * are reachable via `DataColumnRecipe.fromId` (and therefore via
  * `ColumnsCollection.getColumns()`).
  */
 import type {
@@ -29,7 +29,7 @@ import type { GlobalCfgRenderCtx } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
-import { DataColumn, DataColumnImpl } from "../data_column";
+import { DataColumn, type DataColumnRecipe } from "../data_column";
 
 export interface TestCollectionDriverHandle {
   readonly driver: ColumnsCollectionDriverModel;
@@ -38,7 +38,7 @@ export interface TestCollectionDriverHandle {
   /**
    * Install a minimal `globalThis.cfgRenderCtx` so `getService("columnsCollection")`
    * resolves to this driver and registered columns are reachable via
-   * `DataColumn.fromId`. Call inside `beforeEach` if the code under test uses
+   * `DataColumnRecipe.fromId`. Call inside `beforeEach` if the code under test uses
    * the ambient ctx instead of an explicit `driver` option.
    */
   installAmbientCtx(): void;
@@ -163,9 +163,9 @@ function buildStubProvider(
   for (const [id, spec] of specMap) {
     entries.set(id, { accessor: stubAccessorFor(id, spec), name: id, id });
   }
-  const columns: DataColumn<PObjectId>[] = [];
+  const columns: DataColumnRecipe<PObjectId>[] = [];
   for (const [id, spec] of specMap) {
-    columns.push(DataColumnImpl.fromColumn({ id, spec, data: undefined as never }));
+    columns.push(DataColumn.fromColumn({ id, spec, data: undefined as never }));
   }
   return {
     getPObjectEntries: () => entries,

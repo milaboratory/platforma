@@ -11,7 +11,7 @@ import {
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
-import type { DataColumn, ColumnData } from "../data_column";
+import { type DataColumnRecipe, type ColumnData, isDataColumn } from "../data_column";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
 import { ColumnRecipe } from "./index";
 import { Column } from "../column";
@@ -34,7 +34,7 @@ type NonOverriddenColumn = Column<Exclude<ColumnUniversalId, ColumnOverriddenId>
  * This invariant matches the one enforced inside `unwrapOverrides` from
  * pl-model-common: it explicitly throws on a nested override-wrap.
  */
-export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
+export class ColumnOverriddenRecipe implements ColumnRecipe<ColumnOverriddenId> {
   /**
    * Wrap any recipe with overrides. If `inner` is already a
    * {@link ColumnOverriddenRecipe}, merges `overrides` into the existing ones
@@ -75,7 +75,7 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
     inner: NonOverriddenColumn,
     overrides: SpecOverrides,
   ): ColumnOverriddenRecipe {
-    return typeof (inner as Partial<DataColumn>).getData === "function"
+    return isDataColumn(inner)
       ? new DataColumnOverriddenRecipe(inner, overrides)
       : new ColumnOverriddenRecipe(inner, overrides);
   }
@@ -184,17 +184,17 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
  * see {@link build}.
  *
  * Not something callers name. Narrow with `hasReachableData(recipe)`, which
- * yields the {@link DataColumn} interface.
+ * yields the {@link DataColumnRecipe} interface.
  */
 export class DataColumnOverriddenRecipe
   extends ColumnOverriddenRecipe
-  implements DataColumn<ColumnOverriddenId>
+  implements DataColumnRecipe<ColumnOverriddenId>
 {
   /**
    * Safe by construction: {@link build} only picks this class when the inner
    * recipe exposes `getData`.
    */
   getData(): ColumnData {
-    return (this.getInner() as DataColumn).getData();
+    return (this.getInner() as DataColumnRecipe).getData();
   }
 }

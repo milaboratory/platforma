@@ -13,7 +13,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../render/internal";
-import type { DataColumn } from "./data_column";
+import type { DataColumnRecipe } from "./data_column";
 import { DataColumnImpl } from "./data_column";
 import { expandByPartition } from "./expand_by_partition";
 
@@ -33,13 +33,13 @@ function createSpec(name: string, axes: AxisSpec[]): PColumnSpec {
   } as PColumnSpec;
 }
 
-/** Build a synthetic DataColumn whose data is a JsonPartitioned DataInfoEntries. */
+/** Build a synthetic DataColumnRecipe whose data is a JsonPartitioned DataInfoEntries. */
 function createReadyLazy(
   id: string,
   spec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): DataColumn {
+): DataColumnRecipe {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
@@ -55,7 +55,7 @@ function createReadyLazy(
   });
 }
 
-function createComputingLazy(id: string, spec: PColumnSpec): DataColumn {
+function createComputingLazy(id: string, spec: PColumnSpec): DataColumnRecipe {
   return DataColumnImpl.fromColumn({
     id: id as PObjectId,
     spec,
