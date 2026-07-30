@@ -24,7 +24,7 @@ import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
 import { ColumnRecipe } from "./index";
-import { ColumnAbsentError } from "../column_lazy";
+import { ColumnAbsentError } from "../data_column";
 import type { ColumnFieldStatus } from "./types";
 import { installStubRegistry } from "../__test_helpers__/stub_registry";
 import { throwError } from "@milaboratories/helpers";
@@ -581,7 +581,7 @@ describe("Wrapper getStatusByKey delegates to source", () => {
 });
 
 describe("ColumnRecipe.getStatus (top-level dispatcher)", () => {
-  test("routes bare PObjectId to ColumnLazyImpl.getStatusById", () => {
+  test("routes bare PObjectId to DataColumnImpl.getStatusById", () => {
     setupCtx({ [baseLeaf]: stubSpec() });
     expect(ColumnRecipe.getStatus(baseLeaf)).toBe("present");
   });

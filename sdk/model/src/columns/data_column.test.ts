@@ -6,12 +6,12 @@ import {
   type PColumnSpec,
   type PObjectId,
 } from "@milaboratories/pl-model-common";
-import { ColumnAbsentError, ColumnLazy, ColumnLazyImpl } from "./column_lazy";
+import { ColumnAbsentError, DataColumn, DataColumnImpl } from "./data_column";
 import { _ctxProvidersCache } from "./column_providers";
 import { installStubRegistry } from "./__test_helpers__/stub_registry";
 
 // --- Ambient ctx mock ------------------------------------------------------
-// ColumnLazy constructor pulls `getCfgRenderCtx()` from globalThis. A minimal
+// DataColumn constructor pulls `getCfgRenderCtx()` from globalThis. A minimal
 // mock with empty index is enough — these tests don't exercise resolve paths.
 
 const mockCtx = {
@@ -34,12 +34,12 @@ const baseLeaf = createLocalPObjectId(["main", "out"], "col-1");
 const stubSpec = { kind: "PColumn", name: "stub" } as unknown as PColumnSpec;
 
 function lazyOf(id: PObjectId, spec: PColumnSpec = stubSpec) {
-  return ColumnLazyImpl.fromColumn({ id, spec, data: undefined });
+  return DataColumnImpl.fromColumn({ id, spec, data: undefined });
 }
 
 // --- clone flattening -------------------------------------------------------
 
-describe("ColumnLazy.clone", () => {
+describe("DataColumn.clone", () => {
   test("two successive clones produce flat wrap (no nesting)", () => {
     const c0 = lazyOf(baseLeaf);
     const c1 = c0.withSpecs({
@@ -77,7 +77,7 @@ describe("ColumnLazy.clone", () => {
 
 // --- spec() override application -------------------------------------------
 
-describe("ColumnLazy.spec — applySpecOverrides", () => {
+describe("DataColumn.spec — applySpecOverrides", () => {
   test("base spec with no overrides returns readers.spec verbatim", () => {
     const c = lazyOf(baseLeaf);
     expect(c.getSpec()).toBe(stubSpec);
@@ -86,7 +86,7 @@ describe("ColumnLazy.spec — applySpecOverrides", () => {
   test("fromId throws ColumnAbsentError when ctx has no handles", () => {
     // Empty registry — `isFinal()` returns true vacuously, so the leaf is
     // provably absent (no provider will ever supply it).
-    expect(() => ColumnLazyImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
+    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
   });
 
   test("appends axes at indices past base.axesSpec.length", () => {
@@ -129,67 +129,67 @@ describe("ColumnLazy.spec — applySpecOverrides", () => {
 
 // --- resolution status / absent throw --------------------------------------
 
-describe("ColumnLazy resolution: fromId / fromAccessor / getStatus", () => {
+describe("DataColumn resolution: fromId / fromAccessor / getStatus", () => {
   test("fromId returns undefined when registry is unfinalized and id not found", () => {
     // `isFinal: false` → resolver can't tell yet → resolving → undefined.
     installStubRegistry(mockCtx, {}, { isFinal: false });
-    expect(ColumnLazyImpl.fromId(baseLeaf)).toBeUndefined();
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
   test("fromId throws ColumnAbsentError when leaf has no spec field on locked accessor", () => {
     // Leaf entry present, no spec field, accessor locked → absent forever.
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: true } });
-    expect(() => ColumnLazyImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
+    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
   });
 
   test("fromId returns undefined when leaf has no spec field on unlocked accessor", () => {
     // Leaf entry present, no spec field, accessor unlocked → spec may still arrive.
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: false } });
-    expect(ColumnLazyImpl.fromId(baseLeaf)).toBeUndefined();
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
   test("fromId returns undefined when spec accessor exists but hasData is false", () => {
     // Spec resource present, bytes not yet written — transient resolving.
     installStubRegistry(mockCtx, { [baseLeaf]: { spec: stubSpec, specHasData: false } });
-    expect(ColumnLazyImpl.fromId(baseLeaf)).toBeUndefined();
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
   test("fromAccessor throws ColumnAbsentError when accessor is locked without spec", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: true } });
     const entry = pluckLeafEntry(baseLeaf);
-    expect(() => ColumnLazyImpl.fromAccessor(entry)).toThrow(ColumnAbsentError);
+    expect(() => DataColumnImpl.fromAccessor(entry)).toThrow(ColumnAbsentError);
   });
 
   test("fromAccessor returns undefined when accessor is unlocked without spec", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: false } });
     const entry = pluckLeafEntry(baseLeaf);
-    expect(ColumnLazyImpl.fromAccessor(entry)).toBeUndefined();
+    expect(DataColumnImpl.fromAccessor(entry)).toBeUndefined();
   });
 
   test("getStatusById returns 'absent' / 'resolving' / 'present' across configurations", () => {
     // present — spec with data on a locked, populated leaf.
     installStubRegistry(mockCtx, { [baseLeaf]: stubSpec });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("present");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("present");
 
     // resolving — same leaf id, spec bytes not yet written.
     installStubRegistry(mockCtx, { [baseLeaf]: { spec: stubSpec, specHasData: false } });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("resolving");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("resolving");
 
     // resolving — leaf entry exists but spec field missing on an unlocked accessor.
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: false } });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("resolving");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("resolving");
 
     // absent — leaf entry exists with no spec field on a locked accessor.
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: true } });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("absent");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("absent");
 
     // absent — id not in any provider and registry is final.
     installStubRegistry(mockCtx, {}, { isFinal: true });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("absent");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("absent");
 
     // resolving — id not in any provider but registry still enumerating.
     installStubRegistry(mockCtx, {}, { isFinal: false });
-    expect(ColumnLazy.getStatusById(baseLeaf)).toBe("resolving");
+    expect(DataColumn.getStatusById(baseLeaf)).toBe("resolving");
   });
 });
 

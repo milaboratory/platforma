@@ -1,9 +1,13 @@
-import { PColumn, type ColumnEntriesProvider } from "@milaboratories/pl-model-common";
+import {
+  PColumn,
+  type ColumnEntriesProvider,
+  type PObjectId,
+} from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../../render/internal";
 import { getCfgRenderCtx } from "../../internal";
 import { MainAccessorName, StagingAccessorName } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
-import { ColumnLazy } from "../column_lazy";
+import { DataColumn } from "../data_column";
 import type { ColumnsSource } from "./types";
 import { ArrayColumnsProvider, ColumnsProvider } from "./providers";
 
@@ -69,7 +73,9 @@ export function toColumnProvider(source: ColumnsSource): ColumnsProvider {
 }
 
 function isColumnArray(source: unknown): source is {
-  readonly columns: ReadonlyArray<PColumn<undefined | PColumnDataUniversal> | ColumnLazy>;
+  readonly columns: ReadonlyArray<
+    PColumn<undefined | PColumnDataUniversal> | DataColumn<PObjectId>
+  >;
   readonly isFinal: boolean;
 } {
   if (typeof source !== "object" || source === null) return false;

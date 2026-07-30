@@ -70,7 +70,7 @@ Every concrete `ColumnRecipe` must satisfy:
 2. `recipe.getQuery()` returns a `SpecQuery` whose terminal column leaf
    carries `recipe.id` — not the inner recipe's id, not the bare id.
 
-For leaf recipes (`ColumnLazyImpl`) this is trivial: `id` is the bare
+For leaf recipes (`DataColumnImpl`) this is trivial: `id` is the bare
 `PObjectId` and the query is `{type: "column", column: id}`.
 
 For wrapper recipes (Overridden / Filtered / Discovered) the inner recipe

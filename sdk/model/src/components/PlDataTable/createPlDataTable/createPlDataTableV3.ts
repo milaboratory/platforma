@@ -27,7 +27,7 @@ import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
 import type { MatchingMode } from "@milaboratories/pl-model-common";
 import {
-  isLeafColumn,
+  isSelfContained,
   hitQualifications,
   collectLinkerColumns,
   queriesQualifications,
@@ -261,7 +261,7 @@ function splitByTopology(columns: ColumnRecipe[]): {
   const direct: ColumnRecipe[] = [];
   const linked: ColumnRecipe[] = [];
   for (const c of columns) {
-    if (isLeafColumn(c)) direct.push(c);
+    if (isSelfContained(c)) direct.push(c);
     else linked.push(c);
   }
   return { direct, linked };

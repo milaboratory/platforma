@@ -10,7 +10,7 @@
  * Calling {@link TestCollectionDriverHandle.installAmbientCtx} additionally
  * installs a minimal `globalThis.cfgRenderCtx` AND plants a stub
  * `ColumnEntriesProvider` into the ctx-providers cache so registered specs
- * are reachable via `ColumnLazy.fromId` (and therefore via
+ * are reachable via `DataColumn.fromId` (and therefore via
  * `ColumnsCollection.getColumns()`).
  */
 import type {
@@ -29,7 +29,7 @@ import type { GlobalCfgRenderCtx } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
-import { ColumnLazy, ColumnLazyImpl } from "../column_lazy";
+import { DataColumn, DataColumnImpl } from "../data_column";
 
 export interface TestCollectionDriverHandle {
   readonly driver: ColumnsCollectionDriverModel;
@@ -38,7 +38,7 @@ export interface TestCollectionDriverHandle {
   /**
    * Install a minimal `globalThis.cfgRenderCtx` so `getService("columnsCollection")`
    * resolves to this driver and registered columns are reachable via
-   * `ColumnLazy.fromId`. Call inside `beforeEach` if the code under test uses
+   * `DataColumn.fromId`. Call inside `beforeEach` if the code under test uses
    * the ambient ctx instead of an explicit `driver` option.
    */
   installAmbientCtx(): void;
@@ -148,7 +148,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
  * Construct a {@link ColumnEntriesProvider} + {@link ColumnsProvider} backed
  * by an `(id → spec)` map. Each entry carries a fake {@link TreeNodeAccessor}
  * whose only contract is the surface `readSpec` / `readData` /
- * `readDataStatus` (in `p_column_lazy.ts`) actually call:
+ * `readDataStatus` (in `data_column.ts`) actually call:
  *   - `traverse({field: `${name}.spec`, ignoreError: true})` →
  *     stub-accessor whose `getDataAsJson()` returns the spec.
  *   - `traverse({field: `${name}.data`})` → `undefined` (data is not
@@ -163,9 +163,9 @@ function buildStubProvider(
   for (const [id, spec] of specMap) {
     entries.set(id, { accessor: stubAccessorFor(id, spec), name: id, id });
   }
-  const columns: ColumnLazy[] = [];
+  const columns: DataColumn<PObjectId>[] = [];
   for (const [id, spec] of specMap) {
-    columns.push(ColumnLazyImpl.fromColumn({ id, spec, data: undefined as never }));
+    columns.push(DataColumnImpl.fromColumn({ id, spec, data: undefined as never }));
   }
   return {
     getPObjectEntries: () => entries,

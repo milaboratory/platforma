@@ -8,7 +8,7 @@ import {
   isColumnFilteredKey,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
-import { ColumnLazyImpl } from "../column_lazy";
+import { DataColumnImpl } from "../data_column";
 import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
@@ -19,7 +19,7 @@ import type {
 } from "./types";
 
 export type { ColumnFieldStatus, ColumnRecipeId, ColumnResolutionStatus, SpecQuery } from "./types";
-export { ColumnAbsentError } from "../column_lazy";
+export { ColumnAbsentError } from "../data_column";
 export { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 export { ColumnFilteredRecipe } from "./column_filtered_recipe";
 export { ColumnOverriddenRecipe } from "./column_overrided_recipe";
@@ -38,7 +38,7 @@ export interface ColumnRecipe<
  * concrete recipe variant based on the id's encoding and recurses on
  * wrappers' inner `source`:
  *
- *   - bare {@link PObjectId} (non-JSON)               → `ColumnLazy.fromId`
+ *   - bare {@link PObjectId} (non-JSON)               → `DataColumn.fromId`
  *   - `ColumnDiscoveredKey`                          → {@link ColumnDiscoveredRecipe}
  *   - `ColumnOverriddenKey { source, specOverrides }` → recurse on `source`,
  *                                                       then {@link ColumnOverriddenRecipe.wrap}
@@ -56,7 +56,7 @@ function ColumnRecipeBuild(
   const parsed = parseColumnIdSafely(id);
 
   if (isPObjectKey(parsed)) {
-    return ColumnLazyImpl.fromId(id as PObjectId, opts);
+    return DataColumnImpl.fromId(id as PObjectId, opts);
   }
 
   if (isColumnDiscoveredKey(parsed)) {
@@ -98,7 +98,7 @@ function ColumnRecipeGetStatus(
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): ColumnResolutionStatus {
   const parsed = parseColumnIdSafely(id);
-  if (isPObjectKey(parsed)) return ColumnLazyImpl.getStatusById(id as PObjectId, opts);
+  if (isPObjectKey(parsed)) return DataColumnImpl.getStatusById(id as PObjectId, opts);
   if (isColumnDiscoveredKey(parsed)) return ColumnDiscoveredRecipe.getStatusByKey(parsed, opts);
   if (isColumnOverriddenKey(parsed)) return ColumnOverriddenRecipe.getStatusByKey(parsed, opts);
   if (isColumnFilteredKey(parsed)) return ColumnFilteredRecipe.getStatusByKey(parsed, opts);
@@ -112,14 +112,14 @@ export const ColumnRecipe: typeof ColumnRecipeBuild & {
 });
 
 /**
- * Type-guard for any recipe class — leaf {@link ColumnLazyImpl} or any of the
+ * Type-guard for any recipe class — leaf {@link DataColumnImpl} or any of the
  * wrapper recipes ({@link ColumnDiscoveredRecipe}, {@link ColumnFilteredRecipe},
  * {@link ColumnOverriddenRecipe}). Use when a value may be a raw id, a `PColumn`,
  * or a recipe and you want to branch on the recipe case.
  */
 export function isColumnRecipe(value: unknown): value is ColumnRecipe {
   return (
-    value instanceof ColumnLazyImpl ||
+    value instanceof DataColumnImpl ||
     value instanceof ColumnDiscoveredRecipe ||
     value instanceof ColumnFilteredRecipe ||
     value instanceof ColumnOverriddenRecipe
