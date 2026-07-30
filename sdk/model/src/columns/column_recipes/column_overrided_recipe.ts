@@ -11,6 +11,7 @@ import {
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
+import type { DataColumn, DataColumnData } from "../data_column";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
 import { ColumnRecipe } from "./index";
 import { Column } from "../column";
@@ -95,6 +96,26 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
       this.dataStatusCache = { value: this.inner.getDataStatus() };
     }
     return this.dataStatusCache.value;
+  }
+
+  /**
+   * Overrides are a pure spec patch — they never reshape the data — so the
+   * inner column's data stays consistent with this recipe's spec and can be
+   * passed straight through.
+   *
+   * Only valid when `inner` itself carries data. By the flat-merge invariant
+   * `inner` is never another Overridden, so it is a leaf, a Filtered or a
+   * Discovered — and only the leaf exposes `getData`. Gate with
+   * `hasDirectData(recipe)` instead of calling this blind.
+   */
+  getData(): DataColumnData {
+    const inner = this.inner as Partial<DataColumn>;
+    if (typeof inner.getData !== "function") {
+      throw new Error(
+        `ColumnOverriddenRecipe.getData: inner recipe of ${this.id} carries no directly readable data`,
+      );
+    }
+    return inner.getData();
   }
 
   /**

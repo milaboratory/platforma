@@ -13,8 +13,8 @@ import {
 } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../render/internal";
-import type { ColumnLazy } from "./column_lazy";
-import { ColumnLazyImpl } from "./column_lazy";
+import type { DataColumn } from "./data_column";
+import { DataColumnImpl } from "./data_column";
 import { expandByPartition } from "./expand_by_partition";
 
 // --- Helpers ---
@@ -33,13 +33,13 @@ function createSpec(name: string, axes: AxisSpec[]): PColumnSpec {
   } as PColumnSpec;
 }
 
-/** Build a synthetic ColumnLazy whose data is a JsonPartitioned DataInfoEntries. */
+/** Build a synthetic DataColumn whose data is a JsonPartitioned DataInfoEntries. */
 function createReadyLazy(
   id: string,
   spec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): ColumnLazy {
+): DataColumn {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
@@ -48,15 +48,15 @@ function createReadyLazy(
   // `data` is typed `PColumnDataUniversal` but `getUniquePartitionKeys`
   // duck-types DataInfoEntries via `isDataInfoEntries`, so the JsonPartitioned
   // payload works at runtime.
-  return ColumnLazyImpl.fromColumn({
+  return DataColumnImpl.fromColumn({
     id: id as PObjectId,
     spec,
     data: dataEntries as unknown as PColumnDataUniversal,
   });
 }
 
-function createComputingLazy(id: string, spec: PColumnSpec): ColumnLazy {
-  return ColumnLazyImpl.fromColumn({
+function createComputingLazy(id: string, spec: PColumnSpec): DataColumn {
+  return DataColumnImpl.fromColumn({
     id: id as PObjectId,
     spec,
     data: undefined,

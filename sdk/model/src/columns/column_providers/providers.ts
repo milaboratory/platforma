@@ -2,10 +2,11 @@ import {
   AccessorEntriesProvider,
   ResultPoolEntriesProvider,
   type PColumn,
+  type PObjectId,
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
 import { AccessorHandle, PColumnDataUniversal, TreeNodeAccessor } from "../../render";
-import { ColumnLazy, ColumnLazyImpl } from "../column_lazy";
+import { DataColumnImpl, type DataColumn } from "../data_column";
 import { getCfgRenderCtx } from "../../internal";
 import { isNil } from "es-toolkit";
 import { LRUCache } from "lru-cache";
@@ -20,7 +21,7 @@ import { LRUCache } from "lru-cache";
  */
 export interface ColumnsProvider {
   /** Returns all currently known PColumn columns as lazy views. */
-  getColumns(): ColumnLazy[];
+  getColumns(): DataColumn<PObjectId>[];
   /** Whether the provider has finished enumerating all its columns. */
   isFinal(): boolean;
 }
@@ -92,16 +93,16 @@ export function ResultPoolColumnsProvider(
  * id-index source — `ColumnRegistry` does not consume it.
  */
 export class ArrayColumnsProvider implements ColumnsProvider {
-  private readonly columns: ColumnLazy[];
+  private readonly columns: DataColumn<PObjectId>[];
 
   constructor(
-    columns: ReadonlyArray<PColumn<undefined | PColumnDataUniversal> | ColumnLazy>,
+    columns: ReadonlyArray<PColumn<undefined | PColumnDataUniversal> | DataColumn<PObjectId>>,
     private readonly _isFinal: boolean,
   ) {
-    this.columns = columns.map((c) => ColumnLazyImpl.fromColumn(c));
+    this.columns = columns.map((c) => DataColumnImpl.fromColumn(c));
   }
 
-  getColumns(): ColumnLazy[] {
+  getColumns(): DataColumn<PObjectId>[] {
     return this.columns;
   }
 
@@ -113,24 +114,24 @@ export class ArrayColumnsProvider implements ColumnsProvider {
 /**
  * Sandbox-specific provider over a {@link TreeNodeAccessor} root. Uses the
  * accessor's own `resolvePath` as the canonical root path for id construction,
- * and adds `getColumns()` returning {@link ColumnLazy}s on top of the generic
+ * and adds `getColumns()` returning {@link DataColumn<PObjectId>}s on top of the generic
  * entries index.
  */
 export class AccessorColumnsProviderImpl
   extends AccessorEntriesProvider<TreeNodeAccessor>
   implements ColumnsProvider
 {
-  private cachedColumns?: ColumnLazy[];
+  private cachedColumns?: DataColumn<PObjectId>[];
 
   constructor(root: TreeNodeAccessor) {
     super(root, root.resolvePath);
   }
 
-  getColumns(): ColumnLazy[] {
+  getColumns(): DataColumn<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
     return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => ColumnLazyImpl.fromAccessor(e))
-      .filter((v): v is ColumnLazy => !isNil(v)));
+      .map((e) => DataColumnImpl.fromAccessor(e))
+      .filter((v): v is DataColumn<PObjectId> => !isNil(v)));
   }
 }
 
@@ -146,7 +147,7 @@ export class ResultPoolColumnsProviderImpl
   extends ResultPoolEntriesProvider<TreeNodeAccessor>
   implements ColumnsProvider
 {
-  private cachedColumns?: ColumnLazy[];
+  private cachedColumns?: DataColumn<PObjectId>[];
 
   constructor(
     rawPool: ReadonlyArray<
@@ -170,11 +171,11 @@ export class ResultPoolColumnsProviderImpl
     super(blocks);
   }
 
-  getColumns(): ColumnLazy[] {
+  getColumns(): DataColumn<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
     return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => ColumnLazyImpl.fromAccessor(e))
-      .filter((v): v is ColumnLazy => !isNil(v)));
+      .map((e) => DataColumnImpl.fromAccessor(e))
+      .filter((v): v is DataColumn<PObjectId> => !isNil(v)));
   }
 }
 

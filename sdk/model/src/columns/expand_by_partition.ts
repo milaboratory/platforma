@@ -17,7 +17,7 @@ import type { ColumnRecipe } from "./column_recipes";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import { Column } from "./column";
-import { getLeafColumnData } from "./utils";
+import { hasDirectData } from "./utils";
 
 // --- Types ---
 
@@ -70,7 +70,7 @@ export function expandByPartition(
   const result: ColumnRecipe[] = [];
 
   for (const inner of inputs) {
-    const data = getLeafColumnData(inner);
+    const data = hasDirectData(inner) ? inner.getData() : undefined;
     // Partition inspection requires either a live tree-accessor or already
     // parsed DataInfoEntries. Anything else means the input is not yet ready.
     if (!(data instanceof TreeNodeAccessor) && !isDataInfoEntries(data)) {

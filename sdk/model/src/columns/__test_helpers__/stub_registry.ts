@@ -3,7 +3,7 @@
  * `ColumnRegistry.resolve(id)` returns a `LeafEntry` whose spec accessor
  * reports `hasData() === true` and `getDataAsJson()` returns the supplied
  * spec. Sufficient for code that goes through
- * `getCtxProviders` / `readLeafSpecAccessor` (e.g. `ColumnLazy.fromId`,
+ * `getCtxProviders` / `readLeafSpecAccessor` (e.g. `DataColumn.fromId`,
  * `ColumnDiscoveredRecipe.fromKey`).
  *
  * Two leaf shapes:
@@ -28,7 +28,7 @@ import type { GlobalCfgRenderCtx } from "../../render/internal";
 import type { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
-import { ColumnLazy, ColumnLazyImpl } from "../column_lazy";
+import { DataColumn, DataColumnImpl } from "../data_column";
 
 /** Fine-grained per-leaf stub config. Defaults match the shorthand form. */
 export type StubLeafConfig = {
@@ -65,14 +65,14 @@ function buildStubProvider(
       acc.entries.set(id, { accessor: stubAccessorFor(id, cfg), name: id, id });
       if (cfg.spec !== undefined && cfg.specHasData) {
         acc.columns.push(
-          ColumnLazyImpl.fromColumn({ id, spec: cfg.spec, data: undefined as never }),
+          DataColumnImpl.fromColumn({ id, spec: cfg.spec, data: undefined as never }),
         );
       }
       return acc;
     },
     {
       entries: new Map<PObjectId, LeafEntry<TreeNodeAccessor>>(),
-      columns: [] as ColumnLazy[],
+      columns: [] as DataColumn<PObjectId>[],
     },
   );
   return {

@@ -7,7 +7,7 @@ import type {
 import { PColumnName } from "@milaboratories/pl-model-common";
 import type { RenderCtxBase } from "../../../render";
 import type { ColumnRecipe, ColumnsSource } from "../../../columns";
-import { ColumnsCollection, isLeafColumn } from "../../../columns";
+import { ColumnsCollection, isSelfContained } from "../../../columns";
 import type { ColumnsSelectorConfig } from "./createPlDataTableV3";
 
 export type DiscoverTableColumnOptions = {
@@ -38,7 +38,7 @@ export function discoverTableColumns(
   const primary: ColumnRecipe[] = [];
   const secondary: ColumnRecipe[] = [];
   for (const col of discoveredColumns) {
-    if (isLeafColumn(col)) primary.push(col);
+    if (isSelfContained(col)) primary.push(col);
     else secondary.push(col);
   }
   return { primary, secondary };
