@@ -9,7 +9,7 @@ import {
   deriveAxisValuesLabels,
   expandByPartition,
   isSelfContained,
-  hasDirectData,
+  hasReachableData,
   type InferHrefType,
   type InferOutputsType,
   type PlDataTableStateV2,
@@ -144,7 +144,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
     const countLeaves = ColumnsCollection()
       .filter({ include: { name: [{ type: "exact", value: "count" }] } })
       .getColumns()
-      .filter(hasDirectData);
+      .filter(hasReachableData);
 
     const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
       axisValuesLabels: deriveAxisValuesLabels(),

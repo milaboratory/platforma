@@ -11,10 +11,13 @@ import { throwError } from "@milaboratories/helpers";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import { TreeNodeAccessor } from "../render";
 import { deriveDistinctLabels, type DeriveLabelsOptions } from "../labels/derive_distinct_labels";
-import { DataColumnImpl, type DataColumn, type DataColumnData } from "./data_column";
+import { DataColumnImpl, type DataColumn, type ColumnData } from "./data_column";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
-import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
+import {
+  ColumnOverriddenRecipe,
+  DataColumnOverriddenRecipe,
+} from "./column_recipes/column_overrided_recipe";
 import type { ColumnRecipe } from "./column_recipes/types";
 import { ColumnsCollection, isColumnsCollection } from "./columns_collection";
 import type { ColumnsSource } from "./column_providers/types";
@@ -115,7 +118,7 @@ export function hasColumnData(
   return true;
 }
 
-function isLeafDataPresent(data: DataColumnData): boolean {
+function isLeafDataPresent(data: ColumnData): boolean {
   if (data === undefined) return false;
   if (Array.isArray(data)) return true;
   if (data instanceof TreeNodeAccessor) return data.hasData();
@@ -168,7 +171,7 @@ export function isSelfContained(recipe: ColumnRecipe): boolean {
 
 /**
  * @deprecated Renamed to {@link isSelfContained} — "leaf" read as "you can get
- * data out of it", which is a different question (see {@link hasDirectData}).
+ * data out of it", which is a different question (see {@link hasReachableData}).
  * Same semantics.
  */
 export const isLeafColumn = isSelfContained;
@@ -183,24 +186,27 @@ export const isLeafColumn = isSelfContained;
  * other columns (nothing to read until the engine joins them). In both of
  * those cases the data exists only engine-side: pass `recipe.id` to
  * `createPFrame` / `createPTable` instead of trying to read it.
+ *
+ * The distinction is settled when the recipe is built, not here — recipes that
+ * carry data are instances of a class that declares `getData`. So a `true`
+ * result narrows to a value that really has the method, and there is no
+ * throwing path behind the guard.
  */
-export function hasDirectData(recipe: ColumnRecipe): recipe is DataColumn {
-  if (recipe instanceof DataColumnImpl) return true;
-  if (recipe instanceof ColumnOverriddenRecipe) return recipe.getInner() instanceof DataColumnImpl;
-  return false;
+export function hasReachableData(recipe: ColumnRecipe): recipe is DataColumn {
+  return recipe instanceof DataColumnImpl || recipe instanceof DataColumnOverriddenRecipe;
 }
 
 /**
- * @deprecated Use {@link hasDirectData} and call `getData()` on the narrowed
+ * @deprecated Use {@link hasReachableData} and call `getData()` on the narrowed
  * column.
  *
  * Behaviour change: this used to walk past an axis-filtered layer and hand
  * back the *unsliced* data of the underlying leaf, which does not match the
  * recipe's spec. It now returns `undefined` for anything
- * {@link hasDirectData} rejects.
+ * {@link hasReachableData} rejects.
  */
-export function getLeafColumnData(recipe: ColumnRecipe): DataColumnData {
-  return hasDirectData(recipe) ? recipe.getData() : undefined;
+export function getLeafColumnData(recipe: ColumnRecipe): ColumnData {
+  return hasReachableData(recipe) ? recipe.getData() : undefined;
 }
 
 /** Drop-down option built over a {@link ColumnsCollection} — universal-id valued. */

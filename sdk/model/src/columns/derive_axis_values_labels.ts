@@ -4,7 +4,7 @@ import type { ColumnsSource } from "./column_providers";
 import { ColumnsCollection, isColumnsCollection } from "./columns_collection";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import { TreeNodeAccessor } from "../render";
-import { hasDirectData } from "./utils";
+import { hasReachableData } from "./utils";
 
 const RT_JSON = "PColumnData/Json";
 const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
@@ -22,7 +22,7 @@ const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
  * `(axisId) => Record<axisValue, label>` shape).
  *
  * Skips:
- *  - recipes whose data is not directly readable (see `hasDirectData`);
+ *  - recipes whose data is not directly readable (see `hasReachableData`);
  *  - label columns whose `axesSpec.length !== 1`;
  *  - label columns whose data resource type isn't `PColumnData/Json` /
  *    `PColumnData/JsonPartitioned`.
@@ -43,7 +43,7 @@ export function deriveAxisValuesLabels(
     .getColumns();
 
   const byAxis = labelCols.reduce<Map<string, Record<string | number, string>>>((map, col) => {
-    if (!hasDirectData(col)) return map;
+    if (!hasReachableData(col)) return map;
     const spec = col.getSpec();
     if (spec.axesSpec.length !== 1) return map;
 
