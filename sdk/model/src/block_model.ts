@@ -33,6 +33,7 @@ import {
   createInitialStorage,
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
+  deriveTemplateParamsFromStorage,
 } from "./block_storage_callbacks";
 import { type PluginName } from "./block_storage";
 import type {
@@ -109,6 +110,7 @@ interface BlockModelV3Config<
   Data,
   Plugins extends Record<string, PluginRecord> = {},
   Transfers extends Record<string, unknown> = {},
+  Params = unknown,
 > {
   renderingMode: BlockRenderingMode;
   dataModel: DataModel<Data, unknown, Transfers>;
@@ -124,6 +126,8 @@ interface BlockModelV3Config<
   featureFlags: BlockCodeKnownFeatureFlags;
   argsFunction: ((data: unknown) => unknown) | undefined;
   prerunArgsFunction: ((data: unknown) => unknown) | undefined;
+  /** Projects block data back to this kind's params for template export (A-0041). */
+  templateParamsFunction: ((data: Data) => Params) | undefined;
   plugins: Plugins;
 }
 
@@ -138,9 +142,10 @@ export class BlockModelV3<
   Href extends `/${string}` = "/",
   Plugins extends Record<string, PluginRecord> = {},
   Transfers extends Record<string, unknown> = {},
+  Params = unknown,
 > {
   private constructor(
-    private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers>,
+    private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers, Params>,
   ) {}
 
   public static readonly FEATURE_FLAGS = {
@@ -182,7 +187,7 @@ export class BlockModelV3<
   >(args: {
     dataModel: DataModel<Data, Params, Transfers>;
     kind: BlockKind<Params>;
-  }): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>;
+  }): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params>;
   /**
    * @deprecated Transition-window overload for kind-less blocks. Prefer
    * `create({ dataModel, kind })`; this form will be removed once every V3
@@ -193,7 +198,7 @@ export class BlockModelV3<
     Transfers extends Record<string, unknown> = {},
   >(
     dataModel: DataModel<Data, unknown, Transfers>,
-  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>;
+  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, unknown>;
   public static create<
     Data extends Record<string, unknown>,
     Params = never,
@@ -202,7 +207,7 @@ export class BlockModelV3<
     arg:
       | { dataModel: DataModel<Data, Params, Transfers>; kind: BlockKind<Params> }
       | DataModel<Data, unknown, Transfers>,
-  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers> {
+  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params> {
     // Discriminate the two overloads: the object form has a `dataModel`
     // property; a DataModel instance does not.
     const isObjectArg = "dataModel" in arg;
@@ -220,7 +225,7 @@ export class BlockModelV3<
       );
     }
 
-    return new BlockModelV3<NoOb, {}, Data, "/", {}, Transfers>({
+    return new BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params>({
       renderingMode: "Heavy",
       dataModel,
       // The container-level kind reference: the one create() was given, or the
@@ -235,6 +240,7 @@ export class BlockModelV3<
       featureFlags: { ...BlockModelV3.FEATURE_FLAGS },
       argsFunction: undefined,
       prerunArgsFunction: undefined,
+      templateParamsFunction: undefined,
       plugins: {},
     });
   }
@@ -261,7 +267,8 @@ export class BlockModelV3<
     Data,
     Href,
     Plugins,
-    Transfers
+    Transfers,
+    Params
   >;
   /**
    * Add output cell to the configuration
@@ -283,13 +290,14 @@ export class BlockModelV3<
     Data,
     Href,
     Plugins,
-    Transfers
+    Transfers,
+    Params
   >;
   public output(
     key: string,
     cfgOrRf: RenderFunction<Args, Data, unknown>,
     flags: ConfigRenderLambdaFlags = {},
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
     return new BlockModelV3({
       ...this.config,
       outputs: {
@@ -318,7 +326,8 @@ export class BlockModelV3<
     Data,
     Href,
     Plugins,
-    Transfers
+    Transfers,
+    Params
   > {
     return this.output(key, rf, { retentive: true });
   }
@@ -346,8 +355,8 @@ export class BlockModelV3<
    */
   public args<A>(
     lambda: (data: Data) => A,
-  ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       argsFunction: lambda as (data: unknown) => unknown,
     });
@@ -375,10 +384,47 @@ export class BlockModelV3<
    */
   public prerunArgs(
     fn: (data: Data) => unknown,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       prerunArgsFunction: fn as (data: unknown) => unknown,
+    });
+  }
+
+  /**
+   * Sets the function that projects block data back to this kind's params, for
+   * exporting the project as a template (A-0041).
+   *
+   * The inverse of the data model's `init`: `init` builds data from `params`, this
+   * recovers the `params` that would rebuild the current data. Return only params
+   * — runtime and derived state is dropped, and the exporter supplies the rest of
+   * the entry (`id`, `kind`), which this lambda cannot set.
+   *
+   * References are returned as ordinary `PlRef`s; the SDK rewrites them into
+   * template-local form on the way out, so a block never deals with the file
+   * representation.
+   *
+   * Optional. A block without it exports as an entry with no `params`, so
+   * applying the template re-initializes it from the kind's defaults. Note that
+   * returning `{}` is NOT the same: empty params are written out and used as-is.
+   *
+   * The return type is the kind's `Params`, so a block whose projection drifts
+   * from its own init contract fails to compile. Available only on a
+   * kind-carrying model — `create(dataModel)` without a kind leaves `Params` as
+   * `unknown` and this method cannot be type-checked against anything.
+   *
+   * @example
+   * BlockModelV3.create({ dataModel, kind })
+   *   .args((data) => ({ numbers: data.numbers }))
+   *   .templateParams((data) => ({ sources: data.sources }))
+   *   .done();
+   */
+  public templateParams(
+    fn: (data: Data) => Params,
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+      ...this.config,
+      templateParamsFunction: fn,
     });
   }
 
@@ -386,27 +432,35 @@ export class BlockModelV3<
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, Data, Ret>,
-  >(rf: RF): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers>(
-      {
-        ...this.config,
-        // Replace the default sections callback with the user-provided one
-        sections: createAndRegisterRenderLambda(
-          {
-            handle: "sections",
-            lambda: () => rf(new BlockRenderCtx<Args, Data>()),
-          },
-          true,
-        ),
-      },
-    );
+  >(
+    rf: RF,
+  ): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers, Params> {
+    return new BlockModelV3<
+      Args,
+      OutputsCfg,
+      Data,
+      DeriveHref<ReturnType<RF>>,
+      Plugins,
+      Transfers,
+      Params
+    >({
+      ...this.config,
+      // Replace the default sections callback with the user-provided one
+      sections: createAndRegisterRenderLambda(
+        {
+          handle: "sections",
+          lambda: () => rf(new BlockRenderCtx<Args, Data>()),
+        },
+        true,
+      ),
+    });
   }
 
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
@@ -417,8 +471,8 @@ export class BlockModelV3<
 
   public subtitle(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
@@ -429,8 +483,8 @@ export class BlockModelV3<
 
   public tags(
     rf: RenderFunction<Args, Data, string[]>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
@@ -442,8 +496,8 @@ export class BlockModelV3<
   /** Sets or overrides feature flags for the block. */
   public withFeatureFlags(
     flags: Partial<BlockCodeKnownFeatureFlags>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       featureFlags: { ...this.config.featureFlags, ...flags },
     });
@@ -455,8 +509,8 @@ export class BlockModelV3<
    */
   public enriches(
     lambda: (args: Args) => PlRef[],
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
       enrichmentTargets: createAndRegisterRenderLambda({
         handle: "enrichmentTargets",
@@ -527,7 +581,8 @@ export class BlockModelV3<
         PluginUiServices
       >;
     },
-    Omit<Transfers, PluginId>
+    Omit<Transfers, PluginId>,
+    Params
   >;
   public plugin(
     instance: PluginInstanceClass,
@@ -538,7 +593,8 @@ export class BlockModelV3<
     Data,
     Href,
     Record<string, PluginRecord>,
-    Record<string, unknown>
+    Record<string, unknown>,
+    Params
   > {
     const pluginId = instance.id;
     const plugin = instance[CREATE_PLUGIN_MODEL]();
@@ -596,7 +652,7 @@ export class BlockModelV3<
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
-    const { dataModel, argsFunction, prerunArgsFunction } = this.config;
+    const { dataModel, argsFunction, prerunArgsFunction, templateParamsFunction } = this.config;
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -628,6 +684,11 @@ export class BlockModelV3<
         deriveArgsFromStorage(storageJson, argsFunction),
       [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
         derivePrerunArgsFromStorage(storageJson, argsFunction, prerunArgsFunction),
+      [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (storageJson) =>
+        deriveTemplateParamsFromStorage(
+          storageJson,
+          templateParamsFunction as ((data: unknown) => unknown) | undefined,
+        ),
     });
 
     // Register plugin input and output lambdas
@@ -757,6 +818,7 @@ type _ConfigTest = Expect<
       renderingMode: BlockRenderingMode;
       argsFunction: ((data: unknown) => unknown) | undefined;
       prerunArgsFunction: ((data: unknown) => unknown) | undefined;
+      templateParamsFunction: ((data: _TestData) => unknown) | undefined;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;
       outputs: _TestOutputs;

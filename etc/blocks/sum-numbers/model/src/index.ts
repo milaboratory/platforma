@@ -34,6 +34,8 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     return { sources: data.sources ?? [] };
   })
 
+  .templateParams((data) => ({ sources: data.sources }))
+
   .output("opts", (ctx) =>
     ctx.resultPool
       .getSpecs()

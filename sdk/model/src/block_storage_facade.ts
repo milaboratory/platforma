@@ -82,6 +82,7 @@ export const BlockStorageFacadeCallbacks = {
   ArgsDerive: "__pl_args_derive",
   PrerunArgsDerive: "__pl_prerunArgs_derive",
   StorageInitial: "__pl_storage_initial",
+  TemplateParamsDerive: "__pl_templateParams_derive",
 } as const;
 
 /**
@@ -189,6 +190,27 @@ export interface BlockStorageFacade {
    * @returns Initial storage as JSON string
    */
   [BlockStorageFacadeCallbacks.StorageInitial]: () => StringifiedJson;
+
+  /**
+   * Derive this block's template entry params from storage.
+   * Called when exporting the project as a template (A-0041).
+   *
+   * Registered by every V3 block, whether or not it declares `.templateParams()`:
+   * a block without the method returns `{ value: undefined }`, which the exporter
+   * writes as an entry with no `params` (the block re-initializes from its kind's
+   * defaults). `undefined` and `{}` are therefore NOT interchangeable — empty
+   * params are emitted as `params: {}` and used as-is by init.
+   *
+   * The returned params are already in template form: references appear as
+   * `{ block, output }` rather than as `PlRef`s. The caller supplies everything
+   * else in the entry — `id`, `kind` — so the lambda cannot set them.
+   *
+   * @param storageJson - Storage as JSON string
+   * @returns Either an error, or the params to write (undefined for none)
+   */
+  [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (
+    storageJson: StringifiedJson,
+  ) => { error: string } | { error?: undefined; value: unknown };
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */

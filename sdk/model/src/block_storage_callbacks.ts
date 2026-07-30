@@ -25,7 +25,11 @@ import {
 } from "./block_storage";
 import type { PluginHandle } from "./plugin_handle";
 
-import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
+import {
+  stringifyJson,
+  toTemplateForm,
+  type StringifiedJson,
+} from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
 import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
@@ -326,6 +330,43 @@ export function derivePrerunArgsFromStorage(
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
     return { error: `args() threw (fallback): ${errorMsg}` };
+  }
+}
+
+// =============================================================================
+// Template Entry Derivation from Storage
+// =============================================================================
+
+/**
+ * Derives this block's template-entry params from storage (A-0041).
+ *
+ * The inverse of the data model's `init`: `init` turns `params` into data, this
+ * turns data back into the params that would recreate it. The lambda returns
+ * params in ordinary live form — references as `PlRef`s — and this function
+ * projects them into template form, so the reference rewrite is one generic step
+ * here rather than per-kind work in every block.
+ *
+ * A block that declares no `templateParams` yields `{ value: undefined }`: the
+ * exporter writes an entry with no `params` and the block re-initializes from its
+ * kind's defaults.
+ *
+ * @param storageJson - Storage as JSON string
+ * @param templateParamsFunction - The block's templateParams lambda, if declared
+ * @returns ArgsDeriveResult holding the params in template form, or undefined
+ */
+export function deriveTemplateParamsFromStorage(
+  storageJson: string,
+  templateParamsFunction?: (data: unknown) => unknown,
+): ArgsDeriveResult {
+  if (!templateParamsFunction) return { value: undefined };
+
+  const { data } = normalizeStorage(storageJson);
+
+  try {
+    return { value: toTemplateForm(templateParamsFunction(data)) };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `templateParams() threw: ${errorMsg}` };
   }
 }
 

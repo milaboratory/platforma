@@ -34,6 +34,8 @@ export type BlockArgs = BlockData;
 export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
 
+  .templateParams((data) => ({ label: data.label }))
+
   .sections(() => {
     return [
       {

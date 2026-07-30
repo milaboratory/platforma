@@ -19,13 +19,6 @@ export type ProjectTemplateSchemaV1 = typeof PROJECT_TEMPLATE_SCHEMA_V1;
  * `{ block: <entry id>, output: <output name> }`. On apply the engine rewrites
  * each of these into a concrete `PlRef` against the freshly assigned UUIDs
  * before the params reach the block's init lambda.
- *
- * PROTOTYPE — RESERVATION RULE, needs sign-off: a plain object whose keys are
- * *exactly* `block` and `output`, both strings, is reserved for this meaning
- * anywhere inside an entry's `params`. Kinds must not use that shape for
- * anything else. The rule is what lets the engine rewrite references generically
- * (see {@link collectTemplateLocalRefs}) instead of every kind shipping a
- * params codec. Reject the rule and reference rewriting becomes per-kind work.
  */
 export type TemplateLocalRef = {
   readonly block: string;
@@ -38,12 +31,12 @@ export function createTemplateLocalRef(block: string, output: string): TemplateL
 }
 
 /**
- * Whether `value` is a {@link TemplateLocalRef} — a plain object with exactly
- * the two string keys `block` and `output`.
+ * Whether `value` is a {@link TemplateLocalRef} — a plain object with exactly the
+ * two string keys `block` and `output`.
  *
  * Deliberately exact: an object carrying a third key is NOT a reference, so a
- * kind that grows a `{ block, output, … }` param shape fails the reservation
- * rule loudly rather than having its params silently rewritten.
+ * kind that grows a `{ block, output, … }` param shape fails the reservation rule
+ * loudly rather than having its params silently rewritten.
  */
 export function isTemplateLocalRef(value: unknown): value is TemplateLocalRef {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
