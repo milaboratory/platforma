@@ -20,7 +20,7 @@ function wrap(id: PObjectId | SUniversalPColumnId, tag: string): SUniversalPColu
   });
 }
 
-// DataColumn constructor pulls `getCfgRenderCtx()` from globalThis on some
+// DataColumnRecipe constructor pulls `getCfgRenderCtx()` from globalThis on some
 // paths — keep a minimal mock the same way p_column_lazy.test.ts does.
 const mockCtx = {
   getAccessorHandleByName: () => undefined,

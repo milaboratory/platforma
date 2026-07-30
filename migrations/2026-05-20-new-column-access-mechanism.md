@@ -124,7 +124,7 @@ The bare leaf is the only recipe you ever construct from a `TreeNodeAccessor` / 
 
 `getData()` is available on a leaf and on an override over one — those are the shapes whose data still matches their spec, and together they form the `DataColumn` interface. An axis-filtered recipe deliberately has no `getData()`: its spec has dropped the pinned axes while the underlying data still carries them, so the slice only exists engine-side.
 
-For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** You never need to know which recipe class you're holding — narrow with `hasReachableData` / `isSelfContained` and use the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) rather than walking the recipe tree by hand.
+For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** You never need to know which recipe class you're holding — narrow with `hasReachableData` / `hasSingleDataColumn` and use the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) rather than walking the recipe tree by hand.
 
 ### Reading and constructing columns
 
@@ -144,26 +144,35 @@ if (hasReachableData(col)) {
 
 Iterating a 5k-column collection to call `getSpec()` on every entry will fetch 5k specs. If you only need ids, pass `col.id` straight through to whatever needs it — `createPFrame` / `createPTable` accept ids directly, so most pipelines never call `getSpec()` at all.
 
-### Predicates — `isColumn` / `isColumnRecipe` / `hasReachableData` / `isSelfContained`
+### Predicates — `isColumn` / `isDataColumn` / `hasReachableData` / `hasSingleDataColumn`
 
 They are named after what you can do with the column, not after which recipe class it is. Which classes exist is an implementation detail behind `recipe.id`; never `instanceof`-narrow to one.
 
 ```ts
-isColumn(value); // value is Column        (alias of isColumnRecipe)
-isColumnRecipe(value); // value is ColumnRecipe  (any recipe)
-hasReachableData(recipe); // recipe is DataColumn   (data readable here, matching getSpec())
-isSelfContained(recipe); // boolean               (resolves without other columns)
+isColumn(value); // value is Column               (any recipe)
+isDataColumn(value); // value is DataColumnRecipe     (bare leaf — id is a storage PObjectId)
+hasReachableData(recipe); // recipe is DataColumnRecipe    (data readable here, matching getSpec())
+hasSingleDataColumn(recipe); // boolean                      (reads one data column, not several)
 ```
 
 **`hasReachableData` — "can I read the data?"** True for a bare leaf and for a spec-override over one; those are the only shapes whose data still lines up with their spec. False for an axis-filtered recipe — its spec has dropped axes the underlying data still carries, and the slice happens engine-side — and false for anything reached through other columns. In both of those cases pass `recipe.id` to `createPFrame` / `createPTable` and let the host materialise it.
 
-**`isSelfContained` — "does it need other columns?"** True when the recipe is described entirely by its own source column plus projections over it. A column that is *not* self-contained reaches its data through other columns, so it brings axes into a join that its own spec never mentions. Use it for the **primary vs linker-joined** split at the `createPlDataTableV3` boundary: only self-contained columns are valid primaries, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `isSelfContained` for this — mirror it in your block code.
+**`hasSingleDataColumn` — "does it read one column or several?"** True for a bare leaf and for projections over one (spec overrides, axis slicing) — those add layers but no new columns. False when the recipe gets at its data through further columns, which is what happens when discovery reached it via a linker chain.
 
-The two are independent: an axis-filtered leaf is self-contained but has no direct data. Pick by what you do next with the result, not by which one sounds stricter.
+Such a column is co-indexed by its own axes, so its spec is the whole truth about them. A column that reads several only lines up after they are joined in, and therefore drags axes into the join its own spec never mentions. That is the **primary vs linker-joined** split at the `createPlDataTableV3` boundary: only single-column recipes are valid primaries, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `hasSingleDataColumn` for this — mirror it in your block code.
 
-Deprecated predecessors, still exported: `isLeafColumn` (renamed to `isSelfContained`, same semantics) and `isColumnLazy` (bare leaf only). The one case that still needs `isColumnLazy` is a legacy slot typed `PObjectId` — `PColumn.id`, `PColumnIdAndSpec.columnId` — which only bare leaves carry; wrappers expose `ColumnUniversalId`.
+The two predicates are independent: an axis-filtered leaf reads a single column but has no reachable data. Pick by what you do next with the result, not by which one sounds stricter.
 
-`getLeafColumnData(recipe)` is deprecated and its behaviour changed: it used to walk past an axis-filtered layer and hand back the underlying leaf's **unsliced** data, which does not match the recipe's spec. It now returns `undefined` for anything `hasReachableData` rejects. Use `hasReachableData(c) ? c.getData() : …` instead.
+**`isDataColumn` — "is this a storage column?"** True only for a bare leaf, whose `id` is a `PObjectId` naming a real column in storage. Reach for it when a type forces you to that id shape — `PColumn.id`, `PColumnIdAndSpec.columnId` — not when you merely want to read data; `hasReachableData` is the guard for that and also admits a spec-override over a leaf.
+
+`isLeafColumn` is still exported as a deprecated alias of `hasSingleDataColumn` (same semantics).
+
+**Removed:**
+
+- `isColumnLazy` → `isDataColumn`. Same check, named for the contract rather than for how the leaf is implemented.
+- `getLeafColumnData` — it walked past an axis-filtered layer and returned the underlying leaf's unsliced data, which does not match the recipe's spec. Replace with `hasReachableData(c) ? c.getData() : undefined`.
+- `isColumnRecipe` → `isColumn`.
+- `ColumnLazy` / `ColumnLazyImpl` / `ColumnLazyId` / `ColumnLazyData` → `DataColumn` / `DataColumnImpl` / `DataColumnId` / `ColumnData`.
 
 There is a single top-level entry point, `Column(source)`. It picks the right factory by source shape and returns a `ColumnRecipe`:
 
@@ -680,7 +689,7 @@ When the same accessor is reused as a discovery **source** (e.g. `sampledRows` i
 A handful of SDK helpers (most notably `createPFrameForGraphs`, and any consumer typed against `PColumn<PColumnDataUniversal>[]`) still take materialised `PColumn[]` only — they do not yet accept `ColumnRecipe[]` / ids. The bridge is straightforward when every recipe in the set is a **bare leaf** (`DataColumn`):
 
 ```ts
-const leaves = recipes.filter(isColumnLazy);
+const leaves = recipes.filter(isDataColumn);
 const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
   id: c.id,
   spec: c.getSpec(),
@@ -689,7 +698,7 @@ const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
 return createPFrameForGraphs(ctx, pCols);
 ```
 
-This is the one place `isColumnLazy` is still the right guard, despite being deprecated: the `PColumn.id` slot is typed `PObjectId`, which only a bare leaf carries — every wrapper, including an override over a leaf, exposes `ColumnUniversalId`. `hasReachableData` is the wrong narrow here precisely because it also admits those overrides. Same reasoning applies to `PColumnIdAndSpec.columnId`.
+`isDataColumn` — not `hasReachableData` — is the right guard here: the `PColumn.id` slot is typed `PObjectId`, which only a bare leaf carries, while every wrapper (including an override over a leaf) exposes `ColumnUniversalId`. `hasReachableData` is the wrong narrow precisely because it also admits those overrides. Same reasoning applies to `PColumnIdAndSpec.columnId`.
 
 Notes:
 
@@ -716,7 +725,7 @@ import {
   deriveAxisValuesLabels,
   expandByPartition,
   hasReachableData,
-  isSelfContained,
+  hasSingleDataColumn,
 } from "@platforma-sdk/model";
 
 .outputWithStatus("tableSplit", (ctx) => {
@@ -726,17 +735,17 @@ import {
   // can also surface multi-axis Discovered variants (e.g. `count [group, name]`
   // reached via a linker); those belong in secondary, not in the join's primary
   // side. Mirrors what `discoverTableColumns` does internally for the
-  // selector-form path. `isSelfContained` accepts bare `DataColumn` plus
+  // selector-form path. `hasSingleDataColumn` accepts bare `DataColumn` plus
   // `Overridden` / `Filtered` over a leaf — anything whose chain reaches a
   // `Discovered` is rejected.
   const primary = ColumnsCollection()
     .discover({ anchors: { main: valueAnchor }, mode: "exact" })
     .getColumns()
-    .filter(isSelfContained);
+    .filter(hasSingleDataColumn);
   if (primary.length === 0) return undefined;
 
   // Inputs for the split must be readable here — `expandByPartition` calls
-  // `getData()` on each to inspect partitions. `isSelfContained` is the wrong
+  // `getData()` on each to inspect partitions. `hasSingleDataColumn` is the wrong
   // guard: an axis-filtered column passes it but has no readable data.
   const countLeaves = ColumnsCollection()
     .filter({ include: { name: [{ type: "exact", value: "count" }] } })
@@ -773,4 +782,4 @@ Two architectural invariants worth remembering when reading or extending this pa
 
 - **`ColumnOverriddenRecipe` is always the outermost wrap.** `ColumnFilteredRecipe.withSpecs(overrides)` yields `Overridden<Filtered<inner>>` automatically. Do not try to construct `Filtered<Overridden<...>>` — the SDK has no public path to that layering and the invariant is enforced inside `unwrapOverrides`.
 
-- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `DataColumn` (direct anchor hits), `Overridden` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `isSelfContained`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(isSelfContained)` on the discover result — **not** `isColumnLazy`, which is stricter and drops valid `Filtered` / `Overridden`-over-leaf primaries.
+- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `DataColumn` (direct anchor hits), `Overridden` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `hasSingleDataColumn`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(hasSingleDataColumn)` on the discover result — **not** `isDataColumn`, which is stricter and drops valid `Filtered` / `Overridden`-over-leaf primaries.

@@ -6,7 +6,7 @@ import {
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
 import { AccessorHandle, PColumnDataUniversal, TreeNodeAccessor } from "../../render";
-import { DataColumnImpl, type DataColumn } from "../data_column";
+import { DataColumn, DataColumnRecipe } from "../data_column";
 import { getCfgRenderCtx } from "../../internal";
 import { isNil } from "es-toolkit";
 import { LRUCache } from "lru-cache";
@@ -21,7 +21,7 @@ import { LRUCache } from "lru-cache";
  */
 export interface ColumnsProvider {
   /** Returns all currently known PColumn columns as lazy views. */
-  getColumns(): DataColumn<PObjectId>[];
+  getColumns(): DataColumnRecipe<PObjectId>[];
   /** Whether the provider has finished enumerating all its columns. */
   isFinal(): boolean;
 }
@@ -93,16 +93,16 @@ export function ResultPoolColumnsProvider(
  * id-index source — `ColumnRegistry` does not consume it.
  */
 export class ArrayColumnsProvider implements ColumnsProvider {
-  private readonly columns: DataColumn<PObjectId>[];
+  private readonly columns: DataColumnRecipe<PObjectId>[];
 
   constructor(
-    columns: ReadonlyArray<PColumn<undefined | PColumnDataUniversal> | DataColumn<PObjectId>>,
+    columns: ReadonlyArray<PColumn<undefined | PColumnDataUniversal> | DataColumnRecipe<PObjectId>>,
     private readonly _isFinal: boolean,
   ) {
-    this.columns = columns.map((c) => DataColumnImpl.fromColumn(c));
+    this.columns = columns.map((c) => DataColumn.fromColumn(c));
   }
 
-  getColumns(): DataColumn<PObjectId>[] {
+  getColumns(): DataColumnRecipe<PObjectId>[] {
     return this.columns;
   }
 
@@ -114,24 +114,24 @@ export class ArrayColumnsProvider implements ColumnsProvider {
 /**
  * Sandbox-specific provider over a {@link TreeNodeAccessor} root. Uses the
  * accessor's own `resolvePath` as the canonical root path for id construction,
- * and adds `getColumns()` returning {@link DataColumn<PObjectId>}s on top of the generic
+ * and adds `getColumns()` returning {@link DataColumnRecipe<PObjectId>}s on top of the generic
  * entries index.
  */
 export class AccessorColumnsProviderImpl
   extends AccessorEntriesProvider<TreeNodeAccessor>
   implements ColumnsProvider
 {
-  private cachedColumns?: DataColumn<PObjectId>[];
+  private cachedColumns?: DataColumnRecipe<PObjectId>[];
 
   constructor(root: TreeNodeAccessor) {
     super(root, root.resolvePath);
   }
 
-  getColumns(): DataColumn<PObjectId>[] {
+  getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
     return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumnImpl.fromAccessor(e))
-      .filter((v): v is DataColumn<PObjectId> => !isNil(v)));
+      .map((e) => DataColumn.fromAccessor(e))
+      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
   }
 }
 
@@ -147,7 +147,7 @@ export class ResultPoolColumnsProviderImpl
   extends ResultPoolEntriesProvider<TreeNodeAccessor>
   implements ColumnsProvider
 {
-  private cachedColumns?: DataColumn<PObjectId>[];
+  private cachedColumns?: DataColumnRecipe<PObjectId>[];
 
   constructor(
     rawPool: ReadonlyArray<
@@ -171,11 +171,11 @@ export class ResultPoolColumnsProviderImpl
     super(blocks);
   }
 
-  getColumns(): DataColumn<PObjectId>[] {
+  getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
     return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumnImpl.fromAccessor(e))
-      .filter((v): v is DataColumn<PObjectId> => !isNil(v)));
+      .map((e) => DataColumn.fromAccessor(e))
+      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
   }
 }
 

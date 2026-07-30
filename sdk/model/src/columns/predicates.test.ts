@@ -6,10 +6,10 @@ import type {
   SpecOverrides,
 } from "@milaboratories/pl-model-common";
 import type { PColumnDataUniversal } from "../render/internal";
-import { DataColumnImpl, type DataColumn } from "./data_column";
+import { DataColumnImpl, type DataColumnRecipe } from "./data_column";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
-import { getLeafColumnData, hasReachableData, isSelfContained } from "./utils";
+import { hasReachableData, hasSingleDataColumn } from "./utils";
 
 // --- Helpers ---
 
@@ -77,7 +77,7 @@ describe("hasReachableData", () => {
   test("an unreadable override has no getData at all — nothing to call, nothing to throw", () => {
     const filtered = ColumnFilteredRecipe.wrap(leaf(), [[0, "s1"]]);
     const col = ColumnOverriddenRecipe.wrap(filtered, overrides({ annotations: { tag: "1" } }));
-    expect((col as Partial<DataColumn>).getData).toBeUndefined();
+    expect((col as Partial<DataColumnRecipe>).getData).toBeUndefined();
   });
 
   test("merging overrides keeps the readable variant", () => {
@@ -99,42 +99,26 @@ describe("hasReachableData", () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// isSelfContained — "does this column need other columns to resolve?"
+// hasSingleDataColumn — "does this column read one data column, or several?"
 // ════════════════════════════════════════════════════════════════════════════
 
-describe("isSelfContained", () => {
-  test("bare leaf, override and axis filter are all self-contained", () => {
+describe("hasSingleDataColumn", () => {
+  test("bare leaf, override and axis filter all read a single data column", () => {
     const bare = leaf();
     const filtered = ColumnFilteredRecipe.wrap(leaf(), [[0, "s1"]]);
     const overridden = ColumnOverriddenRecipe.wrap(filtered, overrides({ domain: { d: "1" } }));
 
-    expect(isSelfContained(bare)).toBe(true);
-    expect(isSelfContained(filtered)).toBe(true);
-    expect(isSelfContained(overridden)).toBe(true);
+    expect(hasSingleDataColumn(bare)).toBe(true);
+    expect(hasSingleDataColumn(filtered)).toBe(true);
+    expect(hasSingleDataColumn(overridden)).toBe(true);
   });
 
   test("is a different question from hasReachableData", () => {
     const filtered = ColumnFilteredRecipe.wrap(leaf(), [[0, "s1"]]);
-    // Self-contained (no other column needed) yet not directly readable
-    // (the slice happens engine-side). Conflating the two is the bug this
-    // pair of predicates replaced.
-    expect(isSelfContained(filtered)).toBe(true);
+    // Reads a single data column, yet its data is not reachable here (the
+    // slice happens engine-side). Conflating the two is the bug this pair of
+    // predicates replaced.
+    expect(hasSingleDataColumn(filtered)).toBe(true);
     expect(hasReachableData(filtered)).toBe(false);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// Regression: the deprecated reader must not hand back unsliced data
-// ════════════════════════════════════════════════════════════════════════════
-
-describe("getLeafColumnData (deprecated)", () => {
-  test("returns undefined for an axis-filtered recipe instead of the unsliced leaf data", () => {
-    const filtered = ColumnFilteredRecipe.wrap(leaf(), [[0, "s1"]]);
-    expect(getLeafColumnData(filtered)).toBeUndefined();
-  });
-
-  test("still reads through an override over a leaf", () => {
-    const col = ColumnOverriddenRecipe.wrap(leaf(), overrides({ annotations: { tag: "1" } }));
-    expect(getLeafColumnData(col)).toBe(DATA);
   });
 });

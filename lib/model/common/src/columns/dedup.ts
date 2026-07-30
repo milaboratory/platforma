@@ -20,7 +20,7 @@ import { isPObjectId } from "../pool";
  *
  * Shared by sandbox-side `extractColumns` (column_providers) and host-side
  * `ColumnsCollectionDriverImpl.getColumns` — both layers need identical
- * dedup semantics, but operate on different concrete item types (DataColumn
+ * dedup semantics, but operate on different concrete item types (DataColumnRecipe
  * vs. raw ColumnUniversalId).
  */
 export function dedupColumns<T>(

@@ -10,7 +10,7 @@ import type { PColumnDataUniversal } from "../../../render";
 import { isFunction } from "es-toolkit";
 import type { PlDataTableFilters } from "../typesV8";
 import { createPTableDefV3 } from "./createPTableDefV3";
-import { DataColumnImpl } from "../../../columns";
+import { DataColumn } from "../../../columns";
 
 export function createPTableDefV2(params: {
   columns: PColumn<undefined | PColumnDataUniversal>[];
@@ -33,8 +33,8 @@ export function createPTableDefV2(params: {
   secondaryColumns.push(...params.labelColumns);
 
   return createPTableDefV3({
-    primary: coreColumns.map((column) => DataColumnImpl.fromColumn(column)),
-    secondary: secondaryColumns.map((column) => DataColumnImpl.fromColumn(column)),
+    primary: coreColumns.map((column) => DataColumn.fromColumn(column)),
+    secondary: secondaryColumns.map((column) => DataColumn.fromColumn(column)),
     primaryJoinType: params.coreJoinType,
     filters: params.filters,
     sorting: params.sorting,
