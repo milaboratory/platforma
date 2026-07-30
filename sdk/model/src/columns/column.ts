@@ -7,7 +7,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import type { TreeNodeAccessor } from "../render";
-import { DataColumn, type DataColumnData } from "./data_column";
+import { DataColumn, type ColumnData } from "./data_column";
 import { ColumnRecipe, ColumnRecipeId, isColumnRecipe } from "./column_recipes";
 
 export type ColumnSource =
@@ -15,7 +15,7 @@ export type ColumnSource =
   | ColumnUniversalId
   | PlRef
   | LeafEntry<TreeNodeAccessor>
-  | PColumn<DataColumnData>
+  | PColumn<ColumnData>
   | DataColumn<PObjectId>;
 
 /**

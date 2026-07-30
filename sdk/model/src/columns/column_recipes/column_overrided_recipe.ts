@@ -11,7 +11,7 @@ import {
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
-import type { DataColumn, DataColumnData } from "../data_column";
+import type { DataColumn, ColumnData } from "../data_column";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
 import { ColumnRecipe } from "./index";
 import { Column } from "../column";
@@ -43,12 +43,41 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
    */
   static wrap(col: Column, overrides: SpecOverrides): ColumnOverriddenRecipe {
     if (col instanceof ColumnOverriddenRecipe) {
-      return new ColumnOverriddenRecipe(col.inner, mergeSpecOverrides(col.overrides, overrides));
+      return ColumnOverriddenRecipe.build(col.inner, mergeSpecOverrides(col.overrides, overrides));
     }
     // `inner` is not an Overridden wrap (the `instanceof` branch above handles
     // that). Narrow the id union here so the constructor parameter stays
     // honest with `ColumnOverriddenKey.source`.
-    return new ColumnOverriddenRecipe(col as NonOverriddenColumn, overrides);
+    return ColumnOverriddenRecipe.build(col as NonOverriddenColumn, overrides);
+  }
+
+  /**
+   * Pick the variant from the inner recipe: data-bearing inner →
+   * {@link DataColumnOverriddenRecipe}, otherwise the plain wrapper.
+   *
+   * The choice is **structural**, not a readiness check — it follows from
+   * which kind of recipe `inner` is, which in turn follows from the id alone
+   * (a bare `PObjectId` source is a leaf, anything else is not). So the same
+   * id always yields the same class, whether it was built via `withSpecs` or
+   * parsed from a string, and recipes stay value-objects that are equal iff
+   * their ids match.
+   *
+   * Re-deriving from `inner` on every build is also what keeps the merge path
+   * honest: `overridden.withSpecs(a).withSpecs(b)` cannot silently drop the
+   * data-bearing variant.
+   *
+   * Discriminated by method presence rather than `instanceof DataColumnImpl`
+   * to keep this module free of a runtime import cycle with `../data_column`.
+   * By the flat-merge invariant `inner` is never an Overridden, so the only
+   * recipe kind reaching here that carries `getData` is the leaf.
+   */
+  private static build(
+    inner: NonOverriddenColumn,
+    overrides: SpecOverrides,
+  ): ColumnOverriddenRecipe {
+    return typeof (inner as Partial<DataColumn>).getData === "function"
+      ? new DataColumnOverriddenRecipe(inner, overrides)
+      : new ColumnOverriddenRecipe(inner, overrides);
   }
 
   /**
@@ -68,7 +97,7 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
   private queryCache?: { readonly value: SpecQuery };
   private dataStatusCache?: { readonly value: ColumnFieldStatus };
 
-  private constructor(
+  protected constructor(
     private readonly inner: NonOverriddenColumn,
     private readonly overrides: SpecOverrides,
   ) {
@@ -96,26 +125,6 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
       this.dataStatusCache = { value: this.inner.getDataStatus() };
     }
     return this.dataStatusCache.value;
-  }
-
-  /**
-   * Overrides are a pure spec patch — they never reshape the data — so the
-   * inner column's data stays consistent with this recipe's spec and can be
-   * passed straight through.
-   *
-   * Only valid when `inner` itself carries data. By the flat-merge invariant
-   * `inner` is never another Overridden, so it is a leaf, a Filtered or a
-   * Discovered — and only the leaf exposes `getData`. Gate with
-   * `hasDirectData(recipe)` instead of calling this blind.
-   */
-  getData(): DataColumnData {
-    const inner = this.inner as Partial<DataColumn>;
-    if (typeof inner.getData !== "function") {
-      throw new Error(
-        `ColumnOverriddenRecipe.getData: inner recipe of ${this.id} carries no directly readable data`,
-      );
-    }
-    return inner.getData();
   }
 
   /**
@@ -163,5 +172,29 @@ export class ColumnOverriddenRecipe implements Column<ColumnOverriddenId> {
    */
   withSpecs(overrides: SpecOverrides): Column {
     return ColumnOverriddenRecipe.wrap(this, overrides);
+  }
+}
+
+/**
+ * The variant produced when the wrapped recipe is itself data-bearing.
+ *
+ * Overrides are a pure spec patch — they never reshape the data — so the inner
+ * column's data stays consistent with this recipe's spec and is passed
+ * straight through. Which variant you get is decided once, at construction:
+ * see {@link build}.
+ *
+ * Not something callers name. Narrow with `hasReachableData(recipe)`, which
+ * yields the {@link DataColumn} interface.
+ */
+export class DataColumnOverriddenRecipe
+  extends ColumnOverriddenRecipe
+  implements DataColumn<ColumnOverriddenId>
+{
+  /**
+   * Safe by construction: {@link build} only picks this class when the inner
+   * recipe exposes `getData`.
+   */
+  getData(): ColumnData {
+    return (this.getInner() as DataColumn).getData();
   }
 }

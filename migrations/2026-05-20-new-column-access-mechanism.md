@@ -107,7 +107,7 @@ recipe.getDataStatus(); // "present" | "absent" | "resolving" (worst across refe
 recipe.withSpecs(patch); // returns a new recipe with the patch baked into the id
 ```
 
-Note what's **not** there: there is no `getData()` on a recipe. For most recipes the data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`; pulling it into the sandbox would defeat the whole point of the refactor. The recipes that _can_ be read here implement `DataColumn`, and you reach that capability through `hasDirectData(recipe)` — see below.
+Note what's **not** there: there is no `getData()` on a recipe. For most recipes the data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`; pulling it into the sandbox would defeat the whole point of the refactor. The recipes that _can_ be read here implement `DataColumn`, and you reach that capability through `hasReachableData(recipe)` — see below.
 
 The id is the source of truth; the recipe is just a typed accessor over it. The id string encodes _how_ the column was produced, and each form has its own recipe class:
 
@@ -124,7 +124,7 @@ The bare leaf is the only recipe you ever construct from a `TreeNodeAccessor` / 
 
 `getData()` is available on a leaf and on an override over one — those are the shapes whose data still matches their spec, and together they form the `DataColumn` interface. An axis-filtered recipe deliberately has no `getData()`: its spec has dropped the pinned axes while the underlying data still carries them, so the slice only exists engine-side.
 
-For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** You never need to know which recipe class you're holding — narrow with `hasDirectData` / `isSelfContained` and use the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) rather than walking the recipe tree by hand.
+For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** You never need to know which recipe class you're holding — narrow with `hasReachableData` / `isSelfContained` and use the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) rather than walking the recipe tree by hand.
 
 ### Reading and constructing columns
 
@@ -137,25 +137,25 @@ col.getSpec(); // PColumnSpec — bridge round-trip on first call
 col.getDataStatus(); // ColumnFieldStatus: "present" | "absent" | "resolving"
 
 // Data is not on the recipe interface — narrow first.
-if (hasDirectData(col)) {
+if (hasReachableData(col)) {
   col.getData(); // PColumnDataUniversal | undefined — bridge round-trip
 }
 ```
 
 Iterating a 5k-column collection to call `getSpec()` on every entry will fetch 5k specs. If you only need ids, pass `col.id` straight through to whatever needs it — `createPFrame` / `createPTable` accept ids directly, so most pipelines never call `getSpec()` at all.
 
-### Predicates — `isColumn` / `isColumnRecipe` / `hasDirectData` / `isSelfContained`
+### Predicates — `isColumn` / `isColumnRecipe` / `hasReachableData` / `isSelfContained`
 
 They are named after what you can do with the column, not after which recipe class it is. Which classes exist is an implementation detail behind `recipe.id`; never `instanceof`-narrow to one.
 
 ```ts
 isColumn(value); // value is Column        (alias of isColumnRecipe)
 isColumnRecipe(value); // value is ColumnRecipe  (any recipe)
-hasDirectData(recipe); // recipe is DataColumn   (data readable here, matching getSpec())
+hasReachableData(recipe); // recipe is DataColumn   (data readable here, matching getSpec())
 isSelfContained(recipe); // boolean               (resolves without other columns)
 ```
 
-**`hasDirectData` — "can I read the data?"** True for a bare leaf and for a spec-override over one; those are the only shapes whose data still lines up with their spec. False for an axis-filtered recipe — its spec has dropped axes the underlying data still carries, and the slice happens engine-side — and false for anything reached through other columns. In both of those cases pass `recipe.id` to `createPFrame` / `createPTable` and let the host materialise it.
+**`hasReachableData` — "can I read the data?"** True for a bare leaf and for a spec-override over one; those are the only shapes whose data still lines up with their spec. False for an axis-filtered recipe — its spec has dropped axes the underlying data still carries, and the slice happens engine-side — and false for anything reached through other columns. In both of those cases pass `recipe.id` to `createPFrame` / `createPTable` and let the host materialise it.
 
 **`isSelfContained` — "does it need other columns?"** True when the recipe is described entirely by its own source column plus projections over it. A column that is *not* self-contained reaches its data through other columns, so it brings axes into a join that its own spec never mentions. Use it for the **primary vs linker-joined** split at the `createPlDataTableV3` boundary: only self-contained columns are valid primaries, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `isSelfContained` for this — mirror it in your block code.
 
@@ -163,7 +163,7 @@ The two are independent: an axis-filtered leaf is self-contained but has no dire
 
 Deprecated predecessors, still exported: `isLeafColumn` (renamed to `isSelfContained`, same semantics) and `isColumnLazy` (bare leaf only). The one case that still needs `isColumnLazy` is a legacy slot typed `PObjectId` — `PColumn.id`, `PColumnIdAndSpec.columnId` — which only bare leaves carry; wrappers expose `ColumnUniversalId`.
 
-`getLeafColumnData(recipe)` is deprecated and its behaviour changed: it used to walk past an axis-filtered layer and hand back the underlying leaf's **unsliced** data, which does not match the recipe's spec. It now returns `undefined` for anything `hasDirectData` rejects. Use `hasDirectData(c) ? c.getData() : …` instead.
+`getLeafColumnData(recipe)` is deprecated and its behaviour changed: it used to walk past an axis-filtered layer and hand back the underlying leaf's **unsliced** data, which does not match the recipe's spec. It now returns `undefined` for anything `hasReachableData` rejects. Use `hasReachableData(c) ? c.getData() : …` instead.
 
 There is a single top-level entry point, `Column(source)`. It picks the right factory by source shape and returns a `ColumnRecipe`:
 
@@ -331,7 +331,7 @@ The biggest mechanical hazard. `ColumnMatch` had a nested `.column` field carryi
 | `m.column.spec.name`        | `c.getSpec().name`          | host round-trip                                                                       |
 | `m.column.spec.axesSpec`    | `c.getSpec().axesSpec`      | host round-trip                                                                       |
 | `m.column.spec.annotations` | `c.getSpec().annotations`   | host round-trip                                                                       |
-| `m.column.data`             | _only on `DataColumn`_      | narrow first: `if (hasDirectData(c)) c.getData()`                                     |
+| `m.column.data`             | _only on `DataColumn`_      | narrow first: `if (hasReachableData(c)) c.getData()`                                     |
 | `m.column.data.get()`       | `c.getData()` (no `.get()`) | the `.get()` indirection is gone — `getData()` is the read.                           |
 
 The rule is the same as for any other recipe: **filter host-side via `include` / `exclude` whenever possible, call `getSpec()` only on survivors**. Whenever you see a long `.filter(m => …m.column.spec…)` chain in legacy code, the first migration step is "what of this is expressible as a selector?".
@@ -689,11 +689,11 @@ const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
 return createPFrameForGraphs(ctx, pCols);
 ```
 
-This is the one place `isColumnLazy` is still the right guard, despite being deprecated: the `PColumn.id` slot is typed `PObjectId`, which only a bare leaf carries — every wrapper, including an override over a leaf, exposes `ColumnUniversalId`. `hasDirectData` is the wrong narrow here precisely because it also admits those overrides. Same reasoning applies to `PColumnIdAndSpec.columnId`.
+This is the one place `isColumnLazy` is still the right guard, despite being deprecated: the `PColumn.id` slot is typed `PObjectId`, which only a bare leaf carries — every wrapper, including an override over a leaf, exposes `ColumnUniversalId`. `hasReachableData` is the wrong narrow here precisely because it also admits those overrides. Same reasoning applies to `PColumnIdAndSpec.columnId`.
 
 Notes:
 
-- This **only works for a bare leaf**. `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` cannot be read in the sandbox at all, and `ColumnOverriddenRecipe` — though readable via `hasDirectData` — carries a `ColumnUniversalId` that the `PColumn.id` slot rejects. There is no "materialise this recipe to a PColumn" path for any of them. If your discovery emits wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
+- This **only works for a bare leaf**. `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` cannot be read in the sandbox at all, and `ColumnOverriddenRecipe` — though readable via `hasReachableData` — carries a `ColumnUniversalId` that the `PColumn.id` slot rejects. There is no "materialise this recipe to a PColumn" path for any of them. If your discovery emits wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
 - `PColumnIdAndSpec.columnId: PObjectId` — same constraint by the same logic. Only `DataColumn.id` (bare `PObjectId`) goes there; never a `ColumnUniversalId` from a wrapper recipe.
 - The `{ anchor: 'main', idx: 1 }` axis-binding from legacy `getAnchoredPColumns` has no `RelaxedAxisSelector` form. Workaround: read the anchor's `axesSpec[i].name` and pass it as `axes: [{ name }]` in the new selector — the axis-name match is enough for the common case.
 
@@ -715,7 +715,7 @@ import {
   createPlDataTableV3,
   deriveAxisValuesLabels,
   expandByPartition,
-  hasDirectData,
+  hasReachableData,
   isSelfContained,
 } from "@platforma-sdk/model";
 
@@ -741,7 +741,7 @@ import {
   const countLeaves = ColumnsCollection()
     .filter({ include: { name: [{ type: "exact", value: "count" }] } })
     .getColumns()
-    .filter(hasDirectData);
+    .filter(hasReachableData);
 
   const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
     axisValuesLabels: deriveAxisValuesLabels(),

@@ -26,7 +26,7 @@ import type {
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 
 export type DataColumnId = PObjectId;
-export type DataColumnData = undefined | PColumnDataUniversal;
+export type ColumnData = undefined | PColumnDataUniversal;
 export type { ColumnFieldStatus, ColumnResolutionStatus } from "./column_recipes/types";
 
 /**
@@ -40,13 +40,13 @@ export type { ColumnFieldStatus, ColumnResolutionStatus } from "./column_recipes
  * only materialises after a join; neither can be read here, so neither
  * implements this interface.
  *
- * Narrow to it with `hasDirectData(recipe)` rather than testing for a concrete
+ * Narrow to it with `hasReachableData(recipe)` rather than testing for a concrete
  * class — which recipe classes exist is an implementation detail behind
  * `recipe.id`.
  */
 export interface DataColumn<ID extends ColumnRecipeId = ColumnRecipeId> extends ColumnRecipe<ID> {
   /** Column data, consistent with {@link ColumnRecipe.getSpec}. */
-  getData(): DataColumnData;
+  getData(): ColumnData;
 }
 
 /**
@@ -78,14 +78,14 @@ export class ColumnAbsentError extends Error {
  */
 export class DataColumnImpl implements DataColumn<PObjectId> {
   private specCache?: { readonly value: PColumnSpec };
-  private dataCache?: { readonly value: DataColumnData };
+  private dataCache?: { readonly value: ColumnData };
   private dataStatusCache?: { readonly value: ColumnFieldStatus };
 
   private constructor(
     public readonly id: PObjectId,
     private readonly options: {
       getSpec: () => PColumnSpec;
-      getData: () => DataColumnData;
+      getData: () => ColumnData;
       getDataStatus: () => ColumnFieldStatus;
     },
   ) {}
@@ -107,7 +107,7 @@ export class DataColumnImpl implements DataColumn<PObjectId> {
     return { type: "column", column: this.id } as SpecQuery;
   }
 
-  getData(): DataColumnData {
+  getData(): ColumnData {
     if (this.dataCache === undefined) this.dataCache = { value: this.options.getData() };
     return this.dataCache.value;
   }
@@ -186,15 +186,13 @@ export class DataColumnImpl implements DataColumn<PObjectId> {
    * Wrap a materialised {@link PColumn}. If the input is already a
    * {@link DataColumn} leaf it is returned as-is.
    */
-  static fromColumn(
-    column: PColumn<DataColumnData> | DataColumn<PObjectId>,
-  ): DataColumn<PObjectId> {
+  static fromColumn(column: PColumn<ColumnData> | DataColumn<PObjectId>): DataColumn<PObjectId> {
     if (column instanceof DataColumnImpl) return column;
     // `DataColumn` is an interface, so `instanceof` above does not remove it
     // from the union. The only implementation carrying a bare `PObjectId` is
     // `DataColumnImpl` (wrappers expose `ColumnUniversalId`), so anything
     // reaching here is a materialised `PColumn`.
-    const pColumn = column as PColumn<DataColumnData>;
+    const pColumn = column as PColumn<ColumnData>;
     return new DataColumnImpl(pColumn.id, {
       getSpec: () => pColumn.spec,
       getData: () => pColumn.data,
@@ -237,7 +235,7 @@ export type DataColumnSource =
   | PObjectId
   | PlRef
   | LeafEntry<TreeNodeAccessor>
-  | PColumn<DataColumnData>
+  | PColumn<ColumnData>
   | DataColumn<PObjectId>;
 
 /**
@@ -254,7 +252,7 @@ function DataColumnDispatch(
   if (source instanceof DataColumnImpl) return source;
   // `DataColumn` is an interface — `instanceof` above cannot remove it from
   // the union, and only `DataColumnImpl` implements it with a bare id.
-  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<DataColumnData>;
+  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<ColumnData>;
   if ("accessor" in rest) return DataColumnImpl.fromAccessor(rest);
   if (isPlRef(rest)) return DataColumnImpl.fromPlRef(rest);
   if (isPColumn(rest)) return DataColumnImpl.fromColumn(rest);
@@ -273,7 +271,7 @@ function DataColumnGetStatus(
 ): ColumnResolutionStatus {
   if (typeof source === "string") return DataColumnImpl.getStatusById(source, opts);
   if (source instanceof DataColumnImpl) return "present";
-  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<DataColumnData>;
+  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<ColumnData>;
   if ("accessor" in rest) return DataColumnImpl.getStatusByAccessor(rest);
   if (isPlRef(rest)) return DataColumnImpl.getStatusByPlRef(rest, opts);
   if (isPColumn(rest)) return "present";
@@ -296,7 +294,7 @@ export const DataColumn = Object.assign(DataColumnDispatch, {
  * plain {@link PObjectId}.
  *
  * @deprecated Answers a question about the implementation, not about what you
- * can do with the column. For reading data use `hasDirectData(recipe)`, which
+ * can do with the column. For reading data use `hasReachableData(recipe)`, which
  * also accepts a spec-override over a leaf. The only remaining reason to reach
  * for this guard is a legacy slot typed `PObjectId` (`PColumn.id`,
  * `PColumnIdAndSpec.columnId`) — wrappers expose `ColumnUniversalId`.
@@ -322,8 +320,8 @@ export const ColumnLazyImpl = DataColumnImpl;
 /** @deprecated Renamed to {@link DataColumnId}. */
 export type ColumnLazyId = DataColumnId;
 
-/** @deprecated Renamed to {@link DataColumnData}. */
-export type ColumnLazyData = DataColumnData;
+/** @deprecated Renamed to {@link ColumnData}. */
+export type ColumnLazyData = ColumnData;
 
 const readSpecAccessor = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
