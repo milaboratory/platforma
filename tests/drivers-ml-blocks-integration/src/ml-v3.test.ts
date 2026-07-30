@@ -28,7 +28,7 @@ import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { test } from "vitest";
+import { assert, test } from "vitest";
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
 import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
@@ -127,6 +127,118 @@ test("v3: project list manipulations test", async ({ expect }) => {
     await ml.deleteProject(prj1Id);
 
     expect(await projectList.awaitStableValue()).toEqual([]);
+  });
+});
+
+test("v3: duplicate project test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create source project
+    const srcPrjId = await ml.createProject({ label: "Source Project" });
+    await ml.openProject(srcPrjId);
+    const srcPrj = ml.getOpenedProject(srcPrjId);
+
+    // Add blocks with args
+    const block1Id = await srcPrj.addBlock("Enter Numbers", enterNumberSpec);
+    const block2Id = await srcPrj.addBlock("Sum Numbers", sumNumbersSpec);
+
+    await srcPrj.mutateBlockStorage(block1Id, {
+      operation: "update-block-data",
+      value: { numbers: [10, 20, 30] },
+    });
+    await srcPrj.mutateBlockStorage(block2Id, {
+      operation: "update-block-data",
+      value: { sources: [outputRef(block1Id, "numbers")] },
+    });
+
+    await ml.closeProject(srcPrjId);
+
+    // Duplicate with rename lambda
+    const prjDupId = await ml.duplicateProject(srcPrjId, (prevLabel, existingLabels) => {
+      expect(existingLabels).toContain("Source Project");
+      let candidate = `${prevLabel} (Copy)`;
+      let i = 2;
+      while (existingLabels.includes(candidate)) {
+        candidate = `${prevLabel} (Copy ${i})`;
+        i++;
+      }
+      return candidate;
+    });
+
+    // Verify project list has both projects
+    const list = await projectList.getValue();
+    assert(list);
+    expect(list).toHaveLength(2);
+
+    const srcEntry = list.find((p) => p.id === srcPrjId);
+    const dupEntry = list.find((p) => p.id === prjDupId);
+    assert(srcEntry);
+    assert(dupEntry);
+    expect(srcEntry.meta.label).toBe("Source Project");
+    expect(dupEntry.meta.label).toBe("Source Project (Copy)");
+
+    // Duplicate has different rid and fresh timestamps
+    expect(prjDupId).not.toBe(srcPrjId);
+    expect(dupEntry.created.valueOf()).toBeGreaterThanOrEqual(srcEntry.created.valueOf());
+
+    // Open duplicate and verify structure
+    await ml.openProject(prjDupId);
+    const dupPrj = ml.getOpenedProject(prjDupId);
+
+    const dupOverview = await dupPrj.overview.awaitStableValue();
+    expect(dupOverview.meta.label).toBe("Source Project (Copy)");
+    expect(dupOverview.blocks).toHaveLength(2);
+    expect(dupOverview.blocks[0].title).toBeDefined();
+    expect(dupOverview.blocks[1].title).toBeDefined();
+
+    // Verify source project is unchanged
+    await ml.openProject(srcPrjId);
+    const srcPrj2 = ml.getOpenedProject(srcPrjId);
+    const srcOverview = await srcPrj2.overview.awaitStableValue();
+    expect(srcOverview.meta.label).toBe("Source Project");
+    expect(srcOverview.blocks).toHaveLength(2);
+
+    // Cleanup
+    await ml.closeProject(prjDupId);
+    await ml.closeProject(srcPrjId);
+    await ml.deleteProject(prjDupId);
+    await ml.deleteProject(srcPrjId);
+
+    expect(await projectList.awaitStableValue()).toEqual([]);
+  });
+});
+
+test("v3: duplicate project - name deduplication test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create two projects with names that would conflict
+    const prj1Id = await ml.createProject({ label: "My Analysis" });
+    const prj2Id = await ml.createProject({ label: "My Analysis (Copy)" });
+
+    // Duplicate with dedup logic - should skip "My Analysis (Copy)" since it exists
+    const prjDupId = await ml.duplicateProject(prj1Id, (prevLabel, existingLabels) => {
+      let candidate = `${prevLabel} (Copy)`;
+      let i = 2;
+      while (existingLabels.includes(candidate)) {
+        candidate = `${prevLabel} (Copy ${i})`;
+        i++;
+      }
+      return candidate;
+    });
+
+    const list = await projectList.getValue();
+    assert(list);
+    expect(list).toHaveLength(3);
+    const dupEntry = list.find((p) => p.id === prjDupId);
+    assert(dupEntry);
+    expect(dupEntry.meta.label).toBe("My Analysis (Copy 2)");
+
+    // Cleanup
+    await ml.deleteProject(prjDupId);
+    await ml.deleteProject(prj2Id);
+    await ml.deleteProject(prj1Id);
   });
 });
 
