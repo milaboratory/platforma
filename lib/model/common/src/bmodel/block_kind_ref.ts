@@ -23,18 +23,37 @@ export const formatKindRef = (k: { name: string; version: string }): BlockKindRe
   `${k.name}@${k.version}` as BlockKindReference;
 
 /**
- * Split a {@link BlockKindReference} back into `{ name, version }`.
+ * Split a `{name}@{version}` string on its version separator.
  *
- * Uses the LAST `@` so an org-qualified npm name that itself starts with `@`
- * (e.g. `@platforma-open/pkg.kind`) keeps its whole name. A leading/absent
- * separator (`lastIndexOf("@") <= 0`) means the reference carries no version
- * segment — a malformed reference — so this throws rather than returning a
- * silently version-less result.
+ * The one place that decides where the name ends. Uses the LAST `@` so an
+ * org-qualified npm name that itself starts with `@` (e.g.
+ * `@platforma-open/pkg.kind`) keeps its whole name. A leading/absent separator
+ * (`lastIndexOf("@") <= 0`) means the string carries no version segment —
+ * malformed — so this throws rather than returning a silently version-less
+ * result.
+ *
+ * Shared with the template layer, whose `{name}@{selector}` references use the
+ * same split and differ only in how the right half is interpreted (see
+ * `parseKindSelectorReference`). `what` names the thing being parsed so the
+ * error message stays specific to the caller's reference type.
  */
-export const parseKindRef = (ref: BlockKindReference): { name: string; version: string } => {
+export const splitVersionedName = (
+  ref: string,
+  what = "block kind reference",
+  expected = "{name}@{version}",
+): { name: string; version: string } => {
   const at = ref.lastIndexOf("@");
   if (at <= 0) {
-    throw new Error(`Malformed block kind reference (expected '{name}@{version}'): ${ref}`);
+    throw new Error(`Malformed ${what} (expected '${expected}'): ${ref}`);
   }
   return { name: ref.slice(0, at), version: ref.slice(at + 1) };
 };
+
+/**
+ * Split a {@link BlockKindReference} back into `{ name, version }`.
+ *
+ * Throws on a reference with no version segment — see
+ * {@link splitVersionedName}, which owns the split rule.
+ */
+export const parseKindRef = (ref: BlockKindReference): { name: string; version: string } =>
+  splitVersionedName(ref);
