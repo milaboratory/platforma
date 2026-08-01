@@ -6,9 +6,7 @@ import type {
   BlockSection,
   NavigationState,
   AuthorMarker,
-  StringifiedJson,
 } from "@milaboratories/pl-model-common";
-import type { StorageDebugView } from "./storage_debug_view";
 import type { UpdateSuggestions } from "./update_info";
 import type { BlockSettings } from "./block_settings";
 
@@ -178,11 +176,4 @@ export type BlockStateOverview = {
 
   /** Current navigation state of the block */
   navigationState: NavigationState;
-
-  /**
-   * Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}').
-   * Used by developer tools to display block state info.
-   * Undefined when block-pack is not yet materialized or for non-V2 blocks.
-   */
-  storageDebugView: StringifiedJson<StorageDebugView> | undefined;
 };

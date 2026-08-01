@@ -1,3 +1,4 @@
+import canonicalize from "canonicalize";
 import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import type { Mutable } from "@milaboratories/helpers";
 import type {
@@ -45,6 +46,26 @@ interface InternalPluginState<
   Services = Record<string, unknown>,
 > extends PluginState<Data, Outputs, Services> {
   readonly ignoreUpdates: (fn: () => void) => void;
+}
+
+/**
+ * Canonical (RFC 8785) JSON form of a value, or `undefined` when it cannot be produced
+ * (cycles, BigInt, `undefined`, …).
+ *
+ * Canonical rather than plain `JSON.stringify` because the comparison must not depend on key
+ * order: blocks routinely rebuild their data object, which reorders keys while changing
+ * nothing. Plain stringify treats that as a difference and lets a redundant write through —
+ * measured against a real block, where it missed one of three echo writes.
+ *
+ * Callers must treat `undefined` as "not comparable" rather than as a value: two
+ * unserialisable payloads are not known to be equal, and must not be collapsed.
+ */
+function canonicalJson(value: unknown): string | undefined {
+  try {
+    return canonicalize(value);
+  } catch {
+    return undefined;
+  }
 }
 
 export const createNextAuthorMarker = (marker: AuthorMarker | undefined): AuthorMarker => ({
@@ -186,12 +207,40 @@ export function createAppV3<
     };
   };
 
+  /**
+   * Serialised form of the data we last handed to the middle layer, used to drop writes that
+   * would store exactly what is already stored.
+   *
+   * Reactive watchers re-fire whenever `appModel.model.data` is replaced — which happens on
+   * every applied patch — so blocks routinely re-write byte-identical data. Each such write
+   * costs a full round trip plus the middle layer's whole render fan-out, and payloads run to
+   * hundreds of KB, so suppressing them is worth the comparison.
+   *
+   * Compared against what we last *sent*, not against `snapshot`: snapshot lags behind
+   * in-flight writes, and comparing to it would silently drop a genuine revert issued before
+   * the previous write's patch arrived.
+   */
+  let lastSentDataJson: string | undefined = canonicalJson(
+    deriveDataFromStorage<Data>(snapshot.value.blockStorage),
+  );
+
+  /** Enqueues a data write unless it would be a no-op. */
+  const enqueueDataUpdate = (value: Data): Promise<boolean> => {
+    const json = canonicalJson(value);
+    if (json !== undefined && json === lastSentDataJson) {
+      debug("skipping no-op data update");
+      return Promise.resolve(true);
+    }
+    lastSentDataJson = json;
+    return setDataQueue.run(() => updateData(value).then(unwrapResult));
+  };
+
   const { ignoreUpdates } = watchIgnorable(
     () => appModel.model,
     (_newData) => {
       const newData = deepClone(_newData);
       debug("setDataQueue appModel.model, data", newData.data);
-      setDataQueue.run(() => updateData(newData.data).then(unwrapResult));
+      void enqueueDataUpdate(newData.data);
     },
     { deep: true },
   );
@@ -199,6 +248,10 @@ export function createAppV3<
   const updateAppModel = (newData: { data: Data }) => {
     debug("updateAppModel", newData);
     appModel.model.data = deepClone(newData.data) as Data;
+    // Adopting an external value: the middle layer already holds it, so a later local write of
+    // the same value is a no-op. Without this the guard would let one redundant write through
+    // after every external change.
+    lastSentDataJson = canonicalJson(newData.data);
   };
 
   (async () => {
@@ -286,7 +339,7 @@ export function createAppV3<
       const newData = cb(cloneData());
       debug("updateData", newData);
       appModel.model.data = newData;
-      return setDataQueue.run(() => updateData(newData).then(unwrapResult));
+      return enqueueDataUpdate(newData);
     },
     /**
      * Navigates to a specific href by updating the navigation state.

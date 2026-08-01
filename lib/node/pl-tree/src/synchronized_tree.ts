@@ -53,6 +53,42 @@ export type SynchronizedTreeOps = {
 
   /** Controls which tree-loading path to use.  Default `"auto"`. */
   traversalMode?: TraversalMode;
+
+  /**
+   * Optional persistent store for resources the tree may reuse across process restarts.
+   *
+   * A cold {@link SynchronizedTreeState.init} starts from an empty heap, so
+   * {@link constructTreeLoadingRequest} has nothing to put in `finalResources` and the backend
+   * re-sends every resource — including large immutable ones the client has seen many times
+   * before. Hydrating the heap from a store before the first refresh makes that first refresh
+   * behave like every subsequent one: known resources land in `finalResources` and are skipped.
+   *
+   * The store decides what is safe to keep; the tree only replays what it is given. See
+   * {@link TreeStateStore}.
+   */
+  stateStore?: TreeStateStore;
+};
+
+/**
+ * Persistent store for tree resources, supplied by the tree's owner.
+ *
+ * **The store is responsible for correctness of what it returns.** Anything handed to
+ * {@link TreeStateStore.load} is inserted into the heap and reported to the backend as
+ * already-known, so a resource that can still change must never be stored. Note that the
+ * tree's own `final` flag is not a sufficient test: it is set for both genuinely-immutable
+ * resources and ones where traversal merely stopped (`frame.final || frame.traverseWasStopped`
+ * in `sync.ts`), so a store should select by a property it can reason about — a content-addressed
+ * resource type, for instance — rather than by that flag alone.
+ */
+export type TreeStateStore = {
+  /** Resources to seed the heap with before the first refresh. */
+  load: (roots: SignedResourceId[]) => Promise<ExtendedResourceData[] | undefined>;
+  /**
+   * Called after a successful refresh with the tree's current contents and root set. The roots
+   * are part of the identity of what was stored: replaying a tree whose roots have moved would
+   * report resources as known that the new tree may never reach.
+   */
+  save: (resources: ExtendedResourceData[], roots: SignedResourceId[]) => Promise<void>;
 };
 
 /** An explicit resource to serve as a tree root. Several explicit seeds may be passed. */
@@ -112,6 +148,7 @@ export class SynchronizedTreeState {
   private readonly sharedSeeds: SharedTypeSeed[];
   /** Roots discovered for shared-type seeds on the last discovery poll. */
   private discoveredRoots: SignedResourceId[] = [];
+  private readonly stateStore?: TreeStateStore;
 
   private constructor(
     private readonly pl: PlClient,
@@ -128,6 +165,7 @@ export class SynchronizedTreeState {
       pollingInterval,
       stopPollingDelay,
       logStat,
+      stateStore,
     } = ops;
     this.pruning = pruning;
     this.fieldFilter = fieldFilter;
@@ -136,6 +174,7 @@ export class SynchronizedTreeState {
     this.pollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
+    this.stateStore = stateStore;
 
     this.explicitRoots = seeds
       .filter((s): s is ExplicitRootSeed => s.kind === "resource")
@@ -437,6 +476,44 @@ export class SynchronizedTreeState {
   }
 
   /**
+   * Seeds the heap from {@link SynchronizedTreeOps.stateStore} before the first refresh, so the
+   * initial load can skip resources the store already holds. Orphan inputs are permitted
+   * because a store legitimately holds a subset of the tree — typically a few large immutable
+   * resources, with the path to them still to be fetched.
+   *
+   * ⚠ **Not recoverable if the store's data is rejected.** `updateFromResourceData` calls
+   * `invalidateTree()` before throwing (e.g. `orphan resource` when the replayed set is not
+   * reachable from the roots), so catching here prevents the exception escaping but leaves the
+   * tree unusable. A store must therefore only ever return a connected subgraph it is confident
+   * in; the catch is a backstop for I/O and parse errors, not a licence to guess.
+   */
+  private async hydrateFromStore(): Promise<void> {
+    const store = this.stateStore;
+    if (!store) return;
+    try {
+      const cached = await store.load([...this.currentRootSet()]);
+      if (!cached || cached.length === 0) return;
+      this.state.updateFromResourceData(cached, { allowOrphanInputs: true });
+      this.logger?.info(`Tree state store: hydrated ${cached.length} resources`);
+    } catch (error: unknown) {
+      this.logger?.error(
+        `Tree state store: hydration rejected; the tree may now be invalid: ${String(error)}`,
+      );
+    }
+  }
+
+  /** Hands the tree's current contents to the store. Never fatal. */
+  private async persistToStore(): Promise<void> {
+    const store = this.stateStore;
+    if (!store) return;
+    try {
+      await store.save(this.state.dumpState(), [...this.currentRootSet()]);
+    } catch (error: unknown) {
+      this.logger?.warn(`Tree state store: save failed: ${String(error)}`);
+    }
+  }
+
+  /**
    * Terminates the internal loop, and permanently destoys all internal state, so
    * all computables using this state will resolve to errors.
    * */
@@ -444,6 +521,11 @@ export class SynchronizedTreeState {
     this.keepRunning = false;
     this.terminated = true;
     this.abortController.abort();
+
+    // Before the heap is invalidated: this is the only point where it holds everything the
+    // session accumulated. Saving after the initial refresh instead would persist just what was
+    // loaded a moment earlier, which is worth nothing.
+    await this.persistToStore();
 
     if (this.currentLoop === undefined) return;
     await this.currentLoop;
@@ -479,6 +561,7 @@ export class SynchronizedTreeState {
     try {
       // resolve shared-type seeds before the first refresh so discovered roots load now
       await tree.discover();
+      await tree.hydrateFromStore();
       await tree.refresh(stat, {
         timeout: ops.initialTreeLoadingTimeout,
       });

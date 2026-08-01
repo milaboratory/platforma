@@ -11,7 +11,6 @@ import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
-import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 import { getDebugFlags } from "../debug";
 
 type EnrichmentTargetsRequest = {
@@ -236,40 +235,6 @@ export class ProjectHelper {
         ),
       );
       throw new Error(`Block storage update failed: ${e}`);
-    }
-  }
-
-  /**
-   * Gets storage debug view from raw storage data by calling the VM's __pl_storage_debugView callback.
-   * Returns structured debug info about the storage (e.g., dataVersion).
-   *
-   * @param blockConfig Block configuration
-   * @param rawStorageJson Raw storage as JSON string (or undefined)
-   * @returns Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}')
-   */
-  public getStorageDebugViewInVM(
-    blockConfig: BlockConfig,
-    rawStorageJson: string | undefined,
-  ): StringifiedJson<StorageDebugView> | undefined {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      throw new Error("getStorageDebugViewInVM is only supported for model API version 2");
-    }
-
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
-        extractCodeWithInfo(blockConfig),
-        rawStorageJson,
-      ) as StringifiedJson<StorageDebugView>;
-      return result;
-    } catch (e) {
-      this.logger.error(
-        new Error("[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed", {
-          cause: e,
-        }),
-      );
-      return undefined;
     }
   }
 

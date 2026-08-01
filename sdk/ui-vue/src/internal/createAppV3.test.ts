@@ -264,6 +264,68 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     app.closedRef = true;
   });
 
+  it("should not re-write data that is already stored", async () => {
+    const state = createDefaultState();
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, defaultBlockModelInfo());
+
+    let writes = 0;
+    const originalMutate = platforma.mutateStorage.bind(platforma);
+    platforma.mutateStorage = (payload: MutateStoragePayload, author?: AuthorMarker) => {
+      writes++;
+      return originalMutate(payload, author);
+    };
+
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { app } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    app.model.data.count = 5;
+    await app.allSettled();
+    await delay(patchPoolingDelay + 50);
+
+    const writesAfterRealChange = writes;
+    expect(writesAfterRealChange).toBeGreaterThan(0);
+    expect(state.blockStorage.__data).toMatchObject({ count: 5 });
+
+    // Replacing data with a deep-equal but distinct object is what happens on every applied
+    // patch: it re-triggers the deep watcher while changing nothing. That must not write.
+    app.model.data = { ...deepClone(app.model.data) };
+    await app.allSettled();
+    await delay(patchPoolingDelay + 50);
+
+    expect(writes).toBe(writesAfterRealChange);
+
+    // Same content in a different key order must also be recognised as unchanged. Blocks
+    // rebuild their data object routinely, which reorders keys; a plain JSON.stringify
+    // comparison treats that as a difference and lets the redundant write through.
+    const reordered = {} as Data;
+    for (const key of Object.keys(deepClone(app.model.data)).reverse()) {
+      (reordered as Record<string, unknown>)[key] = (
+        app.model.data as unknown as Record<string, unknown>
+      )[key];
+    }
+    app.model.data = reordered;
+    await app.allSettled();
+    await delay(patchPoolingDelay + 50);
+
+    expect(writes).toBe(writesAfterRealChange);
+    expect(state.blockStorage.__data).toMatchObject({ count: 5 });
+
+    // A genuine change after a suppressed one must still go through.
+    app.model.data.count = 6;
+    await app.allSettled();
+    await delay(patchPoolingDelay + 50);
+
+    expect(writes).toBeGreaterThan(writesAfterRealChange);
+    expect(state.blockStorage.__data).toMatchObject({ count: 6 });
+
+    app.closedRef = true;
+  });
+
   it("should update outputs from external changes", async () => {
     const state = createDefaultState();
     const platforma = createMockApiV3<Data, Args, Outputs>(state, defaultBlockModelInfo());

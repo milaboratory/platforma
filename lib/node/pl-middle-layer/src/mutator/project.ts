@@ -455,6 +455,29 @@ export class ProjectMutator {
     );
   }
 
+  private serviceTemplateMaterialized = false;
+
+  /** See {@link hasUnsavedServiceState}. */
+  private markServiceTemplateMaterialized() {
+    this.serviceTemplateMaterialized = true;
+  }
+
+  /**
+   * True when {@link load} had to materialize the ctx-export template because this project
+   * carried no cached field for the current template hash.
+   *
+   * This is deliberately *not* part of {@link wasModified}: nothing the caller asked for has
+   * changed, and `save()` must stay a no-op. But the transaction now holds a `createField`
+   * that the project needs, and a caller that discards the transaction because
+   * `wasModified` is false throws that work away — so the next load materializes it again,
+   * and the one after that, indefinitely. The refresh loop runs `load()` every couple of
+   * seconds, which turned this into a permanent CPU burn for any project last written under
+   * an older template hash.
+   */
+  get hasUnsavedServiceState(): boolean {
+    return this.serviceTemplateMaterialized;
+  }
+
   get structure(): ProjectStructure {
     return JSON.parse(JSON.stringify(this.struct)) as ProjectStructure;
   }
@@ -1960,6 +1983,8 @@ export class ProjectMutator {
       projectHelper,
     );
 
+    if (ctxExportTplField === undefined) prj.markServiceTemplateMaterialized();
+
     prj.fixProblemsAndMigrate();
 
     return prj;
@@ -2188,9 +2213,11 @@ export async function withProjectAuthored<T>(
       async (tx) => {
         const mut = await ProjectMutator.load(projectHelper, tx, rid, author);
         const result = await cb(mut);
-        if (!mut.wasModified)
+        if (!mut.wasModified && !mut.hasUnsavedServiceState)
           // skipping save and commit altogether if no modifications were actually made
           return result;
+        // `save()` is a no-op unless something the caller changed needs writing; committing
+        // for `hasUnsavedServiceState` alone persists only the service field `load()` created.
         mut.save();
         await tx.commit();
         if (getDebugFlags().logProjectMutationStat) console.log(JSON.stringify(tx.stat));

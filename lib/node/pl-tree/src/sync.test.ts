@@ -541,3 +541,78 @@ test("orphan-invariant-preserved: error referent streamed alongside stop marker"
   expect(ids).toEqual(["NG:0x1", "NG:0xE"]);
   // No throw means the invariant held throughout loadTreeState
 });
+
+test("followup-is-depth-capped: follow-up requests only the seeds' own state", async () => {
+  // Regression guard. The follow-up round cannot reapply traverseStopRules (the rule would
+  // re-flag the seeds themselves), so without a depth cap the server streams each seed's whole
+  // subtree — every already-final descendant then discarded on arrival. On a real project a
+  // single block reorder streamed 2041 such frames.
+  const optsPerCall: (Record<string, unknown> | undefined)[] = [];
+  const tx = {
+    resourceTree: (_seeds: unknown, opts?: Record<string, unknown>) => {
+      optsPerCall.push(opts);
+      if (optsPerCall.length === 1)
+        return (async function* () {
+          yield makeStopMarker("NG:0x1");
+        })();
+      return (async function* () {
+        yield makeFullResource("NG:0x1");
+      })();
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x99"],
+    finalResources: new Set<string>(),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  await loadTreeState(tx, request, undefined, stopMarkerCaps);
+
+  expect(optsPerCall).toHaveLength(2);
+  expect(optsPerCall[0]?.maxDepth).toBeUndefined(); // round 0 traverses freely
+  expect(optsPerCall[1]?.maxDepth).toBe(0); // follow-up must not descend
+});
+
+test("followup-expands-only-unknown-referents", async () => {
+  // A depth-capped follow-up delivers the seed's fields without their values, so anything the
+  // client does not already hold must be requested in a further round or updateFromResourceData
+  // sees an orphan. Anything known-final is immutable and already in the tree — requesting it
+  // again is exactly the waste the cap exists to avoid.
+  const seedsPerCall: string[][] = [];
+  const stoppedX = makeFullResource("NG:0x1", {
+    fields: [
+      { name: "toFinal", value: "NG:0xF", error: NullSignedResourceId },
+      { name: "toUnknown", value: "NG:0xU", error: NullSignedResourceId },
+    ],
+  });
+
+  const tx = {
+    resourceTree: (seeds: string[]) => {
+      seedsPerCall.push([...seeds]);
+      if (seedsPerCall.length === 1)
+        return (async function* () {
+          yield makeStopMarker("NG:0x1");
+        })();
+      if (seedsPerCall.length === 2)
+        return (async function* () {
+          yield stoppedX;
+        })();
+      return (async function* () {
+        yield makeFullResource("NG:0xU");
+      })();
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x99"],
+    finalResources: new Set<string>(["NG:0xF"]),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const stats = initialTreeLoadingStat();
+  const result = await loadTreeState(tx, request, stats, stopMarkerCaps);
+
+  // NG:0xF is known-final and must not be re-requested; NG:0xU must be.
+  expect(seedsPerCall).toEqual([["NG:0x99"], ["NG:0x1"], ["NG:0xU"]]);
+  expect(result.map((resource) => resource.id).sort()).toEqual(["NG:0x1", "NG:0xU"]);
+  expect(stats.stopMarkerFollowUpRoundTrips).toBe(2);
+});

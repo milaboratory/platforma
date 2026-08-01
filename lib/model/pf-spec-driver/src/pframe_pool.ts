@@ -21,10 +21,37 @@ export class PFramePool extends RefCountPoolBase<
     super();
   }
 
+  /**
+   * Canonical-JSON → handle memo.
+   *
+   * `blake3` here runs over the canonical form of the *whole* spec map, which on a real project is
+   * ~1.2 MB across ~650 columns, and the pure-JS implementation manages only ~70 MB/s — ~17 ms
+   * per call, versus 3 ms to canonicalize. Callers hash the same map repeatedly:
+   * `buildDatasetOptions` hoists one `ColumnsProvider` and then calls `findFilterColumns` once per
+   * dataset option, so a single render was measured hashing one identical 1.2 MB map 9 times
+   * (19 calls, only ~4 distinct maps, 935 ms of blake3).
+   *
+   * Keyed on the exact canonical string, so a hit is an exact-content match — no collision risk.
+   * Bounded because entries retain that string; 4 covers every distinct map seen in a render while
+   * capping retention at a few MB.
+   */
+  private readonly keyMemo = new Map<string, SpecFrameHandle>();
+  private static readonly keyMemoMaxEntries = 4;
+
   protected calculateParamsKey(params: Record<string, PColumnSpec>): SpecFrameHandle {
-    return bytesToHex(
-      blake3(new TextEncoder().encode(canonicalizeJson(params))),
-    ) as SpecFrameHandle;
+    const canonical = canonicalizeJson(params);
+    const memoized = this.keyMemo.get(canonical);
+    if (memoized !== undefined) return memoized;
+
+    const key = bytesToHex(blake3(new TextEncoder().encode(canonical))) as SpecFrameHandle;
+
+    if (this.keyMemo.size >= PFramePool.keyMemoMaxEntries) {
+      // Map preserves insertion order, so the first key is the oldest.
+      const oldest = this.keyMemo.keys().next();
+      if (!oldest.done) this.keyMemo.delete(oldest.value);
+    }
+    this.keyMemo.set(canonical, key);
+    return key;
   }
 
   protected createNewResource(

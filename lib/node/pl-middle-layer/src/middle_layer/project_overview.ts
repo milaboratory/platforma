@@ -264,20 +264,6 @@ export function projectOverview(
           })
           .getDataAsJson() as BlockSettings;
 
-        // Get block storage debug view by calling VM function (only for Model API v2 blocks)
-        const storageDebugView = ifNotUndef(bp, ({ cfg }) => {
-          if (cfg.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-            return undefined;
-          }
-          const storageNode = prj.traverse({
-            field: projectFieldName(id, "blockStorage"),
-            assertFieldType: "Dynamic",
-            stableIfNotFound: true,
-          });
-          const rawStorageJson = storageNode?.getDataAsString();
-          return env.projectHelper.getStorageDebugViewInVM(cfg, rawStorageJson);
-        });
-
         const updates = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get({ currentSpec: info.source, settings }),
         );
@@ -308,7 +294,6 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
-          storageDebugView,
         };
       });
 
@@ -352,6 +337,10 @@ export function projectOverview(
             console.log(`[projectOverview] ${JSON.stringify(stats)}`);
           }
         : undefined,
+      // Stable key rather than an auto-assigned ephemeral one, so that if this computable is ever
+      // embedded as a child its state is transferred across rebuilds by key instead of being
+      // recomputed. Also makes it identifiable in the computable debug logs.
+      key: `projectOverview#${resourceIdToString(prjEntry.rid)}`,
     },
   ).withStableType();
 }

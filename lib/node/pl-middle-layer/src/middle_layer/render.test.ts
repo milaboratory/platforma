@@ -80,6 +80,40 @@ test("test JS render enter numbers", async () => {
   });
 });
 
+test("re-renders after args change, and reproduces an earlier render", async () => {
+  // Going A -> B must change the render, and coming back to A must reproduce A's render exactly.
+  // This is the guard for any attempt to cache render state across recomputations: a QuickJS
+  // context reused between Computable body invocations serves the previous render intermittently
+  // (block and SDK code may keep module-level state and is entitled to a fresh global per render),
+  // which shows up here as B's outputs surviving the return to A.
+  await withMl(async (ml) => {
+    const projectId = await ml.createProject({ label: "Render idempotency" });
+    await ml.openProject(projectId);
+    const project = ml.getOpenedProject(projectId);
+
+    const blockId = await project.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "enter-numbers", version: "1.1.1" },
+    });
+
+    const blockState = project.getBlockState(blockId);
+    const renderWith = async (numbers: number[]): Promise<string> => {
+      await project.setBlockArgs(blockId, { numbers });
+      await blockState.awaitStableValue();
+      const snapshot = await blockState.getValue();
+      return JSON.stringify(snapshot.outputs);
+    };
+
+    const short = await renderWith([1, 2, 3]);
+    const long = await renderWith([1, 2, 3, 4, 5]);
+    const shortAgain = await renderWith([1, 2, 3]);
+
+    expect(long).not.toEqual(short);
+    expect(shortAgain).toEqual(short);
+  });
+});
+
 test.skip("test JS render options", async () => {
   await withMl(async (ml) => {
     const prj1Id = await ml.createProject({ label: "Project 1" });
