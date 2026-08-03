@@ -315,7 +315,25 @@ class BlockInfo {
  */
 /** Specification for creating a new block. Discriminated union based on `storageMode`. */
 export type NewBlockSpec =
-  | { storageMode: "fromModel"; blockPack: BlockPackSpecPrepared }
+  | {
+      storageMode: "fromModel";
+      blockPack: BlockPackSpecPrepared;
+      /**
+       * Storage to start the block with, instead of the model's own default.
+       *
+       * Only for a caller that produced it through the block's own model, which today
+       * means one seeding a block from a template entry's params: the model's
+       * params-to-storage initializer can reject those params, and it has to do so
+       * before anything in the transaction changes. Computing the storage first turns
+       * that rejection into a value the caller can report, and leaves this method with
+       * no failure path it did not already have.
+       *
+       * The result is the same storage the block would have written itself, so args
+       * derivation below is unchanged — which is why this is the `fromModel` mode with
+       * one input filled in rather than a mode of its own.
+       */
+      initialStorage?: string;
+    }
   | { storageMode: "legacy"; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
@@ -1217,8 +1235,11 @@ export class ProjectMutator {
     let storageToWrite: string;
 
     if (spec.storageMode === "fromModel") {
-      // Model API v2+: get initial storage and derive args from it
-      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
+      // Model API v2+: get initial storage and derive args from it. A caller that
+      // already produced the storage — a template seeding a block from its params —
+      // passes it in, precisely so the VM call that could reject those params happens
+      // before the transaction is touched; see `initialStorage`.
+      storageToWrite = spec.initialStorage ?? this.projectHelper.getInitialStorageInVM(blockConfig);
 
       // Derive prerunArgs first — always derived independently of args validation
       prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
