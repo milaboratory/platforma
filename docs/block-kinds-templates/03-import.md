@@ -34,7 +34,8 @@ navigate to the result.
 ## Depends on
 
 - Track 1 kind resolution (per-kind `overview.json` projection, `~`/`^` selectors,
-  derived `any` channel).
+  derived `any` channel) — **landed** in `2c2c15b3d`, see "Where the Adapter Actually
+  Stands".
 - The `template-v1` schema shared with export (track 2).
 
 ## Out of scope
@@ -69,12 +70,16 @@ inferred.
 
 - [~] **Resolve `kind@selector` → block pack spec** — the import side landed as
       `resolveTemplateEntries` in `lib/node/pl-middle-layer/src/model/template_resolve.ts`,
-      against the `BlockPackProvider` port. Track 1 still owns the resolver itself (§5
-      reconciler projection, §6 `resolveKind` facade) and **nothing from track 1 has
-      landed** — `01-kind-and-lifecycle-implementation-path.md` is a plan with no tracker.
-      Import owns the per-apply `allowUnstable` flag and turning the three failure reasons
-      into messages, both of which are done and tested against a fake provider. Remaining:
-      the adapter that implements the port, which needs track 1
+      against the `BlockPackProvider` port. Import owns the per-apply `allowUnstable` flag
+      and turning the three failure reasons into messages, both done and tested against a
+      fake provider. **Correction to an earlier entry here, which claimed nothing from
+      track 1 had landed:** `2c2c15b3d` (2026-07-24, "prototype the block-kind subsystem")
+      landed §5 and §6 — `RegistryV2Reader.getKindOverview` / `resolveKind`, the pure
+      `resolveKind` + `KindResolutionError` in
+      `tools/block-tools/src/v2/registry/kind_resolver.ts`, and the
+      `BlockPackRegistry.resolveKind` / `getOverview` facade
+      (`src/block_registry/registry.ts:292-323`). Remaining: the adapter, which is now
+      unblocked — see "Where the Adapter Actually Stands"
 - [~] **Honor the entry's `block` override** — same module, converging on the same
       `BlockPackSpec` as the kind path (`decisions.md:118`). Includes the npm-name →
       `{organization, name}` split the schema left to import (`project_template_v1.ts:52-56`),
@@ -420,10 +425,64 @@ but the adapter has to answer it: the primary registry only, or every configured
 order, with a policy for a name that exists in two. Worth settling before the adapter, since
 it also decides what "not found" means in a multi-registry setup.
 
-**Co-design note.** `KindResolution`'s three reasons mirror track 1 §6's planned
-`KindResolution` so the adapter stays trivial, but track 1 currently plans for `resolveKind`
-to *throw* a typed `KindResolutionError` rather than return a union. The adapter absorbs
-that; if track 1's reasons drift, this port is where it shows up.
+## Where the Adapter Actually Stands
+
+This tracker said for three entries that nothing from track 1 had landed. That was wrong,
+and it made the adapter look blocked when it is not. `2c2c15b3d` (2026-07-24) landed the kind
+subsystem prototype, including everything the port needs:
+
+| Port method | What already exists |
+|-------------|---------------------|
+| `byKind` | `BlockPackRegistry.resolveKind(registryId, ref, { allowUnstable })` (`block_registry/registry.ts:314`) → `RegistryV2Reader.resolveKind` → `getKindOverview` + the pure `resolveKind` in `block-tools/src/v2/registry/kind_resolver.ts` |
+| `byExactVersion` | `BlockPackRegistry.getOverview(registryId, id, channel)` → `RegistryV2Reader.getSpecificOverview`, which returns `{ id, meta, spec }` |
+
+The reader's own `KindResolution` carries **exactly** the three reasons this port declares —
+`no-matching-kind-version`, `no-implementation`, `no-stable-implementation` — because the port
+was written against it. The one shape difference is real and unchanged: the reader *throws*
+`KindResolutionError` where the port returns a union, so the adapter's `byKind` is a
+try/catch that reads `e.reason`.
+
+What is still genuinely open is the registry question below, plus `registryId`: both facade
+methods take one, while a resolved spec carries a `registryUrl`. The adapter picks the
+registry, so it has the id in hand — but that is the same decision as "which registry", not a
+separate one.
+
+## The Label, and Why It Is the Registry's
+
+A block created from a template is placed under the block package's published title, which
+resolution carries as `ResolvedEntry.title`. The first implementation used the entry's own id
+instead, which is wrong in a way worth recording, because the reasoning that produced it was
+plausible:
+
+- **An exported template names its entries by the source project's block ids**
+  (`template_export.ts:19-22`), which the golden fixtures show as
+  `aaaaaaaa-0000-4000-8000-000000000001`. So "the id is what the file called this block" holds
+  only for hand-written files — on the export → import path it is a UUID.
+- **That UUID would be visible.** `project_overview.ts:288` computes `label: title ??
+  defaultLabel`, where `title` comes from the model's own `title` lambda and `defaultLabel` is
+  the structure's `label`. Nine of the 63 blocks in `blocks/*` declare no `title` lambda —
+  `graph-maker`, `table`, `differential-expression`, `blast`, `makeblastdb`, `gene-browser`,
+  `immuno-match`, `import-bulk-count-matrix`, `xsv-import` — and the desktop renders
+  `overview.title`, so for those the label *is* the name in the sidebar.
+- **`Block.label` is `@deprecated` but not optional**, and there is no replacement field to
+  write instead: `title`/`subtitle` are render lambdas in the block's config, not project
+  state. So the question was never whether to write it, only what to write.
+- **The middle layer has no other source, by construction.** `Project.addBlock` takes the
+  label as an argument precisely because of that, and both desktop callers pass
+  `pack.meta.title` off a registry listing they already fetched for display
+  (`AddBlockModal/components/DetailedCard.vue:123`, `main/src/tasks/CreateProject.ts:50`). A
+  prepared block pack carries the model, the workflow and the frontend; none of them names the
+  block. The update watcher returns specs, not meta.
+
+Hence `title` on the port, required rather than optional: an adapter always has one — it reads
+the manifest — and every fallback a caller downstream could invent is worse than asking.
+
+**Cost, and a cheaper follow-up.** On the pinned route it is free: `getSpecificOverview`
+already returns `meta`. On the kind route the adapter needs one extra manifest read after
+`resolveKind`. Note that `prepare` *already* reads that manifest — `getComponents`
+(`registry_reader.ts:250-265`) parses all of it and keeps only the component URLs in its LRU.
+Widening that cache to retain `description.meta` would make the title free on both routes; it
+touches block-tools' caching, so it is a follow-up rather than part of this.
 
 ## What Import Gets For Free
 
@@ -573,9 +632,9 @@ Two smaller things the implementation settled:
   this stage can answer — are the params the right shape — and leaves what they point at to
   validation, which already owns it.
 
-The label is the entry's own id for now. It is a fallback only — `project_overview.ts` prefers
-a title the block's model derives — and the block package's own title would need the provider
-to return it, which is the same seam track 1 still owns.
+The label is the block package's published title, carried from resolution. It went in as the
+entry's own id first, which would have put UUIDs in the sidebar — see "The Label, and Why It
+Is the Registry's".
 
 Pinned by `template_construct.test.ts` (13), which fakes the one mutator method construction
 uses and keeps everything else real: a real `ProjectHelper`, a real model VM, real block code.
