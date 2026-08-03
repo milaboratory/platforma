@@ -56,8 +56,8 @@ inferred.
       `StorageInitial`, wired end to end: `DataModel.getDataFromParams` →
       `createInitialStorageFromParams` → registration in `BlockModelV3.done()` →
       `ProjectHelper.getInitialStorageFromParamsInVM`. See "The Missing Half" below for what
-      was missing and why the shape came out this way. Remaining: `Q-0009` (nothing
-      validates params against the kind at this seam yet)
+      was missing and why the shape came out this way. `Q-0009` — validating those params
+      against the kind — is now answered too; see "Params Against Their Kind"
 - [~] **Add-block / state API** — landed as `TemplateApplyApi` in
       `lib/node/pl-middle-layer/src/model/template_apply.ts`, together with the fixed
       orchestrator `applyProjectTemplateV1` that drives construction through it and nothing
@@ -86,23 +86,20 @@ inferred.
       `lib/node/pl-middle-layer/src/model/template_parser.ts`, mirroring
       `template_serializer.ts` on the other side. Most of the work turned out to be
       diagnostics rather than parsing — see "Reading a File Someone Wrote By Hand"
-- [ ] **Validate before the project exists** — nothing may be created until the whole file
-      is known good. Already done by shared code: entry shape, both reference grammars and
-      id uniqueness in the parser (`project_template_v1.ts:188-200`), and
-      dangling/self/forward references in `findProjectTemplateV1ReferenceProblems`
-      (`:279`). Still to add: kind-resolution failures, `Q-0009` params validation, and the
-      stale-id guard below — collected into one report rather than a first-failure throw,
-      the shape export settled on
-- [ ] **Reject params carrying a foreign block id** — the mirror of export's parity guard,
-      run over the *input* file (operator decision, 2026-08-03). A reference hidden inside a
-      canonicalized-JSON string is invisible to the structural rewrite, so it would survive
-      apply naming a UUID from whatever project the file was written in — a valid-looking
-      params object wired to nothing. Our own export cannot emit one (`template_export.ts`
-      fails the export instead), but a hand-authored file can, and the user cannot see it.
-      The detector already exists: `inferAllReferencedBlocks` (`model/args.ts`) recognizes a
-      reference both as an object and inside N `JSON.stringify` passes. Run it on each
-      entry's params *after* the template-local rewrite — anything it still reports is a
-      foreign id, and the file is rejected naming the entry. See "Stale Ids in Strings"
+- [~] **Validate before the project exists** — `validateTemplateV1ForApply` in
+      `lib/node/pl-middle-layer/src/model/template_validate.ts`: reference consistency plus
+      the foreign-id guard, grouped by entry in file order. Entry shape, both grammars and
+      id uniqueness are already the parser's (`project_template_v1.ts:188-200`). Params
+      against their kind is `Q-0009`, now **resolved and implemented** — see "Params
+      Against Their Kind". Remaining: assembling all of these with resolution's problems
+      into the single report the caller shows
+- [x] **Reject params carrying a foreign block id** — same module (operator decision,
+      2026-08-03), using `inferAllReferencedBlocks` (`model/args.ts`), the detector export's
+      guard uses. **Correction to this plan:** it runs on the file-form params *before* any
+      rewrite, not after. In file form a legitimate reference is `{ block, output }`, which
+      the detector does not recognize at all, so everything it finds is foreign by
+      construction — nothing to subtract, and the check lands before the project exists,
+      where the plan says validation belongs. See "Stale Ids in Strings"
 - [ ] **Id map + reference rewrite** — assign a fresh UUID per entry, then
       `fromTemplateForm(params, resolve)` (`template_form.ts:65`, already implemented and
       tested) before params reach the block. Single forward pass: file order is
@@ -198,9 +195,9 @@ Consequences worth knowing:
   handed nothing.
 - **A block's init factory decides what is valid.** A factory that throws is reported as a
   per-entry problem, not propagated — the same collect-everything shape export uses.
-- **`Q-0009` is still open, and its seam is now fixed.** This is the only place a
-  hand-authored file's params meet the kind that types them, so validation, if it happens,
-  happens here. Nothing validates today: params reach the factory as-is.
+- **`Q-0009` was answered at this seam.** It is the only place a hand-authored file's params
+  meet the kind that types them, and that is where the check landed — see "Params Against
+  Their Kind".
 
 ## The Construction Contract
 
@@ -275,6 +272,112 @@ Pinned by `template_parser.test.ts` (18), which also parses every golden export 
 round-trips document → text → document, so the two text layers are checked against each
 other and not only against files.
 
+## Params Against Their Kind — `Q-0009` Resolved
+
+**A kind may ship a runtime check for its params** (operator decision, 2026-08-03, chosen
+to spend build-time effort instead of debugging time later). `defineBlockKind` gains an
+optional `parseTemplateParams: (value: unknown) => BlockParams`; the SDK applies it wherever
+params arrive untyped, and the middle layer can ask for it alone as a pre-flight.
+
+This narrows track 1's "`BlockParams` is a pure TS type" decision rather than reversing it:
+the type stays the contract, `parseTemplateParams` is optional, and a kind that omits it
+behaves exactly as before.
+
+### Why it was worth doing
+
+Measured on `enter-numbers` (kind params `{ numbers?: number[] }`) before the check existed
+— params straight from a file, through init, to derived args:
+
+| YAML | Was | Now |
+|------|-----|-----|
+| `numbers: [3,1,2]` | `args={numbers:[1,2,3]}` | accepted |
+| `number: [3,1,2]` (typo) | block created empty, later "Numbers are required!" | `Unrecognized key(s) in object: 'number'` |
+| `numbers: ["3","1","2"]` | **silently** `args={numbers:["1","2","3"]}` — numeric sort became lexicographic | `numbers[0]: Expected number, received string; …` |
+| `numbers: "1,2,3"` | `args() threw: not a function` | `numbers: Expected array, received string` |
+| `numbers: [1], colour: red` | extra key silently dropped | `Unrecognized key(s) in object: 'colour'` |
+| `numbers: null` | block created empty, later "Numbers are required!" | `numbers: Expected array, received null` |
+
+The third row is the one that mattered: no error anywhere, and a wrong scientific result.
+
+### Shape of it
+
+- **The kind owns the check, not the block.** Many block versions implement one kind; a
+  per-block check could drift between them and from the type.
+- **`.strict()` is where most of the value is.** Two of the six rows above are a
+  misspelled or stray key — invisible to any type-shaped check that only looks at what it
+  knows about.
+- **The parser returns the params to use**, so it can strip and coerce; its output is what
+  reaches the block's `init`.
+- **TypeScript keeps schema and type in step**: the parser must return `BlockParams`, so a
+  schema missing a declared field does not compile. A schema *looser* than the type is not
+  caught — the honest limit.
+- **Two call sites, one function.** Facade callback #9 `__pl_templateParams_validate` is
+  the pre-flight (`ProjectHelper.validateTemplateParamsInVM`) — nothing is created, so a bad
+  file is reported entry by entry with no project to half-build. Callback #8 re-checks
+  anyway, so the factory can never be handed params the kind refused, whichever path got
+  there.
+- **`checked: false` is not a failure.** It reports that the kind declares no check. A
+  block whose model predates the callback is treated the same way: the pre-flight creates
+  nothing, so proceeding costs nothing, and the entry still fails clearly when applied.
+- **Rejections are rendered, not dumped.** A zod error's own `message` is its whole issue
+  array as JSON; the SDK duck-types `{ issues: [{ path, message }] }` and renders
+  `numbers[0]: Expected number, received string`, matching how the file is written. No
+  schema library is prescribed or depended on.
+
+### Cost, measured — and the build change it forced
+
+Declaring the schema first grew `enter-numbers`' model bundle **382 kB → 501 kB**: zod was
+bundled *inside* the kind's own `dist/kind.js` (that build inlines everything) and so arrived
+as a second copy alongside the model's own zod. Not a static cost —
+`executeSingleLambda` evaluates the whole model bundle on **every** callback invocation, so a
+duplicated dependency is paid per call.
+
+**Fixed by building a kind twice, the way a model already is** (operator direction):
+
+| Artifact | Dependencies | Who consumes it |
+|----------|--------------|-----------------|
+| `dist/index.js` / `index.cjs` | external | blocks importing the kind |
+| `dist/kind.js` | inlined | the registry, and `build-kind-manifest`'s hash |
+
+`createRolldownBlockKindConfig` now prepends the standard node config, and the structurer's
+`kind-package-json` rule points `main`/`module`/`types`/`exports` at the externalized pair
+(all three of `import`/`require`/`default` spelled out, since `build-model` reaches a kind
+through `require`). The self-contained bundle stays on disk for the registry and is no longer
+an entry point.
+
+Result: **382 kB → 401 kB**, one copy of zod in the bundle (verified), i.e. ~19 kB for the
+schema itself instead of ~119 kB for the schema plus a duplicate library. A kind that
+declares no check still pays nothing.
+
+## Validation: Two Checks, One Report
+
+`validateTemplateV1ForApply(document)` holds everything knowable from the document alone —
+no registry, no project. That placement is the substance of the check: the same findings
+made one stage later would have to be reported against a half-built project.
+
+- **References name an earlier entry.** Detection is shared with export
+  (`findProjectTemplateV1ReferenceProblems`); the wording is not. Export tells a developer
+  their project cannot be written out; this tells a reader which edit fixes their file —
+  "move 'b' above this entry", not "blocks order is the instantiation order". The shared
+  finding is structured (`reason` is a discriminant) precisely so each direction can word
+  it for its own reader.
+- **No params carry a block id from another project.** The mirror of export's guard, and
+  the reason it is cheap: in file form a legitimate reference is `{ block, output }`, a
+  shape `inferAllReferencedBlocks` does not recognize, so anything it finds is foreign with
+  nothing to subtract. Caught in an object, in a canonicalized string, and through repeated
+  `JSON.stringify` nesting — the enrichment case that started this.
+
+Problems are grouped by entry in file order, so the report reads alongside the file and an
+entry's problems appear together. Everything is collected: three mistakes, one pass.
+
+Params against their kind are checked separately, and one stage later: that check needs each
+entry's block config, which only exists once resolution has fetched it. See "Params Against
+Their Kind".
+
+Pinned by `template_validate.test.ts` (14). Two of them exist to keep the guard from
+over-reaching: a `{ block, output }` reference must not be mistaken for a foreign id, and a
+uuid that is merely *data* in params — a sample id, a note — must be left alone.
+
 ## Resolution, and What It Left Open
 
 `resolveTemplateEntries(document, provider, { allowUnstable })` is the first stage of an
@@ -338,10 +441,10 @@ ranges), and five golden `template-v1` files.
 - [TODO: validation taxonomy and presentation — blocking dialog vs inline list,
   fail-fast vs collect-all.] The collect-all half is settled by precedent — export reports
   every problem at once; presentation is still open.
-- **`Q-0009`** — apply-time validation of untyped YAML params. Since `BlockParams` is a
-  pure TS type with no zod (track 1 decision), a hand-authored YAML's params are untyped
-  at runtime; how/whether they are validated against the kind on apply is open. The seam
-  it would live at is now identified — see "The Missing Half".
+- ~~**`Q-0009`** — apply-time validation of untyped YAML params.~~ **Resolved** (operator
+  decision, 2026-08-03): a kind may declare `parseTemplateParams`, optional, applied wherever
+  params arrive untyped. See "Params Against Their Kind" — including the bundle-size cost,
+  which is the one part still open.
 - ~~References inside a `PObjectId` string are invisible to the structural rewrite —
   decide whether apply rejects them.~~ **Decided: apply rejects** (operator decision,
   2026-08-03). See "Stale Ids in Strings" and the guard in the validation stage.
