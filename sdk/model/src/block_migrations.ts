@@ -113,7 +113,13 @@ type BuilderState<S> = {
   versionChain: DataVersionKey[];
   steps: MigrationStep[];
   transferSteps: TransferStep[];
-  initialDataFn: DataCreateFn<S>;
+  /**
+   * The params type is erased to `unknown` here: the builder checks the block's
+   * factory against its kind's params, but once stored, the only caller that has
+   * params is the template engine, which carries them as parsed file content and
+   * cannot know the type.
+   */
+  initialDataFn: DataCreateFn<S, unknown>;
   /** Reference to the block kind this data model belongs to, if declared. */
   kindRef?: BlockKindReference;
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
@@ -212,7 +218,7 @@ abstract class MigrationChainBase<
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       transferSteps: this.transferSteps,
-      initialDataFn: initialData as DataCreateFn<Current>,
+      initialDataFn: initialData as DataCreateFn<Current, unknown>,
       kindRef: this.kindRef,
       ...this.recoverState(),
     });
@@ -604,7 +610,7 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
   private readonly stepsByFromVersion: ReadonlyMap<DataVersionKey, number>;
   private readonly steps: MigrationStep[];
   private readonly transferSteps: TransferStep[];
-  private readonly initialDataFn: DataCreateFn<State>;
+  private readonly initialDataFn: DataCreateFn<State, unknown>;
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
   /** Reference to the block kind this data model was built for, if any. */
@@ -673,6 +679,24 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
    */
   getDefaultData(): DataVersioned<State> {
     return makeVersionedData(this.latestVersion, this.initialDataFn({}));
+  }
+
+  /**
+   * Get initial data built from params, wrapped with current version.
+   *
+   * The counterpart of {@link getDefaultData} for a block created from a template
+   * entry: the factory receives the entry's params instead of nothing. A factory
+   * that ignores its argument produces the same result as `getDefaultData`, which
+   * is why the two are separate methods rather than one optional argument — the
+   * caller decides which contract it is asking for, and a block that cannot honour
+   * params must not silently look like one that can.
+   *
+   * References inside `params` are already resolved to the target project's
+   * concrete ids by the time they get here; the factory never sees a
+   * template-local one.
+   */
+  getDataFromParams(params: unknown): DataVersioned<State> {
+    return makeVersionedData(this.latestVersion, this.initialDataFn({ params }));
   }
 
   private recoverFrom(data: unknown, version: DataVersionKey): DataVersioned<State> {

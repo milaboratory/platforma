@@ -31,6 +31,7 @@ import {
   getStorageDebugView,
   migrateStorage,
   createInitialStorage,
+  createInitialStorageFromParams,
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
   deriveTemplateParamsFromStorage,
@@ -689,6 +690,12 @@ export class BlockModelV3<
           storageJson,
           deriveTemplateParams as (data: unknown) => unknown,
         ),
+      [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (paramsJson) =>
+        createInitialStorageFromParams(paramsJson, {
+          getBlockDataFromParams: (params) => dataModel.getDataFromParams(params),
+          getPluginRegistry: () => pluginRegistry,
+          createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
+        }),
     });
 
     // Register plugin input and output lambdas

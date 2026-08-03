@@ -241,7 +241,20 @@ export function migrateStorage(
  * @throws If initialDataFn or createPluginData throws
  */
 export function createInitialStorage(hooks: InitialStorageHooks): StringifiedJson<BlockStorage> {
-  const blockDefault = hooks.getDefaultBlockData();
+  return assembleStorage(hooks.getDefaultBlockData(), hooks);
+}
+
+/**
+ * Wraps freshly created block data and freshly created plugin data into storage.
+ *
+ * Shared by the two ways a block's first storage comes into being — from defaults
+ * and from template params. Only the block's own data differs between them:
+ * plugins have no params channel, so they are always created at their defaults.
+ */
+function assembleStorage(
+  blockData: DataVersioned<unknown>,
+  hooks: Omit<InitialStorageHooks, "getDefaultBlockData">,
+): StringifiedJson<BlockStorage> {
   const pluginRegistry = hooks.getPluginRegistry();
 
   const plugins: Record<PluginHandle, VersionedData<unknown>> = {};
@@ -252,12 +265,64 @@ export function createInitialStorage(hooks: InitialStorageHooks): StringifiedJso
 
   const storage: BlockStorage = {
     [BLOCK_STORAGE_KEY]: BLOCK_STORAGE_SCHEMA_VERSION,
-    __dataVersion: blockDefault.version,
-    __data: blockDefault.data,
+    __dataVersion: blockData.version,
+    __data: blockData.data,
     __pluginRegistry: pluginRegistry,
     __plugins: plugins,
   };
   return stringifyJson(storage);
+}
+
+/** Dependencies for creating storage from a template entry's params. */
+export interface ParamsStorageHooks extends Omit<InitialStorageHooks, "getDefaultBlockData"> {
+  /** The block's init factory, called with the entry's params. */
+  getBlockDataFromParams: (params: unknown) => DataVersioned<unknown>;
+}
+
+/**
+ * Result of building initial storage from params.
+ * Returned by the `__pl_storage_initialFromParams` callback.
+ */
+export type ParamsStorageResult =
+  | { error: string }
+  | { error?: undefined; storageJson: StringifiedJson<BlockStorage> };
+
+/**
+ * Creates complete initial storage for a block being created from template params.
+ *
+ * The inverse of {@link deriveTemplateParamsFromStorage}: that projects storage
+ * into params, this builds storage from them. The params are handed to the block's
+ * init factory, whose output is versioned and wrapped exactly as
+ * {@link createInitialStorage} wraps the defaults — so a block created from a
+ * template is indistinguishable from one created in the UI and then edited.
+ *
+ * Params arrive as JSON text because this runs across the model-VM boundary, where
+ * only strings pass. Anything the factory rejects is returned as an error rather
+ * than thrown: applying a hand-written template is expected to surface bad params,
+ * and the applier reports every entry's problem in one pass.
+ *
+ * @param paramsJson - The entry's params as JSON string, with references resolved
+ * @param hooks - The block's init factory plus plugin creation
+ * @returns The storage to write, or why the params could not produce any
+ */
+export function createInitialStorageFromParams(
+  paramsJson: string,
+  hooks: ParamsStorageHooks,
+): ParamsStorageResult {
+  let params: unknown;
+  try {
+    params = JSON.parse(paramsJson);
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `params are not valid JSON: ${errorMsg}` };
+  }
+
+  try {
+    return { storageJson: assembleStorage(hooks.getBlockDataFromParams(params), hooks) };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `init() threw on the given params: ${errorMsg}` };
+  }
 }
 
 // =============================================================================
