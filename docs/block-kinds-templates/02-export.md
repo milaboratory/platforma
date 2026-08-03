@@ -60,10 +60,17 @@ Dependency-ordered. Use `[~]`/`[x]` as work lands, matching the tracker conventi
       `ProjectHelper.deriveTemplateParamsFromStorage` for facade callback #7. **No
       topological sort was needed** — see "Dependency-Order Walk" below. Remaining: the
       provider that reads real project state, which belongs with the serializer
-- [ ] **Template-local ids** — emit each block's project-local UUID verbatim as its
-      template-local `id`; references stored in params already carry those ids, so no
-      remap step (`decisions.md:139`).
-- [ ] **Emit `template-v1` YAML** — serializer producing exactly what import parses.
+- [~] **Template-local ids** — verbatim reuse confirmed end to end, and the one thing it
+      depends on is now enforced: `walkProjectForTemplateExport` rejects params that still
+      carry an un-rewritten project-local id. See "Template-Local Ids" below — it resolves
+      one of the open questions above and leaves the dangling-reference check to the
+      serializer
+- [~] **Emit `template-v1` YAML** — `lib/node/pl-middle-layer/src/model/template_serializer.ts`:
+      `assembleProjectTemplateV1` → `stringifyProjectTemplateV1` → `exportProjectAsTemplateV1`.
+      Round-trip pinned against the import-side parser. See "Serializer" below — it
+      **implements a decision that is still awaiting sign-off** (kind-less blocks fail the
+      export). Remaining: the provider that reads real project state, which needs the
+      desktop surface
 
 **Desktop**
 
@@ -288,6 +295,121 @@ performance-tuned batching routine now would be guesswork. Note the same loader 
 other extracted config: an exporter reading from `BlockInfoState` must take
 `bpInfo.config.kind`, not `info.blockConfig`.
 
+## Template-Local Ids
+
+**There is no id namespace to translate into, so there is nothing to remap.** Both sides
+of the id draw from the same source:
+
+| What | Where | Becomes |
+| --- | --- | --- |
+| `Block.id` in the structure | `project_model.ts` | the entry's `id`, verbatim |
+| `PlRef.blockId` inside params | `ref.ts:9` | `TemplateLocalRef.block` via `toTemplateForm` |
+
+`toTemplateForm` copies `ref.blockId` straight into the reference
+(`template_form.ts:49`), so an entry id and every reference naming it are the *same
+string* — pinned by a test asserting exactly that identity. Nothing generates, maps, or
+counts ids.
+
+Two framing corrections to the TODO's wording:
+
+- **"UUID" is the common case, not a constraint.** `addBlock` and `duplicateBlock` only
+  *default* the id to `randomUUID()`; both accept an explicit one
+  (`middle_layer/project.ts:217,288`), and the workspace test blocks use ids like
+  `block1`. An entry `id` is `z.string().min(1)`, so this is fine — but code and docs
+  should not promise UUID shape.
+- **Verbatim reuse is only sound if the rewrite is complete**, and that is the real work
+  this step turned up.
+
+**What landed: a detection-parity guard.** The two walks disagree about what carries a
+block id, and the export path sat on the wrong side of the gap:
+
+| Walk | Recognizes a `PlRef` object | Recognizes a `PlRef` serialized into a string |
+| --- | --- | --- |
+| `toTemplateForm` (`mapRefs`, `template_form.ts:74`) | yes | **no** |
+| `inferAllReferencedBlocks` (`args.ts:40-99`) | yes | yes, peeling N `stringify` passes |
+
+The second is the project's own reference detector — the block dependency graph is built
+from it — so it is the authority on what carries a block id. `walkProjectForTemplateExport`
+now runs it over the already-template-form params and reports any id it still finds as a
+per-block problem. Correct template form has none: a rewritten reference is
+`{ block, output }` with no `__isRef` marker, invisible to the detector. It sits in the
+walk rather than in `toTemplateForm` because the detector is middle-layer code while the
+codec ships in every block-model and UI bundle.
+
+**This resolves the second open question under "Template-Descriptor Contract."** It was
+recorded as "whether such a reference reaches persisted params is unverified". The carrier
+is now verified real and precisely located: `EnrichmentRef.hit` and `EnrichmentStep.linker`
+are declared as global-form `PObjectId`s, i.e. `canonicalize({ __isRef: true, blockId,
+name })` (`ref.ts:139-149`) — and `args.ts`'s string-unwrapping branch exists *because*
+that form occurs in real args. So this was never hypothetical, and export was silently
+writing a project-local UUID into a file with no way to resolve it. It is now a named
+error naming the offending block and id. Still open, and now a smaller question:
+whether to *support* the case by rewriting inside the string (the apply side would have to
+re-canonicalize with a matching escape depth) rather than rejecting it. Rejecting is the
+right default until a block is shown to need it.
+
+**What is deliberately not here: the dangling-reference check.** Verbatim reuse can emit a
+reference to a block that is not in the file, and this is ordinary rather than exotic:
+`deleteBlock` only splices the structure (`mutator/project.ts:1420-1432`) and does not
+rewrite downstream args, which is exactly why `BlockGraphNode` carries a
+`missingReferences` flag. A project in that state exports entries whose params name a
+block with no entry. `validateProjectTemplateV1References` already reports precisely this,
+with the offending entry named in the message, and it needs the whole document — so the
+serializer calls it once instead of the walk approximating it per block.
+
+**Noted, not fixed: duplicate ids are possible upstream.** `updateStructure` diffs
+`stagingGraph`s, which key blocks by id in a `Map` (`mutator/project.ts:1282-1304`), so
+adding a block with an id that already exists collapses in the diff — the new-block
+initializer never fires (`:1371-1374`) and the structure ends up with two blocks of the
+same id. Export would then emit two entries with the same `id`. Not export's hole to fix,
+and `ProjectTemplateV1Schema` rejects duplicate ids at parse, so the exported file cannot
+pass validation silently.
+
+## Serializer
+
+`lib/node/pl-middle-layer/src/model/template_serializer.ts`, three layers so each can be
+tested and reused separately:
+
+| Function | Does |
+| --- | --- |
+| `assembleProjectTemplateV1(walk, kindProvider)` | walk output + kind refs → `{ document, problems }` |
+| `stringifyProjectTemplateV1(document)` | document → YAML text, `lineWidth: 0` |
+| `exportProjectAsTemplateV1(structure, paramsProvider, kindProvider)` | the whole thing, all-or-nothing |
+
+Assembly is dull by design — an entry is the block's id, its widened kind reference, and
+the params the walk already collected. `block` is never emitted: the override exists to pin
+an implementation against a kind version *range*, and export writes the exact version
+(`A-0041`), so it has nothing left to pin.
+
+**The round-trip is asserted on every export, not only in tests.** `exportProjectAsTemplateV1`
+runs the import-side `parseProjectTemplateV1` over the document before rendering it. That
+is the cheapest possible proof of "export emits exactly what import parses", and it is a
+throw rather than a problem: by then the kind grammar was checked by the widening, params
+by the walk, and references by the assembler, so a failure means an assembler bug — with
+the one known exception of the upstream duplicate-id hole noted under "Template-Local Ids".
+
+**Decision taken, still needs sign-off: kind-less blocks fail the export (option (a)).**
+The recommendation under "Kind Reference Read-Back" is implemented, naming every offending
+block, and nothing partial is written. Rationale for choosing rather than blocking: (a) is
+the only reversible option — relaxing it later is a one-line change, whereas a shipped
+export that writes invalid files or silently drops blocks cannot be un-shipped. The other
+two remain available; if you want (b), the change is to demote the problem to a warning and
+let `findProjectTemplateV1ReferenceProblems` catch whatever the dropped block leaves
+dangling.
+
+**Also landed, in `pl-model-common`:** `findProjectTemplateV1ReferenceProblems` returns
+`{ entryId, ref, reason, message }` per problem, and `validateProjectTemplateV1References`
+is now `.map(p => p.message)` over it. Export needs per-block attribution to report which
+block to fix, and the alternative was either parsing the message back apart or duplicating
+the traversal. Same messages, so no caller changes.
+
+**What is left, and it is the same blocker as before:** the two providers. `paramsProvider`
+and `kindProvider` are both plain functions over a block id, deliberately — the serializer
+is pure and fixture-testable — but wiring them to a real project means reading per-block
+storage and `bpInfo.config.kind`, which is reachable only from `ProjectMutator`'s batched
+loader or inside a Computable. Which one is right depends on the desktop surface, so it
+belongs with the desktop command.
+
 ## Out of scope
 
 - Import / apply (track 3).
@@ -296,6 +418,10 @@ other extracted config: an exporter reading from `BlockInfoState` must take
 ## Open questions
 
 - Both original open questions are answered above. The live ones are the sign-off items
-  under "Schema Prototype", the two decisions under "Template-Descriptor Contract", and the
-  kind-less-block export decision under "Kind Reference Read-Back" — the last of these
-  gates the serializer.
+  under "Schema Prototype", the extra-fields decision under "Template-Descriptor Contract",
+  and the kind-less-block decision under "Kind Reference Read-Back" — that last one is now
+  **implemented as (a)** rather than blocking, and needs confirming rather than deciding
+  (see "Serializer").
+- A note on code comments: source comments in this track carry no `A-00NN` citations or
+  paths back into these documents — they state the fact inline instead (operator decision,
+  2026-08-03). Citations live here, in the tracker.
