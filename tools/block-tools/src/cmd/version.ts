@@ -19,8 +19,9 @@ function capBump(t: VersionType, cap: VersionType): VersionType {
   return BUMP_ORDER[t] <= BUMP_ORDER[cap] ? t : cap;
 }
 
-// Decision (c): a package reached only through a released `workspace:` devDependency
-// is never auto-bumped to major. A major there is a human call — warn and cap to minor.
+// A package reached only through a released `workspace:` devDependency is never
+// auto-bumped to major — a major release is a human call. When a triggering sibling
+// is major, we warn and cap the injected bump to minor.
 const INJECTED_BUMP_CAP: VersionType = "minor";
 
 /**
@@ -109,8 +110,8 @@ export async function runVersion(cwd: string, logger: MiLogger): Promise<void> {
       }
       if (triggers.length === 0) continue;
 
-      // Decision (c): mirror the highest trigger, floored at updateInternalDependencies,
-      // capped at minor.
+      // Mirror the highest triggering sibling bump, floored at updateInternalDependencies
+      // and capped at minor.
       let desired: VersionType = floor;
       for (const t of triggers) desired = maxBump(desired, t.type);
       desired = capBump(desired, INJECTED_BUMP_CAP);
