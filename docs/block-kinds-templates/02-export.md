@@ -74,13 +74,20 @@ Dependency-ordered. Use `[~]`/`[x]` as work lands, matching the tracker conventi
 
 **Desktop**
 
-- [ ] **"Export Project as Template…" command** — menu/action entry, file-save dialog,
-      write the YAML (`decisions.md:148`).
+- [~] **"Export Project as Template…" command** — wired end to end across both repos:
+      `MiddleLayer.exportProjectAsTemplate(id)` here, and the ProjectCard context-menu
+      item, save dialog and write in `platforma-desktop-app` on branch
+      `MILAB-6648_export-project-as-template` (off `origin/main`). See "Desktop Command"
+      below. Confirmed working against a live backend; the failure path was exercised, the
+      success path needs a project of kind-bearing blocks
 
 **Validation**
 
-- [ ] **Fixture-based tests** — golden project fixtures → expected YAML, runnable ahead
-      of import (no kind resolution, no apply lambda required).
+- [~] **Fixture-based tests** — five golden `.yaml` files under
+      `lib/node/pl-middle-layer/test_fixtures/template-v1/`, driven by
+      `template_serializer_fixtures.test.ts`. Turned up a real interop bug in the emitter
+      — see "Golden Fixtures" below. Still open: fixtures of a *real* project (through
+      `ProjectMutator`), which need a backend
 - [ ] **Round-trip check once import exists** — export → import → equivalent project;
       the north-star acceptance criterion, deferred to track 3 landing.
 
@@ -409,6 +416,130 @@ is pure and fixture-testable — but wiring them to a real project means reading
 storage and `bpInfo.config.kind`, which is reachable only from `ProjectMutator`'s batched
 loader or inside a Computable. Which one is right depends on the desktop surface, so it
 belongs with the desktop command.
+
+## Desktop Command
+
+Spans two repos. Nothing here is verified at runtime — see "What is not proven" below.
+
+**This repo — the providers, which were the standing blocker.** The serializer takes two
+plain functions over a block id; supplying them for a real project needs per-block storage
+and the container-level kind, and both are only reachable from inside `ProjectMutator`:
+
+| Piece | Where |
+| --- | --- |
+| `BlockInfo.kind` | carried through the batched loader, `mutator/project.ts` |
+| `ProjectMutator.exportAsTemplateV1()` | assembles both providers, calls the serializer |
+| `MiddleLayer.exportProjectAsTemplate(id)` | `resolveProjectId` → `withProject`, the entry point |
+
+**The entry point takes a project id, not an open `Project`** (operator decision,
+2026-08-03: the command belongs on a project card, not in the File menu). Exporting is a
+property of the stored project rather than of a session with it, and from a card the
+project is usually closed — `withOpenedProject` would simply throw. Opening one to read it
+would spin up trees and watchers for a one-shot read and then have to decide whether to
+close them again. This matches how the other card-scoped actions work: `duplicateProject`
+and `copyProjectToUser` also go through the middle layer by id. Modelled on
+`setProjectMeta` — `resolveProjectId` then `withProject`.
+
+An earlier `Project.exportAsTemplate()` on the open-project object was removed rather than
+kept alongside: the id-based method covers the open case too, and two entry points where
+one is a strict subset of the other is worse than one.
+
+The kind needed one line in the loader: `bpInfo.config.kind` is read off the container
+right where `extractConfig` already runs, so it costs no extra round-trip. This is what the
+earlier note about "adding a read to that performance-tuned batching routine would be
+guesswork" was worried about, and the worry turned out not to apply — nothing new is
+fetched, a value already in hand is kept. `BlockInfo` now carries it alongside `config`,
+which cannot: `extractConfig` normalizes the render envelope, one level below the kind.
+
+`exportAsTemplate` is a one-shot `withProject` read, deliberately **not** a `Computable`.
+An export is a user action with an answer, not project state to watch, and deriving every
+block's params in the VM is far too much to redo on each overview recompute. The mutator
+touches no field, so `wasModified` is false and the transaction is never committed.
+
+**`platforma-desktop-app`, branch `MILAB-6648_export-project-as-template`** (branched from
+`origin/main`; note `origin/main` carries a change to the same `workerApi.ts`, which does not
+overlap these edits):
+
+| Piece | Where |
+| --- | --- |
+| `ExportProjectAsTemplateResult` | `packages/core/src/types/contract.ts` |
+| `exportProjectAsTemplate` worker method | `packages/worker/src/workerApi.ts` |
+| `ExportProjectAsTemplate(projectId)` task | `packages/main/src/tasks/` + `tasks/index.ts` |
+| "Export as Template..." context-menu item | `packages/renderer/src/start/ProjectCard.vue` |
+
+The command sits in the project card's context menu, next to Share and above Delete — not
+in the OS File menu, where an earlier draft put it. The File menu is `setApplicationMenu`,
+i.e. the macOS menu bar, which this app's users never look at: the in-app menu is a
+separate popup fed by `createMainMenuTemplate`. Unlike Duplicate, the export does not gate
+the context menu while it runs, since it only reads.
+
+Three things there are worth knowing:
+
+- **The catalog lags.** The desktop's committed config pins `pl-middle-layer` 1.66.9;
+  `exportAsTemplate` is in unreleased 1.66.10. Handled with a *catalog-lag adapter*, the
+  convention that file already uses for two other methods — a narrow cast plus a comment
+  saying to delete it after the bump. Unlike those two, a missing method here cannot default
+  to empty, so it surfaces as "not supported by this version of the platform". Note a
+  developer whose working tree activates the local `file:../platforma/...tgz` overrides gets
+  1.66.10 and the method in the typings directly, making the adapter redundant *there* — but
+  it is what keeps the committed code compiling against the catalog.
+- **Render first, ask for a path second.** The opposite order shows a save dialog and only
+  then discovers the project cannot be exported — and with kind-less blocks failing, that is
+  currently the common outcome, not the rare one.
+- **The document does not cross the thread boundary.** The middle layer returns both the
+  YAML and the parsed document; the worker rebuilds only `{ ok, yaml }` / `{ ok, problems }`,
+  since the text carries the same information and the caller only writes text.
+
+**What is not proven.** Type-checked, linted and formatted in all five touched packages
+(three here, three there), and the desktop's `packages/main` suite still passes 31/31. But:
+
+- `ProjectMutator.exportAsTemplateV1` has **no unit test**. Every test that reaches a
+  mutator goes through `withTempRoot`, which needs a live backend (`PL_ADDRESS`), so those
+  suites do not run locally at all — they are the backend CI monorepo tests. The pure layers
+  below it are covered: 20 walk tests, 17 serializer tests, all backend-free.
+- The Electron half cannot be exercised without a built app, so "the menu item appears,
+  is greyed out with no project open, and the dialog writes the file" is unverified.
+
+## Golden Fixtures
+
+`lib/node/pl-middle-layer/test_fixtures/template-v1/` — five expected `.yaml` files,
+driven by `src/model/template_serializer_fixtures.test.ts`. Input side stays in TypeScript
+(typed, so a fixture cannot drift from `ProjectStructure`); expected side is a file on
+disk, which is the artifact a reviewer reads.
+
+| Fixture | Pins |
+| --- | --- |
+| `empty-project.yaml` | `blocks: []`, not a bare `blocks:` that parses as null |
+| `minimal.yaml` | schema marker first; no `params` key at all when none were derived |
+| `linear-chain.yaml` | the canonical shape — three blocks wired up, ids verbatim |
+| `nested-params.yaml` | objects in arrays, refs at depth, `{}` and `[]` and `null` |
+| `scalar-quoting.yaml` | strings a YAML reader would otherwise turn into something else |
+
+**Plain files, not snapshots** (operator decision, 2026-08-03). There is no snapshot
+infrastructure in this repo to fit into — zero `toMatchSnapshot`, zero `__snapshots__` —
+and a snapshot comes with `-u`, which rewrites the expectation without anyone reading it.
+For a file format promised to a second implementation, changing the expectation should be
+a deliberate edit visible in review. Each fixture is also parsed back with the import-side
+parser, so a golden file can never be updated to something import cannot read. They live
+outside `src/` because this package publishes `src/**/*`.
+
+**They immediately earned their keep: the emitter had an interop bug.** YAML 1.2 dropped
+`yes`/`no`/`on`/`off`/`y`/`n` as booleans and dropped sexagesimal integers, so the `yaml`
+package — 1.2 by default — was emitting a params value of `"yes"` as bare `yes` and
+`"1:30"` as bare `1:30`. Our own parser reads those back as strings, so the round-trip
+assertion was green and the field-by-field tests could not see it at all. But PyYAML's
+default and Go's `yaml.v2` are **1.1**, where they are `true` and `90`.
+
+Fixed by emitting with `version: "1.1"` while still parsing as 1.2: quote against the
+stricter ruleset, read with the looser one, since a quoted scalar means the same thing
+under both. It adds no `%YAML` directive — only more quotes. Pinned by a test that asserts
+each hazard is quoted, which is the only kind of test that can catch this, precisely
+because a self-round-trip cannot.
+
+**What is left here.** Fixtures of a *real* project, i.e. driven through `ProjectMutator`
+rather than through the pure serializer. These would catch a provider bug — the current
+fixtures verify the format contract, not that reading a real project produces it. They
+need a backend, so they belong with the monorepo CI suite.
 
 ## Out of scope
 
