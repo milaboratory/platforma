@@ -456,10 +456,10 @@ export class MiddleLayer {
           }
         }
 
-        // The label is only a fallback — a block whose model derives a title shows that
-        // instead — so the entry's own id is used: it is what the file called this block,
-        // and it costs nothing to know.
-        prepared.set(entry.entryId, { blockPack: cachedBp, label: entry.entryId });
+        // The block package's own title, the same thing the add-block UI writes. It is
+        // what the user sees for a block whose model derives no title of its own, and it
+        // is resolution's to supply — nothing here could reconstruct it.
+        prepared.set(entry.entryId, { blockPack: cachedBp, label: entry.title });
       } catch (e) {
         problems.push({
           entryId: entry.entryId,

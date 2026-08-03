@@ -15,13 +15,20 @@ import type { TemplateApplyProblem } from "./template_apply";
  *
  * Both of an entry's paths to an implementation go through this one interface, and
  * both come back as the same `BlockPackSpec` — the shape the existing add-block path
- * already consumes. That convergence is the point: everything downstream of
- * resolution treats a kind-resolved entry and a version-pinned one identically.
+ * already consumes — plus the block's published title. That convergence is the point:
+ * everything downstream of resolution treats a kind-resolved entry and a
+ * version-pinned one identically.
  *
  * Registry knowledge sits deliberately on the far side of this interface. A template
  * file names no registry, so choosing which one (or ones) to consult is a property
  * of the environment applying the file, not of the file — and keeping it out here is
  * what lets resolution be tested with no registry at all.
+ *
+ * The title is required rather than optional for the same reason: an implementation
+ * always has one to hand — a registry adapter reads it off the block's manifest, and
+ * anything else names the blocks it serves — while a caller downstream has no source
+ * for it at all, and the fallbacks it could invent are all wrong. See
+ * {@link ResolvedEntry}'s `title`.
  */
 export type BlockPackProvider = {
   /**
@@ -61,7 +68,7 @@ export type BlockPackProvider = {
  *   without editing anything.
  */
 export type KindResolution =
-  | { readonly ok: true; readonly spec: BlockPackSpec }
+  | { readonly ok: true; readonly spec: BlockPackSpec; readonly title: string }
   | {
       readonly ok: false;
       readonly reason:
@@ -72,7 +79,7 @@ export type KindResolution =
 
 /** The outcome of locating one exact block version. */
 export type ExactResolution =
-  | { readonly ok: true; readonly spec: BlockPackSpec }
+  | { readonly ok: true; readonly spec: BlockPackSpec; readonly title: string }
   | { readonly ok: false; readonly reason: "no-such-block-version" };
 
 /** Where one entry's block will come from. */
@@ -80,6 +87,22 @@ export type ResolvedEntry = {
   /** The entry's template-local id. */
   readonly entryId: string;
   readonly spec: BlockPackSpec;
+  /**
+   * The block package's own title, as its author published it — `meta.title` for a
+   * registry block.
+   *
+   * Carried here because resolution is the only stage that talks to a registry, and a
+   * registry is the only thing that knows it. Nothing downstream can recover it: a
+   * prepared block pack holds the model, the workflow and the frontend, none of which
+   * names the block.
+   *
+   * It becomes the created block's label, which is what the user sees for any block
+   * whose model derives no title of its own — `graph-maker`, `table` and seven other
+   * shipped blocks. Deriving it from the entry instead is specifically wrong: an
+   * exported template names its entries by the source project's block ids, so a
+   * round-tripped project would show UUIDs in the sidebar.
+   */
+  readonly title: string;
   /** True when the entry pinned an exact version instead of resolving its kind. */
   readonly pinned: boolean;
 };
@@ -163,7 +186,10 @@ async function resolveEntry(
 
     const outcome = await provider.byExactVersion(id);
     if (outcome.ok)
-      return { ok: true, entry: { entryId: entry.id, spec: outcome.spec, pinned: true } };
+      return {
+        ok: true,
+        entry: { entryId: entry.id, spec: outcome.spec, title: outcome.title, pinned: true },
+      };
 
     return problem(
       `Block '${id.organization}/${id.name}' version ${id.version} was not found. Correct ` +
@@ -181,7 +207,10 @@ async function resolveEntry(
 
   const outcome = await provider.byKind(entry.kind, options);
   if (outcome.ok)
-    return { ok: true, entry: { entryId: entry.id, spec: outcome.spec, pinned: false } };
+    return {
+      ok: true,
+      entry: { entryId: entry.id, spec: outcome.spec, title: outcome.title, pinned: false },
+    };
 
   switch (outcome.reason) {
     case "no-matching-kind-version":

@@ -28,6 +28,13 @@ const specFor = (name: string): BlockPackSpec => ({
   channel: "stable",
 });
 
+/** A successful resolution of `name`, titled the way a registry would title it. */
+const foundBlock = (name: string) => ({
+  ok: true as const,
+  spec: specFor(name),
+  title: `The ${name} Block`,
+});
+
 const entry = (
   id: string,
   extra: Partial<Pick<ProjectTemplateV1Entry, "kind" | "block">> = {},
@@ -53,11 +60,11 @@ function fakeProvider(answers: { byKind?: KindResolution; byExactVersion?: Exact
     provider: {
       byKind: (kind, options) => {
         kindCalls.push({ kind, allowUnstable: options.allowUnstable });
-        return Promise.resolve(answers.byKind ?? { ok: true, spec: specFor("resolved") });
+        return Promise.resolve(answers.byKind ?? foundBlock("resolved"));
       },
       byExactVersion: (id) => {
         exactCalls.push(id);
-        return Promise.resolve(answers.byExactVersion ?? { ok: true, spec: specFor("pinned") });
+        return Promise.resolve(answers.byExactVersion ?? foundBlock("pinned"));
       },
     },
   };
@@ -101,7 +108,12 @@ describe("resolveTemplateEntries", () => {
     expect(exactCalls).toEqual([
       { organization: "milaboratories", name: "demo", version: "2.0.1" },
     ]);
-    expect(outcome.resolved[0]).toEqual({ entryId: "a", spec: specFor("pinned"), pinned: true });
+    expect(outcome.resolved[0]).toEqual({
+      entryId: "a",
+      spec: specFor("pinned"),
+      title: "The pinned Block",
+      pinned: true,
+    });
   });
 
   test("both paths produce the same kind of result", async () => {
@@ -118,8 +130,31 @@ describe("resolveTemplateEntries", () => {
     );
 
     expect(outcome.resolved.map((r) => Object.keys(r).sort())).toEqual([
-      ["entryId", "pinned", "spec"],
-      ["entryId", "pinned", "spec"],
+      ["entryId", "pinned", "spec", "title"],
+      ["entryId", "pinned", "spec", "title"],
+    ]);
+  });
+
+  test("the block's published title comes back with it, whichever route it took", async () => {
+    // It becomes the created block's label, and this is the only stage that can know it:
+    // a prepared block pack carries the model, the workflow and the frontend, none of
+    // which names the block. Deriving it from the entry would put a UUID there, since an
+    // exported template names its entries by the source project's block ids.
+    const { provider } = fakeProvider({});
+
+    const outcome = await resolve(
+      documentOf(
+        entry("aaaaaaaa-0000-4000-8000-000000000001"),
+        entry("bbbbbbbb-0000-4000-8000-000000000002", {
+          block: "@platforma-open/milaboratories.demo@2.0.1" as BlockPackReference,
+        }),
+      ),
+      provider,
+    );
+
+    expect(outcome.resolved.map((r) => r.title)).toEqual([
+      "The resolved Block",
+      "The pinned Block",
     ]);
   });
 
@@ -137,7 +172,7 @@ describe("resolveTemplateEntries", () => {
     // `resolved` being shorter than the document is the signal that it must not be
     // applied — resolution is all-or-nothing for the caller, not per entry.
     const provider: BlockPackProvider = {
-      byKind: () => Promise.resolve({ ok: true, spec: specFor("resolved") }),
+      byKind: () => Promise.resolve(foundBlock("resolved")),
       byExactVersion: () => Promise.resolve({ ok: false, reason: "no-such-block-version" }),
     };
 

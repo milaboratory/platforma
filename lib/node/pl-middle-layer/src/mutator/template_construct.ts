@@ -12,13 +12,16 @@ export type PreparedTemplateEntry = {
   /** The block pack, already prepared and template-cached. */
   readonly blockPack: BlockPackSpecPrepared;
   /**
-   * The label to place the block under.
+   * The label to place the block under: the block package's published title.
    *
-   * A template names no block instances, so this cannot come from the file. It is the
-   * caller's to choose, and it is only a fallback: a block whose model derives a title
-   * shows that instead (`project_overview.ts` prefers the derived title). The block
-   * package's own title is the natural source; the entry's template-local id is a
-   * reasonable second, since it is what the file called the block.
+   * A template names no block instances, so this cannot come from the file — and must
+   * not be derived from it, since an exported template names its entries by the source
+   * project's block ids. It reaches here from resolution, the only stage that talks to
+   * a registry.
+   *
+   * A block whose model derives a title shows that instead (`project_overview.ts`
+   * prefers the derived one), so for most blocks this is invisible. For the ones that
+   * derive none it is the name the user reads.
    */
   readonly label: string;
 };
