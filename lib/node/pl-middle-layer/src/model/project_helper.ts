@@ -40,6 +40,14 @@ export type MigrationResult =
  */
 type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
+/**
+ * Result of building initial storage from params.
+ * Returned by the __pl_storage_initialFromParams VM callback.
+ */
+type ParamsStorageResult =
+  | { error: string }
+  | { error?: undefined; storageJson: StringifiedJson<BlockStorage> };
+
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<
     string,
@@ -175,11 +183,14 @@ export class ProjectHelper {
     // params, we just have no way to ask for them. Reporting it as `undefined` params
     // would export the block stripped of its configuration and quietly rebuild a
     // differently-configured project, so it has to be an error.
+    // The message names the one action available to whoever pressed Export. It
+    // deliberately says nothing about SDKs or callbacks: the person reading it did
+    // not build this block and cannot change how it was built.
     if (callback === undefined) {
       return {
         error: new Error(
-          "Block model cannot describe itself as a template entry — it was built before " +
-            "template export existed. Rebuild the block against a current SDK.",
+          "This version of the block cannot be written to a template. Update the block " +
+            "to a newer version and export again.",
         ),
       };
     }
@@ -266,6 +277,82 @@ export class ProjectHelper {
         }),
       );
       throw new Error(`Block initial storage creation failed: ${e}`);
+    }
+  }
+
+  /**
+   * Creates initial BlockStorage for a block being created from template params.
+   *
+   * The inverse of {@link deriveTemplateParamsFromStorage}, and the reason a block
+   * can be created by anything other than the UI: it hands the params to the
+   * block's own init factory inside the model VM, so the resulting storage is
+   * whatever that block considers a correctly-initialized state.
+   *
+   * The caller must resolve references in `params` first — a reference reaching the
+   * factory has to name a block that already exists in the target project.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param params The entry's params, with references already resolved
+   * @returns The initial storage as JSON string, or why the params yield none
+   */
+  public getInitialStorageFromParamsInVM(
+    blockConfig: BlockConfig,
+    params: unknown,
+  ): ResultOrError<string> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error(
+          "getInitialStorageFromParamsInVM is only supported for model API version 2",
+        ),
+      };
+    }
+
+    const callback =
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitialFromParams];
+
+    // A model built before this callback existed has no entry for it. Falling back
+    // to the params-less initializer is not an option: it would produce a
+    // default-configured block that looks like a successful apply, so the block the
+    // user gets would silently differ from the one the template describes.
+    //
+    // The message offers the two actions available to whoever applied the file. The
+    // second one is the reason this branch is reachable at all: kind resolution only
+    // ever returns a block that declares a kind, and such a block is new enough to
+    // support this — but an entry may pin an exact block version instead, bypassing
+    // resolution, and that pin can name anything ever published.
+    if (callback === undefined) {
+      return {
+        error: new Error(
+          "This version of the block cannot be created from a template. Use a newer " +
+            "version of the block, or remove the pinned block version from the template " +
+            "entry so a supported one is chosen automatically.",
+        ),
+      };
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        callback,
+        extractCodeWithInfo(blockConfig),
+        // Params cross the VM boundary as text, like storage does. `undefined` would
+        // stringify to nothing at all, and an entry with no params must go through
+        // the params-less initializer rather than reaching this method.
+        JSON.stringify(params ?? {}),
+      ) as ParamsStorageResult;
+
+      if (result.error !== undefined) return { error: new Error(result.error) };
+      return { value: result.storageJson };
+    } catch (e) {
+      const cause = ensureError(e);
+      // The reason goes in the message, not only in `cause`: this error becomes a
+      // per-entry apply problem shown to whoever triggered the import, and every
+      // layer in between carries only `message`.
+      return {
+        error: new Error(`Initial storage creation from params failed: ${cause.message}`, {
+          cause,
+        }),
+      };
     }
   }
 
