@@ -51,10 +51,15 @@ Dependency-ordered. Use `[~]`/`[x]` as work lands, matching the tracker conventi
 
 **Serialization**
 
-- [ ] **Read the kind reference back at runtime** — `{name}@X.Y.Z` from `model.json` into
-      the exported template entry (`A-0013`). No kind _resolution_ needed.
-- [ ] **Dependency-order walk** of the project's blocks, collecting each block's
-      template-descriptor output (`decisions.md:148`).
+- [~] **Read the kind reference back at runtime** — audited end to end and pinned by
+      `sdk/model/src/kind_reference.test.ts`; **no production code was needed**, the read
+      already works. See "Kind Reference Read-Back" below for the audit, why no helper
+      landed, and the one open decision it surfaced (kind-less blocks)
+- [~] **Dependency-order walk** — `walkProjectForTemplateExport` in
+      `lib/node/pl-middle-layer/src/model/template_export.ts`, plus the ML-side invoker
+      `ProjectHelper.deriveTemplateParamsFromStorage` for facade callback #7. **No
+      topological sort was needed** — see "Dependency-Order Walk" below. Remaining: the
+      provider that reads real project state, which belongs with the serializer
 - [ ] **Template-local ids** — emit each block's project-local UUID verbatim as its
       template-local `id`; references stored in params already carry those ids, so no
       remap step (`decisions.md:139`).
@@ -171,6 +176,118 @@ the method as worked examples.
   structural walk cannot see them and the UUID survives export to go stale on apply.
   Whether such a reference reaches persisted params is unverified.
 
+## Kind Reference Read-Back
+
+The TODO's wording ("read the kind reference back at runtime") suggests missing plumbing.
+There is none. Every hop is a verbatim passthrough, audited on disk:
+
+| Hop | Where | Behavior |
+| --- | --- | --- |
+| Bake | `sdk/model/src/block_model.ts:218,233,739` | `formatKindRef` → container-level `kind` |
+| Write | `tools/block-tools/src/cmd/build-model.ts` | `JSON.stringify(config)`, no whitelist |
+| model.json | `etc/blocks/*/model/dist/model.json` | `kind` at **top level**; 13/13 carry it |
+| Manifest lift | `tools/block-tools/src/v2/build_dist.ts:55-70` | `modelKindReference`, fail-safe |
+| Parse | `.../mutator/block-pack/block_pack.ts:43-55` | open record + cast, preserves it |
+| Store | `.../mutator/block-pack/block_pack.ts:353` | `{ config: spec.config, source }` |
+| Read | `.../middle_layer/util.ts:35` | hands every caller the whole `info` |
+
+The single loss is `extractConfigGeneric` (`lib/model/common/src/bmodel/normalization.ts`),
+which drops `kind` in all four arms — deliberately: it normalizes the *render envelope*,
+and `kind` is container-level. So `getBlockPackInfo(...).cfg` is kind-blind by construction
+and the read point is `getBlockPackInfo(...).info.config.kind`.
+
+**Why no helper landed.** `BlockConfigContainer.kind` is already declared
+`readonly kind?: BlockKindReference` (`container.ts:21`), so that property access already
+yields `BlockKindReference | undefined` — an `extractKindRef(cfg)` wrapper would narrow
+nothing, parse nothing, and resolve nothing, while becoming permanent block-author-facing
+API (`pl-model-common` is re-exported wholesale by `@platforma-sdk/model`). The middle-layer
+read is one expression at the serializer's own call site, and that call site does not exist
+yet. What was missing was not code but *proof the path holds*, so this step landed the
+test instead.
+
+**What the test pins** (`sdk/model/src/kind_reference.test.ts`, 6 cases, no backend):
+`done()` bakes the kind at container level; the normalized config does **not** carry it
+(fails loudly if anyone later routes it through the normalizer, creating two sources of
+truth); a kind-less block reads back `undefined` rather than throwing; the reference widens
+to the exact tier with the string unchanged; the org-scoped name survives the last-`@`
+split; and the widened reference is accepted by `ProjectTemplateV1EntrySchema` as an
+entry's `kind`.
+
+**One correction to the TODO's framing.** "No kind _resolution_ needed" is right, but a
+brand *widen* is mandatory and was understated: an entry's `kind` is typed
+`BlockKindSelectorReference`, so the exact reference goes through
+`kindReferenceToSelectorReference`. `A-0041` fixes the tier — "the exact version the block
+implements, `{name}@X.Y.Z`, read from the model's embedded kind reference" — and also
+settles that export never emits a `block` override. Widening happens at the **serializer**,
+not the read point, because it validates and therefore throws; every read site sits inside
+a `Computable` re-evaluated on project-overview recompute, so a malformed stored reference
+must not be able to break the overview of unrelated blocks.
+
+**Open — needs a decision**
+
+- **What does export do with a kind-less block?** A genuine spec contradiction, not a code
+  problem: an entry's `kind` is **required** (`A-0036`, `project_template_v1.ts:95` — "it
+  carries the params contract the entry is typed against") while a block's `kind` is
+  **optional** for backward compatibility (`container.ts:19-21`). For such a block there is
+  no legal entry to write, and no atom in the corpus decides between: (a) fail the export
+  and name every offending block; (b) skip the block with a warning — but downstream entries'
+  params may hold `TemplateLocalRef`s to it, producing a file that fails
+  `validateProjectTemplateV1References`; (c) emit an entry without `kind`, i.e. an invalid
+  file. Recommendation: **(a)**. This is not an edge case — every block published before
+  kinds existed, and every block still on the deprecated `create(dataModel)` overload, is
+  kind-less, so it is what most existing projects will hit until blocks are republished.
+  Gates the serializer step, not this one.
+
+## Dependency-Order Walk
+
+**The project structure is already stored in topological order, so there is no sort.** That
+is not an assumption — it is enforced. `productionGraph` iterates `allBlocks(structure)` and
+passes the set of blocks seen *so far* as the `allowed` set to `inferAllReferencedBlocks`
+(`lib/node/pl-middle-layer/src/model/project_model_util.ts:136-143`, `args.ts:107-110`), so a
+reference to a block not already above is recorded as `missingReferences` rather than as an
+upstream; the upstream scan then stops at the current block (`:155-156`). `BlockGraph`
+documents the same invariant on its node map ("Nodes are stored in the map in topological
+order", `:40`). A block can therefore only legally reference blocks earlier in the sequence
+— which is exactly `A-0036`'s ordering rule ("every block must appear after the blocks it
+references") and `A-0041`'s "the engine emits entries upstream-first". Emitting in structure
+order satisfies both for free. Groups are flattened in order, so cross-group order is the
+structure's too.
+
+The walk deliberately does **not** reorder to repair a structure that violates the rule:
+reordering would change which references are even legal, and the resulting file is caught by
+`validateProjectTemplateV1References` anyway. Pinned by a test.
+
+**What landed**
+
+- `walkProjectForTemplateExport(structure, paramsProvider)` →
+  `{ entries, problems }`. Pure over plain data, 13 unit tests, no backend. It owns the four
+  distinctions that are easy to get wrong: structure order is the answer; `undefined` params
+  (block declares no `templateParams`) is legal and **not** the same as `{}`; a failed
+  derivation is a per-block problem rather than an abort, so every offending block is
+  reported in one pass; and non-object params are rejected — an entry's `params` is a mapping
+  (`A-0036`), but a kind carries `Params` as a type only (`A-0019`), so this walk is the only
+  place that can catch a lambda returning a primitive or an array.
+- `ProjectHelper.deriveTemplateParamsFromStorage` — the middle layer's invoker for
+  `__pl_templateParams_derive`, mirroring `deriveArgsFromStorage`. This did not exist; the
+  callback had been registered by every V3 block since the previous step with nothing on the
+  ML side calling it. Unlike `derivePrerunArgsFromStorage`, it surfaces failures instead of
+  swallowing them: a prerun that cannot derive args just skips a block in staging, whereas an
+  export that silently drops one produces a template that does not describe the project.
+- A block whose state cannot be read at all is a **problem**, not a silent skip — the
+  opposite of `productionGraph`, which skips such blocks by design. Deliberate divergence:
+  surviving entries may hold `TemplateLocalRef`s to the omitted block.
+
+**What is left, and why it is the serializer's**
+
+The provider that supplies real project state. Per-block storage is only reachable from
+`ProjectMutator`'s batched round-trip loader (`mutator/project.ts:1870-1899`) or from inside
+a Computable, and an export is a one-shot user action rather than part of the render loop —
+so where that read lives depends on the desktop surface, and adding it to that
+performance-tuned batching routine now would be guesswork. Note the same loader does
+`info.blockConfig = extractConfig(bpInfo.config)` (`:1897`), so it is kind-blind like every
+other extracted config: an exporter reading from `BlockInfoState` must take
+`bpInfo.config.kind`, not `info.blockConfig`.
+
 ## Out of scope
 
 - Import / apply (track 3).
@@ -179,4 +296,6 @@ the method as worked examples.
 ## Open questions
 
 - Both original open questions are answered above. The live ones are the sign-off items
-  under "Schema Prototype" and the two decisions under "Template-Descriptor Contract".
+  under "Schema Prototype", the two decisions under "Template-Descriptor Contract", and the
+  kind-less-block export decision under "Kind Reference Read-Back" — the last of these
+  gates the serializer.
