@@ -6,13 +6,13 @@ import { parseKindSelector, parseKindSelectorReference } from "./kind_selector";
 
 /**
  * Value of a template file's `schema` field — the format marker every
- * `template-v1` document opens with (A-0036).
+ * `template-v1` document opens with.
  */
 export const PROJECT_TEMPLATE_SCHEMA_V1 = "template-v1";
 export type ProjectTemplateSchemaV1 = typeof PROJECT_TEMPLATE_SCHEMA_V1;
 
 /**
- * A template-local reference: entry `id` plus an upstream output name (A-0038).
+ * A template-local reference: entry `id` plus an upstream output name.
  *
  * A template cannot carry project-local UUIDs — the blocks do not exist until it
  * is applied — so an inter-block wire inside `params` is written as
@@ -82,14 +82,14 @@ export function parseBlockPackReference(ref: BlockPackReference): {
  * `kind` is always required: it carries the params contract the entry is typed
  * against. `block` is an optional exact-version override — when present it is
  * used directly and kind resolution is skipped. `params` omitted means "start
- * this block from its kind's defaults" (A-0036). There is no `label` field: a
+ * this block from its kind's defaults". There is no `label` field: a
  * template does not name block instances for display.
  */
 export type ProjectTemplateV1Entry = {
   /**
    * Template-local identifier, unique within the file. Names the entry for
    * inter-block references; on export it is the block's project-local UUID,
-   * reused verbatim (A-0038).
+   * reused verbatim.
    */
   readonly id: string;
   readonly kind: BlockKindSelectorReference;
@@ -102,7 +102,7 @@ export type ProjectTemplateV1Entry = {
 };
 
 /**
- * A `template-v1` document — the primitive form of a template (A-0036).
+ * A `template-v1` document — the primitive form of a template.
  *
  * `blocks` order is the instantiation order, so every entry must appear after
  * the entries it references. This type is the shared contract for both
@@ -244,41 +244,84 @@ export function collectTemplateLocalRefs(
   return found;
 }
 
+/** Why one {@link TemplateLocalRef} is not usable, and which entry holds it. */
+export type TemplateReferenceProblem = {
+  /** The entry whose `params` hold the offending reference. */
+  readonly entryId: string;
+  readonly ref: TemplateLocalRef;
+  /**
+   * - `self` — the entry references its own output.
+   * - `unknown` — the target id matches no entry in the document.
+   * - `forward` — the target exists but is declared later, so it does not exist
+   *   yet at the point this entry is created.
+   */
+  readonly reason: "self" | "unknown" | "forward";
+  /** Human-readable form, suitable for showing to whoever triggered the export. */
+  readonly message: string;
+};
+
 /**
- * Check that every template-local reference names an entry declared EARLIER in
- * `blocks`, and report the ones that do not.
+ * Find every template-local reference that does not name an entry declared
+ * EARLIER in `blocks`.
  *
- * Both halves of A-0036's ordering rule ("every block must appear after the
- * blocks it references") in one pass: an unknown target and a forward target are
- * reported distinctly. Returns human-readable problems, empty when the document
- * is consistent.
+ * Both halves of the ordering rule — every block must appear after the blocks it
+ * references — in one pass, reporting an unknown target and a forward target
+ * distinctly. Empty when the document is consistent.
+ *
+ * Structured rather than string-only so a caller that has to attribute a problem
+ * to a block (an exporter reporting per-block failures, for instance) does not
+ * have to parse the message back apart.
  *
  * Separate from {@link parseProjectTemplateV1} because it rests on the
  * reservation rule for `{ block, output }` — a parser must not depend on a rule
  * still awaiting sign-off.
  */
-export function validateProjectTemplateV1References(doc: ProjectTemplateV1): string[] {
-  const problems: string[] = [];
+export function findProjectTemplateV1ReferenceProblems(
+  doc: ProjectTemplateV1,
+): TemplateReferenceProblem[] {
+  const problems: TemplateReferenceProblem[] = [];
   const declaredBefore = new Set<string>();
   const allIds = new Set(doc.blocks.map((e) => e.id));
 
   for (const entry of doc.blocks) {
     for (const ref of collectTemplateLocalRefs(entry.params)) {
       if (ref.block === entry.id) {
-        problems.push(`Entry '${entry.id}' references its own output '${ref.output}'`);
+        problems.push({
+          entryId: entry.id,
+          ref,
+          reason: "self",
+          message: `Entry '${entry.id}' references its own output '${ref.output}'`,
+        });
       } else if (!allIds.has(ref.block)) {
-        problems.push(
-          `Entry '${entry.id}' references output '${ref.output}' of unknown entry '${ref.block}'`,
-        );
+        problems.push({
+          entryId: entry.id,
+          ref,
+          reason: "unknown",
+          message:
+            `Entry '${entry.id}' references output '${ref.output}' of unknown entry ` +
+            `'${ref.block}'`,
+        });
       } else if (!declaredBefore.has(ref.block)) {
-        problems.push(
-          `Entry '${entry.id}' references entry '${ref.block}', which is declared after it ` +
+        problems.push({
+          entryId: entry.id,
+          ref,
+          reason: "forward",
+          message:
+            `Entry '${entry.id}' references entry '${ref.block}', which is declared after it ` +
             `(blocks order is the instantiation order)`,
-        );
+        });
       }
     }
     declaredBefore.add(entry.id);
   }
 
   return problems;
+}
+
+/**
+ * {@link findProjectTemplateV1ReferenceProblems} as human-readable lines, for a
+ * caller that only needs to show them.
+ */
+export function validateProjectTemplateV1References(doc: ProjectTemplateV1): string[] {
+  return findProjectTemplateV1ReferenceProblems(doc).map((p) => p.message);
 }

@@ -1,0 +1,273 @@
+import { describe, expect, test } from "vitest";
+import YAML from "yaml";
+import type { BlockKindReference } from "@milaboratories/pl-model-common";
+import {
+  createTemplateLocalRef,
+  kindReferenceToSelectorReference,
+  parseProjectTemplateV1,
+} from "@milaboratories/pl-model-common";
+import type { ProjectStructure } from "./project_model";
+import type { TemplateParamsResult } from "./template_export";
+import {
+  assembleProjectTemplateV1,
+  exportProjectAsTemplateV1,
+  stringifyProjectTemplateV1,
+} from "./template_serializer";
+
+function simpleStructure(...ids: string[]): ProjectStructure {
+  return {
+    groups: [
+      {
+        id: "g1",
+        label: "G1",
+        blocks: ids.map((id) => ({ id, label: id, renderingMode: "Heavy" })),
+      },
+    ],
+  };
+}
+
+const ok = (value: unknown): TemplateParamsResult => ({ value });
+
+const kindOf = (name: string, version = "1.4.2") =>
+  `@platforma-open/milaboratories.${name}.kind@${version}` as BlockKindReference;
+
+/** Every block gets a kind derived from its own id. */
+const kindPerBlock = (blockId: string) => kindOf(blockId);
+
+function exportOf(
+  structure: ProjectStructure,
+  params: Record<string, TemplateParamsResult>,
+  kinds: (blockId: string) => BlockKindReference | undefined = kindPerBlock,
+) {
+  return exportProjectAsTemplateV1(structure, (id) => params[id], kinds);
+}
+
+describe("the document", () => {
+  test("an entry is the block id, its exact kind, and its params", () => {
+    const result = exportOf(simpleStructure("samples"), {
+      samples: ok({ dataset: "bulk-rna" }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.document).toEqual({
+      schema: "template-v1",
+      blocks: [
+        {
+          id: "samples",
+          kind: "@platforma-open/milaboratories.samples.kind@1.4.2",
+          params: { dataset: "bulk-rna" },
+        },
+      ],
+    });
+  });
+
+  test("the kind is emitted at the exact tier, never widened to a range", () => {
+    // A block implements exactly one kind version, so pinning it is the whole
+    // point; a `~` or `^` tier would let apply pick a different params contract.
+    const result = exportOf(simpleStructure("a"), { a: ok({}) });
+
+    expect(result.ok && result.document.blocks[0].kind).toBe(
+      "@platforma-open/milaboratories.a.kind@1.4.2",
+    );
+  });
+
+  test("no `block` override is emitted", () => {
+    // The override pins an implementation against a kind version *range*. Export
+    // writes the exact version, so there is nothing left for it to pin.
+    const result = exportOf(simpleStructure("a"), { a: ok({}) });
+
+    expect(result.ok && "block" in result.document.blocks[0]).toBe(false);
+  });
+
+  test("a block declaring no templateParams gets no `params` key at all", () => {
+    // Not `params: null`: absent means "re-initialize from the kind's defaults",
+    // which is a different instruction from "use these empty params".
+    const result = exportOf(simpleStructure("bare", "empty"), {
+      bare: ok(undefined),
+      empty: ok({}),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect("params" in result.document.blocks[0]).toBe(false);
+    expect(result.document.blocks[1].params).toEqual({});
+    expect(result.yaml).not.toContain("params: null");
+  });
+
+  test("entry order is structure order", () => {
+    const result = exportOf(simpleStructure("samples", "mixcr", "browser"), {
+      samples: ok({}),
+      mixcr: ok({ input: createTemplateLocalRef("samples", "reads") }),
+      browser: ok({ clones: createTemplateLocalRef("mixcr", "clonotypes") }),
+    });
+
+    expect(result.ok && result.document.blocks.map((b) => b.id)).toEqual([
+      "samples",
+      "mixcr",
+      "browser",
+    ]);
+  });
+});
+
+describe("the YAML", () => {
+  test("round-trips through the import-side parser unchanged", () => {
+    // The one property that matters: export emits exactly what import parses.
+    const result = exportOf(simpleStructure("samples", "mixcr"), {
+      samples: ok({ dataset: "bulk-rna", replicates: [1, 2, 3] }),
+      mixcr: ok({
+        input: createTemplateLocalRef("samples", "reads"),
+        species: "hsa",
+        nested: { deep: { flag: true, absent: null } },
+      }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(parseProjectTemplateV1(YAML.parse(result.yaml))).toEqual(result.document);
+  });
+
+  test("opens with the schema marker", () => {
+    const result = exportOf(simpleStructure("a"), { a: ok({}) });
+
+    expect(result.ok && result.yaml.startsWith("schema: template-v1\n")).toBe(true);
+  });
+
+  test("nothing is line-folded", () => {
+    // A folded scalar still parses, but it makes a diff between two exported
+    // templates unreadable, which is most of the reason to emit YAML at all.
+    const long = "x".repeat(400);
+    const yaml = stringifyProjectTemplateV1({
+      schema: "template-v1",
+      blocks: [
+        {
+          id: "a",
+          kind: kindReferenceToSelectorReference(kindOf("a")),
+          params: { note: long },
+        },
+      ],
+    });
+
+    expect(yaml).toContain(long);
+  });
+
+  test("a reference is written as a plain two-key mapping", () => {
+    // How the engine recognizes a reference on apply, so its shape in the file is
+    // part of the contract rather than a rendering detail.
+    const result = exportOf(simpleStructure("samples", "mixcr"), {
+      samples: ok({}),
+      mixcr: ok({ input: createTemplateLocalRef("samples", "reads") }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // A plain mapping of the two reserved keys, with no marker left over from the
+    // live `PlRef` form the block's lambda returned.
+    expect(result.yaml).toContain("block: samples");
+    expect(result.yaml).toContain("output: reads");
+    expect(result.yaml).not.toContain("__isRef");
+  });
+});
+
+describe("problems", () => {
+  test("a kind-less block fails the export and is named", () => {
+    // Every block published before kinds existed is in this state, so this is the
+    // common case today rather than an edge one.
+    const result = exportOf(
+      simpleStructure("modern", "legacy"),
+      { modern: ok({}), legacy: ok({}) },
+      (id) => (id === "legacy" ? undefined : kindOf(id)),
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toHaveLength(1);
+    expect(result.problems[0].blockId).toBe("legacy");
+    expect(result.problems[0].error).toContain("declares no kind");
+  });
+
+  test("a malformed stored kind reference is a problem, not a throw", () => {
+    const result = exportOf(
+      simpleStructure("a"),
+      { a: ok({}) },
+      () => "no-version-here" as BlockKindReference,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems[0].blockId).toBe("a");
+    expect(result.problems[0].error).toContain("malformed");
+  });
+
+  test("a reference to a block that is not in the project is caught", () => {
+    // Deleting a block only removes it from the structure and does not rewrite
+    // downstream args, so a live project holds such references routinely — and
+    // verbatim id reuse carries them straight into the file.
+    const result = exportOf(simpleStructure("survivor"), {
+      survivor: ok({ input: createTemplateLocalRef("deleted-upstream", "reads") }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems[0].blockId).toBe("survivor");
+    expect(result.problems[0].error).toContain("unknown entry 'deleted-upstream'");
+  });
+
+  test("a forward reference is caught, and named as one", () => {
+    const result = exportOf(simpleStructure("downstream", "upstream"), {
+      downstream: ok({ input: createTemplateLocalRef("upstream", "reads") }),
+      upstream: ok({}),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems[0].error).toContain("declared after it");
+  });
+
+  test("walk problems and assembly problems are reported together, in one pass", () => {
+    // Fixing an export should take one round, not one round per broken block.
+    const result = exportOf(
+      simpleStructure("unreadable", "kindless", "fine"),
+      { kindless: ok({}), fine: ok({}) },
+      (id) => (id === "kindless" ? undefined : kindOf(id)),
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems.map((p) => p.blockId).sort()).toEqual(["kindless", "unreadable"]);
+  });
+
+  test("no partial YAML is produced when anything is wrong", () => {
+    // All-or-nothing: a template missing blocks the user never chose to leave out
+    // would still look like a successful export.
+    const result = exportOf(simpleStructure("a", "b"), { a: ok({}), b: ok({}) }, (id) =>
+      id === "b" ? undefined : kindOf(id),
+    );
+
+    expect(result).not.toHaveProperty("yaml");
+  });
+
+  test("an empty project exports an empty template", () => {
+    const result = exportOf(simpleStructure(), {});
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.document.blocks).toEqual([]);
+    expect(parseProjectTemplateV1(YAML.parse(result.yaml))).toEqual(result.document);
+  });
+});
+
+describe("assembleProjectTemplateV1", () => {
+  test("carries the walk's problems through unchanged", () => {
+    const { document, problems } = assembleProjectTemplateV1(
+      {
+        entries: [{ blockId: "a", params: {} }],
+        problems: [{ blockId: "ghost", error: "state unavailable" }],
+      },
+      kindPerBlock,
+    );
+
+    expect(problems).toEqual([{ blockId: "ghost", error: "state unavailable" }]);
+    expect(document.blocks.map((b) => b.id)).toEqual(["a"]);
+  });
+});
