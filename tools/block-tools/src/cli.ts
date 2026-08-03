@@ -9,6 +9,7 @@ import { updateDepsCommand } from "./cmd/update-deps";
 import { listOverviewSnapshotsCommand } from "./cmd/list-overview-snapshots";
 import { restoreOverviewFromSnapshotCommand } from "./cmd/restore-overview-from-snapshot";
 import { uploadPackageV1Command } from "./cmd/upload-package-v1";
+import { versionCommand } from "./cmd/version";
 import { structureCheckCommand } from "./cmd/structure/check";
 import { structureInitCommand } from "./cmd/structure/init";
 import { structureRefreshCommand } from "./cmd/structure/refresh";
@@ -33,6 +34,7 @@ export function buildProgram(packageRoot: string = process.cwd()): Command {
   program.addCommand(listOverviewSnapshotsCommand());
   program.addCommand(restoreOverviewFromSnapshotCommand());
   program.addCommand(uploadPackageV1Command());
+  program.addCommand(versionCommand());
   program.addCommand(softwareCommand());
 
   // `structure` subcommands: check | init | refresh.
