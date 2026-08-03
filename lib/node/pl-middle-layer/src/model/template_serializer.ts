@@ -120,12 +120,23 @@ export function assembleProjectTemplateV1(
 /**
  * Render a template document to YAML text.
  *
- * Line folding is switched off: a wrapped kind reference or params string still
- * parses, but it makes a diff between two exported templates unreadable, which is
- * most of the reason to prefer YAML over JSON here.
+ * Two non-default emitter settings, both about the file being read by someone
+ * else's code:
+ *
+ * - **No line folding.** A wrapped scalar still parses, but it makes a diff between
+ *   two exported templates unreadable, which is most of the reason to prefer YAML
+ *   over JSON here.
+ * - **Quote as if the reader were YAML 1.1**, while still parsing as 1.2. YAML 1.2
+ *   dropped `yes`/`no`/`on`/`off`/`y`/`n` as booleans and dropped sexagesimal
+ *   integers, so a 1.2 emitter leaves a params value of `"yes"` or `"1:30"` bare —
+ *   which a 1.1 reader (PyYAML's default, and Go's yaml.v2) turns into `true` and
+ *   `90`. A template is a contract for a second implementation, so the safe
+ *   combination is to quote against the stricter ruleset and read with the looser
+ *   one: a quoted scalar means the same thing under both. This adds no `%YAML`
+ *   directive — it only changes which scalars get quotes.
  */
 export function stringifyProjectTemplateV1(document: ProjectTemplateV1): string {
-  return YAML.stringify(document, { lineWidth: 0 });
+  return YAML.stringify(document, { lineWidth: 0, version: "1.1" });
 }
 
 /**
