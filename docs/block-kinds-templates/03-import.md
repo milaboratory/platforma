@@ -91,8 +91,8 @@ inferred.
       the foreign-id guard, grouped by entry in file order. Entry shape, both grammars and
       id uniqueness are already the parser's (`project_template_v1.ts:188-200`). Params
       against their kind is `Q-0009`, now **resolved and implemented** — see "Params
-      Against Their Kind". Remaining: assembling all of these with resolution's problems
-      into the single report the caller shows
+      Against Their Kind". The single report every stage feeds is `TemplateApplyReport`,
+      assembled by the driver
 - [x] **Reject params carrying a foreign block id** — same module (operator decision,
       2026-08-03), using `inferAllReferencedBlocks` (`model/args.ts`), the detector export's
       guard uses. **Correction to this plan:** it runs on the file-form params *before* any
@@ -107,21 +107,23 @@ inferred.
       order is instantiation order and forward references are already rejected, so every
       upstream id is mapped by the time it is needed. Assignment and publication came out
       as two steps rather than one; see "Two Steps, Not One"
-- [ ] **Construction loop** — create the project, then add entries in file order. Two
-      decisions here, both about existing code: `Project.addBlock` does one block-pack
-      prepare, one authored transaction and one `refreshState` per call
-      (`middle_layer/project.ts:219-269`), so an N-entry template is N transactions —
-      acceptable or worth a mutator-level batch pass; and `NewBlockSpec` has exactly two
-      arms today, `fromModel` and `legacy` (`mutator/project.ts:317-319`), so seeding from
-      params either extends `fromModel` or adds a third
-- [ ] **Failure policy — decided: keep the partial project and report** (operator decision,
-      2026-08-03). Apply creates the project first, so a failure at entry *k* leaves *k-1*
-      blocks behind; unlike export, all-or-nothing is not free here. Deleting the project
-      would destroy the only evidence of how far the apply got, and the blocks that did
-      land are valid — the user can finish by hand. The report must name the entry that
-      failed and how many landed, so a partial project is never mistaken for a complete
-      one. Pre-validation above narrows this to genuine runtime failures (backend,
-      block-pack fetch)
+- [x] **Construction loop** — `createTemplateApplyApi` in
+      `lib/node/pl-middle-layer/src/mutator/template_construct.ts` is the in-transaction
+      half, `MiddleLayer.applyTemplateToProject(id, document, provider, options)` the
+      driver. Both decisions the plan left open are resolved, and neither the way it
+      guessed: **one** transaction rather than N, because the construction contract already
+      committed to a synchronous API and `Project.addBlock` is async end to end; and
+      `NewBlockSpec.fromModel` gained an optional `initialStorage` rather than a third arm,
+      because seeding from params produces exactly the storage the block would have written
+      itself. See "Four Stages, and Where the Project Appears"
+- [x] **Failure policy — keep the partial project and report** (operator decision,
+      2026-08-03). Wired: the three stages before construction create nothing, so a bad
+      file leaves the project untouched, and a failure inside construction commits the
+      blocks that landed and reports the entry that stopped it. **Correction to this plan:**
+      apply does *not* create the project — the caller does, which is what makes the first
+      three stages free of cleanup. Deleting the project was never on the table for the
+      same reason it was rejected here: the blocks that landed are valid and the report is
+      the only record of how far it got
 
 **Desktop**
 
@@ -191,7 +193,10 @@ compatible way to extend it (`block_storage_facade.ts:25-32`).
 Consequences worth knowing:
 
 - **The params-less path is untouched.** An entry with no `params` goes through the existing
-  `StorageInitial`, so such an entry applies even to a block built before any of this.
+  `StorageInitial`, so such an entry applies even to a block whose model predates the new
+  callback. Not to one predating the storage facade itself, though — construction refuses
+  those outright, for a reason that has nothing to do with params; see "Four Stages, and
+  Where the Project Appears".
 - **Params cross as text, references already resolved.** `undefined` is normalized to `{}` at
   the boundary, because `JSON.stringify(undefined)` is not a string and the callback would be
   handed nothing.
@@ -215,7 +220,7 @@ What is deliberately **not** in the request, and why:
 |--------|-----|
 | block pack / kind / version | The entry is named by its template-local `id` and the implementation looks up what it already resolved for it, so no orchestrator can substitute an implementation the document was never validated against |
 | the project-local id | Assigned by the implementation, which keeps the id map in the one place that needs it to rewrite references |
-| a label | A template names no block instances, so the label comes from the block package's own metadata |
+| a label | A template names no block instances, so the label is the implementation's to choose — the block package's own title once the provider returns it, the entry's id until then |
 | resolved references | Params cross **in file form**, references still naming entries; rewriting them is the implementation's job, since only it knows the assigned ids. An orchestrator that rewrote them would need the id map, and every orchestrator would own a copy of the same logic |
 
 Two properties follow from this being the contract a sandboxed orchestrator will receive,
@@ -226,9 +231,9 @@ and both constrain the eventual implementation:
 - **Synchronous.** Everything slow must already be in hand before the orchestrator runs:
   kinds resolved, block packs fetched, project created. What remains is in-memory work
   inside a single transaction, so no async bridge is needed for the sandbox and an apply
-  cannot be interrupted mid-way by a network call. This also settles the transaction
-  question in the construction-loop item: prepare all entries up front, add them in one
-  mutator pass, rather than one transaction per block as `Project.addBlock` does today.
+  cannot be interrupted mid-way by a network call. This also settled the transaction question
+  in the construction-loop item before it was asked: prepare all entries up front, add them
+  in one mutator pass, rather than one transaction per block as `Project.addBlock` does.
 
 **Stop at the first failure** — the refinement of the keep-and-report policy. Entries after
 the failure may reference it, so continuing would place blocks whose upstream is missing:
@@ -441,8 +446,10 @@ ranges), and five golden `template-v1` files.
   `TemplateLocalRef`, recognized structurally by the reserved `{ block, output }` shape.
   Confirm rather than re-decide.
 - [TODO: validation taxonomy and presentation — blocking dialog vs inline list,
-  fail-fast vs collect-all.] The collect-all half is settled by precedent — export reports
-  every problem at once; presentation is still open.
+  fail-fast vs collect-all.] **Fail-fast vs collect-all is settled**, and by stage rather
+  than by taste: everything that creates nothing collects every problem, placement stops at
+  the first. One report shape carries both (`TemplateApplyReport`). Presentation is still
+  open, and is the desktop's.
 - ~~**`Q-0009`** — apply-time validation of untyped YAML params.~~ **Resolved** (operator
   decision, 2026-08-03): a kind may declare `parseTemplateParams`, optional, applied wherever
   params arrive untyped. See "Params Against Their Kind" — including the bundle-size cost,
@@ -511,5 +518,66 @@ entry means the document never went through the parser, and the first block woul
 silently orphaned.
 
 Id generation is injectable, defaulting to the `randomUUID` that `Project.addBlock` would
-have used itself. That is what lets `template_ids.test.ts` (13) run the forward pass —
+have used itself. That is what lets `template_ids.test.ts` (15) run the forward pass —
 assign, rewrite, create, record over a three-entry chain — with named ids and no project.
+
+## Four Stages, and Where the Project Appears
+
+`MiddleLayer.applyTemplateToProject(id, document, provider, options)` is the driver, and
+`createTemplateApplyApi` is what it hands the orchestrator inside the transaction. The
+stages, in order:
+
+| Stage | Creates | On failure |
+|-------|---------|------------|
+| check the document | nothing | every problem at once, project untouched |
+| resolve every entry | nothing | every problem at once, project untouched |
+| prepare every block | nothing in the project | every problem at once, project untouched |
+| place the blocks | the blocks | stops at the entry, keeps what landed |
+
+The ordering is the whole failure policy. Three stages that create nothing means almost
+every way a template can be wrong is reported with nothing to clean up, and the one stage
+that does create is left with only in-memory work — which is what lets it be a single
+transaction, and what made the synchronous construction contract implementable.
+
+**The project is the caller's.** The plan said apply creates it; it does not. Applying a
+template is a property of the stored project rather than of a session with it — the same
+reasoning `exportProjectAsTemplate` uses — so the entry point takes a project id, and
+"Create Project from Template file…" is `createProject` followed by this. That also removes
+the awkward case the plan carried: a document that fails validation would otherwise have
+left an empty project behind.
+
+Two plan questions resolved, neither the way it framed them:
+
+- **N transactions or a batch?** Neither was open, in the end. The construction contract
+  fixed a synchronous `addBlock`, and `Project.addBlock` is async end to end — prepare, cache,
+  transaction, refresh — so it cannot be called from one. Everything slow is hoisted into
+  stage 3 and the transaction is entered once. The mutator's own `addBlock` is called N times
+  inside it, which is in-memory work.
+- **`NewBlockSpec`: extend `fromModel` or add a third arm?** Extended, with an optional
+  `initialStorage`. What comes back from the block's params initializer is the same storage
+  that block would have written itself, so args derivation downstream is untouched — this is
+  `fromModel` with one input supplied, not a new mode. Passing it in rather than having the
+  mutator call the VM is also what keeps the rejection *outside* the mutation: params a block
+  declines are a reported problem, and the mutator gains no failure path it did not have.
+
+Two smaller things the implementation settled:
+
+- **A block too old for the facade is refused**, even with no params to ignore. Every entry
+  names a kind and a block predating the facade implements none, so creating one would honour
+  the entry's pinned version while contradicting the kind it claims. Kind resolution cannot
+  produce this; a `block` override can.
+- **The pre-flight params check runs on the live shape with the file's own ids**
+  (`liveParamsForCheck`). Checking the file form directly would fail every entry that carries
+  a reference: a kind describing a param as a reference sees `{ block, output }` and rejects
+  it. Feeding it `PlRef`s whose `blockId` is still a template-local id asks the only question
+  this stage can answer — are the params the right shape — and leaves what they point at to
+  validation, which already owns it.
+
+The label is the entry's own id for now. It is a fallback only — `project_overview.ts` prefers
+a title the block's model derives — and the block package's own title would need the provider
+to return it, which is the same seam track 1 still owns.
+
+Pinned by `template_construct.test.ts` (13), which fakes the one mutator method construction
+uses and keeps everything else real: a real `ProjectHelper`, a real model VM, real block code.
+The driver itself is not covered — it needs a backend — which is why nothing but sequencing
+lives in it.
