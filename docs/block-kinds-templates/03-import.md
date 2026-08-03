@@ -58,11 +58,12 @@ inferred.
       `ProjectHelper.getInitialStorageFromParamsInVM`. See "The Missing Half" below for what
       was missing and why the shape came out this way. Remaining: `Q-0009` (nothing
       validates params against the kind at this seam yet)
-- [ ] **Add-block / state API** — the surface the fixed native lambda drives construction
-      through, designed as the contract a sandboxed lambda would receive
-      (`decisions.md:143`, a hard requirement). Must express: add an entry by *resolved*
-      block pack, assign its project-local id, seed its storage from params, and place it
-      in file order. Deciding it settles the first two open questions below
+- [~] **Add-block / state API** — landed as `TemplateApplyApi` in
+      `lib/node/pl-middle-layer/src/model/template_apply.ts`, together with the fixed
+      orchestrator `applyProjectTemplateV1` that drives construction through it and nothing
+      else. See "The Construction Contract" below: it came out at **one method**, and the
+      reasons for that are the answer to the first open question. Remaining: the
+      implementation backed by a real project, which belongs with the engine
 
 **Kind resolution — consumed from track 1**
 
@@ -201,6 +202,45 @@ Consequences worth knowing:
   hand-authored file's params meet the kind that types them, so validation, if it happens,
   happens here. Nothing validates today: params reach the factory as-is.
 
+## The Construction Contract
+
+`TemplateApplyApi` is one method — `addBlock({ id, params? }) → { ok, blockId } | { ok, error }`
+— and the fixed orchestrator that drives it is a dozen lines. That is the design, not an
+unfinished draft: everything an orchestrator does not decide was pushed to the
+implementation, because every one of those decisions is either unsafe or duplicated work if
+an orchestrator makes it.
+
+What is deliberately **not** in the request, and why:
+
+| Absent | Why |
+|--------|-----|
+| block pack / kind / version | The entry is named by its template-local `id` and the implementation looks up what it already resolved for it, so no orchestrator can substitute an implementation the document was never validated against |
+| the project-local id | Assigned by the implementation, which keeps the id map in the one place that needs it to rewrite references |
+| a label | A template names no block instances, so the label comes from the block package's own metadata |
+| resolved references | Params cross **in file form**, references still naming entries; rewriting them is the implementation's job, since only it knows the assigned ids. An orchestrator that rewrote them would need the id map, and every orchestrator would own a copy of the same logic |
+
+Two properties follow from this being the contract a sandboxed orchestrator will receive,
+and both constrain the eventual implementation:
+
+- **Plain data only.** Arguments and results are JSON values — hence failures as strings in
+  a result rather than throws.
+- **Synchronous.** Everything slow must already be in hand before the orchestrator runs:
+  kinds resolved, block packs fetched, project created. What remains is in-memory work
+  inside a single transaction, so no async bridge is needed for the sandbox and an apply
+  cannot be interrupted mid-way by a network call. This also settles the transaction
+  question in the construction-loop item: prepare all entries up front, add them in one
+  mutator pass, rather than one transaction per block as `Project.addBlock` does today.
+
+**Stop at the first failure** — the refinement of the keep-and-report policy. Entries after
+the failure may reference it, so continuing would place blocks whose upstream is missing:
+a project wired to nothing in the middle is worse than one short a tail. What already
+landed is kept and returned, paired file-id to assigned-id, so the caller can say how far
+it got.
+
+Pinned by `template_apply.test.ts` (9), driven against a recording fake. That the tests need
+no project, backend or registry is itself the check that the contract is narrow enough to
+hand to a sandbox.
+
 ## What Import Gets For Free
 
 Track 2 left more than the schema behind. Already implemented and tested, consumed by
@@ -212,9 +252,11 @@ ranges), and five golden `template-v1` files.
 
 ## Open questions
 
-- [TODO: concrete add-block API shape — add-by-kind vs add-by-exact-version,
-  inter-block reference resolution order (`decisions.md:133`).] Owned by the add-block API
-  item above; the reference-order half is answered by the single forward pass.
+- ~~[TODO: concrete add-block API shape — add-by-kind vs add-by-exact-version,
+  inter-block reference resolution order (`decisions.md:133`).]~~ **Answered** — see "The
+  Construction Contract". Neither: an orchestrator adds by *entry*, and which
+  implementation that entry resolved to is not its to choose. Reference order is the single
+  forward pass, and the rewrite itself never crosses the API.
 - [TODO: concrete type for a template-local reference — distinct unresolved type vs
   reused reference shape (`decisions.md:143`).] **Answered by track 2**: a distinct type,
   `TemplateLocalRef`, recognized structurally by the reserved `{ block, output }` shape.
