@@ -82,7 +82,11 @@ import {
   UiError,
   BLOCK_STORAGE_FACADE_VERSION,
   type BlockConfig,
+  type BlockKindReference,
 } from "@platforma-sdk/model";
+import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
+import { exportProjectAsTemplateV1 } from "../model/template_serializer";
+import type { TemplateParamsResult } from "../model/template_export";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
 
@@ -112,6 +116,12 @@ interface BlockInfoState {
   readonly id: string;
   readonly fields: BlockFieldStates;
   blockConfig?: BlockConfig;
+  /**
+   * The block's kind reference, kept separately because `blockConfig` cannot carry
+   * it: `extractConfig` normalizes the render envelope and the kind sits at the
+   * container level, one level above. Undefined for a block that declares no kind.
+   */
+  blockKind?: BlockKindReference;
   blockPack?: BlockPackSpec;
 }
 
@@ -141,6 +151,8 @@ class BlockInfo {
     public readonly fields: BlockFieldStates,
     public readonly config: BlockConfig,
     public readonly source: BlockPackSpec,
+    /** See {@link BlockInfoState.blockKind}. */
+    public readonly kind: BlockKindReference | undefined,
     private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
 
@@ -514,6 +526,46 @@ export class ProjectMutator {
           () => args,
         ),
       };
+  }
+
+  //
+  // Template export
+  //
+
+  /**
+   * Render this project as a `template-v1` YAML document, or report every reason it
+   * cannot be.
+   *
+   * Read-only: it derives params in the VM and touches no field, so a `withProject`
+   * wrapper sees `wasModified === false` and skips the commit.
+   *
+   * This is where the two providers the serializer needs come from, and both are
+   * only reachable here. A block's storage lives behind `BlockInfo`, which is
+   * populated by the loader's batched round-trips, and its kind reference is read
+   * off the block-pack container during the same load — `config` cannot carry it,
+   * since `extractConfig` normalizes the render envelope one level below the kind.
+   */
+  public exportAsTemplateV1(): ProjectTemplateExportOutcome {
+    return exportProjectAsTemplateV1(
+      this.struct,
+      (blockId) => this.deriveTemplateParams(blockId),
+      (blockId) => this.blockInfos.get(blockId)?.kind,
+    );
+  }
+
+  private deriveTemplateParams(blockId: string): TemplateParamsResult | undefined {
+    const info = this.blockInfos.get(blockId);
+    // A block in the structure with no loaded info, or with no storage yet, has no
+    // state to project into params. Returning undefined makes the walk report it
+    // rather than quietly leaving the block out of the template.
+    if (info === undefined) return undefined;
+
+    const storageJson = info.blockStorageJson;
+    if (storageJson === undefined) return undefined;
+
+    const derived = this.projectHelper.deriveTemplateParamsFromStorage(info.config, storageJson);
+    if (derived.error !== undefined) return { error: derived.error.message };
+    return { value: derived.value };
   }
 
   private getPendingProductionGraph(): BlockGraph {
@@ -1142,6 +1194,7 @@ export class ProjectMutator {
       {},
       extractConfig(spec.blockPack.config),
       spec.blockPack.source,
+      spec.blockPack.config.kind,
       this.projectHelper.logger,
     );
     this.blockInfos.set(blockId, info);
@@ -1251,6 +1304,7 @@ export class ProjectMutator {
       {},
       originalBlockInfo.config,
       originalBlockInfo.source,
+      originalBlockInfo.kind,
       this.projectHelper.logger,
     );
 
@@ -1895,6 +1949,9 @@ export class ProjectMutator {
       const result = await response;
       const bpInfo = cachedDeserialize<BlockPackInfo>(notEmpty(result.data));
       info.blockConfig = extractConfig(bpInfo.config);
+      // Read off the container before `extractConfig`'s result replaces it as the
+      // only thing we keep. Costs no round-trip — `bpInfo` is already in hand.
+      info.blockKind = bpInfo.config.kind;
       info.blockPack = bpInfo.source;
     }
 
@@ -1926,10 +1983,17 @@ export class ProjectMutator {
     const blocksInLimboSet = new Set(blocksInLimbo);
 
     const blockInfos = new Map<string, BlockInfo>();
-    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
+    blockInfoStates.forEach(({ id, fields, blockConfig, blockKind, blockPack }) =>
       blockInfos.set(
         id,
-        new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack), projectHelper.logger),
+        new BlockInfo(
+          id,
+          fields,
+          notEmpty(blockConfig),
+          notEmpty(blockPack),
+          blockKind,
+          projectHelper.logger,
+        ),
       ),
     );
 

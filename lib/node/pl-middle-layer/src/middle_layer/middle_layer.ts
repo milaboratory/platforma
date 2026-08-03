@@ -20,7 +20,13 @@ import {
   ProjectsField,
   ProjectsResourceType,
 } from "./project_list";
-import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
+import {
+  createProject,
+  duplicateProject,
+  withProject,
+  withProjectAuthored,
+} from "../mutator/project";
+import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
@@ -323,6 +329,32 @@ export class MiddleLayer {
       { name: "setProjectMeta" },
     );
     await this.projectListTree.refreshState();
+  }
+
+  /**
+   * Renders a project as a `template-v1` YAML document, or reports every reason it
+   * cannot be — the backing call for an "Export Project as Template…" command.
+   *
+   * Takes a project id rather than an open {@link Project} because exporting is a
+   * property of the stored project, not of a session with it: the command belongs on
+   * a project card, where the project is usually closed. Opening one to read it would
+   * spin up trees and watchers for a one-shot read, and then have to decide whether to
+   * close them again.
+   *
+   * Read-only — the underlying mutator touches no field, so the transaction is never
+   * committed and the project list needs no refresh.
+   *
+   * @param id - project id of the project to export
+   */
+  public async exportProjectAsTemplate(id: ProjectId): Promise<ProjectTemplateExportOutcome> {
+    const rid = await this.resolveProjectId(id);
+    return await withProject(
+      this.env.projectHelper,
+      this.pl,
+      rid,
+      (prj) => prj.exportAsTemplateV1(),
+      { name: "exportProjectAsTemplate" },
+    );
   }
 
   /** Permanently deletes project from the project list, this will result in
