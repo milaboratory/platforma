@@ -275,19 +275,19 @@ export type ArgsDeriveResult = { error: string } | { error?: undefined; value: u
  * This extracts data from storage and passes it to the block's args() function.
  *
  * @param storageJson - Storage as JSON string
- * @param argsFunction - The block's args derivation function
+ * @param deriveArgs - The block's args derivation function
  * @returns ArgsDeriveResult with derived args or error
  */
 export function deriveArgsFromStorage(
   storageJson: string,
-  argsFunction: (data: unknown) => unknown,
+  deriveArgs: (data: unknown) => unknown,
 ): ArgsDeriveResult {
   // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
   // Call the args function with extracted data
   try {
-    const result = argsFunction(data);
+    const result = deriveArgs(data);
     return { value: result };
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -297,25 +297,25 @@ export function deriveArgsFromStorage(
 
 /**
  * Derives prerunArgs from storage.
- * Uses prerunArgsFunction if provided, otherwise falls back to argsFunction.
+ * Uses derivePrerunArgs if provided, otherwise falls back to deriveArgs.
  *
  * @param storageJson - Storage as JSON string
- * @param argsFunction - The block's args derivation function (fallback)
- * @param prerunArgsFunction - Optional prerun args derivation function
+ * @param deriveArgs - The block's args derivation function (fallback)
+ * @param derivePrerunArgs - Optional prerun args derivation function
  * @returns ArgsDeriveResult with derived prerunArgs or error
  */
 export function derivePrerunArgsFromStorage(
   storageJson: string,
-  argsFunction: (data: unknown) => unknown,
-  prerunArgsFunction?: (data: unknown) => unknown,
+  deriveArgs: (data: unknown) => unknown,
+  derivePrerunArgs?: (data: unknown) => unknown,
 ): ArgsDeriveResult {
   // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
   // Try prerunArgs function first if available
-  if (prerunArgsFunction) {
+  if (derivePrerunArgs) {
     try {
-      const result = prerunArgsFunction(data);
+      const result = derivePrerunArgs(data);
       return { value: result };
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
@@ -325,7 +325,7 @@ export function derivePrerunArgsFromStorage(
 
   // Fall back to args function
   try {
-    const result = argsFunction(data);
+    const result = deriveArgs(data);
     return { value: result };
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
@@ -351,19 +351,19 @@ export function derivePrerunArgsFromStorage(
  * kind's defaults.
  *
  * @param storageJson - Storage as JSON string
- * @param templateParamsFunction - The block's templateParams lambda, if declared
+ * @param deriveTemplateParams - The block's templateParams lambda, if declared
  * @returns ArgsDeriveResult holding the params in template form, or undefined
  */
-export function deriveTemplateParamsFromStorage(
+export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => unknown>(
   storageJson: string,
-  templateParamsFunction?: (data: unknown) => unknown,
+  deriveTemplateParams?: TP,
 ): ArgsDeriveResult {
-  if (!templateParamsFunction) return { value: undefined };
+  if (!deriveTemplateParams) return { value: undefined };
 
   const { data } = normalizeStorage(storageJson);
 
   try {
-    return { value: toTemplateForm(templateParamsFunction(data)) };
+    return { value: toTemplateForm(deriveTemplateParams(data)) };
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
     return { error: `templateParams() threw: ${errorMsg}` };

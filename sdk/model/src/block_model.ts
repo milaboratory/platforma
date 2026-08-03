@@ -124,10 +124,10 @@ interface BlockModelV3Config<
   tags: ConfigRenderLambda | undefined;
   enrichmentTargets: ConfigRenderLambda | undefined;
   featureFlags: BlockCodeKnownFeatureFlags;
-  argsFunction: ((data: unknown) => unknown) | undefined;
-  prerunArgsFunction: ((data: unknown) => unknown) | undefined;
+  deriveArgs: ((data: unknown) => unknown) | undefined;
+  derivePrerunArgs: ((data: unknown) => unknown) | undefined;
   /** Projects block data back to this kind's params for template export (A-0041). */
-  templateParamsFunction: ((data: Data) => Params) | undefined;
+  deriveTemplateParams: ((data: Data) => Params) | undefined;
   plugins: Plugins;
 }
 
@@ -238,9 +238,9 @@ export class BlockModelV3<
       tags: undefined,
       enrichmentTargets: undefined,
       featureFlags: { ...BlockModelV3.FEATURE_FLAGS },
-      argsFunction: undefined,
-      prerunArgsFunction: undefined,
-      templateParamsFunction: undefined,
+      deriveArgs: undefined,
+      derivePrerunArgs: undefined,
+      deriveTemplateParams: undefined,
       plugins: {},
     });
   }
@@ -358,7 +358,7 @@ export class BlockModelV3<
   ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
     return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
-      argsFunction: lambda as (data: unknown) => unknown,
+      deriveArgs: lambda as (data: unknown) => unknown,
     });
   }
 
@@ -387,7 +387,7 @@ export class BlockModelV3<
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
-      prerunArgsFunction: fn as (data: unknown) => unknown,
+      derivePrerunArgs: fn as (data: unknown) => unknown,
     });
   }
 
@@ -424,7 +424,7 @@ export class BlockModelV3<
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
-      templateParamsFunction: fn,
+      deriveTemplateParams: fn,
     });
   }
 
@@ -640,7 +640,7 @@ export class BlockModelV3<
       BlockDefaultUiServices
     >
   > {
-    if (this.config.argsFunction === undefined) throw new Error("Args rendering function not set.");
+    if (this.config.deriveArgs === undefined) throw new Error("Args rendering function not set.");
 
     const apiVersion = 3;
 
@@ -652,7 +652,7 @@ export class BlockModelV3<
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
-    const { dataModel, argsFunction, prerunArgsFunction, templateParamsFunction } = this.config;
+    const { dataModel, deriveArgs, derivePrerunArgs, deriveTemplateParams } = this.config;
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -681,13 +681,13 @@ export class BlockModelV3<
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
-        deriveArgsFromStorage(storageJson, argsFunction),
+        deriveArgsFromStorage(storageJson, deriveArgs),
       [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
-        derivePrerunArgsFromStorage(storageJson, argsFunction, prerunArgsFunction),
+        derivePrerunArgsFromStorage(storageJson, deriveArgs, derivePrerunArgs),
       [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (storageJson) =>
         deriveTemplateParamsFromStorage(
           storageJson,
-          templateParamsFunction as ((data: unknown) => unknown) | undefined,
+          deriveTemplateParams as (data: unknown) => unknown,
         ),
     });
 
@@ -816,9 +816,9 @@ type _ConfigTest = Expect<
     BlockModelV3Config<_TestOutputs, _TestData>,
     {
       renderingMode: BlockRenderingMode;
-      argsFunction: ((data: unknown) => unknown) | undefined;
-      prerunArgsFunction: ((data: unknown) => unknown) | undefined;
-      templateParamsFunction: ((data: _TestData) => unknown) | undefined;
+      deriveArgs: ((data: unknown) => unknown) | undefined;
+      derivePrerunArgs: ((data: unknown) => unknown) | undefined;
+      deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;
       outputs: _TestOutputs;
