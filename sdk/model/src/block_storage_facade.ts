@@ -84,6 +84,7 @@ export const BlockStorageFacadeCallbacks = {
   StorageInitial: "__pl_storage_initial",
   TemplateParamsDerive: "__pl_templateParams_derive",
   StorageInitialFromParams: "__pl_storage_initialFromParams",
+  TemplateParamsValidate: "__pl_templateParams_validate",
 } as const;
 
 /**
@@ -244,6 +245,31 @@ export interface BlockStorageFacade {
   [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (
     paramsJson: StringifiedJson,
   ) => { error: string } | { error?: undefined; storageJson: StringifiedJson };
+
+  /**
+   * Check params against this block's kind, creating nothing.
+   *
+   * Called once per entry before a template is applied, so params a kind rejects are
+   * reported against the entry that carries them while there is still no project — the
+   * same reason references and ids are checked before construction starts. Applying
+   * without this call is safe but worse: `StorageInitialFromParams` runs the same check
+   * and refuses, by which point earlier entries have already been created.
+   *
+   * `checked: false` reports that the kind declares no runtime check, so nothing was
+   * verified beyond the params being valid JSON. It is not a failure — most kinds start
+   * out this way — but it is the only way a caller can tell an unchecked pass from a
+   * checked one.
+   *
+   * Reference ids inside the params may be placeholders at this point: the check runs
+   * before blocks exist, so what is verified is the shape of the params, not what they
+   * point at.
+   *
+   * @param paramsJson The entry's params as JSON string
+   * @returns Either why the params were rejected, or whether anything checked them
+   */
+  [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (
+    paramsJson: StringifiedJson,
+  ) => { error: string } | { error?: undefined; checked: boolean };
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */

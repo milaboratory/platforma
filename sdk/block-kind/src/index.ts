@@ -2,8 +2,8 @@ import type { CompiledBlockKind } from "./descriptor";
 
 export type { CompiledBlockKind, InferBlockParams } from "./descriptor";
 
-/** A kind's identity, as declared in its own `package.json`. */
-export interface BlockKindMeta {
+/** A kind's identity, as declared in its own `package.json`, plus optional behaviour. */
+export interface BlockKindMeta<BlockParams = unknown> {
   /**
    * The FULL npm package name of the kind, e.g.
    * `@platforma-open/milaboratories.mixcr-clonotyping.kind`. The S3 `{org, name}`
@@ -12,6 +12,11 @@ export interface BlockKindMeta {
    */
   name: string;
   version: string;
+  /**
+   * Runtime check for params that did not come from a typed caller — see
+   * {@link CompiledBlockKind}'s `parseTemplateParams` for what it must do and why it exists.
+   */
+  parseTemplateParams?: (value: unknown) => BlockParams;
 }
 
 /**
@@ -31,14 +36,27 @@ export interface BlockKindMeta {
  * rolldown inlines the JSON import (tree-shaken to the two strings) into the
  * bundled `kind.js`, so no build-time injection is needed.
  *
- * @typeParam BlockParams - shape of the params a block of this kind reads.
- *   Carried as a type only; see {@link CompiledBlockKind}.
+ * A kind may also declare `parseTemplateParams` — a runtime check applied to params that
+ * came from a template file rather than from typed code. Optional; see
+ * {@link CompiledBlockKind}.
+ *
+ * @typeParam BlockParams - shape of the params a block of this kind reads. Carried as
+ *   a type only, unless the kind declares `parseTemplateParams`, which is also checked
+ *   against it.
  */
-export function defineBlockKind<BlockParams>(meta: BlockKindMeta): CompiledBlockKind<BlockParams> {
-  // Frozen, serializable v1 descriptor. The phantom param slot is never assigned.
+export function defineBlockKind<BlockParams>(
+  meta: BlockKindMeta<BlockParams>,
+): CompiledBlockKind<BlockParams> {
+  // Frozen v1 descriptor. The phantom param slot is never assigned. `parseTemplateParams` is
+  // omitted rather than set to undefined when absent, so a descriptor without one has
+  // exactly the shape it always had — and nothing serializes this object anyway: only
+  // its name and version are read, to compose the `{name}@{version}` reference.
   return Object.freeze({
     kindSchema: "v1" as const,
     name: meta.name,
     version: meta.version,
+    ...(meta.parseTemplateParams !== undefined
+      ? { parseTemplateParams: meta.parseTemplateParams }
+      : {}),
   });
 }

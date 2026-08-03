@@ -32,6 +32,7 @@ import {
   migrateStorage,
   createInitialStorage,
   createInitialStorageFromParams,
+  validateTemplateParamsJson,
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
   deriveTemplateParamsFromStorage,
@@ -129,6 +130,13 @@ interface BlockModelV3Config<
   derivePrerunArgs: ((data: unknown) => unknown) | undefined;
   /** Projects block data back to this kind's params for template export. */
   deriveTemplateParams: ((data: Data) => Params) | undefined;
+  /**
+   * The kind's runtime check for params supplied by a template, if it declares one.
+   * Read off the compiled kind rather than declared per block: the params contract
+   * belongs to the kind, and two blocks implementing it must not be able to disagree
+   * about what a valid params object is.
+   */
+  parseTemplateParams: ((value: unknown) => unknown) | undefined;
   plugins: Plugins;
 }
 
@@ -232,6 +240,9 @@ export class BlockModelV3<
       // The container-level kind reference: the one create() was given, or the
       // one the data model was built with (they are cross-checked above).
       kind: kindRef ?? dataModel.kindRef,
+      // Same two sources, same precedence, for the same reason: either call may be
+      // the one that carries the kind.
+      parseTemplateParams: kind?.parseTemplateParams ?? dataModel.templateParamsParser,
       outputs: {},
       sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
@@ -653,7 +664,8 @@ export class BlockModelV3<
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
-    const { dataModel, deriveArgs, derivePrerunArgs, deriveTemplateParams } = this.config;
+    const { dataModel, deriveArgs, derivePrerunArgs, deriveTemplateParams, parseTemplateParams } =
+      this.config;
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -695,7 +707,10 @@ export class BlockModelV3<
           getBlockDataFromParams: (params) => dataModel.getDataFromParams(params),
           getPluginRegistry: () => pluginRegistry,
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
+          parseTemplateParams,
         }),
+      [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (paramsJson) =>
+        validateTemplateParamsJson(paramsJson, parseTemplateParams),
     });
 
     // Register plugin input and output lambdas
@@ -826,6 +841,7 @@ type _ConfigTest = Expect<
       deriveArgs: ((data: unknown) => unknown) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
       deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
+      parseTemplateParams: ((value: unknown) => unknown) | undefined;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;
       outputs: _TestOutputs;

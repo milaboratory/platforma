@@ -48,6 +48,12 @@ function configWith(
   } as unknown as BlockConfig;
 }
 
+/** The value a check returned. Fails the test if it errored instead. */
+function valueFrom<T>(result: ResultOrError<T>): T {
+  if (result.error !== undefined) throw new Error(`expected a value, got: ${result.error.message}`);
+  return result.value;
+}
+
 /** The storage the callback produced, parsed. Fails the test if it errored instead. */
 function storageFrom(result: ResultOrError<string>): unknown {
   if (result.error !== undefined) throw new Error(`expected storage, got: ${result.error.message}`);
@@ -155,5 +161,89 @@ describe("getInitialStorageFromParamsInVM", () => {
     );
 
     expect(result.error?.message).toMatch(/only supported for model API version 2/);
+  });
+});
+
+describe("validateTemplateParamsInVM", () => {
+  const VALIDATE = BlockStorageFacadeCallbacks.TemplateParamsValidate;
+
+  /** A model registering only the validate callback, with `body` as its implementation. */
+  const validatorConfig = (body: string, options: { declareCallback?: boolean } = {}) => {
+    const { declareCallback = true } = options;
+    return {
+      modelAPIVersion: 2,
+      sdkVersion: "1.0.0",
+      code: {
+        type: "plain",
+        content: `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(VALIDATE)}] = ${body};`,
+      },
+      blockLifecycleCallbacks: declareCallback ? { [VALIDATE]: { handle: VALIDATE } } : {},
+    } as unknown as BlockConfig;
+  };
+
+  test("a kind that checks its params reports that it did", () => {
+    const result = helper.validateTemplateParamsInVM(validatorConfig("() => ({ checked: true })"), {
+      numbers: [1, 2],
+    });
+
+    expect(valueFrom(result)).toEqual({ checked: true });
+  });
+
+  test("params the kind rejects come back with the kind's reason", () => {
+    // The whole point of the pre-flight: this is reported against the entry that
+    // carries the params, with no project created yet.
+    const result = helper.validateTemplateParamsInVM(
+      validatorConfig('() => ({ error: "numbers: Expected array, received string" })'),
+      { numbers: "1,2,3" },
+    );
+
+    expect(result.error?.message).toBe("numbers: Expected array, received string");
+  });
+
+  test("a kind with no runtime check is not a failure", () => {
+    // Most kinds start out this way. `checked: false` is how a caller can tell that
+    // nothing verified these params, without treating it as a problem.
+    const result = helper.validateTemplateParamsInVM(
+      validatorConfig("() => ({ checked: false })"),
+      { numbers: [1] },
+    );
+
+    expect(valueFrom(result)).toEqual({ checked: false });
+  });
+
+  test("a block whose model predates the callback is treated as unchecked", () => {
+    // Unlike initialization, this creates nothing, so there is nothing to get wrong by
+    // proceeding — and the entry still fails clearly at the point it is applied.
+    const result = helper.validateTemplateParamsInVM(
+      validatorConfig("() => ({ checked: true })", { declareCallback: false }),
+      { numbers: [1] },
+    );
+
+    expect(valueFrom(result)).toEqual({ checked: false });
+  });
+
+  test("params reach the check as text, references included", () => {
+    // A reference id here may be a placeholder — the check runs before blocks exist —
+    // so what crosses must be the shape, unaltered.
+    const result = helper.validateTemplateParamsInVM(
+      validatorConfig("(paramsJson) => ({ error: paramsJson })"),
+      { source: { __isRef: true, blockId: "placeholder", name: "reads" } },
+    );
+
+    expect(JSON.parse(result.error!.message)).toEqual({
+      source: { __isRef: true, blockId: "placeholder", name: "reads" },
+    });
+  });
+
+  test("a check that throws is reported as failing to run", () => {
+    // Distinct from a rejection: the kind did not decline the params, its own code
+    // broke.
+    const result = helper.validateTemplateParamsInVM(
+      validatorConfig('() => { throw new Error("schema is broken"); }'),
+      { numbers: [1] },
+    );
+
+    expect(result.error?.message).toContain("Params check failed to run");
+    expect(result.error?.message).toContain("schema is broken");
   });
 });

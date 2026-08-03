@@ -8,6 +8,8 @@ import {
   createInitialStorage,
   createInitialStorageFromParams,
   deriveTemplateParamsFromStorage,
+  validateTemplateParams,
+  validateTemplateParamsJson,
 } from "./block_storage_callbacks";
 import { DataModelBuilder } from "./block_migrations";
 import { defineBlockKind } from "@platforma-sdk/block-kind";
@@ -180,5 +182,142 @@ describe("params round trip", () => {
     expect(derived).toEqual({
       value: { label: "run 1", sources: [{ block: upstream, output: "reads" }] },
     });
+  });
+});
+
+describe("validateTemplateParams", () => {
+  test("a kind with no runtime check reports that nothing checked", () => {
+    // Not a failure — a kind is not obliged to describe its params at runtime, and
+    // most do not yet. But a caller must be able to tell this from a real pass, since
+    // the two look identical otherwise.
+    expect(validateTemplateParams({ anything: true })).toEqual({
+      value: { anything: true },
+      checked: false,
+    });
+  });
+
+  test("the parser's output is what flows on, not its input", () => {
+    // This is what makes a schema able to strip keys the kind does not declare, which
+    // is the difference between a typo being ignored and a typo being caught.
+    const result = validateTemplateParams({ label: "x", stray: 1 }, () => ({ label: "x" }));
+
+    expect(result).toEqual({ value: { label: "x" }, checked: true });
+  });
+});
+
+describe("params reaching init", () => {
+  test("init sees what the parser returned", () => {
+    const storage = storageOf(
+      createInitialStorageFromParams(JSON.stringify({ label: "raw", stray: 1 }), {
+        getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+        parseTemplateParams: () => ({ label: "parsed" }),
+        ...noPlugins,
+      }),
+    );
+
+    expect((storage.__data as BlockData).label).toBe("parsed");
+  });
+
+  test("params the kind rejects never reach init", () => {
+    // Checked here as well as in the caller's pre-flight: the pre-flight exists to
+    // report every bad entry before anything is created, this exists so the factory is
+    // never handed a value the kind refused, whichever path got here.
+    let reached = false;
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), {
+      getBlockDataFromParams: (p) => {
+        reached = true;
+        return dataModel.getDataFromParams(p);
+      },
+      parseTemplateParams: () => {
+        throw new Error("label must not be empty");
+      },
+      ...noPlugins,
+    });
+
+    expect(reached).toBe(false);
+    expect(result.error).toMatch(/do not match this block's kind/);
+  });
+});
+
+describe("validateTemplateParamsJson", () => {
+  test("valid params against a real schema", () => {
+    expect(validateTemplateParamsJson(JSON.stringify({ n: 1 }), (v) => v)).toEqual({
+      checked: true,
+    });
+  });
+
+  test("a rejection comes back as a message, not a throw", () => {
+    const result = validateTemplateParamsJson(JSON.stringify({}), () => {
+      throw new Error("n: Required");
+    });
+
+    expect(result.error).toContain("n: Required");
+  });
+
+  test("params that are not JSON are reported", () => {
+    expect(validateTemplateParamsJson("{oops", (v) => v).error).toMatch(/not valid JSON/);
+  });
+});
+
+describe("the kind carries the check", () => {
+  test("a kind's parser reaches the data model that declared it", () => {
+    // The threading that makes any of this work: the kind object is not kept, but the
+    // parser is lifted off it beside the kind reference, so `done()` can register it.
+    const parse = (v: unknown) => v as Params;
+    const checkedKind = defineBlockKind<Params>({
+      name: "@platforma-open/milaboratories.checked.kind",
+      version: "1.0.0",
+      parseTemplateParams: parse,
+    });
+    const model = new DataModelBuilder({ kind: checkedKind })
+      .from<BlockData>("v1")
+      .init(() => ({ sources: [], label: "", scratch: 0 }));
+
+    expect(model.templateParamsParser).toBe(parse);
+  });
+
+  test("a kind without one carries nothing", () => {
+    expect(dataModel.templateParamsParser).toBeUndefined();
+  });
+});
+
+describe("how a rejection reads", () => {
+  test("a schema library's issue list is unpacked, not dumped as JSON", () => {
+    // A zod error's own `message` is the entire issue array as JSON. Complete, and
+    // unreadable in the dialog this ends up in. The shape is duck-typed because this
+    // package prescribes no schema library.
+    const zodLike = Object.assign(new Error("[{...}]"), {
+      issues: [
+        { code: "invalid_type", path: ["numbers", 0], message: "Expected number, received string" },
+        { code: "unrecognized_keys", path: [], message: "Unrecognized key(s) in object: 'colour'" },
+      ],
+    });
+
+    const result = validateTemplateParams({}, () => {
+      throw zodLike;
+    });
+
+    expect(result.error).toBe(
+      "params do not match this block's kind: numbers[0]: Expected number, received string; " +
+        "Unrecognized key(s) in object: 'colour'",
+    );
+  });
+
+  test("a path is written the way the params are written", () => {
+    const result = validateTemplateParams({}, () => {
+      throw Object.assign(new Error("x"), {
+        issues: [{ path: ["steps", 2, "name"], message: "Required" }],
+      });
+    });
+
+    expect(result.error).toContain("steps[2].name: Required");
+  });
+
+  test("a plain error keeps its own words", () => {
+    const result = validateTemplateParams({}, () => {
+      throw new Error("numbers must not be empty");
+    });
+
+    expect(result.error).toBe("params do not match this block's kind: numbers must not be empty");
   });
 });

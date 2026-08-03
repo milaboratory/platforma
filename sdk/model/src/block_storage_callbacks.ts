@@ -277,6 +277,132 @@ function assembleStorage(
 export interface ParamsStorageHooks extends Omit<InitialStorageHooks, "getDefaultBlockData"> {
   /** The block's init factory, called with the entry's params. */
   getBlockDataFromParams: (params: unknown) => DataVersioned<unknown>;
+  /**
+   * The kind's runtime params check, if it declares one. Applied before the factory
+   * sees anything, and its output is what the factory gets.
+   */
+  parseTemplateParams?: (value: unknown) => unknown;
+}
+
+/**
+ * Result of checking params against their kind.
+ *
+ * `checked: false` means the kind declares no parser, not that the params are good —
+ * a caller that wants to know whether anything actually verified them has to look at
+ * this, because there is no other way to tell a validated pass from an unvalidated
+ * one.
+ */
+export type TemplateParamsValidationResult =
+  | { error: string }
+  | { error?: undefined; value: unknown; checked: boolean };
+
+/**
+ * Check params against their kind's declared shape.
+ *
+ * The kind owns this rather than the block because the params contract belongs to the
+ * kind: many block versions implement one kind, and a per-block check would let them
+ * drift from each other and from the type.
+ *
+ * A parser rejects by throwing and accepts by returning the params to use, so its
+ * output — not the input — is what flows onward. That is what lets a kind strip keys
+ * it does not declare, which is the difference between a typo being ignored and a typo
+ * being reported.
+ *
+ * With no parser the params pass through untouched. That is the pre-existing
+ * behaviour, kept so a kind published before this slot existed still applies.
+ *
+ * @param value The params to check, references already in live form
+ * @param parseTemplateParams The kind's parser, if it has one
+ */
+export function validateTemplateParams(
+  value: unknown,
+  parseTemplateParams?: (value: unknown) => unknown,
+): TemplateParamsValidationResult {
+  if (!parseTemplateParams) return { value, checked: false };
+
+  try {
+    return { value: parseTemplateParams(value), checked: true };
+  } catch (e) {
+    // A rejection is an expected outcome for a hand-written file, so it is reported,
+    // not thrown.
+    return { error: `params do not match this block's kind: ${describeRejection(e)}` };
+  }
+}
+
+/** One `{ path, message }` entry of a schema library's error. */
+type IssueLike = { path?: unknown; message?: unknown };
+
+/**
+ * Render whatever a parser threw as one readable line.
+ *
+ * An error carrying an `issues` array is unpacked rather than printed: that is the
+ * shape zod (and several others) use, and its `message` is the whole issue list as
+ * JSON — technically complete and unreadable in a dialog. Duck-typed on purpose, since
+ * this package prescribes no schema library and takes no dependency on one; anything
+ * else falls back to its own message.
+ */
+function describeRejection(e: unknown): string {
+  const issues = (e as { issues?: unknown }).issues;
+  if (!Array.isArray(issues) || issues.length === 0) return messageOf(e);
+
+  return issues
+    .map((issue) => {
+      const { path, message } = issue as IssueLike;
+      const what = typeof message === "string" ? message : "is invalid";
+      const where = Array.isArray(path) ? formatPath(path) : "";
+      return where === "" ? what : `${where}: ${what}`;
+    })
+    .join("; ");
+}
+
+/** `["numbers", 0]` → `numbers[0]` — how the params are written, not how they parse. */
+function formatPath(path: readonly unknown[]): string {
+  return path.reduce<string>((acc, segment) => {
+    if (typeof segment === "number") return `${acc}[${segment}]`;
+    return acc === "" ? String(segment) : `${acc}.${String(segment)}`;
+  }, "");
+}
+
+/**
+ * Result of the `__pl_params_validate` callback.
+ *
+ * Carries no params back. The check is a pre-flight — its answer is "may this entry be
+ * applied", and the params that actually reach the block are produced by
+ * {@link createInitialStorageFromParams}, which parses again. One authoritative
+ * producer, rather than two values that could differ.
+ */
+export type TemplateParamsValidateCallbackResult =
+  | { error: string }
+  | { error?: undefined; checked: boolean };
+
+/**
+ * Check params that crossed into the model VM as text.
+ *
+ * The pre-flight entry point: a caller asks this before creating anything, once per
+ * template entry, so params a kind rejects are reported while there is still no
+ * project to half-build.
+ *
+ * @param paramsJson The entry's params as JSON string
+ * @param parseTemplateParams The kind's parser, if it has one
+ */
+export function validateTemplateParamsJson(
+  paramsJson: string,
+  parseTemplateParams?: (value: unknown) => unknown,
+): TemplateParamsValidateCallbackResult {
+  let params: unknown;
+  try {
+    params = JSON.parse(paramsJson);
+  } catch (e) {
+    return { error: `params are not valid JSON: ${messageOf(e)}` };
+  }
+
+  const result = validateTemplateParams(params, parseTemplateParams);
+  if (result.error !== undefined) return { error: result.error };
+  return { checked: result.checked };
+}
+
+function messageOf(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
 }
 
 /**
@@ -313,15 +439,19 @@ export function createInitialStorageFromParams(
   try {
     params = JSON.parse(paramsJson);
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `params are not valid JSON: ${errorMsg}` };
+    return { error: `params are not valid JSON: ${messageOf(e)}` };
   }
 
+  // Checked here too, not only in the caller's pre-flight pass. The pre-flight is
+  // about reporting every bad entry before anything is created; this is about the
+  // factory never being handed a value the kind rejects, whichever path got here.
+  const checked = validateTemplateParams(params, hooks.parseTemplateParams);
+  if (checked.error !== undefined) return { error: checked.error };
+
   try {
-    return { storageJson: assembleStorage(hooks.getBlockDataFromParams(params), hooks) };
+    return { storageJson: assembleStorage(hooks.getBlockDataFromParams(checked.value), hooks) };
   } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `init() threw on the given params: ${errorMsg}` };
+    return { error: `init() threw on the given params: ${messageOf(e)}` };
   }
 }
 
