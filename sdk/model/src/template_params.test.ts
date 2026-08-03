@@ -46,7 +46,8 @@ describe("deriveTemplateParamsFromStorage", () => {
   });
 
   test("a block that declares no lambda yields no params", () => {
-    // A-0041: the entry gets no `params` and re-initializes from kind defaults.
+    // The entry then gets no `params` at all, and the block re-initializes from
+    // its kind's defaults.
     expect(
       deriveTemplateParamsFromStorage(storageOf({ sources: [], label: "", scratch: 0 })),
     ).toEqual({ value: undefined });
@@ -102,8 +103,9 @@ describe("BlockModelV3.templateParams", () => {
     // apply excess-property checks to an object literal returned from a
     // contextually-typed arrow, so `scratch` type-checks and would be written
     // into the exported file. Nothing catches it at runtime either — a kind
-    // carries params as a TYPE only (A-0019), so there is no schema to strip
-    // against. See the open question in docs/block-kinds-templates/02-export.md.
+    // carries params as a TYPE only, so there is no schema to strip against.
+    // Whether to accept this, give a kind a runtime schema, or strip against a key
+    // list is undecided; this test pins the current behavior.
     builder.templateParams((data) => ({
       label: data.label,
       sources: data.sources,

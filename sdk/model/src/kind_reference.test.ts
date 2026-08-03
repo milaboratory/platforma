@@ -11,7 +11,7 @@ import { defineBlockKind } from "@platforma-sdk/block-kind";
 
 // Template export needs one fact to hold at runtime: the kind reference a block
 // declared at build time is still readable from its config, and reaches a
-// template entry unchanged (A-0013, A-0041).
+// template entry unchanged.
 //
 // No new code is needed for that read — `BlockConfigContainer.kind` is already
 // typed `BlockKindReference | undefined`, so the middle layer's read is the
@@ -82,17 +82,17 @@ describe("reading the kind reference back at runtime", () => {
     // published before kinds existed is in this state — so this is the common
     // case today, not an edge one. What the exporter should DO with such a block
     // is undecided: a template entry's `kind` is required, so there is no legal
-    // entry to write. See the open question in
-    // docs/block-kinds-templates/02-export.md.
+    // entry to write. Failing the export and naming every kind-less block is the
+    // proposed answer; nothing implements a choice yet.
     expect(container.kind).toBeUndefined();
   });
 });
 
 describe("the reference as a template entry's kind", () => {
   test("it widens to the exact tier, string unchanged", () => {
-    // A-0041: "the exact version the block implements, {name}@X.Y.Z, read from
-    // the model's embedded kind reference". Widening changes the brand, not the
-    // string — export never loosens to a `~` or `^` tier.
+    // An entry's kind is the exact version the block implements, `{name}@X.Y.Z`,
+    // read from the model's embedded kind reference. Widening changes the brand,
+    // not the string — export never loosens to a `~` or `^` tier.
     expect(kindReferenceToSelectorReference(kindfulContainer().kind!)).toBe(KIND_REF);
   });
 
@@ -114,11 +114,11 @@ describe("the reference as a template entry's kind", () => {
     });
 
     // The whole path, end to end: what the block declared is what the file
-    // carries. `id` is the block's project-local UUID, reused verbatim (A-0038).
+    // carries. `id` is the block's project-local UUID, reused verbatim.
     expect(entry).toEqual({ id: blockId, kind: KIND_REF });
 
     // No `block` override: a block implements exactly one kind version, so
-    // export has nothing to pin (A-0041).
+    // export has nothing to pin.
     expect(entry.block).toBeUndefined();
   });
 });

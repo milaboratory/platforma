@@ -126,7 +126,7 @@ interface BlockModelV3Config<
   featureFlags: BlockCodeKnownFeatureFlags;
   deriveArgs: ((data: unknown) => unknown) | undefined;
   derivePrerunArgs: ((data: unknown) => unknown) | undefined;
-  /** Projects block data back to this kind's params for template export (A-0041). */
+  /** Projects block data back to this kind's params for template export. */
   deriveTemplateParams: ((data: Data) => Params) | undefined;
   plugins: Plugins;
 }
@@ -393,7 +393,7 @@ export class BlockModelV3<
 
   /**
    * Sets the function that projects block data back to this kind's params, for
-   * exporting the project as a template (A-0041).
+   * exporting the project as a template.
    *
    * The inverse of the data model's `init`: `init` builds data from `params`, this
    * recovers the `params` that would rebuild the current data. Return only params

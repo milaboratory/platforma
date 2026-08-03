@@ -23,7 +23,7 @@ import {
 } from "./project_template_v1";
 
 //
-// The normative example from A-0036, as the value a YAML reader hands back:
+// The reference example for the format, as the value a YAML reader hands back:
 //
 //   schema: template-v1
 //   blocks:
@@ -46,7 +46,7 @@ import {
 // The YAML text <-> value step is not this package's job (no `yaml` dependency);
 // byte-level round-tripping belongs to the middle-layer serializer.
 //
-const a0036Example = {
+const referenceExample = {
   schema: "template-v1",
   blocks: [
     {
@@ -118,7 +118,7 @@ describe("kind selector grammar", () => {
   });
 
   test("an exact kind reference widens to the exact selector tier", () => {
-    // The export direction (A-0041): a block implements exactly one version.
+    // The export direction: a block implements exactly one version.
     const resolved: BlockKindReference = formatKindRef({
       name: "@platforma-open/milaboratories.clonotype-browser.kind",
       version: "1.0.0",
@@ -183,10 +183,10 @@ describe("template-local references", () => {
 });
 
 describe("parseProjectTemplateV1", () => {
-  test("parses the A-0036 example unchanged", () => {
-    const doc = parseProjectTemplateV1(a0036Example);
+  test("parses the reference example unchanged", () => {
+    const doc = parseProjectTemplateV1(referenceExample);
 
-    expect(doc).toEqual(a0036Example);
+    expect(doc).toEqual(referenceExample);
     expect(doc.blocks.map((b) => b.id)).toEqual(["samples", "mixcr", "browser"]);
     expect(doc.blocks[2].block).toBe("@platforma-open/milaboratories.clonotype-browser@2.4.1");
     expect(validateProjectTemplateV1References(doc)).toEqual([]);

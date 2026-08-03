@@ -137,7 +137,7 @@ export class ProjectHelper {
    *
    * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
    * the args a workflow runs on, it returns the params that would recreate the
-   * block — the inverse of the data model's `init` (A-0041). References come back
+   * block — the inverse of the data model's `init`. References come back
    * already rewritten into template form by the SDK side, so the middle layer
    * never has to know a kind's params shape.
    *

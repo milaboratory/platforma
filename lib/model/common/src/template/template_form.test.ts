@@ -104,7 +104,7 @@ describe("round trip", () => {
       thresholds: [0.1, 0.2],
     };
 
-    // Export: ids are the UUIDs the blocks already have (A-0038).
+    // Export: ids are the UUIDs the blocks already have.
     const fileForm = toTemplateForm(live);
 
     // Apply into a fresh project: the same template ids map to new UUIDs.

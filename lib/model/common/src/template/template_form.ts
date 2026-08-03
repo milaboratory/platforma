@@ -9,7 +9,7 @@ import { createTemplateLocalRef, isTemplateLocalRef } from "./project_template_v
  *
  * A block's params in a live project carry `PlRef`s, whose `blockId` is a
  * project-local UUID. A template cannot carry those, so the file form names the
- * upstream entry instead (A-0038). The mapping is a shape transform, not a
+ * upstream entry instead. The mapping is a shape transform, not a
  * relabeling: `{ __isRef: true, blockId, name }` becomes `{ block, output }`.
  *
  * Nested carriers need no special case — `PrimaryRef`'s `column`/`filter` are
@@ -19,9 +19,11 @@ import { createTemplateLocalRef, isTemplateLocalRef } from "./project_template_v
  * NOT covered: a reference embedded in a `PObjectId` (`GlobalPObjectId` is a
  * canonicalized-JSON *string* holding a block UUID, as `EnrichmentRef.hit` and
  * `EnrichmentStep.linker` use). Those are opaque to a structural walk, so any
- * UUID inside them survives export and goes stale on apply. Whether such a
- * reference reaches persisted params is unverified — see the open question in
- * `docs/block-kinds-templates/02-export.md`.
+ * UUID inside them survives export and goes stale on apply. Deliberately left
+ * uncovered rather than overlooked: rewriting inside the string would require the
+ * apply side to re-canonicalize at a matching escape depth, and no block is known
+ * to put such a reference in its params. The export walk rejects params that still
+ * carry a block id, so the case fails loudly instead of corrupting a file.
  */
 export type TemplateForm<T> = T extends PlRef
   ? TemplateLocalRef
@@ -41,7 +43,7 @@ export type TemplateForm<T> = T extends PlRef
  * rewriting references itself.
  *
  * A `PlRef`'s `blockId` is copied through as the template-local `id` because
- * export names each block by the UUID it already has (A-0038). Its
+ * export names each block by the UUID it already has. Its
  * `requireEnrichments` flag is dropped: enrichments are out of scope for templates
  * (operator decision, 2026-07-30), so the file form has no slot for it.
  */
@@ -55,7 +57,7 @@ export function toTemplateForm<T>(value: T): TemplateForm<T> {
  *
  * The apply half of the codec. The engine passes a `resolve` that maps each
  * template-local id to the project-local UUID it just assigned, so the block's
- * init lambda only ever sees resolved references (A-0038).
+ * init lambda only ever sees resolved references.
  *
  * @param resolve - template-local id → project-local UUID. Throw from it to
  *   reject a reference to an entry that does not exist.

@@ -338,7 +338,7 @@ export function derivePrerunArgsFromStorage(
 // =============================================================================
 
 /**
- * Derives this block's template-entry params from storage (A-0041).
+ * Derives this block's template-entry params from storage.
  *
  * The inverse of the data model's `init`: `init` turns `params` into data, this
  * turns data back into the params that would recreate it. The lambda returns

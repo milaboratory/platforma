@@ -3,7 +3,7 @@ import type { BlockKindReference } from "../bmodel/block_kind_ref";
 import { parseKindRef, splitVersionedName } from "../bmodel/block_kind_ref";
 
 /**
- * Version-selection tier of a template entry's `kind` field (A-0034, A-0036).
+ * Version-selection tier of a template entry's `kind` field.
  *
  * - `exact` — `X.Y.Z`: this version and no other.
  * - `patch` — `~X.Y.Z`: patch floor, behavior frozen.
@@ -104,7 +104,7 @@ export function formatKindSelectorReference(k: {
  * Widen a resolved {@link BlockKindReference} to its `exact`-tier selector form.
  *
  * The export direction: a block implements exactly one kind version, so export
- * always emits `{name}@X.Y.Z` (A-0041). Validates on the way through, so a
+ * always emits `{name}@X.Y.Z`. Validates on the way through, so a
  * malformed stored reference fails at the boundary rather than in the file.
  */
 export function kindReferenceToSelectorReference(

@@ -193,7 +193,7 @@ export interface BlockStorageFacade {
 
   /**
    * Derive this block's template entry params from storage.
-   * Called when exporting the project as a template (A-0041).
+   * Called when exporting the project as a template.
    *
    * Registered by every V3 block, whether or not it declares `.templateParams()`:
    * a block without the method returns `{ value: undefined }`, which the exporter
