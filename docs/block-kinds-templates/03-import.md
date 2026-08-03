@@ -67,18 +67,18 @@ inferred.
 
 **Kind resolution — consumed from track 1**
 
-- [ ] **Resolve `kind@selector` → block pack spec** — owned by track 1 §5 (reconciler
-      emits `kinds/{org}/{name}/overview.json`) and §6 (`resolveKind` facade at
-      `lib/node/pl-middle-layer/src/block_registry/registry.ts`). **Nothing from track 1
-      has landed** — `01-kind-and-lifecycle-implementation-path.md` is a plan with no
-      tracker. Import consumes the facade and owns only the per-apply `allowUnstable`
-      flag and the mapping of the resolver's three failure reasons to user-facing
-      problems. Behind a stub resolver the whole engine below can be built and tested
-      first, which is what keeps this track off track 1's critical path
-- [ ] **Honor the entry's `block` override** — bypasses resolution entirely
-      (`decisions.md:118`); the schema already carries it as `BlockPackReference` with
-      `parseBlockPackReference` (`project_template_v1.ts:57,65`). Both paths must converge
-      on one prepared-spec seam so construction has a single input
+- [~] **Resolve `kind@selector` → block pack spec** — the import side landed as
+      `resolveTemplateEntries` in `lib/node/pl-middle-layer/src/model/template_resolve.ts`,
+      against the `BlockPackProvider` port. Track 1 still owns the resolver itself (§5
+      reconciler projection, §6 `resolveKind` facade) and **nothing from track 1 has
+      landed** — `01-kind-and-lifecycle-implementation-path.md` is a plan with no tracker.
+      Import owns the per-apply `allowUnstable` flag and turning the three failure reasons
+      into messages, both of which are done and tested against a fake provider. Remaining:
+      the adapter that implements the port, which needs track 1
+- [~] **Honor the entry's `block` override** — same module, converging on the same
+      `BlockPackSpec` as the kind path (`decisions.md:118`). Includes the npm-name →
+      `{organization, name}` split the schema left to import (`project_template_v1.ts:52-56`),
+      as `parseBlockPackName`
 
 **Engine — parse, validate, construct**
 
@@ -240,6 +240,46 @@ it got.
 Pinned by `template_apply.test.ts` (9), driven against a recording fake. That the tests need
 no project, backend or registry is itself the check that the contract is narrow enough to
 hand to a sandbox.
+
+## Resolution, and What It Left Open
+
+`resolveTemplateEntries(document, provider, { allowUnstable })` is the first stage of an
+apply and the only one that touches the network. It runs before the project exists, which
+is what makes "no block for this entry" a message about a file rather than a half-built
+project — and, since it hoists all the slow work, it is also what lets the construction API
+be synchronous.
+
+Both of an entry's routes to an implementation go through `BlockPackProvider` and come back
+as the same `BlockPackSpec`, so nothing downstream cares which route an entry took:
+
+| Route | Port method | When |
+|-------|-------------|------|
+| kind selector | `byKind(kind, { allowUnstable })` | the normal case |
+| pinned version | `byExactVersion(id)` | the entry carries a `block` override |
+
+Import owns the messages, and each of the resolver's three failure reasons has a different
+way out — which is the reason they stay distinct rather than collapsing into "not found":
+the selector matches no published kind version (the file or the registry is wrong), the kind
+version exists but nothing implements it (nothing can be installed yet), or implementations
+exist but none is stable (**import again with unstable allowed** — the only one the reader
+can clear without editing the file, and the reason the checkbox exists). Every entry is
+attempted and every failure collected, so an unapplicable file takes one pass to fix.
+`resolved` shorter than the document is the signal not to apply it.
+
+`allowUnstable` is per apply, never per entry: a file that resolved some entries to stable
+blocks and others to pre-releases would be unreproducible in a way the file itself does not
+record.
+
+**Open — which registry.** A template names no registry, and both routes need one. The port
+keeps that on the far side deliberately (it is a property of the environment, not the file),
+but the adapter has to answer it: the primary registry only, or every configured one in
+order, with a policy for a name that exists in two. Worth settling before the adapter, since
+it also decides what "not found" means in a multi-registry setup.
+
+**Co-design note.** `KindResolution`'s three reasons mirror track 1 §6's planned
+`KindResolution` so the adapter stays trivial, but track 1 currently plans for `resolveKind`
+to *throw* a typed `KindResolutionError` rather than return a union. The adapter absorbs
+that; if track 1's reasons drift, this port is where it shows up.
 
 ## What Import Gets For Free
 

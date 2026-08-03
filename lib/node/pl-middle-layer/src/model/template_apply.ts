@@ -72,6 +72,20 @@ export type AddBlockOutcome =
   | { readonly ok: true; readonly blockId: string }
   | { readonly ok: false; readonly error: string };
 
+/**
+ * Something that stopped one entry from being applied.
+ *
+ * Every stage of an apply reports in this shape — resolution, validation,
+ * construction — so a caller assembles one list and the reader sees which entry in
+ * their file each problem belongs to. `error` is a finished sentence for the person
+ * who applied the file, not a code.
+ */
+export type TemplateApplyProblem = {
+  /** The template-local id of the entry the problem belongs to. */
+  readonly entryId: string;
+  readonly error: string;
+};
+
 /** One entry that made it into the project. */
 export type AppliedEntry = {
   /** The entry's id in the file. */
@@ -90,11 +104,7 @@ export type AppliedEntry = {
 export type TemplateApplyOutcome = {
   readonly added: readonly AppliedEntry[];
   /** Absent if every entry was added. */
-  readonly problem?: {
-    /** The template-local id of the entry that could not be added. */
-    readonly entryId: string;
-    readonly error: string;
-  };
+  readonly problem?: TemplateApplyProblem;
 };
 
 /**
