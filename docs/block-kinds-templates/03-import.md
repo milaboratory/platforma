@@ -82,10 +82,10 @@ inferred.
 
 **Engine — parse, validate, construct**
 
-- [ ] **YAML text → document** — `YAML.parse` then the existing `parseProjectTemplateV1`.
-      Lives in `pl-middle-layer` beside `template_serializer.ts`, mirroring it: the text
-      layer is deliberately out of `pl-model-common` (schema decision #1 in
-      `02-export.md`)
+- [x] **YAML text → document** — `parseProjectTemplateV1Yaml` in
+      `lib/node/pl-middle-layer/src/model/template_parser.ts`, mirroring
+      `template_serializer.ts` on the other side. Most of the work turned out to be
+      diagnostics rather than parsing — see "Reading a File Someone Wrote By Hand"
 - [ ] **Validate before the project exists** — nothing may be created until the whole file
       is known good. Already done by shared code: entry shape, both reference grammars and
       id uniqueness in the parser (`project_template_v1.ts:188-200`), and
@@ -240,6 +240,40 @@ it got.
 Pinned by `template_apply.test.ts` (9), driven against a recording fake. That the tests need
 no project, backend or registry is itself the check that the contract is narrow enough to
 hand to a sandbox.
+
+## Reading a File Someone Wrote By Hand
+
+`parseProjectTemplateV1Yaml(text)` is two library calls — `YAML.parse` then the shared
+`parseProjectTemplateV1` — wrapped in the diagnostics that make the difference between a
+file someone can fix and one they can only re-generate. Export's reader was always our own
+output; this one's input is a person's.
+
+Failures return one message rather than per-entry problems: until the document parses there
+are no entries to attach anything to. The message is multi-line when the file has several
+fixable issues, because fixing it should take one pass.
+
+Cases given their own wording, each replacing something unhelpful:
+
+| Input | Instead of | Says |
+|-------|-----------|------|
+| empty / blank / comments only | `expected object, received null` | "The file is empty." |
+| top-level scalar or list | `expected object, received array` | what a template's top level looks like |
+| `schema: template-v2`, or no `schema` | `Invalid literal value, expected "template-v1"` | that this is not a template-v1 file, and what it claims to be |
+| YAML syntax error, repeated key, tab indent | the library's code frame | the same message trimmed to `at line L, column C` |
+| schema issues | `blocks.0.kind` | `blocks[0].kind`, counted and listed together |
+
+Two behaviours worth knowing, both pinned by tests:
+
+- **Read as YAML 1.2**, while export quotes as if for 1.1. Deliberate on both ends: quoting
+  against the stricter ruleset makes a file we write mean one thing to every reader, and
+  reading with the looser one keeps a hand-written bare `yes` or `1:30` the string it looks
+  like instead of `true` or `90`.
+- **Repeated keys are an error**, not last-wins. A copied entry with a field left unchanged
+  would otherwise apply, wrongly and silently.
+
+Pinned by `template_parser.test.ts` (18), which also parses every golden export fixture and
+round-trips document → text → document, so the two text layers are checked against each
+other and not only against files.
 
 ## Resolution, and What It Left Open
 
