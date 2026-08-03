@@ -131,6 +131,63 @@ export class ProjectHelper {
     }
   }
 
+  /**
+   * Derives this block's template-export params from storage JSON using the VM
+   * callback (`__pl_templateParams_derive`, facade callback #7).
+   *
+   * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
+   * the args a workflow runs on, it returns the params that would recreate the
+   * block — the inverse of the data model's `init` (A-0041). References come back
+   * already rewritten into template form by the SDK side, so the middle layer
+   * never has to know a kind's params shape.
+   *
+   * A `{ value: undefined }` result is NOT a failure: it means the block declares
+   * no `templateParams`, and the exported entry gets no `params` so the block
+   * re-initializes from its kind's defaults.
+   *
+   * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
+   * than swallowed — a prerun that cannot derive args just skips a block in
+   * staging, whereas an export that silently drops a block produces a template
+   * that does not describe the project.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param storageJson Storage as JSON string
+   * @returns The derived params in template form, `undefined` if the block
+   *   declares no lambda, or an error if derivation failed
+   */
+  public deriveTemplateParamsFromStorage(
+    blockConfig: BlockConfig,
+    storageJson: string,
+  ): ResultOrError<unknown> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error(
+          "deriveTemplateParamsFromStorage is only supported for model API version 2",
+        ),
+      };
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsDerive],
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        return { error: new Error(result.error) };
+      }
+      return { value: result.value };
+    } catch (e) {
+      return {
+        error: new Error("Template params derivation from storage failed", {
+          cause: ensureError(e),
+        }),
+      };
+    }
+  }
+
   private calculateEnrichmentTargets(req: EnrichmentTargetsRequest): PlRef[] | undefined {
     const blockConfig = req.blockConfig();
     if (blockConfig.enrichmentTargets === undefined) return undefined;
