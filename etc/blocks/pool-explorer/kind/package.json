@@ -4,16 +4,16 @@
   "private": true,
   "description": "Block kind for the pool-explorer block",
   "type": "module",
-  "main": "./dist/kind.js",
-  "module": "./dist/kind.js",
-  "types": "./dist/kind.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/kind.d.ts",
+      "types": "./dist/index.d.ts",
       "sources": "./src/index.ts",
-      "import": "./dist/kind.js",
-      "require": "./dist/kind.js",
-      "default": "./dist/kind.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {

@@ -6,10 +6,16 @@
 // canonical field / dependency order (oxfmt-clean, so build->check passes with
 // no prior `pnpm fmt`).
 //
-// The `exports` map carries BOTH `import` and `require`/`default` arms pointing
-// at the single ESM `dist/kind.js`: `block-tools build-model` loads the model
-// via `require()`, and the model `require`s its kind — but the block-kind build
-// emits ESM only. Node's require-ESM then resolves the kind through `require`.
+// A kind builds TWICE, like the model: `dist/index.{js,cjs}` with dependencies
+// external — what a block imports — and the self-contained `dist/kind.js` that
+// the registry publishes and `build-kind-manifest` hashes. The `exports` map
+// points at the externalized pair only, so a kind and the block implementing it
+// share one copy of any dependency they both use; the self-contained bundle is
+// read off disk by the manifest builder and needs no export.
+//
+// All three of `import` / `require` / `default` are spelled out: `block-tools
+// build-model` loads the model via `require()`, and the model `require`s its
+// kind, so the CJS arm has to resolve to real CJS.
 
 import {
   ensureField,
@@ -26,11 +32,11 @@ import { canonicalPackageJsonOrder } from "./shared/key-order";
 
 const KIND_EXPORTS = {
   ".": {
-    types: "./dist/kind.d.ts",
+    types: "./dist/index.d.ts",
     sources: "./src/index.ts",
-    import: "./dist/kind.js",
-    require: "./dist/kind.js",
-    default: "./dist/kind.js",
+    import: "./dist/index.js",
+    require: "./dist/index.cjs",
+    default: "./dist/index.js",
   },
 };
 
@@ -40,11 +46,12 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
     name: `${v.facadeName}.kind`,
     private: true,
     type: "module",
-    // The block-kind build emits a single ESM bundle `dist/kind.js` plus a
-    // self-contained `dist/kind.d.ts` — no CJS entry.
-    main: "./dist/kind.js",
-    module: "./dist/kind.js",
-    types: "./dist/kind.d.ts",
+    // `main` is the CommonJS entry (require fallback), `module` the ESM one —
+    // the model's convention. `dist/kind.js`, the self-contained bundle, is
+    // deliberately not an entry: it exists for the registry, not for importers.
+    main: "./dist/index.cjs",
+    module: "./dist/index.js",
+    types: "./dist/index.d.ts",
     exports: KIND_EXPORTS,
     scripts: {
       fmt: "ts-builder format",
@@ -74,9 +81,9 @@ export function kindPackageJsonRules(): void {
   ensureField("private", true);
 
   ensureField("type", "module");
-  ensureField("main", "./dist/kind.js");
-  ensureField("module", "./dist/kind.js");
-  ensureField("types", "./dist/kind.d.ts");
+  ensureField("main", "./dist/index.cjs");
+  ensureField("module", "./dist/index.js");
+  ensureField("types", "./dist/index.d.ts");
   ensureField("exports", KIND_EXPORTS);
 
   ensureScript("fmt", "ts-builder format");
