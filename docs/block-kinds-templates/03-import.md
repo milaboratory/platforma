@@ -100,11 +100,13 @@ inferred.
       the detector does not recognize at all, so everything it finds is foreign by
       construction — nothing to subtract, and the check lands before the project exists,
       where the plan says validation belongs. See "Stale Ids in Strings"
-- [ ] **Id map + reference rewrite** — assign a fresh UUID per entry, then
-      `fromTemplateForm(params, resolve)` (`template_form.ts:65`, already implemented and
-      tested) before params reach the block. Single forward pass: file order is
-      instantiation order and forward references are already rejected, so every upstream
-      id is mapped by the time it is needed
+- [x] **Id map + reference rewrite** — `createTemplateIdMap` in
+      `lib/node/pl-middle-layer/src/model/template_ids.ts`: assign a fresh UUID per entry,
+      then `fromTemplateForm(params, resolve)` (`template_form.ts:65`, already implemented
+      and tested) before params reach the block. Single forward pass, as planned — file
+      order is instantiation order and forward references are already rejected, so every
+      upstream id is mapped by the time it is needed. Assignment and publication came out
+      as two steps rather than one; see "Two Steps, Not One"
 - [ ] **Construction loop** — create the project, then add entries in file order. Two
       decisions here, both about existing code: `Project.addBlock` does one block-pack
       prepare, one authored transaction and one `refreshState` per call
@@ -477,3 +479,37 @@ merely name nothing. That silence is the reason to reject rather than warn.
 
 Rewriting inside the string was rejected instead: it would require matching the escape
 depth on both sides, and no block is known to put an enrichment reference in its params.
+
+## Two Steps, Not One
+
+`createTemplateIdMap` is the whole of the id map: `assign` hands an entry a project-local
+UUID, `record` publishes it as a reference target, and `liveParams` rewrites one entry's
+params from file form into live form. It lives with the `TemplateApplyApi` implementation
+rather than with the orchestrator, because an orchestrator that knew the map would also own
+the rewrite, and every orchestrator would then carry a copy of it.
+
+The plan said "assign a fresh UUID per entry, then rewrite" — one step. It came out as two,
+and the split is the only design content in the module. An id is generated when a block is
+about to be created, but only becomes resolvable once the block exists, so the window
+between the two is where a per-entry pass rewrites that entry's params. Two things fall out
+of it, both for free:
+
+- **An entry cannot reference itself.** Its own id is still unpublished while its params are
+  being rewritten, so a self-reference is reported instead of silently connecting a block to
+  its own output.
+- **Params are never wired to a block that failed to be created.** Which matters
+  specifically here: a failed apply keeps the blocks that already landed, so there is no
+  unwind to hide a bad mapping.
+
+Both are already rejected by validation. The point is not to check twice — it is that the
+map's ordering makes the failures unreachable rather than trusting an earlier stage, and if
+one does arrive it comes back as a reported problem rather than a throw. That direction is
+forced: by the time params are rewritten, earlier blocks are in the project, and the failure
+policy is to keep them and say how far the apply got. A duplicate `assign` is the one thing
+that does throw — entry ids are unique by the schema, so a second assignment for the same
+entry means the document never went through the parser, and the first block would be
+silently orphaned.
+
+Id generation is injectable, defaulting to the `randomUUID` that `Project.addBlock` would
+have used itself. That is what lets `template_ids.test.ts` (13) run the forward pass —
+assign, rewrite, create, record over a three-entry chain — with named ids and no project.
