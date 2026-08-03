@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { createPlRef, createTemplateLocalRef } from "@milaboratories/pl-model-common";
 import type { TemplateIdMap, TemplateParamsRewrite } from "./template_ids";
-import { createTemplateIdMap } from "./template_ids";
+import { createTemplateIdMap, liveParamsForCheck } from "./template_ids";
 
 /**
  * The id map, exercised the way an apply uses it: assign, rewrite, create, record.
@@ -142,6 +142,23 @@ describe("liveParams", () => {
     ids.liveParams(original);
 
     expect(original).toEqual({ input: createTemplateLocalRef("a", "reads") });
+  });
+});
+
+describe("liveParamsForCheck", () => {
+  test("a reference takes the live shape, keeping the id the file used", () => {
+    // What the pre-flight check needs: a kind describing this param as a reference must
+    // see a reference, even though no block exists to point at yet.
+    expect(liveParamsForCheck({ input: createTemplateLocalRef("samples", "reads") })).toEqual({
+      input: createPlRef("samples", "reads"),
+    });
+  });
+
+  test("everything else is left as it is", () => {
+    expect(liveParamsForCheck({ numbers: [3, 1, 2], species: "hsa" })).toEqual({
+      numbers: [3, 1, 2],
+      species: "hsa",
+    });
   });
 });
 

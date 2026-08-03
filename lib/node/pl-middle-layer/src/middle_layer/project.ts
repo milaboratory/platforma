@@ -996,7 +996,7 @@ function convertErrorsToStrings(
  * the UI (`AddBlockModal`) and direct middle-layer callers (the MCP server's
  * `add_block` tool, programmatic block installs, tests) reject incompatible
  * blocks consistently. */
-function throwIfMissingServerCapabilities(
+export function throwIfMissingServerCapabilities(
   pl: PlClient,
   requiredCapabilities: readonly string[] | undefined,
 ): void {

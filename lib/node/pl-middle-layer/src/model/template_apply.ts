@@ -108,6 +108,22 @@ export type TemplateApplyOutcome = {
 };
 
 /**
+ * What a whole apply — reading, checking, resolving, placing — left behind.
+ *
+ * One shape for every stage's findings, because the reader does not care which stage
+ * objected. `problems` empty means the project holds exactly what the document described;
+ * otherwise it holds `added` and nothing more, and the problems say why it stopped there.
+ *
+ * A stage that creates nothing reports every problem it found, so a file with three
+ * mistakes takes one pass to fix. Placement, which does create things, stops at the first
+ * one — hence at most one problem from there.
+ */
+export type TemplateApplyReport = {
+  readonly added: readonly AppliedEntry[];
+  readonly problems: readonly TemplateApplyProblem[];
+};
+
+/**
  * Apply a `template-v1` document: add each entry's block, in file order.
  *
  * The fixed orchestrator — the whole of it. It is this short because everything

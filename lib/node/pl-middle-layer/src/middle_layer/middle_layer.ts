@@ -27,6 +27,22 @@ import {
   withProjectAuthored,
 } from "../mutator/project";
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
+import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import { extractConfig, ensureError } from "@platforma-sdk/model";
+import type {
+  TemplateApplyOutcome,
+  TemplateApplyProblem,
+  TemplateApplyReport,
+} from "../model/template_apply";
+import { applyProjectTemplateV1 } from "../model/template_apply";
+import type { BlockPackProvider } from "../model/template_resolve";
+import { resolveTemplateEntries } from "../model/template_resolve";
+import { validateTemplateV1ForApply } from "../model/template_validate";
+import { liveParamsForCheck } from "../model/template_ids";
+import type { PreparedTemplateEntry } from "../mutator/template_construct";
+import { createTemplateApplyApi } from "../mutator/template_construct";
+import { throwIfMissingServerCapabilities } from "./project";
+import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
@@ -355,6 +371,133 @@ export class MiddleLayer {
       (prj) => prj.exportAsTemplateV1(),
       { name: "exportProjectAsTemplate" },
     );
+  }
+
+  /**
+   * Creates the blocks a `template-v1` document describes in an existing project, in the
+   * order the document lists them — the backing call for a "Create Project from Template
+   * file…" command, which is `createProject` followed by this.
+   *
+   * Takes a project id rather than an open {@link Project}, like
+   * {@link exportProjectAsTemplate} and for the same reason: applying a template is a
+   * property of the stored project, not of a session with it, and the flow that needs it
+   * has just created the project and has no session yet. An already-open session picks the
+   * new blocks up through its own refresh loop.
+   *
+   * Four stages, and their order is the design:
+   *
+   * 1. **Check the document** — reference consistency, and ids belonging to the project
+   *    the file was written in. All of it knowable from the file alone.
+   * 2. **Resolve every entry** to a concrete block pack, through `provider`.
+   * 3. **Prepare every block**: fetch it, check it can run against this backend, cache its
+   *    workflow template, and offer the entry's params to the block's kind for a shape
+   *    check.
+   * 4. **Create the blocks**, in one transaction.
+   *
+   * The first three create nothing, so any of them failing leaves the project exactly as
+   * it was — almost every way a template can be wrong is reported with nothing to clean
+   * up. They are also what leaves stage 4 with only in-memory work, and hence able to be a
+   * single transaction.
+   *
+   * **A failure in stage 4 keeps the blocks that landed.** They are valid and the user can
+   * finish by hand, and the report names the entry that stopped the apply, so a partial
+   * project is never mistaken for a complete one. Undoing them would destroy the only
+   * record of how far the apply got.
+   *
+   * @param id Project to apply into
+   * @param document A parsed template document
+   * @param provider Where each entry's block comes from
+   * @param options `allowUnstable` widens resolution to pre-release implementations, for
+   *   the whole document
+   */
+  public async applyTemplateToProject(
+    id: ProjectId,
+    document: ProjectTemplateV1,
+    provider: BlockPackProvider,
+    options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
+  ): Promise<TemplateApplyReport> {
+    const documentProblems = validateTemplateV1ForApply(document);
+    if (documentProblems.length > 0) return { added: [], problems: documentProblems };
+
+    const resolution = await resolveTemplateEntries(document, provider, {
+      allowUnstable: options.allowUnstable ?? false,
+    });
+    if (resolution.problems.length > 0) return { added: [], problems: resolution.problems };
+
+    const paramsByEntry = new Map(document.blocks.map((entry) => [entry.id, entry.params]));
+    const prepared = new Map<string, PreparedTemplateEntry>();
+    const problems: TemplateApplyProblem[] = [];
+
+    for (const entry of resolution.resolved) {
+      try {
+        const preparedBp = await this.env.bpPreparer.prepare(entry.spec);
+        const blockCfg = extractConfig(preparedBp.config);
+
+        // The same two gates `Project.addBlock` applies, for the same reason: a block that
+        // cannot run here must not be installed. Here they become per-entry problems
+        // rather than throws, so one unusable block reads as one bad entry.
+        this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+        throwIfMissingServerCapabilities(this.pl, preparedBp.requiredCapabilities);
+
+        const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp);
+
+        const params = paramsByEntry.get(entry.entryId);
+        if (params !== undefined) {
+          // Offered to the block's kind while nothing has been created yet. A kind that
+          // declares no runtime check accepts everything, which is not a failure — most
+          // kinds do not describe their params yet.
+          const checked = this.env.projectHelper.validateTemplateParamsInVM(
+            blockCfg,
+            liveParamsForCheck(params),
+          );
+          if (checked.error !== undefined) {
+            problems.push({ entryId: entry.entryId, error: checked.error.message });
+            continue;
+          }
+        }
+
+        // The label is only a fallback — a block whose model derives a title shows that
+        // instead — so the entry's own id is used: it is what the file called this block,
+        // and it costs nothing to know.
+        prepared.set(entry.entryId, { blockPack: cachedBp, label: entry.entryId });
+      } catch (e) {
+        problems.push({
+          entryId: entry.entryId,
+          error: `This entry's block could not be installed: ${ensureError(e).message}`,
+        });
+      }
+    }
+
+    if (problems.length > 0) return { added: [], problems };
+
+    const rid = await this.resolveProjectId(id);
+    let outcome: TemplateApplyOutcome = { added: [] };
+    await withProjectAuthored(
+      this.env.projectHelper,
+      this.pl,
+      rid,
+      options.author,
+      (mut) => {
+        // Built inside the callback, not outside it: the transaction can be retried, and
+        // an id map carried across a retry would hand one entry a second block id.
+        outcome = applyProjectTemplateV1(
+          document,
+          createTemplateApplyApi({
+            placer: mut,
+            projectHelper: this.env.projectHelper,
+            entries: prepared,
+          }),
+        );
+      },
+      // Under the same lock an open session's own mutations take, so an apply and a user
+      // editing the project cannot interleave.
+      { name: "applyTemplateToProject", lockId: `project:${id}` },
+    );
+
+    return {
+      added: outcome.added,
+      problems: outcome.problem !== undefined ? [outcome.problem] : [],
+    };
   }
 
   /** Permanently deletes project from the project list, this will result in

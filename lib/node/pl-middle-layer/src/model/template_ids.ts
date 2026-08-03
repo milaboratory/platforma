@@ -110,6 +110,26 @@ export function createTemplateIdMap(newBlockId: () => string = randomUUID): Temp
 }
 
 /**
+ * Params in live shape, with each entry's template-local id standing in for the block id
+ * it has not been given yet.
+ *
+ * For the pre-flight params check, which runs before any block exists and therefore
+ * before any reference can be resolved. Checking the file form directly would not work:
+ * a kind describing a param as a reference sees `{ block, output }` and rejects it, so
+ * every entry with a reference would fail a check meant to catch the opposite. Feeding it
+ * the live shape with unresolvable ids asks the only question that stage can answer — are
+ * these params the right shape — and leaves what they point at to validation, which
+ * already owns it.
+ *
+ * The ids are the file's own rather than invented placeholders: nothing dereferences them
+ * here, and if one does surface in a kind's rejection message it names something the
+ * reader can find in their file.
+ */
+export function liveParamsForCheck(params: Record<string, unknown>): Record<string, unknown> {
+  return fromTemplateForm<Record<string, unknown>>(params, (templateLocalId) => templateLocalId);
+}
+
+/**
  * A reference naming an entry with no block.
  *
  * Thrown to stop the rewrite from inside `fromTemplateForm`'s resolver and caught one
