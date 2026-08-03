@@ -167,10 +167,27 @@ export class ProjectHelper {
       };
     }
 
+    const callback =
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsDerive];
+
+    // A model built before this callback existed simply has no entry for it. That is
+    // NOT the same as a block declaring no `templateParams`: the block may well have
+    // params, we just have no way to ask for them. Reporting it as `undefined` params
+    // would export the block stripped of its configuration and quietly rebuild a
+    // differently-configured project, so it has to be an error.
+    if (callback === undefined) {
+      return {
+        error: new Error(
+          "Block model cannot describe itself as a template entry — it was built before " +
+            "template export existed. Rebuild the block against a current SDK.",
+        ),
+      };
+    }
+
     try {
       const result = executeSingleLambda(
         this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsDerive],
+        callback,
         extractCodeWithInfo(blockConfig),
         storageJson,
       ) as ArgsDeriveResult;
@@ -180,9 +197,13 @@ export class ProjectHelper {
       }
       return { value: result.value };
     } catch (e) {
+      const cause = ensureError(e);
+      // The reason goes in the message, not only in `cause`: this error is rendered
+      // into a per-block export problem and shown to whoever triggered the export,
+      // and every layer between here and there carries only `message`.
       return {
-        error: new Error("Template params derivation from storage failed", {
-          cause: ensureError(e),
+        error: new Error(`Template params derivation from storage failed: ${cause.message}`, {
+          cause,
         }),
       };
     }
