@@ -49,13 +49,24 @@ import {
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { isAbortedError, isUnauthenticated } from "./errors";
+import { isAbortedError, isTransientCallFailure, isUnauthenticated } from "./errors";
 import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
 }
+
+/** Bounded retry for idempotent unary calls. Deliberately short: these calls sit on the
+ * connect path and gate the UI, so a few quick attempts beat a long grind. */
+const IDEMPOTENT_RETRY_OPTIONS: RetryOptions = {
+  type: "exponentialBackoff",
+  maxAttempts: 4,
+  initialDelay: 200,
+  backoffMultiplier: 2,
+  jitter: 0.3,
+  maxDelay: 2_000,
+};
 
 // Parses leading "<major>.<minor>.<patch>" from a version string like
 // "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
@@ -176,7 +187,10 @@ export class LLPlClient implements WireClientProviderFactory {
     // Guarantee a ping happened so capability-gated paths (login, refresh) can branch synchronously.
     // In the autodetect path the loop's last successful ping already populated _serverInfo via the
     // side-effect in ping(); this fallback covers the path where autodetect is disabled.
-    if (!pl._serverInfo) await pl.ping();
+    // Retried, not bare: this ping is the first contact with the server, so DNS and LB
+    // warm-up land here. A single transient failure must not fail the whole connect.
+    // (Not inside ping() itself: the autodetect path already wraps it in its own retry.)
+    if (!pl._serverInfo) await pl.withIdempotentRetry("ping", () => pl.ping());
 
     // Install the process-global signature-strictness flag based on backend version.
     setResourceSignaturesRequired(pl.supportsResourceSignatures);
@@ -351,6 +365,16 @@ export class LLPlClient implements WireClientProviderFactory {
   /** Smoothed round-trip estimate in ms, or undefined before the first ping. */
   public get rttEstimateMs(): number | undefined {
     return this._rttMs;
+  }
+
+  /** Runs an idempotent unary call with a bounded retry on transient transport failures.
+   * Safe only for calls with no side effects, since a retry may duplicate the request. */
+  private async withIdempotentRetry<T>(name: string, cb: () => Promise<T>): Promise<T> {
+    return await retry(cb, IDEMPOTENT_RETRY_OPTIONS, (e: unknown) => {
+      if (!isTransientCallFailure(e)) return false;
+      this.ops.logger?.info(`${name}: transient failure, retrying. err=${String(e)}`);
+      return true;
+    });
   }
 
   private _replaceWireConnection(newConn: WireConnection): void {
@@ -954,6 +978,14 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async getUserRoot(
+    opts: { login?: string; createIfNotExists?: boolean } = {},
+  ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
+    // Retryable even with createIfNotExists: the call is get-or-create keyed on login, so a
+    // second attempt returns the existing root rather than making another one.
+    return await this.withIdempotentRetry("getUserRoot", () => this.getUserRootOnce(opts));
+  }
+
+  private async getUserRootOnce(
     opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
     const cl = this.clientProvider.get();
