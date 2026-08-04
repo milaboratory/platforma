@@ -266,6 +266,10 @@ export class LLPlClient implements WireClientProviderFactory {
     const clientOptions: ClientOptions = {
       "grpc.keepalive_time_ms": 30_000, // 30 seconds
       "grpc.service_config_disable_resolution": 1, // Disable DNS TXT lookups for service config
+      // Raises the per-stream and connection-level HTTP/2 windows. Node's 64 KB default
+      // caps a big single-stream read (project open) at window/RTT rather than link speed,
+      // and a lost WINDOW_UPDATE can deadlock it under packet loss.
+      "grpc-node.flow_control_window": 16 * 1024 * 1024, // 16 MiB
       interceptors: this._grpcInterceptors,
     };
 
