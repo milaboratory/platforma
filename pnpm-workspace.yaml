@@ -262,7 +262,7 @@ catalog:
   "@milaboratories/pframes-rs-wasip2": 1.1.56
   "@milaboratories/pframes-rs-wasm": 1.1.56
 
-  "quickjs-emscripten": 0.31.0
+  "quickjs-emscripten": 0.32.0
 
   # UI
 
