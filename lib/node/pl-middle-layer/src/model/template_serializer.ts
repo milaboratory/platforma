@@ -1,7 +1,9 @@
 import YAML from "yaml";
+import { pathToFileURL } from "node:url";
 import type {
   BlockKindReference,
   BlockKindSelectorReference,
+  BlockPackLocationReference,
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
 } from "@milaboratories/pl-model-common";
@@ -11,6 +13,7 @@ import {
   kindReferenceToSelectorReference,
   parseProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { ProjectStructure } from "./project_model";
 import type {
   TemplateExportProblem,
@@ -22,6 +25,15 @@ import { walkProjectForTemplateExport } from "./template_export";
 /** A block's exact kind reference, or `undefined` for a block that declares no kind. */
 export type BlockKindProvider = (blockId: string) => BlockKindReference | undefined;
 
+/**
+ * A block's origin spec — where the installed block came from — or `undefined` when
+ * it is not known for that block.
+ *
+ * The project stores this next to the kind reference, so both are read from the same
+ * place and neither costs an extra round-trip.
+ */
+export type BlockPackSpecProvider = (blockId: string) => BlockPackSpec | undefined;
+
 /** What the caller gets back for a whole project. */
 export type ProjectTemplateExportOutcome =
   | {
@@ -29,12 +41,49 @@ export type ProjectTemplateExportOutcome =
       readonly yaml: string;
       /** The document the YAML was rendered from, already validated. */
       readonly document: ProjectTemplateV1;
+      /**
+       * Things the exported file cannot say about itself, for showing to whoever
+       * asked for the export. Empty for a file that is portable as written.
+       */
+      readonly warnings: readonly string[];
     }
   | {
       readonly ok: false;
       /** Every block that stands in the way, not just the first. */
       readonly problems: readonly TemplateExportProblem[];
     };
+
+/**
+ * The `location` to write for a block installed from the filesystem, or `undefined`
+ * for one that came from a registry and therefore needs no locator.
+ *
+ * Both filesystem spec shapes are emitted, and they anchor at different directories
+ * — a dev block at its facade package, an npm-consumed one at its block-pack folder.
+ * The document does not distinguish them: one URI is written either way, and telling
+ * the two layouts apart is done by looking at what is actually there, by the side
+ * that has the filesystem anyway. Encoding the layout in the file instead would
+ * freeze today's two shapes into the format.
+ *
+ * A dev spec carries an OS path and is converted here, which also percent-encodes a
+ * path containing spaces. An npm-consumed spec already carries a `file:` URL and is
+ * passed through: it is the locator the block itself emitted, and reconstructing one
+ * from it could only lose information.
+ */
+export function locationOf(spec: BlockPackSpec): BlockPackLocationReference | undefined {
+  switch (spec.type) {
+    case "dev-v2":
+      return pathToFileURL(spec.folder).href as BlockPackLocationReference;
+    case "from-pack-v2":
+      return spec.packUrl as BlockPackLocationReference;
+    // A registry block is found by name, which is what makes the entry portable —
+    // writing where this machine happened to cache it would take that away. `dev-v1`
+    // predates kinds entirely, so such a block has no kind and never reaches here.
+    case "dev-v1":
+    case "from-registry-v1":
+    case "from-registry-v2":
+      return undefined;
+  }
+}
 
 /**
  * Turn a project into a template document.
@@ -59,15 +108,28 @@ export type ProjectTemplateExportOutcome =
  * a kind's version range, and export always writes the exact version the block
  * implements, so there is nothing left for it to pin.
  *
+ * `location` IS emitted, for every block that was installed from the filesystem. Such
+ * a block is not in any registry, so the kind reference alone names nothing the
+ * importer could find, and a file that omitted the one usable answer would describe a
+ * project that cannot be recreated. It costs portability, which the file cannot state
+ * about itself — hence {@link locationOf} and the warning the caller gets back.
+ *
  * Problems from `walk` are carried through, so a caller can hand a walk straight
  * in and get one combined list.
  */
 export function assembleProjectTemplateV1(
   walk: TemplateExportWalk,
   kindProvider: BlockKindProvider,
-): { document: ProjectTemplateV1; problems: readonly TemplateExportProblem[] } {
+  specProvider: BlockPackSpecProvider,
+): {
+  document: ProjectTemplateV1;
+  problems: readonly TemplateExportProblem[];
+  /** Ids of the entries that were given a `location`, in document order. */
+  located: readonly string[];
+} {
   const problems: TemplateExportProblem[] = [...walk.problems];
   const blocks: ProjectTemplateV1Entry[] = [];
+  const located: string[] = [];
 
   for (const entry of walk.entries) {
     const kind = kindProvider(entry.blockId);
@@ -97,9 +159,14 @@ export function assembleProjectTemplateV1(
       continue;
     }
 
+    const spec = specProvider(entry.blockId);
+    const location = spec === undefined ? undefined : locationOf(spec);
+    if (location !== undefined) located.push(entry.blockId);
+
     blocks.push({
       id: entry.blockId,
       kind: selector,
+      ...(location !== undefined ? { location } : {}),
       // Omitted, not set to undefined: an absent `params` means "re-initialize
       // from the kind's defaults", and `{}` means "use these empty params". The
       // YAML renderer would write an explicit `params: null` for undefined,
@@ -114,7 +181,7 @@ export function assembleProjectTemplateV1(
     problems.push({ blockId: problem.entryId, error: problem.message });
   }
 
-  return { document, problems };
+  return { document, problems, located };
 }
 
 /**
@@ -151,14 +218,20 @@ export function stringifyProjectTemplateV1(document: ProjectTemplateV1): string 
  * @param structure The project structure, which supplies both membership and order
  * @param paramsProvider A block's derived template params, in template form
  * @param kindProvider A block's exact kind reference, read from its stored config
+ * @param specProvider A block's origin spec, read from the same stored container
  */
 export function exportProjectAsTemplateV1(
   structure: ProjectStructure,
   paramsProvider: (blockId: string) => TemplateParamsResult | undefined,
   kindProvider: BlockKindProvider,
+  specProvider: BlockPackSpecProvider,
 ): ProjectTemplateExportOutcome {
   const walk = walkProjectForTemplateExport(structure, paramsProvider);
-  const { document, problems } = assembleProjectTemplateV1(walk, kindProvider);
+  const { document, problems, located } = assembleProjectTemplateV1(
+    walk,
+    kindProvider,
+    specProvider,
+  );
 
   if (problems.length > 0) return { ok: false, problems };
 
@@ -172,5 +245,33 @@ export function exportProjectAsTemplateV1(
   // which is reachable through the mutator and produces duplicate entry ids.
   parseProjectTemplateV1(document);
 
-  return { ok: true, yaml: stringifyProjectTemplateV1(document), document };
+  return {
+    ok: true,
+    yaml: stringifyProjectTemplateV1(document),
+    document,
+    warnings: portabilityWarnings(located),
+  };
+}
+
+/**
+ * Say out loud what a located entry costs, because the file cannot.
+ *
+ * A `location` is an absolute path on the machine that exported it, so the template
+ * works here and nowhere else. That is not a defect — for an unpublished block it is
+ * the only thing that could work — but it is invisible to whoever receives the file,
+ * and the moment to mention it is while the person who made it is still looking.
+ */
+function portabilityWarnings(located: readonly string[]): string[] {
+  if (located.length === 0) return [];
+
+  const which =
+    located.length === 1
+      ? `block '${located[0]}' is`
+      : `${located.length} blocks (${located.join(", ")}) are`;
+
+  return [
+    `This template can only be applied on this machine: ${which} installed from a local ` +
+      `folder, so the entry points at that folder by path. Publish the block to share the ` +
+      `template.`,
+  ];
 }

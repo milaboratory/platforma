@@ -10,6 +10,7 @@ import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { ensureError } from "@platforma-sdk/model";
 import type { BlockPackProvider, ExactResolution, KindResolution } from "../model/template_resolve";
+import { resolveBlockPackLocation } from "./location_provider";
 
 /**
  * The part of {@link BlockPackRegistry} a template's provider uses.
@@ -117,6 +118,10 @@ export function templateBlockPackProvider(deps: {
 
       return { ok: false, reason: furthest ?? "no-matching-kind-version" };
     },
+
+    // No registry is consulted for a located entry, and none of this adapter's
+    // registry knowledge applies to it — which is why it is a straight delegation.
+    byLocation: resolveBlockPackLocation,
 
     byExactVersion: async (id): Promise<ExactResolution> => {
       for (const registryId of registryIds) {

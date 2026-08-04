@@ -557,17 +557,19 @@ export class ProjectMutator {
    * Read-only: it derives params in the VM and touches no field, so a `withProject`
    * wrapper sees `wasModified === false` and skips the commit.
    *
-   * This is where the two providers the serializer needs come from, and both are
+   * This is where the three providers the serializer needs come from, and all are
    * only reachable here. A block's storage lives behind `BlockInfo`, which is
-   * populated by the loader's batched round-trips, and its kind reference is read
-   * off the block-pack container during the same load — `config` cannot carry it,
-   * since `extractConfig` normalizes the render envelope one level below the kind.
+   * populated by the loader's batched round-trips, and both its kind reference and
+   * its origin spec are read off the block-pack container during that same load —
+   * `config` cannot carry the kind, since `extractConfig` normalizes the render
+   * envelope one level below it, and the spec is not part of the config at all.
    */
   public exportAsTemplateV1(): ProjectTemplateExportOutcome {
     return exportProjectAsTemplateV1(
       this.struct,
       (blockId) => this.deriveTemplateParams(blockId),
       (blockId) => this.blockInfos.get(blockId)?.kind,
+      (blockId) => this.blockInfos.get(blockId)?.source,
     );
   }
 

@@ -1,13 +1,20 @@
 import { describe, expect, test } from "vitest";
 import type {
+  BlockKindReference,
   BlockKindSelectorReference,
+  BlockPackLocationReference,
   BlockPackReference,
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
 } from "@milaboratories/pl-model-common";
 import { PROJECT_TEMPLATE_SCHEMA_V1 } from "@milaboratories/pl-model-common";
 import type { BlockPackId, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
-import type { BlockPackProvider, ExactResolution, KindResolution } from "./template_resolve";
+import type {
+  BlockPackProvider,
+  ExactResolution,
+  KindResolution,
+  LocationResolution,
+} from "./template_resolve";
 import { parseBlockPackName, resolveTemplateEntries } from "./template_resolve";
 
 /**
@@ -37,7 +44,7 @@ const foundBlock = (name: string) => ({
 
 const entry = (
   id: string,
-  extra: Partial<Pick<ProjectTemplateV1Entry, "kind" | "block">> = {},
+  extra: Partial<Pick<ProjectTemplateV1Entry, "kind" | "block" | "location">> = {},
 ): ProjectTemplateV1Entry => ({ id, kind: KIND, ...extra });
 
 const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => ({
@@ -45,18 +52,25 @@ const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => (
   blocks,
 });
 
-/** A provider whose two answers are fixed, recording what it was asked. */
-function fakeProvider(answers: { byKind?: KindResolution; byExactVersion?: ExactResolution }): {
+/** A provider whose three answers are fixed, recording what it was asked. */
+function fakeProvider(answers: {
+  byKind?: KindResolution;
+  byExactVersion?: ExactResolution;
+  byLocation?: LocationResolution;
+}): {
   provider: BlockPackProvider;
   kindCalls: { kind: string; allowUnstable: boolean }[];
   exactCalls: BlockPackId[];
+  locationCalls: string[];
 } {
   const kindCalls: { kind: string; allowUnstable: boolean }[] = [];
   const exactCalls: BlockPackId[] = [];
+  const locationCalls: string[] = [];
 
   return {
     kindCalls,
     exactCalls,
+    locationCalls,
     provider: {
       byKind: (kind, options) => {
         kindCalls.push({ kind, allowUnstable: options.allowUnstable });
@@ -66,9 +80,20 @@ function fakeProvider(answers: { byKind?: KindResolution; byExactVersion?: Exact
         exactCalls.push(id);
         return Promise.resolve(answers.byExactVersion ?? foundBlock("pinned"));
       },
+      byLocation: (location) => {
+        locationCalls.push(location);
+        return Promise.resolve(
+          answers.byLocation ?? { ...foundBlock("located"), kind: DECLARED_KIND },
+        );
+      },
     },
   };
 }
+
+/** The concrete kind the located block declares, matching {@link KIND}'s selector. */
+const DECLARED_KIND = "@platforma-open/milaboratories.demo.kind@1.0.0" as BlockKindReference;
+
+const LOCATION = "file:///Users/dev/blocks/demo/block" as BlockPackLocationReference;
 
 const resolve = (document: ProjectTemplateV1, provider: BlockPackProvider, allowUnstable = false) =>
   resolveTemplateEntries(document, provider, { allowUnstable });
@@ -174,6 +199,7 @@ describe("resolveTemplateEntries", () => {
     const provider: BlockPackProvider = {
       byKind: () => Promise.resolve(foundBlock("resolved")),
       byExactVersion: () => Promise.resolve({ ok: false, reason: "no-such-block-version" }),
+      byLocation: () => Promise.resolve({ ok: false, reason: "not-found" }),
     };
 
     const outcome = await resolve(
@@ -193,6 +219,145 @@ describe("resolveTemplateEntries", () => {
 
     expect(await resolve(documentOf(), provider)).toEqual({ resolved: [], problems: [] });
     expect(kindCalls).toEqual([]);
+  });
+});
+
+describe("an entry that says where its block is", () => {
+  test("reads that place, and consults no registry at all", async () => {
+    const { provider, kindCalls, exactCalls, locationCalls } = fakeProvider({});
+
+    const outcome = await resolve(documentOf(entry("a", { location: LOCATION })), provider);
+
+    expect(locationCalls).toEqual([LOCATION]);
+    expect(kindCalls).toEqual([]);
+    expect(exactCalls).toEqual([]);
+    expect(outcome.problems).toEqual([]);
+    expect(outcome.resolved[0]).toEqual({
+      entryId: "a",
+      spec: specFor("located"),
+      title: "The located Block",
+      pinned: true,
+    });
+  });
+
+  test("a located entry looks like any other downstream", async () => {
+    // Preparation and construction must not be able to tell how an entry found its
+    // block — that convergence is what lets an unpublished block travel the same path.
+    const { provider } = fakeProvider({});
+
+    const outcome = await resolve(
+      documentOf(entry("a"), entry("b", { location: LOCATION })),
+      provider,
+    );
+
+    expect(outcome.resolved.map((r) => Object.keys(r).sort())).toEqual([
+      ["entryId", "pinned", "spec", "title"],
+      ["entryId", "pinned", "spec", "title"],
+    ]);
+  });
+
+  test("the location wins over a kind, which is the point of naming a place", async () => {
+    const { provider, kindCalls, locationCalls } = fakeProvider({});
+
+    await resolve(documentOf(entry("a", { location: LOCATION })), provider);
+
+    expect(locationCalls).toHaveLength(1);
+    expect(kindCalls).toEqual([]);
+  });
+
+  describe("what each failure tells the reader", () => {
+    const messageFor = async (answer: LocationResolution) => {
+      const { provider } = fakeProvider({ byLocation: answer });
+      const outcome = await resolve(documentOf(entry("a", { location: LOCATION })), provider);
+      return outcome.problems[0].error;
+    };
+
+    test("a scheme this application cannot read says so, and names what it can", async () => {
+      // Distinct from "nothing there": the file may be perfectly correct and simply
+      // written for a consumer that fetches more than this one does.
+      const message = await messageFor({ ok: false, reason: "unsupported-scheme" });
+
+      expect(message).toMatch(/cannot read/);
+      expect(message).toContain("file:");
+      expect(message).toContain(LOCATION);
+    });
+
+    test("a missing folder names the reason a pinned template travels badly", async () => {
+      const message = await messageFor({ ok: false, reason: "not-found" });
+
+      expect(message).toMatch(/Nothing is at/);
+      expect(message).toMatch(/only works on the machine/);
+    });
+
+    test("a folder that is not a block says what was looked for", async () => {
+      // Reachable by pointing one directory off, so the message has to be actionable
+      // rather than just negative.
+      const message = await messageFor({ ok: false, reason: "not-a-block" });
+
+      expect(message).toMatch(/is not a block/);
+      expect(message).toMatch(/package\.json/);
+    });
+  });
+
+  describe("the entry's kind is verified against what was found", () => {
+    const resolveWith = async (kind: BlockKindReference | undefined) => {
+      const { provider } = fakeProvider({
+        byLocation: { ...foundBlock("located"), ...(kind !== undefined ? { kind } : {}) },
+      });
+      return await resolve(documentOf(entry("a", { location: LOCATION })), provider);
+    };
+
+    test("a version inside the entry's range is accepted", async () => {
+      // KIND asks for `^1.0.0`, so a later minor of the same kind still implements the
+      // contract the params were written against.
+      const outcome = await resolveWith(
+        "@platforma-open/milaboratories.demo.kind@1.4.0" as BlockKindReference,
+      );
+
+      expect(outcome.problems).toEqual([]);
+      expect(outcome.resolved).toHaveLength(1);
+    });
+
+    test("a version outside the range is refused, naming both sides", async () => {
+      const outcome = await resolveWith(
+        "@platforma-open/milaboratories.demo.kind@2.0.0" as BlockKindReference,
+      );
+
+      expect(outcome.resolved).toEqual([]);
+      expect(outcome.problems[0].error).toContain(KIND);
+      expect(outcome.problems[0].error).toContain("version 2.0.0");
+    });
+
+    test("a different kind entirely is refused, naming both", async () => {
+      // The failure a location makes possible: the path still resolves, but what is
+      // there now is a different block than the one the params were written for.
+      const outcome = await resolveWith(
+        "@platforma-open/milaboratories.other.kind@1.0.0" as BlockKindReference,
+      );
+
+      expect(outcome.problems[0].error).toContain("@platforma-open/milaboratories.demo.kind");
+      expect(outcome.problems[0].error).toContain("@platforma-open/milaboratories.other.kind");
+    });
+
+    test("a block declaring no kind cannot serve the entry", async () => {
+      const outcome = await resolveWith(undefined);
+
+      expect(outcome.problems[0].error).toMatch(/declares no kind/);
+    });
+
+    test("an unreadable declared kind is a problem, not a throw", async () => {
+      const outcome = await resolveWith("no-version-here" as BlockKindReference);
+
+      expect(outcome.problems[0].error).toMatch(/unreadable kind/);
+    });
+
+    test("the failing entry's location is named, since the path is what to fix", async () => {
+      const outcome = await resolveWith(
+        "@platforma-open/milaboratories.other.kind@1.0.0" as BlockKindReference,
+      );
+
+      expect(outcome.problems[0].error).toContain(LOCATION);
+    });
   });
 });
 

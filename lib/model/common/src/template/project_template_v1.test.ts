@@ -14,10 +14,12 @@ import {
   collectTemplateLocalRefs,
   createTemplateLocalRef,
   isTemplateLocalRef,
+  parseBlockPackLocation,
   parseBlockPackReference,
   parseProjectTemplateV1,
   ProjectTemplateV1Schema,
   validateProjectTemplateV1References,
+  type BlockPackLocationReference,
   type BlockPackReference,
   type ProjectTemplateV1,
 } from "./project_template_v1";
@@ -149,6 +151,36 @@ describe("block pack override", () => {
   });
 });
 
+describe("block pack location", () => {
+  const location = (raw: string) => parseBlockPackLocation(raw as BlockPackLocationReference);
+
+  test("reads the scheme, which is all this layer needs to know", () => {
+    // Everything past the scheme belongs to whoever can reach it: this layer cannot
+    // know which schemes a given environment serves, and must not decide for it.
+    expect(location("file:///Users/dev/blocks/enter-numbers/block")).toEqual({ scheme: "file" });
+    expect(location("https://blocks.internal/enter-numbers")).toEqual({ scheme: "https" });
+  });
+
+  test("the scheme is compared case-insensitively", () => {
+    expect(location("FILE:///Users/dev/blocks/x")).toEqual({ scheme: "file" });
+  });
+
+  test("a bare path is rejected, because it would be read against the wrong directory", () => {
+    // The whole point of a locator is removing the question "relative to what".
+    expect(() => location("/Users/dev/blocks/enter-numbers/block")).toThrow(
+      /absolute URI with a scheme/,
+    );
+    expect(() => location("./blocks/enter-numbers")).toThrow(/absolute URI with a scheme/);
+  });
+
+  test("a Windows path is rejected rather than read as a one-letter scheme", () => {
+    // `C:\blocks\x` satisfies the URI scheme grammar with scheme `c`, so without the
+    // two-character floor it would be accepted here and fail somewhere unrelated.
+    expect(() => location("C:\\blocks\\enter-numbers")).toThrow(/absolute URI with a scheme/);
+    expect(location("file:///C:/blocks/enter-numbers")).toEqual({ scheme: "file" });
+  });
+});
+
 describe("template-local references", () => {
   test("recognized by the reserved two-key shape only", () => {
     expect(isTemplateLocalRef(createTemplateLocalRef("samples", "reads"))).toBe(true);
@@ -209,6 +241,59 @@ describe("parseProjectTemplateV1", () => {
         blocks: [{ id: "samples", params: { dataset: "bulk-rna" } }],
       }),
     ).toThrow(/kind/);
+  });
+
+  test("an entry may pin where its implementation comes from", () => {
+    const doc = parseProjectTemplateV1({
+      schema: "template-v1",
+      blocks: [
+        {
+          id: "9f3c",
+          kind: "@milaboratories/milaboratories.test-enter-numbers.kind@^1.0.0",
+          location: "file:///Users/dev/blocks/enter-numbers/block",
+          params: { numbers: [1, 2, 3] },
+        },
+      ],
+    });
+
+    expect(doc.blocks[0].location).toBe("file:///Users/dev/blocks/enter-numbers/block");
+    // The kind stays required alongside it: the locator says where to get the
+    // implementation, not what contract the params are written against.
+    expect(doc.blocks[0].kind).toBe(
+      "@milaboratories/milaboratories.test-enter-numbers.kind@^1.0.0",
+    );
+  });
+
+  test("an entry cannot pin both a version and a place", () => {
+    // Two different statements with nothing to reconcile them, so it is refused
+    // rather than settled by precedence.
+    const result = ProjectTemplateV1Schema.safeParse({
+      schema: "template-v1",
+      blocks: [
+        {
+          id: "a",
+          kind: "@o/a.kind@1.0.0",
+          block: "@o/a@1.0.0",
+          location: "file:///blocks/a",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0].path).toEqual(["blocks", 0, "location"]);
+    expect(result.error.issues[0].message).toMatch(/cannot carry both 'block' and 'location'/);
+  });
+
+  test("a malformed location is reported on its own path", () => {
+    const result = ProjectTemplateV1Schema.safeParse({
+      schema: "template-v1",
+      blocks: [{ id: "a", kind: "@o/a.kind@1.0.0", location: "/blocks/a" }],
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0].path).toEqual(["blocks", 0, "location"]);
   });
 
   test("the format marker is checked", () => {

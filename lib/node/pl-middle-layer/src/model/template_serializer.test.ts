@@ -6,11 +6,13 @@ import {
   kindReferenceToSelectorReference,
   parseProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { ProjectStructure } from "./project_model";
 import type { TemplateParamsResult } from "./template_export";
 import {
   assembleProjectTemplateV1,
   exportProjectAsTemplateV1,
+  locationOf,
   stringifyProjectTemplateV1,
 } from "./template_serializer";
 
@@ -34,12 +36,23 @@ const kindOf = (name: string, version = "1.4.2") =>
 /** Every block gets a kind derived from its own id. */
 const kindPerBlock = (blockId: string) => kindOf(blockId);
 
+/** A registry-installed block: found by name, so it needs no locator. */
+const registrySpec: BlockPackSpec = {
+  type: "from-registry-v2",
+  registryUrl: "https://block.registry.platforma.bio/releases",
+  id: { organization: "milaboratories", name: "demo", version: "1.4.2" },
+  channel: "stable",
+};
+
+const devSpec = (folder: string): BlockPackSpec => ({ type: "dev-v2", folder });
+
 function exportOf(
   structure: ProjectStructure,
   params: Record<string, TemplateParamsResult>,
   kinds: (blockId: string) => BlockKindReference | undefined = kindPerBlock,
+  specs: (blockId: string) => BlockPackSpec | undefined = () => registrySpec,
 ) {
-  return exportProjectAsTemplateV1(structure, (id) => params[id], kinds);
+  return exportProjectAsTemplateV1(structure, (id) => params[id], kinds, specs);
 }
 
 describe("the document", () => {
@@ -257,6 +270,124 @@ describe("problems", () => {
   });
 });
 
+describe("locationOf", () => {
+  test("a dev block's folder becomes a file URL", () => {
+    expect(locationOf(devSpec("/Users/dev/blocks/enter-numbers/block"))).toBe(
+      "file:///Users/dev/blocks/enter-numbers/block",
+    );
+  });
+
+  test("a path with a space is encoded, not written raw", () => {
+    // A raw space makes the value not a URI at all, so it would be rejected by the
+    // document parser on the way back in.
+    expect(locationOf(devSpec("/Users/dev/my blocks/x"))).toBe("file:///Users/dev/my%20blocks/x");
+  });
+
+  test("an npm-consumed pack's own URL is passed through untouched", () => {
+    // The block emitted this locator itself; rebuilding one from it could only lose
+    // information, and the pack directory is not derivable from the package root.
+    expect(
+      locationOf({
+        type: "from-pack-v2",
+        packUrl: "file:///repo/node_modules/@o/x/block-pack",
+        rootUrl: "file:///repo/node_modules/@o/x",
+      }),
+    ).toBe("file:///repo/node_modules/@o/x/block-pack");
+  });
+
+  test("a registry block gets no locator, which is what keeps it portable", () => {
+    expect(locationOf(registrySpec)).toBeUndefined();
+    expect(
+      locationOf({
+        type: "from-registry-v1",
+        registryUrl: "https://old",
+        id: { organization: "o", name: "n", version: "1.0.0" },
+      }),
+    ).toBeUndefined();
+  });
+
+  test("a legacy dev block gets none either", () => {
+    // It predates kinds, so it has no kind reference and the assembler refuses it
+    // before a locator would matter.
+    expect(locationOf({ type: "dev-v1", folder: "/Users/dev/old" })).toBeUndefined();
+  });
+});
+
+describe("locating a block installed from a folder", () => {
+  test("the entry carries the folder, and the caller is told the file is not portable", () => {
+    const result = exportOf(
+      simpleStructure("samples"),
+      { samples: ok({ dataset: "bulk-rna" }) },
+      kindPerBlock,
+      () => devSpec("/Users/dev/blocks/samples/block"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.document.blocks[0].location).toBe("file:///Users/dev/blocks/samples/block");
+    // The kind stays alongside: it is the params contract, not the locator.
+    expect(result.document.blocks[0].kind).toBe(
+      kindReferenceToSelectorReference(kindOf("samples")),
+    );
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/only be applied on this machine/);
+    expect(result.warnings[0]).toContain("samples");
+  });
+
+  test("what is written survives the round trip through YAML", () => {
+    const result = exportOf(simpleStructure("samples"), { samples: ok({}) }, kindPerBlock, () =>
+      devSpec("/Users/dev/blocks/samples/block"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(parseProjectTemplateV1(YAML.parse(result.yaml))).toEqual(result.document);
+  });
+
+  test("a registry-only project is portable and says nothing", () => {
+    const result = exportOf(simpleStructure("samples"), { samples: ok({}) });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect("location" in result.document.blocks[0]).toBe(false);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test("a block whose origin is unknown is written without a locator", () => {
+    // Not a failure: an entry with no locator is the normal, portable form, and the
+    // kind is what the importer resolves.
+    const result = exportOf(
+      simpleStructure("samples"),
+      { samples: ok({}) },
+      kindPerBlock,
+      () => undefined,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect("location" in result.document.blocks[0]).toBe(false);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test("the warning names every located block, not just the first", () => {
+    const result = exportOf(
+      simpleStructure("a", "b", "c"),
+      { a: ok({}), b: ok({}), c: ok({}) },
+      kindPerBlock,
+      (id) => (id === "b" ? registrySpec : devSpec(`/Users/dev/blocks/${id}/block`)),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.warnings[0]).toContain("2 blocks (a, c)");
+    expect(result.document.blocks.map((e) => e.location)).toEqual([
+      "file:///Users/dev/blocks/a/block",
+      undefined,
+      "file:///Users/dev/blocks/c/block",
+    ]);
+  });
+});
+
 describe("assembleProjectTemplateV1", () => {
   test("carries the walk's problems through unchanged", () => {
     const { document, problems } = assembleProjectTemplateV1(
@@ -265,6 +396,7 @@ describe("assembleProjectTemplateV1", () => {
         problems: [{ blockId: "ghost", error: "state unavailable" }],
       },
       kindPerBlock,
+      () => registrySpec,
     );
 
     expect(problems).toEqual([{ blockId: "ghost", error: "state unavailable" }]);

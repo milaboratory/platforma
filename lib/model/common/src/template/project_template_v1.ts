@@ -77,13 +77,74 @@ export function parseBlockPackReference(ref: BlockPackReference): {
 }
 
 /**
+ * On-wire locator naming WHERE one entry's block implementation comes from, as an
+ * absolute URI: `file:///abs/path/to/block`.
+ *
+ * The third way an entry can reach an implementation, and the only one that names a
+ * place rather than a name. It exists for a block that is built but not published —
+ * the implementation lives in a folder and no registry knows it, so neither `kind`
+ * resolution nor a `block` version pin can find it.
+ *
+ * A URI rather than a bare path because the question "where" is not limited to the
+ * filesystem, and because scheme dispatch is how the rest of the toolchain already
+ * answers it. Which schemes an environment can actually serve is that environment's
+ * business: this type fixes only the grammar, so a document remains readable by a
+ * consumer that cannot fetch every scheme.
+ */
+export type BlockPackLocationReference = Branded<string, "BlockPackLocationReference">;
+
+/**
+ * Read the scheme off a {@link BlockPackLocationReference}, which is all the
+ * document layer knows about it — resolving the rest belongs to whoever can reach
+ * the scheme.
+ *
+ * A scheme is required. Accepting a bare path would mean reading it relative to
+ * whatever directory the application happens to have been started from, which is
+ * exactly the ambiguity a locator exists to remove.
+ *
+ * @throws if the value carries no scheme
+ */
+export function parseBlockPackLocation(ref: BlockPackLocationReference): { scheme: string } {
+  const match = LocationSchemePattern.exec(ref);
+  if (!match) {
+    throw new Error(
+      `A 'location' must be an absolute URI with a scheme (expected e.g. ` +
+        `'file:///path/to/block'), got: ${ref}`,
+    );
+  }
+  return { scheme: match.groups!.scheme.toLowerCase() };
+}
+
+/**
+ * Scheme grammar, with one deliberate narrowing: a scheme is at least TWO
+ * characters, while the URI grammar allows one.
+ *
+ * `C:\blocks\my-block` is a valid single-letter-scheme URI, so a Windows path
+ * pasted into the field would otherwise be accepted with scheme `c` and then fail
+ * far away from the mistake. Rejecting it here means the error names the actual
+ * problem, and the fix — `file:///C:/blocks/my-block` — is spelled out.
+ */
+const LocationSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]+):/;
+
+/**
  * One block in a template file.
  *
  * `kind` is always required: it carries the params contract the entry is typed
- * against. `block` is an optional exact-version override — when present it is
- * used directly and kind resolution is skipped. `params` omitted means "start
- * this block from its kind's defaults". There is no `label` field: a
- * template does not name block instances for display.
+ * against, and it is checked against what the located implementation declares even
+ * when it did not do the locating. `params` omitted means "start this block from its
+ * kind's defaults". There is no `label` field: a template does not name block
+ * instances for display.
+ *
+ * Two optional, mutually exclusive locator overrides answer different questions, and
+ * either one skips kind resolution:
+ *
+ * - `block` — WHICH VERSION, leaving the environment to decide which registry serves
+ *   it. Portable.
+ * - `location` — WHICH PLACE. Names a concrete, possibly unpublished implementation,
+ *   and is therefore only meaningful where that place exists.
+ *
+ * An entry carrying both states two different things with no way to reconcile them,
+ * so it is rejected rather than resolved by precedence.
  */
 export type ProjectTemplateV1Entry = {
   /**
@@ -94,6 +155,7 @@ export type ProjectTemplateV1Entry = {
   readonly id: string;
   readonly kind: BlockKindSelectorReference;
   readonly block?: BlockPackReference;
+  readonly location?: BlockPackLocationReference;
   /**
    * The block's `BlockParams` instance — opaque here, typed by the kind. Wires
    * to other entries appear inside it as {@link TemplateLocalRef}s.
@@ -168,14 +230,40 @@ const blockPackReferenceSchema = z
   })
   .transform((value) => value as BlockPackReference) satisfies BoundaryParser<BlockPackReference>;
 
+const blockPackLocationSchema = z
+  .string()
+  .superRefine((value, ctx) => {
+    try {
+      parseBlockPackLocation(value as BlockPackLocationReference);
+    } catch (e) {
+      issue(ctx, e);
+    }
+  })
+  .transform(
+    (value) => value as BlockPackLocationReference,
+  ) satisfies BoundaryParser<BlockPackLocationReference>;
+
 export const ProjectTemplateV1EntrySchema = z
   .object({
     id: z.string().min(1),
     kind: kindSelectorReferenceSchema,
     block: blockPackReferenceSchema.optional(),
+    location: blockPackLocationSchema.optional(),
     params: z.record(z.string(), z.unknown()).optional(),
   })
   .strict()
+  .superRefine((entry, ctx) => {
+    if (entry.block !== undefined && entry.location !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location"],
+        message:
+          `An entry cannot carry both 'block' and 'location': the first pins which version ` +
+          `to install, the second pins where to install it from. Keep the one that is ` +
+          `actually meant.`,
+      });
+    }
+  })
   .readonly() satisfies BoundaryParser<ProjectTemplateV1Entry>;
 
 export const ProjectTemplateV1Schema = z

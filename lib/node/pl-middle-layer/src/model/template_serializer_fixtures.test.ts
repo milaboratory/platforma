@@ -167,6 +167,14 @@ function exportFixture(fixture: Fixture) {
     fixture.structure,
     (blockId) => fixture.params[blockId],
     (blockId) => fixture.kinds[blockId],
+    // The golden files describe portable templates, so every block is a registry one:
+    // a locator would pin them to whichever machine produced the fixture.
+    () => ({
+      type: "from-registry-v2",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratories", name: "demo", version: "1.0.0" },
+      channel: "stable",
+    }),
   );
   if (!result.ok)
     throw new Error(
