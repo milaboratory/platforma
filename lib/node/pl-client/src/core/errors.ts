@@ -82,6 +82,13 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   return false;
 }
 
+/** Failures worth another attempt on an idempotent call: the peer was unreachable, or the
+ * deadline elapsed. Everything else (auth, permission, not-found, unimplemented) is a real
+ * answer from the server, and retrying it only wastes the caller's time. */
+export function isTransientCallFailure(err: unknown): boolean {
+  return isConnectionProblem(err) || isTimeoutError(err);
+}
+
 export function isUnimplementedError(err: unknown, nested: boolean = false): boolean {
   if (err === undefined || err === null) return false;
 
