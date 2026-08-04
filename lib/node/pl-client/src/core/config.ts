@@ -90,6 +90,11 @@ export interface PlClientConfig {
 
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
   retryJitter: number;
+
+  /** Upper bound for a single backoff delay, in ms. Without it the exponential
+   * sequence keeps growing across all attempts: at the defaults the last sleep
+   * alone reaches ~66s (~150s once jitter compounds). */
+  retryMaxDelay: number;
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 5_000;
@@ -106,6 +111,7 @@ export const DEFAULT_RETRY_INITIAL_DELAY = 20; // 20 ms * <jitter> of sleep afte
 export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 1.5; // + 50% on each round
 export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
 export const DEFAULT_RETRY_JITTER = 0.3; // 30%
+export const DEFAULT_RETRY_MAX_DELAY = 5_000; // 5 seconds
 
 export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
   type: "exponentialBackoff",
@@ -113,6 +119,7 @@ export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
   initialDelay: DEFAULT_RETRY_INITIAL_DELAY,
   backoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
   jitter: DEFAULT_RETRY_JITTER,
+  maxDelay: DEFAULT_RETRY_MAX_DELAY,
 };
 
 type PlConfigOverrides = Partial<
@@ -161,6 +168,7 @@ export function plAddressToConfig(
       retryExponentialBackoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
       retryLinearBackoffStep: DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
       retryJitter: DEFAULT_RETRY_JITTER,
+      retryMaxDelay: DEFAULT_RETRY_MAX_DELAY,
 
       ...overrides,
     };
@@ -234,6 +242,7 @@ export function plAddressToConfig(
       parseInt(url.searchParams.get("retry-linear-backoff-step")) ??
       DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
     retryJitter: parseInt(url.searchParams.get("retry-backoff-jitter")) ?? DEFAULT_RETRY_JITTER,
+    retryMaxDelay: parseInt(url.searchParams.get("retry-max-delay")) ?? DEFAULT_RETRY_MAX_DELAY,
 
     ...overrides,
   };

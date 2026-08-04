@@ -145,6 +145,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffMultiplier: conf.retryExponentialBackoffMultiplier,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       case "linear":
@@ -154,6 +155,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffStep: conf.retryLinearBackoffStep,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       default:
