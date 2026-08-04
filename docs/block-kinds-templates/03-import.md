@@ -132,16 +132,18 @@ inferred.
 
 **Desktop**
 
-- [ ] **"Create Project from Template file…"** — a `TaskCommand` in
-      `platforma-desktop-app/packages/main/src/tasks/`, following the shape of the export
-      command already on branch `MILAB-6648_export-project-as-template`. Uses the existing
-      open-dialog helper (`packages/main/src/dialogs/index.ts:3`), offers the single
-      `allow-unstable` checkbox (default off), applies headless, navigates to the result.
-      Note: the existing `CreateProject` task also auto-adds the root block pack
-      (`tasks/CreateProject.ts:41-52`) — apply must not, the template supplies every block
-- [ ] **Entry point placement** — export hangs off the ProjectCard context menu; import
-      has no card to hang off, so it belongs on the projects-list surface. Treat UX as
-      deferred, as export did
+- [x] **"Create Project from Template file…"** — `CreateProjectFromTemplate` in
+      `platforma-desktop-app/packages/main/src/tasks/`, over a `createProjectFromTemplate`
+      worker method. Asks for the file first (the reverse of export, which must render
+      before it can offer a path), parses before creating anything, then navigates to the
+      result. The root block pack the existing `CreateProject` auto-adds
+      (`tasks/CreateProject.ts:41-52`) is deliberately absent — the template supplies every
+      block. `allow-unstable` is a task option, default off, with no control yet: the
+      checkbox belongs with the dialog that does not exist. See "The Desktop Command"
+- [x] **Entry point placement** — a ghost button beside "Create New Project" on the
+      projects list, where the create flow already lives; import creates a project, so it
+      has no card to hang off. UX deferred as export's was: a button and a native alert,
+      no dedicated dialog
 
 **Validation**
 
@@ -640,3 +642,40 @@ Pinned by `template_construct.test.ts` (13), which fakes the one mutator method 
 uses and keeps everything else real: a real `ProjectHelper`, a real model VM, real block code.
 The driver itself is not covered — it needs a backend — which is why nothing but sequencing
 lives in it.
+
+## The Desktop Command
+
+`CreateProjectFromTemplate` (main) over `createProjectFromTemplate` (worker), with a ghost
+button beside "Create New Project". The flow, and the two decisions in it:
+
+1. Ask for the file. **First**, unlike export, which has to render the document before it
+   can offer a save path — here the file is the input, so there is nothing to compute
+   before asking.
+2. Read it, derive the project's label from the file name, deduplicate against existing
+   labels (`Name (2)`, the shape `DuplicateProject` already uses).
+3. Parse. A file that is not a template creates nothing.
+4. `createProject`, then `applyTemplateToProject`.
+5. Navigate to the project.
+
+**The label comes from the file name, not a prompt.** Export names its file after the
+project's label (`My-Study.template.yaml`), so stripping the two suffixes recovers it and
+the round trip keeps the name. It also keeps the command at one dialog, which is the whole
+UX budget this step has.
+
+**Landing nothing drops the project again.** The middle layer's stages that create nothing
+run *inside* `applyTemplateToProject`, so the worker has to create the project before it can
+learn that, say, resolution failed — and then it holds an empty project the user never
+asked for. So: zero blocks added and at least one problem → delete it and report. An empty
+project is not a partial result, it is litter, and it is seconds old. One or more blocks
+added → keep, navigate, and say what is missing, since a project short a few blocks looks
+exactly like a complete one.
+
+`allow-unstable` is a task option defaulting to off, with nothing wired to it yet. The
+checkbox the plan calls for belongs with the import dialog, and the dialog is the deferred
+part; the resolution path already honours the flag, and it is one argument away.
+
+**Not exercised end to end, and cannot be yet.** `byKind` asks a registry for a kind
+projection, and no published block declares a kind — `sdk/block-kind` exists only on this
+branch. Until a kind is published, the only template that can apply against a real registry
+is one whose entries carry a `block` override, which takes the `byExactVersion` route. That
+is the check to run first once a kind ships.
