@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.13
+
+### Patch Changes
+
+- 497ad12: Bump `quickjs-emscripten` to 0.32.0. quickjs (wasm) is the largest worker CPU cost, and 0.32.0 upgrades the underlying bellard/quickjs and reworks host function binding onto `HostRef`.
+- Updated dependencies [8f77fbc]
+  - @milaboratories/pl-client@3.14.5
+  - @milaboratories/pl-drivers@1.16.14
+  - @milaboratories/pl-model-backend@1.4.19
+  - @milaboratories/pl-errors@1.4.34
+  - @milaboratories/pl-tree@1.13.5
+  - @milaboratories/pl-deployments@3.0.15
+  - @platforma-sdk/block-tools@2.12.10
+  - @platforma-sdk/workflow-tengo@6.8.2
+
 ## 1.66.12
 
 ### Patch Changes
