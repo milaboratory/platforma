@@ -276,8 +276,13 @@ export class SynchronizedTreeState {
     else {
       this.scheduledOnNextState.push({ resolve, reject });
       // Someone is waiting on fresh state, so this tree is not idle after all: drop any
-      // accumulated backoff, otherwise the cycles right after a nudge stay slow.
-      this.effectivePollingInterval = this.pollingInterval;
+      // accumulated backoff, otherwise the cycles right after a nudge stay slow. Routed
+      // through the policy rather than assigning the configured value directly, so the RTT
+      // floor survives the reset. Assigning it raw would poll a high-latency link faster than
+      // it can answer, and the interval would stay there until the next cycle that completes:
+      // the error path never reaches updatePollingInterval, so a failing nudged refresh would
+      // keep retrying at the un-floored rate.
+      this.updatePollingInterval(true);
       if (this.currentLoopDelayInterrupt) {
         this.currentLoopDelayInterrupt.abort();
         this.currentLoopDelayInterrupt = undefined;

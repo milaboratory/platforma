@@ -55,6 +55,15 @@ test("idle backoff is bounded", () => {
   expect(interval).toEqual(5_000);
 });
 
+test("resetting backoff keeps the rtt floor", () => {
+  // What an observer nudge does: reset to the floor, from a fully backed-off interval.
+  // The floor must stay RTT-derived, not drop to the raw configured value, or a nudge on a
+  // slow link would poll faster than the link can answer.
+  expect(
+    derivePollingInterval({ configuredMs: FAST, currentMs: 5_000, rttMs: 1400, changed: true }),
+  ).toEqual(2800);
+});
+
 test("the rtt floor outranks the ceiling on a very slow link", () => {
   // 4s RTT implies an 8s floor, past the 5s ceiling. Clamping to 5s would poll faster than
   // the link can answer, so the floor has to win.
