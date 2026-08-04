@@ -63,6 +63,10 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     return { evenNumbers: data.numbers.toSorted().filter((n) => n % 2 === 0) };
   })
 
+  .templateParams((data) => {
+    return { numbers: data.numbers };
+  })
+
   .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 
   .output("activeArgs", (ctx) => ctx.activeArgs)
