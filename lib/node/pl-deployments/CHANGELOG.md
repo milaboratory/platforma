@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 3.0.15
+
+### Patch Changes
+
+- Updated dependencies [8f77fbc]
+  - @milaboratories/pl-healthcheck@1.0.5
+
 ## 3.0.14
 
 ### Patch Changes
