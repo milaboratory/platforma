@@ -1,10 +1,16 @@
 import {
+  DEFAULT_REQUEST_TIMEOUT,
   DEFAULT_RETRY_MAX_ATTEMPTS,
   DEFAULT_RETRY_MAX_DELAY,
   DEFAULT_RO_TX_TIMEOUT,
   DEFAULT_RW_TX_TIMEOUT,
   DefaultRetryOptions,
+  MAX_ADAPTIVE_REQUEST_TIMEOUT,
+  RTT_DEADLINE_MULTIPLIER,
+  RTT_SMOOTHING_ALPHA,
+  deriveUnaryDeadline,
   plAddressToConfig,
+  smoothRtt,
 } from "./config";
 import { createRetryState, nextRetryStateOrError } from "@milaboratories/ts-helpers";
 import { test, expect } from "vitest";
@@ -114,6 +120,37 @@ test("retryMaxDelay defaults and is overridable via url", () => {
   expect(plAddressToConfig("http://127.0.0.1:6345/?retry-max-delay=1500").retryMaxDelay).toEqual(
     1500,
   );
+});
+
+test("unary deadline floors at the configured timeout on a fast link", () => {
+  // No sample yet, and small RTTs, must both leave the configured value untouched.
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, undefined)).toEqual(DEFAULT_REQUEST_TIMEOUT);
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, 5)).toEqual(DEFAULT_REQUEST_TIMEOUT);
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, 600)).toEqual(DEFAULT_REQUEST_TIMEOUT);
+});
+
+test("unary deadline scales with RTT and is capped", () => {
+  // The spec's target envelope is 1.4s RTT, where the old fixed 5s aborted connect.
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, 1400)).toEqual(
+    1400 * RTT_DEADLINE_MULTIPLIER,
+  );
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, 1400)).toBeGreaterThan(
+    DEFAULT_REQUEST_TIMEOUT,
+  );
+  // A pathological RTT must not produce an unbounded deadline.
+  expect(deriveUnaryDeadline(DEFAULT_REQUEST_TIMEOUT, 120_000)).toEqual(
+    MAX_ADAPTIVE_REQUEST_TIMEOUT,
+  );
+});
+
+test("rtt smoothing takes the first sample then converges", () => {
+  expect(smoothRtt(undefined, 800)).toEqual(800);
+  // One outlier moves the estimate only by alpha, so the deadline cannot swing on it.
+  expect(smoothRtt(100, 1100)).toBeCloseTo(100 + 1000 * RTT_SMOOTHING_ALPHA, 6);
+
+  let rtt = smoothRtt(undefined, 100);
+  for (let i = 0; i < 50; i++) rtt = smoothRtt(rtt, 1000);
+  expect(rtt).toBeCloseTo(1000, 1);
 });
 
 test("default retry backoff is bounded by maxDelay", () => {
