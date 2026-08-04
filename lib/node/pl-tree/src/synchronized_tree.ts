@@ -25,6 +25,12 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
  * preventing tight polling loops during rapid state transitions. */
 const MIN_POLLING_INTERVAL_MS = 100;
 
+/** The client's measured RTT becomes an interval floor, scaled by this. Every refresh costs
+ * at least one round trip, so polling faster than a small multiple of the RTT only queues
+ * round-trips the link cannot service. This is what replaces the fixed interval on a
+ * high-latency link; on a fast link the configured `pollingInterval` still dominates. */
+const RTT_POLL_FACTOR = 2;
+
 type StatLoggingMode = "cumulative" | "per-request";
 
 export type SynchronizedTreeOps = {
@@ -90,6 +96,21 @@ function normalizeSeeds(seeds: SignedResourceId | TreeSeed | TreeSeed[]): TreeSe
  * and explicit-seed trees (empty `sharedSeeds`), so the value never affects them. */
 const DISCOVERY_INTERVAL_MS = 3_000;
 
+/** The poll-cadence policy, as a pure function.
+ *
+ * `configuredMs` is the tree's static `pollingInterval` and acts as the lower bound, so no
+ * link is ever polled faster than configured. `rttMs` raises that bound on a slow link. */
+export function derivePollingInterval(opts: {
+  configuredMs: number;
+  rttMs: number | undefined;
+}): number {
+  const { configuredMs, rttMs } = opts;
+
+  return rttMs === undefined
+    ? configuredMs
+    : Math.max(configuredMs, Math.ceil(rttMs * RTT_POLL_FACTOR));
+}
+
 type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
@@ -135,6 +156,7 @@ export class SynchronizedTreeState {
     this.traverseStopRules = traverseStopRules;
     this.traversalMode = traversalMode ?? "auto";
     this.pollingInterval = pollingInterval;
+    this.effectivePollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
 
@@ -201,6 +223,18 @@ export class SynchronizedTreeState {
 
   private currentLoopDelayInterrupt: AbortController | undefined = undefined;
   private scheduledOnNextState: ScheduledRefresh[] = [];
+
+  /** Interval actually used for the current wait. Starts at the configured `pollingInterval`
+   * and is re-derived after every cycle by {@link updatePollingInterval}. */
+  private effectivePollingInterval: number;
+
+  /** Re-derives {@link effectivePollingInterval} from the link's current RTT. */
+  private updatePollingInterval(): void {
+    this.effectivePollingInterval = derivePollingInterval({
+      configuredMs: this.pollingInterval,
+      rttMs: this.pl.rttEstimateMs,
+    });
+  }
 
   /** Called from computable hooks when external observer asks for state refresh */
   private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
@@ -345,6 +379,8 @@ export class SynchronizedTreeState {
         // actual tree synchronization
         await this.refresh(stat);
 
+        this.updatePollingInterval();
+
         // logging stats if we were asked to
         if (stat && this.logger)
           this.logger.info(
@@ -403,7 +439,7 @@ export class SynchronizedTreeState {
       // Phase 2: optional remainder up to pollingInterval — interruptible by
       // scheduleOnNextState so that an external nudge wakes the loop promptly.
       if (this.scheduledOnNextState.length === 0) {
-        const remaining = Math.max(0, this.pollingInterval - MIN_POLLING_INTERVAL_MS);
+        const remaining = Math.max(0, this.effectivePollingInterval - MIN_POLLING_INTERVAL_MS);
         if (remaining > 0) {
           try {
             this.currentLoopDelayInterrupt = new AbortController();
