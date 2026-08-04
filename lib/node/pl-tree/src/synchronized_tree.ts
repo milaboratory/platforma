@@ -75,19 +75,20 @@ function normalizeSeeds(seeds: SignedResourceId | TreeSeed | TreeSeed[]): TreeSe
   return [{ kind: "resource", root: seeds }];
 }
 
-/** How often, in main-loop iterations, a tree with shared-type seeds re-polls
- * ListUserResources to reconcile its discovered roots. 1 would mean every iteration.
+/** How often a tree with shared-type seeds re-polls ListUserResources to reconcile its
+ * discovered roots.
  *
  * Discovery (a full ListUserResources stream) is far heavier than an ordinary incremental
- * refresh, so it must NOT run on every fast refresh tick. The refresh cadence is the tree's
- * `pollingInterval` floored by {@link MIN_POLLING_INTERVAL_MS} (~200ms-1s in practice — the
- * shared-seed discovery tree runs at the 200ms default). At N = 15 discovery fires roughly
- * every 15 × 200ms ≈ 3s, decoupling it from the fast refresh loop while keeping the latency
- * of noticing a new/removed share to a few seconds — acceptable for a human-driven share flow.
+ * refresh, so it must NOT run on every refresh tick. This is a wall-clock interval rather
+ * than a count of iterations, so it pins the latency of noticing a new/removed share
+ * regardless of the refresh cadence. Counting iterations ties the two together: anything that
+ * slows the refresh loop (a high-latency link, or the adaptive cadence that follows) silently
+ * drags share-discovery latency out with it. 3s keeps the previous effective behaviour, where
+ * 15 iterations at the 200ms default worked out to roughly the same figure.
  *
  * Only trees with shared-type seeds gate on this; {@link discover} is a no-op for single-root
  * and explicit-seed trees (empty `sharedSeeds`), so the value never affects them. */
-const DISCOVERY_EVERY_N_REFRESHES = 15;
+const DISCOVERY_INTERVAL_MS = 3_000;
 
 type ScheduledRefresh = {
   resolve: () => void;
@@ -315,8 +316,8 @@ export class SynchronizedTreeState {
 
     let lastUpdate = Date.now();
 
-    // counts refresh iterations to pace the discovery poll for shared-type seeds.
-    let iteration = 0;
+    // paces the discovery poll for shared-type seeds; 0 forces discovery on the first pass.
+    let lastDiscovery = 0;
 
     while (true) {
       if (!this.keepRunning || this.terminated) break;
@@ -336,10 +337,10 @@ export class SynchronizedTreeState {
 
         // discovery sync for shared-type seeds: reconcile the discovered root set before
         // refreshing, so newly discovered roots are materialized in this same iteration.
-        if (this.sharedSeeds.length > 0 && iteration % DISCOVERY_EVERY_N_REFRESHES === 0) {
+        if (this.sharedSeeds.length > 0 && Date.now() - lastDiscovery >= DISCOVERY_INTERVAL_MS) {
           await this.discover();
+          lastDiscovery = Date.now();
         }
-        iteration++;
 
         // actual tree synchronization
         await this.refresh(stat);
