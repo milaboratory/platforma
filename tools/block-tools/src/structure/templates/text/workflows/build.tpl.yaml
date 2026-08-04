@@ -39,6 +39,11 @@ jobs:
       package-path: 'block'
       create-tag: 'true'
 
+      # Require the published `block` package to be bumped by a changeset on
+      # PRs (empty changeset or the `skip-changelog` label waives it). Needs
+      # the input to exist on the pinned `@v4` reusable workflow.
+      require-package-path-bump: true
+
       npmrc-config: |
         {
           "registries": {
