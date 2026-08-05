@@ -28,6 +28,7 @@ export default {
 >
 import "./pl-number-field.scss";
 import DoubleContour from "../../utils/DoubleContour.vue";
+import type { BooleanProp, BooleanPropUnless } from "../../utils/booleanProps";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import { computed, ref, useSlots, watch } from "vue";
 import { PlTooltip } from "../PlTooltip";
@@ -45,7 +46,7 @@ const emit = defineEmits<{
 const props = withDefaults(
   defineProps<{
     /** If `true`, the field is required and will show an error if left empty. */
-    required?: R;
+    required?: BooleanProp<R>;
     /** Label on the top border of the field, empty by default */
     label?: string;
     /** Input placeholder, empty by default */
@@ -65,7 +66,7 @@ const props = withDefaults(
     /** Additional validity check for input value that must return an error text if failed */
     validate?: (v: number) => string | undefined;
     /** If `true`, shows a clear button that resets value to `undefined`. If a function, calls it to get the reset value. */
-    clearable?: (R extends true ? never : boolean) | (() => C);
+    clearable?: BooleanPropUnless<R> | (() => C);
     /** Makes some of corners not rounded */
     groupPosition?:
       | "top"
