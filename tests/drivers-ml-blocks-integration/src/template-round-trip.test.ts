@@ -1,0 +1,277 @@
+import { BlockPointer as enterNumbersSpec } from "@milaboratories/milaboratories.test-enter-numbers";
+import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
+import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import { createPlRef, fromTemplateForm, toTemplateForm } from "@milaboratories/pl-model-common";
+import type { BlockPackProvider, Project } from "@milaboratories/pl-middle-layer";
+import {
+  parseProjectTemplateV1Yaml,
+  templateBlockPackProvider,
+} from "@milaboratories/pl-middle-layer";
+import { deriveDataFromStorage } from "@platforma-sdk/model";
+import { test } from "vitest";
+import { awaitBlockDone, awaitBlockStateStable } from "./test-helpers";
+import { withMl } from "./with-ml";
+
+/**
+ * Export and apply are inverses: what a project writes out, applying it reads back
+ * into an equivalent project.
+ *
+ * The two halves that only a live project can exercise are `exportProjectAsTemplate`
+ * — which derives every block's params in the model VM off stored block state — and
+ * `applyTemplateToProject`, which resolves, installs and places the blocks against a
+ * real backend. Everything between them (the walk, the serializer, resolution, the
+ * orchestrator, id assignment) is unit-tested in the middle layer; what is proven
+ * here is that the two ends compose.
+ *
+ * Transport is held constant and local. Both test blocks are installed from a built
+ * pack on disk, so their entries carry a `location` and no registry is consulted —
+ * which is why `registryIds` below is empty. Where a block's bytes come from is a
+ * resolution concern behind `BlockPackProvider` and is covered separately; it is not
+ * part of the claim that export and apply are inverses.
+ */
+
+/** How much slack a block gets to compute, cold, on a freshly created project. */
+const RUN_TIMEOUT_MS = 60_000;
+
+/**
+ * How long a block's state may take to settle.
+ *
+ * Well above the helper's own default, which is short enough to abort on a cold render
+ * of a block that was just created — a flake, not a finding.
+ */
+const STATE_TIMEOUT_MS = 60_000;
+
+/** A block's settled state, with a budget that survives a cold machine. */
+async function settled(project: Project, blockId: string) {
+  return await awaitBlockStateStable(project, blockId, STATE_TIMEOUT_MS);
+}
+
+test("v3: a project exported as a template applies back as an equivalent project", async ({
+  expect,
+}) => {
+  await withMl(async (ml) => {
+    // --- A configured, running source project ------------------------------
+
+    const sourceId = await ml.createProject({ label: "Source" });
+    await ml.openProject(sourceId);
+    const source = ml.getOpenedProject(sourceId);
+
+    const numbersId = await source.addBlock("Numbers", enterNumbersSpec);
+    const sumId = await source.addBlock("Sum", sumNumbersSpec);
+
+    // `numbers` is what this block's kind declares; `description` is not, and is set
+    // here to something distinguishable so the trip's boundary is visible below.
+    await source.mutateBlockStorage(numbersId, {
+      operation: "update-block-data",
+      value: { numbers: [1, 2, 3], labels: [], description: "outside the params contract" },
+    });
+    await source.mutateBlockStorage(sumId, {
+      operation: "update-block-data",
+      value: { sources: [createPlRef(numbersId, "numbers")] },
+    });
+
+    await source.runBlock(sumId);
+    await awaitBlockDone(source, sumId, RUN_TIMEOUT_MS);
+
+    const sourceNumbersData = blockData(await settled(source, numbersId));
+    const sourceSumState = await settled(source, sumId);
+    const sourceSumData = blockData(sourceSumState);
+    expect(sourceSumState.outputs!["sum"]).toMatchObject({ ok: true, value: 6 });
+
+    // --- Export ------------------------------------------------------------
+
+    const exported = await ml.exportProjectAsTemplate(sourceId);
+    if (!exported.ok) throw new Error(`export failed: ${JSON.stringify(exported.problems)}`);
+
+    // Entry ids are the source project's own block ids, in structure order.
+    expect(exported.document.blocks.map((entry) => entry.id)).toStrictEqual([numbersId, sumId]);
+
+    // The wiring is in the file, as a reference naming the upstream entry. Asserted
+    // before the comparisons below, which would otherwise be satisfied by two documents
+    // that both carry nothing.
+    expect(exported.document.blocks[0].params).toStrictEqual({ numbers: [1, 2, 3] });
+    expect(exported.document.blocks[1].params).toStrictEqual({
+      sources: [{ block: numbersId, output: "numbers" }],
+    });
+
+    // Both blocks came from a folder on this machine, and the file says so exactly
+    // once however many blocks are involved.
+    expect(exported.warnings).toHaveLength(1);
+
+    // --- Apply, from the text and not the document -------------------------
+
+    // The document is already asserted to parse on every export; going through the
+    // YAML is what proves the text a user would save is what the importer reads.
+    const parsed = parseProjectTemplateV1Yaml(exported.yaml);
+    if (!parsed.ok) throw new Error(`the exported YAML did not parse: ${parsed.error}`);
+
+    const targetId = await ml.createProject({ label: "Target" });
+    const report = await ml.applyTemplateToProject(targetId, parsed.document, localPacksOnly());
+
+    expect(report.problems).toStrictEqual([]);
+    expect(report.added.map((entry) => entry.templateLocalId)).toStrictEqual([numbersId, sumId]);
+
+    const appliedId = new Map(report.added.map((entry) => [entry.templateLocalId, entry.blockId]));
+    // Applied blocks are new blocks with new ids, which is why equivalence below is
+    // stated up to renaming rather than as equality of ids.
+    expect(appliedId.get(numbersId)).not.toBe(numbersId);
+
+    // --- 1. The applied project exports to the same template ---------------
+
+    const reExported = await ml.exportProjectAsTemplate(targetId);
+    if (!reExported.ok) throw new Error(`re-export failed: ${JSON.stringify(reExported.problems)}`);
+
+    expect(canonical(reExported.document)).toStrictEqual(canonical(exported.document));
+
+    // --- 2. Every block starts with the state its source block held --------
+
+    await ml.openProject(targetId);
+    const target = ml.getOpenedProject(targetId);
+
+    // Bounded by the params contract, and only by it. `numbers` is declared by the kind
+    // and arrives intact; `description` is not, so the applied block holds what its own
+    // init produces instead of what the source block held. A block's fidelity is
+    // therefore its own choice of what to project into params — silent for anything left
+    // out, which is why this asserts the loss rather than looking away from it.
+    expect(sourceNumbersData).toMatchObject({ description: "outside the params contract" });
+    expect(blockData(await settled(target, appliedId.get(numbersId)!))).toStrictEqual({
+      numbers: [1, 2, 3],
+      labels: [],
+      description: "",
+    });
+
+    // The one field that must differ: the reference now names the block the apply
+    // created, not the one it was exported from.
+    expect(blockData(await settled(target, appliedId.get(sumId)!))).toStrictEqual(
+      renameInLiveParams(sourceSumData, appliedId),
+    );
+
+    // --- 3. And the applied project computes what the source computed ------
+
+    const appliedSumId = appliedId.get(sumId)!;
+    await target.runBlock(appliedSumId);
+    await awaitBlockDone(target, appliedSumId, RUN_TIMEOUT_MS);
+    expect((await settled(target, appliedSumId)).outputs!["sum"]).toMatchObject({
+      ok: true,
+      value: 6,
+    });
+  });
+});
+
+test("v3: a block whose params name a deleted block cannot be exported", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectId = await ml.createProject({ label: "With a dangling reference" });
+    await ml.openProject(projectId);
+    const project = ml.getOpenedProject(projectId);
+
+    const numbersId = await project.addBlock("Numbers", enterNumbersSpec);
+    const sumId = await project.addBlock("Sum", sumNumbersSpec);
+    await project.mutateBlockStorage(sumId, {
+      operation: "update-block-data",
+      value: { sources: [createPlRef(numbersId, "numbers")] },
+    });
+    await settled(project, sumId);
+
+    // Deleting a block removes it from the structure and leaves downstream params
+    // naming it, so the reference survives into the file pointing at nothing. All or
+    // nothing: no partial template is written.
+    await project.deleteBlock(numbersId);
+    await settled(project, sumId);
+
+    const exported = await ml.exportProjectAsTemplate(projectId);
+    expect(exported.ok).toBe(false);
+    if (exported.ok) return;
+    expect(exported.problems.map((problem) => problem.blockId)).toStrictEqual([sumId]);
+  });
+});
+
+/** A block's current data, as the model sees it. */
+function blockData(state: Awaited<ReturnType<typeof awaitBlockStateStable>>): unknown {
+  return deriveDataFromStorage(state.blockStorage);
+}
+
+/**
+ * A provider for a document whose every entry names a place on this machine.
+ *
+ * Configuring no registries is not a shortcut: a located entry is resolved by reading
+ * the folder it names, and consulting a registry for one would be a bug. With the list
+ * empty there is nothing for the kind route to read, so an entry that reached it would
+ * fail the apply rather than pass quietly.
+ */
+function localPacksOnly(): BlockPackProvider {
+  return templateBlockPackProvider({
+    registry: {
+      resolveKind: () => {
+        throw new Error("a located entry must not consult a registry");
+      },
+      getOverview: () => {
+        throw new Error("a located entry must not consult a registry");
+      },
+    },
+    registryIds: [],
+    logger: {
+      info: (msg) => console.log(msg),
+      warn: (msg) => console.warn(msg),
+      error: (msg) => console.error(msg),
+    },
+  });
+}
+
+/**
+ * A document with every entry id replaced by its position, references included.
+ *
+ * Two exports of the same pipeline can never be textually equal: the entry ids are the
+ * project's block ids, and applying a template creates new blocks with new ids. What
+ * "equivalent" has to mean is therefore equality up to that renaming — same blocks, in
+ * the same order, with the same kinds, the same locators and the same params, wired the
+ * same way. Position is the right name to canonicalize to because the list's order is
+ * itself part of the document's meaning: it is the instantiation order.
+ *
+ * Not covered, deliberately: a block's label, which is an instance name a template does
+ * not carry, and any block state outside what the block projects into params. Both are
+ * lost by design, and the assertions above pin each one where it is visible rather than
+ * hiding them in here.
+ */
+function canonical(document: ProjectTemplateV1): ProjectTemplateV1 {
+  const positionOf = new Map(document.blocks.map((entry, i) => [entry.id, `b${i}`]));
+
+  return {
+    ...document,
+    blocks: document.blocks.map((entry, i) => ({
+      ...entry,
+      id: `b${i}`,
+      ...(entry.params !== undefined
+        ? { params: renameInTemplateParams(entry.params, positionOf) }
+        : {}),
+    })),
+  };
+}
+
+/**
+ * Rename the blocks named by references inside live params — the shape a project
+ * stores, where a reference is a `PlRef` carrying a block id.
+ *
+ * Both renamers go through the same codec the export and apply paths use, one pass in
+ * each direction, so they recognize exactly the references the system recognizes.
+ * Re-implementing the walk here would let this comparison agree with a bug instead of
+ * catching it.
+ */
+function renameInLiveParams(value: unknown, newIdOf: ReadonlyMap<string, string>): unknown {
+  return fromTemplateForm(toTemplateForm(value), (blockId) => newIdOf.get(blockId) ?? blockId);
+}
+
+/**
+ * The same for params in file form, where a reference names an entry rather than a
+ * block. The codec passes run in the opposite order, so what goes in comes back out in
+ * the shape a document holds.
+ */
+function renameInTemplateParams(
+  params: Record<string, unknown>,
+  newIdOf: ReadonlyMap<string, string>,
+): Record<string, unknown> {
+  const live = fromTemplateForm<Record<string, unknown>>(
+    params,
+    (entryId) => newIdOf.get(entryId) ?? entryId,
+  );
+  return toTemplateForm(live) as Record<string, unknown>;
+}
