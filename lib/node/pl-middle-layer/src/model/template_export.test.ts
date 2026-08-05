@@ -104,29 +104,16 @@ describe("collecting each block's descriptor output", () => {
     expect(walk.entries).toEqual([{ blockId: "mixcr", params }]);
   });
 
-  test("a block declaring no templateParams yields an entry with no params", () => {
-    // Legal, and means "re-initialize this block from its kind's defaults".
+  test("a block with nothing to project yields empty params", () => {
+    // Every block declares the lambda, so "no params at all" is not an outcome the walk
+    // can produce. A block whose state carries nothing worth restoring returns `{}`.
     const walk = walkProjectForTemplateExport(
       simpleStructure("pool-explorer"),
-      providerFrom({ "pool-explorer": ok(undefined) }),
+      providerFrom({ "pool-explorer": ok({}) }),
     );
 
-    expect(walk.entries).toEqual([{ blockId: "pool-explorer", params: undefined }]);
+    expect(walk.entries).toEqual([{ blockId: "pool-explorer", params: {} }]);
     expect(walk.problems).toEqual([]);
-  });
-
-  test("empty params are kept distinct from absent params", () => {
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("empty", "absent"),
-      providerFrom({ empty: ok({}), absent: ok(undefined) }),
-    );
-
-    // `{}` is written out and used as-is by `init`; no `params` re-initializes
-    // from defaults. The two are not interchangeable.
-    expect(walk.entries).toEqual([
-      { blockId: "empty", params: {} },
-      { blockId: "absent", params: undefined },
-    ]);
   });
 });
 

@@ -66,9 +66,9 @@ const FIXTURES: readonly Fixture[] = [
   },
   {
     file: "minimal.yaml",
-    pins: "the schema marker comes first, and a block with no templateParams gets no params key",
+    pins: "the schema marker comes first, and a block with nothing to project renders `params: {}`",
     structure: structureOf("11111111-1111-4111-8111-111111111111"),
-    params: { "11111111-1111-4111-8111-111111111111": ok(undefined) },
+    params: { "11111111-1111-4111-8111-111111111111": ok({}) },
     kinds: { "11111111-1111-4111-8111-111111111111": kind("pool-explorer", "1.0.0") },
   },
   {

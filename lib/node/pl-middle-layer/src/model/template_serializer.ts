@@ -167,11 +167,10 @@ export function assembleProjectTemplateV1(
       id: entry.blockId,
       kind: selector,
       ...(location !== undefined ? { location } : {}),
-      // Omitted, not set to undefined: an absent `params` means "re-initialize
-      // from the kind's defaults", and `{}` means "use these empty params". The
-      // YAML renderer would write an explicit `params: null` for undefined,
-      // collapsing the distinction.
-      ...(entry.params !== undefined ? { params: entry.params } : {}),
+      // Always written, including as `{}`. Every block projects its params — the model
+      // does not build otherwise — so there is no export that legitimately has none, and
+      // an omitted key would only read back as the same `{}` anyway.
+      params: entry.params,
     });
   }
 

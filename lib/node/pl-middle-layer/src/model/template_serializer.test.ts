@@ -93,18 +93,15 @@ describe("the document", () => {
     expect(result.ok && "block" in result.document.blocks[0]).toBe(false);
   });
 
-  test("a block declaring no templateParams gets no `params` key at all", () => {
-    // Not `params: null`: absent means "re-initialize from the kind's defaults",
-    // which is a different instruction from "use these empty params".
-    const result = exportOf(simpleStructure("bare", "empty"), {
-      bare: ok(undefined),
-      empty: ok({}),
-    });
+  test("empty params are written as `params: {}`, never as `params: null`", () => {
+    // Every entry carries a `params` key, because every block projects one. `null` would
+    // be a third thing the schema does not define, and a reader would have to guess.
+    const result = exportOf(simpleStructure("empty"), { empty: ok({}) });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect("params" in result.document.blocks[0]).toBe(false);
-    expect(result.document.blocks[1].params).toEqual({});
+    expect(result.document.blocks[0].params).toEqual({});
+    expect(result.yaml).toContain("params: {}");
     expect(result.yaml).not.toContain("params: null");
   });
 

@@ -109,18 +109,11 @@ export function walkProjectForTemplateExport(
 
     const params = derived.value;
 
-    // A block that declares no `templateParams` yields `undefined` — legal, and
-    // the whole point of the method being optional.
-    if (params === undefined) {
-      entries.push({ blockId: id, params: undefined });
-      continue;
-    }
-
-    // An entry's `params` must be a mapping. The lambda's declared return type is
-    // the block kind's params type, but a kind carries that as a TypeScript type
-    // only — there is no runtime schema anywhere to check it against — so a block
-    // whose params type is a primitive or a tuple compiles fine and would produce
-    // an unwritable entry. This is the only place that can catch it.
+    // An entry's `params` must be a mapping. The lambda's declared return type is the
+    // block kind's params type, and the kind's parser checks values coming IN, but
+    // nothing checks what the lambda hands back on the way out — so a block whose
+    // params type is a primitive or a tuple compiles fine and would produce an
+    // unwritable entry. This is the only place that can catch it.
     if (typeof params !== "object" || params === null || Array.isArray(params)) {
       problems.push({
         blockId: id,
