@@ -18,6 +18,10 @@ What this means for you, the consumer:
 
 The rest of this document is the mechanical migration. Each change is an instance of one of the rules above.
 
+For code with no old shape to migrate from, the API surface itself is documented in
+[`docs/column-access-api.md`](../docs/column-access-api.md) — every export, its cost, and
+which consumers accept ids.
+
 ---
 
 ## Column access — `ColumnCollectionBuilder` → `ColumnsCollection`
