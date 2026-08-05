@@ -441,19 +441,17 @@ export class MiddleLayer {
 
         const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp);
 
-        const params = paramsByEntry.get(entry.entryId);
-        if (params !== undefined) {
-          // Offered to the block's kind while nothing has been created yet. A kind that
-          // declares no runtime check accepts everything, which is not a failure — most
-          // kinds do not describe their params yet.
-          const checked = this.env.projectHelper.validateTemplateParamsInVM(
-            blockCfg,
-            liveParamsForCheck(params),
-          );
-          if (checked.error !== undefined) {
-            problems.push({ entryId: entry.entryId, error: checked.error.message });
-            continue;
-          }
+        // Offered to the block's kind while nothing has been created yet. Every entry is
+        // checked, including one whose file omitted `params` — that reads as `{}`, which a
+        // kind with required fields rejects, and rightly: it would otherwise apply as a
+        // block that looks configured and is not.
+        const checked = this.env.projectHelper.validateTemplateParamsInVM(
+          blockCfg,
+          liveParamsForCheck(paramsByEntry.get(entry.entryId) ?? {}),
+        );
+        if (checked.error !== undefined) {
+          problems.push({ entryId: entry.entryId, error: checked.error.message });
+          continue;
         }
 
         // The block package's own title, the same thing the add-block UI writes. It is

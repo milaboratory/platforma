@@ -48,12 +48,6 @@ function configWith(
   } as unknown as BlockConfig;
 }
 
-/** The value a check returned. Fails the test if it errored instead. */
-function valueFrom<T>(result: ResultOrError<T>): T {
-  if (result.error !== undefined) throw new Error(`expected a value, got: ${result.error.message}`);
-  return result.value;
-}
-
 /** The storage the callback produced, parsed. Fails the test if it errored instead. */
 function storageFrom(result: ResultOrError<string>): unknown {
   if (result.error !== undefined) throw new Error(`expected storage, got: ${result.error.message}`);
@@ -181,12 +175,14 @@ describe("validateTemplateParamsInVM", () => {
     } as unknown as BlockConfig;
   };
 
-  test("a kind that checks its params reports that it did", () => {
-    const result = helper.validateTemplateParamsInVM(validatorConfig("() => ({ checked: true })"), {
+  test("params the kind accepts come back with no error and nothing else", () => {
+    // Every kind declares a parser, so a pass needs no flag saying whether anything ran:
+    // reaching here without an error means the params were held to the contract.
+    const result = helper.validateTemplateParamsInVM(validatorConfig("() => ({})"), {
       numbers: [1, 2],
     });
 
-    expect(valueFrom(result)).toEqual({ checked: true });
+    expect(result.error).toBeUndefined();
   });
 
   test("params the kind rejects come back with the kind's reason", () => {
@@ -200,26 +196,15 @@ describe("validateTemplateParamsInVM", () => {
     expect(result.error?.message).toBe("numbers: Expected array, received string");
   });
 
-  test("a kind with no runtime check is not a failure", () => {
-    // Most kinds start out this way. `checked: false` is how a caller can tell that
-    // nothing verified these params, without treating it as a problem.
-    const result = helper.validateTemplateParamsInVM(
-      validatorConfig("() => ({ checked: false })"),
-      { numbers: [1] },
-    );
-
-    expect(valueFrom(result)).toEqual({ checked: false });
-  });
-
-  test("a block whose model predates the callback is treated as unchecked", () => {
+  test("a block whose model predates the callback passes unchecked", () => {
     // Unlike initialization, this creates nothing, so there is nothing to get wrong by
-    // proceeding — and the entry still fails clearly at the point it is applied.
+    // proceeding — and such a block is refused outright at the point it is applied.
     const result = helper.validateTemplateParamsInVM(
-      validatorConfig("() => ({ checked: true })", { declareCallback: false }),
+      validatorConfig("() => ({})", { declareCallback: false }),
       { numbers: [1] },
     );
 
-    expect(valueFrom(result)).toEqual({ checked: false });
+    expect(result.error).toBeUndefined();
   });
 
   test("params reach the check as text, references included", () => {

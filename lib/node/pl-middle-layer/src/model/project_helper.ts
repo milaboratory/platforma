@@ -52,7 +52,7 @@ type ParamsStorageResult =
  * Result of checking params against their kind.
  * Returned by the __pl_templateParams_validate VM callback.
  */
-type TemplateParamsValidateResult = { error: string } | { error?: undefined; checked: boolean };
+type TemplateParamsValidateResult = { error: string } | { error?: undefined };
 
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<
@@ -295,24 +295,22 @@ export class ProjectHelper {
    * initialization runs the same check — but then the report arrives after earlier
    * entries have already been created.
    *
-   * `checked: false` says the kind declares no runtime check, so nothing verified these
-   * params beyond their being JSON. Not a failure: a kind is not obliged to describe
-   * its params at runtime, and most do not yet.
+   * Every kind declares a parser, so a pass here means the params were checked against
+   * the contract — not merely that they were JSON.
    *
-   * A block whose model predates the callback is treated the same way — nothing checked
-   * it — rather than as an error. Unlike initialization, this method creates nothing, so
-   * there is nothing to get wrong by proceeding, and the entry still gets a clear
-   * failure at the point it is applied.
+   * A block whose model predates the callback passes unchecked rather than failing.
+   * Unlike initialization, this method creates nothing, so there is nothing to get wrong
+   * by proceeding, and such a block is refused outright at the point it is applied.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param params The entry's params. Reference ids may be placeholders: what is being
    *   checked is the shape of the params, not what they point at
-   * @returns Whether anything checked the params, or why they were rejected
+   * @returns Nothing, or why the params were rejected
    */
   public validateTemplateParamsInVM(
     blockConfig: BlockConfig,
     params: unknown,
-  ): ResultOrError<{ checked: boolean }> {
+  ): ResultOrError<undefined> {
     if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       return {
         error: new Error("validateTemplateParamsInVM is only supported for model API version 2"),
@@ -321,7 +319,7 @@ export class ProjectHelper {
 
     const callback =
       blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsValidate];
-    if (callback === undefined) return { value: { checked: false } };
+    if (callback === undefined) return { value: undefined };
 
     try {
       const result = executeSingleLambda(
@@ -332,7 +330,7 @@ export class ProjectHelper {
       ) as TemplateParamsValidateResult;
 
       if (result.error !== undefined) return { error: new Error(result.error) };
-      return { value: { checked: result.checked } };
+      return { value: undefined };
     } catch (e) {
       const cause = ensureError(e);
       return { error: new Error(`Params check failed to run: ${cause.message}`, { cause }) };

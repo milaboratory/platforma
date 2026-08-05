@@ -142,10 +142,10 @@ describe("createTemplateApplyApi", () => {
     expect(storageOf(placements[0])).toEqual({ numbers: [3, 1, 2] });
   });
 
-  test("an entry with no params leaves the block's own default alone", () => {
-    // No `initialStorage` at all, not an empty one: the mutator's default path asks the
-    // model what it starts as, and `{}` handed to the params initializer is a different
-    // thing entirely.
+  test("an entry with no params goes through the params path as `{}`", () => {
+    // Not routed around it. The two produce the same block anyway — both reach the same
+    // init factory — but only this way is the entry checked against its kind, so an
+    // omitted key cannot be a way to apply params the contract would have rejected.
     const { placer, placements } = recordingPlacer();
     const api = apiOver(entryMap({ a: preparedBlock(echoModel) }), placer);
 
@@ -154,7 +154,9 @@ describe("createTemplateApplyApi", () => {
     expect(placements[0].spec).toEqual({
       storageMode: "fromModel",
       blockPack: expect.anything(),
+      initialStorage: expect.anything(),
     });
+    expect(storageOf(placements[0])).toEqual({});
   });
 
   test("references are resolved to the blocks already placed", () => {

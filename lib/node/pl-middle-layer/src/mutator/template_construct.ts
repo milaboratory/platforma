@@ -97,26 +97,24 @@ export function createTemplateApplyApi(deps: {
 
       const blockId = ids.assign(request.id);
 
-      let initialStorage: string | undefined;
-      if (request.params !== undefined) {
-        const live = ids.liveParams(request.params);
-        if (!live.ok) return { ok: false, error: live.error };
+      // An entry that omits `params` is read as `{}`, not routed around the params path.
+      // The two produce the same block — both reach the same init factory and both
+      // assemble storage the same way — but only this one is checked against the kind, so
+      // an omitted key can no longer be a way to apply an entry the contract rejects.
+      const live = ids.liveParams(request.params ?? {});
+      if (!live.ok) return { ok: false, error: live.error };
 
-        // The block's own model decides what params mean. Run before anything is
-        // placed, so params it declines cost nothing but the report.
-        const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, live.params);
-        if (storage.error !== undefined) return { ok: false, error: storage.error.message };
-        initialStorage = storage.value;
-      }
+      // The block's own model decides what params mean. Run before anything is
+      // placed, so params it declines cost nothing but the report.
+      const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, live.params);
+      if (storage.error !== undefined) return { ok: false, error: storage.error.message };
 
-      // No params at all means "whatever this block starts as", which is the mutator's
-      // own default path — not `{}` handed to the params initializer.
       placer.addBlock(
         { id: blockId, label: prepared.label, renderingMode: blockConfig.renderingMode },
         {
           storageMode: "fromModel",
           blockPack: prepared.blockPack,
-          ...(initialStorage !== undefined ? { initialStorage } : {}),
+          initialStorage: storage.value,
         },
       );
 
