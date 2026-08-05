@@ -1,0 +1,5 @@
+coverage/
+
+# jco output. scripts/transpile.ts makes these files from
+# @milaboratories/pframes-rs-wasip2.
+src/generated/

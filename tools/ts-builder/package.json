@@ -32,7 +32,7 @@
     "oxlint-plugin-eslint": "1.63.0",
     "rolldown": "^1.1.2",
     "rolldown-plugin-dts": "^0.26.0",
-    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-copy": "catalog:",
     "rollup-plugin-sourcemaps2": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

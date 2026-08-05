@@ -5,17 +5,16 @@ import {
   stringifyJson,
   canonicalizeJson,
 } from "@milaboratories/pl-model-common";
-import { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { MiLogger, RefCountPoolBase } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
-import { createPFrame } from "@milaboratories/pframes-rs-wasm";
+import { createPFrame, type PFrame } from "@milaboratories/pf-spec";
 import { blake3 } from "@noble/hashes/blake3.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 
 export class PFramePool extends RefCountPoolBase<
   Record<string, PColumnSpec>,
   SpecFrameHandle,
-  PFrameInternal.PFrameWasmV3
+  PFrame
 > {
   constructor(private readonly logger: MiLogger) {
     super();
@@ -27,17 +26,14 @@ export class PFramePool extends RefCountPoolBase<
     ) as SpecFrameHandle;
   }
 
-  protected createNewResource(
-    params: Record<string, PColumnSpec>,
-    key: SpecFrameHandle,
-  ): PFrameInternal.PFrameWasmV3 {
+  protected createNewResource(params: Record<string, PColumnSpec>, key: SpecFrameHandle): PFrame {
     if (logPFrames()) {
       this.logger.info(`Creating SpecFrame for handle = ${key}, columns: ` + stringifyJson(params));
     }
     return createPFrame(params);
   }
 
-  public getByKey(key: SpecFrameHandle): PFrameInternal.PFrameWasmV3 {
+  public getByKey(key: SpecFrameHandle): PFrame {
     const resource = super.tryGetByKey(key);
     if (!resource) {
       const error = new PFrameDriverError(`Invalid SpecFrame handle`);
