@@ -61,6 +61,10 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
     },
     dependencies: {
       "@platforma-sdk/block-kind": "sdk:",
+      // A kind ships a runtime params check, so it is not a types-only package. zod is
+      // the default the scaffolded parser is written against; an author who validates by
+      // hand can drop this, which is why it is seeded rather than asserted on refresh.
+      zod: "catalog:",
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
