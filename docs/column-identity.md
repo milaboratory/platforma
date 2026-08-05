@@ -5,6 +5,10 @@ and the host (`pl-middle-layer`). Two distinct identities are involved in a
 table-rendering pipeline; mixing them up causes engine-level "column not
 found" errors and silent variant deduplication.
 
+For the consumer-facing surface built on these ids — `ColumnsCollection`,
+the recipe factories, the predicates — see
+[`column-access-api.md`](./column-access-api.md).
+
 ## The two identities
 
 ### Physical identity — `PObjectId`
@@ -127,7 +131,7 @@ the leaves is what makes that lookup succeed.
   `lib/model/common/src/drivers/pframe/query/query_spec.ts`,
   `lib/model/common/src/drivers/pframe/table_common.ts`.
 - Recipe implementations:
-  `sdk/model/src/columns/column_lazy.ts`,
+  `sdk/model/src/columns/data_column.ts`,
   `sdk/model/src/columns/column_recipes/column_overrided_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_filtered_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_discovered_recipe.ts`,
