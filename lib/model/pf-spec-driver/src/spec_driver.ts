@@ -5,7 +5,7 @@ import {
   findAxis,
   findTableColumn,
   rewriteLegacyFilters,
-} from "@milaboratories/pframes-rs-wasm";
+} from "@milaboratories/pf-spec";
 import type {
   AxesId,
   AxesSpec,

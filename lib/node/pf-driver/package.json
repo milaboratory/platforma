@@ -15,13 +15,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
+    "build": "ts-builder build --target node --build-config build.config.js",
+    "watch": "ts-builder build --target node --build-config build.config.js --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
@@ -32,8 +31,8 @@
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/pf-spec": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
-    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
