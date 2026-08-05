@@ -13,6 +13,9 @@ type Params = { sources?: PlRef[]; label: string };
 const kind = defineBlockKind<Params>({
   name: "@platforma-open/milaboratories.demo.kind",
   version: "1.0.0",
+  // These tests are about the export direction, so the parser only carries the shape
+  // through; rejection behaviour lives in `template_init.test.ts`.
+  parseTemplateParams: (value) => value as Params,
 });
 
 type BlockData = { sources: PlRef[]; label: string; scratch: number };
@@ -45,15 +48,10 @@ describe("deriveTemplateParamsFromStorage", () => {
     });
   });
 
-  test("a block that declares no lambda yields no params", () => {
-    // The entry then gets no `params` at all, and the block re-initializes from
-    // its kind's defaults.
-    expect(
-      deriveTemplateParamsFromStorage(storageOf({ sources: [], label: "", scratch: 0 })),
-    ).toEqual({ value: undefined });
-  });
-
-  test("empty params are NOT the same as no params", () => {
+  test("a block with nothing to project yields empty params, not absent ones", () => {
+    // Every block declares the lambda, so there is no "no params" outcome to test for.
+    // A block whose state carries nothing worth restoring returns `{}`, and `{}` is what
+    // gets written — the entry is still checked against the kind on the way back in.
     expect(
       deriveTemplateParamsFromStorage(
         storageOf({ sources: [], label: "", scratch: 0 }),
@@ -102,10 +100,10 @@ describe("BlockModelV3.templateParams", () => {
     // No `@ts-expect-error` here, and that is the point: TypeScript does not
     // apply excess-property checks to an object literal returned from a
     // contextually-typed arrow, so `scratch` type-checks and would be written
-    // into the exported file. Nothing catches it at runtime either — a kind
-    // carries params as a TYPE only, so there is no schema to strip against.
-    // Whether to accept this, give a kind a runtime schema, or strip against a key
-    // list is undecided; this test pins the current behavior.
+    // into the exported file. The kind's parser does not catch it either — that runs
+    // on params coming IN, and nothing runs on what the projection hands back. The
+    // asymmetry is real: such a file is written happily and rejected on re-import by
+    // the same kind that would have caught it here. This test pins current behaviour.
     builder.templateParams((data) => ({
       label: data.label,
       sources: data.sources,
@@ -113,12 +111,23 @@ describe("BlockModelV3.templateParams", () => {
     }));
   });
 
-  test("the method is chainable and optional", () => {
-    // Both shapes build; `.templateParams` is not required to reach `.done()`.
+  test("a model that declares it builds", () => {
     expect(() =>
       BlockModelV3.create({ dataModel, kind })
         .args((data) => ({ label: data.label }))
-        .templateParams((data) => ({ sources: data.sources, label: data.label })),
+        .templateParams((data) => ({ sources: data.sources, label: data.label }))
+        .done(),
     ).not.toThrow();
+  });
+
+  test("a model that omits it does not build", () => {
+    // The projection is not optional. Without this gate a block exports an entry with
+    // no params, which applies as a default-initialized block that looks restored — so
+    // the failure has to land on whoever wrote the model, at build.
+    expect(() =>
+      BlockModelV3.create({ dataModel, kind })
+        .args((data) => ({ label: data.label }))
+        .done(),
+    ).toThrow(/templateParams\(\) not set/);
   });
 });

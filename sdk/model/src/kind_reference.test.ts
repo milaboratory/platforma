@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import type { BlockConfigContainer } from "@milaboratories/pl-model-common";
+import { describe, expect, expectTypeOf, test } from "vitest";
+import type { BlockConfigContainer, BlockKindReference } from "@milaboratories/pl-model-common";
 import {
   ProjectTemplateV1EntrySchema,
   kindReferenceToSelectorReference,
@@ -27,7 +27,11 @@ const KIND_NAME = "@platforma-open/milaboratories.demo.kind";
 const KIND_VERSION = "1.4.2";
 const KIND_REF = `${KIND_NAME}@${KIND_VERSION}`;
 
-const kind = defineBlockKind<Params>({ name: KIND_NAME, version: KIND_VERSION });
+const kind = defineBlockKind<Params>({
+  name: KIND_NAME,
+  version: KIND_VERSION,
+  parseTemplateParams: (value) => value as Params,
+});
 
 const dataModel = new DataModelBuilder({ kind })
   .from<BlockData>("v1")
@@ -48,6 +52,7 @@ const kindfulContainer = () =>
   containerOf(
     BlockModelV3.create({ dataModel, kind })
       .args((data) => ({ label: data.label }))
+      .templateParams((data) => ({ label: data.label }))
       .done(),
   );
 
@@ -67,24 +72,27 @@ describe("reading the kind reference back at runtime", () => {
     expect("kind" in extractConfig(kindfulContainer())).toBe(false);
   });
 
-  test("a kind-less block reads back as undefined rather than throwing", () => {
+  test("the authoring API can no longer produce a kind-less block", () => {
     const kindlessDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
       label: "",
     }));
 
-    const container = containerOf(
-      BlockModelV3.create(kindlessDataModel)
-        .args((data) => ({ label: data.label }))
-        .done(),
-    );
+    // The kind-less `create(dataModel)` overload is gone: a kind is mandatory, so there
+    // is no longer a way to author a block whose container carries no kind reference.
+    // @ts-expect-error - create takes { dataModel, kind }; a bare DataModel is not it
+    expect(() => BlockModelV3.create(kindlessDataModel)).toThrow();
+  });
 
-    // The deprecated kind-less overload is still legal, and every block
-    // published before kinds existed is in this state — so this is the common
-    // case today, not an edge one. What the exporter should DO with such a block
-    // is undecided: a template entry's `kind` is required, so there is no legal
-    // entry to write. Failing the export and naming every kind-less block is the
-    // proposed answer; nothing implements a choice yet.
-    expect(container.kind).toBeUndefined();
+  test("the READ side stays optional — already-published blocks carry no kind", () => {
+    // `BlockConfigContainer.kind` is `BlockKindReference | undefined` and must stay that
+    // way: every block published before kinds existed is in that state, and the middle
+    // layer reads those configs. What the exporter should DO with such a block is
+    // decided — a template entry's `kind` is required, so there is no legal entry to
+    // write and the export fails naming the block (`template_serializer.ts`).
+    const container = kindfulContainer();
+
+    expect(container.kind).toBe(KIND_REF);
+    expectTypeOf(container.kind).toEqualTypeOf<BlockKindReference | undefined>();
   });
 });
 

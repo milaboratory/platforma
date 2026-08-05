@@ -131,12 +131,12 @@ interface BlockModelV3Config<
   /** Projects block data back to this kind's params for template export. */
   deriveTemplateParams: ((data: Data) => Params) | undefined;
   /**
-   * The kind's runtime check for params supplied by a template, if it declares one.
-   * Read off the compiled kind rather than declared per block: the params contract
-   * belongs to the kind, and two blocks implementing it must not be able to disagree
-   * about what a valid params object is.
+   * The kind's runtime check for params supplied by a template. Read off the compiled
+   * kind rather than declared per block: the params contract belongs to the kind, and
+   * two blocks implementing it must not be able to disagree about what a valid params
+   * object is. Always present — a kind cannot omit it, and a block cannot omit a kind.
    */
-  parseTemplateParams: ((value: unknown) => unknown) | undefined;
+  parseTemplateParams: (value: unknown) => unknown;
   plugins: Plugins;
 }
 
@@ -196,39 +196,17 @@ export class BlockModelV3<
   >(args: {
     dataModel: DataModel<Data, Params, Transfers>;
     kind: BlockKind<Params>;
-  }): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params>;
-  /**
-   * @deprecated Transition-window overload for kind-less blocks. Prefer
-   * `create({ dataModel, kind })`; this form will be removed once every V3
-   * block declares its kind (see Q-0005).
-   */
-  public static create<
-    Data extends Record<string, unknown>,
-    Transfers extends Record<string, unknown> = {},
-  >(
-    dataModel: DataModel<Data, unknown, Transfers>,
-  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, unknown>;
-  public static create<
-    Data extends Record<string, unknown>,
-    Params = never,
-    Transfers extends Record<string, unknown> = {},
-  >(
-    arg:
-      | { dataModel: DataModel<Data, Params, Transfers>; kind: BlockKind<Params> }
-      | DataModel<Data, unknown, Transfers>,
-  ): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params> {
-    // Discriminate the two overloads: the object form has a `dataModel`
-    // property; a DataModel instance does not.
-    const isObjectArg = "dataModel" in arg;
-    const dataModel = (isObjectArg ? arg.dataModel : arg) as DataModel<Data, unknown, Transfers>;
-    const kind = isObjectArg ? arg.kind : undefined;
+  }): BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params> {
+    const { dataModel, kind } = args;
     // Derive the on-wire reference from the compiled kind; the kind object has
     // no reference field of its own.
-    const kindRef = kind ? formatKindRef(kind) : undefined;
+    const kindRef = formatKindRef(kind);
 
     // Runtime guard: the kind handed to the builder must match the kind handed
-    // to create() (they are two separately-passed objects — see doc §3).
-    if (kindRef && dataModel.kindRef && dataModel.kindRef !== kindRef) {
+    // to create() (they are two separately-passed objects — see doc §3). The
+    // builder's own reference is still optional, because a PLUGIN data model is
+    // built without a kind and has none to compare.
+    if (dataModel.kindRef && dataModel.kindRef !== kindRef) {
       throw new Error(
         `Block kind mismatch: data model built for '${dataModel.kindRef}' but create() got '${kindRef}'`,
       );
@@ -237,12 +215,10 @@ export class BlockModelV3<
     return new BlockModelV3<NoOb, {}, Data, "/", {}, Transfers, Params>({
       renderingMode: "Heavy",
       dataModel,
-      // The container-level kind reference: the one create() was given, or the
-      // one the data model was built with (they are cross-checked above).
-      kind: kindRef ?? dataModel.kindRef,
-      // Same two sources, same precedence, for the same reason: either call may be
-      // the one that carries the kind.
-      parseTemplateParams: kind?.parseTemplateParams ?? dataModel.templateParamsParser,
+      kind: kindRef,
+      // Read off the kind, which cannot omit it — not off the data model. The two
+      // are cross-checked above, so there is one source, not a precedence order.
+      parseTemplateParams: kind.parseTemplateParams,
       outputs: {},
       sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
@@ -416,9 +392,9 @@ export class BlockModelV3<
    * template-local form on the way out, so a block never deals with the file
    * representation.
    *
-   * Optional. A block without it exports as an entry with no `params`, so
-   * applying the template re-initializes it from the kind's defaults. Note that
-   * returning `{}` is NOT the same: empty params are written out and used as-is.
+   * Required: `done()` throws without it. A block whose state cannot be reduced to
+   * params returns `{}` and says so explicitly, rather than exporting an entry with
+   * no params that silently applies as a default-initialized block.
    *
    * The return type is the kind's `Params`, so a block whose projection drifts
    * from its own init contract fails to compile. Available only on a
@@ -653,6 +629,12 @@ export class BlockModelV3<
     >
   > {
     if (this.config.deriveArgs === undefined) throw new Error("Args rendering function not set.");
+    if (this.config.deriveTemplateParams === undefined)
+      throw new Error(
+        "templateParams() not set. Every block must project its state back to its kind's params, " +
+          "so a project can be exported as a template and re-applied; a block whose state carries " +
+          "nothing worth restoring returns {}.",
+      );
 
     const apiVersion = 3;
 
@@ -841,7 +823,7 @@ type _ConfigTest = Expect<
       deriveArgs: ((data: unknown) => unknown) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
       deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
-      parseTemplateParams: ((value: unknown) => unknown) | undefined;
+      parseTemplateParams: (value: unknown) => unknown;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;
       outputs: _TestOutputs;
