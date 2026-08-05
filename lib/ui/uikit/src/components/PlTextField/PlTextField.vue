@@ -20,6 +20,7 @@ import { computed, ref, useSlots } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
 import DoubleContour from "../../utils/DoubleContour.vue";
+import type { BooleanProp, BooleanPropUnless } from "../../utils/booleanProps";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
@@ -42,7 +43,7 @@ const props = defineProps<{
   /** The label to display above the input field. */
   label?: string;
   /** If `true`, the input field is marked as required and will show an error if left empty. */
-  required?: R;
+  required?: BooleanProp<R>;
   /** An error message to display below the input field. */
   error?: unknown;
   /** A helper text to display below the input field when there are no errors. */
@@ -59,7 +60,7 @@ const props = defineProps<{
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
    * If a function, calls it to get the reset value.
    */
-  clearable?: ([R] extends [true] ? never : boolean) | (() => C);
+  clearable?: BooleanPropUnless<R> | (() => C);
   /** Additional validity check for input value that must return an error text if failed */
   validate?: (v: V) => string | undefined;
   /** Makes some of corners not rounded */
