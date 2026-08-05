@@ -10,11 +10,14 @@
  * S3 `{org, name}` path is always DERIVED from this npm name via the single
  * `npmNameToKindPath` helper — there is no separate `organization` field.
  *
- * `BlockParams` is carried as a TYPE ONLY, via a contravariant phantom slot
- * (a function-parameter position). Under `strictFunctionTypes` this blocks
- * silent structural widening between kinds of different param shapes: a kind
- * typed for `{ ref: PlRef; k: number }` is not assignable to one typed for
- * `{ ref: PlRef }`. The slot carries zero runtime bytes.
+ * A descriptor is not a types-only object: it carries `parseTemplateParams`, the
+ * required runtime check of its params, so a kind package ships executable code.
+ *
+ * `BlockParams` is additionally pinned by a contravariant phantom slot (a
+ * function-parameter position). Under `strictFunctionTypes` this blocks silent
+ * structural widening between kinds of different param shapes: a kind typed for
+ * `{ ref: PlRef; k: number }` is not assignable to one typed for `{ ref: PlRef }`.
+ * The slot carries zero runtime bytes.
  */
 export interface CompiledBlockKindV1<BlockParams> {
   readonly kindSchema: "v1";
@@ -24,20 +27,19 @@ export interface CompiledBlockKindV1<BlockParams> {
    * Runtime check of params that did not come from a typed caller — in practice,
    * params read out of a template file someone wrote by hand.
    *
-   * Optional, and everything works without it: a kind that declares no parser gets
-   * params passed through as they were written, which is the only behaviour that
-   * existed before this slot. What it buys is the difference between a bad value
-   * being caught at the entry that carries it and being caught much later, or never
-   * — params typed `number[]` arriving as `["3","1","2"]` reach the block's init and
-   * the workflow with no error anywhere, and a numeric sort silently becomes a
-   * lexicographic one.
+   * REQUIRED. Without it a bad value is not caught at the entry that carries it but
+   * much later, or never — params typed `number[]` arriving as `["3","1","2"]` reach
+   * the block's init and the workflow with no error anywhere, and a numeric sort
+   * silently becomes a lexicographic one. A kind whose params are genuinely empty
+   * still declares a parser; it just rejects everything but `{}`.
    *
    * Must THROW to reject, and must RETURN the params to use. Returning rather than
    * validating in place is what lets a parser strip keys the kind does not declare
    * and coerce what it chooses to coerce — its output is what the block receives.
    *
-   * The signature is a plain function so this package stays dependency-free and a
-   * kind author picks their own tool. With zod:
+   * The signature is a plain function, so this package needs no validation library of
+   * its own and a kind author picks their own tool — a hand-written check satisfies it.
+   * zod is what the workspace kinds use, and what the scaffold generates:
    *
    * ```ts
    * const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
@@ -55,7 +57,7 @@ export interface CompiledBlockKindV1<BlockParams> {
    * check that happens before any block exists, the reference ids are placeholders,
    * so a parser must not treat a specific id as meaningful.
    */
-  readonly parseTemplateParams?: (value: unknown) => BlockParams;
+  readonly parseTemplateParams: (value: unknown) => BlockParams;
   readonly __PHANTOM_BLOCK_PARAMS__?: (p: BlockParams) => void;
 }
 
