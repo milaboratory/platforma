@@ -58,28 +58,33 @@ export function parseSelector(raw: string): Selector {
 }
 
 /**
- * Map a {@link Selector} to a semver range string.
+ * Map a {@link Selector} to a semver range string:
+ *   - `exact` — `=X.Y.Z`
+ *   - `patch` — `>=X.Y.Z <X.(Y+1).0-0`, behavior frozen, params float
+ *   - `minor` — `>=X.Y.Z <(X+1).0.0-0`, behavior floats, never crosses a params-break
  *
- * The kind spec redefines the *meaning* of major/minor/patch, not the range
- * arithmetic (implementation-path §6): `@`→`=` (exact), `~`→`~` (patch floor),
- * `^`→`^` (minor floor) are all valid semver ranges consumed by
- * `semver.maxSatisfying` unchanged.
+ * The kind scheme redefines the *meaning* of major/minor/patch, not the range
+ * arithmetic — so the arithmetic is written out here rather than delegated to
+ * npm's `~`/`^` operators, which are not major-agnostic. Below 1.0.0 npm expands
+ * both `^0.2.3` and `~0.2.3` to `>=0.2.3 <0.3.0-0`, treating a `0.x` minor as the
+ * breaking boundary per ecosystem convention. Under the kind scheme a
+ * params-break is a MAJOR bump at every major including zero, and nothing
+ * guarantees a kind starts at `1.0.0`, so borrowing `^` would silently collapse
+ * `patch` and `minor` into one tier for any `0.x` kind — erasing the distinction
+ * the whole scheme rests on.
  *
- * KNOWN PRE-1.0 QUIRK: `semver` treats both `^0.2.3` and `~0.2.3` as
- * `>=0.2.3 <0.3.0`, so for `0.x` kinds `^`/`~` collapse to the same range. If
- * the spec's "minor floats" tier must span `0.2 → 0.3` for pre-1.0 kinds, this
- * function needs an explicit `0.x` range — see risks in §6. Left as stock semver
- * pending confirmation that kinds are guaranteed `>=1.0.0`.
+ * For `X >= 1` these forms are equivalent to `~`/`^`, down to npm's `-0`
+ * upper-bound suffix that keeps prereleases of the boundary out of range.
+ *
+ * @throws if `sel.version` is not a valid semver version. {@link parseSelector}
+ *   does not validate it; the model-side `parseKindSelector` does.
  */
 export function selectorToRange(sel: Selector): string {
-  switch (sel.op) {
-    case "exact":
-      return `=${sel.version}`;
-    case "patch":
-      return `~${sel.version}`;
-    case "minor":
-      return `^${sel.version}`;
-  }
+  if (sel.op === "exact") return `=${sel.version}`;
+  const major = semver.major(sel.version);
+  const minor = semver.minor(sel.version);
+  const upperBound = sel.op === "patch" ? `${major}.${minor + 1}.0` : `${major + 1}.0.0`;
+  return `>=${sel.version} <${upperBound}-0`;
 }
 
 /**
