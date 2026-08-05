@@ -199,11 +199,14 @@ compatible way to extend it (`block_storage_facade.ts:25-32`).
 
 Consequences worth knowing:
 
-- **The params-less path is untouched.** An entry with no `params` goes through the existing
-  `StorageInitial`, so such an entry applies even to a block whose model predates the new
-  callback. Not to one predating the storage facade itself, though — construction refuses
-  those outright, for a reason that has nothing to do with params; see "Four Stages, and
-  Where the Project Appears".
+- **There is no params-less path any more** (2026-08-04 — `A-0056`). An entry that omits
+  `params` is read as `{}` and goes through the params callback like any other, rather than
+  being routed to `StorageInitial`. The block produced is identical either way — both reach
+  the same init factory — but only this way is the entry checked against its kind, so an
+  omitted key can no longer apply params the contract would have rejected. `StorageInitial`
+  remains the UI-creation path, where there genuinely are none. A block predating the storage
+  facade is still refused outright, for a reason that has nothing to do with params; see
+  "Four Stages, and Where the Project Appears".
 - **Params cross as text, references already resolved.** `undefined` is normalized to `{}` at
   the boundary, because `JSON.stringify(undefined)` is not a string and the callback would be
   handed nothing.
@@ -288,14 +291,22 @@ other and not only against files.
 
 ## Params Against Their Kind — `Q-0009` Resolved
 
-**A kind may ship a runtime check for its params** (operator decision, 2026-08-03, chosen
-to spend build-time effort instead of debugging time later). `defineBlockKind` gains an
-optional `parseTemplateParams: (value: unknown) => BlockParams`; the SDK applies it wherever
-params arrive untyped, and the middle layer can ask for it alone as a pre-flight.
+**A kind ships a runtime check for its params** (operator decision, 2026-08-03, chosen to
+spend build-time effort instead of debugging time later; made **mandatory** 2026-08-04 —
+`A-0057`). `defineBlockKind` requires `parseTemplateParams: (value: unknown) => BlockParams`;
+the SDK applies it wherever params arrive untyped, and the middle layer asks for it alone as
+a pre-flight.
 
-This narrows track 1's "`BlockParams` is a pure TS type" decision rather than reversing it:
-the type stays the contract, `parseTemplateParams` is optional, and a kind that omits it
-behaves exactly as before.
+This **reverses** track 1's "`BlockParams` is a pure TS type" decision rather than narrowing
+it. A kind is no longer a types-only artifact: every kind ships executable code, depends on
+whatever validates its params, and enters the model bundle. The validator is the author's
+choice — the field is a plain function and a hand-written check satisfies it — with zod as
+the default the workspace kinds and the scaffold use.
+
+There is no unchecked pass left, so the `checked` flag that used to distinguish one is gone
+from `TemplateParamsValidationResult`, the facade callback, and `validateTemplateParamsInVM`.
+The only remaining unchecked path is a block whose model predates the callback, and such a
+block is refused outright at placement.
 
 ### Why it was worth doing
 
@@ -512,9 +523,11 @@ ranges), and five golden `template-v1` files.
   the first. One report shape carries both (`TemplateApplyReport`). Presentation is still
   open, and is the desktop's.
 - ~~**`Q-0009`** — apply-time validation of untyped YAML params.~~ **Resolved** (operator
-  decision, 2026-08-03): a kind may declare `parseTemplateParams`, optional, applied wherever
-  params arrive untyped. See "Params Against Their Kind" — including the bundle-size cost,
-  which is the one part still open.
+  decision, 2026-08-03; parser made mandatory 2026-08-04 — `A-0057`): every kind declares
+  `parseTemplateParams`, applied wherever params arrive untyped. See "Params Against Their
+  Kind". The bundle-size cost is now paid by every kind rather than by opt-in ones; the
+  twice-built kind keeps it to the schema itself (~4 kB per model) instead of a second copy
+  of the validator inside the model bundle.
 - ~~References inside a `PObjectId` string are invisible to the structural rewrite —
   decide whether apply rejects them.~~ **Decided: apply rejects** (operator decision,
   2026-08-03). See "Stale Ids in Strings" and the guard in the validation stage.

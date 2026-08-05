@@ -36,7 +36,9 @@ read-back/address-verify and `implementations.json` model. Citations use **atom 
 
 **Kind artifact (decided)**
 
-- [x] `BlockParams` is a pure TS type, no zod — `descriptor.ts` (phantom `InferBlockParams`).
+- [x] `BlockParams` is pinned twice: as a TS type (phantom `InferBlockParams`) and by the kind's
+      **mandatory** `parseTemplateParams` — `descriptor.ts`. A kind therefore ships runtime code;
+      zod is the default the workspace kinds use, not part of the contract.
 - [x] Named export, no default — `defineBlockKind`.
 - [x] Reference `{name}@{version}` derived; registry address never stored.
 - [x] Per-version manifest = sourceHash + first-upload ts — `buildKindDist`. · RESOLVED `A-0052`/`Q-0005` (name+version imported from the kind's own `package.json`; rolldown inlines the JSON import)
@@ -121,9 +123,11 @@ block's publish flow, and resolved from the registry — entirely in the TypeScr
 
 ### Kind artifact (decided)
 
-- `BlockParams` is a **pure TypeScript type — no zod**; params conformance is a
-  compile-time check only. (Runtime validation of untyped YAML params at apply time is a
-  separate concern — `Q-0009`, track 3.)
+- `BlockParams` is carried **both as a TypeScript type and as a mandatory runtime parser**
+  (`parseTemplateParams`). Typed callers are checked by the compiler; untyped params from a
+  template file are checked by the kind's parser at apply time. The two divide by where the
+  params came from, not by strictness. (Resolves `Q-0009` — `A-0057`.) A validation library
+  is the kind author's choice; zod is what the workspace kinds and the scaffold use.
 - The kind descriptor is exposed via a **named export — no default export**.
 - The descriptor carries the **reference** (`{org}/{name}@version`); the registry
   address is **derived deterministically** from it and never stored (aligns with

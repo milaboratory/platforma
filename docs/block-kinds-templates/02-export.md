@@ -130,11 +130,19 @@ test files. The template test was verified by hand against a tsconfig that inclu
 
 ## Template-Descriptor Contract
 
-What a block exposes is one optional builder method, the mirror image of the data model's
+What a block exposes is one **required** builder method, the mirror image of the data model's
 `init`. **Named `templateParams`, not `templateEntry`** (operator decision, 2026-07-30): the
 lambda returns only params — the engine assembles the entry around them — so naming it after
-the entry oversells what a block controls. `A-0041` and `01-kind-and-lifecycle-\
-implementation-path.md` still say `templateEntry`; the atom needs a version bump to match.
+the entry oversells what a block controls. `A-0041 v2.0.0` carries both the name and the
+requirement; `01-kind-and-lifecycle-implementation-path.md` still says `templateEntry`.
+
+**Required, not optional** (operator decision, 2026-08-04 — `A-0056`): `done()` throws
+without it, at the same gate that rejects a model with no `.args`. An optional projection
+bought no expressiveness — an absent `params` and `params: {}` reach the same init factory
+and produce the same storage (`block_migrations.ts:721` vs `:739`) — while costing fidelity
+silently: a block with no projection exported an entry with no params, which applied as a
+default-initialized block that looked restored. A block whose state carries nothing worth
+restoring returns `{}`.
 
 ```typescript
 BlockModelV3.create({ dataModel, kind })
@@ -179,12 +187,15 @@ the method as worked examples.
 
 **Open — needs a decision**
 
-- **Extra fields are not rejected.** TypeScript applies no excess-property check to an
-  object literal returned from a contextually-typed arrow, so a lambda can return fields
-  the kind never declared and they land in the file. There is no runtime backstop either: a
-  kind carries `Params` as a type only (`A-0019`), so nothing exists to strip against.
-  Options: accept it, have the kind also carry a runtime schema, or strip against a
-  key list. Pinned by a test in `sdk/model/src/template_entry.test.ts`.
+- **Extra fields are not rejected on the way out.** TypeScript applies no excess-property
+  check to an object literal returned from a contextually-typed arrow, so a lambda can return
+  fields the kind never declared and they land in the file. The kind's parser is no backstop
+  here — it runs on params coming IN, and nothing runs on what the projection hands back. The
+  asymmetry is now the interesting part: such a file is written happily and then rejected on
+  re-import by the same kind that would have caught it, so the round trip fails at the far
+  end rather than at the source. Options: accept it, run the kind's parser over the
+  projection's output too, or strip against a key list. Pinned by a test in
+  `sdk/model/src/template_params.test.ts`.
 - **References inside a `PObjectId` are invisible to the rewrite.** `EnrichmentRef.hit` and
   `EnrichmentStep.linker` are canonicalized-JSON *strings* holding a block UUID, so a
   structural walk cannot see them and the UUID survives export to go stale on apply.
