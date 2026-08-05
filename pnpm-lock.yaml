@@ -3938,6 +3938,9 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers/block
+      '@milaboratories/pl-model-common':
+        specifier: workspace:*
+        version: link:../../lib/model/common
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:*
         version: link:../../lib/model/middle-layer
