@@ -23,7 +23,8 @@
     "check": "ts-builder check --target block-kind"
   },
   "dependencies": {
-    "@platforma-sdk/block-kind": "workspace:*"
+    "@platforma-sdk/block-kind": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",

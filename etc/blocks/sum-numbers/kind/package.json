@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:*",
-    "@platforma-sdk/block-kind": "workspace:*"
+    "@platforma-sdk/block-kind": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",

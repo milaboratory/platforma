@@ -1,4 +1,5 @@
 import { defineBlockKind } from "@platforma-sdk/block-kind";
+import { z } from "zod";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -16,4 +17,26 @@ export type BlockParams = {
   tagArgs?: string[];
 };
 
-export const kind = defineBlockKind<BlockParams>({ name, version });
+/**
+ * The same contract at runtime, for params that arrive from a template file rather
+ * than from typed code.
+ *
+ * `.strict()` matters most here, where five of the fields are near-synonyms: a file
+ * saying `titleArgs` or `tagArg` would otherwise be ignored key and all, the block would
+ * initialize blank, and nothing would say which of the five was misspelled.
+ */
+const Params = z
+  .object({
+    titleArg: z.string().optional(),
+    subtitleArg: z.string().optional(),
+    badgeArg: z.string().optional(),
+    tagToWorkflow: z.string().optional(),
+    tagArgs: z.array(z.string()).optional(),
+  })
+  .strict();
+
+export const kind = defineBlockKind<BlockParams>({
+  name,
+  version,
+  parseTemplateParams: (value) => Params.parse(value),
+});

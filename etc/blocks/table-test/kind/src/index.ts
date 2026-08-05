@@ -1,4 +1,5 @@
 import { defineBlockKind } from "@platforma-sdk/block-kind";
+import { z } from "zod";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -9,4 +10,19 @@ import { name, version } from "../package.json" with { type: "json" };
  */
 export type TableTestKindParams = { label: string };
 
-export const kind = defineBlockKind<TableTestKindParams>({ name, version });
+/**
+ * The same contract at runtime, for params that arrive from a template file rather
+ * than from typed code.
+ *
+ * `label` is the one required field in the workspace fixtures, so this is where a
+ * missing key is caught: without the check an entry omitting it would initialize the
+ * block with `undefined` where a string is declared, and the mismatch would only show
+ * up wherever that label is rendered.
+ */
+const Params = z.object({ label: z.string() }).strict();
+
+export const kind = defineBlockKind<TableTestKindParams>({
+  name,
+  version,
+  parseTemplateParams: (value) => Params.parse(value),
+});

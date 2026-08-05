@@ -1,4 +1,5 @@
 import { defineBlockKind } from "@platforma-sdk/block-kind";
+import { z } from "zod";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -11,4 +12,18 @@ import { name, version } from "../package.json" with { type: "json" };
  */
 export type BlockParams = Record<string, never>;
 
-export const kind = defineBlockKind<BlockParams>({ name, version });
+/**
+ * The same contract at runtime, for params that arrive from a template file rather
+ * than from typed code.
+ *
+ * `.strict()` is the whole point for an empty contract: it turns a file that sets any
+ * key at all into a rejection naming that key, instead of ignoring it and applying a
+ * block that looks configured and is not.
+ */
+const Params = z.object({}).strict();
+
+export const kind = defineBlockKind<BlockParams>({
+  name,
+  version,
+  parseTemplateParams: (value) => Params.parse(value),
+});
