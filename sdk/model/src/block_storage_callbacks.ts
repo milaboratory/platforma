@@ -278,23 +278,16 @@ export interface ParamsStorageHooks extends Omit<InitialStorageHooks, "getDefaul
   /** The block's init factory, called with the entry's params. */
   getBlockDataFromParams: (params: unknown) => DataVersioned<unknown>;
   /**
-   * The kind's runtime params check, if it declares one. Applied before the factory
-   * sees anything, and its output is what the factory gets.
+   * The kind's runtime params check. Applied before the factory sees anything, and its
+   * output is what the factory gets.
    */
-  parseTemplateParams?: (value: unknown) => unknown;
+  parseTemplateParams: (value: unknown) => unknown;
 }
 
-/**
- * Result of checking params against their kind.
- *
- * `checked: false` means the kind declares no parser, not that the params are good —
- * a caller that wants to know whether anything actually verified them has to look at
- * this, because there is no other way to tell a validated pass from an unvalidated
- * one.
- */
+/** Result of checking params against their kind: the params to use, or why they lost. */
 export type TemplateParamsValidationResult =
   | { error: string }
-  | { error?: undefined; value: unknown; checked: boolean };
+  | { error?: undefined; value: unknown };
 
 /**
  * Check params against their kind's declared shape.
@@ -308,20 +301,18 @@ export type TemplateParamsValidationResult =
  * it does not declare, which is the difference between a typo being ignored and a typo
  * being reported.
  *
- * With no parser the params pass through untouched. That is the pre-existing
- * behaviour, kept so a kind published before this slot existed still applies.
+ * Every kind declares a parser, so every set of params that reaches here is checked;
+ * there is no pass-through path.
  *
  * @param value The params to check, references already in live form
- * @param parseTemplateParams The kind's parser, if it has one
+ * @param parseTemplateParams The kind's parser
  */
 export function validateTemplateParams(
   value: unknown,
-  parseTemplateParams?: (value: unknown) => unknown,
+  parseTemplateParams: (value: unknown) => unknown,
 ): TemplateParamsValidationResult {
-  if (!parseTemplateParams) return { value, checked: false };
-
   try {
-    return { value: parseTemplateParams(value), checked: true };
+    return { value: parseTemplateParams(value) };
   } catch (e) {
     // A rejection is an expected outcome for a hand-written file, so it is reported,
     // not thrown.
@@ -371,9 +362,7 @@ function formatPath(path: readonly unknown[]): string {
  * {@link createInitialStorageFromParams}, which parses again. One authoritative
  * producer, rather than two values that could differ.
  */
-export type TemplateParamsValidateCallbackResult =
-  | { error: string }
-  | { error?: undefined; checked: boolean };
+export type TemplateParamsValidateCallbackResult = { error: string } | { error?: undefined };
 
 /**
  * Check params that crossed into the model VM as text.
@@ -383,11 +372,11 @@ export type TemplateParamsValidateCallbackResult =
  * project to half-build.
  *
  * @param paramsJson The entry's params as JSON string
- * @param parseTemplateParams The kind's parser, if it has one
+ * @param parseTemplateParams The kind's parser
  */
 export function validateTemplateParamsJson(
   paramsJson: string,
-  parseTemplateParams?: (value: unknown) => unknown,
+  parseTemplateParams: (value: unknown) => unknown,
 ): TemplateParamsValidateCallbackResult {
   let params: unknown;
   try {
@@ -398,7 +387,7 @@ export function validateTemplateParamsJson(
 
   const result = validateTemplateParams(params, parseTemplateParams);
   if (result.error !== undefined) return { error: result.error };
-  return { checked: result.checked };
+  return {};
 }
 
 function messageOf(e: unknown): string {
@@ -541,20 +530,17 @@ export function derivePrerunArgsFromStorage(
  * projects them into template form, so the reference rewrite is one generic step
  * here rather than per-kind work in every block.
  *
- * A block that declares no `templateParams` yields `{ value: undefined }`: the
- * exporter writes an entry with no `params` and the block re-initializes from its
- * kind's defaults.
+ * Every block declares the lambda, so every export produces params; a block with
+ * nothing worth restoring returns `{}` rather than declining.
  *
  * @param storageJson - Storage as JSON string
- * @param deriveTemplateParams - The block's templateParams lambda, if declared
- * @returns ArgsDeriveResult holding the params in template form, or undefined
+ * @param deriveTemplateParams - The block's templateParams lambda
+ * @returns ArgsDeriveResult holding the params in template form
  */
 export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => unknown>(
   storageJson: string,
-  deriveTemplateParams?: TP,
+  deriveTemplateParams: TP,
 ): ArgsDeriveResult {
-  if (!deriveTemplateParams) return { value: undefined };
-
   const { data } = normalizeStorage(storageJson);
 
   try {

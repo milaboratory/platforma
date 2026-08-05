@@ -197,18 +197,16 @@ export interface BlockStorageFacade {
    * Derive this block's template entry params from storage.
    * Called when exporting the project as a template.
    *
-   * Registered by every V3 block, whether or not it declares `.templateParams()`:
-   * a block without the method returns `{ value: undefined }`, which the exporter
-   * writes as an entry with no `params` (the block re-initializes from its kind's
-   * defaults). `undefined` and `{}` are therefore NOT interchangeable — empty
-   * params are emitted as `params: {}` and used as-is by init.
+   * Every V3 block declares `.templateParams()` — the model does not build without
+   * it — so every export produces params. A block whose state carries nothing worth
+   * restoring returns `{}`, which is written out and used as-is by init.
    *
    * The returned params are already in template form: references appear as
    * `{ block, output }` rather than as `PlRef`s. The caller supplies everything
    * else in the entry — `id`, `kind` — so the lambda cannot set them.
    *
    * @param storageJson - Storage as JSON string
-   * @returns Either an error, or the params to write (undefined for none)
+   * @returns Either an error, or the params to write
    */
   [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (
     storageJson: StringifiedJson,
@@ -219,10 +217,12 @@ export interface BlockStorageFacade {
    * Called when applying a template, once per entry that carries `params`.
    *
    * The mirror image of {@link BlockStorageFacadeCallbacks.TemplateParamsDerive}:
-   * that one turns storage into params, this one turns params into storage. An
-   * entry with no `params` uses the plain
-   * {@link BlockStorageFacadeCallbacks.StorageInitial} instead, so a block built
-   * before this callback existed still applies from such an entry.
+   * that one turns storage into params, this one turns params into storage. Every
+   * applied entry comes through here, including one whose file omitted `params` —
+   * an omitted key is read as `{}` and checked like any other value, so no entry
+   * reaches a block without passing its kind's contract.
+   * {@link BlockStorageFacadeCallbacks.StorageInitial} stays the UI-creation path,
+   * where there are genuinely no params.
    *
    * Separate from `StorageInitial` rather than an optional argument to it,
    * deliberately: a block bundled with an older SDK does not register this
@@ -255,21 +255,20 @@ export interface BlockStorageFacade {
    * without this call is safe but worse: `StorageInitialFromParams` runs the same check
    * and refuses, by which point earlier entries have already been created.
    *
-   * `checked: false` reports that the kind declares no runtime check, so nothing was
-   * verified beyond the params being valid JSON. It is not a failure — most kinds start
-   * out this way — but it is the only way a caller can tell an unchecked pass from a
-   * checked one.
+   * A pass carries nothing back but its own absence of error: every kind declares a
+   * parser, so a pass means the params were checked against the contract, not merely
+   * that they were valid JSON.
    *
    * Reference ids inside the params may be placeholders at this point: the check runs
    * before blocks exist, so what is verified is the shape of the params, not what they
    * point at.
    *
    * @param paramsJson The entry's params as JSON string
-   * @returns Either why the params were rejected, or whether anything checked them
+   * @returns Why the params were rejected, or nothing
    */
   [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (
     paramsJson: StringifiedJson,
-  ) => { error: string } | { error?: undefined; checked: boolean };
+  ) => { error: string } | { error?: undefined };
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */

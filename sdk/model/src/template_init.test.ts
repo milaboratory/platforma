@@ -24,9 +24,18 @@ import { defineBlockKind } from "@platforma-sdk/block-kind";
 
 type Params = { sources?: PlRef[]; label: string };
 
+/**
+ * Deliberately permissive: these tests are about what the apply path does with params
+ * the kind already accepted, so the parser here only carries the shape through. The
+ * rejection behaviour is covered by the `validateTemplateParams` cases below, which
+ * supply their own strict parsers.
+ */
+const passThrough = (value: unknown) => value as Params;
+
 const kind = defineBlockKind<Params>({
   name: "@platforma-open/milaboratories.demo.kind",
   version: "1.0.0",
+  parseTemplateParams: passThrough,
 });
 
 type BlockData = { sources: PlRef[]; label: string; scratch: number };
@@ -34,7 +43,6 @@ type BlockData = { sources: PlRef[]; label: string; scratch: number };
 const dataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(({ params }) => ({
   sources: params?.sources ?? [],
   label: params?.label ?? "",
-  // Runtime state, not part of the params contract.
   scratch: 0,
 }));
 
@@ -51,6 +59,7 @@ const noPlugins = {
 const fromParams = (params: unknown) =>
   createInitialStorageFromParams(JSON.stringify(params), {
     getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+    parseTemplateParams: passThrough,
     ...noPlugins,
   });
 
@@ -110,6 +119,7 @@ describe("createInitialStorageFromParams", () => {
   test("params that are not valid JSON are reported", () => {
     const result = createInitialStorageFromParams("{not json", {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+      parseTemplateParams: passThrough,
       ...noPlugins,
     });
 
@@ -124,6 +134,7 @@ describe("createInitialStorageFromParams", () => {
       getBlockDataFromParams: () => {
         throw new Error("label must not be empty");
       },
+      parseTemplateParams: passThrough,
       ...noPlugins,
     });
 
@@ -136,6 +147,7 @@ describe("createInitialStorageFromParams", () => {
     const handle = "p1" as PluginHandle;
     const result = createInitialStorageFromParams(JSON.stringify({ label: "x" }), {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+      parseTemplateParams: passThrough,
       getPluginRegistry: () => ({ [handle]: "demoPlugin" as PluginName }),
       createPluginData: (h) => {
         expect(h).toBe(handle);
@@ -186,22 +198,23 @@ describe("params round trip", () => {
 });
 
 describe("validateTemplateParams", () => {
-  test("a kind with no runtime check reports that nothing checked", () => {
-    // Not a failure — a kind is not obliged to describe its params at runtime, and
-    // most do not yet. But a caller must be able to tell this from a real pass, since
-    // the two look identical otherwise.
-    expect(validateTemplateParams({ anything: true })).toEqual({
-      value: { anything: true },
-      checked: false,
-    });
-  });
-
   test("the parser's output is what flows on, not its input", () => {
     // This is what makes a schema able to strip keys the kind does not declare, which
     // is the difference between a typo being ignored and a typo being caught.
     const result = validateTemplateParams({ label: "x", stray: 1 }, () => ({ label: "x" }));
 
-    expect(result).toEqual({ value: { label: "x" }, checked: true });
+    expect(result).toEqual({ value: { label: "x" } });
+  });
+
+  test("there is no unchecked pass", () => {
+    // Every kind declares a parser, so the result carries no "was this checked" flag:
+    // a pass means the params were held to the contract. A parser is the only way a
+    // value gets through, and one that rejects everything is still a parser.
+    expect(
+      validateTemplateParams({ anything: true }, () => {
+        throw new Error("this kind takes no params");
+      }).error,
+    ).toMatch(/do not match this block's kind/);
   });
 });
 
@@ -241,9 +254,7 @@ describe("params reaching init", () => {
 
 describe("validateTemplateParamsJson", () => {
   test("valid params against a real schema", () => {
-    expect(validateTemplateParamsJson(JSON.stringify({ n: 1 }), (v) => v)).toEqual({
-      checked: true,
-    });
+    expect(validateTemplateParamsJson(JSON.stringify({ n: 1 }), (v) => v)).toEqual({});
   });
 
   test("a rejection comes back as a message, not a throw", () => {
@@ -276,8 +287,16 @@ describe("the kind carries the check", () => {
     expect(model.templateParamsParser).toBe(parse);
   });
 
-  test("a kind without one carries nothing", () => {
-    expect(dataModel.templateParamsParser).toBeUndefined();
+  test("a kind-less data model carries no parser — the plugin case", () => {
+    // The only remaining way this slot is empty. A BLOCK data model always has a kind,
+    // and a kind always supplies a parser; a PLUGIN data model is built with no kind at
+    // all, because a plugin has no params channel of its own. Such a model can no longer
+    // reach `BlockModelV3.create`, so nothing reads this as a block's parser.
+    const pluginDataModel = new DataModelBuilder()
+      .from<BlockData>("v1")
+      .init(() => ({ sources: [], label: "", scratch: 0 }));
+
+    expect(pluginDataModel.templateParamsParser).toBeUndefined();
   });
 });
 
