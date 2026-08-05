@@ -39,6 +39,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
   // handle, so it dedups on its own side.
   .args<BlockArgs>((data) => ({ inputHandles: [...data.inputHandles] }))
 
+  // Nothing to project: the kind takes no params, because every entry of
+  // `inputHandles` is a signed path from an OS file-dialog gesture and would not
+  // resolve in the project a template is applied into.
+  .templateParams(() => ({}))
+
   // fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
   //   return im.handle
   // }))

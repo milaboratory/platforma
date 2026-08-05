@@ -106,6 +106,14 @@ const counter = counterPlugin.create({ pluginId: "counter", config: { defaultCou
 export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
 
+  .templateParams((data) => ({
+    titleArg: data.titleArg,
+    subtitleArg: data.subtitleArg,
+    badgeArg: data.badgeArg,
+    tagToWorkflow: data.tagToWorkflow,
+    tagArgs: data.tagArgs,
+  }))
+
   .plugin(counter, {
     title: (ctx) => ctx.data.titleArg || "Test Counter",
   })

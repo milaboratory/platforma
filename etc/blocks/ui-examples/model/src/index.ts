@@ -76,6 +76,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     return { numbers: data.numbers, handles: data.handles };
   })
 
+  // Nothing to project: the kind takes no params. Every field of this showcase's data
+  // is either demo state a page mutates by gesture or a signed, session-local handle,
+  // and `numbers` is a fixture for the arg/error-state demos rather than configuration.
+  .templateParams(() => ({}))
+
   .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 
   .output("progresses", (ctx) => {

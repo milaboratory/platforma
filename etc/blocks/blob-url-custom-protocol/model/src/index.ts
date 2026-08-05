@@ -37,6 +37,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     inputZipHandle: data.inputZipHandle,
   }))
 
+  // Nothing to project: the kind takes no params, because both handles are signed,
+  // session-local references from an OS file-dialog gesture and would not resolve in
+  // the project a template is applied into.
+  .templateParams(() => ({}))
+
   .output("handleTgz", (ctx) => ctx.outputs?.resolve("handleTgz")?.getImportProgress())
   .output("handleZip", (ctx) => ctx.outputs?.resolve("handleZip")?.getImportProgress())
 

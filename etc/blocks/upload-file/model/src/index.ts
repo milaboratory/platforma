@@ -32,6 +32,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<BlockArgs>((data) => ({ inputHandle: data.inputHandle }))
 
+  // Nothing to project: the kind takes no params, because a signed upload handle is
+  // machine- and session-local and would not resolve in the project a template is
+  // applied into. An exported entry re-creates this block ready for a fresh upload.
+  .templateParams(() => ({}))
+
   .output("blob", (ctx) => ctx.outputs?.resolve("blob")?.getDataAsJsonOrUndefined<unknown>())
 
   .output("handle", (ctx) => ctx.outputs?.resolve("handle")?.getImportProgress())

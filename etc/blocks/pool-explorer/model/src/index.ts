@@ -21,6 +21,10 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<BlockArgs>(() => ({}))
 
+  // Nothing to project: this block is a result-pool diagnostic with no configuration
+  // of its own — its filter state lives in the Vue component, not in block data.
+  .templateParams(() => ({}))
+
   .output("allSpecs", (ctx) => ctx.resultPool.getSpecs())
 
   .sections((_ctx) => {

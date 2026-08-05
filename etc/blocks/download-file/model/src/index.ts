@@ -31,6 +31,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<BlockArgs>((data) => ({ inputHandle: data.inputHandle }))
 
+  // The kind declares `inputHandle` as an init param, so the projection emits it —
+  // narrowing the contract here is not this block's call to make. Whether the handle
+  // still resolves is the importing side's problem, and only it can tell.
+  .templateParams((data) => ({ inputHandle: data.inputHandle }))
+
   .output("blob", (ctx) => ctx.outputs?.resolve("blob")?.getDataAsJsonOrUndefined<unknown>())
 
   .output("handle", (ctx) => ctx.outputs?.resolve("handle")?.getImportProgress())

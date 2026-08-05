@@ -38,6 +38,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     readFileWithSleepArgs: data.readFileWithSleepArgs,
   }))
 
+  // Nothing to project: the kind takes no params. `inputHandle` is a signed,
+  // session-local reference, and `readFileWithSleepArgs` is a fixture knob driven from
+  // the UI rather than something a template would pre-wire.
+  .templateParams(() => ({}))
+
   .output("handle", (ctx) => ctx.outputs?.resolve("handle")?.getImportProgress())
 
   .output("lastLogs", (ctx) => ctx.outputs?.resolve("log")?.getLastLogs(10))

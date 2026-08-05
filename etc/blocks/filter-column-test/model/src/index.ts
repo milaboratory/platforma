@@ -34,6 +34,10 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     };
   })
 
+  // Nothing to project: the kind takes no params. This fixture exists to exercise
+  // dataset selection end-to-end, so the selection is always made in the UI.
+  .templateParams(() => ({}))
+
   .output("datasetOptions", (ctx) =>
     buildDatasetOptions(ctx, { primary: isPrimaryColumn, withEnrichments: () => true }),
   )

@@ -63,6 +63,11 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     };
   })
 
+  // Nothing to project: the kind takes no params. `inputHandles` are signed,
+  // session-local references; `productKey` and `shouldAddRunPerFile` are fixture knobs
+  // flipped in the UI; and the `__mnz*` fields belong to the monetization plugin.
+  .templateParams(() => ({}))
+
   // Declaring this is mandatory, not an optimization. The pre-run is what
   // produces `__mnzInfo`, which is what flips `__mnzCanRun` to true — so it has
   // to keep running while `.args` is still throwing. Without an explicit
