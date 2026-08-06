@@ -47,10 +47,8 @@ export type TemplateIdMap = {
    * Rewrite one entry's params from file form into live form: every
    * `{ block, output }` becomes a `PlRef` pointing at the block that entry received.
    *
-   * Call it with params that are present. Absent params mean "initialize this block
-   * from its kind's defaults", which is not the same as `{}`, and the distinction is
-   * only visible if the caller keeps the key absent rather than passing `undefined`
-   * through here.
+   * Call it with params that are present. A caller holding an entry that omitted the
+   * key substitutes `{}` before this point, so there is no absent case to decide here.
    */
   liveParams: (params: Record<string, unknown>) => TemplateParamsRewrite;
 };

@@ -25,9 +25,10 @@ export type TemplateExportEntry = {
    * The block's params in template form, or `undefined` when the block declares
    * no `templateParams`.
    *
-   * `undefined` is written as an entry with **no** `params` key, which means
-   * "re-initialize this block from its kind's defaults". It is not interchangeable
-   * with `{}`, which is written out and used as-is by the block's `init`.
+   * `undefined` is written as an entry with **no** `params` key. Only a block built
+   * against an older SDK gets here: a current block cannot be built without
+   * `templateParams`, and one whose state carries nothing worth restoring returns `{}`
+   * rather than declining.
    */
   readonly params: Record<string, unknown> | undefined;
 };

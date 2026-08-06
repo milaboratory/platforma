@@ -94,8 +94,8 @@ describe("applyProjectTemplateV1", () => {
   });
 
   test("an entry with no params is asked for without any", () => {
-    // Absent params mean "initialize from the kind's defaults", which the
-    // implementation cannot distinguish from `{}` unless the key stays absent.
+    // The key travels exactly as the file wrote it — omitted stays omitted, `{}` stays
+    // `{}`. Reading a missing key as `{}` belongs to the implementation, not this walk.
     const { api, requests } = recordingApi();
 
     applyProjectTemplateV1(documentOf(entry("a"), entry("b", {})), api);

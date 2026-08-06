@@ -131,9 +131,10 @@ const LocationSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]+):/;
  *
  * `kind` is always required: it carries the params contract the entry is typed
  * against, and it is checked against what the located implementation declares even
- * when it did not do the locating. `params` omitted means "start this block from its
- * kind's defaults". There is no `label` field: a template does not name block
- * instances for display.
+ * when it did not do the locating. Omitting `params` means exactly `{}`, validated the
+ * same way, so an entry that omits it fails for a kind whose contract has required
+ * fields — omission is terseness, not an escape from the contract. There is no `label`
+ * field: a template does not name block instances for display.
  *
  * Two optional, mutually exclusive locator overrides answer different questions, and
  * either one skips kind resolution:

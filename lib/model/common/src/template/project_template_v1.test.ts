@@ -224,7 +224,7 @@ describe("parseProjectTemplateV1", () => {
     expect(validateProjectTemplateV1References(doc)).toEqual([]);
   });
 
-  test("params is optional — the block starts from its kind's defaults", () => {
+  test("params is optional — the parser leaves the key absent rather than filling it in", () => {
     const doc = parseProjectTemplateV1({
       schema: "template-v1",
       blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],

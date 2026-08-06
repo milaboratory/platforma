@@ -53,8 +53,8 @@ describe("parseProjectTemplateV1Yaml", () => {
   });
 
   test("an entry without params keeps the key absent", () => {
-    // Absent params mean "initialize from the kind's defaults", which is not the same
-    // as `{}`, so the parser must not fill anything in.
+    // The parser reports what the file says and invents nothing, so a missing key stays
+    // missing; whoever applies the document is what reads it as `{}`.
     const [entry] = documentOf(
       `schema: ${PROJECT_TEMPLATE_SCHEMA_V1}\nblocks:\n  - id: a\n    kind: "${KIND}"\n`,
     ).blocks;

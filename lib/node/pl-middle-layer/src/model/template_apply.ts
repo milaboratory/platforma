@@ -61,8 +61,10 @@ export type AddBlockRequest = {
    * received. An orchestrator that rewrote them itself would have to be told the id
    * map, and every orchestrator would then own a copy of the same logic.
    *
-   * Absent means "initialize this block from its kind's defaults", which is not the
-   * same as `{}` — empty params are params.
+   * Absent and `{}` reach a block as the same value: the implementation reads a
+   * missing key as `{}`, so the kind checks the entry either way. The key is carried
+   * as the file wrote it rather than filled in here, keeping that coercion in one
+   * place.
    */
   readonly params?: Record<string, unknown>;
 };

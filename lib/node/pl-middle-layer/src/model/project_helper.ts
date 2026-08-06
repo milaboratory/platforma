@@ -155,9 +155,9 @@ export class ProjectHelper {
    * already rewritten into template form by the SDK side, so the middle layer
    * never has to know a kind's params shape.
    *
-   * A `{ value: undefined }` result is NOT a failure: it means the block declares
-   * no `templateParams`, and the exported entry gets no `params` so the block
-   * re-initializes from its kind's defaults.
+   * A `{ value: undefined }` result is NOT a failure: it means the block declares no
+   * `templateParams`, which only a block built against an older SDK can do, and the
+   * exported entry gets no `params` key.
    *
    * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
    * than swallowed — a prerun that cannot derive args just skips a block in

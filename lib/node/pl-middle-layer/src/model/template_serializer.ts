@@ -41,11 +41,6 @@ export type ProjectTemplateExportOutcome =
       readonly yaml: string;
       /** The document the YAML was rendered from, already validated. */
       readonly document: ProjectTemplateV1;
-      /**
-       * Things the exported file cannot say about itself, for showing to whoever
-       * asked for the export. Empty for a file that is portable as written.
-       */
-      readonly warnings: readonly string[];
     }
   | {
       readonly ok: false;
@@ -111,8 +106,9 @@ export function locationOf(spec: BlockPackSpec): BlockPackLocationReference | un
  * `location` IS emitted, for every block that was installed from the filesystem. Such
  * a block is not in any registry, so the kind reference alone names nothing the
  * importer could find, and a file that omitted the one usable answer would describe a
- * project that cannot be recreated. It costs portability, which the file cannot state
- * about itself — hence {@link locationOf} and the warning the caller gets back.
+ * project that cannot be recreated. It costs portability, and nothing says so: such a
+ * file is the debugging path, read by the developer who wrote it on the machine that
+ * wrote it.
  *
  * Problems from `walk` are carried through, so a caller can hand a walk straight
  * in and get one combined list.
@@ -121,15 +117,9 @@ export function assembleProjectTemplateV1(
   walk: TemplateExportWalk,
   kindProvider: BlockKindProvider,
   specProvider: BlockPackSpecProvider,
-): {
-  document: ProjectTemplateV1;
-  problems: readonly TemplateExportProblem[];
-  /** Ids of the entries that were given a `location`, in document order. */
-  located: readonly string[];
-} {
+): { document: ProjectTemplateV1; problems: readonly TemplateExportProblem[] } {
   const problems: TemplateExportProblem[] = [...walk.problems];
   const blocks: ProjectTemplateV1Entry[] = [];
-  const located: string[] = [];
 
   for (const entry of walk.entries) {
     const kind = kindProvider(entry.blockId);
@@ -161,7 +151,6 @@ export function assembleProjectTemplateV1(
 
     const spec = specProvider(entry.blockId);
     const location = spec === undefined ? undefined : locationOf(spec);
-    if (location !== undefined) located.push(entry.blockId);
 
     blocks.push({
       id: entry.blockId,
@@ -180,7 +169,7 @@ export function assembleProjectTemplateV1(
     problems.push({ blockId: problem.entryId, error: problem.message });
   }
 
-  return { document, problems, located };
+  return { document, problems };
 }
 
 /**
@@ -226,11 +215,7 @@ export function exportProjectAsTemplateV1(
   specProvider: BlockPackSpecProvider,
 ): ProjectTemplateExportOutcome {
   const walk = walkProjectForTemplateExport(structure, paramsProvider);
-  const { document, problems, located } = assembleProjectTemplateV1(
-    walk,
-    kindProvider,
-    specProvider,
-  );
+  const { document, problems } = assembleProjectTemplateV1(walk, kindProvider, specProvider);
 
   if (problems.length > 0) return { ok: false, problems };
 
@@ -248,29 +233,5 @@ export function exportProjectAsTemplateV1(
     ok: true,
     yaml: stringifyProjectTemplateV1(document),
     document,
-    warnings: portabilityWarnings(located),
   };
-}
-
-/**
- * Say out loud what a located entry costs, because the file cannot.
- *
- * A `location` is an absolute path on the machine that exported it, so the template
- * works here and nowhere else. That is not a defect — for an unpublished block it is
- * the only thing that could work — but it is invisible to whoever receives the file,
- * and the moment to mention it is while the person who made it is still looking.
- */
-function portabilityWarnings(located: readonly string[]): string[] {
-  if (located.length === 0) return [];
-
-  const which =
-    located.length === 1
-      ? `block '${located[0]}' is`
-      : `${located.length} blocks (${located.join(", ")}) are`;
-
-  return [
-    `This template can only be applied on this machine: ${which} installed from a local ` +
-      `folder, so the entry points at that folder by path. Publish the block to share the ` +
-      `template.`,
-  ];
 }

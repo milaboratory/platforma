@@ -311,7 +311,7 @@ describe("locationOf", () => {
 });
 
 describe("locating a block installed from a folder", () => {
-  test("the entry carries the folder, and the caller is told the file is not portable", () => {
+  test("the entry carries the folder, and keeps the kind alongside it", () => {
     const result = exportOf(
       simpleStructure("samples"),
       { samples: ok({ dataset: "bulk-rna" }) },
@@ -326,9 +326,6 @@ describe("locating a block installed from a folder", () => {
     expect(result.document.blocks[0].kind).toBe(
       kindReferenceToSelectorReference(kindOf("samples")),
     );
-    expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toMatch(/only be applied on this machine/);
-    expect(result.warnings[0]).toContain("samples");
   });
 
   test("what is written survives the round trip through YAML", () => {
@@ -347,7 +344,6 @@ describe("locating a block installed from a folder", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect("location" in result.document.blocks[0]).toBe(false);
-    expect(result.warnings).toEqual([]);
   });
 
   test("a block whose origin is unknown is written without a locator", () => {
@@ -363,10 +359,9 @@ describe("locating a block installed from a folder", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect("location" in result.document.blocks[0]).toBe(false);
-    expect(result.warnings).toEqual([]);
   });
 
-  test("the warning names every located block, not just the first", () => {
+  test("a locator is written per block, and only for the located ones", () => {
     const result = exportOf(
       simpleStructure("a", "b", "c"),
       { a: ok({}), b: ok({}), c: ok({}) },
@@ -376,7 +371,6 @@ describe("locating a block installed from a folder", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.warnings[0]).toContain("2 blocks (a, c)");
     expect(result.document.blocks.map((e) => e.location)).toEqual([
       "file:///Users/dev/blocks/a/block",
       undefined,
