@@ -31,12 +31,12 @@ test("license payload carries all required fields", async () => {
   expect(payload.u.length).toBeGreaterThan(0);
   expect(typeof payload.m).toBe("string");
 
-  // Expiration must come after the valid-from moment.
+  // Token expiration must come after the token's valid-from moment.
   expect(payload.e).toBeGreaterThan(payload.v);
 
   console.log("license payload:", JSON.stringify(payload, null, 2));
-  console.log("valid from:", new Date(payload.v * 1000).toISOString());
-  console.log("expires at:", new Date(payload.e * 1000).toISOString());
+  console.log("token valid from:", new Date(payload.v * 1000).toISOString());
+  console.log("token expires at:", new Date(payload.e * 1000).toISOString());
   if (payload.w !== undefined) {
     console.log("warn after:", new Date(payload.w * 1000).toISOString());
   }

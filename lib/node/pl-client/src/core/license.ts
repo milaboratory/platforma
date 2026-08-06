@@ -18,9 +18,15 @@ export type LicenseMonitoringMode = "with_id" | "no_id" | "none";
  * Backend counterpart: `core/pl/cmd/platforma/license.go` (`License` struct).
  */
 export interface LicensePayload {
-  /** Unix timestamp (seconds) the license is valid from. */
+  /** Unix timestamp (seconds) this license token is valid from. */
   v: number;
-  /** Unix timestamp (seconds) the license expires after. */
+  /**
+   * Unix timestamp (seconds) this license token expires after — the token's
+   * TTL, not the license's own validity period. Tokens are short-lived and
+   * re-minted (e.g. a 24h TTL yields `e` = issued-at + 86400) even when the
+   * underlying license is valid far longer, so `e` is not the license
+   * expiration date.
+   */
   e: number;
   /** UID of the customer. */
   u: string;
