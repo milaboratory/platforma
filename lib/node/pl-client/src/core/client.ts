@@ -187,6 +187,13 @@ export class PlClient {
     };
   }
 
+  /** Smoothed round-trip estimate in ms from ping timings, or undefined before the first
+   * ping. Exposed so latency-sensitive consumers (e.g. the tree-sync poll cadence) can scale
+   * their timing to the link instead of assuming a local server. */
+  public get rttEstimateMs(): number | undefined {
+    return this.ll.rttEstimateMs;
+  }
+
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
     return await this.ll.ping();
   }
