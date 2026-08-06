@@ -37,6 +37,8 @@ describe("root CI workflows (fixed, generated)", () => {
     // Shared constants.
     expect(build).toContain("team-id: 'ciplopen'");
     expect(build).toContain("test: true");
+    // Opt-in gate: the published `block` package must be bumped on PRs.
+    expect(build).toContain("require-package-path-bump: true");
     // No bare `build` script exists (root-package-json removes it), so both
     // build legs must name scenario flavors: PR/test validates locally, the
     // publish leg builds the release channel.
