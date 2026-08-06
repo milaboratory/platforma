@@ -28,6 +28,15 @@ export interface LicensePayload {
    * expiration date.
    */
   e: number;
+  /**
+   * [optional] Unix timestamp (seconds) the license itself expires — the
+   * underlying license/contract end date, independent of the short-lived
+   * token TTL `e`. Derived from the contract expiration before any token-TTL
+   * clamping, so this is the field to use when reasoning about whether the
+   * license (not the current token) has expired. Absent on tokens from older
+   * licensing servers that predate the `le` claim.
+   */
+  le?: number;
   /** UID of the customer. */
   u: string;
   /** Metric marker — attached to usage statistics. */
@@ -95,7 +104,8 @@ function assertLicensePayload(value: unknown): asserts value is LicensePayload {
  * it splits the `I.<base64Payload>.<watermark>.<signature>` envelope, checks the
  * fixed prefix/watermark, base64-decodes the payload segment and validates that
  * all required fields are present. This does NOT verify the cryptographic
- * signature — that is a separate concern owned by the desktop's LicenseManager.
+ * signature — as token is used by MiLM manager to access its API, this signature
+ * is for MiLM itself, who issued the token.
  */
 export function decodeLicenseToken(token: string): LicensePayload {
   const segments = token.split(".");
