@@ -103,11 +103,27 @@ you cannot import them.
 | `ColumnOption` | type | `{ id: ColumnUniversalId; label: string }`. |
 | `expandByPartition(inputs, splitAxes, opts?)` | function | Fan a column out into one recipe per partition value. |
 | `SplitAxis`, `ExpandByPartitionOpts` | types | `{ idx }` and `{ axisValuesLabels? }`. |
-| `deriveAxisValuesLabels(source?, opts?)` | function | `(axisId) => Record<value, label>` from `pl7.app/label` columns. |
-| `collectLinkerIds(recipe)` | function | Non-hit `PObjectId`s referenced by the recipe's query. |
-| `collectLinkerColumns(recipe, opts?)` | function | Same set, resolved to leaves. Throws if any is unresolvable. |
-| `hitQualifications(recipe)` | function | Hit-side axis qualifications, or `[]`. |
-| `queriesQualifications(recipe)` | function | Per-primary-column axis qualifications, or `{}`. |
+
+### Exported but Not Part of the Surface
+
+The module also exports the names below. They exist for the SDK's own consumers
+and are not the utility surface a block writes against — a block that reaches
+for one is usually re-implementing something `ColumnsCollection` or
+`createPlDataTableV3` already does. Listed so you know what they are when you
+meet them in SDK code, not so you call them.
+
+| Export | What it is |
+| --- | --- |
+| `deriveAxisValuesLabels(source?, opts?)` | Builds an `(axisId) => Record<value, label>` callback from `pl7.app/label` columns — the shape `expandByPartition`'s `axisValuesLabels` option takes. |
+| `collectLinkerIds(recipe)` | Non-hit `PObjectId`s referenced by the recipe's query. |
+| `collectLinkerColumns(recipe, opts?)` | The same set, resolved to leaves. Throws if any is unresolvable. |
+| `hitQualifications(recipe)` | Hit-side axis qualifications, or `[]`. |
+| `queriesQualifications(recipe)` | Per-primary-column axis qualifications, or `{}`. |
+
+If you do end up needing one of the last four, use them rather than descending
+the wrapper classes by hand: they encapsulate the layering invariants
+(`Overridden` / `Filtered` over at most one `Discovered`) and keep working as
+wrappers are added.
 
 ### Providers — Plumbing
 
@@ -514,6 +530,10 @@ node), `Overridden` adds `domain[axisName]` plus a `split:<axisId>` entry on
 Inputs must be readable here — partition keys are inspected via `getData()`.
 Guard with `hasReachableData`, not `hasSingleDataColumn`.
 
+`axisValuesLabels` is optional; without it a split is labelled by its raw axis
+value. Supply your own resolver, or `deriveAxisValuesLabels()` to build one from
+the `pl7.app/label` columns in scope.
+
 Returns `undefined` when an input's data is neither a live `TreeNodeAccessor`
 nor parsed `DataInfoEntries`, or when partition keys can't be read — i.e. "not
 ready yet, try next render pass". Throws when a requested `idx` exceeds the
@@ -523,35 +543,6 @@ This is the sanctioned way to split a column. Do not fabricate ids by string
 concatenation (`` `${col.id}#${value}` ``) or by nesting a canonical id inside a
 `LocalPObjectId` path: both produce ids that fail `extractPObjectId` downstream,
 and the cast silences the type-checker, not the runtime invariant.
-
-### `deriveAxisValuesLabels`
-
-```ts
-deriveAxisValuesLabels(
-  source?: ColumnsCollection | (ColumnsCollection | ColumnsSource)[],
-  opts?: { ctx?: GlobalCfgRenderCtx },
-): (axisId: AxisId) => Record<string | number, string> | undefined;
-```
-
-Discovers `pl7.app/label` columns in `source` (default: ambient ctx),
-materialises their value→label maps eagerly, keys them by canonical axis id.
-Pair with `expandByPartition` for human-readable split labels.
-
-Skips recipes whose data is not directly readable, label columns with more than
-one axis, and data resource types other than `PColumnData/Json` /
-`PColumnData/JsonPartitioned`.
-
-### Recipe Walking
-
-Use these rather than descending the wrapper classes by hand — they encapsulate
-the layering invariants and keep working as wrappers are added.
-
-| Helper | Returns |
-| --- | --- |
-| `collectLinkerIds(recipe)` | every non-hit `PObjectId` in `recipe.getQuery()`, deduped in traversal order. Pure query walk, no registry access. |
-| `collectLinkerColumns(recipe, opts?)` | the same set resolved to leaf `DataColumnRecipe`s. Throws if any fails to resolve. |
-| `hitQualifications(recipe)` | hit-side `AxisQualification[]` from the inner `ColumnDiscoveredRecipe`, or `[]` for leaves and overrides-over-leaves. |
-| `queriesQualifications(recipe)` | `Record<PObjectId, AxisQualification[]>` — per-primary-column qualifications to apply at the consumer's outer join. |
 
 ## Handing Columns to Consumers
 
