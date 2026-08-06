@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.14
+
+### Patch Changes
+
+- Updated dependencies [fb64329]
+  - @platforma-sdk/block-tools@2.12.11
+
 ## 1.66.13
 
 ### Patch Changes
