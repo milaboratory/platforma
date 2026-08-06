@@ -98,12 +98,16 @@ function assertLicensePayload(value: unknown): asserts value is LicensePayload {
  * signature — that is a separate concern owned by the desktop's LicenseManager.
  */
 export function decodeLicenseToken(token: string): LicensePayload {
-  const [prefix, base64Payload, watermark, signature] = token.split(".");
+  const segments = token.split(".");
+  const [prefix, base64Payload, watermark, signature] = segments;
   if (
+    segments.length !== 4 ||
     prefix !== LICENSE_TOKEN_PREFIX ||
     watermark !== LICENSE_TOKEN_WATERMARK ||
     typeof base64Payload !== "string" ||
-    typeof signature !== "string"
+    base64Payload.length === 0 ||
+    typeof signature !== "string" ||
+    signature.length === 0
   ) {
     throw new Error("invalid license token: unexpected envelope format");
   }
