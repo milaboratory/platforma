@@ -61,9 +61,10 @@ const LICENSE_TOKEN_WATERMARK = "CPECUVF";
  * required field with the expected type. Throws a descriptive error otherwise.
  *
  * Only the always-present fields (`v`, `e`, `u`, `m`) are validated — everything
- * else in {@link LicensePayload} is optional and issuer-dependent.
+ * else in {@link LicensePayload} is optional and issuer-dependent. Internal:
+ * callers get validation for free via {@link decodeLicenseToken}.
  */
-export function assertLicensePayload(value: unknown): asserts value is LicensePayload {
+function assertLicensePayload(value: unknown): asserts value is LicensePayload {
   if (typeof value !== "object" || value === null) {
     throw new Error(`invalid license payload: expected an object, got ${typeof value}`);
   }
