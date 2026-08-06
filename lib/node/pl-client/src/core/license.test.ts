@@ -37,6 +37,9 @@ test("license payload carries all required fields", async () => {
   console.log("license payload:", JSON.stringify(payload, null, 2));
   console.log("token valid from:", new Date(payload.v * 1000).toISOString());
   console.log("token expires at:", new Date(payload.e * 1000).toISOString());
+  if (payload.le !== undefined) {
+    console.log("license expires at:", new Date(payload.le * 1000).toISOString());
+  }
   if (payload.w !== undefined) {
     console.log("warn after:", new Date(payload.w * 1000).toISOString());
   }
