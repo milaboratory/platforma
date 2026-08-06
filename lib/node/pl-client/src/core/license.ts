@@ -18,7 +18,7 @@ export type LicenseMonitoringMode = "with_id" | "no_id" | "none";
  * Backend counterpart: `core/pl/cmd/platforma/license.go` (`License` struct).
  */
 export interface LicensePayload {
-  /** Unix timestamp (seconds) this license token is valid from. */
+  /** Unix timestamp (seconds) the license itself is valid from (issuance), not a token time. */
   v: number;
   /**
    * Unix timestamp (seconds) this license token expires after — the token's
