@@ -94,9 +94,12 @@ test("v3: a project exported as a template applies back as an equivalent project
       sources: [{ block: numbersId, output: "numbers" }],
     });
 
-    // Both blocks came from a folder on this machine, and the file says so exactly
-    // once however many blocks are involved.
-    expect(exported.warnings).toHaveLength(1);
+    // Both blocks came from a folder on this machine, and each entry says so by
+    // carrying the locator that folder resolves to — which is what makes the apply
+    // below reachable without a registry.
+    for (const entry of exported.document.blocks) {
+      expect(entry.location).toMatch(/^file:\/\//);
+    }
 
     // --- Apply, from the text and not the document -------------------------
 
