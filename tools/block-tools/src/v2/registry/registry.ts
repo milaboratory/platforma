@@ -160,6 +160,24 @@ export class BlockRegistryV2 {
     // kind-overview projection accumulator, keyed by kinds/{org}/{name}/overview.json
     const touchedKinds = new Map<string, KindTouchAccumulator>();
     const seedPaths: string[] = [];
+
+    /**
+     * Get-or-create the accumulator for one kind overview, marking `blockId` as
+     * re-read this pass so the RMW below drops its stale entry before merging.
+     *
+     * In force mode `touched` stays `null` (rebuild-from-scan); the optional call
+     * keeps that intact for accumulators the force pre-seed already created.
+     */
+    const touchKind = (ovPath: string, blockId: string): KindTouchAccumulator => {
+      const acc = touchedKinds.get(ovPath) ?? {
+        touched: mode === "force" ? null : new Set<string>(),
+        add: [],
+      };
+      acc.touched?.add(blockId);
+      touchedKinds.set(ovPath, acc);
+      return acc;
+    };
+
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
 
     const addVersionToBeUpdated = ({ organization, name, version }: BlockPackId) => {
@@ -258,9 +276,18 @@ export class BlockRegistryV2 {
       );
 
       // removing versions that we will update
+      const droppedVersions = packageOverview.versions.filter((e) =>
+        packageInfo.versions.has(e.description.id.version),
+      );
       const newVersions = packageOverview.versions.filter(
         (e) => !packageInfo.versions.has(e.description.id.version),
       );
+
+      for (const e of droppedVersions) {
+        if (!e.description.kind) continue;
+        const ovPath = kindOverviewPath(npmNameToKindPath(parseKindRef(e.description.kind).name));
+        touchKind(ovPath, blockPackIdToString(e.description.id));
+      }
 
       // reading new entries
       for (const [v] of packageInfo.versions.entries()) {
@@ -297,13 +324,7 @@ export class BlockRegistryV2 {
         if (description.kind) {
           const { name: kindNpmName, version: kindVersion } = parseKindRef(description.kind);
           const ovPath = kindOverviewPath(npmNameToKindPath(kindNpmName));
-          const acc = touchedKinds.get(ovPath) ?? {
-            touched: mode === "force" ? null : new Set<string>(),
-            add: [],
-          };
-          acc.touched?.add(blockPackIdToString(id));
-          acc.add.push({ id, kindVersion, channels });
-          touchedKinds.set(ovPath, acc);
+          touchKind(ovPath, blockPackIdToString(id)).add.push({ id, kindVersion, channels });
         }
       }
 
