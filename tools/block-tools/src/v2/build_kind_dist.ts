@@ -2,6 +2,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { util } from "@platforma-sdk/package-builder-lib";
 import { calculateSha256 } from "../util";
+import type { KindManifest, KindManifestFileInfo } from "./registry/schema_kinds";
 
 export interface BuildKindDistOptions {
   /** Kind package directory (the dir containing `package.json`, `src/`, `dist/`). */
@@ -22,7 +23,6 @@ export type {
   KindManifestIdentity,
   KindManifestFileInfo,
 } from "./registry/schema_kinds";
-import type { KindManifest, KindManifestFileInfo } from "./registry/schema_kinds";
 
 export const KindManifestFile = "manifest.json";
 
@@ -70,24 +70,24 @@ export async function buildKindDist(opts: BuildKindDistOptions = {}): Promise<Ki
 
   const { name, version } = await readKindPackageIdentity(modulePath);
 
-  // One sha256 over the sorted src/ tree. `hashDirSync` digests lower-case;
-  // `.toUpperCase()` matches block-tools' `calculateSha256` (util.ts) so the
-  // future publish-side comparator never fails on a case mismatch.
   const sourceHash = util.hashDirSync(srcDir).digest("hex").toUpperCase();
 
-  // Per-artifact hashes of the emitted bundle, mirroring build_dist.ts's file
-  // list. Missing artifacts are skipped fail-safe (e.g. no sourcemap).
   const artifactNames = [entryFileName, "kind.d.ts"];
   const files: KindManifestFileInfo[] = [];
   for (const artifact of artifactNames) {
     const abs = path.resolve(dst, artifact);
+    let bytes: Buffer;
     try {
-      const bytes = await fsp.readFile(abs);
-      files.push({ name: artifact, size: bytes.length, sha256: await calculateSha256(bytes) });
+      bytes = await fsp.readFile(abs);
     } catch (err: unknown) {
-      if (err instanceof Error && "code" in err && err.code === "ENOENT") continue;
+      if (err instanceof Error && "code" in err && err.code === "ENOENT") {
+        throw new Error(
+          `Kind build is incomplete: ${artifact} is missing from ${dst}. Run the kind's build before building its manifest.`,
+        );
+      }
       throw err;
     }
+    files.push({ name: artifact, size: bytes.length, sha256: await calculateSha256(bytes) });
   }
 
   const manifest: KindManifest = {
