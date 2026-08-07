@@ -6,6 +6,7 @@ import {
   type PTableHandle,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import type { PFrame } from "@milaboratories/pf-spec";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import type { FullPTableDef } from "./ptable_shared";
@@ -70,7 +71,7 @@ export class PTableDefPool extends RefCountPoolBase<FullPTableDef, PTableHandle,
   public acquireFromLegacy(opts: {
     pFrameHandle: PFrameHandle;
     def: PTableDef<PObjectId>;
-    pFrameSpec: PFrameInternal.PFrameWasmV3;
+    pFrameSpec: PFrame;
   }): { def: FullPTableDef; entry: PoolEntry<PTableHandle> } {
     const def = buildFullPTableDefFromLegacy(opts);
     return { def, entry: this.acquire(def) };

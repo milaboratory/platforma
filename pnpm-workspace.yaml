@@ -21,6 +21,7 @@ packages:
   - lib/node/node-streams
   - lib/node/computable
   - lib/node/pf-driver
+  - lib/model/pf-spec
   - lib/model/pf-spec-driver
   - lib/model/columns-collection-driver
   - lib/node/pl-client
@@ -173,6 +174,7 @@ catalog:
   "@rollup/plugin-typescript": ^12.1.4
   "@rollup/plugin-commonjs": ^28.0.6
   "rollup-plugin-cleandir": ^3.0.0
+  "rollup-plugin-copy": ^3.5.0
   "@rollup/plugin-json": ^6.1.0
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
@@ -260,7 +262,8 @@ catalog:
   # before SDK starts requiring a newer version of desktop.
   "@milaboratories/pframes-rs-node": 1.1.56
   "@milaboratories/pframes-rs-wasip2": 1.1.56
-  "@milaboratories/pframes-rs-wasm": 1.1.56
+  "@bytecodealliance/jco-transpile": ^0.6.3
+  "@bytecodealliance/preview2-shim": ^0.20.1
 
   "quickjs-emscripten": 0.32.0
 

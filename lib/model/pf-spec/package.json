@@ -1,0 +1,50 @@
+{
+  "name": "@milaboratories/pf-spec",
+  "version": "0.0.0",
+  "description": "Spec-plane PFrame operations: bindings to the pframes WASM component",
+  "keywords": [],
+  "license": "UNLICENSED",
+  "files": [
+    "./dist/**/*",
+    "./src/*.ts"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "transpile": "node --conditions=wasm scripts/transpile.ts",
+    "build": "ts-builder build --target node --build-config build.config.js",
+    "watch": "ts-builder build --target node --build-config build.config.js --watch",
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-model-middle-layer": "workspace:*"
+  },
+  "devDependencies": {
+    "@bytecodealliance/jco-transpile": "catalog:",
+    "@bytecodealliance/preview2-shim": "catalog:",
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pframes-rs-wasip2": "catalog:",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "rollup-plugin-copy": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@bytecodealliance/preview2-shim": "catalog:"
+  }
+}
