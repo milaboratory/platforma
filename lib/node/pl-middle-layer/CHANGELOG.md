@@ -1,5 +1,32 @@
 # @milaboratories/pl-middle-layer
 
+## 1.66.15
+
+### Patch Changes
+
+- da11734: Drop the dependency on the pframes spec-plane wrapper. The package declared this
+  dependency, but no code imported it.
+- Updated dependencies [da11734]
+- Updated dependencies [da11734]
+  - @milaboratories/pf-spec-driver@1.5.0
+  - @milaboratories/pf-driver@1.9.0
+  - @milaboratories/pl-model-middle-layer@1.31.0
+  - @platforma-sdk/model@1.80.17
+  - @platforma-sdk/block-tools@2.12.12
+  - @milaboratories/pl-model-backend@1.4.19
+  - @milaboratories/columns-collection-driver@0.2.3
+  - @milaboratories/pl-model-common@1.47.3
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pl-client@3.14.5
+  - @milaboratories/pl-deployments@3.0.15
+  - @milaboratories/pl-drivers@1.16.14
+  - @milaboratories/pl-errors@1.4.34
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.13.5
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+
 ## 1.66.14
 
 ### Patch Changes
