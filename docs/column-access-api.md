@@ -23,7 +23,7 @@ physical/logical id split and the recipe-authoring contract.
    The sandbox only ever holds ids and opaque handles.
 4. `getSpec()` is a host round-trip per column. Columns you never inspect cost
    nothing.
-5. Data is mostly *not* readable in the sandbox. Hand `recipe.id` to the host
+5. Data is mostly _not_ readable in the sandbox. Hand `recipe.id` to the host
    (`createPFrame` / `createPTableV2` / `createPlDataTableV3`) and let it
    materialise.
 6. Nothing is mutable. To get a different spec, encode it into a new id with
@@ -38,32 +38,32 @@ Every public export of the module, by role. Details follow in the sections below
 
 ### Discovery
 
-| Export | Kind | One-liner |
-| --- | --- | --- |
-| `ColumnsCollection(sources?, deps?)` | function + type | Host-driven column set. Entry point for all discovery. |
-| `isColumnsCollection(value)` | guard | Narrows to `ColumnsCollection`. |
-| `ColumnsSourceShorthand` | type | `"result_pool" \| "current_block"`. |
-| `ColumnsSource` | type | Provider / accessor / `{ columns, isFinal }`. |
-| `ColumnsCollectionDeps` | type | `{ ctx?, driver? }` — ctx override and test seam. |
-| `ColumnsCollectionImpl` | class | Instance type behind `ColumnsCollection`; never constructed directly. |
+| Export                               | Kind            | One-liner                                                             |
+| ------------------------------------ | --------------- | --------------------------------------------------------------------- |
+| `ColumnsCollection(sources?, deps?)` | function + type | Host-driven column set. Entry point for all discovery.                |
+| `isColumnsCollection(value)`         | guard           | Narrows to `ColumnsCollection`.                                       |
+| `ColumnsSourceShorthand`             | type            | `"result_pool" \| "current_block"`.                                   |
+| `ColumnsSource`                      | type            | Provider / accessor / `{ columns, isFinal }`.                         |
+| `ColumnsCollectionDeps`              | type            | `{ ctx?, driver? }` — ctx override and test seam.                     |
+| `ColumnsCollectionImpl`              | class           | Instance type behind `ColumnsCollection`; never constructed directly. |
 
 ### Columns
 
-| Export | Kind | One-liner |
-| --- | --- | --- |
-| `Column(source, opts?)` | function + type | Unified factory: string id or object source → `ColumnRecipe`. |
-| `ColumnRecipe` | interface + function | The recipe contract; also the id-shape-dispatching factory. |
-| `ColumnRecipe.getStatus(id, opts?)` | function | Resolution status of an id without building the recipe. |
-| `DataColumn(source, opts?)` | function | Leaf factory, plus `.fromId` / `.fromPlRef` / `.fromAccessor` / `.fromColumn` and the `getStatus*` statics. |
-| `DataColumnRecipe` | interface | `ColumnRecipe` + `getData()`. |
-| `ColumnSource` | type | Input union of `Column(...)`. |
-| `DataColumnSource` | type | Input union of `DataColumn(...)`. |
-| `DataColumnId` | type | Alias of `PObjectId` — a leaf's id. |
-| `ColumnData` | type | `undefined \| PColumnDataUniversal` — what `getData()` returns. |
-| `ColumnDiscoveredRecipe` | class | Discovery hit reached through a linker chain. |
-| `ColumnFilteredRecipe` | class | Axis-sliced projection. |
-| `ColumnOverriddenRecipe` | class | Spec-patched projection. |
-| `DataColumnImpl` | class | Leaf implementation. Internal — hold `DataColumnRecipe`. |
+| Export                              | Kind                 | One-liner                                                                                                   |
+| ----------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Column(source, opts?)`             | function + type      | Unified factory: string id or object source → `ColumnRecipe`.                                               |
+| `ColumnRecipe`                      | interface + function | The recipe contract; also the id-shape-dispatching factory.                                                 |
+| `ColumnRecipe.getStatus(id, opts?)` | function             | Resolution status of an id without building the recipe.                                                     |
+| `DataColumn(source, opts?)`         | function             | Leaf factory, plus `.fromId` / `.fromPlRef` / `.fromAccessor` / `.fromColumn` and the `getStatus*` statics. |
+| `DataColumnRecipe`                  | interface            | `ColumnRecipe` + `getData()`.                                                                               |
+| `ColumnSource`                      | type                 | Input union of `Column(...)`.                                                                               |
+| `DataColumnSource`                  | type                 | Input union of `DataColumn(...)`.                                                                           |
+| `DataColumnId`                      | type                 | Alias of `PObjectId` — a leaf's id.                                                                         |
+| `ColumnData`                        | type                 | `undefined \| PColumnDataUniversal` — what `getData()` returns.                                             |
+| `ColumnDiscoveredRecipe`            | class                | Discovery hit reached through a linker chain.                                                               |
+| `ColumnFilteredRecipe`              | class                | Axis-sliced projection.                                                                                     |
+| `ColumnOverriddenRecipe`            | class                | Spec-patched projection.                                                                                    |
+| `DataColumnImpl`                    | class                | Leaf implementation. Internal — hold `DataColumnRecipe`.                                                    |
 
 You do not name the recipe classes in ordinary block code. They are listed
 because they appear in stack traces and in `instanceof` checks inside the SDK;
@@ -78,31 +78,31 @@ you cannot import them.
 
 ### Predicates
 
-| Export | Kind | Answers |
-| --- | --- | --- |
-| `isColumn(value)` | guard | Is this any recipe? |
-| `hasReachableData(recipe)` | guard → `DataColumnRecipe` | Can I read the data here, consistent with the spec? |
-| `hasSingleDataColumn(recipe)` | boolean | Does it read exactly one storage column? |
-| `isDataColumn(value)` | guard → `DataColumnRecipe<PObjectId>` | Is this a bare leaf, i.e. is its `id` a `PObjectId`? |
-| `hasColumnData(recipe, opts?)` | boolean | Do the underlying data resources actually carry bytes? |
-| `isLeafColumn` | deprecated alias | Same as `hasSingleDataColumn`. |
+| Export                         | Kind                                  | Answers                                                |
+| ------------------------------ | ------------------------------------- | ------------------------------------------------------ |
+| `isColumn(value)`              | guard                                 | Is this any recipe?                                    |
+| `hasReachableData(recipe)`     | guard → `DataColumnRecipe`            | Can I read the data here, consistent with the spec?    |
+| `hasSingleDataColumn(recipe)`  | boolean                               | Does it read exactly one storage column?               |
+| `isDataColumn(value)`          | guard → `DataColumnRecipe<PObjectId>` | Is this a bare leaf, i.e. is its `id` a `PObjectId`?   |
+| `hasColumnData(recipe, opts?)` | boolean                               | Do the underlying data resources actually carry bytes? |
+| `isLeafColumn`                 | deprecated alias                      | Same as `hasSingleDataColumn`.                         |
 
 ### Status and Errors
 
-| Export | Kind | One-liner |
-| --- | --- | --- |
-| `ColumnFieldStatus` | type | `"present" \| "resolving" \| "absent"` — data-field status, worst across referenced ids. |
-| `ColumnResolutionStatus` | type | Same value space; folds spec + registry readiness. |
-| `ColumnAbsentError` | class | Thrown by factories when a column provably will not appear. |
+| Export                   | Kind  | One-liner                                                                                |
+| ------------------------ | ----- | ---------------------------------------------------------------------------------------- |
+| `ColumnFieldStatus`      | type  | `"present" \| "resolving" \| "absent"` — data-field status, worst across referenced ids. |
+| `ColumnResolutionStatus` | type  | Same value space; folds spec + registry readiness.                                       |
+| `ColumnAbsentError`      | class | Thrown by factories when a column provably will not appear.                              |
 
 ### Utilities
 
-| Export | Kind | One-liner |
-| --- | --- | --- |
+| Export                                       | Kind     | One-liner                                                               |
+| -------------------------------------------- | -------- | ----------------------------------------------------------------------- |
 | `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection. |
-| `ColumnOption` | type | `{ id: ColumnUniversalId; label: string }`. |
-| `expandByPartition(inputs, splitAxes, opts?)` | function | Fan a column out into one recipe per partition value. |
-| `SplitAxis`, `ExpandByPartitionOpts` | types | `{ idx }` and `{ axisValuesLabels? }`. |
+| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                             |
+| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.  |
+| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                  |
 
 ### Exported but Not Part of the Surface
 
@@ -112,13 +112,13 @@ for one is usually re-implementing something `ColumnsCollection` or
 `createPlDataTableV3` already does. Listed so you know what they are when you
 meet them in SDK code, not so you call them.
 
-| Export | What it is |
-| --- | --- |
-| `deriveAxisValuesLabels(source?, opts?)` | Builds an `(axisId) => Record<value, label>` callback from `pl7.app/label` columns — the shape `expandByPartition`'s `axisValuesLabels` option takes. |
-| `collectLinkerIds(recipe)` | Non-hit `PObjectId`s referenced by the recipe's query. |
-| `collectLinkerColumns(recipe, opts?)` | The same set, resolved to leaves. Throws if any is unresolvable. |
-| `hitQualifications(recipe)` | Hit-side axis qualifications, or `[]`. |
-| `queriesQualifications(recipe)` | Per-primary-column axis qualifications, or `{}`. |
+| Export                                   | What it is                                                                                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deriveAxisValuesLabels(source?, opts?)` | Builds an `(axisId) => Record<value, label>` callback from `pl7.app/label` columns — the shape `splitByAxes`'s `axisValuesLabels` option takes. |
+| `collectLinkerIds(recipe)`               | Non-hit `PObjectId`s referenced by the recipe's query.                                                                                          |
+| `collectLinkerColumns(recipe, opts?)`    | The same set, resolved to leaves. Throws if any is unresolvable.                                                                                |
+| `hitQualifications(recipe)`              | Hit-side axis qualifications, or `[]`.                                                                                                          |
+| `queriesQualifications(recipe)`          | Per-primary-column axis qualifications, or `{}`.                                                                                                |
 
 If you do end up needing one of the last four, use them rather than descending
 the wrapper classes by hand: they encapsulate the layering invariants
@@ -130,13 +130,13 @@ wrappers are added.
 Rarely needed in block code: `ColumnsCollection` sources cover the same ground
 with less ceremony. Reach for these only when you need a provider object itself.
 
-| Export | Kind | One-liner |
-| --- | --- | --- |
-| `ColumnsProvider` | interface + factory | `{ getColumns(), isFinal() }`; the factory dispatches on accessor vs upstream-block list. |
-| `ArrayColumnsProvider` | class | Wraps a `PColumn[]` / leaf array. Prefer the `{ columns, isFinal }` source shape. |
-| `AccessorColumnsProvider`, `ResultPoolColumnsProvider` | factory + type | Memoised providers over an accessor root / the result pool. |
-| `AccessorColumnsProviderImpl`, `ResultPoolColumnsProviderImpl` | classes | Their implementations. |
-| `isColumnProvider`, `toColumnProvider`, `getCtxProviders` | functions | Shape guard, coercion, ambient-ctx provider triplet. |
+| Export                                                         | Kind                | One-liner                                                                                 |
+| -------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| `ColumnsProvider`                                              | interface + factory | `{ getColumns(), isFinal() }`; the factory dispatches on accessor vs upstream-block list. |
+| `ArrayColumnsProvider`                                         | class               | Wraps a `PColumn[]` / leaf array. Prefer the `{ columns, isFinal }` source shape.         |
+| `AccessorColumnsProvider`, `ResultPoolColumnsProvider`         | factory + type      | Memoised providers over an accessor root / the result pool.                               |
+| `AccessorColumnsProviderImpl`, `ResultPoolColumnsProviderImpl` | classes             | Their implementations.                                                                    |
+| `isColumnProvider`, `toColumnProvider`, `getCtxProviders`      | functions           | Shape guard, coercion, ambient-ctx provider triplet.                                      |
 
 ## `ColumnsCollection`
 
@@ -155,13 +155,13 @@ is no `dispose()`: the host pins each handle to the active render ctx.
 pool. Narrow it aggressively — every entry widens the host-side spec frame the
 collection queries against.
 
-| Source entry | Expands to |
-| --- | --- |
-| `"current_block"` | `outputs` + `prerun` accessors of this block, whichever exist |
-| `"result_pool"` | the upstream-block result pool |
-| `TreeNodeAccessor` | that subtree |
-| `ColumnsCollection` | that collection, by handle (chaining) |
-| `ColumnsProvider` | its `getColumns()` ids + `isFinal()` |
+| Source entry           | Expands to                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `"current_block"`      | `outputs` + `prerun` accessors of this block, whichever exist                              |
+| `"result_pool"`        | the upstream-block result pool                                                             |
+| `TreeNodeAccessor`     | that subtree                                                                               |
+| `ColumnsCollection`    | that collection, by handle (chaining)                                                      |
+| `ColumnsProvider`      | its `getColumns()` ids + `isFinal()`                                                       |
 | `{ columns, isFinal }` | the entries' `.id`s; `columns` accepts `PColumn` / `DataColumnRecipe` / any `ColumnRecipe` |
 
 `isFinal` says whether the visible column set can still grow. While upstream
@@ -171,16 +171,16 @@ compute it; you supply it only with the `{ columns, isFinal }` shape.
 **Instance surface.** Every method that returns a collection mints a fresh
 handle on the host; the receiver is unchanged.
 
-| Member | Returns | Cost |
-| --- | --- | --- |
-| `.handle` | `CollectionHandle` | free — pass into another `ColumnsCollection(...)` |
-| `.isEmpty()` | `boolean` | host call, no ids transferred |
-| `.isFinal()` | `boolean` | host call |
-| `.getColumnIds()` | `ColumnUniversalId[]` | host call; the cheapest exit |
-| `.getColumns()` | `ColumnRecipe[]` | ids + one recipe construction each |
-| `.addSource(source)` | `ColumnsCollection` | host call |
-| `.discover(options)` | `ColumnsCollection` | host-side discovery query |
-| `.filter(options)` | `ColumnsCollection` | host-side selector match |
+| Member               | Returns               | Cost                                              |
+| -------------------- | --------------------- | ------------------------------------------------- |
+| `.handle`            | `CollectionHandle`    | free — pass into another `ColumnsCollection(...)` |
+| `.isEmpty()`         | `boolean`             | host call, no ids transferred                     |
+| `.isFinal()`         | `boolean`             | host call                                         |
+| `.getColumnIds()`    | `ColumnUniversalId[]` | host call; the cheapest exit                      |
+| `.getColumns()`      | `ColumnRecipe[]`      | ids + one recipe construction each                |
+| `.addSource(source)` | `ColumnsCollection`   | host call                                         |
+| `.discover(options)` | `ColumnsCollection`   | host-side discovery query                         |
+| `.filter(options)`   | `ColumnsCollection`   | host-side selector match                          |
 
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
@@ -208,11 +208,11 @@ ColumnsCollection([alreadyNarrowed, "result_pool"]);
 
 ```ts
 interface DiscoverColumnsOptions {
-  include?: ColumnSelector;   // omitted = include all
-  exclude?: ColumnSelector;   // applied after include
-  mode?: MatchingMode;        // default "enrichment"; ignored without anchors
+  include?: ColumnSelector; // omitted = include all
+  exclude?: ColumnSelector; // applied after include
+  mode?: MatchingMode; // default "enrichment"; ignored without anchors
   anchors?: Record<string, AnchorEntry>;
-  maxHops?: number;           // default 4 with anchors, 0 without
+  maxHops?: number; // default 4 with anchors, 0 without
 }
 
 type ColumnsDiscoverOptions = DiscoverColumnsOptions;
@@ -227,11 +227,11 @@ it is called on. It matches selectors against what is already in the set.
 `AnchorEntry` is `PlRef | PObjectId | PColumnSpec | RelaxedColumnSelector`. All
 four are plain JSON, so the option object crosses the bridge unchanged.
 
-| `MatchingMode` | Axis behaviour |
-| --- | --- |
+| `MatchingMode`           | Axis behaviour                                                      |
+| ------------------------ | ------------------------------------------------------------------- |
 | `"enrichment"` (default) | anchor axes may float over un-mapped hit axes — "extend this query" |
-| `"related"` | both source and hit axes may float; widest match |
-| `"exact"` | no floating, no qualifications; strict equality |
+| `"related"`              | both source and hit axes may float; widest match                    |
+| `"exact"`                | no floating, no qualifications; strict equality                     |
 
 ### Selectors
 
@@ -245,8 +245,8 @@ interface RelaxedColumnSelector {
   domain?: Record<string, RelaxedStringMatchers>;
   contextDomain?: Record<string, RelaxedStringMatchers>;
   annotations?: Record<string, RelaxedStringMatchers>;
-  axes?: RelaxedAxisSelector[];      // { name?, type?, domain?, contextDomain?, annotations? }
-  partialAxesMatch?: boolean;        // omit to require an exact axis-set length
+  axes?: RelaxedAxisSelector[]; // { name?, type?, domain?, contextDomain?, annotations? }
+  partialAxesMatch?: boolean; // omit to require an exact axis-set length
 }
 
 type ColumnSelector = RelaxedColumnSelector | RelaxedColumnSelector[];
@@ -261,7 +261,7 @@ Semantics:
 - **Prefer `{ type: "exact", value }` over `^…$`** when you mean one literal
   name. Column namespaces are full of `.` and `/`; the exact matcher takes the
   value literally and needs no escaping.
-- Annotation and domain keys must be *present* in the spec to match. A negation
+- Annotation and domain keys must be _present_ in the spec to match. A negation
   regex will not match columns that lack the key at all — use `exclude` for
   "not this", not a regex.
 - There are no `(spec) => boolean` selectors. The point of a selector is that it
@@ -296,14 +296,14 @@ interface ColumnRecipe<ID extends ColumnRecipeId = ColumnRecipeId> {
 
 (`sdk/model/src/columns/column_recipes/types.ts`)
 
-| Member | Cost | Notes |
-| --- | --- | --- |
-| `id` | free | field, not a method. Canonical, addressable, transportable. |
-| `getReferencedIds()` | free | every storage column the recipe reaches. |
-| `getSpec()` | **host round-trip**, memoised per instance | always returns a value — a constructed recipe is spec-complete by contract. |
-| `getQuery()` | free | the `SpecQuery` IR the host executes. |
-| `getDataStatus()` | host call, memoised | worst status across `getReferencedIds()`. |
-| `withSpecs(patch)` | free | new recipe, new id; receiver unchanged. |
+| Member               | Cost                                       | Notes                                                                       |
+| -------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| `id`                 | free                                       | field, not a method. Canonical, addressable, transportable.                 |
+| `getReferencedIds()` | free                                       | every storage column the recipe reaches.                                    |
+| `getSpec()`          | **host round-trip**, memoised per instance | always returns a value — a constructed recipe is spec-complete by contract. |
+| `getQuery()`         | free                                       | the `SpecQuery` IR the host executes.                                       |
+| `getDataStatus()`    | host call, memoised                        | worst status across `getReferencedIds()`.                                   |
+| `withSpecs(patch)`   | free                                       | new recipe, new id; receiver unchanged.                                     |
 
 Two recipes are equal as value-objects exactly when their ids match. There is no
 `getData()` on this interface, no spec field, and no `getSpecOverrides` /
@@ -316,7 +316,7 @@ specs. Most pipelines never call it: they pass `.id` on.
 
 ```ts
 type SpecOverrides = Pick<PColumnSpec, "domain" | "contextDomain" | "annotations"> & {
-  axesSpec?: AxisPatches;   // Record<axisIndex, Partial<AxisSpec>> — positional, not AxisSpec[]
+  axesSpec?: AxisPatches; // Record<axisIndex, Partial<AxisSpec>> — positional, not AxisSpec[]
 };
 ```
 
@@ -342,7 +342,7 @@ If you find yourself calling `getSpec()` only to feed the result back into
 
 ```ts
 interface DataColumnRecipe<ID = ColumnRecipeId> extends ColumnRecipe<ID> {
-  getData(): ColumnData;   // undefined | PColumnDataUniversal — host round-trip
+  getData(): ColumnData; // undefined | PColumnDataUniversal — host round-trip
 }
 ```
 
@@ -355,12 +355,12 @@ throwing path behind the guard.
 
 The id decides the class. You never choose it.
 
-| Id shape on the wire | Recipe class | What it is |
-| --- | --- | --- |
-| bare `PObjectId` | `DataColumnImpl` (as `DataColumnRecipe`) | a plain stored column; spec and data both reachable |
-| `ColumnOverriddenId` | `ColumnOverriddenRecipe` | "that recipe, with domain / contextDomain / annotations / axes patched" |
-| `ColumnFilteredId` | `ColumnFilteredRecipe` | "that recipe, with some axes pinned to values" |
-| `ColumnDiscoveredId` | `ColumnDiscoveredRecipe` | a discovery hit, carrying the linker path back to its anchor |
+| Id shape on the wire | Recipe class                             | What it is                                                              |
+| -------------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
+| bare `PObjectId`     | `DataColumnImpl` (as `DataColumnRecipe`) | a plain stored column; spec and data both reachable                     |
+| `ColumnOverriddenId` | `ColumnOverriddenRecipe`                 | "that recipe, with domain / contextDomain / annotations / axes patched" |
+| `ColumnFilteredId`   | `ColumnFilteredRecipe`                   | "that recipe, with some axes pinned to values"                          |
+| `ColumnDiscoveredId` | `ColumnDiscoveredRecipe`                 | a discovery hit, carrying the linker path back to its anchor            |
 
 Layering rules, enforced by the wrappers themselves:
 
@@ -393,8 +393,8 @@ The one entry point. Routing:
 Call the dispatchers directly when the call site is unambiguous:
 
 ```ts
-ColumnRecipe(id);              // string id, routed by shape
-DataColumn(source);            // id | PlRef | PColumn | LeafEntry | DataColumnRecipe
+ColumnRecipe(id); // string id, routed by shape
+DataColumn(source); // id | PlRef | PColumn | LeafEntry | DataColumnRecipe
 DataColumn.fromId(pObjectId);
 DataColumn.fromPlRef(ref);
 DataColumn.fromColumn(pColumn);
@@ -423,10 +423,10 @@ DataColumn.getStatusByAccessor(entry);
 Inside a loop over known ids, one `getStatus` up front beats a try/catch around
 the factory.
 
-| Type | Means |
-| --- | --- |
-| `ColumnFieldStatus` | data-field status, worst across every referenced id. What `recipe.getDataStatus()` returns; the usual thing to check while iterating recipes. |
-| `ColumnResolutionStatus` | same values, but folds spec readiness and leaf-registry readiness: "can this recipe be *constructed* at all in this ctx". |
+| Type                     | Means                                                                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ColumnFieldStatus`      | data-field status, worst across every referenced id. What `recipe.getDataStatus()` returns; the usual thing to check while iterating recipes. |
+| `ColumnResolutionStatus` | same values, but folds spec readiness and leaf-registry readiness: "can this recipe be _constructed_ at all in this ctx".                     |
 
 Both are `"present" | "resolving" | "absent"`, worst-wins (`absent` ▸
 `resolving` ▸ `present`).
@@ -444,10 +444,10 @@ classes exist is an implementation detail behind `recipe.id` — never
 `instanceof`-narrow to one.
 
 ```ts
-isColumn(value);              // value is Column                     — any recipe
-hasReachableData(recipe);     // recipe is DataColumnRecipe           — data readable here
-hasSingleDataColumn(recipe);  // boolean                             — reads one column, not several
-isDataColumn(value);          // value is DataColumnRecipe<PObjectId> — bare leaf
+isColumn(value); // value is Column                     — any recipe
+hasReachableData(recipe); // recipe is DataColumnRecipe           — data readable here
+hasSingleDataColumn(recipe); // boolean                             — reads one column, not several
+isDataColumn(value); // value is DataColumnRecipe<PObjectId> — bare leaf
 ```
 
 **`hasReachableData` — "can I read the data?"** True for a bare leaf and for a
@@ -470,18 +470,18 @@ The SDK's own `discoverTableColumns` splits on exactly this predicate.
 
 **`isDataColumn` — "is this a storage column?"** True only for a bare leaf,
 whose `id` is a `PObjectId` naming a real column in storage. Reach for it when a
-*type* forces that id shape — `PColumn.id`, `PColumnIdAndSpec.columnId` — not
+_type_ forces that id shape — `PColumn.id`, `PColumnIdAndSpec.columnId` — not
 when you merely want to read data.
 
 The predicates are independent. An axis-filtered leaf reads a single column and
 has no reachable data. Pick by what you do next, not by which sounds stricter:
 
-| You want to… | Guard |
-| --- | --- |
-| call `getData()` in the sandbox | `hasReachableData` |
+| You want to…                              | Guard                 |
+| ----------------------------------------- | --------------------- |
+| call `getData()` in the sandbox           | `hasReachableData`    |
 | use it as a `createPlDataTableV3` primary | `hasSingleDataColumn` |
-| put its id in a `PObjectId`-typed slot | `isDataColumn` |
-| know whether bytes actually landed | `hasColumnData` |
+| put its id in a `PObjectId`-typed slot    | `isDataColumn`        |
+| know whether bytes actually landed        | `hasColumnData`       |
 
 ## Utilities
 
@@ -511,10 +511,10 @@ const options = deriveColumnOptions(
 );
 ```
 
-### `expandByPartition`
+### `splitByAxes`
 
 ```ts
-expandByPartition(
+splitByAxes(
   inputs: Column[],
   splitAxes: { idx: number }[],
   opts?: { axisValuesLabels?: (axisId: AxisId) => undefined | Record<string | number, string> },
@@ -530,9 +530,11 @@ node), `Overridden` adds `domain[axisName]` plus a `split:<axisId>` entry on
 Inputs must be readable here — partition keys are inspected via `getData()`.
 Guard with `hasReachableData`, not `hasSingleDataColumn`.
 
-`axisValuesLabels` is optional; without it a split is labelled by its raw axis
-value. Supply your own resolver, or `deriveAxisValuesLabels()` to build one from
-the `pl7.app/label` columns in scope.
+`axisValuesLabels` defaults to `deriveAxisValuesLabels()` over the ambient
+render ctx, so splits are labelled from the `pl7.app/label` columns in scope
+without any wiring. The label columns are discovered lazily, on the first axis
+lookup. Supply your own resolver to narrow the label source, or
+`() => undefined` to keep raw axis values.
 
 Returns `undefined` when an input's data is neither a live `TreeNodeAccessor`
 nor parsed `DataInfoEntries`, or when partition keys can't be read — i.e. "not
@@ -548,21 +550,21 @@ and the cast silences the type-checker, not the runtime invariant.
 
 ### Accepts Ids
 
-| Consumer | Accepts |
-| --- | --- |
-| `ctx.createPFrame(def)` | `PFrameDef<PObjectId \| SUniversalPColumnId \| PColumn<…>>` — ids and `PColumn`s, mixed |
-| `ctx.createPTableV2(def)` | `PTableDefV2<ColumnUniversalId \| PColumn<…>>` |
-| `createPlDataTableV3(ctx, options)` | `ColumnRecipe[]` directly, or a declarative discovery config |
+| Consumer                            | Accepts                                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `ctx.createPFrame(def)`             | `PFrameDef<PObjectId \| SUniversalPColumnId \| PColumn<…>>` — ids and `PColumn`s, mixed |
+| `ctx.createPTableV2(def)`           | `PTableDefV2<ColumnUniversalId \| PColumn<…>>`                                          |
+| `createPlDataTableV3(ctx, options)` | `ColumnRecipe[]` directly, or a declarative discovery config                            |
 
 `SUniversalPColumnId` is a legacy alias of `ColumnUniversalId` — same type, no
 migration needed where a signature still names it.
 
 ```ts
-ctx.createPFrame(collection.getColumnIds());   // cheapest form
-ctx.createPFrame(recipes.map((c) => c.id));    // works for any recipe, leaf or wrapped
+ctx.createPFrame(collection.getColumnIds()); // cheapest form
+ctx.createPFrame(recipes.map((c) => c.id)); // works for any recipe, leaf or wrapped
 ```
 
-Passing ids is also the *only* way to feed wrapped recipes into a PFrame. Most
+Passing ids is also the _only_ way to feed wrapped recipes into a PFrame. Most
 of them cannot be read in the sandbox at all, but `recipe.id` is a
 `ColumnUniversalId` the host resolves server-side. Don't try to narrow a recipe
 list before building a PFrame — pass `.id`.
@@ -573,12 +575,12 @@ Prefer the id form whenever the column came from the host in the first place.
 
 ### Does Not Accept Ids
 
-| Slot | Needs | Why |
-| --- | --- | --- |
-| `ctx.createPTable(def)` (v1) | `PColumn<PColumnDataUniversal>[]` | pre-id API; use `createPTableV2` |
-| `createPFrameForGraphs(ctx, cols)` | `PColumn<PColumnDataUniversal>[]` | no id form yet |
-| `PColumn.id` | `PObjectId` | physical id slot |
-| `PColumnIdAndSpec.columnId` | `PObjectId` | physical id slot |
+| Slot                               | Needs                             | Why                              |
+| ---------------------------------- | --------------------------------- | -------------------------------- |
+| `ctx.createPTable(def)` (v1)       | `PColumn<PColumnDataUniversal>[]` | pre-id API; use `createPTableV2` |
+| `createPFrameForGraphs(ctx, cols)` | `PColumn<PColumnDataUniversal>[]` | no id form yet                   |
+| `PColumn.id`                       | `PObjectId`                       | physical id slot                 |
+| `PColumnIdAndSpec.columnId`        | `PObjectId`                       | physical id slot                 |
 
 The bridge, valid **only** for bare leaves:
 
@@ -652,16 +654,16 @@ drops valid projections.
 
 What crosses the sandbox bridge, and when.
 
-| Operation | Bridge traffic |
-| --- | --- |
-| `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource` | one host call, returns a handle |
-| `.isEmpty()`, `.isFinal()` | one host call, no payload |
-| `.getColumnIds()` | one host call, N id strings |
-| `.getColumns()` | ids + per-id registry resolution (no spec bytes) |
-| `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none |
-| `recipe.getSpec()` | one round-trip per recipe, memoised per instance |
-| `recipe.getData()` | one round-trip, memoised per instance |
-| `createPFrame(ids)` / `createPTableV2(ids)` | ids only; host resolves spec and data |
+| Operation                                                         | Bridge traffic                                   |
+| ----------------------------------------------------------------- | ------------------------------------------------ |
+| `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource`    | one host call, returns a handle                  |
+| `.isEmpty()`, `.isFinal()`                                        | one host call, no payload                        |
+| `.getColumnIds()`                                                 | one host call, N id strings                      |
+| `.getColumns()`                                                   | ids + per-id registry resolution (no spec bytes) |
+| `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none                                             |
+| `recipe.getSpec()`                                                | one round-trip per recipe, memoised per instance |
+| `recipe.getData()`                                                | one round-trip, memoised per instance            |
+| `createPFrame(ids)` / `createPTableV2(ids)`                       | ids only; host resolves spec and data            |
 
 Rules that follow:
 
@@ -674,7 +676,7 @@ Rules that follow:
 
 `etc/blocks/table-test/model/src/index.ts` exercises the surface end to end:
 anchored discovery, `hasSingleDataColumn` for the primary split,
-`hasReachableData` before `expandByPartition`, `deriveAxisValuesLabels`, recipe
+`hasReachableData` before `splitByAxes`, recipe
 ids used as filter and sort targets, and both `createPlDataTableV3` forms.
 
 ```ts
@@ -691,9 +693,7 @@ const countLeaves = ColumnsCollection()
   .getColumns()
   .filter(hasReachableData);
 
-const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
-  axisValuesLabels: deriveAxisValuesLabels(),
-});
+const splitRecipes = splitByAxes(countLeaves, [{ idx: 0 }]);
 if (splitRecipes === undefined) return undefined;
 
 const primaryIds = new Set(primary.map((c) => c.id));
@@ -713,13 +713,13 @@ return createPlDataTableV3(ctx, {
 
 Still exported, do not write new code against it:
 
-| Name | Instead |
-| --- | --- |
-| `isLeafColumn` | `hasSingleDataColumn` |
-| `ResultPool` and every column entry point on it (`ctx.resultPool.*`) | `ColumnsCollection` / `Column(ref)` |
-| `TreeNodeAccessor.getPColumns()` | `ColumnsCollection([accessor])` |
-| `ctx.getBlockLabel(blockId)` | nothing — slated to return dummy values |
-| `SUniversalPColumnId` | `ColumnUniversalId` (same type) |
+| Name                                                                 | Instead                                 |
+| -------------------------------------------------------------------- | --------------------------------------- |
+| `isLeafColumn`                                                       | `hasSingleDataColumn`                   |
+| `ResultPool` and every column entry point on it (`ctx.resultPool.*`) | `ColumnsCollection` / `Column(ref)`     |
+| `TreeNodeAccessor.getPColumns()`                                     | `ColumnsCollection([accessor])`         |
+| `ctx.getBlockLabel(blockId)`                                         | nothing — slated to return dummy values |
+| `SUniversalPColumnId`                                                | `ColumnUniversalId` (same type)         |
 
 `TreeNodeAccessor.getIsFinal()` is not deprecated, but once you have wrapped the
 accessor in a collection, read `collection.isFinal()` instead — same answer for
@@ -733,23 +733,3 @@ label }` wire shape with `refsWithEnrichments`. Its `@deprecated` note points at
 since that changes the stored value from a `PlRef` to a `ColumnUniversalId`.
 
 Removed names and their one-to-one replacements are in the migration doc.
-
-## Where the Code Lives
-
-| Area | Path |
-| --- | --- |
-| Collection proxy | `sdk/model/src/columns/columns_collection.ts` |
-| Leaf recipe, factories, `ColumnAbsentError` | `sdk/model/src/columns/data_column.ts` |
-| Recipe contract and dispatcher | `sdk/model/src/columns/column_recipes/{types,index}.ts` |
-| Wrapper recipes | `sdk/model/src/columns/column_recipes/column_{overrided,filtered,discovered}_recipe.ts` |
-| Unified `Column`, `isColumn` | `sdk/model/src/columns/column.ts` |
-| Predicates and recipe-walk helpers | `sdk/model/src/columns/utils.ts` |
-| Partition split | `sdk/model/src/columns/expand_by_partition.ts` |
-| Axis-value labels | `sdk/model/src/columns/derive_axis_values_labels.ts` |
-| Providers | `sdk/model/src/columns/column_providers/` |
-| Id types and helpers | `lib/model/common/src/drivers/pframe/spec/{ids,overridden,filtered_column,discovered_column}.ts` |
-| Selector types and normalisation | `lib/model/common/src/columns/column_selector.ts` |
-| Discover options | `lib/model/common/src/drivers/columns/discover_columns_options.ts` |
-| Collection driver contract | `lib/model/common/src/drivers/columns/columns_collection_driver.ts` |
-| Host-side physical resolver | `lib/node/pl-middle-layer/src/js_render/column_registry.ts` |
-| Table assembly | `sdk/model/src/components/PlDataTable/createPlDataTable/` |

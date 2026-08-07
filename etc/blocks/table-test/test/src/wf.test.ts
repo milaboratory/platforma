@@ -102,7 +102,7 @@ blockTest(
     const fullIndices = Array.from({ length: fullShape.columns }, (_, i) => i);
     const fullData = await pFrameDriver.getData(fullHandle, fullIndices);
 
-    // `count` (group, name) is partitioned by `group`. expandByPartition fans
+    // `count` (group, name) is partitioned by `group`. splitByAxes fans
     // it out into one column per group value — G1 and G2. Each split column
     // has `group` axis sliced away and its `domain.group = "<value>"` patched
     // via specOverride. The values come from count.tsv:
