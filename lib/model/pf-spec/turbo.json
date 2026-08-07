@@ -1,0 +1,17 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "transpile": {
+      "outputs": ["./src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "types:check", "transpile"]
+    },
+    "check": {
+      "dependsOn": ["^build", "transpile"]
+    },
+    "types:check": {
+      "dependsOn": ["^build", "transpile"]
+    }
+  }
+}

@@ -8,6 +8,7 @@ import {
   type PObjectId,
 } from "@milaboratories/pl-model-common";
 import type { PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import type { PFrame } from "@milaboratories/pf-spec";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { logPFrames } from "./logging";
 import type { PFramePool } from "./pframe_pool";
@@ -117,7 +118,7 @@ export class PTablePool<TreeEntry extends JsonSerializable> extends RefCountPool
   public acquireFromLegacy(opts: {
     pFrameHandle: PFrameHandle;
     def: PTableDef<PObjectId>;
-    pFrameSpec: PFrameInternal.PFrameWasmV3;
+    pFrameSpec: PFrame;
   }): { def: FullPTableDef; entry: PoolEntry<PTableHandle, PTableHolder> } {
     const def = buildFullPTableDefFromLegacy(opts);
     return { def, entry: this.acquire(def) };

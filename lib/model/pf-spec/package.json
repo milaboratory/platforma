@@ -1,17 +1,14 @@
 {
-  "name": "@milaboratories/pf-spec-driver",
-  "version": "1.4.24",
-  "description": "PSpecDriver implementation: a handle pool and error handling over pf-spec",
+  "name": "@milaboratories/pf-spec",
+  "version": "0.0.0",
+  "description": "Spec-plane PFrame operations: bindings to the pframes WASM component",
   "keywords": [],
   "license": "UNLICENSED",
   "files": [
     "./dist/**/*",
-    "./src/**/*"
+    "./src/*.ts"
   ],
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,6 +16,7 @@
     }
   },
   "scripts": {
+    "transpile": "node --conditions=wasm scripts/transpile.ts",
     "build": "ts-builder build --target node --build-config build.config.js",
     "watch": "ts-builder build --target node --build-config build.config.js --watch",
     "check": "ts-builder check --target node",
@@ -30,17 +28,23 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/pf-spec": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@noble/hashes": "catalog:"
+    "@milaboratories/pl-model-middle-layer": "workspace:*"
   },
   "devDependencies": {
+    "@bytecodealliance/jco-transpile": "catalog:",
+    "@bytecodealliance/preview2-shim": "catalog:",
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pframes-rs-wasip2": "catalog:",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "rollup-plugin-copy": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@bytecodealliance/preview2-shim": "catalog:"
   }
 }
