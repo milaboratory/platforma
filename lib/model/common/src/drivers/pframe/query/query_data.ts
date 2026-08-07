@@ -23,6 +23,7 @@ import type {
   QueryFilter,
   QueryInlineColumn,
   QueryJoinEntry,
+  QueryLimit,
   QueryLinkerJoin,
   QueryOuterJoin,
   QuerySliceAxes,
@@ -101,6 +102,8 @@ export type DataQuerySliceAxes = QuerySliceAxes<DataQuery, number>;
 export type DataQuerySort = QuerySort<DataQuery, DataQueryExpression>;
 /** @see QueryFilter */
 export type DataQueryFilter = QueryFilter<DataQuery, DataQueryBooleanExpression>;
+/** @see QueryLimit */
+export type DataQueryLimit = QueryLimit<DataQuery>;
 /** @see QueryTransformColumns */
 export type DataQueryTransformColumns = QueryTransformColumns<
   DataQuery,
@@ -129,6 +132,7 @@ export type DataQuery =
   | DataQuerySliceAxes
   | DataQuerySort
   | DataQueryFilter
+  | DataQueryLimit
   | DataQueryTransformColumns;
 
 /** @see ExprAxisRef */

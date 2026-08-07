@@ -919,6 +919,29 @@ export interface QueryFilter<Q, E> {
 }
 
 /**
+ * Limit query operation.
+ *
+ * Keeps only the first `fetch` records.
+ *
+ * **Behavior**:
+ * - All axes and columns pass through unchanged; only record count changes
+ * - Order is determined by the pending sort of the input (or axis order by default)
+ *
+ * @template Q - Input query type
+ *
+ * @example
+ * // Keep the first 100 records
+ * { type: 'limit', input: dataQuery, fetch: 100 }
+ */
+export interface QueryLimit<Q> {
+  type: "limit";
+  /** Input query to limit */
+  input: Q;
+  /** Maximum number of records to keep */
+  fetch: number;
+}
+
+/**
  * Column reference query (leaf node).
  *
  * References an existing column by its unique identifier.

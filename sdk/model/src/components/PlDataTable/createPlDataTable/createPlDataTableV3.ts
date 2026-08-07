@@ -97,12 +97,19 @@ export type ColumnVisibilityRule = {
   visibility: "default" | "optional" | "hidden";
 };
 
+/** Row cap applied to data-table queries when the runtime supports the limit node. */
+const PL_DATA_TABLE_ROW_LIMIT = 50_000;
+
 export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
   const state = upgradePlDataTableStateV2(options.tableState);
   const primaryJoinType = options.primaryJoinType ?? "full";
+
+  // Cap rows only when the desktop's pframe engine understands the `limit` query
+  // node; older runtimes silently ignore an unknown flag, so fall back to no limit.
+  const limit = ctx.featureFlags?.pFrameQueryLimitSupport && PL_DATA_TABLE_ROW_LIMIT;
 
   const resolved = resolveInputColumns(ctx, options);
   if (resolved === undefined) return undefined;
@@ -157,6 +164,7 @@ export function createPlDataTableV3<A, U>(
     secondary: [...direct, ...linked],
     filters,
     sorting,
+    limit,
   });
 
   const fullHandle = ctx.createPTableV2(fullDef);
@@ -193,6 +201,7 @@ export function createPlDataTableV3<A, U>(
     secondary: [...visible.direct, ...visible.linked],
     filters,
     sorting,
+    limit,
   });
   const visibleHandle = ctx.createPTableV2(visibleDef);
 
