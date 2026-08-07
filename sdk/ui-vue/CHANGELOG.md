@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.80.17
+
+### Patch Changes
+
+- Updated dependencies [da11734]
+  - @milaboratories/pf-spec-driver@1.5.0
+  - @platforma-sdk/model@1.80.17
+  - @milaboratories/columns-collection-driver@0.2.3
+  - @milaboratories/pl-model-common@1.47.3
+  - @milaboratories/uikit@2.15.21
+
 ## 1.80.15
 
 ### Patch Changes
