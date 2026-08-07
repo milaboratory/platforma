@@ -1,5 +1,5 @@
 export * from "./column_providers";
-export * from "./expand_by_partition";
+export * from "./split_by_axes";
 export * from "./derive_axis_values_labels";
 export * from "./columns_collection";
 export * from "./data_column";

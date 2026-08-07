@@ -6,8 +6,7 @@ import {
   PlDataTableFilters,
   createPlDataTableStateV2,
   createPlDataTableV3,
-  deriveAxisValuesLabels,
-  expandByPartition,
+  splitByAxes,
   hasSingleDataColumn,
   hasReachableData,
   type InferHrefType,
@@ -146,9 +145,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
       .getColumns()
       .filter(hasReachableData);
 
-    const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
-      axisValuesLabels: deriveAxisValuesLabels(),
-    });
+    const splitRecipes = splitByAxes(countLeaves, [{ idx: 0 }]);
     if (splitRecipes === undefined) return undefined;
 
     const primaryIds = new Set<ColumnUniversalId>(primary.map((c) => c.id));

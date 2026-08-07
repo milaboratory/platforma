@@ -18,7 +18,7 @@ const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
  * column-access mechanism (filtered {@link ColumnsCollection}) instead of
  * walking the raw result pool.
  *
- * Pair with {@link expandByPartition} (or any consumer expecting the
+ * Pair with {@link splitByAxes} (or any consumer expecting the
  * `(axisId) => Record<axisValue, label>` shape).
  *
  * Skips:

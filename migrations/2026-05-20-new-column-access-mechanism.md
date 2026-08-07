@@ -270,7 +270,7 @@ ctx.createPFrame(recipes.map((c) => c.id)); // works for any recipe — leaf or 
 
 (Code that still needs a `PColumn<...>[]`, e.g. `createPFrameForGraphs`, does not have this id-form yet — see the "DataColumn → PColumn adapter" section below for the materialisation pattern that only works for leaves.)
 
-You can still pass `PColumn` objects with live `TreeNodeAccessor` / `DataInfo` data when the column was assembled in the sandbox (e.g. via `expandByPartition`); the helper that converts those (`transformPColumnData`) was renamed and exported as `finalizePColumnData`. Prefer the id form whenever the column came from the host in the first place.
+You can still pass `PColumn` objects with live `TreeNodeAccessor` / `DataInfo` data when the column was assembled in the sandbox (e.g. via `splitByAxes`); the helper that converts those (`transformPColumnData`) was renamed and exported as `finalizePColumnData`. Prefer the id form whenever the column came from the host in the first place.
 
 ---
 
@@ -710,7 +710,7 @@ Notes:
 - `PColumnIdAndSpec.columnId: PObjectId` — same constraint by the same logic. Only `DataColumn.id` (bare `PObjectId`) goes there; never a `ColumnUniversalId` from a wrapper recipe.
 - The `{ anchor: 'main', idx: 1 }` axis-binding from legacy `getAnchoredPColumns` has no `RelaxedAxisSelector` form. Workaround: read the anchor's `axesSpec[i].name` and pass it as `axes: [{ name }]` in the new selector — the axis-name match is enough for the common case.
 
-### Splitting columns by partition — use `expandByPartition`
+### Splitting a column into one column per axis value — use `splitByAxes`
 
 The legacy "snapshot to N synthetic PColumns" pattern (read `data` accessor, fan out, wrap each item with a fresh id, re-wrap via `DataColumnImpl.fromColumn`) does not fit the new recipe model. Two traps:
 
@@ -718,16 +718,15 @@ The legacy "snapshot to N synthetic PColumns" pattern (read `data` accessor, fan
 
 2. **You cannot embed a foreign canonical id inside `LocalPObjectId.resolvePath` either.** `createLocalPObjectId([col.id, ...], value)` parses and passes `extractPObjectId`, but it abuses the semantics of `LocalPObjectKey` (a path inside a _block's own_ local tree) by stuffing a `GlobalPObjectId` JSON in as a path element. Nested canonical ids are not how this layer composes.
 
-**Use the SDK helper `expandByPartition`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverriddenRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverriddenId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
+**Use the SDK helper `splitByAxes`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverriddenRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverriddenId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
 
-For human-readable axis-value labels in the trace annotation, pair it with `deriveAxisValuesLabels()` — the modern replacement for the legacy `ctx.resultPool.findLabels(axisId)`. It reads all label columns in scope and returns a `(axisId) => Record<value, label>` resolver.
+Human-readable axis-value labels in the trace annotation come for free: the `axisValuesLabels` option defaults to `deriveAxisValuesLabels()` — the modern replacement for the legacy `ctx.resultPool.findLabels(axisId)`. It reads all label columns in scope and returns a `(axisId) => Record<value, label>` resolver, discovered lazily on the first lookup. Pass the option explicitly to narrow the label source, or `() => undefined` to keep raw axis values.
 
 ```ts
 import {
   ColumnsCollection,
   createPlDataTableV3,
-  deriveAxisValuesLabels,
-  expandByPartition,
+  splitByAxes,
   hasReachableData,
   hasSingleDataColumn,
 } from "@platforma-sdk/model";
@@ -748,7 +747,7 @@ import {
     .filter(hasSingleDataColumn);
   if (primary.length === 0) return undefined;
 
-  // Inputs for the split must be readable here — `expandByPartition` calls
+  // Inputs for the split must be readable here — `splitByAxes` calls
   // `getData()` on each to inspect partitions. `hasSingleDataColumn` is the wrong
   // guard: an axis-filtered column passes it but has no readable data.
   const countLeaves = ColumnsCollection()
@@ -756,9 +755,7 @@ import {
     .getColumns()
     .filter(hasReachableData);
 
-  const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
-    axisValuesLabels: deriveAxisValuesLabels(),
-  });
+  const splitRecipes = splitByAxes(countLeaves, [{ idx: 0 }]);
   if (splitRecipes === undefined) return undefined;
 
   const primaryIds = new Set(primary.map((c) => c.id));
