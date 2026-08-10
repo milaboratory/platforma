@@ -9,6 +9,7 @@ import {
 } from "@milaboratories/pl-model-middle-layer";
 import { storageByUrl } from "../io/storage";
 import { BlockRegistryV2 } from "../v2/registry/registry";
+import { publishBlock } from "../v2/publish-block";
 import { buildPublishedCoords, writePublishedCoords } from "../v2/resolve_to_registry";
 import path from "node:path";
 
@@ -82,15 +83,23 @@ export function publishCommand(): Command {
       manifest as BlockPackManifest & Record<string, unknown>,
     );
     const manifestRoot = path.dirname(manifestPath);
+    // The facade package root holds `package.json` (with the direct kind
+    // dependency the kind-first publish reads); the manifest sits one level down
+    // in `block-pack/`. `readFacadeKindDependency`/`resolveFacadeKind` need the
+    // package root, not the block-pack dir.
+    const facadeDir = path.dirname(manifestRoot);
 
     logger.info(`Manifest root = ${manifestRoot}`);
+    logger.info(`Facade root = ${facadeDir}`);
 
     if (flags.versionOverride) manifest = overrideManifestVersion(manifest, flags.versionOverride);
 
     const storage = storageByUrl(flags.registry);
     const registry = new BlockRegistryV2(storage, logger);
 
-    await registry.publishPackage(manifest, async (file) =>
+    // Kind-first publish: resolve refs -> version-match gate (before any S3
+    // write) -> publishKind (if the block declares a kind) -> publishPackage.
+    await publishBlock(registry, manifest, facadeDir, async (file) =>
       Buffer.from(await fs.promises.readFile(path.resolve(manifestRoot, file))),
     );
 
