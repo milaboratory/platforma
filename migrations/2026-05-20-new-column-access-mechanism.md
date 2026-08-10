@@ -18,6 +18,10 @@ What this means for you, the consumer:
 
 The rest of this document is the mechanical migration. Each change is an instance of one of the rules above.
 
+For code with no old shape to migrate from, the API surface itself is documented in
+[`docs/column-access-api.md`](../docs/column-access-api.md) — every export, its cost, and
+which consumers accept ids.
+
 ---
 
 ## Column access — `ColumnCollectionBuilder` → `ColumnsCollection`
@@ -47,7 +51,7 @@ The collection itself is **host-driven** — it never ships specs into the sandb
 
 - `"current_block"` — shorthand for `outputs` + `prerun` accessors of the current block;
 - `"result_pool"` — shorthand for the upstream-block result pool;
-- a `TreeNodeAccessor`, a `ColumnsProvider`, another `ColumnsCollection`, or a column-like shape `{ columns, isFinal }`. The `columns` array accepts `PColumn` / `ColumnLazy` / any `ColumnRecipe` — the source only needs `.id` from each entry.
+- a `TreeNodeAccessor`, a `ColumnsProvider`, another `ColumnsCollection`, or a column-like shape `{ columns, isFinal }`. The `columns` array accepts `PColumn` / `DataColumn` / any `ColumnRecipe` — the source only needs `.id` from each entry.
 
 `isFinal` says whether everything upstream has finished computing. While blocks are still running the set of visible columns keeps growing across render passes; `isFinal: true` means it won't grow anymore. The built-in sources figure this out themselves — you only set it explicitly when you pass `{ columns, isFinal }`.
 
@@ -94,7 +98,7 @@ const cols = ColumnsCollection()
   .filter((c) => myCustomPredicate(c.getSpec())); // sandbox-side, one round-trip per survivor
 ```
 
-### `ColumnRecipe` vs `ColumnLazy` — what you're actually holding
+### `ColumnRecipe` vs `DataColumn` — what you're actually holding
 
 Every column you get back from the new API is a **`ColumnRecipe`**: an immutable, identity-bearing _description_ of how to obtain a column — not the column data itself. The recipe interface is intentionally narrow:
 
@@ -107,22 +111,24 @@ recipe.getDataStatus(); // "present" | "absent" | "resolving" (worst across refe
 recipe.withSpecs(patch); // returns a new recipe with the patch baked into the id
 ```
 
-Note what's **not** there: there is no `getData()` on a recipe. Data is only meaningful at a leaf — `Overridden` / `Filtered` / `Discovered` recipes are descriptions whose data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`. Pulling data into the sandbox for a non-leaf recipe would defeat the whole point of the refactor.
+Note what's **not** there: there is no `getData()` on a recipe. For most recipes the data is fetched on the **host** when you hand the id to `createPFrame` / `createPTable`; pulling it into the sandbox would defeat the whole point of the refactor. The recipes that _can_ be read here implement `DataColumn`, and you reach that capability through `hasReachableData(recipe)` — see below.
 
 The id is the source of truth; the recipe is just a typed accessor over it. The id string encodes _how_ the column was produced, and each form has its own recipe class:
 
 | Id shape on the wire  | Recipe class             | What it represents                                                                                                      |
 | --------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| bare `PObjectId`      | `ColumnLazy`             | a plain upstream column — spec comes from the host accessor, data is reachable as `TreeNodeAccessor`                    |
+| bare `PObjectId`      | `DataColumn`             | a plain upstream column — spec comes from the host accessor, data is reachable as `TreeNodeAccessor`                    |
 | `ColumnOverriddenKey` | `ColumnOverriddenRecipe` | "this other recipe, but with annotations/domain/axes patched" — `withSpecs()` builds these                              |
 | `ColumnFilteredKey`   | `ColumnFilteredRecipe`   | "this recipe restricted to a subset of axes" — produced by `ColumnsCollection.filter`                                   |
 | `ColumnDiscoveredKey` | `ColumnDiscoveredRecipe` | the result of a `ColumnsCollection.discover` hit, carrying the join graph back to its anchor so the spec can be rebuilt |
 
 The `*Key` rows are the parsed JSON object shapes; the stringified-on-the-wire form for each is `Column*Id` (e.g. `ColumnOverriddenId`).
 
-**`ColumnLazy` is the only recipe class with `getData()`.** It is the _leaf_ — `implements ColumnRecipe<PObjectId>` — and is also the only recipe you ever construct from a `TreeNodeAccessor` / `PColumn` / `PlRef`. Everything else is a wrapper around a leaf id; you produce the wrappers by calling `discover` / `filter` / `withSpecs`, and you pass them around by `.id`.
+The bare leaf is the only recipe you ever construct from a `TreeNodeAccessor` / `PColumn` / `PlRef`. Everything else is a wrapper around a leaf id; you produce the wrappers by calling `discover` / `filter` / `withSpecs`, and you pass them around by `.id`.
 
-For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** The recipe-kind taxonomy only becomes visible when you `instanceof`-narrow to a leaf to call `getData()`, and even then most call sites are better off using the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) than walking the recipe tree by hand.
+`getData()` is available on a leaf and on an override over one — those are the shapes whose data still matches their spec, and together they form the `DataColumn` interface. An axis-filtered recipe deliberately has no `getData()`: its spec has dropped the pinned axes while the underlying data still carries them, so the slice only exists engine-side.
+
+For most code this is all you need to know: **you hold recipes, you pass ids, you call `getSpec()` only on survivors.** You never need to know which recipe class you're holding — narrow with `hasReachableData` / `hasSingleDataColumn` and use the helpers in `@platforma-sdk/model` (`collectLinkerColumns`, `hitQualifications`, …) rather than walking the recipe tree by hand.
 
 ### Reading and constructing columns
 
@@ -134,48 +140,54 @@ col.getReferencedIds(); // leaf-set this recipe depends on
 col.getSpec(); // PColumnSpec — bridge round-trip on first call
 col.getDataStatus(); // ColumnFieldStatus: "present" | "absent" | "resolving"
 
-// Only on ColumnLazy (the leaf) — narrow first.
-// `ColumnLazy` (the value) is the dispatcher function with statics attached,
-// so `instanceof ColumnLazy` does not narrow. Always use the `isColumnLazy`
-// guard — do **not** import the internal `ColumnLazyImpl` symbol to
-// `instanceof`-narrow either; that's an implementation detail.
-if (isColumnLazy(col)) {
+// Data is not on the recipe interface — narrow first.
+if (hasReachableData(col)) {
   col.getData(); // PColumnDataUniversal | undefined — bridge round-trip
 }
 ```
 
 Iterating a 5k-column collection to call `getSpec()` on every entry will fetch 5k specs. If you only need ids, pass `col.id` straight through to whatever needs it — `createPFrame` / `createPTable` accept ids directly, so most pipelines never call `getSpec()` at all.
 
-### Type guards — `isColumn` / `isColumnRecipe` / `isColumnLazy` / `isLeafColumn`
+### Predicates — `isColumn` / `isDataColumn` / `hasReachableData` / `hasSingleDataColumn`
 
-Four guards are exported alongside the factories so consumers don't need to import the internal `*Impl` symbols just to narrow:
+They are named after what you can do with the column, not after which recipe class it is. Which classes exist is an implementation detail behind `recipe.id`; never `instanceof`-narrow to one.
 
 ```ts
-isColumn(value); // value is Column          (alias of isColumnRecipe)
-isColumnRecipe(value); // value is ColumnRecipe    (any recipe — leaf or wrapper)
-isColumnLazy(value); // value is ColumnLazy      (bare leaf only — the one with getData())
-isLeafColumn(recipe); // boolean              (leaf-form: chain contains no Discovered)
+isColumn(value); // value is Column               (any recipe)
+isDataColumn(value); // value is DataColumnRecipe     (bare leaf — id is a storage PObjectId)
+hasReachableData(recipe); // recipe is DataColumnRecipe    (data readable here, matching getSpec())
+hasSingleDataColumn(recipe); // boolean                      (reads one data column, not several)
 ```
 
-Use `isColumnLazy` instead of `instanceof ColumnLazy`: `ColumnLazy` (the value) is the dispatcher function with statics, not the class, so `instanceof` does not narrow there.
+**`hasReachableData` — "can I read the data?"** True for a bare leaf and for a spec-override over one; those are the only shapes whose data still lines up with their spec. False for an axis-filtered recipe — its spec has dropped axes the underlying data still carries, and the slice happens engine-side — and false for anything reached through other columns. In both of those cases pass `recipe.id` to `createPFrame` / `createPTable` and let the host materialise it.
 
-**`isColumnLazy` vs `isLeafColumn` — pick by what you do with the result.**
+**`hasSingleDataColumn` — "does it read one column or several?"** True for a bare leaf and for projections over one (spec overrides, axis slicing) — those add layers but no new columns. False when the recipe gets at its data through further columns, which is what happens when discovery reached it via a linker chain.
 
-- `isColumnLazy(c)` — strict, type-narrowing predicate. Returns `true` only for the **bare leaf** (`ColumnLazy`). Use it when you need access to `getData()` directly, or when the type forces you to a bare leaf — e.g. `PColumnIdAndSpec.columnId` and `PColumn.id` are `PObjectId`, which only bare leaves carry; wrappers expose `ColumnUniversalId`.
-- `isLeafColumn(recipe)` — broader, boolean (not a type guard). Returns `true` for any recipe whose wrapper chain contains no `ColumnDiscoveredRecipe` — so `Overridden` / `Filtered` over a bare leaf still count. Use it for the **primary vs linker-joined** classification at the `createPlDataTableV3` boundary: anything that has no `Discovered` in its chain is a valid primary, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `isLeafColumn` for this split — mirror it in your block code.
+Such a column is co-indexed by its own axes, so its spec is the whole truth about them. A column that reads several only lines up after they are joined in, and therefore drags axes into the join its own spec never mentions. That is the **primary vs linker-joined** split at the `createPlDataTableV3` boundary: only single-column recipes are valid primaries, projections over a plain leaf included. The SDK's own `createPlDataTableV3` uses `hasSingleDataColumn` for this — mirror it in your block code.
 
-Counterpart for reading data without a strict `isColumnLazy` narrow: `getLeafColumnData(recipe)` walks the wrapper chain down to the bottom leaf and returns its data (throws when the chain reaches a `Discovered`).
+The two predicates are independent: an axis-filtered leaf reads a single column but has no reachable data. Pick by what you do next with the result, not by which one sounds stricter.
+
+**`isDataColumn` — "is this a storage column?"** True only for a bare leaf, whose `id` is a `PObjectId` naming a real column in storage. Reach for it when a type forces you to that id shape — `PColumn.id`, `PColumnIdAndSpec.columnId` — not when you merely want to read data; `hasReachableData` is the guard for that and also admits a spec-override over a leaf.
+
+`isLeafColumn` is still exported as a deprecated alias of `hasSingleDataColumn` (same semantics).
+
+**Removed:**
+
+- `isColumnLazy` → `isDataColumn`. Same check, named for the contract rather than for how the leaf is implemented.
+- `getLeafColumnData` — it walked past an axis-filtered layer and returned the underlying leaf's unsliced data, which does not match the recipe's spec. Replace with `hasReachableData(c) ? c.getData() : undefined`.
+- `isColumnRecipe` → `isColumn`.
+- `ColumnLazy` / `ColumnLazyImpl` / `ColumnLazyId` / `ColumnLazyData` → `DataColumn` / `DataColumnImpl` / `DataColumnId` / `ColumnData`.
 
 There is a single top-level entry point, `Column(source)`. It picks the right factory by source shape and returns a `ColumnRecipe`:
 
 ```ts
-Column(source); // id string | PlRef | PColumn | LeafEntry | ColumnLazy
+Column(source); // id string | PlRef | PColumn | LeafEntry | DataColumn
 ```
 
 Routing rules:
 
 - **String id** (`PObjectId` or `ColumnUniversalId`) → `ColumnRecipe(id)`. The id shape decides which recipe class comes back (see the table above) — you don't pick, the id does.
-- **Object source** (`PlRef` / `LeafEntry` / `PColumn` / `ColumnLazy`) → `ColumnLazy(source)`. These shapes only ever map to the bare `ColumnLazy` case.
+- **Object source** (`PlRef` / `LeafEntry` / `PColumn` / `DataColumn`) → `DataColumn(source)`. These shapes only ever map to the bare `DataColumn` case.
 
 `Column(source)` returns `undefined` when the source can't be resolved (e.g. an id whose accessor isn't reachable from the current ctx, or a `PlRef` with no matching entry). Always check before chaining.
 
@@ -183,16 +195,16 @@ When the intent at the call site is unambiguous you can call the dispatchers dir
 
 ```ts
 ColumnRecipe(id); // string id → routed by id shape
-ColumnLazy(source); // id | PlRef | PColumn | LeafEntry | ColumnLazy
+DataColumn(source); // id | PlRef | PColumn | LeafEntry | DataColumn
 ```
 
 Or the explicit factories when the source shape would otherwise be ambiguous:
 
 ```ts
-ColumnLazy.fromId(id); // PObjectId
-ColumnLazy.fromPlRef(ref); // PlRef
-ColumnLazy.fromColumn(pColumn); // already-materialised PColumn
-ColumnLazy.fromAccessor(leafEntry); // direct accessor binding
+DataColumn.fromId(id); // PObjectId
+DataColumn.fromPlRef(ref); // PlRef
+DataColumn.fromColumn(pColumn); // already-materialised PColumn
+DataColumn.fromAccessor(leafEntry); // direct accessor binding
 ```
 
 ### Two flavours of "not yet" — `resolving` vs `absent`
@@ -206,10 +218,10 @@ Use the static `getStatus` helpers when you need the answer without paying for t
 
 ```ts
 ColumnRecipe.getStatus(id); // any id shape — dispatches by parsed key
-ColumnLazy.getStatus(source); // PObjectId / PlRef / LeafEntry / PColumn / ColumnLazy
-ColumnLazy.getStatusById(id);
-ColumnLazy.getStatusByPlRef(ref);
-ColumnLazy.getStatusByAccessor(entry);
+DataColumn.getStatus(source); // PObjectId / PlRef / LeafEntry / PColumn / DataColumn
+DataColumn.getStatusById(id);
+DataColumn.getStatusByPlRef(ref);
+DataColumn.getStatusByAccessor(entry);
 ```
 
 A recipe factory returns `undefined` for `resolving` (try again on the next render pass — more accessor inputs may still arrive), and throws **`ColumnAbsentError`** for `absent` (every relevant accessor is `inputsLocked`; the column will not appear in this ctx). Catch `ColumnAbsentError` at boundaries — resolver / filter-and-sort wiring / data-table assembly — when partial absence should be surfaced rather than silently producing an empty result. Inside a tight loop over already-known ids, prefer `getStatus(...)` once up-front over a try/catch around the factory.
@@ -250,37 +262,37 @@ When you already have a `ColumnsCollection`, skip the intermediate recipes entir
 ctx.createPFrame(collection.getColumnIds());
 ```
 
-This is also the canonical way to feed **wrapped recipes** (`ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` / `ColumnOverriddenRecipe`) into a PFrame. They have no `getData()` — but `recipe.id` is a `ColumnUniversalId` that `createPFrame` accepts directly, and the host materialises it server-side. So instead of trying to narrow a recipe list to leaves before building a PFrame, pass `.id`:
+This is also the canonical way to feed **wrapped recipes** (`ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` / `ColumnOverriddenRecipe`) into a PFrame. Most of them cannot be read in the sandbox at all — but `recipe.id` is a `ColumnUniversalId` that `createPFrame` accepts directly, and the host materialises it server-side. So instead of trying to narrow a recipe list before building a PFrame, pass `.id`:
 
 ```ts
 ctx.createPFrame(recipes.map((c) => c.id)); // works for any recipe — leaf or wrapped
 ```
 
-(Code that still needs a `PColumn<...>[]`, e.g. `createPFrameForGraphs`, does not have this id-form yet — see the "ColumnLazy → PColumn adapter" section below for the materialisation pattern that only works for leaves.)
+(Code that still needs a `PColumn<...>[]`, e.g. `createPFrameForGraphs`, does not have this id-form yet — see the "DataColumn → PColumn adapter" section below for the materialisation pattern that only works for leaves.)
 
-You can still pass `PColumn` objects with live `TreeNodeAccessor` / `DataInfo` data when the column was assembled in the sandbox (e.g. via `expandByPartition`); the helper that converts those (`transformPColumnData`) was renamed and exported as `finalizePColumnData`. Prefer the id form whenever the column came from the host in the first place.
+You can still pass `PColumn` objects with live `TreeNodeAccessor` / `DataInfo` data when the column was assembled in the sandbox (e.g. via `splitByAxes`); the helper that converts those (`transformPColumnData`) was renamed and exported as `finalizePColumnData`. Prefer the id form whenever the column came from the host in the first place.
 
 ---
 
 ## `ResultPool` / `RenderCtxBase` — all column access goes through `ColumnsCollection`
 
-The whole `ResultPool` class is `@deprecated`. Every column-discovery / column-fetch entry point on it (and the convenience wrappers on `RenderCtxBase`) pulled specs eagerly — exactly the pattern this refactor exists to kill. Use `ColumnsCollection` + `ColumnLazy` for **everything**.
+The whole `ResultPool` class is `@deprecated`. Every column-discovery / column-fetch entry point on it (and the convenience wrappers on `RenderCtxBase`) pulled specs eagerly — exactly the pattern this refactor exists to kill. Use `ColumnsCollection` + `DataColumn` for **everything**.
 
 | Old                                                                                                | New                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `ctx.resultPool.getData()` / `getDataFromResultPool()`                                             | `ColumnsCollection(["result_pool"]).getColumns()` — iterate the resulting `ColumnRecipe[]` and pass `.id`s into `createPFrame` / `createPTable`; never iterate `getData()` over the whole pool                                                                                                                                                                                                                                                                                                                                                   |
 | `ctx.resultPool.getDataWithErrors()` / `getDataWithErrorsFromResultPool()`                         | same; per-column status comes from `recipe.getDataStatus()` ("present" / "absent" / "resolving"). Errors live on the host — surface them at the consumer (PFrame/PTable) instead of the result-pool boundary                                                                                                                                                                                                                                                                                                                                     |
 | `ctx.resultPool.getSpecs()` / `getSpecsFromResultPool()`                                           | `ColumnsCollection(["result_pool"]).getColumns()` and `getSpec()` only on the survivors of a discover/filter — never iterate `getSpec()` over the whole pool                                                                                                                                                                                                                                                                                                                                                                                     |
-| `ctx.resultPool.getDataByRef(ref)`                                                                 | `ColumnLazy.fromPlRef(ref)?.getData()` — `getData()` lives on the leaf `ColumnLazy`, not on the generic `ColumnRecipe`                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ctx.resultPool.getPColumnByRef(ref)`                                                              | `ColumnLazy.fromPlRef(ref)` (or the unified `Column(ref)`, which for `PlRef` likewise yields a `ColumnLazy`)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `ctx.resultPool.getSpecByRef(ref)` / `getPColumnSpecByRef(ref)`                                    | `Column(ref)?.getSpec()` (or `ColumnLazy.fromPlRef(ref)?.getSpec()`) — `getSpec()` is on every recipe, so either form types out                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `ctx.resultPool.getDataByRef(ref)`                                                                 | `DataColumn.fromPlRef(ref)?.getData()` — `getData()` lives on the leaf `DataColumn`, not on the generic `ColumnRecipe`                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `ctx.resultPool.getPColumnByRef(ref)`                                                              | `DataColumn.fromPlRef(ref)` (or the unified `Column(ref)`, which for `PlRef` likewise yields a `DataColumn`)                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `ctx.resultPool.getSpecByRef(ref)` / `getPColumnSpecByRef(ref)`                                    | `Column(ref)?.getSpec()` (or `DataColumn.fromPlRef(ref)?.getSpec()`) — `getSpec()` is on every recipe, so either form types out                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ctx.resultPool.selectColumns(predicate)`                                                          | `ColumnsCollection(["result_pool"]).discover({ include }).getColumns()` — push the predicate into `include` so filtering runs host-side; fall back to a JS post-`.filter((c) => …(c.getSpec()))` only if you must                                                                                                                                                                                                                                                                                                                                |
 | `ctx.resultPool.findDataWithCompatibleSpec(spec)`                                                  | `ColumnsCollection(["result_pool"]).discover({ anchors: { main: spec }, mode: "default" }).getColumns()`                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `ctx.resultPool.getOptions(predicate, labelOps)`                                                   | **Stay on `ctx.resultPool.getOptions(...)`** — it preserves the `Option[]` = `{ ref: PlRef, label }` wire shape and `refsWithEnrichments`. (The `@deprecated` JSDoc on `ResultPool` lists `ctx.getOptions` as the migration target, but the method has **not** been promoted to `RenderCtxBase` yet — `ctx.getOptions` is not callable.) Switch to `ColumnsCollection(["result_pool"]).discover({ include }).getColumns()` + `deriveLabels` **only when** the consumer wants column **ids** (e.g. for `createPFrame`/`createPTable`), not PlRefs |
 | `ctx.resultPool.getAnchoredPColumns(anchors, selectors, opts)`                                     | `ColumnsCollection(["result_pool"]).discover({ anchors, include: selectors, … }).getColumnIds()` — each id is already a `ColumnUniversalId`, pass directly into `createPFrame` / `createPTable`                                                                                                                                                                                                                                                                                                                                                  |
 | `ctx.resultPool.getCanonicalOptions(anchors, selectors, opts)`                                     | same discover call; map `(col) => ({ value: col.id, label: deriveLabel(col) })`                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ctx.resultPool.resolveAnchorCtx({ key: PlRef })`                                                  | per-entry: `isPlRef(v) ? Column(v)?.getSpec() : v`. `ColumnsCollection.discover` accepts the resulting `{ key: PColumnSpec }` directly                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ctx.resultPool.findLabels(axis)` / `findLabelsForColumnAxis(spec, axisIdx)` / `ctx.findLabels(…)` | discover label columns via `ColumnsCollection` (`{ name: "^pl7.app/label$", axes: [{ name: axis.name }] }`) and read JSON data off the resulting `ColumnLazy`                                                                                                                                                                                                                                                                                                                                                                                    |
+| `ctx.resultPool.findLabels(axis)` / `findLabelsForColumnAxis(spec, axisIdx)` / `ctx.findLabels(…)` | discover label columns via `ColumnsCollection` (`{ name: "^pl7.app/label$", axes: [{ name: axis.name }] }`) and read JSON data off the resulting `DataColumn`                                                                                                                                                                                                                                                                                                                                                                                    |
 | `ctx.getBlockLabel(blockId)`                                                                       | `@deprecated` on `RenderCtxBase` — still callable but slated to return dummy values; do not write new code against it                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 Deprecated aliases that just forward to the non-`*FromResultPool` versions (`getDataFromResultPool`, `getDataWithErrorsFromResultPool`, `getSpecsFromResultPool`) follow the same row as their canonical name. `ctx.resultPool` itself is `@deprecated` — the `*ByRef` reads have already moved to `ctx.*ByRef` on `RenderCtxBase` (see the migration map in the JSDoc above `class ResultPool` in `sdk/model/src/render/api.ts`), but the recommended migration is straight to `Column(ref)` / `ColumnsCollection`, which doesn't touch `ctx.resultPool` at all.
@@ -294,7 +306,7 @@ Always pass `["result_pool"]` (or the narrowest source set that works) — the d
 A few helpers in `sdk/model/src/columns/utils.ts` cover the recipe-walk cases you'd otherwise hand-roll:
 
 - **`collectLinkerIds(recipe): PObjectId[]`** — every non-hit `PObjectId` referenced by `recipe.getQuery()`, deduped in traversal order. Pure query walk, no registry access.
-- **`collectLinkerColumns(recipe, opts?): ColumnLazy[]`** — same set, resolved against the ambient ctx as leaf `ColumnLazy` instances. Throws if any linker fails to resolve — direct replacement for the legacy `resolveLinkers`.
+- **`collectLinkerColumns(recipe, opts?): DataColumn[]`** — same set, resolved against the ambient ctx as leaf `DataColumn` instances. Throws if any linker fails to resolve — direct replacement for the legacy `resolveLinkers`.
 - **`hitQualifications(recipe): readonly AxisQualification[]`** — hit-side axis qualifications, pulled out of the inner `ColumnDiscoveredRecipe` (if any). Returns `[]` for plain leaves / overrided-over-leaf chains.
 - **`queriesQualifications(recipe): Readonly<Record<PObjectId, AxisQualification[]>>`** — per-primary-column qualifications, applied to outer primary anchors at the consumer boundary.
 
@@ -332,7 +344,7 @@ The biggest mechanical hazard. `ColumnMatch` had a nested `.column` field carryi
 | `m.column.spec.name`        | `c.getSpec().name`          | host round-trip                                                                       |
 | `m.column.spec.axesSpec`    | `c.getSpec().axesSpec`      | host round-trip                                                                       |
 | `m.column.spec.annotations` | `c.getSpec().annotations`   | host round-trip                                                                       |
-| `m.column.data`             | _only on `ColumnLazy`_      | narrow first: `if (isColumnLazy(c)) c.getData()`                                      |
+| `m.column.data`             | _only on `DataColumn`_      | narrow first: `if (hasReachableData(c)) c.getData()`                                     |
 | `m.column.data.get()`       | `c.getData()` (no `.get()`) | the `.get()` indirection is gone — `getData()` is the read.                           |
 
 The rule is the same as for any other recipe: **filter host-side via `include` / `exclude` whenever possible, call `getSpec()` only on survivors**. Whenever you see a long `.filter(m => …m.column.spec…)` chain in legacy code, the first migration step is "what of this is expressible as a selector?".
@@ -455,7 +467,7 @@ const cols = ColumnsCollection(['result_pool'])
   // Non-selector-expressible: axis-count, runtime-Set membership, etc.
   .filter((c) => !(isLinkerColumn(c) && c.getSpec().axesSpec.length > 2));
 
-const [primary, secondary] = partitionByLeaf(cols);  // bare ColumnLazy vs wrapped recipes
+const [primary, secondary] = partitionByLeaf(cols);  // bare DataColumn vs wrapped recipes
 
 return createPlDataTableV3(ctx, {
   primaryColumns: primary,
@@ -650,7 +662,7 @@ Switch to `ColumnsCollection(["result_pool"]).discover({...}).getColumns()` only
 
 ## `accessor.getPColumns()` / `getIsFinal()` → `ColumnsCollection([accessor])`
 
-`TreeNodeAccessor.getPColumns()` is `@deprecated` and now returns `ColumnLazy[]` (the transitive break: every `.spec` / `.data` read on its result needs `.getSpec()` / `.getData()`). The replacement is **wrap the accessor as a source of a `ColumnsCollection`** — once that's done, every read goes through the collection's host-side surface:
+`TreeNodeAccessor.getPColumns()` is `@deprecated` and now returns `DataColumn[]` (the transitive break: every `.spec` / `.data` read on its result needs `.getSpec()` / `.getData()`). The replacement is **wrap the accessor as a source of a `ColumnsCollection`** — once that's done, every read goes through the collection's host-side surface:
 
 ```diff
 - const sampledRowsAccessor = ctx.outputs?.resolve({ field: 'sampledRows', ... });
@@ -676,12 +688,12 @@ When the same accessor is reused as a discovery **source** (e.g. `sampledRows` i
 
 ---
 
-## Helpers that still need `PColumn[]` — `ColumnLazy` → `PColumn` adapter
+## Helpers that still need `PColumn[]` — `DataColumn` → `PColumn` adapter
 
-A handful of SDK helpers (most notably `createPFrameForGraphs`, and any consumer typed against `PColumn<PColumnDataUniversal>[]`) still take materialised `PColumn[]` only — they do not yet accept `ColumnRecipe[]` / ids. The bridge is straightforward when every recipe in the set is a **bare leaf** (`ColumnLazy`):
+A handful of SDK helpers (most notably `createPFrameForGraphs`, and any consumer typed against `PColumn<PColumnDataUniversal>[]`) still take materialised `PColumn[]` only — they do not yet accept `ColumnRecipe[]` / ids. The bridge is straightforward when every recipe in the set is a **bare leaf** (`DataColumn`):
 
 ```ts
-const leaves = recipes.filter(isColumnLazy);
+const leaves = recipes.filter(isDataColumn);
 const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
   id: c.id,
   spec: c.getSpec(),
@@ -690,34 +702,33 @@ const pCols: PColumn<PColumnDataUniversal>[] = leaves.map((c) => ({
 return createPFrameForGraphs(ctx, pCols);
 ```
 
-Use strict `isColumnLazy` here, **not** the broader `isLeafColumn`. The `PColumn.id` slot is typed `PObjectId`, which only bare `ColumnLazy` carries — wrappers (`Overridden` / `Filtered`-over-leaf) expose `ColumnUniversalId`. Same reasoning applies to `PColumnIdAndSpec.columnId`. `isColumnLazy` is both a type guard and the canonical narrow — pass it straight to `Array.prototype.filter` (no manual predicate, no `ColumnLazyImpl` import).
+`isDataColumn` — not `hasReachableData` — is the right guard here: the `PColumn.id` slot is typed `PObjectId`, which only a bare leaf carries, while every wrapper (including an override over a leaf) exposes `ColumnUniversalId`. `hasReachableData` is the wrong narrow precisely because it also admits those overrides. Same reasoning applies to `PColumnIdAndSpec.columnId`.
 
 Notes:
 
-- This **only works for `ColumnLazy`**. `ColumnOverriddenRecipe` / `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` have no `getData()` — there is no "materialise this recipe to a PColumn" path in the sandbox. If your discovery emits any wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
-- `PColumnIdAndSpec.columnId: PObjectId` — same constraint by the same logic. Only `ColumnLazy.id` (bare `PObjectId`) goes there; never a `ColumnUniversalId` from a wrapper recipe.
+- This **only works for a bare leaf**. `ColumnDiscoveredRecipe` / `ColumnFilteredRecipe` cannot be read in the sandbox at all, and `ColumnOverriddenRecipe` — though readable via `hasReachableData` — carries a `ColumnUniversalId` that the `PColumn.id` slot rejects. There is no "materialise this recipe to a PColumn" path for any of them. If your discovery emits wrapped recipes and you need to feed them into a PColumn-only helper, the helper needs to grow id-form support (or you avoid it for that source).
+- `PColumnIdAndSpec.columnId: PObjectId` — same constraint by the same logic. Only `DataColumn.id` (bare `PObjectId`) goes there; never a `ColumnUniversalId` from a wrapper recipe.
 - The `{ anchor: 'main', idx: 1 }` axis-binding from legacy `getAnchoredPColumns` has no `RelaxedAxisSelector` form. Workaround: read the anchor's `axesSpec[i].name` and pass it as `axes: [{ name }]` in the new selector — the axis-name match is enough for the common case.
 
-### Splitting columns by partition — use `expandByPartition`
+### Splitting a column into one column per axis value — use `splitByAxes`
 
-The legacy "snapshot to N synthetic PColumns" pattern (read `data` accessor, fan out, wrap each item with a fresh id, re-wrap via `ColumnLazyImpl.fromColumn`) does not fit the new recipe model. Two traps:
+The legacy "snapshot to N synthetic PColumns" pattern (read `data` accessor, fan out, wrap each item with a fresh id, re-wrap via `DataColumnImpl.fromColumn`) does not fit the new recipe model. Two traps:
 
 1. **You cannot fabricate ids by string concatenation.** `${col.id}#${value} as PObjectId` looks fine, but the result is not canonical JSON — `JSON.parse` rejects the trailing suffix and any consumer walking the id graph (`discoverLabelColumns` → `collectLinkerIds` → `extractPObjectId` inside `createPlDataTableV3`) throws with `id "..." is not a valid canonical column id`. The cast silences the type-checker, not the runtime invariant.
 
 2. **You cannot embed a foreign canonical id inside `LocalPObjectId.resolvePath` either.** `createLocalPObjectId([col.id, ...], value)` parses and passes `extractPObjectId`, but it abuses the semantics of `LocalPObjectKey` (a path inside a _block's own_ local tree) by stuffing a `GlobalPObjectId` JSON in as a path element. Nested canonical ids are not how this layer composes.
 
-**Use the SDK helper `expandByPartition`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverriddenRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverriddenId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
+**Use the SDK helper `splitByAxes`** instead. Internally it pairs `ColumnFilteredRecipe.wrap` (pins specific axes to specific values, generates a `sliceAxes` query node) with `ColumnOverriddenRecipe.wrap` (overlays domain + trace annotations). The result per split is a canonical `ColumnOverriddenId(source: ColumnFilteredId, specOverrides)` — distinct, parseable, linked to the source for linker discovery — and the PFrame engine does the data slicing, so you never materialise filtered `data` in the sandbox.
 
-For human-readable axis-value labels in the trace annotation, pair it with `deriveAxisValuesLabels()` — the modern replacement for the legacy `ctx.resultPool.findLabels(axisId)`. It reads all label columns in scope and returns a `(axisId) => Record<value, label>` resolver.
+Human-readable axis-value labels in the trace annotation come for free: the `axisValuesLabels` option defaults to `deriveAxisValuesLabels()` — the modern replacement for the legacy `ctx.resultPool.findLabels(axisId)`. It reads all label columns in scope and returns a `(axisId) => Record<value, label>` resolver, discovered lazily on the first lookup. Pass the option explicitly to narrow the label source, or `() => undefined` to keep raw axis values.
 
 ```ts
 import {
   ColumnsCollection,
   createPlDataTableV3,
-  deriveAxisValuesLabels,
-  expandByPartition,
-  isColumnLazy,
-  isLeafColumn,
+  splitByAxes,
+  hasReachableData,
+  hasSingleDataColumn,
 } from "@platforma-sdk/model";
 
 .outputWithStatus("tableSplit", (ctx) => {
@@ -727,26 +738,24 @@ import {
   // can also surface multi-axis Discovered variants (e.g. `count [group, name]`
   // reached via a linker); those belong in secondary, not in the join's primary
   // side. Mirrors what `discoverTableColumns` does internally for the
-  // selector-form path. `isLeafColumn` accepts bare `ColumnLazy` plus
+  // selector-form path. `hasSingleDataColumn` accepts bare `DataColumn` plus
   // `Overridden` / `Filtered` over a leaf — anything whose chain reaches a
   // `Discovered` is rejected.
   const primary = ColumnsCollection()
     .discover({ anchors: { main: valueAnchor }, mode: "exact" })
     .getColumns()
-    .filter(isLeafColumn);
+    .filter(hasSingleDataColumn);
   if (primary.length === 0) return undefined;
 
-  // Inputs for the split must be unwrapped bare leaves — `expandByPartition`
-  // reads `getData()` on each, which only `ColumnLazy` exposes directly. Use
-  // strict `isColumnLazy` here, not `isLeafColumn`.
+  // Inputs for the split must be readable here — `splitByAxes` calls
+  // `getData()` on each to inspect partitions. `hasSingleDataColumn` is the wrong
+  // guard: an axis-filtered column passes it but has no readable data.
   const countLeaves = ColumnsCollection()
     .filter({ include: { name: [{ type: "exact", value: "count" }] } })
     .getColumns()
-    .filter(isColumnLazy);
+    .filter(hasReachableData);
 
-  const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
-    axisValuesLabels: deriveAxisValuesLabels(),
-  });
+  const splitRecipes = splitByAxes(countLeaves, [{ idx: 0 }]);
   if (splitRecipes === undefined) return undefined;
 
   const primaryIds = new Set(primary.map((c) => c.id));
@@ -774,4 +783,4 @@ Two architectural invariants worth remembering when reading or extending this pa
 
 - **`ColumnOverriddenRecipe` is always the outermost wrap.** `ColumnFilteredRecipe.withSpecs(overrides)` yields `Overridden<Filtered<inner>>` automatically. Do not try to construct `Filtered<Overridden<...>>` — the SDK has no public path to that layering and the invariant is enforced inside `unwrapOverrides`.
 
-- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `ColumnLazy` (direct anchor hits), `Overridden` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `isLeafColumn`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(isLeafColumn)` on the discover result — **not** `isColumnLazy`, which is stricter and drops valid `Filtered` / `Overridden`-over-leaf primaries.
+- **`primaryColumns` must be leaf-form only.** `discover` with anchors returns a mix of bare `DataColumn` (direct anchor hits), `Overridden` / `Filtered` over a leaf (projections — still leaf-form), and `ColumnDiscoveredRecipe` (multi-hop hits via linker chains). The selector-form of `createPlDataTableV3` (via `discoverTableColumns`) splits these into `primary` / `secondary` for you using `hasSingleDataColumn`; the `primaryColumns` form trusts you to do the same. If a multi-axis Discovered slips into `primaryColumns`, `discoverLabelColumns` flat-maps its extra axes into the include set and pulls in label columns on those axes — which then appear in the engine join as disjoint-axes tables and crash with `axes sets are disjoint`. The fix is `.filter(hasSingleDataColumn)` on the discover result — **not** `isDataColumn`, which is stricter and drops valid `Filtered` / `Overridden`-over-leaf primaries.

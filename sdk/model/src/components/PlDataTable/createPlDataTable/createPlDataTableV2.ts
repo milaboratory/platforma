@@ -31,7 +31,7 @@ import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import { createPTableDefV2 } from "./createPTableDefV2";
 import { isColumnOptional } from "./utils";
-import { ColumnLazyImpl } from "../../../columns";
+import { DataColumn } from "../../../columns";
 import { createColumnResolver, type ColumnResolver } from "../columnResolver";
 import { isNil, type Nil } from "@milaboratories/helpers";
 
@@ -83,7 +83,7 @@ export function createPlDataTableV2<A, U>(
   const fullColumns = [...columns, ...fullLabelColumns];
 
   const resolver = createColumnResolver(
-    fullColumns.map((c) => ColumnLazyImpl.fromColumn(c)),
+    fullColumns.map((c) => DataColumn.fromColumn(c)),
     { warn: ctx.logWarn.bind(ctx) },
   );
 

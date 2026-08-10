@@ -11,10 +11,13 @@ import { throwError } from "@milaboratories/helpers";
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import { TreeNodeAccessor } from "../render";
 import { deriveDistinctLabels, type DeriveLabelsOptions } from "../labels/derive_distinct_labels";
-import { ColumnLazy, ColumnLazyImpl, type ColumnLazyData } from "./column_lazy";
+import { DataColumnRecipe, DataColumnImpl, type ColumnData } from "./data_column";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
-import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
+import {
+  ColumnOverriddenRecipe,
+  DataColumnOverriddenRecipe,
+} from "./column_recipes/column_overrided_recipe";
 import type { ColumnRecipe } from "./column_recipes/types";
 import { ColumnsCollection, isColumnsCollection } from "./columns_collection";
 import type { ColumnsSource } from "./column_providers/types";
@@ -26,7 +29,7 @@ import type { ColumnsSource } from "./column_providers/types";
  * other engine-consumed column.
  *
  * Pure query walk — no registry access. Use {@link collectLinkerColumns} for
- * the resolved {@link ColumnLazy} variant.
+ * the resolved {@link DataColumnRecipe} variant.
  */
 export function collectLinkerIds(recipe: ColumnRecipe): PObjectId[] {
   const hit = extractPObjectId(recipe.id);
@@ -47,16 +50,16 @@ export function collectLinkerIds(recipe: ColumnRecipe): PObjectId[] {
 
 /**
  * {@link collectLinkerIds} resolved against the ambient context as
- * {@link ColumnLazy} instances. Throws if any id fails to resolve —
+ * {@link DataColumnRecipe} leaves. Throws if any id fails to resolve —
  * matches the contract of the legacy `resolveLinkers` it replaces.
  */
 export function collectLinkerColumns(
   recipe: ColumnRecipe,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
-): ColumnLazy[] {
+): DataColumnRecipe<PObjectId>[] {
   return collectLinkerIds(recipe).map(
     (id) =>
-      ColumnLazyImpl.fromId(id, opts) ??
+      DataColumnImpl.fromId(id, opts) ??
       throwError(`materializeLinkers: linker ${id} not resolvable`),
   );
 }
@@ -95,7 +98,7 @@ export function queriesQualifications(
  *
  * Walks every physical leaf the recipe depends on via
  * {@link ColumnRecipe.getReferencedIds} (resolves each id back to a
- * {@link ColumnLazy} through the ambient ctx) and ANDs `hasData()` across
+ * {@link DataColumnRecipe} through the ambient ctx) and ANDs `hasData()` across
  * all of them. Inline {@link PColumnValues} payloads count as present.
  *
  * Returns `false` if any leaf cannot be re-resolved in `opts.ctx` (treat as
@@ -107,15 +110,15 @@ export function hasColumnData(
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): boolean {
   for (const id of recipe.getReferencedIds()) {
-    const lazy = ColumnLazyImpl.fromId(id, opts);
-    if (lazy === undefined) return false;
-    if (lazy.getDataStatus() !== "present") return false;
-    if (!isLazyDataPresent(lazy.getData())) return false;
+    const leaf = DataColumnImpl.fromId(id, opts);
+    if (leaf === undefined) return false;
+    if (leaf.getDataStatus() !== "present") return false;
+    if (!isLeafDataPresent(leaf.getData())) return false;
   }
   return true;
 }
 
-function isLazyDataPresent(data: ColumnLazyData): boolean {
+function isLeafDataPresent(data: ColumnData): boolean {
   if (data === undefined) return false;
   if (Array.isArray(data)) return true;
   if (data instanceof TreeNodeAccessor) return data.hasData();
@@ -151,51 +154,53 @@ function findDiscovered(recipe: ColumnRecipe): undefined | ColumnDiscoveredRecip
 }
 
 /**
- * A recipe is a "leaf" (directly co-indexed on the anchor, reached without a
- * linker chain) iff its wrapper chain contains no {@link ColumnDiscoveredRecipe}.
+ * Whether the recipe reads exactly one data column — its own — rather than
+ * reaching through others.
  *
- * `Filtered` / `Overridden` over a bare leaf stay leaves; anything wrapping a
- * `Discovered` (e.g. `Overridden(Discovered(...))`) is linked. Use this — not an
- * `instanceof ColumnLazyImpl` check — to split direct vs. linker-joined columns,
- * since projections over a plain leaf are still direct.
+ * True for a bare leaf and for projections over one (spec overrides, axis
+ * slicing): those add layers but no new columns. False when the recipe gets at
+ * its data through further columns, which happens when discovery reached it via
+ * a linker chain.
+ *
+ * **Why callers care.** A recipe over a single data column is co-indexed by its
+ * own axes, so its spec is the whole truth about them. One that needs other
+ * columns only lines up after they are joined in, and therefore drags axes into
+ * the join that its own spec never mentions — which is why it cannot serve as a
+ * primary column, and why `createPlDataTableV3` splits on this.
+ *
+ * The count comes from {@link ColumnRecipe.getReferencedIds}, which resolves
+ * through the whole wrapper chain, so no class walk is involved and foreign
+ * `ColumnRecipe` implementations are handled too.
  */
-export function isLeafColumn(recipe: ColumnRecipe): boolean {
-  return findDiscovered(recipe) === undefined;
+export function hasSingleDataColumn(recipe: ColumnRecipe): boolean {
+  return recipe.getReferencedIds().length === 1;
 }
 
 /**
- * Data of the bare leaf a "leaf" recipe bottoms out at — reads the leaf-only
- * {@link ColumnLazy.getData} after walking the wrapper chain down via
- * {@link extractLeafColumn}. Returns `undefined` when the recipe is not a leaf (its
- * chain reaches a {@link ColumnDiscoveredRecipe}); the symmetric counterpart
- * of {@link isLeafColumn} returning `false`.
+ * @deprecated Renamed to {@link hasSingleDataColumn} — "leaf" read as "you can
+ * get data out of it", which is a different question (see
+ * {@link hasReachableData}). Same semantics.
  */
-export function getLeafColumnData(recipe: ColumnRecipe): ColumnLazyData {
-  if (!isLeafColumn(recipe)) {
-    throw new Error(`getLeafColumnData: recipe ${recipe.id} is not a leaf column`);
-  }
-  return extractLeafColumn(recipe)?.getData();
-}
+export const isLeafColumn = hasSingleDataColumn;
 
 /**
- * Walk wrapper layers (Overridden, Filtered) down to the bare {@link ColumnLazy}
- * leaf the chain bottoms out at. Returns `undefined` if the chain reaches a
- * {@link ColumnDiscoveredRecipe} instead — i.e. the recipe is not a leaf
- * ({@link isLeafColumn} would return `false`). Mirror of {@link findDiscovered}.
+ * Whether the column's data can be read here and now, consistent with its
+ * spec — narrows to {@link DataColumnRecipe}, which exposes `getData()`.
+ *
+ * True for a bare leaf and for a spec-override over a bare leaf. False for an
+ * axis-filtered recipe (its spec has dropped axes the underlying data still
+ * carries, so the two no longer line up) and for anything reached through
+ * other columns (nothing to read until the engine joins them). In both of
+ * those cases the data exists only engine-side: pass `recipe.id` to
+ * `createPFrame` / `createPTable` instead of trying to read it.
+ *
+ * The distinction is settled when the recipe is built, not here — recipes that
+ * carry data are instances of a class that declares `getData`. So a `true`
+ * result narrows to a value that really has the method, and there is no
+ * throwing path behind the guard.
  */
-function extractLeafColumn(recipe: ColumnRecipe): undefined | ColumnLazy {
-  let current: ColumnRecipe = recipe;
-  while (true) {
-    if (current instanceof ColumnLazyImpl) return current;
-    if (current instanceof ColumnOverriddenRecipe || current instanceof ColumnFilteredRecipe) {
-      current = current.getInner();
-      continue;
-    }
-    if (current instanceof ColumnDiscoveredRecipe) {
-      throw new Error(`extractLeafColumn: recipe ${recipe.id} is not a leaf column`);
-    }
-    throw new Error(`extractLeafColumn: unrecognized recipe layer for ${recipe.id}`);
-  }
+export function hasReachableData(recipe: ColumnRecipe): recipe is DataColumnRecipe {
+  return recipe instanceof DataColumnImpl || recipe instanceof DataColumnOverriddenRecipe;
 }
 
 /** Drop-down option built over a {@link ColumnsCollection} — universal-id valued. */

@@ -13,11 +13,12 @@ import {
 } from "@milaboratories/pl-model-common";
 import { TreeNodeAccessor } from "../render/accessor";
 import { getUniquePartitionKeys } from "../render/util/pcolumn_data";
+import { deriveAxisValuesLabels } from "./derive_axis_values_labels";
 import type { ColumnRecipe } from "./column_recipes";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import { Column } from "./column";
-import { getLeafColumnData } from "./utils";
+import { hasReachableData } from "./utils";
 
 // --- Types ---
 
@@ -26,8 +27,15 @@ export interface SplitAxis {
   readonly idx: number;
 }
 
-export interface ExpandByPartitionOpts {
-  /** Resolve axis values to human-readable labels. */
+export interface SplitByAxesOpts {
+  /**
+   * Resolve axis values to human-readable labels.
+   *
+   * Defaults to {@link deriveAxisValuesLabels} over the ambient render ctx
+   * (current block outputs + result pool), resolved lazily on the first
+   * lookup. Pass an explicit callback to narrow the label source, or
+   * `() => undefined` to keep raw axis values.
+   */
   axisValuesLabels?: (axisId: AxisId) => undefined | Record<string | number, string>;
 }
 
@@ -36,8 +44,11 @@ export interface ExpandByPartitionOpts {
 const MAX_KEY_COMBINATIONS = 10_000;
 
 /**
- * Expand each input column along the requested partition axes into one
- * {@link ColumnRecipe} per Cartesian combination of unique partition values.
+ * Split each input column along the requested axes into one
+ * {@link ColumnRecipe} per Cartesian combination of the axes' distinct values.
+ *
+ * The split axes must be partition-key axes of the input's data — the distinct
+ * values are read off the partition keys.
  *
  * Each split is produced as `ColumnOverriddenRecipe.wrap(ColumnFilteredRecipe.wrap(inner, axisFilters), { domain, annotations })`:
  *   - `ColumnFilteredRecipe` pins all split axes at once (one wrap call with
@@ -55,14 +66,16 @@ const MAX_KEY_COMBINATIONS = 10_000;
  * Returns `undefined` when any input's `getData()` is not a
  * {@link TreeNodeAccessor} — partition inspection is not yet possible.
  */
-export function expandByPartition(
+export function splitByAxes(
   inputs: Column[],
   splitAxes: SplitAxis[],
-  opts?: ExpandByPartitionOpts,
+  opts?: SplitByAxesOpts,
 ): ColumnRecipe[] | undefined {
   if (splitAxes.length === 0) {
     return [...inputs];
   }
+
+  const axisValuesLabels = opts?.axisValuesLabels ?? deriveAxisValuesLabels();
 
   const splitAxisIdxs = splitAxes.map((a) => a.idx).sort((a, b) => a - b);
   const maxSplitIdx = splitAxisIdxs[splitAxisIdxs.length - 1];
@@ -70,7 +83,7 @@ export function expandByPartition(
   const result: ColumnRecipe[] = [];
 
   for (const inner of inputs) {
-    const data = getLeafColumnData(inner);
+    const data = hasReachableData(inner) ? inner.getData() : undefined;
     // Partition inspection requires either a live tree-accessor or already
     // parsed DataInfoEntries. Anything else means the input is not yet ready.
     if (!(data instanceof TreeNodeAccessor) && !isDataInfoEntries(data)) {
@@ -90,7 +103,7 @@ export function expandByPartition(
     const axesSpec = spec.axesSpec;
     const splitAxisSpecs = splitAxisIdxs.map((idx) => axesSpec[idx]);
     const splitAxisIds = splitAxisSpecs.map((axisSpec) => getAxisId(axisSpec));
-    const axesLabels = splitAxisIds.map((axisId) => opts?.axisValuesLabels?.(axisId));
+    const axesLabels = splitAxisIds.map((axisId) => axisValuesLabels(axisId));
 
     const existingTraceRaw = readAnnotation(spec, Annotation.Trace);
     const baseTrace: TraceEntry[] = existingTraceRaw
