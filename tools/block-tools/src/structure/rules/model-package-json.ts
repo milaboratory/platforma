@@ -15,6 +15,7 @@ import {
   ensureDep,
   ensureDevDep,
   ensureDevDeps,
+  ensureWorkspaceScopeDeps,
   removeDep,
   removeScript,
   removeField,
@@ -25,6 +26,7 @@ import {
   whenFilesExist,
   type RunContext,
 } from "../engine/api";
+import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
@@ -56,6 +58,9 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
     },
     dependencies: {
       "@platforma-sdk/model": "sdk:",
+      // The model imports its block's kind (to bake the kind reference into
+      // model.json), so it depends on the sibling kind package directly.
+      ...scopeDepMaps(ctx, "kind"),
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
@@ -95,6 +100,9 @@ export function modelPackageJsonRules(): void {
   ensureScript("check", "ts-builder check --target block-model");
 
   ensureDep("@platforma-sdk/model", "sdk:");
+  // The model imports its block's kind to bake the kind reference — direct
+  // dependency on the sibling kind package.
+  ensureWorkspaceScopeDeps("kind");
 
   ensureDevDeps({
     "@milaboratories/ts-builder": "sdk:",

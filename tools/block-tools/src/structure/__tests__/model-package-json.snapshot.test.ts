@@ -29,6 +29,7 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
     "check": "ts-builder check --target block-model"
   },
   "dependencies": {
+    "@platforma-open/test-org.demo.kind": "workspace:*",
     "@platforma-sdk/model": "catalog:"
   },
   "devDependencies": {
