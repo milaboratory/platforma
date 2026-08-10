@@ -88,7 +88,10 @@ export function evaluateRules<R extends { match: ColumnSelector }>(
     const baseCollection = ColumnsCollection([{ columns: baseColumns, isFinal: true }]);
     for (const rule of selectorRules) {
       const hitIds = baseCollection.filter({ include: rule.match }).getColumnIds();
-      if (hitIds.length === 0) return result;
+      // A rule matching nothing simply contributes no entries — it must not
+      // discard the rules evaluated alongside it. The lookup below is
+      // null-safe, so leaving this rule out of the map is enough.
+      if (hitIds.length === 0) continue;
       selectorHitsByRule.set(rule, new Set(hitIds.map((id) => extractPObjectId(id))));
     }
   }
