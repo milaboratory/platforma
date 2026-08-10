@@ -1,0 +1,42 @@
+{
+  "name": "@milaboratories/milaboratories.test-nonpure-output.model",
+  "version": "1.0.34",
+  "private": true,
+  "description": "Block model",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "build": "ts-builder build --target block-model && block-tools build-model",
+    "check": "ts-builder check --target block-model",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-model",
+    "fmt": "ts-builder format",
+    "watch": "ts-builder build --target block-model --watch"
+  },
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
+  }
+}
