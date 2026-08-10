@@ -81,6 +81,7 @@ self.body(func(inputs) {
 	enrichments := []
 	for idx := 0; idx < columnCount; idx++ {
 		c := inputs.columns[string(idx)]
+		keysOnly := c.keysOnly == true
 		if !is_undefined(c.multiResult) {
 			for sub in c.multiResult {
 				enrichments = append(enrichments, {
@@ -89,6 +90,7 @@ self.body(func(inputs) {
 					header: c.header,
 					headerPrefix: c.headerPrefix,
 					headerSuffix: c.headerSuffix,
+					keysOnly: keysOnly,
 					pFrameKey: "col" + string(nextKey),
 					mode: c.mode,
 					path: []
@@ -115,6 +117,7 @@ self.body(func(inputs) {
 				header: c.header,
 				headerPrefix: c.headerPrefix,
 				headerSuffix: c.headerSuffix,
+				keysOnly: keysOnly,
 				pFrameKey: "col" + string(nextKey),
 				mode: c.mode,
 				path: path,
@@ -246,7 +249,8 @@ self.body(func(inputs) {
 			spec: spec,
 			header: e.header,
 			headerPrefix: e.headerPrefix,
-			headerSuffix: e.headerSuffix
+			headerSuffix: e.headerSuffix,
+			keysOnly: e.keysOnly
 		})
 	}
 

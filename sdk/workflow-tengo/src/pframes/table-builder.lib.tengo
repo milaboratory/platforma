@@ -192,13 +192,21 @@ tableBuilder := func(format, ...ctxArg) {
 		 *
 		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
 		 *               PColumnResult | PlRef | EnrichmentRef | ResolvedEnrichmentRef
-		 * @param opts: (optional) { header?: string } — column header in exported file
+		 * @param opts: (optional) { header?: string, keysOnly?: bool }
+		 *               header   — column header in exported file.
+		 *               keysOnly — when true, the column participates in the join
+		 *                          (its key space is unioned into the output rows
+		 *                          and any new axes are surfaced), but its value
+		 *                          column is NOT written to the file. `header` is
+		 *                          ignored for keys-only columns.
 		 * @return self (for chaining)
 		 */
 		addColumn: func(query, ...opts) {
 			header := undefined
+			keysOnly := false
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				header = opts[0].header
+				keysOnly = opts[0].keysOnly == true
 			}
 			if isUnresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
@@ -206,6 +214,7 @@ tableBuilder := func(format, ...ctxArg) {
 			_columns = append(_columns, {
 				query: query,
 				header: header,
+				keysOnly: keysOnly,
 				mode: "single"
 			})
 			return self
@@ -216,15 +225,21 @@ tableBuilder := func(format, ...ctxArg) {
 		 * of pre-resolved columns. Empty match set is allowed (produces no enrichments).
 		 *
 		 * @param query: ColumnQuerySpec | (PColumnResult | EnrichmentRef | ResolvedEnrichmentRef)[] | PlRef
-		 * @param opts: (optional) { headerPrefix?: string, headerSuffix?: string }
+		 * @param opts: (optional) { headerPrefix?: string, headerSuffix?: string, keysOnly?: bool }
+		 *               keysOnly — when true, every matched column participates in
+		 *               the join (key space unioned, new axes surfaced) but no
+		 *               value columns are written. headerPrefix/headerSuffix are
+		 *               ignored for keys-only columns.
 		 * @return self (for chaining)
 		 */
 		addColumns: func(query, ...opts) {
 			headerPrefix := undefined
 			headerSuffix := undefined
+			keysOnly := false
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				headerPrefix = opts[0].headerPrefix
 				headerSuffix = opts[0].headerSuffix
+				keysOnly = opts[0].keysOnly == true
 			}
 
 			// Per-element entries. Labeled enrichments override the
@@ -254,6 +269,7 @@ tableBuilder := func(format, ...ctxArg) {
 						header: entryHeader,
 						headerPrefix: entryPrefix,
 						headerSuffix: entrySuffix,
+						keysOnly: keysOnly,
 						mode: "multi"
 					})
 				}
@@ -267,6 +283,7 @@ tableBuilder := func(format, ...ctxArg) {
 				query: query,
 				headerPrefix: headerPrefix,
 				headerSuffix: headerSuffix,
+				keysOnly: keysOnly,
 				mode: "multi"
 			})
 			return self
@@ -469,7 +486,8 @@ tableBuilder := func(format, ...ctxArg) {
 					mode: c.mode,
 					header: c.header,
 					headerPrefix: c.headerPrefix,
-					headerSuffix: c.headerSuffix
+					headerSuffix: c.headerSuffix,
+					keysOnly: c.keysOnly
 				}
 				if isEnrichmentRef(c.query) {
 					resolvedHit := resolveColumn(c.query.hit)
@@ -560,6 +578,8 @@ tableBuilder := func(format, ...ctxArg) {
 				if !is_undefined(c.header) { entry.header = c.header }
 				if !is_undefined(c.headerPrefix) { entry.headerPrefix = c.headerPrefix }
 				if !is_undefined(c.headerSuffix) { entry.headerSuffix = c.headerSuffix }
+				// Emit only when set — the template defaults a missing flag to false.
+				if c.keysOnly { entry.keysOnly = true }
 				columnsMap[string(idx)] = entry
 			}
 
