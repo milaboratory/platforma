@@ -23,3 +23,4 @@ export * from "./services";
 export * from "./pool_entry";
 export * from "./project_id";
 export * from "./columns";
+export * from "./template";
