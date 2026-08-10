@@ -8,7 +8,7 @@ import type { AccessorLike, ColumnEntriesProvider, LeafEntry, UpstreamBlockCtx }
  * exposes `isFinal()` via the root's `getInputsLocked()`.
  *
  * Used directly on the host side; sandbox extends it with `getColumns()`
- * returning {@link ColumnLazy}s — see `AccessorColumnsProvider` in
+ * returning {@link DataColumnRecipe}s — see `AccessorColumnsProvider` in
  * `@platforma-sdk/model`.
  */
 export class AccessorEntriesProvider<

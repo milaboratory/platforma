@@ -13,9 +13,10 @@ import {
 } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../render/internal";
-import type { ColumnLazy } from "./column_lazy";
-import { ColumnLazyImpl } from "./column_lazy";
-import { expandByPartition } from "./expand_by_partition";
+import type { DataColumnRecipe } from "./data_column";
+import { DataColumnImpl } from "./data_column";
+import type { SplitByAxesOpts } from "./split_by_axes";
+import { splitByAxes } from "./split_by_axes";
 
 // --- Helpers ---
 
@@ -33,13 +34,13 @@ function createSpec(name: string, axes: AxisSpec[]): PColumnSpec {
   } as PColumnSpec;
 }
 
-/** Build a synthetic ColumnLazy whose data is a JsonPartitioned DataInfoEntries. */
+/** Build a synthetic DataColumnRecipe whose data is a JsonPartitioned DataInfoEntries. */
 function createReadyLazy(
   id: string,
   spec: PColumnSpec,
   partitionKeyLength: number,
   parts: { key: (string | number)[]; value: unknown }[],
-): ColumnLazy {
+): DataColumnRecipe {
   const dataEntries: JsonPartitionedDataInfoEntries<unknown> = {
     type: "JsonPartitioned",
     partitionKeyLength,
@@ -48,15 +49,15 @@ function createReadyLazy(
   // `data` is typed `PColumnDataUniversal` but `getUniquePartitionKeys`
   // duck-types DataInfoEntries via `isDataInfoEntries`, so the JsonPartitioned
   // payload works at runtime.
-  return ColumnLazyImpl.fromColumn({
+  return DataColumnImpl.fromColumn({
     id: id as PObjectId,
     spec,
     data: dataEntries as unknown as PColumnDataUniversal,
   });
 }
 
-function createComputingLazy(id: string, spec: PColumnSpec): ColumnLazy {
-  return ColumnLazyImpl.fromColumn({
+function createComputingLazy(id: string, spec: PColumnSpec): DataColumnRecipe {
+  return DataColumnImpl.fromColumn({
     id: id as PObjectId,
     spec,
     data: undefined,
@@ -74,14 +75,21 @@ function extractTrace(recipe: { getSpec(): PColumnSpec }): Trace[] {
   return raw ? (JSON.parse(raw) as Trace[]) : [];
 }
 
+/**
+ * `axisValuesLabels` defaults to `deriveAxisValuesLabels()`, which needs the
+ * ambient render ctx these unit tests deliberately run without. Every case
+ * below is about the split itself, so opt out of label resolution explicitly.
+ */
+const NO_LABELS: SplitByAxesOpts = { axisValuesLabels: () => undefined };
+
 // --- Tests ---
 
-describe("expandByPartition", () => {
+describe("splitByAxes", () => {
   test("no split axes returns inputs unchanged", () => {
     const s = createReadyLazy("col1", createSpec("c", [createAxis("a")]), 1, [
       { key: ["x"], value: {} },
     ]);
-    const result = expandByPartition([s], []);
+    const result = splitByAxes([s], []);
     expect(result).toBeDefined();
     expect(result).toHaveLength(1);
     expect(result![0]).toBe(s); // same reference
@@ -99,7 +107,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     // unique values on axis 0: s1, s2 → 2 recipes
     expect(result).toHaveLength(2);
@@ -124,7 +132,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }, { idx: 1 }]);
+    const result = splitByAxes([s], [{ idx: 0 }, { idx: 1 }], NO_LABELS);
     expect(result).toBeDefined();
     // a: a1, a2 (2) × b: b1, b2 (2) = 4
     expect(result).toHaveLength(4);
@@ -148,7 +156,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     expect(result).toHaveLength(2);
 
@@ -183,7 +191,7 @@ describe("expandByPartition", () => {
     };
     const s = createReadyLazy("col1", spec, 1, [{ key: ["s1"], value: {} }]);
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     expect(result).toHaveLength(1);
 
@@ -205,7 +213,7 @@ describe("expandByPartition", () => {
       s2: "Sample Two",
     };
 
-    const result = expandByPartition([s], [{ idx: 0 }], {
+    const result = splitByAxes([s], [{ idx: 0 }], {
       axisValuesLabels: () => labels,
     });
 
@@ -216,7 +224,7 @@ describe("expandByPartition", () => {
 
   test("computing input (data undefined) returns undefined", () => {
     const s = createComputingLazy("col1", createSpec("c", [createAxis("a")]));
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeUndefined();
   });
 
@@ -228,7 +236,7 @@ describe("expandByPartition", () => {
       [], // no parts → no unique keys
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     expect(result).toHaveLength(0);
   });
@@ -244,7 +252,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     expect(result).toHaveLength(2);
 
@@ -274,7 +282,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s], [{ idx: 0 }]);
+    const result = splitByAxes([s], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     expect(result).toHaveLength(2);
 
@@ -306,7 +314,7 @@ describe("expandByPartition", () => {
       ],
     );
 
-    const result = expandByPartition([s1, s2], [{ idx: 0 }]);
+    const result = splitByAxes([s1, s2], [{ idx: 0 }], NO_LABELS);
     expect(result).toBeDefined();
     // s1: 2 unique + s2: 3 unique = 5 total
     expect(result).toHaveLength(5);
@@ -320,6 +328,6 @@ describe("expandByPartition", () => {
       [{ key: ["x"], value: {} }],
     );
 
-    expect(() => expandByPartition([s], [{ idx: 1 }])).toThrow(/Not enough partition keys/);
+    expect(() => splitByAxes([s], [{ idx: 1 }], NO_LABELS)).toThrow(/Not enough partition keys/);
   });
 });

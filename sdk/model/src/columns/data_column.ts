@@ -20,13 +20,36 @@ import { TreeNodeAccessor } from "../render";
 import type {
   ColumnFieldStatus,
   ColumnRecipe,
+  ColumnRecipeId,
   ColumnResolutionStatus,
 } from "./column_recipes/types";
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 
-export type ColumnLazyId = PObjectId;
-export type ColumnLazyData = undefined | PColumnDataUniversal;
+export type DataColumnId = PObjectId;
+export type ColumnData = undefined | PColumnDataUniversal;
 export type { ColumnFieldStatus, ColumnResolutionStatus } from "./column_recipes/types";
+
+/**
+ * A {@link ColumnRecipe} that can be read directly in the sandbox: its
+ * {@link getData} is guaranteed to be consistent with {@link getSpec}.
+ *
+ * This is a *capability*, not a class. Only two recipe shapes carry it — a
+ * bare leaf and a spec-override over a bare leaf — because those are the only
+ * ones whose data still matches their spec. An axis-filtered recipe drops axes
+ * from its spec while the underlying data keeps them, and a discovered recipe
+ * only materialises after a join; neither can be read here, so neither
+ * implements this interface.
+ *
+ * Narrow to it with `hasReachableData(recipe)` rather than testing for a concrete
+ * class — which recipe classes exist is an implementation detail behind
+ * `recipe.id`.
+ */
+export interface DataColumnRecipe<
+  ID extends ColumnRecipeId = ColumnRecipeId,
+> extends ColumnRecipe<ID> {
+  /** Column data, consistent with {@link ColumnRecipe.getSpec}. */
+  getData(): ColumnData;
+}
 
 /**
  * Thrown by leaf-recipe factories when the requested column is provably
@@ -47,22 +70,24 @@ export class ColumnAbsentError extends Error {
 }
 
 /**
- * ColumnLazy is the leaf-recipe building block: a {@link ColumnRecipe} whose
- * `id` is a bare {@link PObjectId} and whose readers are bound to a single
- * tree-accessor leaf. Layered encodings (Overridden / Discovered / Filtered)
- * are reified through their dedicated recipe classes and reference leaf
- * columns by id.
+ * The leaf-recipe building block: a {@link DataColumnRecipe} whose `id` is a bare
+ * {@link PObjectId} and whose readers are bound to a single tree-accessor
+ * leaf. Layered encodings (Overridden / Discovered / Filtered) are reified
+ * through their dedicated recipe classes and reference leaf columns by id.
+ *
+ * Internal — consumers hold the {@link DataColumnRecipe} interface and construct
+ * through the {@link DataColumnRecipe} dispatcher.
  */
-export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
+export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   private specCache?: { readonly value: PColumnSpec };
-  private dataCache?: { readonly value: ColumnLazyData };
+  private dataCache?: { readonly value: ColumnData };
   private dataStatusCache?: { readonly value: ColumnFieldStatus };
 
   private constructor(
     public readonly id: PObjectId,
     private readonly options: {
       getSpec: () => PColumnSpec;
-      getData: () => ColumnLazyData;
+      getData: () => ColumnData;
       getDataStatus: () => ColumnFieldStatus;
     },
   ) {}
@@ -84,8 +109,7 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
     return { type: "column", column: this.id } as SpecQuery;
   }
 
-  /** Leaf-only: not on the recipe interface — only the leaf can read data directly. */
-  getData(): ColumnLazyData {
+  getData(): ColumnData {
     if (this.dataCache === undefined) this.dataCache = { value: this.options.getData() };
     return this.dataCache.value;
   }
@@ -99,7 +123,7 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
 
   /**
    * Overlay overrides → produces a {@link ColumnOverriddenRecipe} wrapping
-   * this leaf. ColumnLazy itself stays bare (id remains a plain PObjectId);
+   * this leaf. The leaf itself stays bare (id remains a plain PObjectId);
    * layering lives entirely in the recipe wrappers.
    */
   withSpecs(overrides: SpecOverrides): ColumnRecipe {
@@ -113,7 +137,10 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
    * and the column did not appear — the column will not exist in this ctx.
    * Data and dataStatus stay lazy.
    */
-  static fromId(id: PObjectId, { ctx }: { ctx?: GlobalCfgRenderCtx } = {}): undefined | ColumnLazy {
+  static fromId(
+    id: PObjectId,
+    { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
+  ): undefined | DataColumnRecipe<PObjectId> {
     const registry = new ColumnRegistry(getCtxProviders({ ctx }));
     const leaf = registry.resolve(id);
     if (isNil(leaf)) {
@@ -126,7 +153,7 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
       return undefined;
     }
     if (!spec.hasData()) return undefined;
-    return new ColumnLazyImpl(id, {
+    return new DataColumnImpl(id, {
       getSpec: () => spec.getDataAsJson<PColumnSpec>(),
       getData: () => readDataAccessor(leaf),
       getDataStatus: () => readDataStatus(leaf),
@@ -134,8 +161,8 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
   }
 
   /** {@link PlRef} wrapper over {@link fromId}. */
-  static fromPlRef(ref: PlRef): undefined | ColumnLazy {
-    return ColumnLazyImpl.fromId(createGlobalPObjectId(ref.blockId, ref.name));
+  static fromPlRef(ref: PlRef): undefined | DataColumnRecipe<PObjectId> {
+    return DataColumnImpl.fromId(createGlobalPObjectId(ref.blockId, ref.name));
   }
 
   /**
@@ -143,14 +170,14 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
    * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
    * accessor is `inputsLocked`. Returns `undefined` while still resolving.
    */
-  static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | ColumnLazy {
+  static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
     const spec = readSpecAccessor(entry);
     if (isNil(spec)) {
       if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
       return undefined;
     }
     if (!spec.hasData()) return undefined;
-    return new ColumnLazyImpl(entry.id, {
+    return new DataColumnImpl(entry.id, {
       getSpec: () => spec.getDataAsJson<PColumnSpec>(),
       getData: () => readDataAccessor(entry),
       getDataStatus: () => readDataStatus(entry),
@@ -159,13 +186,20 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
 
   /**
    * Wrap a materialised {@link PColumn}. If the input is already a
-   * {@link ColumnLazy} it is returned as-is.
+   * {@link DataColumnRecipe} leaf it is returned as-is.
    */
-  static fromColumn(column: PColumn<ColumnLazyData> | ColumnLazy): ColumnLazy {
-    if (column instanceof ColumnLazyImpl) return column;
-    return new ColumnLazyImpl(column.id, {
-      getSpec: () => column.spec,
-      getData: () => column.data,
+  static fromColumn(
+    column: PColumn<ColumnData> | DataColumnRecipe<PObjectId>,
+  ): DataColumnRecipe<PObjectId> {
+    if (column instanceof DataColumnImpl) return column;
+    // `DataColumnRecipe` is an interface, so `instanceof` above does not remove it
+    // from the union. The only implementation carrying a bare `PObjectId` is
+    // `DataColumnImpl` (wrappers expose `ColumnUniversalId`), so anything
+    // reaching here is a materialised `PColumn`.
+    const pColumn = column as PColumn<ColumnData>;
+    return new DataColumnImpl(pColumn.id, {
+      getSpec: () => pColumn.spec,
+      getData: () => pColumn.data,
       getDataStatus: () => "present",
     });
   }
@@ -191,7 +225,7 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
     ref: PlRef,
     opts: { ctx?: GlobalCfgRenderCtx } = {},
   ): ColumnResolutionStatus {
-    return ColumnLazyImpl.getStatusById(createGlobalPObjectId(ref.blockId, ref.name), opts);
+    return DataColumnImpl.getStatusById(createGlobalPObjectId(ref.blockId, ref.name), opts);
   }
 
   /** No registry — reads straight off the entry's accessor. */
@@ -200,67 +234,71 @@ export class ColumnLazyImpl implements ColumnRecipe<PObjectId> {
   }
 }
 
-/**
- * Public type alias — `ColumnLazy` (the type) refers to the underlying
- * {@link ColumnLazyImpl} class instance. `ColumnLazy` (the value) is the
- * callable below with the static factories attached.
- */
-export type ColumnLazy = ColumnLazyImpl;
+/** Anything the {@link DataColumnRecipe} dispatcher can build a leaf from. */
+export type DataColumnSource =
+  | PObjectId
+  | PlRef
+  | LeafEntry<TreeNodeAccessor>
+  | PColumn<ColumnData>
+  | DataColumnRecipe<PObjectId>;
 
 /**
- * Unified dispatcher — picks the right `ColumnLazyImpl.fromX` by source
+ * Unified dispatcher — picks the right `DataColumnImpl.fromX` by source
  * shape. For ambiguous inputs callers can still use the explicit factories
- * (also attached as properties: `ColumnLazy.fromId`, `.fromPlRef`,
+ * (also attached as properties: `DataColumn.fromId`, `.fromPlRef`,
  * `.fromAccessor`, `.fromColumn`).
  */
-function ColumnLazyDispatch(
-  source: PObjectId | PlRef | LeafEntry<TreeNodeAccessor> | PColumn<ColumnLazyData> | ColumnLazy,
+function DataColumnDispatch(
+  source: DataColumnSource,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
-): undefined | ColumnLazy {
-  if (typeof source === "string") return ColumnLazyImpl.fromId(source, opts);
-  if (source instanceof ColumnLazyImpl) return source;
-  if ("accessor" in source) return ColumnLazyImpl.fromAccessor(source);
-  if (isPlRef(source)) return ColumnLazyImpl.fromPlRef(source);
-  if (isPColumn(source)) return ColumnLazyImpl.fromColumn(source);
-  throw new Error("ColumnLazy: unknown source shape");
+): undefined | DataColumnRecipe<PObjectId> {
+  if (typeof source === "string") return DataColumnImpl.fromId(source, opts);
+  if (source instanceof DataColumnImpl) return source;
+  // `DataColumnRecipe` is an interface — `instanceof` above cannot remove it from
+  // the union, and only `DataColumnImpl` implements it with a bare id.
+  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<ColumnData>;
+  if ("accessor" in rest) return DataColumnImpl.fromAccessor(rest);
+  if (isPlRef(rest)) return DataColumnImpl.fromPlRef(rest);
+  if (isPColumn(rest)) return DataColumnImpl.fromColumn(rest);
+  throw new Error("DataColumn: unknown source shape");
 }
 
 /**
- * Polymorphic counterpart to {@link ColumnLazyDispatch}: returns the
+ * Polymorphic counterpart to {@link DataColumnDispatch}: returns the
  * {@link ColumnResolutionStatus} for any factory input without constructing
  * the recipe. For already-materialised sources ({@link PColumn} value,
- * existing {@link ColumnLazy}) status is `present` by construction.
+ * existing {@link DataColumnRecipe}) status is `present` by construction.
  */
-function ColumnLazyGetStatus(
-  source: PObjectId | PlRef | LeafEntry<TreeNodeAccessor> | PColumn<ColumnLazyData> | ColumnLazy,
+function DataColumnGetStatus(
+  source: DataColumnSource,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): ColumnResolutionStatus {
-  if (typeof source === "string") return ColumnLazyImpl.getStatusById(source, opts);
-  if (source instanceof ColumnLazyImpl) return "present";
-  if ("accessor" in source) return ColumnLazyImpl.getStatusByAccessor(source);
-  if (isPlRef(source)) return ColumnLazyImpl.getStatusByPlRef(source, opts);
-  if (isPColumn(source)) return "present";
-  throw new Error("ColumnLazy.getStatus: unknown source shape");
+  if (typeof source === "string") return DataColumnImpl.getStatusById(source, opts);
+  if (source instanceof DataColumnImpl) return "present";
+  const rest = source as LeafEntry<TreeNodeAccessor> | PlRef | PColumn<ColumnData>;
+  if ("accessor" in rest) return DataColumnImpl.getStatusByAccessor(rest);
+  if (isPlRef(rest)) return DataColumnImpl.getStatusByPlRef(rest, opts);
+  if (isPColumn(rest)) return "present";
+  throw new Error("DataColumn.getStatus: unknown source shape");
 }
 
-export const ColumnLazy = Object.assign(ColumnLazyDispatch, {
-  fromId: ColumnLazyImpl.fromId,
-  fromPlRef: ColumnLazyImpl.fromPlRef,
-  fromAccessor: ColumnLazyImpl.fromAccessor,
-  fromColumn: ColumnLazyImpl.fromColumn,
-  getStatus: ColumnLazyGetStatus,
-  getStatusById: ColumnLazyImpl.getStatusById,
-  getStatusByPlRef: ColumnLazyImpl.getStatusByPlRef,
-  getStatusByAccessor: ColumnLazyImpl.getStatusByAccessor,
+export const DataColumn = Object.assign(DataColumnDispatch, {
+  fromId: DataColumnImpl.fromId,
+  fromPlRef: DataColumnImpl.fromPlRef,
+  fromAccessor: DataColumnImpl.fromAccessor,
+  fromColumn: DataColumnImpl.fromColumn,
+  getStatus: DataColumnGetStatus,
+  getStatusById: DataColumnImpl.getStatusById,
+  getStatusByPlRef: DataColumnImpl.getStatusByPlRef,
+  getStatusByAccessor: DataColumnImpl.getStatusByAccessor,
 });
 
 /**
- * Type-guard narrowing to the leaf recipe. Prefer this over
- * `instanceof ColumnLazyImpl` — `ColumnLazy` (the value) is the dispatcher
- * with statics, not the class, so `instanceof` requires the impl symbol.
+ * Type-guard narrowing to a bare leaf — a {@link DataColumnRecipe} whose `id` is a
+ * plain {@link PObjectId}.
  */
-export function isColumnLazy(value: unknown): value is ColumnLazy {
-  return value instanceof ColumnLazyImpl;
+export function isDataColumn(value: unknown): value is DataColumnRecipe<PObjectId> {
+  return value instanceof DataColumnImpl;
 }
 
 const readSpecAccessor = memoizeByEntry(

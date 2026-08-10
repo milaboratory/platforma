@@ -9,7 +9,7 @@ import {
   type PTableColumnId,
   type SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { ColumnLazyImpl } from "../../columns";
+import { DataColumnImpl } from "../../columns";
 import type { ColumnRecipe } from "../../columns";
 import { createColumnResolver } from "./columnResolver";
 
@@ -20,7 +20,7 @@ function wrap(id: PObjectId | SUniversalPColumnId, tag: string): SUniversalPColu
   });
 }
 
-// ColumnLazy constructor pulls `getCfgRenderCtx()` from globalThis on some
+// DataColumnRecipe constructor pulls `getCfgRenderCtx()` from globalThis on some
 // paths — keep a minimal mock the same way p_column_lazy.test.ts does.
 const mockCtx = {
   getAccessorHandleByName: () => undefined,
@@ -36,7 +36,7 @@ afterEach(() => {
 
 function lazyOf(id: PObjectId, axes: AxisSpec[] = []) {
   const spec = { kind: "PColumn", name: "stub", axesSpec: axes } as unknown as PColumnSpec;
-  return ColumnLazyImpl.fromColumn({
+  return DataColumnImpl.fromColumn({
     id,
     spec,
     data: undefined,

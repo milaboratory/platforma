@@ -5,6 +5,10 @@ and the host (`pl-middle-layer`). Two distinct identities are involved in a
 table-rendering pipeline; mixing them up causes engine-level "column not
 found" errors and silent variant deduplication.
 
+For the consumer-facing surface built on these ids — `ColumnsCollection`,
+the recipe factories, the predicates — see
+[`column-access-api.md`](./column-access-api.md).
+
 ## The two identities
 
 ### Physical identity — `PObjectId`
@@ -70,7 +74,7 @@ Every concrete `ColumnRecipe` must satisfy:
 2. `recipe.getQuery()` returns a `SpecQuery` whose terminal column leaf
    carries `recipe.id` — not the inner recipe's id, not the bare id.
 
-For leaf recipes (`ColumnLazyImpl`) this is trivial: `id` is the bare
+For leaf recipes (`DataColumnImpl`) this is trivial: `id` is the bare
 `PObjectId` and the query is `{type: "column", column: id}`.
 
 For wrapper recipes (Overridden / Filtered / Discovered) the inner recipe
@@ -127,7 +131,7 @@ the leaves is what makes that lookup succeed.
   `lib/model/common/src/drivers/pframe/query/query_spec.ts`,
   `lib/model/common/src/drivers/pframe/table_common.ts`.
 - Recipe implementations:
-  `sdk/model/src/columns/column_lazy.ts`,
+  `sdk/model/src/columns/data_column.ts`,
   `sdk/model/src/columns/column_recipes/column_overrided_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_filtered_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_discovered_recipe.ts`,

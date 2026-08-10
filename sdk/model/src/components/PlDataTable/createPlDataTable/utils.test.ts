@@ -7,7 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
-import { ColumnLazy } from "../../../columns";
+import { DataColumn, type DataColumnRecipe } from "../../../columns";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
@@ -156,11 +156,11 @@ function gid(name: string): PObjectId {
   return createGlobalPObjectId("test-block", name);
 }
 
-function makeLazyColumn(name: string, spec: Partial<PColumnSpec> = {}): ColumnLazy {
+function makeLazyColumn(name: string, spec: Partial<PColumnSpec> = {}): DataColumnRecipe {
   const s = makeSpec({ axesSpec: [{ name: "id", type: "String" }], ...spec });
   const id = gid(name);
   driverHandle.register([{ id, spec: s }]);
-  return ColumnLazy.fromColumn({ id, spec: s, data: undefined as never });
+  return DataColumn.fromColumn({ id, spec: s, data: undefined as never });
 }
 
 describe("evaluateRules", () => {

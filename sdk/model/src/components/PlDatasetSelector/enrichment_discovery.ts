@@ -15,7 +15,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import type { ColumnRecipe, ColumnsSource } from "../../columns";
 import {
-  isLeafColumn,
+  hasSingleDataColumn,
   ColumnsCollection,
   collectLinkerIds,
   hitQualifications,
@@ -67,7 +67,7 @@ export function findEnrichmentColumns(options: FindEnrichmentColumnsOptions): Co
 
   const predicate = options.predicate;
   return columns.filter((v) => {
-    if (isLeafColumn(v)) return false;
+    if (hasSingleDataColumn(v)) return false;
     if (predicate !== undefined && !predicate(v.getSpec())) return false;
     if (!isGlobalPObjectId(extractPObjectId(v.id))) return false;
     if (collectLinkerIds(v).some((id) => !isGlobalPObjectId(id))) return false;
