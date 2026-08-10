@@ -82,7 +82,11 @@ import {
   UiError,
   BLOCK_STORAGE_FACADE_VERSION,
   type BlockConfig,
+  type BlockKindReference,
 } from "@platforma-sdk/model";
+import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
+import { exportProjectAsTemplateV1 } from "../model/template_serializer";
+import type { TemplateParamsResult } from "../model/template_export";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
 
@@ -112,6 +116,12 @@ interface BlockInfoState {
   readonly id: string;
   readonly fields: BlockFieldStates;
   blockConfig?: BlockConfig;
+  /**
+   * The block's kind reference, kept separately because `blockConfig` cannot carry
+   * it: `extractConfig` normalizes the render envelope and the kind sits at the
+   * container level, one level above. Undefined for a block that declares no kind.
+   */
+  blockKind?: BlockKindReference;
   blockPack?: BlockPackSpec;
 }
 
@@ -141,6 +151,8 @@ class BlockInfo {
     public readonly fields: BlockFieldStates,
     public readonly config: BlockConfig,
     public readonly source: BlockPackSpec,
+    /** See {@link BlockInfoState.blockKind}. */
+    public readonly kind: BlockKindReference | undefined,
     private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
 
@@ -303,7 +315,25 @@ class BlockInfo {
  */
 /** Specification for creating a new block. Discriminated union based on `storageMode`. */
 export type NewBlockSpec =
-  | { storageMode: "fromModel"; blockPack: BlockPackSpecPrepared }
+  | {
+      storageMode: "fromModel";
+      blockPack: BlockPackSpecPrepared;
+      /**
+       * Storage to start the block with, instead of the model's own default.
+       *
+       * Only for a caller that produced it through the block's own model, which today
+       * means one seeding a block from a template entry's params: the model's
+       * params-to-storage initializer can reject those params, and it has to do so
+       * before anything in the transaction changes. Computing the storage first turns
+       * that rejection into a value the caller can report, and leaves this method with
+       * no failure path it did not already have.
+       *
+       * The result is the same storage the block would have written itself, so args
+       * derivation below is unchanged — which is why this is the `fromModel` mode with
+       * one input filled in rather than a mode of its own.
+       */
+      initialStorage?: string;
+    }
   | { storageMode: "legacy"; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
@@ -514,6 +544,48 @@ export class ProjectMutator {
           () => args,
         ),
       };
+  }
+
+  //
+  // Template export
+  //
+
+  /**
+   * Render this project as a `template-v1` YAML document, or report every reason it
+   * cannot be.
+   *
+   * Read-only: it derives params in the VM and touches no field, so a `withProject`
+   * wrapper sees `wasModified === false` and skips the commit.
+   *
+   * This is where the three providers the serializer needs come from, and all are
+   * only reachable here. A block's storage lives behind `BlockInfo`, which is
+   * populated by the loader's batched round-trips, and both its kind reference and
+   * its origin spec are read off the block-pack container during that same load —
+   * `config` cannot carry the kind, since `extractConfig` normalizes the render
+   * envelope one level below it, and the spec is not part of the config at all.
+   */
+  public exportAsTemplateV1(): ProjectTemplateExportOutcome {
+    return exportProjectAsTemplateV1(
+      this.struct,
+      (blockId) => this.deriveTemplateParams(blockId),
+      (blockId) => this.blockInfos.get(blockId)?.kind,
+      (blockId) => this.blockInfos.get(blockId)?.source,
+    );
+  }
+
+  private deriveTemplateParams(blockId: string): TemplateParamsResult | undefined {
+    const info = this.blockInfos.get(blockId);
+    // A block in the structure with no loaded info, or with no storage yet, has no
+    // state to project into params. Returning undefined makes the walk report it
+    // rather than quietly leaving the block out of the template.
+    if (info === undefined) return undefined;
+
+    const storageJson = info.blockStorageJson;
+    if (storageJson === undefined) return undefined;
+
+    const derived = this.projectHelper.deriveTemplateParamsFromStorage(info.config, storageJson);
+    if (derived.error !== undefined) return { error: derived.error.message };
+    return { value: derived.value };
   }
 
   private getPendingProductionGraph(): BlockGraph {
@@ -1142,6 +1214,7 @@ export class ProjectMutator {
       {},
       extractConfig(spec.blockPack.config),
       spec.blockPack.source,
+      spec.blockPack.config.kind,
       this.projectHelper.logger,
     );
     this.blockInfos.set(blockId, info);
@@ -1164,8 +1237,11 @@ export class ProjectMutator {
     let storageToWrite: string;
 
     if (spec.storageMode === "fromModel") {
-      // Model API v2+: get initial storage and derive args from it
-      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
+      // Model API v2+: get initial storage and derive args from it. A caller that
+      // already produced the storage — a template seeding a block from its params —
+      // passes it in, precisely so the VM call that could reject those params happens
+      // before the transaction is touched; see `initialStorage`.
+      storageToWrite = spec.initialStorage ?? this.projectHelper.getInitialStorageInVM(blockConfig);
 
       // Derive prerunArgs first — always derived independently of args validation
       prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
@@ -1251,6 +1327,7 @@ export class ProjectMutator {
       {},
       originalBlockInfo.config,
       originalBlockInfo.source,
+      originalBlockInfo.kind,
       this.projectHelper.logger,
     );
 
@@ -1895,6 +1972,9 @@ export class ProjectMutator {
       const result = await response;
       const bpInfo = cachedDeserialize<BlockPackInfo>(notEmpty(result.data));
       info.blockConfig = extractConfig(bpInfo.config);
+      // Read off the container before `extractConfig`'s result replaces it as the
+      // only thing we keep. Costs no round-trip — `bpInfo` is already in hand.
+      info.blockKind = bpInfo.config.kind;
       info.blockPack = bpInfo.source;
     }
 
@@ -1926,10 +2006,17 @@ export class ProjectMutator {
     const blocksInLimboSet = new Set(blocksInLimbo);
 
     const blockInfos = new Map<string, BlockInfo>();
-    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
+    blockInfoStates.forEach(({ id, fields, blockConfig, blockKind, blockPack }) =>
       blockInfos.set(
         id,
-        new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack), projectHelper.logger),
+        new BlockInfo(
+          id,
+          fields,
+          notEmpty(blockConfig),
+          notEmpty(blockPack),
+          blockKind,
+          projectHelper.logger,
+        ),
       ),
     );
 
