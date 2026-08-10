@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.81.1
+
+### Patch Changes
+
+- 252a3d2: Fix `evaluateRules` discarding every display rule when one selector matches
+  nothing. A rule whose selector hits zero columns is now skipped instead of
+  aborting the whole evaluation, so the remaining `displayOptions.ordering` /
+  `displayOptions.visibility` rules still apply.
+
 ## 1.81.0
 
 ### Minor Changes
