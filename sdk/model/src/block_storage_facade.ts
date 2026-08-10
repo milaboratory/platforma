@@ -82,6 +82,9 @@ export const BlockStorageFacadeCallbacks = {
   ArgsDerive: "__pl_args_derive",
   PrerunArgsDerive: "__pl_prerunArgs_derive",
   StorageInitial: "__pl_storage_initial",
+  TemplateParamsDerive: "__pl_templateParams_derive",
+  StorageInitialFromParams: "__pl_storage_initialFromParams",
+  TemplateParamsValidate: "__pl_templateParams_validate",
 } as const;
 
 /**
@@ -189,6 +192,83 @@ export interface BlockStorageFacade {
    * @returns Initial storage as JSON string
    */
   [BlockStorageFacadeCallbacks.StorageInitial]: () => StringifiedJson;
+
+  /**
+   * Derive this block's template entry params from storage.
+   * Called when exporting the project as a template.
+   *
+   * Every V3 block declares `.templateParams()` — the model does not build without
+   * it — so every export produces params. A block whose state carries nothing worth
+   * restoring returns `{}`, which is written out and used as-is by init.
+   *
+   * The returned params are already in template form: references appear as
+   * `{ block, output }` rather than as `PlRef`s. The caller supplies everything
+   * else in the entry — `id`, `kind` — so the lambda cannot set them.
+   *
+   * @param storageJson - Storage as JSON string
+   * @returns Either an error, or the params to write
+   */
+  [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (
+    storageJson: StringifiedJson,
+  ) => { error: string } | { error?: undefined; value: unknown };
+
+  /**
+   * Get initial storage JSON for a block created from params.
+   * Called when applying a template, once per entry that carries `params`.
+   *
+   * The mirror image of {@link BlockStorageFacadeCallbacks.TemplateParamsDerive}:
+   * that one turns storage into params, this one turns params into storage. Every
+   * applied entry comes through here, including one whose file omitted `params` —
+   * an omitted key is read as `{}` and checked like any other value, so no entry
+   * reaches a block without passing its kind's contract.
+   * {@link BlockStorageFacadeCallbacks.StorageInitial} stays the UI-creation path,
+   * where there are genuinely no params.
+   *
+   * Separate from `StorageInitial` rather than an optional argument to it,
+   * deliberately: a block bundled with an older SDK does not register this
+   * callback at all, so the caller sees it missing and can say so. Widening
+   * `StorageInitial` would instead have that block silently ignore the params and
+   * produce a default-initialized block that looks successfully applied.
+   *
+   * The params arrive as ordinary live params — references are `PlRef`s, already
+   * pointing at the ids the target project just assigned. Resolution happens in
+   * the engine, before this call, so a block's init factory never handles a
+   * template-local reference.
+   *
+   * Errors are returned, not thrown: a factory rejecting params it cannot use is
+   * an expected outcome for a hand-written template file, and every entry's
+   * problem is reported together.
+   *
+   * @param paramsJson - The entry's params as JSON string
+   * @returns Either an error, or the initial storage as JSON string
+   */
+  [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (
+    paramsJson: StringifiedJson,
+  ) => { error: string } | { error?: undefined; storageJson: StringifiedJson };
+
+  /**
+   * Check params against this block's kind, creating nothing.
+   *
+   * Called once per entry before a template is applied, so params a kind rejects are
+   * reported against the entry that carries them while there is still no project — the
+   * same reason references and ids are checked before construction starts. Applying
+   * without this call is safe but worse: `StorageInitialFromParams` runs the same check
+   * and refuses, by which point earlier entries have already been created.
+   *
+   * A pass carries nothing back but its own absence of error: every kind declares a
+   * parser, so a pass means the params were checked against the contract, not merely
+   * that they were valid JSON.
+   *
+   * Reference ids inside the params may be placeholders at this point: the check runs
+   * before blocks exist, so what is verified is the shape of the params, not what they
+   * point at.
+   *
+   * @param paramsJson The entry's params as JSON string
+   * @returns Why the params were rejected, or nothing
+   */
+  [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (
+    paramsJson: StringifiedJson,
+  ) => { error: string } | { error?: undefined };
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */
