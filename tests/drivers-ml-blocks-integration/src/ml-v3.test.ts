@@ -2,10 +2,10 @@ import { BlockPointer as downloadBlobURLSpec } from "@milaboratories/milaborator
 import type { platforma as downloadBlobURLModel } from "@milaboratories/milaboratories.test-blob-url-custom-protocol.model";
 import { BlockPointer as downloadFileSpec } from "@milaboratories/milaboratories.test-download-file";
 import type { platforma as downloadFileModel } from "@milaboratories/milaboratories.test-download-file.model";
-import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers";
 import { BlockPointer as readLogsSpec } from "@milaboratories/milaboratories.test-read-logs";
 import type { platforma as readLogsModel } from "@milaboratories/milaboratories.test-read-logs.model";
-import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers-v3";
+import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
 import { BlockPointer as uploadFileSpec } from "@milaboratories/milaboratories.test-upload-file";
 import type { platforma as uploadFileModel } from "@milaboratories/milaboratories.test-upload-file.model";
 import { BlockPointer as transferFilesSpec } from "@milaboratories/milaboratories.transfer-files";
@@ -28,7 +28,7 @@ import { createHash } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { test } from "vitest";
+import { assert, test } from "vitest";
 import { compareBuffersInChunks, computeHashIncremental, shuffleInPlace } from "./imports";
 import { isObject } from "@milaboratories/ts-helpers";
 import { withMl, withMlAndProxy } from "./with-ml";
@@ -127,6 +127,118 @@ test("v3: project list manipulations test", async ({ expect }) => {
     await ml.deleteProject(prj1Id);
 
     expect(await projectList.awaitStableValue()).toEqual([]);
+  });
+});
+
+test("v3: duplicate project test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create source project
+    const srcPrjId = await ml.createProject({ label: "Source Project" });
+    await ml.openProject(srcPrjId);
+    const srcPrj = ml.getOpenedProject(srcPrjId);
+
+    // Add blocks with args
+    const block1Id = await srcPrj.addBlock("Enter Numbers", enterNumberSpec);
+    const block2Id = await srcPrj.addBlock("Sum Numbers", sumNumbersSpec);
+
+    await srcPrj.mutateBlockStorage(block1Id, {
+      operation: "update-block-data",
+      value: { numbers: [10, 20, 30] },
+    });
+    await srcPrj.mutateBlockStorage(block2Id, {
+      operation: "update-block-data",
+      value: { sources: [outputRef(block1Id, "numbers")] },
+    });
+
+    await ml.closeProject(srcPrjId);
+
+    // Duplicate with rename lambda
+    const prjDupId = await ml.duplicateProject(srcPrjId, (prevLabel, existingLabels) => {
+      expect(existingLabels).toContain("Source Project");
+      let candidate = `${prevLabel} (Copy)`;
+      let i = 2;
+      while (existingLabels.includes(candidate)) {
+        candidate = `${prevLabel} (Copy ${i})`;
+        i++;
+      }
+      return candidate;
+    });
+
+    // Verify project list has both projects
+    const list = await projectList.getValue();
+    assert(list);
+    expect(list).toHaveLength(2);
+
+    const srcEntry = list.find((p) => p.id === srcPrjId);
+    const dupEntry = list.find((p) => p.id === prjDupId);
+    assert(srcEntry);
+    assert(dupEntry);
+    expect(srcEntry.meta.label).toBe("Source Project");
+    expect(dupEntry.meta.label).toBe("Source Project (Copy)");
+
+    // Duplicate has different rid and fresh timestamps
+    expect(prjDupId).not.toBe(srcPrjId);
+    expect(dupEntry.created.valueOf()).toBeGreaterThanOrEqual(srcEntry.created.valueOf());
+
+    // Open duplicate and verify structure
+    await ml.openProject(prjDupId);
+    const dupPrj = ml.getOpenedProject(prjDupId);
+
+    const dupOverview = await dupPrj.overview.awaitStableValue();
+    expect(dupOverview.meta.label).toBe("Source Project (Copy)");
+    expect(dupOverview.blocks).toHaveLength(2);
+    expect(dupOverview.blocks[0].title).toBeDefined();
+    expect(dupOverview.blocks[1].title).toBeDefined();
+
+    // Verify source project is unchanged
+    await ml.openProject(srcPrjId);
+    const srcPrj2 = ml.getOpenedProject(srcPrjId);
+    const srcOverview = await srcPrj2.overview.awaitStableValue();
+    expect(srcOverview.meta.label).toBe("Source Project");
+    expect(srcOverview.blocks).toHaveLength(2);
+
+    // Cleanup
+    await ml.closeProject(prjDupId);
+    await ml.closeProject(srcPrjId);
+    await ml.deleteProject(prjDupId);
+    await ml.deleteProject(srcPrjId);
+
+    expect(await projectList.awaitStableValue()).toEqual([]);
+  });
+});
+
+test("v3: duplicate project - name deduplication test", async ({ expect }) => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+
+    // Create two projects with names that would conflict
+    const prj1Id = await ml.createProject({ label: "My Analysis" });
+    const prj2Id = await ml.createProject({ label: "My Analysis (Copy)" });
+
+    // Duplicate with dedup logic - should skip "My Analysis (Copy)" since it exists
+    const prjDupId = await ml.duplicateProject(prj1Id, (prevLabel, existingLabels) => {
+      let candidate = `${prevLabel} (Copy)`;
+      let i = 2;
+      while (existingLabels.includes(candidate)) {
+        candidate = `${prevLabel} (Copy ${i})`;
+        i++;
+      }
+      return candidate;
+    });
+
+    const list = await projectList.getValue();
+    assert(list);
+    expect(list).toHaveLength(3);
+    const dupEntry = list.find((p) => p.id === prjDupId);
+    assert(dupEntry);
+    expect(dupEntry.meta.label).toBe("My Analysis (Copy 2)");
+
+    // Cleanup
+    await ml.deleteProject(prjDupId);
+    await ml.deleteProject(prj2Id);
+    await ml.deleteProject(prj1Id);
   });
 });
 
@@ -661,7 +773,7 @@ test("v3: block update test", async ({ expect }) => {
 
     // touch
     await fs.promises.appendFile(
-      path.resolve("..", "..", "etc", "blocks", "enter-numbers-v3", "model", "dist", "model.json"),
+      path.resolve("..", "..", "etc", "blocks", "enter-numbers", "model", "dist", "model.json"),
       " ",
     );
 
@@ -803,7 +915,10 @@ blockTest(
       "answer_to_the_ultimate_question.txt",
     );
 
-    await project.setBlockArgs(blockId, { inputHandle });
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputHandle },
+    });
 
     await project.runBlock(blockId);
 
@@ -912,7 +1027,12 @@ blockTest(
       inputHandles.push((ourFile as any).handle);
     }
 
-    await project.setBlockArgs(blockId, { inputHandles });
+    // transfer-files is a V3 block (modelAPIVersion 2); the deprecated
+    // setBlockArgs hardcodes modelAPIVersion 1 and would mismatch.
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputHandles },
+    });
     await project.runBlock(blockId);
 
     async function testChunkedDownload(
@@ -1199,7 +1319,12 @@ blockTest(
       inputHandles.push((ourFile as any).handle);
     }
 
-    await project.setBlockArgs(blockId, { inputHandles });
+    // transfer-files is a V3 block (modelAPIVersion 2); the deprecated
+    // setBlockArgs hardcodes modelAPIVersion 1 and would mismatch.
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputHandles },
+    });
     await project.runBlock(blockId);
 
     while (true) {
@@ -1373,7 +1498,12 @@ blockTest(
     );
     const inputZipHandle = await lsDriverGetFileHandleFromAssets(ml, expect, "funny_cats_site.zip");
 
-    await project.setBlockArgs(blockId, { inputTgzHandle, inputZipHandle });
+    // blob-url-custom-protocol is a V3 block (modelAPIVersion 2); the deprecated
+    // setBlockArgs hardcodes modelAPIVersion 1 and would mismatch.
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputTgzHandle, inputZipHandle },
+    });
 
     await project.runBlock(blockId);
 
@@ -1390,9 +1520,12 @@ blockTest(
 
       const outputs = state.outputs;
 
-      if (outputs.tgz_content.ok) {
+      // `tgz_content` is now derived by a render lambda rather than V1's
+      // config-based extractArchiveAndGetURL, so it resolves as
+      // `FolderURL | undefined` — `ok` can be true before the URL is available.
+      // Keep polling until the value itself settles.
+      if (outputs.tgz_content.ok && outputs.tgz_content.value !== undefined) {
         const url = outputs.tgz_content.value;
-        expect(url).not.toBeUndefined();
         console.dir(ml.internalDriverKit.blobToURLDriver.info(), { depth: 150 });
 
         const defaultUrl = ml.internalDriverKit.blobToURLDriver.getPathForCustomProtocol(url);
@@ -1421,7 +1554,12 @@ blockTest(
       "another_answer_to_the_ultimate_question.txt",
     );
 
-    await project.setBlockArgs(blockId, { inputHandle });
+    // upload-file is a V3 block (modelAPIVersion 2); the deprecated
+    // setBlockArgs hardcodes modelAPIVersion 1 and would mismatch.
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputHandle },
+    });
 
     await project.runBlock(blockId);
 
@@ -1456,11 +1594,16 @@ blockTest(
       "maybe_the_number_of_lines_is_the_answer.txt",
     );
 
-    await project.setBlockArgs(blockId, {
-      inputHandle,
-      // args are from here:
-      // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
-      readFileWithSleepArgs: "PREFIX,100,1000",
+    // read-logs is a V3 block (modelAPIVersion 2); the deprecated setBlockArgs
+    // hardcodes modelAPIVersion 1 and would mismatch.
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: {
+        inputHandle,
+        // args are from here:
+        // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
+        readFileWithSleepArgs: "PREFIX,100,1000",
+      },
     });
 
     await project.runBlock(blockId);

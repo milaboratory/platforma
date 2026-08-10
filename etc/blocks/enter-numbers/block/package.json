@@ -1,6 +1,7 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers",
-  "version": "1.1.1",
+  "version": "1.0.0",
+  "private": true,
   "files": [
     "dist",
     "block-pack"
@@ -24,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-enter-numbers.kind": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.ui": "workspace:*",
     "@milaboratories/milaboratories.test-enter-numbers.workflow": "workspace:*",
@@ -41,8 +43,8 @@
       "ui": "@milaboratories/milaboratories.test-enter-numbers.ui/dist"
     },
     "meta": {
-      "title": "Enter Numbers (old api)",
-      "description": "Enter Numbers (old api)",
+      "title": "Enter Numbers (new api)",
+      "description": "Enter Numbers",
       "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",

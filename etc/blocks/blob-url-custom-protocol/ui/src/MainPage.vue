@@ -7,8 +7,8 @@ const app = useApp();
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <PlFileInput v-model="app.model.args.inputTgzHandle" label="Select tgz file to import" />
-    <PlFileInput v-model="app.model.args.inputZipHandle" label="Select zip file to import" />
+    <PlFileInput v-model="app.model.data.inputTgzHandle" label="Select tgz file to import" />
+    <PlFileInput v-model="app.model.data.inputZipHandle" label="Select zip file to import" />
 
     <PlAlert type="success">
       Blob tgz content:
@@ -25,8 +25,8 @@ const app = useApp();
     </PlAlert>
 
     <fieldset>
-      <legend>Args (app.model.args)</legend>
-      {{ app.model.args }}
+      <legend>Data (app.model.data)</legend>
+      {{ app.model.data }}
     </fieldset>
     <h3>app.model</h3>
     <code>{{ app.model }}</code>

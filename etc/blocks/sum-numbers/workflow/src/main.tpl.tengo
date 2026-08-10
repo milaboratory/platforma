@@ -5,6 +5,9 @@ slices := import("@platforma-sdk/workflow-tengo:slices")
 json := import("json")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+wf.setPreRun(assets.importTemplate(":prerun"))
 
 mapToPValueData := func(map) {
 	data := {}

@@ -7,6 +7,7 @@ import type {
   PrimaryRef,
 } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder, buildDatasetOptions } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-filter-column.kind";
 import { z } from "zod";
 
 export const BlockData = z.object({
@@ -15,13 +16,15 @@ export const BlockData = z.object({
 
 export type BlockData = z.infer<typeof BlockData>;
 
-const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({}));
+// The kind declares no init params — `dataset` is always picked in the UI — so
+// `init` takes no `params` and a fresh block starts with an unset selection.
+const dataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(() => ({}));
 
 const PRIMARY_NAMES = new Set(["value", "description"]);
 const isPrimaryColumn = (spec: PObjectSpec): boolean =>
   spec.kind === "PColumn" && PRIMARY_NAMES.has(spec.name);
 
-export const platforma = BlockModelV3.create(dataModel)
+export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<{ dataset: PrimaryRef; enrichments: LabeledEnrichmentRefs }>((data) => {
     if (data.dataset === undefined) throw new Error("Select a dataset");
@@ -30,6 +33,10 @@ export const platforma = BlockModelV3.create(dataModel)
       enrichments: data.dataset.enrichments ?? [],
     };
   })
+
+  // Nothing to project: the kind takes no params. This fixture exists to exercise
+  // dataset selection end-to-end, so the selection is always made in the UI.
+  .templateParams(() => ({}))
 
   .output("datasetOptions", (ctx) =>
     buildDatasetOptions(ctx, { primary: isPrimaryColumn, withEnrichments: () => true }),

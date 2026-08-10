@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.transfer-files.kind": "workspace:*",
     "@milaboratories/milaboratories.transfer-files.model": "workspace:*",
     "@milaboratories/milaboratories.transfer-files.ui": "workspace:*",
     "@milaboratories/milaboratories.transfer-files.workflow": "workspace:*",

@@ -31,7 +31,7 @@ function onProductKeyInput(key: string) {
     key.startsWith(PRODUCT_KEY_PREFIX) &&
     key.length === PRODUCT_KEY_PREFIX.length + PRODUCT_KEY_LENGTH
   ) {
-    app.model.args.productKey = key.slice(PRODUCT_KEY_PREFIX.length);
+    app.model.data.productKey = key.slice(PRODUCT_KEY_PREFIX.length);
   }
 }
 
@@ -65,14 +65,14 @@ const files = reactive<{
 
 const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   if (v) {
-    app.model.args.inputHandles[i].handle = v;
+    app.model.data.inputHandles[i].handle = v;
   } else {
-    app.model.args.inputHandles.splice(i, 1);
+    app.model.data.inputHandles.splice(i, 1);
   }
 };
 
 const onImport = (imported: ImportedFiles) => {
-  app.model.args.inputHandles = imported.files.map((h, i) => ({
+  app.model.data.inputHandles = imported.files.map((h, i) => ({
     handle: h,
     fileName: getFileNameFromHandle(h),
     argName: `arg_${i}`,
@@ -134,12 +134,12 @@ const productOptions = [
     <PlRow>
       <PlContainer width="400px">
         <PlDropdown
-          v-model="app.model.args.productKey"
+          v-model="app.model.data.productKey"
           label="Select product"
           :options="productOptions"
         />
         <PlTextField
-          :model-value="app.model.args.productKey"
+          :model-value="app.model.data.productKey"
           label="or enter product key"
           clearable
           :validate="validateProductKey"
@@ -148,7 +148,7 @@ const productOptions = [
       </PlContainer>
     </PlRow>
 
-    <PlCheckbox v-model="app.model.args.shouldAddRunPerFile"> Add run per file </PlCheckbox>
+    <PlCheckbox v-model="app.model.data.shouldAddRunPerFile"> Add run per file </PlCheckbox>
 
     <PlRow width="400px">
       <PlBtnPrimary @click="files.isMultiDialogFileOpen = true">
@@ -158,16 +158,16 @@ const productOptions = [
         Show mnz info
       </PlBtnPrimary>
     </PlRow>
-    <template v-for="({ handle }, i) of app.model.args.inputHandles" :key="i">
+    <template v-for="({ handle }, i) of app.model.data.inputHandles" :key="i">
       <PlRow>
-        <PlTextField v-model="app.model.args.inputHandles[i].fileName" label="Type file name" />
-        <PlTextField v-model="app.model.args.inputHandles[i].argName" label="Type argument name" />
+        <PlTextField v-model="app.model.data.inputHandles[i].fileName" label="Type file name" />
+        <PlTextField v-model="app.model.data.inputHandles[i].argName" label="Type argument name" />
         <PlFileInput
           :model-value="handle"
           @update:model-value="(v: ImportFileHandle | undefined) => updateHandle(v, i)"
         />
         <PlDropdownMulti
-          v-model="app.model.args.inputHandles[i].options"
+          v-model="app.model.data.inputHandles[i].options"
           label="Metrics to monetize"
           :options="dropdownOptions"
         />

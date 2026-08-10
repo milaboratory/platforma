@@ -1,4 +1,4 @@
-import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers-v3";
+import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers";
 import {
   field,
   isNotNullSignedResourceId,
