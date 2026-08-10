@@ -8,6 +8,8 @@ import {
 } from "./filtered_column";
 import {
   createPObjectId,
+  isGlobalPObjectKey,
+  isLocalPObjectKey,
   isPObjectId,
   isPObjectKey,
   LocalPObjectKey,
@@ -28,7 +30,7 @@ import {
   type ColumnOverriddenId,
   type ColumnOverriddenKey,
 } from "./overridden";
-import { canonicalizeJson } from "../../../json";
+import { canonicalizeJson, parseJsonSafely } from "../../../json";
 import { AxisSpec, PColumnSpec } from "./spec";
 import { isString } from "es-toolkit";
 
@@ -95,6 +97,139 @@ export function parseColumnIdSafely(
   } catch {
     return fallback;
   }
+}
+
+/** Whether `value` is any of the five key forms a {@link ColumnUniversalId} serializes. */
+export function isColumnUniversalKey(value: unknown): value is ColumnUniversalKey {
+  return (
+    isPObjectKey(value) ||
+    isColumnFilteredKey(value) ||
+    isColumnDiscoveredKey(value) ||
+    isColumnOverriddenKey(value)
+  );
+}
+
+export function isColumnUniversalId(value: unknown): value is ColumnUniversalId {
+  const key = isString(value) ? parseJsonSafely(value, false) : false;
+  return key === false ? false : isColumnUniversalKey(key);
+}
+
+/**
+ * A {@link GlobalPObjectKey} leaf names its upstream by block id, and the wrapper
+ * key forms nest by *string* id rather than by object — so a block id can sit under
+ * several layers of JSON escaping, and `queriesQualifications` carries one in a map
+ * *key*. A caller that only walks object properties never reaches any of them, which
+ * is why moving a column id between projects needs this rather than a generic walk.
+ *
+ * Recursion re-canonicalizes bottom-up, so every level is canonical afterwards —
+ * including the rebuilt `queriesQualifications`, whose keys the canonical form sorts.
+ *
+ * Returns the input itself when no block id changed, so a caller mapping ids to
+ * themselves gets its value back byte-for-byte and never re-serializes a stored id.
+ * Any `string` is accepted for the same reason: a caller sweeping a params object
+ * cannot know which of its strings are ids, and one that is not is returned as-is.
+ *
+ * @param remapBlockId old block id → new block id. Throw from it to reject an id
+ *   that cannot be mapped.
+ */
+export function remapColumnIdBlockIds<T extends string | ColumnUniversalKey>(
+  id: T,
+  remapBlockId: (blockId: string) => string,
+): T {
+  const remapped = isString(id) ? remapIdString(id, remapBlockId) : remapKey(id, remapBlockId);
+  return (remapped ?? id) as T;
+}
+
+/**
+ * The string half of {@link remapColumnIdBlockIds}. `undefined` means "nothing to
+ * change", which is what keeps an unaffected id from being re-serialized.
+ *
+ * A string that does not parse to a column key is left alone: params hold ordinary
+ * strings too, and only a canonical id may be rewritten.
+ */
+function remapIdString(
+  id: string,
+  remapBlockId: (blockId: string) => string,
+): ColumnUniversalId | undefined {
+  // Every canonical id starts with `{`; ordinary strings stop here without a parse.
+  if (id.charCodeAt(0) !== 0x7b) return undefined;
+  const key = parseColumnIdSafely(id as ColumnUniversalId);
+  if (key === undefined || !isColumnUniversalKey(key)) return undefined;
+  const remappedKey = remapKey(key, remapBlockId);
+  return remappedKey === undefined ? undefined : stringifyColumnId(remappedKey);
+}
+
+/** The key half of {@link remapColumnIdBlockIds}. `undefined` means "nothing to change". */
+function remapKey(
+  key: ColumnUniversalKey,
+  remapBlockId: (blockId: string) => string,
+): ColumnUniversalKey | undefined {
+  if (isGlobalPObjectKey(key)) {
+    const blockId = remapBlockId(key.blockId);
+    return blockId === key.blockId ? undefined : { ...key, blockId };
+  }
+
+  // A local leaf names its column by a path inside its own block — no block id.
+  if (isLocalPObjectKey(key)) return undefined;
+
+  if (isColumnFilteredKey(key)) {
+    const source = remapIdString(key.source, remapBlockId);
+    return source === undefined ? undefined : { ...key, source };
+  }
+
+  if (isColumnOverriddenKey(key)) {
+    const source = remapIdString(key.source, remapBlockId);
+    // Remapping preserves the id's shape, so `source` is still not an Overridden id.
+    return source === undefined
+      ? undefined
+      : { ...key, source: source as ColumnOverriddenKey["source"] };
+  }
+
+  if (isColumnDiscoveredKey(key)) return remapDiscoveredKey(key, remapBlockId);
+
+  throw new Error(
+    `remapColumnIdBlockIds: unrecognized column id structure: ${JSON.stringify(key)}`,
+  );
+}
+
+/**
+ * Discovered is the only key form carrying more than one nested id: the column it
+ * discovered, one per linker hop, and one per entry in `queriesQualifications` —
+ * where the id is the map key, not the value.
+ */
+function remapDiscoveredKey(
+  key: ColumnDiscoveredKey,
+  remapBlockId: (blockId: string) => string,
+): ColumnDiscoveredKey | undefined {
+  const column = remapIdString(key.column, remapBlockId);
+
+  let pathChanged = false;
+  const path = key.path?.map((item) => {
+    const itemColumn = remapIdString(item.column, remapBlockId);
+    if (itemColumn === undefined) return item;
+    pathChanged = true;
+    return { ...item, column: itemColumn };
+  });
+
+  let queriesChanged = false;
+  const queriesQualifications =
+    key.queriesQualifications &&
+    (Object.fromEntries(
+      Object.entries(key.queriesQualifications).map(([queryId, qualifications]) => {
+        const remappedId = remapIdString(queryId, remapBlockId);
+        if (remappedId === undefined) return [queryId, qualifications];
+        queriesChanged = true;
+        return [remappedId, qualifications];
+      }),
+    ) as ColumnDiscoveredKey["queriesQualifications"]);
+
+  if (column === undefined && !pathChanged && !queriesChanged) return undefined;
+  return {
+    ...key,
+    ...(column !== undefined ? { column } : {}),
+    ...(pathChanged ? { path } : {}),
+    ...(queriesChanged ? { queriesQualifications } : {}),
+  };
 }
 
 /**

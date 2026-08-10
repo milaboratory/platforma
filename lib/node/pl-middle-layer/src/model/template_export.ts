@@ -74,9 +74,11 @@ export type TemplateExportWalk = {
  * reordering would change which references are legal in the first place.
  *
  * Ids are reused verbatim rather than remapped, so the walk also guards the one
- * thing verbatim reuse depends on — that no un-rewritten project-local id escapes
- * into the file. See {@link unrewrittenBlockIds}. Whether the rewritten references
- * point at anything is a whole-document question and belongs to the serializer.
+ * thing verbatim reuse depends on — that every block id reaching the file names a
+ * block the file describes. Accumulating the exported ids as it goes is what lets it
+ * answer that, and it is also why a block that failed carries its failure forward:
+ * an entry wired to a block that never made it into the document is unusable, and
+ * saying so beats emitting it. See {@link unrewrittenBlockIds}.
  *
  * @param structure The project structure — the source of both membership and order
  * @param paramsProvider Yields a block's derived template params. Return
@@ -91,6 +93,8 @@ export function walkProjectForTemplateExport(
 ): TemplateExportWalk {
   const entries: TemplateExportEntry[] = [];
   const problems: TemplateExportProblem[] = [];
+  /** Blocks this document describes so far, and so the only ones its params may name. */
+  const exportable = new Set<string>();
 
   for (const { id } of allBlocks(structure)) {
     const derived = paramsProvider(id);
@@ -126,49 +130,55 @@ export function walkProjectForTemplateExport(
     // Nothing renames ids on the way out, which is precisely what makes it
     // load-bearing that every id-carrying reference was already rewritten into
     // template form.
-    const unrewritten = unrewrittenBlockIds(params);
+    const unrewritten = unrewrittenBlockIds(params, exportable);
     if (unrewritten.length > 0) {
       problems.push({
         blockId: id,
         error:
-          `params still name project-local block(s) ${unrewritten.join(", ")} after the ` +
-          `template rewrite — a reference carried inside a string (an EnrichmentRef's ` +
-          `PObjectId is one) is invisible to toTemplateForm and would go stale on apply`,
+          `params still name block(s) ${unrewritten.join(", ")}, which this template does ` +
+          `not describe — a reference carried inside a string that is not a column id is ` +
+          `invisible to toTemplateForm and would name nothing on apply`,
       });
       continue;
     }
 
     entries.push({ blockId: id, params: params as Record<string, unknown> });
+    // Only now is this block nameable: an entry may reference blocks above it, and
+    // its own params referencing itself is a cycle, not a wire.
+    exportable.add(id);
   }
 
   return { entries, problems };
 }
 
 /**
- * Project-local block ids still present in already-template-form params, i.e.
- * references `toTemplateForm` failed to rewrite. Empty for correct params.
+ * Block ids in already-template-form params that name a block outside `exportable`,
+ * i.e. carriers `toTemplateForm` failed to rewrite. Empty for correct params.
  *
  * The two walks disagree about what carries a block id, and this closes the gap.
- * `toTemplateForm` recognizes only a plain `PlRef` object. `inferAllReferencedBlocks`
- * is the project's own reference detector and the authority on the question, since
- * the block dependency graph is built from it, and it additionally recognizes a
- * `PlRef` serialized into a string, unwrapping any number of `JSON.stringify`
- * passes. That case is not hypothetical: an `EnrichmentRef`'s `hit` and each of its
- * linker steps hold their block id exactly that way, as a canonicalized-JSON string
- * of `{ __isRef: true, blockId, name }`. Such a reference passes through the codec
- * untouched, carrying a project-local id into the file, where it names nothing when
- * the template is applied.
+ * `toTemplateForm` recognizes a plain `PlRef` object and a block id inside a column
+ * id. `inferAllReferencedBlocks` is the project's own reference detector and the
+ * authority on the question, since the block dependency graph is built from it, and
+ * it additionally recognizes a `PlRef` serialized into a string, unwrapping any
+ * number of `JSON.stringify` passes — so it reaches a carrier the codec does not.
  *
- * Correct template form contains no reference this detector can see — a rewritten
- * reference is a plain `{ block, output }` pair with no `__isRef` marker — so
- * anything it finds is a carrier the codec missed.
+ * A hit is not by itself a fault. A rewritten `PlRef` is a plain `{ block, output }`
+ * pair the detector cannot see, but a rewritten column id still holds
+ * `{ __isRef: true, blockId, name }` inside its string, because it has to stay a
+ * resolvable column id — and its block id is legitimate exactly when the document
+ * describes that block. So membership, not presence, is the test: a hit naming an
+ * exported entry is a wire, and a hit naming anything else would name nothing on
+ * apply.
  *
  * Checked here rather than inside `toTemplateForm` because the detector is
  * middle-layer code, while the codec ships in every block-model and UI bundle.
  */
-function unrewrittenBlockIds(templateFormParams: unknown): string[] {
+function unrewrittenBlockIds(
+  templateFormParams: unknown,
+  exportable: ReadonlySet<string>,
+): string[] {
   const { upstreams } = inferAllReferencedBlocks(templateFormParams);
-  return [...upstreams].sort();
+  return [...upstreams].filter((blockId) => !exportable.has(blockId)).sort();
 }
 
 /** Name the offending value's type for an error message, without printing the value. */

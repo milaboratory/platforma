@@ -214,6 +214,55 @@ describe("template-local ids", () => {
     expect(walk.problems[0].error).toContain(UUID_B);
   });
 
+  test("a column id naming a block the template describes is a wire, not a fault", () => {
+    // A rewritten column id still holds `{ __isRef: true, blockId, name }` inside its
+    // string — it has to, or it would stop being a column id a block can resolve. The
+    // detector sees it either way, so membership is what separates the two cases.
+    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
+    const walk = walkProjectForTemplateExport(
+      simpleStructure("a", "b"),
+      providerFrom({ a: ok({}), b: ok({ anchor }) }),
+    );
+
+    expect(walk.problems).toEqual([]);
+    expect(walk.entries.map((e) => e.blockId)).toEqual(["a", "b"]);
+  });
+
+  test("a column id naming a block the template does not describe is caught", () => {
+    const anchor = canonicalize({ __isRef: true, blockId: UUID_A, name: "clonotypes" })!;
+    const walk = walkProjectForTemplateExport(
+      simpleStructure("a", "b"),
+      providerFrom({ a: ok({}), b: ok({ anchor }) }),
+    );
+
+    expect(walk.entries.map((e) => e.blockId)).toEqual(["a"]);
+    expect(walk.problems).toHaveLength(1);
+    expect(walk.problems[0].blockId).toBe("b");
+    expect(walk.problems[0].error).toContain(UUID_A);
+  });
+
+  test("a block cannot name itself — its own id is published only once it is written", () => {
+    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
+    const walk = walkProjectForTemplateExport(
+      simpleStructure("a"),
+      providerFrom({ a: ok({ anchor }) }),
+    );
+
+    expect(walk.entries).toEqual([]);
+    expect(walk.problems[0].error).toContain("a");
+  });
+
+  test("a block whose upstream failed to export fails too, rather than wiring to nothing", () => {
+    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
+    const walk = walkProjectForTemplateExport(
+      simpleStructure("a", "b"),
+      providerFrom({ a: { error: "templateParams() threw" }, b: ok({ anchor }) }),
+    );
+
+    expect(walk.entries).toEqual([]);
+    expect(walk.problems.map((p) => p.blockId)).toEqual(["a", "b"]);
+  });
+
   test("every un-rewritten id is named at once, sorted", () => {
     const walk = walkProjectForTemplateExport(
       simpleStructure("b"),

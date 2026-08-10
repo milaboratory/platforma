@@ -1,6 +1,9 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
+import type { ColumnUniversalId } from "../drivers";
+import { createColumnDiscoveredId, createColumnFilteredId, extractPObjectId } from "../drivers";
 import type { PlRef, PrimaryRef } from "../ref";
 import { createPlRef, createPrimaryRef } from "../ref";
+import { createGlobalPObjectId } from "../pool";
 import type { TemplateLocalRef } from "./project_template_v1";
 import { createTemplateLocalRef } from "./project_template_v1";
 import { fromTemplateForm, toTemplateForm, type TemplateForm } from "./template_form";
@@ -65,6 +68,11 @@ describe("toTemplateForm", () => {
     const params = { dataset: "bulk-rna", threshold: 0.5 };
     expect(toTemplateForm(params)).toEqual(params);
   });
+
+  test("a column id keeps its block id, because export names blocks by the id they have", () => {
+    const params = { anchor: createGlobalPObjectId(samplesUuid, "clonotypes") };
+    expect(toTemplateForm(params)).toEqual(params);
+  });
 });
 
 describe("fromTemplateForm", () => {
@@ -85,6 +93,28 @@ describe("fromTemplateForm", () => {
     expect(() =>
       fromTemplateForm<PlRef>(createTemplateLocalRef("ghost", "reads"), resolve),
     ).toThrow(/Unknown template-local id: ghost/);
+  });
+
+  test("a block id inside a column id is resolved too, at whatever depth it sits", () => {
+    const leaf = createGlobalPObjectId("samples", "clonotypes") as ColumnUniversalId;
+    const params = {
+      anchor: createColumnFilteredId({
+        source: createColumnDiscoveredId({ column: leaf }),
+        axisFilters: [[0, "SAMPLE-1"]],
+      }),
+    };
+
+    const live = fromTemplateForm<typeof params>(params, resolve);
+
+    expect(extractPObjectId(live.anchor)).toBe(createGlobalPObjectId(samplesUuid, "clonotypes"));
+  });
+
+  test("a column id naming an entry with no block is rejected like any other reference", () => {
+    const params = { anchor: createGlobalPObjectId("ghost", "clonotypes") };
+
+    expect(() => fromTemplateForm<typeof params>(params, resolve)).toThrow(
+      /Unknown template-local id: ghost/,
+    );
   });
 });
 
@@ -122,6 +152,38 @@ describe("round trip", () => {
 
     // Applying with an identity map returns exactly what the project held.
     expect(fromTemplateForm<Params>(fileForm, (id) => id)).toEqual(live);
+  });
+
+  test("a column id survives the round trip and comes back naming the new block", () => {
+    // The case the codec used to miss: the block id is inside a canonicalized string,
+    // two escape layers down, where a property walk cannot reach it.
+    type Params = { anchor: ColumnUniversalId; species: string };
+    const live: Params = {
+      anchor: createColumnFilteredId({
+        source: createColumnDiscoveredId({
+          column: createGlobalPObjectId(samplesUuid, "clonotypes") as ColumnUniversalId,
+        }),
+        axisFilters: [[0, "SAMPLE-1"]],
+      }),
+      species: "human",
+    };
+
+    const freshUuid = "9999aaaa-0000-4000-8000-00000000000a";
+    const applied = fromTemplateForm<Params>(toTemplateForm(live), (id) =>
+      id === samplesUuid ? freshUuid : id,
+    );
+
+    expect(extractPObjectId(applied.anchor)).toBe(createGlobalPObjectId(freshUuid, "clonotypes"));
+    expect(applied.species).toBe("human");
+    // The shape is preserved: still a filtered id over a discovered one.
+    expect(applied.anchor).toBe(
+      createColumnFilteredId({
+        source: createColumnDiscoveredId({
+          column: createGlobalPObjectId(freshUuid, "clonotypes") as ColumnUniversalId,
+        }),
+        axisFilters: [[0, "SAMPLE-1"]],
+      }),
+    );
   });
 });
 
