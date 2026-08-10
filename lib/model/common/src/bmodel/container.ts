@@ -1,4 +1,5 @@
 import type { BlockConfigV3Generic, BlockConfigV4Generic } from "./block_config";
+import type { BlockKindReference } from "./block_kind_ref";
 import type { Code } from "./code";
 import type { BlockRenderingMode } from "./types";
 
@@ -10,6 +11,14 @@ export type BlockConfigContainer = {
 
   /** Config code bundle. Actually is required, but we keep it optional for backward compatibility */
   readonly code?: Code;
+
+  /**
+   * Reference to the block kind this config implements, in `{name}@{version}`
+   * form. Version-independent block identity — lives at the container level
+   * beside {@link code}, orthogonal to which render envelope (`v3`/`v4`)
+   * applies. Optional for backward compatibility with kind-less blocks.
+   */
+  readonly kind?: BlockKindReference;
 
   //
   // Fields below are used to read previous config versions
