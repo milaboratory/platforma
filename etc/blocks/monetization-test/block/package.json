@@ -24,6 +24,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.monetization-test.kind": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.ui": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.workflow": "workspace:*",

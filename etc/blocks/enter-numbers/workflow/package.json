@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers.workflow",
-  "version": "1.0.18",
+  "version": "1.0.0",
   "private": true,
   "description": "Tengo-based template",
   "type": "module",

@@ -7,10 +7,10 @@ const app = useApp();
 
 const sources = computed({
   get() {
-    return app.model.args.sources ?? [];
+    return app.model.data.sources ?? [];
   },
   set(newValue) {
-    app.model.args.sources = newValue;
+    app.model.data.sources = newValue;
   },
 });
 </script>
@@ -32,12 +32,8 @@ const sources = computed({
       {{ app.error }}
     </PlAlert>
     <fieldset>
-      <legend>Args (app.snapshot.args)</legend>
-      {{ app.snapshot.args }}
-    </fieldset>
-    <fieldset>
-      <legend>Args (app.model.args)</legend>
-      {{ app.model.args }}
+      <legend>Block Storage (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
     <h3>app.model</h3>
     <code>{{ app.model }}</code>

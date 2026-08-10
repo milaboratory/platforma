@@ -25,6 +25,7 @@
     "watch": "ts-builder build --target block-model --watch"
   },
   "dependencies": {
+    "@milaboratories/milaboratories.test-block-model.kind": "workspace:*",
     "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
