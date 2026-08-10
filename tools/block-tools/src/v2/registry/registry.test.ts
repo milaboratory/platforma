@@ -4,9 +4,15 @@ import { randomUUID } from "crypto";
 import path from "path";
 import fsp from "fs/promises";
 import { BlockRegistryV2 } from "./registry";
-import { UpdateSuggestions, BlockPackManifest } from "@milaboratories/pl-model-middle-layer";
+import {
+  UpdateSuggestions,
+  BlockPackManifest,
+  StableChannel,
+} from "@milaboratories/pl-model-middle-layer";
 import { inferUpdateSuggestions } from "./registry_reader";
 import { OverviewSnapshotsPrefix } from "./schema_internal";
+import { KindOverview, kindOverviewPath, npmNameToKindPath } from "./schema_kinds";
+import { resolveKind } from "./kind_resolver";
 
 type TestStorageInstance = {
   storage: RegistryStorage;
@@ -254,6 +260,246 @@ test.each(testStorages)(
       });
       expect(pkg3Overview?.versions).toHaveLength(1);
       expect(pkg3Overview?.versions[0].description.id.version).toBe("1.0.0");
+    } finally {
+      await teardown();
+    }
+  },
+);
+
+/**
+ * Fixture for the kind-projection test: a block version whose description
+ * carries a `{name}@{version}` kind reference. Only the id and that reference
+ * matter to the reconciler's kind pass.
+ */
+const kindTestKindNpmName = "@platforma-open/kindorg.kindpkg.kind";
+/** A second, unrelated kind — the migration target in the kind-change test. */
+const kindTestOtherKindNpmName = "@platforma-open/kindorg.otherpkg.kind";
+
+function kindImplementingManifest(
+  version: string,
+  kindVersion: string,
+  kindNpmName: string = kindTestKindNpmName,
+): BlockPackManifest {
+  return BlockPackManifest.parse({
+    schema: "v2",
+    description: {
+      id: { organization: "testorg", name: "kindblk", version },
+      title: "Kind implementing block",
+      summary: "Test package",
+      kind: `${kindNpmName}@${kindVersion}`,
+      components: {
+        workflow: { type: "workflow-v1", main: { type: "relative", path: "workflow.json" } },
+        model: { type: "relative", path: "model.json" },
+        ui: { type: "relative", path: "ui.json" },
+      },
+      meta: {
+        title: "Kind implementing block",
+        description: "Test package description",
+        organization: { name: "Test Organization", url: "https://test.com" },
+        tags: [],
+      },
+    },
+    files: [
+      {
+        name: "model.json",
+        size: 13,
+        sha256: "6FD977DB9B2AFE87A9CEEE48432881299A6AAF83D935FBBE83007660287F9C2E",
+      },
+    ],
+  });
+}
+
+const kindTestFileReader = async (fileName: string) => {
+  if (fileName === "model.json") return Buffer.from('{"test":true}');
+  throw new Error(`Unknown file: ${fileName}`);
+};
+
+/**
+ * Channel membership is per *block version* (`v2/{org}/{name}/{version}/channels/{channel}`),
+ * and every writer of a channel marker drops an update seed for that same
+ * version. So a `normal` (read-modify-write) reconcile pass always re-reads the
+ * versions whose membership changed, and the per-entry `channels` snapshot
+ * stored in `kinds/{org}/{name}/overview.json` cannot go stale behind it.
+ *
+ * This test pins that invariant on both sides of a stable-channel handover:
+ * adding `stable` to a newer version (both versions stable — marking is not a
+ * moving pointer, so the older one keeps its own membership) and then removing
+ * `stable` from the older one. Either step must leave every entry's snapshot
+ * equal to the markers actually present in storage, and stable resolution must
+ * follow. Regression guard: any future change that mutates a marker without
+ * seeding that exact version — or that turns `stable` into a single moving
+ * pointer — leaves the kind index asserting a version is stable when it is not.
+ */
+test.each(testStorages)(
+  "channel handover keeps kind overview channel snapshots correct in normal mode with $name",
+  async ({ storageProvider }) => {
+    const { storage, teardown } = storageProvider();
+    const registry = new BlockRegistryV2(storage, undefined, { skipSnapshotCreation: true });
+
+    const ovPath = kindOverviewPath(npmNameToKindPath(kindTestKindNpmName));
+    const readKindOverview = async (): Promise<KindOverview> => {
+      const content = await storage.getFile(ovPath);
+      expect(content).toBeDefined();
+      return KindOverview.parse(JSON.parse(content!.toString()));
+    };
+    const channelsOf = (overview: KindOverview, version: string): string[] => {
+      const entry = overview.implementers.find((i) => i.id.version === version);
+      expect(entry, `no implementer entry for ${version}`).toBeDefined();
+      return [...entry!.channels].sort();
+    };
+    const stableResolution = (overview: KindOverview) =>
+      resolveKind(overview, "1.0.0", { allowUnstable: false });
+
+    try {
+      // Two versions of one block, both implementing kind 1.0.0.
+      const a = kindImplementingManifest("1.0.0", "1.0.0");
+      const b = kindImplementingManifest("2.0.0", "1.0.0");
+      await registry.publishPackage(a, kindTestFileReader);
+      await registry.publishPackage(b, kindTestFileReader);
+
+      // A stable, reconcile.
+      await registry.addPackageToChannel(a.description.id, StableChannel);
+      await registry.updateIfNeeded("normal");
+
+      let overview = await readKindOverview();
+      expect(channelsOf(overview, "1.0.0")).toEqual([StableChannel]);
+      expect(channelsOf(overview, "2.0.0")).toEqual([]);
+      expect(stableResolution(overview)).toEqual({
+        ok: true,
+        blockId: a.description.id,
+        channel: StableChannel,
+      });
+
+      // B stable, reconcile in normal mode. A keeps its own marker (marking is
+      // additive per version), so both entries must read stable and resolution
+      // must move to the newer version.
+      await registry.addPackageToChannel(b.description.id, StableChannel);
+      await registry.updateIfNeeded("normal");
+
+      overview = await readKindOverview();
+      expect(channelsOf(overview, "1.0.0")).toEqual([StableChannel]);
+      expect(channelsOf(overview, "2.0.0")).toEqual([StableChannel]);
+      expect(await storage.listFiles(`v2/testorg/kindblk/1.0.0/channels/`)).toEqual([
+        StableChannel,
+      ]);
+      expect(stableResolution(overview)).toEqual({
+        ok: true,
+        blockId: b.description.id,
+        channel: StableChannel,
+      });
+
+      // Now the losing side of a real handover: drop stable from A. The version
+      // losing membership is the one seeded, so a normal pass must clear its
+      // snapshot rather than carry the stale `["stable"]`.
+      await registry.removePackageFromChannel(a.description.id, StableChannel);
+      await registry.updateIfNeeded("normal");
+
+      overview = await readKindOverview();
+      expect(channelsOf(overview, "1.0.0")).toEqual([]);
+      expect(channelsOf(overview, "2.0.0")).toEqual([StableChannel]);
+      expect(await storage.listFiles(`v2/testorg/kindblk/1.0.0/channels/`)).toEqual([]);
+      expect(stableResolution(overview)).toEqual({
+        ok: true,
+        blockId: b.description.id,
+        channel: StableChannel,
+      });
+
+      // Dropping the last stable marker must make the kind unresolvable on the
+      // stable channel — not silently fall back to a no-longer-stable version.
+      await registry.removePackageFromChannel(b.description.id, StableChannel);
+      await registry.updateIfNeeded("normal");
+
+      overview = await readKindOverview();
+      expect(channelsOf(overview, "1.0.0")).toEqual([]);
+      expect(channelsOf(overview, "2.0.0")).toEqual([]);
+      expect(stableResolution(overview)).toEqual({
+        ok: false,
+        reason: "no-stable-implementation",
+      });
+      expect(resolveKind(overview, "1.0.0", { allowUnstable: true })).toEqual({
+        ok: true,
+        blockId: b.description.id,
+        channel: "any",
+      });
+    } finally {
+      await teardown();
+    }
+  },
+);
+
+/**
+ * A block version can change which kind it implements: `publishPackage` overwrites
+ * same-version content (unlike `publishKind`, which is source-hash guarded), so a
+ * re-publish can move `{org}:{name}:{version}` from kind A to kind B.
+ *
+ * A `normal` pass only ever reads the CURRENT manifest, which names B — so nothing
+ * in the fresh scan points at A. Without an explicit visit A keeps listing the block
+ * as its implementer, and `resolveKind(A)` answers with a block whose manifest
+ * implements B: a mismatch that surfaces only at apply time, as rejected params.
+ * The reconciler recovers the old ref from the package overview it already loaded.
+ *
+ * Both halves are pinned here: A survives, minus the migrated version, while it
+ * still has an implementer — and is deleted once the last one leaves.
+ */
+test.each(testStorages)(
+  "changing a block's kind clears its old kind overview in normal mode with $name",
+  async ({ storageProvider }) => {
+    const { storage, teardown } = storageProvider();
+    const registry = new BlockRegistryV2(storage, undefined, { skipSnapshotCreation: true });
+
+    const ovPathA = kindOverviewPath(npmNameToKindPath(kindTestKindNpmName));
+    const ovPathB = kindOverviewPath(npmNameToKindPath(kindTestOtherKindNpmName));
+    const readOverview = async (ovPath: string): Promise<KindOverview | undefined> => {
+      const content = await storage.getFile(ovPath);
+      return content === undefined ? undefined : KindOverview.parse(JSON.parse(content.toString()));
+    };
+    const implementerVersions = (overview: KindOverview | undefined): string[] =>
+      (overview?.implementers ?? []).map((i) => i.id.version).sort();
+
+    try {
+      // Two versions of one block, both implementing kind A, both stable.
+      const a1 = kindImplementingManifest("1.0.0", "1.0.0");
+      const a2 = kindImplementingManifest("2.0.0", "1.0.0");
+      await registry.publishPackage(a1, kindTestFileReader);
+      await registry.publishPackage(a2, kindTestFileReader);
+      await registry.addPackageToChannel(a1.description.id, StableChannel);
+      await registry.addPackageToChannel(a2.description.id, StableChannel);
+      await registry.updateIfNeeded("normal");
+
+      expect(implementerVersions(await readOverview(ovPathA))).toEqual(["1.0.0", "2.0.0"]);
+      expect(await readOverview(ovPathB)).toBeUndefined();
+
+      // Re-publish 1.0.0 against kind B — same block id, different kind.
+      const b1 = kindImplementingManifest("1.0.0", "1.0.0", kindTestOtherKindNpmName);
+      await registry.publishPackage(b1, kindTestFileReader);
+      await registry.updateIfNeeded("normal");
+
+      const overviewA = await readOverview(ovPathA);
+      const overviewB = await readOverview(ovPathB);
+      expect(implementerVersions(overviewA)).toEqual(["2.0.0"]);
+      expect(implementerVersions(overviewB)).toEqual(["1.0.0"]);
+      // Each kind must resolve to the block that actually implements it now.
+      expect(resolveKind(overviewA!, "1.0.0", { allowUnstable: false })).toEqual({
+        ok: true,
+        blockId: a2.description.id,
+        channel: StableChannel,
+      });
+      expect(resolveKind(overviewB!, "1.0.0", { allowUnstable: false })).toEqual({
+        ok: true,
+        blockId: b1.description.id,
+        channel: StableChannel,
+      });
+
+      // Migrate the last implementer off A: its overview is orphaned and removed.
+      const b2 = kindImplementingManifest("2.0.0", "1.0.0", kindTestOtherKindNpmName);
+      await registry.publishPackage(b2, kindTestFileReader);
+      await registry.updateIfNeeded("normal");
+
+      expect(await readOverview(ovPathA)).toBeUndefined();
+      expect(implementerVersions(await readOverview(ovPathB))).toEqual(["1.0.0", "2.0.0"]);
+      expect(
+        resolveKind((await readOverview(ovPathB))!, "1.0.0", { allowUnstable: false }),
+      ).toEqual({ ok: true, blockId: b2.description.id, channel: StableChannel });
     } finally {
       await teardown();
     }
