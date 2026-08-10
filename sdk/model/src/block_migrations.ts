@@ -1,9 +1,28 @@
+import type { BlockKindReference } from "@milaboratories/pl-model-common";
+import { formatKindRef } from "@milaboratories/pl-model-common";
+import type { CompiledBlockKind } from "@platforma-sdk/block-kind";
 import { DATA_MODEL_LEGACY_VERSION } from "./block_storage";
 
 export type DataVersionKey = string;
 export type DataMigrateFn<From, To> = (prev: Readonly<From>) => To;
-export type DataCreateFn<T> = () => T;
+/**
+ * Initial-data factory. Object-arg so future inputs (services, resolved refs)
+ * can extend it without a signature break. `Params` carries the block's
+ * kind-declared params type; `never` means the block reads no params yet.
+ */
+export type DataCreateFn<T, Params = never> = (args: { params?: Params }) => T;
 export type DataRecoverFn<T> = (version: DataVersionKey, data: unknown) => T;
+
+/**
+ * The compiled block-kind object a block declares — exactly the output of
+ * `defineBlockKind` from `@platforma-sdk/block-kind`, consumed type-only.
+ *
+ * The kind object carries no reference field: the `{name}@{version}` reference
+ * is derived from it internally (via `formatKindRef`) at the point the builder
+ * and `BlockModelV3.create` need it. Aliased here so `DataModelBuilder` /
+ * `create` signatures directly accept `defineBlockKind`'s output.
+ */
+export type BlockKind<Params = never> = CompiledBlockKind<Params>;
 
 /**
  * Minimal interface that .transfer() accepts. PluginInstance implements this.
@@ -94,7 +113,17 @@ type BuilderState<S> = {
   versionChain: DataVersionKey[];
   steps: MigrationStep[];
   transferSteps: TransferStep[];
-  initialDataFn: () => S;
+  /**
+   * The params type is erased to `unknown` here: the builder checks the block's
+   * factory against its kind's params, but once stored, the only caller that has
+   * params is the template engine, which carries them as parsed file content and
+   * cannot know the type.
+   */
+  initialDataFn: DataCreateFn<S, unknown>;
+  /** Reference to the block kind this data model belongs to, if declared. */
+  kindRef?: BlockKindReference;
+  /** The kind's runtime params check, threaded with {@link kindRef}. */
+  parseTemplateParams?: (value: unknown) => unknown;
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   /** Index of the first step to run after recovery. Equals the number of steps
    *  present at the time recover() was called. */
@@ -115,19 +144,32 @@ type RecoverState = {
  *
  * @internal
  */
-abstract class MigrationChainBase<Current, Transfers extends Record<string, unknown> = {}> {
+abstract class MigrationChainBase<
+  Current,
+  Transfers extends Record<string, unknown> = {},
+  Params = never,
+> {
   protected readonly versionChain: DataVersionKey[];
   protected readonly migrationSteps: MigrationStep[];
   protected readonly transferSteps: TransferStep[];
+  /** Kind reference seeded by the builder, threaded through the chain into init(). */
+  protected readonly kindRef?: BlockKindReference;
+  /** The kind's runtime params check, carried for `init()` to hand to the DataModel. */
+  protected readonly parseTemplateParams?: (value: unknown) => unknown;
 
   protected constructor(state: {
     versionChain: DataVersionKey[];
     steps: MigrationStep[];
     transferSteps?: TransferStep[];
+    kindRef?: BlockKindReference;
+    /** The kind's runtime params check, threaded with {@link kindRef}. */
+    parseTemplateParams?: (value: unknown) => unknown;
   }) {
     this.versionChain = state.versionChain;
     this.migrationSteps = state.steps;
     this.transferSteps = state.transferSteps ?? [];
+    this.kindRef = state.kindRef;
+    this.parseTemplateParams = state.parseTemplateParams;
   }
 
   /** Appends a migration step and returns the new versionChain and steps arrays. */
@@ -178,12 +220,14 @@ abstract class MigrationChainBase<Current, Transfers extends Record<string, unkn
    * @param initialData - Factory function returning the initial state
    * @returns Finalized DataModel instance
    */
-  init(initialData: DataCreateFn<Current>): DataModel<Current, Transfers> {
-    return DataModel[FROM_BUILDER]<Current, Transfers>({
+  init(initialData: DataCreateFn<Current, Params>): DataModel<Current, Params, Transfers> {
+    return DataModel[FROM_BUILDER]<Current, Params, Transfers>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       transferSteps: this.transferSteps,
-      initialDataFn: initialData,
+      initialDataFn: initialData as DataCreateFn<Current, unknown>,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
       ...this.recoverState(),
     });
   }
@@ -201,7 +245,8 @@ abstract class MigrationChainBase<Current, Transfers extends Record<string, unkn
 class DataModelMigrationChainWithRecover<
   Current,
   Transfers extends Record<string, unknown> = {},
-> extends MigrationChainBase<Current, Transfers> {
+  Params = never,
+> extends MigrationChainBase<Current, Transfers, Params> {
   private readonly recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex?: number;
 
@@ -210,6 +255,9 @@ class DataModelMigrationChainWithRecover<
     versionChain: DataVersionKey[];
     steps: MigrationStep[];
     transferSteps?: TransferStep[];
+    kindRef?: BlockKindReference;
+    /** The kind's runtime params check, threaded with {@link kindRef}. */
+    parseTemplateParams?: (value: unknown) => unknown;
     recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
     recoverFromIndex?: number;
   }) {
@@ -232,12 +280,14 @@ class DataModelMigrationChainWithRecover<
   migrate<Next>(
     nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChainWithRecover<Next, Transfers> {
+  ): DataModelMigrationChainWithRecover<Next, Transfers, Params> {
     const { versionChain, steps } = this.buildStep(nextVersion, fn);
-    return new DataModelMigrationChainWithRecover<Next, Transfers>({
+    return new DataModelMigrationChainWithRecover<Next, Transfers, Params>({
       versionChain,
       steps,
       transferSteps: this.transferSteps,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
     });
@@ -251,12 +301,14 @@ class DataModelMigrationChainWithRecover<
   transfer<Id extends string, L>(
     target: TransferTarget<Id & (Id extends keyof Transfers ? never : string), L>,
     extract: (data: Current) => L,
-  ): DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>> {
+  ): DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>, Params> {
     const { transferSteps } = this.buildTransfer(target, extract);
-    return new DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>>({
+    return new DataModelMigrationChainWithRecover<Current, Transfers & Record<Id, L>, Params>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       transferSteps,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
     });
@@ -276,18 +328,24 @@ class DataModelMigrationChainWithRecover<
 class DataModelMigrationChain<
   Current,
   Transfers extends Record<string, unknown> = {},
-> extends MigrationChainBase<Current, Transfers> {
+  Params = never,
+> extends MigrationChainBase<Current, Transfers, Params> {
   /** @internal */
   constructor({
     versionChain,
     steps = [],
     transferSteps = [],
+    kindRef,
+    parseTemplateParams,
   }: {
     versionChain: DataVersionKey[];
     steps?: MigrationStep[];
     transferSteps?: TransferStep[];
+    kindRef?: BlockKindReference;
+    /** The kind's runtime params check, threaded with {@link kindRef}. */
+    parseTemplateParams?: (value: unknown) => unknown;
   }) {
-    super({ versionChain, steps, transferSteps });
+    super({ versionChain, steps, transferSteps, kindRef, parseTemplateParams });
   }
 
   /**
@@ -304,12 +362,14 @@ class DataModelMigrationChain<
   migrate<Next>(
     nextVersion: string,
     fn: DataMigrateFn<Current, Next>,
-  ): DataModelMigrationChain<Next, Transfers> {
+  ): DataModelMigrationChain<Next, Transfers, Params> {
     const { versionChain, steps } = this.buildStep(nextVersion, fn);
-    return new DataModelMigrationChain<Next, Transfers>({
+    return new DataModelMigrationChain<Next, Transfers, Params>({
       versionChain,
       steps,
       transferSteps: this.transferSteps,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
     });
   }
 
@@ -329,12 +389,14 @@ class DataModelMigrationChain<
   transfer<Id extends string, L>(
     target: TransferTarget<Id & (Id extends keyof Transfers ? never : string), L>,
     extract: (data: Current) => L,
-  ): DataModelMigrationChain<Current, Transfers & Record<Id, L>> {
+  ): DataModelMigrationChain<Current, Transfers & Record<Id, L>, Params> {
     const { transferSteps } = this.buildTransfer(target, extract);
-    return new DataModelMigrationChain<Current, Transfers & Record<Id, L>>({
+    return new DataModelMigrationChain<Current, Transfers & Record<Id, L>, Params>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       transferSteps,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
     });
   }
 
@@ -361,11 +423,15 @@ class DataModelMigrationChain<
    *   .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
    *   .init(() => ({ count: 0, label: "", description: "" }));
    */
-  recover(fn: DataRecoverFn<Current>): DataModelMigrationChainWithRecover<Current, Transfers> {
-    return new DataModelMigrationChainWithRecover<Current, Transfers>({
+  recover(
+    fn: DataRecoverFn<Current>,
+  ): DataModelMigrationChainWithRecover<Current, Transfers, Params> {
+    return new DataModelMigrationChainWithRecover<Current, Transfers, Params>({
       versionChain: this.versionChain,
       steps: this.migrationSteps,
       transferSteps: this.transferSteps,
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
       recoverFn: fn as (version: DataVersionKey, data: unknown) => unknown,
       recoverFromIndex: this.migrationSteps.length,
     });
@@ -384,7 +450,8 @@ class DataModelMigrationChain<
 class DataModelInitialChain<
   Current,
   Transfers extends Record<string, unknown> = {},
-> extends DataModelMigrationChain<Current, Transfers> {
+  Params = never,
+> extends DataModelMigrationChain<Current, Transfers, Params> {
   /**
    * Handle legacy V1 model state ({ args, uiState }) when upgrading a block from
    * BlockModel V1 to BlockModelV3.
@@ -421,7 +488,7 @@ class DataModelInitialChain<
    */
   upgradeLegacy<Args, UiState = unknown>(
     fn: (legacy: LegacyV1State<Args, UiState>) => Current,
-  ): DataModelMigrationChainWithRecover<Current, Transfers> {
+  ): DataModelMigrationChainWithRecover<Current, Transfers, Params> {
     const wrappedFn = (data: unknown): unknown => {
       if (data !== null && typeof data === "object" && "args" in data) {
         return fn(data as LegacyV1State<Args, UiState>);
@@ -437,9 +504,11 @@ class DataModelInitialChain<
       toVersion: initialVersion,
       migrate: wrappedFn,
     };
-    return new DataModelMigrationChainWithRecover<Current, Transfers>({
+    return new DataModelMigrationChainWithRecover<Current, Transfers, Params>({
       versionChain: [DATA_MODEL_LEGACY_VERSION, ...this.versionChain],
       steps: [step, ...this.migrationSteps],
+      kindRef: this.kindRef,
+      parseTemplateParams: this.parseTemplateParams,
       // Shift transfer indices to account for the prepended legacy step
       transferSteps: this.transferSteps.map((t) => ({
         ...t,
@@ -495,7 +564,29 @@ class DataModelInitialChain<
  *   }))
  *   .init(() => ({ inputFile: '', selectedTab: 'main' }));
  */
-export class DataModelBuilder {
+export class DataModelBuilder<Params = never> {
+  readonly #kindRef?: BlockKindReference;
+  readonly #parseTemplateParams?: (value: unknown) => Params;
+
+  /**
+   * @param opts.kind - The block kind this data model implements. Its reference
+   *   is captured and baked into the config so the manifest can advertise which
+   *   kind the block satisfies, and its `Params` type flows into `.init()`.
+   *   Optional during the transition window while existing V3 blocks are
+   *   migrated to kind-carrying builders; a kind-less builder simply carries no
+   *   reference and the reconciler can't project it yet. Object form mirrors
+   *   `BlockModelV3.create({ dataModel, kind })`.
+   */
+  constructor(opts?: { kind?: BlockKind<Params> }) {
+    // Derive the on-wire `{name}@{version}` reference from the compiled kind;
+    // the kind object itself has no reference field.
+    this.#kindRef = opts?.kind ? formatKindRef(opts.kind) : undefined;
+    // Carried alongside the reference, and for the same reason: the kind object is
+    // not kept, but two things off it are needed later — how to name the kind, and
+    // how to check params claimed to be of it.
+    this.#parseTemplateParams = opts?.kind?.parseTemplateParams;
+  }
+
   /**
    * Start the migration chain with the given initial data type and version key.
    *
@@ -503,8 +594,12 @@ export class DataModelBuilder {
    * @param initialVersion - Version key string (e.g. "v1")
    * @returns Migration chain builder
    */
-  from<T>(initialVersion: string): DataModelInitialChain<T> {
-    return new DataModelInitialChain<T>({ versionChain: [initialVersion] });
+  from<T>(initialVersion: string): DataModelInitialChain<T, {}, Params> {
+    return new DataModelInitialChain<T, {}, Params>({
+      versionChain: [initialVersion],
+      kindRef: this.#kindRef,
+      parseTemplateParams: this.#parseTemplateParams as ((value: unknown) => unknown) | undefined,
+    });
   }
 }
 
@@ -527,9 +622,12 @@ export class DataModelBuilder {
  *   .migrate<V3>("v3", (v2) => ({ ...v2, description: "" }))
  *   .init(() => ({ count: 0, label: "", description: "" }));
  */
-export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
+export class DataModel<State, Params = never, Transfers extends Record<string, unknown> = {}> {
   /** @internal Phantom field to anchor the Transfers type parameter. */
   declare readonly __transfers?: Transfers;
+  /** @internal Phantom field to anchor the Params type parameter (drives the
+   *  compile-time kind cross-check in `BlockModelV3.create`). */
+  declare readonly __params?: Params;
 
   /** Latest version key — O(1) access for the common "already current" check. */
   private readonly latestVersion: DataVersionKey;
@@ -537,15 +635,21 @@ export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
   private readonly stepsByFromVersion: ReadonlyMap<DataVersionKey, number>;
   private readonly steps: MigrationStep[];
   private readonly transferSteps: TransferStep[];
-  private readonly initialDataFn: () => State;
+  private readonly initialDataFn: DataCreateFn<State, unknown>;
   private readonly recoverFn: (version: DataVersionKey, data: unknown) => unknown;
   private readonly recoverFromIndex: number;
+  /** Reference to the block kind this data model was built for, if any. */
+  private readonly _kindRef?: BlockKindReference;
+  /** The kind's runtime params check, if it declares one. */
+  private readonly _parseTemplateParams?: (value: unknown) => unknown;
 
   private constructor({
     versionChain,
     steps,
     transferSteps = [],
     initialDataFn,
+    kindRef,
+    parseTemplateParams,
     recoverFn = defaultRecover,
     recoverFromIndex,
   }: BuilderState<State>) {
@@ -557,6 +661,8 @@ export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
     this.steps = steps;
     this.transferSteps = transferSteps;
     this.initialDataFn = initialDataFn;
+    this._kindRef = kindRef;
+    this._parseTemplateParams = parseTemplateParams;
     this.recoverFn = recoverFn;
     this.recoverFromIndex = recoverFromIndex ?? steps.length;
   }
@@ -566,10 +672,31 @@ export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
    * Uses Symbol key to prevent external access.
    * @internal
    */
-  static [FROM_BUILDER]<S, T extends Record<string, unknown> = {}>(
+  static [FROM_BUILDER]<S, P = never, T extends Record<string, unknown> = {}>(
     state: BuilderState<S>,
-  ): DataModel<S, T> {
-    return new DataModel<S, T>(state);
+  ): DataModel<S, P, T> {
+    return new DataModel<S, P, T>(state);
+  }
+
+  /**
+   * Reference to the block kind this data model was built for, or `undefined`
+   * for a kind-less builder. Used by `BlockModelV3.create` to cross-check that
+   * the kind handed to the builder matches the kind handed to `create`.
+   * @internal
+   */
+  get kindRef(): BlockKindReference | undefined {
+    return this._kindRef;
+  }
+
+  /**
+   * The kind's runtime params check, or `undefined` if the kind declares none (or
+   * there is no kind). Read by `BlockModelV3.done()` to register the check, and
+   * carried here rather than only on the model because `init` — the one place params
+   * are consumed — lives on this side.
+   * @internal
+   */
+  get templateParamsParser(): ((value: unknown) => unknown) | undefined {
+    return this._parseTemplateParams;
   }
 
   /**
@@ -583,7 +710,7 @@ export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
    * Get a fresh copy of the initial data.
    */
   initialData(): State {
-    return this.initialDataFn();
+    return this.initialDataFn({});
   }
 
   /**
@@ -591,7 +718,25 @@ export class DataModel<State, Transfers extends Record<string, unknown> = {}> {
    * Used when creating new blocks or resetting to defaults.
    */
   getDefaultData(): DataVersioned<State> {
-    return makeVersionedData(this.latestVersion, this.initialDataFn());
+    return makeVersionedData(this.latestVersion, this.initialDataFn({}));
+  }
+
+  /**
+   * Get initial data built from params, wrapped with current version.
+   *
+   * The counterpart of {@link getDefaultData} for a block created from a template
+   * entry: the factory receives the entry's params instead of nothing. A factory
+   * that ignores its argument produces the same result as `getDefaultData`, which
+   * is why the two are separate methods rather than one optional argument — the
+   * caller decides which contract it is asking for, and a block that cannot honour
+   * params must not silently look like one that can.
+   *
+   * References inside `params` are already resolved to the target project's
+   * concrete ids by the time they get here; the factory never sees a
+   * template-local one.
+   */
+  getDataFromParams(params: unknown): DataVersioned<State> {
+    return makeVersionedData(this.latestVersion, this.initialDataFn({ params }));
   }
 
   private recoverFrom(data: unknown, version: DataVersionKey): DataVersioned<State> {

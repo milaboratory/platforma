@@ -1,0 +1,342 @@
+import { describe, expect, test } from "vitest";
+import type { PlRef } from "@milaboratories/pl-model-common";
+import { createPlRef, stringifyJson } from "@milaboratories/pl-model-common";
+import type { PluginHandle } from "./plugin_handle";
+import type { PluginName } from "./block_storage";
+import { BLOCK_STORAGE_KEY, createBlockStorage, isBlockStorage } from "./block_storage";
+import {
+  createInitialStorage,
+  createInitialStorageFromParams,
+  deriveTemplateParamsFromStorage,
+  validateTemplateParams,
+  validateTemplateParamsJson,
+} from "./block_storage_callbacks";
+import { DataModelBuilder } from "./block_migrations";
+import { defineBlockKind } from "@platforma-sdk/block-kind";
+
+/**
+ * The apply half of the template contract: params in, storage out.
+ *
+ * `template_params.test.ts` covers the export direction. These cover the inverse,
+ * plus the one property that ties the two together — params that survive a round
+ * trip through storage.
+ */
+
+type Params = { sources?: PlRef[]; label: string };
+
+/**
+ * Deliberately permissive: these tests are about what the apply path does with params
+ * the kind already accepted, so the parser here only carries the shape through. The
+ * rejection behaviour is covered by the `validateTemplateParams` cases below, which
+ * supply their own strict parsers.
+ */
+const passThrough = (value: unknown) => value as Params;
+
+const kind = defineBlockKind<Params>({
+  name: "@platforma-open/milaboratories.demo.kind",
+  version: "1.0.0",
+  parseTemplateParams: passThrough,
+});
+
+type BlockData = { sources: PlRef[]; label: string; scratch: number };
+
+const dataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(({ params }) => ({
+  sources: params?.sources ?? [],
+  label: params?.label ?? "",
+  scratch: 0,
+}));
+
+const upstream = "3f1c2b7a-0000-4000-8000-000000000001";
+
+/** Hooks for a block with no plugins — the common case. */
+const noPlugins = {
+  getPluginRegistry: () => ({}),
+  createPluginData: () => {
+    throw new Error("no plugins registered");
+  },
+};
+
+const fromParams = (params: unknown) =>
+  createInitialStorageFromParams(JSON.stringify(params), {
+    getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+    parseTemplateParams: passThrough,
+    ...noPlugins,
+  });
+
+/** Storage the callback produced, parsed back. Fails the test if it errored. */
+function storageOf(result: ReturnType<typeof fromParams>) {
+  if (result.error !== undefined) throw new Error(`expected storage, got: ${result.error}`);
+  return JSON.parse(result.storageJson) as Record<string, unknown>;
+}
+
+describe("createInitialStorageFromParams", () => {
+  test("the block's init factory receives the entry's params", () => {
+    const storage = storageOf(fromParams({ label: "run 1" }));
+
+    expect(storage.__data).toEqual({ sources: [], label: "run 1", scratch: 0 });
+  });
+
+  test("references arrive as PlRefs and land in data untouched", () => {
+    // The engine resolves template-local references before this point, so what the
+    // factory sees is an ordinary live reference to a block that already exists.
+    const ref = createPlRef(upstream, "reads");
+    const storage = storageOf(fromParams({ label: "wired", sources: [ref] }));
+
+    expect((storage.__data as BlockData).sources).toEqual([ref]);
+  });
+
+  test("the result is well-formed storage at the current data version", () => {
+    const storage = storageOf(fromParams({ label: "x" }));
+
+    expect(isBlockStorage(storage)).toBe(true);
+    expect(storage[BLOCK_STORAGE_KEY]).toBeDefined();
+    expect(storage.__dataVersion).toBe(dataModel.version);
+  });
+
+  test("a block created from params is shaped exactly like one created from defaults", () => {
+    // Same envelope, only `__data` differs — which is what lets an applied block be
+    // read, migrated and edited by every path that never heard of templates.
+    const fromDefaults = JSON.parse(
+      createInitialStorage({
+        getDefaultBlockData: () => dataModel.getDefaultData(),
+        getPluginRegistry: noPlugins.getPluginRegistry,
+        createPluginData: noPlugins.createPluginData,
+      }),
+    ) as Record<string, unknown>;
+    const applied = storageOf(fromParams({ label: "x" }));
+
+    expect(Object.keys(applied).sort()).toEqual(Object.keys(fromDefaults).sort());
+    expect({ ...applied, __data: null }).toEqual({ ...fromDefaults, __data: null });
+  });
+
+  test("empty params are used as-is, not treated as absent", () => {
+    // An entry with `params: {}` says "initialize from nothing in particular";
+    // the factory's own fallbacks fill in, and the applier never substitutes
+    // defaults on the block's behalf.
+    expect(storageOf(fromParams({})).__data).toEqual({ sources: [], label: "", scratch: 0 });
+  });
+
+  test("params that are not valid JSON are reported", () => {
+    const result = createInitialStorageFromParams("{not json", {
+      getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+      parseTemplateParams: passThrough,
+      ...noPlugins,
+    });
+
+    expect(result.error).toMatch(/params are not valid JSON/);
+  });
+
+  test("a factory that rejects the params is reported, not propagated", () => {
+    // The expected failure mode for a hand-written template file: params the block
+    // cannot make sense of. It must come back as a problem the applier can attach
+    // to an entry, not as a throw that aborts the whole apply.
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), {
+      getBlockDataFromParams: () => {
+        throw new Error("label must not be empty");
+      },
+      parseTemplateParams: passThrough,
+      ...noPlugins,
+    });
+
+    expect(result).toEqual({ error: "init() threw on the given params: label must not be empty" });
+  });
+
+  test("plugins are created at their defaults, never from params", () => {
+    // Params belong to the block's kind; a plugin has no params channel, so it is
+    // initialized the same way whether the block came from a template or the UI.
+    const handle = "p1" as PluginHandle;
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "x" }), {
+      getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+      parseTemplateParams: passThrough,
+      getPluginRegistry: () => ({ [handle]: "demoPlugin" as PluginName }),
+      createPluginData: (h) => {
+        expect(h).toBe(handle);
+        return { version: "v1", data: { items: [] } };
+      },
+    });
+
+    expect(storageOf(result).__plugins).toEqual({
+      [handle]: { __dataVersion: "v1", __data: { items: [] } },
+    });
+  });
+});
+
+describe("DataModel.getDataFromParams", () => {
+  test("a factory that ignores params matches getDefaultData", () => {
+    const paramless = new DataModelBuilder().from<{ n: number }>("v1").init(() => ({ n: 7 }));
+
+    expect(paramless.getDataFromParams({ n: 99 })).toEqual(paramless.getDefaultData());
+  });
+
+  test("undefined params are what a factory sees from getDefaultData", () => {
+    // The two entry points must not diverge on the "no params" case: an entry
+    // without params goes through StorageInitial, and a factory written against
+    // `params?.x ?? default` has to behave identically either way.
+    expect(dataModel.getDataFromParams(undefined)).toEqual(dataModel.getDefaultData());
+  });
+});
+
+describe("params round trip", () => {
+  test("init then templateParams returns the params it started from", () => {
+    // The closest thing to an export→import round trip available without the
+    // engine: params → storage → params. References come back in template form,
+    // since that is what the export side writes to the file.
+    const params = { label: "run 1", sources: [createPlRef(upstream, "reads")] };
+
+    const storageJson = stringifyJson(
+      createBlockStorage(storageOf(fromParams(params)).__data as BlockData),
+    );
+    const derived = deriveTemplateParamsFromStorage(storageJson, (data) => {
+      const d = data as BlockData;
+      return { sources: d.sources, label: d.label };
+    });
+
+    expect(derived).toEqual({
+      value: { label: "run 1", sources: [{ block: upstream, output: "reads" }] },
+    });
+  });
+});
+
+describe("validateTemplateParams", () => {
+  test("the parser's output is what flows on, not its input", () => {
+    // This is what makes a schema able to strip keys the kind does not declare, which
+    // is the difference between a typo being ignored and a typo being caught.
+    const result = validateTemplateParams({ label: "x", stray: 1 }, () => ({ label: "x" }));
+
+    expect(result).toEqual({ value: { label: "x" } });
+  });
+
+  test("there is no unchecked pass", () => {
+    // Every kind declares a parser, so the result carries no "was this checked" flag:
+    // a pass means the params were held to the contract. A parser is the only way a
+    // value gets through, and one that rejects everything is still a parser.
+    expect(
+      validateTemplateParams({ anything: true }, () => {
+        throw new Error("this kind takes no params");
+      }).error,
+    ).toMatch(/do not match this block's kind/);
+  });
+});
+
+describe("params reaching init", () => {
+  test("init sees what the parser returned", () => {
+    const storage = storageOf(
+      createInitialStorageFromParams(JSON.stringify({ label: "raw", stray: 1 }), {
+        getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+        parseTemplateParams: () => ({ label: "parsed" }),
+        ...noPlugins,
+      }),
+    );
+
+    expect((storage.__data as BlockData).label).toBe("parsed");
+  });
+
+  test("params the kind rejects never reach init", () => {
+    // Checked here as well as in the caller's pre-flight: the pre-flight exists to
+    // report every bad entry before anything is created, this exists so the factory is
+    // never handed a value the kind refused, whichever path got here.
+    let reached = false;
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), {
+      getBlockDataFromParams: (p) => {
+        reached = true;
+        return dataModel.getDataFromParams(p);
+      },
+      parseTemplateParams: () => {
+        throw new Error("label must not be empty");
+      },
+      ...noPlugins,
+    });
+
+    expect(reached).toBe(false);
+    expect(result.error).toMatch(/do not match this block's kind/);
+  });
+});
+
+describe("validateTemplateParamsJson", () => {
+  test("valid params against a real schema", () => {
+    expect(validateTemplateParamsJson(JSON.stringify({ n: 1 }), (v) => v)).toEqual({});
+  });
+
+  test("a rejection comes back as a message, not a throw", () => {
+    const result = validateTemplateParamsJson(JSON.stringify({}), () => {
+      throw new Error("n: Required");
+    });
+
+    expect(result.error).toContain("n: Required");
+  });
+
+  test("params that are not JSON are reported", () => {
+    expect(validateTemplateParamsJson("{oops", (v) => v).error).toMatch(/not valid JSON/);
+  });
+});
+
+describe("the kind carries the check", () => {
+  test("a kind's parser reaches the data model that declared it", () => {
+    // The threading that makes any of this work: the kind object is not kept, but the
+    // parser is lifted off it beside the kind reference, so `done()` can register it.
+    const parse = (v: unknown) => v as Params;
+    const checkedKind = defineBlockKind<Params>({
+      name: "@platforma-open/milaboratories.checked.kind",
+      version: "1.0.0",
+      parseTemplateParams: parse,
+    });
+    const model = new DataModelBuilder({ kind: checkedKind })
+      .from<BlockData>("v1")
+      .init(() => ({ sources: [], label: "", scratch: 0 }));
+
+    expect(model.templateParamsParser).toBe(parse);
+  });
+
+  test("a kind-less data model carries no parser — the plugin case", () => {
+    // The only remaining way this slot is empty. A BLOCK data model always has a kind,
+    // and a kind always supplies a parser; a PLUGIN data model is built with no kind at
+    // all, because a plugin has no params channel of its own. Such a model can no longer
+    // reach `BlockModelV3.create`, so nothing reads this as a block's parser.
+    const pluginDataModel = new DataModelBuilder()
+      .from<BlockData>("v1")
+      .init(() => ({ sources: [], label: "", scratch: 0 }));
+
+    expect(pluginDataModel.templateParamsParser).toBeUndefined();
+  });
+});
+
+describe("how a rejection reads", () => {
+  test("a schema library's issue list is unpacked, not dumped as JSON", () => {
+    // A zod error's own `message` is the entire issue array as JSON. Complete, and
+    // unreadable in the dialog this ends up in. The shape is duck-typed because this
+    // package prescribes no schema library.
+    const zodLike = Object.assign(new Error("[{...}]"), {
+      issues: [
+        { code: "invalid_type", path: ["numbers", 0], message: "Expected number, received string" },
+        { code: "unrecognized_keys", path: [], message: "Unrecognized key(s) in object: 'colour'" },
+      ],
+    });
+
+    const result = validateTemplateParams({}, () => {
+      throw zodLike;
+    });
+
+    expect(result.error).toBe(
+      "params do not match this block's kind: numbers[0]: Expected number, received string; " +
+        "Unrecognized key(s) in object: 'colour'",
+    );
+  });
+
+  test("a path is written the way the params are written", () => {
+    const result = validateTemplateParams({}, () => {
+      throw Object.assign(new Error("x"), {
+        issues: [{ path: ["steps", 2, "name"], message: "Required" }],
+      });
+    });
+
+    expect(result.error).toContain("steps[2].name: Required");
+  });
+
+  test("a plain error keeps its own words", () => {
+    const result = validateTemplateParams({}, () => {
+      throw new Error("numbers must not be empty");
+    });
+
+    expect(result.error).toBe("params do not match this block's kind: numbers must not be empty");
+  });
+});
