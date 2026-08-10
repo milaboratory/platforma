@@ -40,6 +40,20 @@ export type MigrationResult =
  */
 type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
+/**
+ * Result of building initial storage from params.
+ * Returned by the __pl_storage_initialFromParams VM callback.
+ */
+type ParamsStorageResult =
+  | { error: string }
+  | { error?: undefined; storageJson: StringifiedJson<BlockStorage> };
+
+/**
+ * Result of checking params against their kind.
+ * Returned by the __pl_templateParams_validate VM callback.
+ */
+type TemplateParamsValidateResult = { error: string } | { error?: undefined };
+
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<
     string,
@@ -131,6 +145,87 @@ export class ProjectHelper {
     }
   }
 
+  /**
+   * Derives this block's template-export params from storage JSON using the VM
+   * callback (`__pl_templateParams_derive`, facade callback #7).
+   *
+   * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
+   * the args a workflow runs on, it returns the params that would recreate the
+   * block — the inverse of the data model's `init`. References come back
+   * already rewritten into template form by the SDK side, so the middle layer
+   * never has to know a kind's params shape.
+   *
+   * A `{ value: undefined }` result is NOT a failure: it means the block declares no
+   * `templateParams`, which only a block built against an older SDK can do, and the
+   * exported entry gets no `params` key.
+   *
+   * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
+   * than swallowed — a prerun that cannot derive args just skips a block in
+   * staging, whereas an export that silently drops a block produces a template
+   * that does not describe the project.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param storageJson Storage as JSON string
+   * @returns The derived params in template form, `undefined` if the block
+   *   declares no lambda, or an error if derivation failed
+   */
+  public deriveTemplateParamsFromStorage(
+    blockConfig: BlockConfig,
+    storageJson: string,
+  ): ResultOrError<unknown> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error(
+          "deriveTemplateParamsFromStorage is only supported for model API version 2",
+        ),
+      };
+    }
+
+    const callback =
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsDerive];
+
+    // A model built before this callback existed simply has no entry for it. That is
+    // NOT the same as a block declaring no `templateParams`: the block may well have
+    // params, we just have no way to ask for them. Reporting it as `undefined` params
+    // would export the block stripped of its configuration and quietly rebuild a
+    // differently-configured project, so it has to be an error.
+    // The message names the one action available to whoever pressed Export. It
+    // deliberately says nothing about SDKs or callbacks: the person reading it did
+    // not build this block and cannot change how it was built.
+    if (callback === undefined) {
+      return {
+        error: new Error(
+          "This version of the block cannot be written to a template. Update the block " +
+            "to a newer version and export again.",
+        ),
+      };
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        callback,
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        return { error: new Error(result.error) };
+      }
+      return { value: result.value };
+    } catch (e) {
+      const cause = ensureError(e);
+      // The reason goes in the message, not only in `cause`: this error is rendered
+      // into a per-block export problem and shown to whoever triggered the export,
+      // and every layer between here and there carries only `message`.
+      return {
+        error: new Error(`Template params derivation from storage failed: ${cause.message}`, {
+          cause,
+        }),
+      };
+    }
+  }
+
   private calculateEnrichmentTargets(req: EnrichmentTargetsRequest): PlRef[] | undefined {
     const blockConfig = req.blockConfig();
     if (blockConfig.enrichmentTargets === undefined) return undefined;
@@ -188,6 +283,133 @@ export class ProjectHelper {
         }),
       );
       throw new Error(`Block initial storage creation failed: ${e}`);
+    }
+  }
+
+  /**
+   * Checks a template entry's params against the block's kind, creating nothing.
+   *
+   * The pre-flight half of {@link getInitialStorageFromParamsInVM}: run once per entry
+   * before a template is applied, so params a kind rejects are reported against the
+   * entry that carries them while there is still no project. Skipping it is safe —
+   * initialization runs the same check — but then the report arrives after earlier
+   * entries have already been created.
+   *
+   * Every kind declares a parser, so a pass here means the params were checked against
+   * the contract — not merely that they were JSON.
+   *
+   * A block whose model predates the callback passes unchecked rather than failing.
+   * Unlike initialization, this method creates nothing, so there is nothing to get wrong
+   * by proceeding, and such a block is refused outright at the point it is applied.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param params The entry's params. Reference ids may be placeholders: what is being
+   *   checked is the shape of the params, not what they point at
+   * @returns Nothing, or why the params were rejected
+   */
+  public validateTemplateParamsInVM(
+    blockConfig: BlockConfig,
+    params: unknown,
+  ): ResultOrError<undefined> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error("validateTemplateParamsInVM is only supported for model API version 2"),
+      };
+    }
+
+    const callback =
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsValidate];
+    if (callback === undefined) return { value: undefined };
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        callback,
+        extractCodeWithInfo(blockConfig),
+        JSON.stringify(params ?? {}),
+      ) as TemplateParamsValidateResult;
+
+      if (result.error !== undefined) return { error: new Error(result.error) };
+      return { value: undefined };
+    } catch (e) {
+      const cause = ensureError(e);
+      return { error: new Error(`Params check failed to run: ${cause.message}`, { cause }) };
+    }
+  }
+
+  /**
+   * Creates initial BlockStorage for a block being created from template params.
+   *
+   * The inverse of {@link deriveTemplateParamsFromStorage}, and the reason a block
+   * can be created by anything other than the UI: it hands the params to the
+   * block's own init factory inside the model VM, so the resulting storage is
+   * whatever that block considers a correctly-initialized state.
+   *
+   * The caller must resolve references in `params` first — a reference reaching the
+   * factory has to name a block that already exists in the target project.
+   *
+   * @param blockConfig The block configuration (provides the model code)
+   * @param params The entry's params, with references already resolved
+   * @returns The initial storage as JSON string, or why the params yield none
+   */
+  public getInitialStorageFromParamsInVM(
+    blockConfig: BlockConfig,
+    params: unknown,
+  ): ResultOrError<string> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error(
+          "getInitialStorageFromParamsInVM is only supported for model API version 2",
+        ),
+      };
+    }
+
+    const callback =
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitialFromParams];
+
+    // A model built before this callback existed has no entry for it. Falling back
+    // to the params-less initializer is not an option: it would produce a
+    // default-configured block that looks like a successful apply, so the block the
+    // user gets would silently differ from the one the template describes.
+    //
+    // The message offers the two actions available to whoever applied the file. The
+    // second one is the reason this branch is reachable at all: kind resolution only
+    // ever returns a block that declares a kind, and such a block is new enough to
+    // support this — but an entry may pin an exact block version instead, bypassing
+    // resolution, and that pin can name anything ever published.
+    if (callback === undefined) {
+      return {
+        error: new Error(
+          "This version of the block cannot be created from a template. Use a newer " +
+            "version of the block, or remove the pinned block version from the template " +
+            "entry so a supported one is chosen automatically.",
+        ),
+      };
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        callback,
+        extractCodeWithInfo(blockConfig),
+        // Params cross the VM boundary as text, like storage does. `undefined` would
+        // stringify to nothing at all, and an entry with no params must go through
+        // the params-less initializer rather than reaching this method.
+        JSON.stringify(params ?? {}),
+      ) as ParamsStorageResult;
+
+      if (result.error !== undefined) return { error: new Error(result.error) };
+      return { value: result.storageJson };
+    } catch (e) {
+      const cause = ensureError(e);
+      // The reason goes in the message, not only in `cause`: this error becomes a
+      // per-entry apply problem shown to whoever triggered the import, and every
+      // layer in between carries only `message`.
+      return {
+        error: new Error(`Initial storage creation from params failed: ${cause.message}`, {
+          cause,
+        }),
+      };
     }
   }
 
