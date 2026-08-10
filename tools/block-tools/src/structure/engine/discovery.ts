@@ -1,4 +1,4 @@
-// Workspace-package classification — the seven scope detection rules.
+// Workspace-package classification — the eight scope detection rules.
 //
 // Input: the parsed package.json of every workspace member, plus its
 // block-relative path. Output: `Module[]` (scope + name + path).
@@ -7,7 +7,16 @@
 
 import type { Module, Scope } from "./api";
 
-export const ALL_SCOPES: Scope[] = ["root", "block", "model", "ui", "workflow", "test", "software"];
+export const ALL_SCOPES: Scope[] = [
+  "root",
+  "block",
+  "model",
+  "ui",
+  "workflow",
+  "test",
+  "software",
+  "kind",
+];
 
 export type WorkspacePackage = {
   /** Block-relative path of the package — "" or "." means the
@@ -95,6 +104,11 @@ export function classifyOne(wp: WorkspacePackage): Scope | undefined {
   if (wp.pkg.block !== undefined) return "block";
 
   const deps = depKeys(wp.pkg);
+
+  // kind — @platforma-sdk/block-kind is unique to kind packages (no other scope
+  // depends on it). MUST precede the model rule: a kind sets `main`, and were it
+  // to carry any model-ish signal it would otherwise misclassify.
+  if (deps.has("@platforma-sdk/block-kind")) return "kind";
 
   // 1. software — top-level `block-software` field OR
   //    (package-builder AND any @platforma-open/*runenv* dep).
