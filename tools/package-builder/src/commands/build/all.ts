@@ -1,6 +1,12 @@
 import { Command } from "commander";
 import * as cmdOpts from "../../cmd-opts";
-import { util, envs, defaults, createBuilder } from "@platforma-sdk/package-builder-lib";
+import {
+  util,
+  envs,
+  defaults,
+  createBuilder,
+  assertDockerPushIntent,
+} from "@platforma-sdk/package-builder-lib";
 
 // Registered twice: as the top-level `build` command and as the `build all`
 // subcommand. Both run the same build-all action with the same flags.
@@ -61,6 +67,25 @@ export function buildAllCommand(name = "build"): Command {
         flags["docker-registry"] ??
         (isDevLocal && buildDocker ? defaults.DEV_DOCKER_REGISTRY : undefined);
 
+      // Auto-push defaults to OFF outside CI. Dev iteration doesn't push;
+      // explicit opt-in via --docker-autopush / PL_DOCKER_AUTOPUSH=1 (which
+      // 'build:dev-remote' sets) flips it. Private packages never push by
+      // default — the dev ECR is public.
+      const autopush = cmdOpts.shouldDoAction({
+        default: envs.isCI() && !core.isPrivate,
+        enable: flags["docker-autopush"],
+        disable: flags["docker-no-autopush"],
+      });
+
+      // Before the build, not after: a CI run that would discard its images
+      // should not spend minutes cross-compiling them first.
+      assertDockerPushIntent({
+        buildDocker,
+        pushDocker: autopush,
+        pushDisabledExplicitly: flags["docker-no-autopush"],
+        dockerPackageCount: core.dockerPackages.size,
+      });
+
       if (buildDocker) {
         core.buildDockerImages({
           ids: flags["package-id"],
@@ -89,15 +114,6 @@ export function buildAllCommand(name = "build"): Command {
         packageIds: flags["package-id"] ? flags["package-id"] : undefined,
       });
 
-      // Auto-push defaults to OFF outside CI. Dev iteration doesn't push;
-      // explicit opt-in via --docker-autopush / PL_DOCKER_AUTOPUSH=1 (which
-      // 'build:dev-remote' sets) flips it. Private packages never push by
-      // default — the dev ECR is public.
-      const autopush = cmdOpts.shouldDoAction({
-        default: envs.isCI() && !core.isPrivate,
-        enable: flags["docker-autopush"],
-        disable: flags["docker-no-autopush"],
-      });
       if (buildDocker && autopush) {
         // TODO: as we do not create content-addressable archives for binary packages, we should not upload them
         //       for each build to not spoil release process with dev archives cached by CDN.

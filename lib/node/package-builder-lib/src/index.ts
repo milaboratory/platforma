@@ -4,6 +4,7 @@ import { Core } from "./core/core";
 export * as util from "./core/util";
 export * as envs from "./core/envs";
 export * as defaults from "./defaults";
+export { assertDockerPushIntent, type PushIntent } from "./core/push-guard";
 
 /** The logger the engine and its callers pass around. */
 export type Logger = winston.Logger;
@@ -22,6 +23,7 @@ export type Builder = Pick<
   | "fullDirHash"
   | "version"
   | "isPrivate"
+  | "dockerPackages"
   | "buildDockerImages"
   | "buildSoftwareArchives"
   | "buildSwJsonFiles"
