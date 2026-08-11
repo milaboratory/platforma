@@ -733,3 +733,78 @@ label }` wire shape with `refsWithEnrichments`. Its `@deprecated` note points at
 since that changes the stored value from a `PlRef` to a `ColumnUniversalId`.
 
 Removed names and their one-to-one replacements are in the migration doc.
+
+## Workflow Side (Tengo)
+
+A `ColumnUniversalId` is a first-class column reference in
+`@platforma-sdk/workflow-tengo`, not just something the host understands. The
+model mints an id; the workflow resolves it, reconstructs its spec, and — for a
+discovered id — builds the join. Blocks pass ids straight through their args.
+
+`:pframes.column-id` is the decoder: `decode`, `kindOf`, `isUniversalId`,
+`poolKey`, `unwrap`, `extractLeafId`, `referencedIds`, `applyAxisFilters`,
+`applySpecOverrides`, `effectiveSpec`, `fromEnrichmentRef`. Every function is
+pure over decoded JSON, so it is unit-tested offline against the TypeScript
+source of truth (`spec/ids.ts`, `spec/filtered_column.ts`, `spec/overridden.ts`).
+
+### Where each layer is realised
+
+| Layer        | Realised                                                          | Mechanism                                                                          |
+| ------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| leaf         | resolution time                                                   | `bquery.resolve` on the terminal `{__isRef, blockId, name}`                        |
+| `Filtered`   | read time (bundle) / execution time (frame)                       | spec: axes dropped; data: `:pframes.slice-data`, or `pt.p.slicedColumn` in a frame |
+| `Overridden` | read time                                                         | spec math only — the engine's query language has no `specOverride` node            |
+| `Discovered` | execution time                                                    | `bundle.getQueryEntry` → `bquery.buildQuery` → `pt.p._rawQueryEntry`               |
+
+### Pool keys
+
+A rich id registers and reads under **the id itself**, never under its leaf. Two
+projections of one physical column, or one column reached by two linker routes,
+are different columns to a consumer and must not collapse into one pool entry —
+this is the workflow's counterpart to `rebrandLeafId`. It also makes the
+registration key and the read key identical by construction, so the collector
+and the unmarshaller cannot drift.
+
+The one exception is the legacy `FilteredPColumnId` (`{source, axisFilters}` with
+a *selector map* source), which still keys on its source. Marker fields are
+therefore tested before that duck-test.
+
+### Axes of a discovered column
+
+`getSpec` on a discovered id passes through to the hit — the linker chain enables
+co-indexing, it does not remap the hit's own axes, and the engine needs the hit's
+real axes to resolve the join.
+
+The axes the column *contributes to a frame* are different, and that is what
+`getAxesSpecOf` reports: each hop inner-joins its linker and projects out that
+linker's one-side axes, so the result lands on the many side of the outermost
+hop. `pSpec.linkerSides` derives the two sides from the linker's own spec by
+splitting its `axesSpec` into parent-connected components (exactly two are
+required; the component holding axis 0 is the one side). A hit axis the route
+never touches survives, which a blanket empty `axesSpec` would lose.
+
+### Deliberate divergences from the model side
+
+- An `axesSpec` patch whose index is past the end of the spec **panics** instead
+  of appending. The workflow registers specs against data that already exists,
+  and an axis with no data behind it is a spec the engine cannot satisfy.
+- Axis filters on a discovered column **panic**: pinning them would have to
+  become a `sliceAxes` node inside the join, and the query builder emits only
+  column / linkerJoin / innerJoin. Filter after the join instead.
+- `queriesQualifications` is **not** carried. Its keys are the `PObjectId`s of
+  external primary columns, and the workflow addresses its primaries by `PlRef`
+  and frame key — the key space does not exist here. `columnQualifications` does
+  reach `tableBuilder`'s join entry.
+- `tableBuilder` accepts a bare or discovered id but refuses one carrying spec
+  overrides or axis filters: it resolves specs as futures, so there is nothing to
+  patch or slice at that point. Use a column bundle for those.
+
+### `EnrichmentRef` is derived
+
+`EnrichmentRef` (`{__isEnrichment: "v1", hit, path[].linker, qualifications}`) is
+the strictly narrower spelling of the same idea: its hit and every hop must be
+bare global ids and its only step type is `linker`. `fromEnrichmentRef`
+normalizes it into a `ColumnDiscoveredKey`, and `tableBuilder` funnels both
+spellings through one resolution path. The reverse conversion is lossy and
+deliberately absent — a discovered key whose hit or hop carries a projection has
+no v1 representation. The type is deprecated, with no removal date.
