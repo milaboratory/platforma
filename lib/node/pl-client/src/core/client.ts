@@ -145,6 +145,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffMultiplier: conf.retryExponentialBackoffMultiplier,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       case "linear":
@@ -154,6 +155,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffStep: conf.retryLinearBackoffStep,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       default:
@@ -183,6 +185,13 @@ export class PlClient {
       conflict: this.txConflictStat,
       error: this.txErrorStat,
     };
+  }
+
+  /** Smoothed round-trip estimate in ms from ping timings, or undefined before the first
+   * ping. Exposed so latency-sensitive consumers (e.g. the tree-sync poll cadence) can scale
+   * their timing to the link instead of assuming a local server. */
+  public get rttEstimateMs(): number | undefined {
+    return this.ll.rttEstimateMs;
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {

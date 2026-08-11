@@ -25,6 +25,27 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
  * preventing tight polling loops during rapid state transitions. */
 const MIN_POLLING_INTERVAL_MS = 100;
 
+/** Ceiling for the adaptive poll interval. Caps how stale an idle tree can get before the
+ * next look, and bounds how far the idle backoff can push the interval out. */
+const MAX_POLLING_INTERVAL_MS = 5_000;
+
+/** Applied to the interval after a cycle that changed nothing. An idle tree walks its
+ * interval out towards {@link MAX_POLLING_INTERVAL_MS} instead of re-polling at full rate;
+ * the first cycle that changes anything resets it. */
+const IDLE_BACKOFF_MULTIPLIER = 1.5;
+
+/** The client's measured RTT becomes an interval floor, scaled by this. Every refresh costs
+ * at least one round trip, so polling faster than a small multiple of the RTT only queues
+ * round-trips the link cannot service. This is what replaces the fixed interval on a
+ * high-latency link; on a fast link the configured `pollingInterval` still dominates. */
+const RTT_POLL_FACTOR = 2;
+
+/** Ceiling for the RTT-derived floor. The estimate is sampled at connect time and never
+ * re-sampled, so without a bound one slow ping pins the cadence high for the whole session.
+ * Mirrors `MAX_ADAPTIVE_REQUEST_TIMEOUT` on the deadline side: past this the link is stuck
+ * rather than slow, and spacing polls further only delays noticing it recovered. */
+const MAX_RTT_POLL_INTERVAL_MS = 30_000;
+
 type StatLoggingMode = "cumulative" | "per-request";
 
 export type SynchronizedTreeOps = {
@@ -75,19 +96,59 @@ function normalizeSeeds(seeds: SignedResourceId | TreeSeed | TreeSeed[]): TreeSe
   return [{ kind: "resource", root: seeds }];
 }
 
-/** How often, in main-loop iterations, a tree with shared-type seeds re-polls
- * ListUserResources to reconcile its discovered roots. 1 would mean every iteration.
+/** How often a tree with shared-type seeds re-polls ListUserResources to reconcile its
+ * discovered roots.
  *
  * Discovery (a full ListUserResources stream) is far heavier than an ordinary incremental
- * refresh, so it must NOT run on every fast refresh tick. The refresh cadence is the tree's
- * `pollingInterval` floored by {@link MIN_POLLING_INTERVAL_MS} (~200ms-1s in practice — the
- * shared-seed discovery tree runs at the 200ms default). At N = 15 discovery fires roughly
- * every 15 × 200ms ≈ 3s, decoupling it from the fast refresh loop while keeping the latency
- * of noticing a new/removed share to a few seconds — acceptable for a human-driven share flow.
+ * refresh, so it must NOT run on every refresh tick. This is a wall-clock interval rather
+ * than a count of iterations: the refresh cadence is adaptive (it stretches towards
+ * {@link MAX_POLLING_INTERVAL_MS} on an idle tree and scales with RTT on a slow link),
+ * so a fixed iteration count would let discovery latency drift out with it. Keeping it in
+ * milliseconds pins the latency of noticing a new/removed share regardless of cadence, which
+ * is what a human-driven share flow cares about.
  *
  * Only trees with shared-type seeds gate on this; {@link discover} is a no-op for single-root
  * and explicit-seed trees (empty `sharedSeeds`), so the value never affects them. */
-const DISCOVERY_EVERY_N_REFRESHES = 15;
+const DISCOVERY_INTERVAL_MS = 3_000;
+
+/** Counters that mean "this cycle brought something new". Deliberately not the full change
+ * breakdown: those fields are sub-counts of `resourcesChanged` and would double-count.
+ * `resourcesUnchanged` is excluded by design, since a cycle that only re-fetched unchanged
+ * state is exactly the idle case the backoff exists for. */
+function countedChanges(stat: TreeLoadingStat): number {
+  return stat.resourcesNew + stat.resourcesChanged + stat.resourcesMarkedFinal;
+}
+
+/** The poll-cadence policy, as a pure function of the last cycle's outcome.
+ *
+ * `configuredMs` is the tree's static `pollingInterval` and acts as the lower bound, so no
+ * link can be polled faster than configured. `rttMs` raises that bound on a slow link.
+ * `currentMs` is the interval in force for the cycle that just finished, which is what the
+ * idle backoff compounds on. */
+export function derivePollingInterval(opts: {
+  configuredMs: number;
+  currentMs: number;
+  rttMs: number | undefined;
+  changed: boolean;
+}): number {
+  const { configuredMs, currentMs, rttMs, changed } = opts;
+
+  // The cap applies to the RTT-derived part only, so `configuredMs` stays an absolute lower
+  // bound even if it is ever set above the cap.
+  const floor =
+    rttMs === undefined
+      ? configuredMs
+      : Math.max(
+          configuredMs,
+          Math.min(MAX_RTT_POLL_INTERVAL_MS, Math.ceil(rttMs * RTT_POLL_FACTOR)),
+        );
+
+  const next = changed ? floor : Math.max(floor, currentMs * IDLE_BACKOFF_MULTIPLIER);
+
+  // The ceiling never cuts below the floor: a link slower than MAX_POLLING_INTERVAL_MS still
+  // gets its RTT-derived spacing rather than being forced to re-poll early.
+  return Math.max(floor, Math.min(MAX_POLLING_INTERVAL_MS, next));
+}
 
 type ScheduledRefresh = {
   resolve: () => void;
@@ -134,6 +195,7 @@ export class SynchronizedTreeState {
     this.traverseStopRules = traverseStopRules;
     this.traversalMode = traversalMode ?? "auto";
     this.pollingInterval = pollingInterval;
+    this.effectivePollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
 
@@ -201,11 +263,39 @@ export class SynchronizedTreeState {
   private currentLoopDelayInterrupt: AbortController | undefined = undefined;
   private scheduledOnNextState: ScheduledRefresh[] = [];
 
+  /** Interval actually used for the current wait. Starts at the configured `pollingInterval`
+   * and is re-derived after every cycle by {@link updatePollingInterval}. */
+  private effectivePollingInterval: number;
+
+  /** Re-derives {@link effectivePollingInterval} after a cycle.
+   *
+   * Two independent effects. The floor scales with the client's measured RTT, so a
+   * high-latency link stops queueing round-trips it cannot service. On top of that, a cycle
+   * that changed nothing multiplies the interval out towards
+   * {@link MAX_POLLING_INTERVAL_MS}, while any change snaps it straight back to the floor so
+   * an active tree stays responsive. */
+  private updatePollingInterval(changed: boolean): void {
+    this.effectivePollingInterval = derivePollingInterval({
+      configuredMs: this.pollingInterval,
+      currentMs: this.effectivePollingInterval,
+      rttMs: this.pl.rttEstimateMs,
+      changed,
+    });
+  }
+
   /** Called from computable hooks when external observer asks for state refresh */
   private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
     if (this.terminated) reject(new Error("tree synchronization is terminated"));
     else {
       this.scheduledOnNextState.push({ resolve, reject });
+      // Someone is waiting on fresh state, so this tree is not idle after all: drop any
+      // accumulated backoff, otherwise the cycles right after a nudge stay slow. Routed
+      // through the policy rather than assigning the configured value directly, so the RTT
+      // floor survives the reset. Assigning it raw would poll a high-latency link faster than
+      // it can answer, and the interval would stay there until the next cycle that completes:
+      // the error path never reaches updatePollingInterval, so a failing nudged refresh would
+      // keep retrying at the un-floored rate.
+      this.updatePollingInterval(true);
       if (this.currentLoopDelayInterrupt) {
         this.currentLoopDelayInterrupt.abort();
         this.currentLoopDelayInterrupt = undefined;
@@ -310,13 +400,14 @@ export class SynchronizedTreeState {
   private terminated = false;
 
   private async mainLoop() {
-    // will hold request stats
-    let stat = this.logStat ? initialTreeLoadingStat() : undefined;
+    // Always collected, even when not logging: the change counters drive the idle backoff
+    // below. Counter bumps are cheap next to the round trip they describe.
+    let stat = initialTreeLoadingStat();
 
     let lastUpdate = Date.now();
 
-    // counts refresh iterations to pace the discovery poll for shared-type seeds.
-    let iteration = 0;
+    // paces the discovery poll for shared-type seeds; 0 forces discovery on the first pass.
+    let lastDiscovery = 0;
 
     while (true) {
       if (!this.keepRunning || this.terminated) break;
@@ -336,16 +427,22 @@ export class SynchronizedTreeState {
 
         // discovery sync for shared-type seeds: reconcile the discovered root set before
         // refreshing, so newly discovered roots are materialized in this same iteration.
-        if (this.sharedSeeds.length > 0 && iteration % DISCOVERY_EVERY_N_REFRESHES === 0) {
+        if (this.sharedSeeds.length > 0 && Date.now() - lastDiscovery >= DISCOVERY_INTERVAL_MS) {
           await this.discover();
+          lastDiscovery = Date.now();
         }
-        iteration++;
+
+        // Change counters before the refresh, so the delta tells us whether this single cycle
+        // brought anything new. Works in both stat modes: "per-request" resets to 0 above.
+        const changesBefore = countedChanges(stat);
 
         // actual tree synchronization
         await this.refresh(stat);
 
+        this.updatePollingInterval(countedChanges(stat) > changesBefore);
+
         // logging stats if we were asked to
-        if (stat && this.logger)
+        if (this.logStat && this.logger)
           this.logger.info(
             `Tree stat (success, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`,
           );
@@ -355,7 +452,7 @@ export class SynchronizedTreeState {
         if (toNotify !== undefined) for (const n of toNotify) n.resolve();
       } catch (e: any) {
         // logging stats if we were asked to (even if error occured)
-        if (stat && this.logger)
+        if (this.logStat && this.logger)
           this.logger.info(
             `Tree stat (error, after ${Date.now() - lastUpdate}ms): ${JSON.stringify(stat)}`,
           );
@@ -402,7 +499,7 @@ export class SynchronizedTreeState {
       // Phase 2: optional remainder up to pollingInterval — interruptible by
       // scheduleOnNextState so that an external nudge wakes the loop promptly.
       if (this.scheduledOnNextState.length === 0) {
-        const remaining = Math.max(0, this.pollingInterval - MIN_POLLING_INTERVAL_MS);
+        const remaining = Math.max(0, this.effectivePollingInterval - MIN_POLLING_INTERVAL_MS);
         if (remaining > 0) {
           try {
             this.currentLoopDelayInterrupt = new AbortController();
