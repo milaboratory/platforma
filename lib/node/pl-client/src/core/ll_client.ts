@@ -13,7 +13,14 @@ import type {
   PlConnectionStatus,
   PlConnectionStatusListener,
 } from "./config";
-import { plAddressToConfig, type wireProtocol, SUPPORTED_WIRE_PROTOCOLS } from "./config";
+import {
+  plAddressToConfig,
+  type wireProtocol,
+  SUPPORTED_WIRE_PROTOCOLS,
+  DEFAULT_LOGIN_TIMEOUT,
+  deriveUnaryDeadline,
+  smoothRtt,
+} from "./config";
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
 import { LLPlTransaction } from "./ll_transaction";
@@ -42,13 +49,24 @@ import {
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { isAbortedError, isUnauthenticated } from "./errors";
+import { isAbortedError, isTransientCallFailure, isUnauthenticated } from "./errors";
 import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
 }
+
+/** Bounded retry for idempotent unary calls. Deliberately short: these calls sit on the
+ * connect path and gate the UI, so a few quick attempts beat a long grind. */
+const IDEMPOTENT_RETRY_OPTIONS: RetryOptions = {
+  type: "exponentialBackoff",
+  maxAttempts: 4,
+  initialDelay: 200,
+  backoffMultiplier: 2,
+  jitter: 0.3,
+  maxDelay: 2_000,
+};
 
 // Parses leading "<major>.<minor>.<patch>" from a version string like
 // "3.1.1" or "3.1.1-rc1" and returns true if the parsed version is >= target.
@@ -128,6 +146,15 @@ export class LLPlClient implements WireClientProviderFactory {
   private _wireProto: wireProtocol = "grpc";
   private _wireConn!: WireConnection;
 
+  /** The live GrpcOptions object handed to GrpcTransport. The transport keeps it by
+   * reference and re-reads it on every call, so mutating `timeout` here retunes
+   * subsequent deadlines without tearing down the connection. */
+  private _grpcOptions?: GrpcOptions;
+
+  /** Smoothed round-trip estimate in ms, from ping timings. Undefined until the first
+   * successful ping, in which case the configured deadline is used as-is. */
+  private _rttMs?: number;
+
   private readonly _restInterceptors: Dispatcher.DispatcherComposeInterceptor[];
   private readonly _restMiddlewares: Middleware[];
   private readonly _grpcInterceptors: Interceptor[];
@@ -160,7 +187,10 @@ export class LLPlClient implements WireClientProviderFactory {
     // Guarantee a ping happened so capability-gated paths (login, refresh) can branch synchronously.
     // In the autodetect path the loop's last successful ping already populated _serverInfo via the
     // side-effect in ping(); this fallback covers the path where autodetect is disabled.
-    if (!pl._serverInfo) await pl.ping();
+    // Retried, not bare: this ping is the first contact with the server, so DNS and LB
+    // warm-up land here. A single transient failure must not fail the whole connect.
+    // (Not inside ping() itself: the autodetect path already wraps it in its own retry.)
+    if (!pl._serverInfo) await pl.withIdempotentRetry("ping", () => pl.ping());
 
     // Install the process-global signature-strictness flag based on backend version.
     setResourceSignaturesRequired(pl.supportsResourceSignatures);
@@ -284,7 +314,7 @@ export class LLPlClient implements WireClientProviderFactory {
     //
     const grpcOptions: GrpcOptions = {
       host: this.conf.hostAndPort,
-      timeout: this.conf.defaultRequestTimeout,
+      timeout: this.unaryDeadline(),
       channelCredentials: this.conf.ssl
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
@@ -309,7 +339,46 @@ export class LLPlClient implements WireClientProviderFactory {
       delete process.env.grpc_proxy;
     }
 
+    this._grpcOptions = grpcOptions;
     this._replaceWireConnection({ type: "grpc", Transport: new GrpcTransport(grpcOptions) });
+  }
+
+  /** Unary deadline derived from the observed RTT, floored by the configured value so
+   * a fast link behaves exactly as before, and capped by
+   * {@link MAX_ADAPTIVE_REQUEST_TIMEOUT}. */
+  private unaryDeadline(): number {
+    return deriveUnaryDeadline(this.conf.defaultRequestTimeout, this._rttMs);
+  }
+
+  /** Folds a fresh round-trip sample into the estimate and retunes the live unary
+   * deadline. Called after every successful ping. */
+  private recordRtt(sampleMs: number): void {
+    this._rttMs = smoothRtt(this._rttMs, sampleMs);
+
+    if (this._grpcOptions) {
+      const next = this.unaryDeadline();
+      if (next !== this._grpcOptions.timeout) {
+        this.ops.logger?.info(
+          `Unary deadline retuned to ${next}ms (rtt estimate ${Math.round(this._rttMs)}ms)`,
+        );
+        this._grpcOptions.timeout = next;
+      }
+    }
+  }
+
+  /** Smoothed round-trip estimate in ms, or undefined before the first ping. */
+  public get rttEstimateMs(): number | undefined {
+    return this._rttMs;
+  }
+
+  /** Runs an idempotent unary call with a bounded retry on transient transport failures.
+   * Safe only for calls with no side effects, since a retry may duplicate the request. */
+  private async withIdempotentRetry<T>(name: string, cb: () => Promise<T>): Promise<T> {
+    return await retry(cb, IDEMPOTENT_RETRY_OPTIONS, (e: unknown) => {
+      if (!isTransientCallFailure(e)) return false;
+      this.ops.logger?.info(`${name}: transient failure, retrying. err=${String(e)}`);
+      return true;
+    });
   }
 
   private _replaceWireConnection(newConn: WireConnection): void {
@@ -562,7 +631,7 @@ export class LLPlClient implements WireClientProviderFactory {
             expiration: { seconds: ttlSeconds, nanos: 0 },
             requestedRole: role,
           },
-          { meta },
+          { meta, timeout: DEFAULT_LOGIN_TIMEOUT },
         ).response
       ).token;
     } else {
@@ -588,14 +657,17 @@ export class LLPlClient implements WireClientProviderFactory {
 
     if (cl instanceof GrpcPlApiClient) {
       return (
-        await cl.login({
-          credentials: {
-            oneofKind: "basic",
-            basic: { login: user, password },
+        await cl.login(
+          {
+            credentials: {
+              oneofKind: "basic",
+              basic: { login: user, password },
+            },
+            expiration: { seconds: ttl, nanos: 0 },
+            requestedRole: role,
           },
-          expiration: { seconds: ttl, nanos: 0 },
-          requestedRole: role,
-        }).response
+          { timeout: DEFAULT_LOGIN_TIMEOUT },
+        ).response
       ).token;
     } else {
       const resp = cl.POST("/v1/auth/login", {
@@ -624,14 +696,17 @@ export class LLPlClient implements WireClientProviderFactory {
 
     if (cl instanceof GrpcPlApiClient) {
       return (
-        await cl.login({
-          credentials: {
-            oneofKind: "token",
-            token: { token: bytes },
+        await cl.login(
+          {
+            credentials: {
+              oneofKind: "token",
+              token: { token: bytes },
+            },
+            expiration: { seconds: ttl, nanos: 0 },
+            requestedRole: role,
           },
-          expiration: { seconds: ttl, nanos: 0 },
-          requestedRole: role,
-        }).response
+          { timeout: DEFAULT_LOGIN_TIMEOUT },
+        ).response
       ).token;
     } else {
       const resp = cl.POST("/v1/auth/login", {
@@ -653,12 +728,15 @@ export class LLPlClient implements WireClientProviderFactory {
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {
       return (
-        await cl.login({
-          credentials: {
-            oneofKind: "sso",
-            sso: { tokenResponse },
+        await cl.login(
+          {
+            credentials: {
+              oneofKind: "sso",
+              sso: { tokenResponse },
+            },
           },
-        }).response
+          { timeout: DEFAULT_LOGIN_TIMEOUT },
+        ).response
       ).token;
     } else {
       const resp = cl.POST("/v1/auth/login", {
@@ -711,10 +789,13 @@ export class LLPlClient implements WireClientProviderFactory {
 
     if (cl instanceof GrpcPlApiClient) {
       return (
-        await cl.refreshToken({
-          token: currentToken,
-          expiration: { seconds: ttl, nanos: 0 },
-        }).response
+        await cl.refreshToken(
+          {
+            token: currentToken,
+            expiration: { seconds: ttl, nanos: 0 },
+          },
+          { timeout: DEFAULT_LOGIN_TIMEOUT },
+        ).response
       ).token;
     } else {
       const resp = cl.POST("/v1/auth/refresh", {
@@ -727,6 +808,8 @@ export class LLPlClient implements WireClientProviderFactory {
   public async ping(): Promise<grpcTypes.MaintenanceAPI_Ping_Response> {
     const cl = this.clientProvider.get();
     let resp: grpcTypes.MaintenanceAPI_Ping_Response;
+    // Ping is the cheapest call we make, so its duration is our best RTT proxy.
+    const startedAt = performance.now();
     if (cl instanceof GrpcPlApiClient) {
       resp = (await cl.ping({})).response;
     } else {
@@ -741,6 +824,7 @@ export class LLPlClient implements WireClientProviderFactory {
         capabilities: (pingData as any).capabilities ?? [],
       };
     }
+    this.recordRtt(performance.now() - startedAt);
     this._serverInfo = resp;
     return resp;
   }
@@ -898,6 +982,14 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async getUserRoot(
+    opts: { login?: string; createIfNotExists?: boolean } = {},
+  ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
+    // Retryable even with createIfNotExists: the call is get-or-create keyed on login, so a
+    // second attempt returns the existing root rather than making another one.
+    return await this.withIdempotentRetry("getUserRoot", () => this.getUserRootOnce(opts));
+  }
+
+  private async getUserRootOnce(
     opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<grpcTypes.AuthAPI_GetUserRoot_Response> {
     const cl = this.clientProvider.get();

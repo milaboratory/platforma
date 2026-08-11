@@ -90,6 +90,11 @@ export interface PlClientConfig {
 
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
   retryJitter: number;
+
+  /** Upper bound for a single backoff delay, in ms. Without it the exponential
+   * sequence keeps growing across all attempts: at the defaults the last sleep
+   * alone reaches ~66s (~150s once jitter compounds). */
+  retryMaxDelay: number;
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 5_000;
@@ -106,6 +111,41 @@ export const DEFAULT_RETRY_INITIAL_DELAY = 20; // 20 ms * <jitter> of sleep afte
 export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 1.5; // + 50% on each round
 export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
 export const DEFAULT_RETRY_JITTER = 0.3; // 30%
+export const DEFAULT_RETRY_MAX_DELAY = 5_000; // 5 seconds
+
+/** Multiplier applied to the observed RTT when deriving the unary deadline. A unary call
+ * costs at least one round trip, plus connect/DNS/LB and server work on top, so the
+ * deadline needs sizeable headroom over the bare RTT. */
+export const RTT_DEADLINE_MULTIPLIER = 8;
+
+/** Ceiling for the RTT-derived unary deadline. Beyond this a call is stuck rather than
+ * slow, and waiting longer only delays the retry. */
+export const MAX_ADAPTIVE_REQUEST_TIMEOUT = 60_000;
+
+/** Weight of the newest RTT sample in the smoothed estimate. Low enough that one unlucky
+ * sample cannot swing the deadline, high enough to follow a real change. */
+export const RTT_SMOOTHING_ALPHA = 0.3;
+
+/** Login runs password hashing (and possibly an external IdP round trip) server side, so
+ * it is legitimately slow and gets its own deadline instead of the unary default. */
+export const DEFAULT_LOGIN_TIMEOUT = 120_000;
+
+/** Unary deadline for a given RTT estimate: floored by the configured timeout so a fast
+ * link behaves exactly as before, capped by {@link MAX_ADAPTIVE_REQUEST_TIMEOUT}.
+ * An undefined `rttMs` (no ping yet) yields the configured value unchanged. */
+export function deriveUnaryDeadline(configuredMs: number, rttMs: number | undefined): number {
+  if (rttMs === undefined) return configuredMs;
+  return Math.min(
+    MAX_ADAPTIVE_REQUEST_TIMEOUT,
+    Math.max(configuredMs, Math.ceil(rttMs * RTT_DEADLINE_MULTIPLIER)),
+  );
+}
+
+/** Folds a new round-trip sample into an exponentially smoothed estimate. */
+export function smoothRtt(previousMs: number | undefined, sampleMs: number): number {
+  if (previousMs === undefined) return sampleMs;
+  return previousMs * (1 - RTT_SMOOTHING_ALPHA) + sampleMs * RTT_SMOOTHING_ALPHA;
+}
 
 export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
   type: "exponentialBackoff",
@@ -113,6 +153,7 @@ export const DefaultRetryOptions: ExponentialBackoffRetryOptions = {
   initialDelay: DEFAULT_RETRY_INITIAL_DELAY,
   backoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
   jitter: DEFAULT_RETRY_JITTER,
+  maxDelay: DEFAULT_RETRY_MAX_DELAY,
 };
 
 type PlConfigOverrides = Partial<
@@ -161,6 +202,7 @@ export function plAddressToConfig(
       retryExponentialBackoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
       retryLinearBackoffStep: DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
       retryJitter: DEFAULT_RETRY_JITTER,
+      retryMaxDelay: DEFAULT_RETRY_MAX_DELAY,
 
       ...overrides,
     };
@@ -234,6 +276,7 @@ export function plAddressToConfig(
       parseInt(url.searchParams.get("retry-linear-backoff-step")) ??
       DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
     retryJitter: parseInt(url.searchParams.get("retry-backoff-jitter")) ?? DEFAULT_RETRY_JITTER,
+    retryMaxDelay: parseInt(url.searchParams.get("retry-max-delay")) ?? DEFAULT_RETRY_MAX_DELAY,
 
     ...overrides,
   };
