@@ -599,6 +599,133 @@ getAxisId := func(axisSpec) {
 	return canonical.encode(id)
 }
 
+/**
+ * Splits `axesSpec` into parent-connected components.
+ *
+ * An axis is connected to the axes listed in its `parentAxes` (positional
+ * indices into the same `axesSpec`). Components are returned ordered by their
+ * lowest member index, and each component's members ascend — the same order the
+ * engine produces, so component numbering agrees on both sides.
+ *
+ * @param axesSpec: AxisSpec[] - axes to split
+ * @return number[][] - one array of positional indices per component
+ */
+splitAxes := func(axesSpec) {
+	n := len(axesSpec)
+
+	// Union-find with path compression, keyed by positional index.
+	parent := []
+	for i := 0; i < n; i++ {
+		parent = append(parent, i)
+	}
+	root := undefined
+	root = func(i) {
+		if parent[i] == i {
+			return i
+		}
+		r := root(parent[i])
+		parent[i] = r
+		return r
+	}
+	join := func(a, b) {
+		ra := root(a)
+		rb := root(b)
+		if ra != rb {
+			parent[ra] = rb
+		}
+	}
+
+	for i, axis in axesSpec {
+		if is_undefined(axis.parentAxes) {
+			continue
+		}
+		for _, p in axis.parentAxes {
+			ll.assert(is_int(p) && p >= 0 && p < n,
+				"splitAxes: parentAxes index %v out of range for %v axes", p, n)
+			join(i, p)
+		}
+	}
+
+	// Walking 0..n-1 and opening a component on first sight of its root gives
+	// components ordered by lowest member index.
+	componentByRoot := {}
+	components := []
+	for i := 0; i < n; i++ {
+		r := string(root(i))
+		idx := componentByRoot[r]
+		if is_undefined(idx) {
+			idx = len(components)
+			componentByRoot[r] = idx
+			components = append(components, [])
+		}
+		components[idx] = append(components[idx], i)
+	}
+
+	return components
+}
+
+/**
+ * Positional indices of a linker column's one-side and many-side axes.
+ *
+ * A linker relates exactly two axis groups, so its `axesSpec` must fall into
+ * exactly two parent-connected components. The component holding axis 0 is the
+ * one side (the end being traversed away from); the other is the many side
+ * (the end results are lifted onto).
+ *
+ * @param linkerSpec: PColumnSpec - spec of a linker column
+ * @return { oneSide: number[], manySide: number[] }
+ */
+linkerSides := func(linkerSpec) {
+	components := splitAxes(linkerSpec.axesSpec)
+	ll.assert(len(components) == 2,
+		"linkerSides: a linker column must have exactly 2 parent-connected axis " +
+		"components, got %v — spec: %v", len(components), linkerSpec)
+	return {
+		oneSide: components[0],
+		manySide: components[1]
+	}
+}
+
+/**
+ * Axes a `linkerJoin` produces: the linker's axes followed by the secondary's,
+ * deduplicated by axis identity, with the linker's one-side axes projected out.
+ *
+ * The linker leads, matching the engine's integration order, so a caller
+ * selecting these axes positionally sees the same layout the engine builds.
+ *
+ * @param linkerSpec: PColumnSpec - spec of the linker column
+ * @param secondaryAxesSpec: AxisSpec[] - axes of the joined (many-side) result
+ * @return AxisSpec[]
+ */
+linkerJoinAxesSpec := func(linkerSpec, secondaryAxesSpec) {
+	sides := linkerSides(linkerSpec)
+
+	projectedOut := {}
+	for _, idx in sides.oneSide {
+		projectedOut[getAxisId(linkerSpec.axesSpec[idx])] = true
+	}
+
+	result := []
+	seen := {}
+	appendAxis := func(axis) {
+		axisId := getAxisId(axis)
+		if !is_undefined(projectedOut[axisId]) || !is_undefined(seen[axisId]) {
+			return
+		}
+		seen[axisId] = true
+		result = append(result, axis)
+	}
+
+	for _, axis in linkerSpec.axesSpec {
+		appendAxis(axis)
+	}
+	for _, axis in secondaryAxesSpec {
+		appendAxis(axis)
+	}
+
+	return result
+}
+
 export ll.toStrict({
 	P_UNTYPED_SPEC_SCHEMA: P_UNTYPED_SPEC_SCHEMA,
 	P_AXIS_SPEC_SCHEMA: P_AXIS_SPEC_SCHEMA,
@@ -615,6 +742,7 @@ export ll.toStrict({
 
 	A_LABEL: A_LABEL,
 	A_TRACE: A_TRACE,
+	A_IS_LINKER_COLUMN: A_IS_LINKER_COLUMN,
 
 	normalizeColumnSpec: normalizeColumnSpec,
 
@@ -628,6 +756,10 @@ export ll.toStrict({
 	prepareAxisFiltersAndAxesSpec: prepareAxisFiltersAndAxesSpec,
 	axisSpecToMatcher: axisSpecToMatcher,
 
-	getAxisId: getAxisId
+	getAxisId: getAxisId,
+
+	splitAxes: splitAxes,
+	linkerSides: linkerSides,
+	linkerJoinAxesSpec: linkerJoinAxesSpec
 })
 
