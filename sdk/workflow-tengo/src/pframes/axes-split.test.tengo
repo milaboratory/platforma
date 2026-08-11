@@ -1,0 +1,138 @@
+// Tests for the parent-connected-component math in `:pframes.spec`
+// (`splitAxes`, `linkerSides`, `linkerJoinAxesSpec`).
+//
+// Ported from pframes-rs: `AxesSpec::split` (packages/spec/src/axes/axes_spec.rs),
+// the linker one-side/many-side derivation (packages/spec/src/linker_index.rs),
+// and the linkerJoin axis projection rule (the joined axes minus the linker's
+// one-side axes).
+
+test := import(":test")
+pSpec := import(":pframes.spec")
+
+axis := func(name, ...parents) {
+	a := { name: name, type: "String" }
+	if len(parents) > 0 {
+		a.parentAxes = parents[0]
+	}
+	return a
+}
+
+// A linker between `clusterId` (one side) and `clonotypeKey` (many side).
+// Axis 0 lands in the one-side component, matching the engine's convention.
+linkerSpec := func() {
+	return {
+		kind: "PColumn",
+		name: "linker",
+		valueType: "Int",
+		annotations: { "pl7.app/isLinkerColumn": "true" },
+		axesSpec: [
+			axis("clusterId"),
+			axis("clonotypeKey")
+		]
+	}
+}
+
+//
+// splitAxes
+//
+
+TestSplitAxesSingleComponent := func() {
+	// b and c both hang off a, so all three are one component.
+	axesSpec := [axis("a"), axis("b", [0]), axis("c", [0])]
+	test.isEqual([[0, 1, 2]], pSpec.splitAxes(axesSpec))
+}
+
+TestSplitAxesIndependentAxesAreSeparateComponents := func() {
+	test.isEqual([[0], [1]], pSpec.splitAxes([axis("a"), axis("b")]))
+}
+
+TestSplitAxesOrdersComponentsByLowestMember := func() {
+	// a(0) — c(2) joined; b(1) alone. Component containing 0 comes first.
+	axesSpec := [axis("a"), axis("b"), axis("c", [0])]
+	test.isEqual([[0, 2], [1]], pSpec.splitAxes(axesSpec))
+}
+
+TestSplitAxesTransitiveChainCollapses := func() {
+	// a <- b <- c is a single component even though c never names a.
+	axesSpec := [axis("a"), axis("b", [0]), axis("c", [1])]
+	test.isEqual([[0, 1, 2]], pSpec.splitAxes(axesSpec))
+}
+
+TestSplitAxesThreeComponents := func() {
+	axesSpec := [axis("a"), axis("b"), axis("c"), axis("d", [1])]
+	test.isEqual([[0], [1, 3], [2]], pSpec.splitAxes(axesSpec))
+}
+
+TestSplitAxesEmpty := func() {
+	test.isEqual([], pSpec.splitAxes([]))
+}
+
+//
+// linkerSides
+//
+
+TestLinkerSidesSplitsOneAndMany := func() {
+	sides := pSpec.linkerSides(linkerSpec())
+	test.isEqual([0], sides.oneSide)
+	test.isEqual([1], sides.manySide)
+}
+
+TestLinkerSidesWithCompositeManySide := func() {
+	// Many side is a two-axis group: clonotypeKey plus a child axis.
+	spec := {
+		kind: "PColumn",
+		name: "linker",
+		valueType: "Int",
+		axesSpec: [
+			axis("clusterId"),
+			axis("clonotypeKey"),
+			axis("chain", [1])
+		]
+	}
+	sides := pSpec.linkerSides(spec)
+	test.isEqual([0], sides.oneSide)
+	test.isEqual([1, 2], sides.manySide)
+}
+
+//
+// linkerJoinAxesSpec — linker axes lead, one-side axes projected out
+//
+
+TestLinkerJoinAxesSpecProjectsOutOneSide := func() {
+	// Hit lives on the one side; after the join only the many side survives.
+	hitAxes := [axis("clusterId")]
+	got := pSpec.linkerJoinAxesSpec(linkerSpec(), hitAxes)
+	test.isEqual([axis("clonotypeKey")], got)
+}
+
+TestLinkerJoinAxesSpecKeepsHitAxesBeyondTheRoute := func() {
+	// A hit carrying an axis the route does not touch keeps it — this is the
+	// case a blanket `axesSpec: []` would silently lose.
+	hitAxes := [axis("clusterId"), axis("sampleId")]
+	got := pSpec.linkerJoinAxesSpec(linkerSpec(), hitAxes)
+	test.isEqual([axis("clonotypeKey"), axis("sampleId")], got)
+}
+
+TestLinkerJoinAxesSpecDeduplicatesSharedAxes := func() {
+	// The hit already sits on the many side: no duplicate column.
+	hitAxes := [axis("clonotypeKey")]
+	got := pSpec.linkerJoinAxesSpec(linkerSpec(), hitAxes)
+	test.isEqual([axis("clonotypeKey")], got)
+}
+
+TestLinkerJoinAxesSpecDistinguishesAxesByDomain := func() {
+	// Same name, different domain — distinct axes, so nothing is projected out
+	// or deduplicated by name alone.
+	linker := {
+		kind: "PColumn",
+		name: "linker",
+		valueType: "Int",
+		axesSpec: [
+			{ name: "group", type: "String", domain: { side: "primary" } },
+			{ name: "group", type: "String", domain: { side: "secondary" } }
+		]
+	}
+	hitAxes := [{ name: "group", type: "String", domain: { side: "primary" } }]
+	got := pSpec.linkerJoinAxesSpec(linker, hitAxes)
+	test.isEqual([{ name: "group", type: "String", domain: { side: "secondary" } }], got)
+}
