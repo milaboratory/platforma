@@ -156,7 +156,7 @@ export function softwareBuildCommand(): Command {
           buildDocker,
           pushDocker,
           pushDisabledExplicitly: Boolean(o.dockerNoAutopush),
-          dockerPackageCount: core.dockerPackages.size,
+          dockerPackageCount: core.selectedDockerPackages(o.packageId).length,
         });
       }
 

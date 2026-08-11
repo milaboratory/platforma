@@ -83,7 +83,7 @@ export function buildAllCommand(name = "build"): Command {
         buildDocker,
         pushDocker: autopush,
         pushDisabledExplicitly: flags["docker-no-autopush"],
-        dockerPackageCount: core.dockerPackages.size,
+        dockerPackageCount: core.selectedDockerPackages(flags["package-id"]).length,
       });
 
       if (buildDocker) {
