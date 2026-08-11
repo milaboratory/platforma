@@ -23,7 +23,7 @@ export type Builder = Pick<
   | "fullDirHash"
   | "version"
   | "isPrivate"
-  | "dockerPackages"
+  | "selectedDockerPackages"
   | "buildDockerImages"
   | "buildSoftwareArchives"
   | "buildSwJsonFiles"

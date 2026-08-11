@@ -40,7 +40,7 @@ export function buildDockerCommand(): Command {
       buildDocker: true,
       pushDocker: autopush,
       pushDisabledExplicitly: flags["docker-no-autopush"],
-      dockerPackageCount: core.dockerPackages.size,
+      dockerPackageCount: core.selectedDockerPackages(flags["package-id"]).length,
     });
 
     core.buildDockerImages({
