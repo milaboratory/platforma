@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 3.14.6
+
+### Patch Changes
+
+- a666e0d: Derive the unary gRPC deadline from the observed round-trip time instead of a fixed 5s, and give login/refresh their own 120s deadline. On a high-latency link the fixed 5s aborted connect and login outright; the derived deadline is floored by the configured value, so fast links are unaffected.
+- 1a17259: Retry the connect-path ping and `getUserRoot` on transient transport failures (unreachable peer, elapsed deadline), bounded to 4 attempts. A single blip during DNS or load-balancer warm-up previously failed the whole connect. Real server answers such as auth and permission errors are never retried.
+- 00a46f7: Cap a single transaction-retry backoff delay at 5s (`retryMaxDelay`, overridable via the `retry-max-delay` url param). The exponential sequence previously grew unbounded across all 21 attempts, so a conflicting transaction could sleep ~66s in one step and several minutes in total.
+- fa18a18: Scale the tree-sync poll interval to the client's measured RTT instead of polling at a fixed interval regardless of link latency. Also exposes `PlClient.rttEstimateMs`. The configured interval remains the lower bound, so fast links are unaffected, and the derived floor is capped at 30s.
+
 ## 3.14.5
 
 ### Patch Changes
