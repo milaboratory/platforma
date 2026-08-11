@@ -34,6 +34,7 @@ assets := import(":assets")
 maps := import(":maps")
 pSpec := import(":pframes.spec")
 bquery := import(":workflow.bquery")
+columnId := import(":pframes.column-id")
 
 buildTableTpl := assets.importTemplate(":pframes.build-table")
 
@@ -105,18 +106,59 @@ decodeGlobalPObjectId := func(id) {
 	return { __isRef: true, blockId: decoded.blockId, name: decoded.name }
 }
 
-// step.linker is either a global-form PObjectId string or a resolved {spec, data}.
-enrichmentStepColumn := func(step) {
-	ll.assert(step.type == "linker",
-		"unsupported enrichment step type %q (only \"linker\" is allowed)", step.type)
-	ll.assert(!is_undefined(step.linker),
-		"linker step missing 'linker' field: %v", step)
-	return step.linker
+// A `ColumnUniversalId` string — the model-side column identifier. Carries the
+// same hit-plus-route information as an EnrichmentRef, and more besides.
+isColumnUniversalId := func(value) {
+	return columnId.isUniversalId(value)
+}
+
+// Reduces either wire form to one shape: `{ column, path, qualifications }`,
+// where `column` and each `path[].column` is something `resolveColumn` accepts.
+//
+// `EnrichmentRef` is the narrower form, so it normalizes into the id form rather
+// than the other way round: one route mechanism, two accepted spellings.
+normalizeDiscovery := func(query) {
+	key := isEnrichmentRef(query) ? columnId.fromEnrichmentRef(query) : columnId.decode(query)
+
+	// A route can be resolved here because every hop is a column to fetch. A
+	// projection cannot: specs arrive as unresolved futures, so there is nothing
+	// to patch or slice at this point. The bundle path handles those.
+	unwrapped := columnId.unwrap(key)
+	ll.assert(is_undefined(unwrapped.specOverrides),
+		"tableBuilder: spec overrides on a column id cannot be applied here — specs are " +
+		"resolved as futures. Use a column bundle for this column. Id: %v", query)
+	ll.assert(is_undefined(unwrapped.axisFilters),
+		"tableBuilder: axis filters on a column id cannot be applied here. " +
+		"Use a column bundle for this column. Id: %v", query)
+
+	discovery := unwrapped.discovery
+	if is_undefined(discovery) {
+		// A bare leaf id: no route, resolved like any other column reference.
+		return { column: key, path: [], qualifications: undefined }
+	}
+
+	path := []
+	if !is_undefined(discovery.path) {
+		for _, step in discovery.path {
+			ll.assert(step.type == "linker",
+				"unsupported enrichment step type %q (only \"linker\" is allowed)", step.type)
+			ll.assert(!is_undefined(step.column),
+				"linker step missing its column: %v", step)
+			path = append(path, { type: "linker", column: step.column })
+		}
+	}
+
+	return {
+		column: discovery.column,
+		path: path,
+		qualifications: discovery.columnQualifications
+	}
 }
 
 // Anchored ColumnQuerySpec that needs `bquery.anchoredQuery` to resolve.
 isQuerySpec := func(q) {
-	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q)
+	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q) &&
+		!isColumnUniversalId(q)
 }
 
 /**
@@ -166,14 +208,24 @@ tableBuilder := func(format, ...ctxArg) {
 				header = opts[0].header
 			}
 
-			unresolved := isUnresolved(value)
+			unresolved := isUnresolved(value) || isColumnUniversalId(value)
 			if !unresolved {
 				ll.assert(
 					isResolvedColumn(value) ||
 						(isPrimaryRef(value) && isResolvedColumn(value.column)),
-					"value must be a resolved column {spec, data}, " +
+					"value must be a resolved column {spec, data}, a column id, " +
 					"a resolved PrimaryRef, or a structure containing PlRefs; got: %v",
 					value)
+			}
+			if isColumnUniversalId(value) {
+				// A primary is the trunk every other column joins onto, so it has
+				// to be a column that stands on its own. A discovered id is a
+				// column reached *from* a trunk — using one as the trunk inverts
+				// the relationship and silently produces the wrong table.
+				ll.assert(is_undefined(columnId.unwrap(value).discovery),
+					"addPrimary: a discovered column cannot be a primary — it is reached " +
+					"from one. Pass the anchor column as the primary and this id as a " +
+					"column. Id: %v", value)
 			}
 			if unresolved {
 				_hasUnresolved = true
@@ -200,7 +252,7 @@ tableBuilder := func(format, ...ctxArg) {
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				header = opts[0].header
 			}
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if isUnresolved(query) || isEnrichmentRef(query) || isColumnUniversalId(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -231,9 +283,10 @@ tableBuilder := func(format, ...ctxArg) {
 			// shared header prefix/suffix with their own label.
 			if is_array(query) {
 				for col in query {
-					ll.assert(isResolvedColumn(col) || isEnrichmentRef(col) || isLabeledEnrichment(col),
-						"array elements must be resolved columns {spec, data}, EnrichmentRefs, " +
-						"or labeled enrichments {ref, label}; got: %v", col)
+					ll.assert(isResolvedColumn(col) || isEnrichmentRef(col) ||
+						isLabeledEnrichment(col) || isColumnUniversalId(col),
+						"array elements must be resolved columns {spec, data}, column ids, " +
+						"EnrichmentRefs, or labeled enrichments {ref, label}; got: %v", col)
 
 					entryQuery := col
 					entryHeader := undefined
@@ -246,7 +299,7 @@ tableBuilder := func(format, ...ctxArg) {
 						entrySuffix = undefined
 					}
 
-					if isUnresolved(entryQuery) || isEnrichmentRef(entryQuery) {
+					if isUnresolved(entryQuery) || isEnrichmentRef(entryQuery) || isColumnUniversalId(entryQuery) {
 						_hasUnresolved = true
 					}
 					_columns = append(_columns, {
@@ -260,7 +313,7 @@ tableBuilder := func(format, ...ctxArg) {
 				return self
 			}
 
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if isUnresolved(query) || isEnrichmentRef(query) || isColumnUniversalId(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -362,6 +415,18 @@ tableBuilder := func(format, ...ctxArg) {
 			// Resolve a column reference into {spec, data} futures.
 			// Accepts: PObjectId string | PlRef map | resolved {spec, data}.
 			resolveColumn := func(value) {
+				if isColumnUniversalId(value) {
+					// Reduce to the leaf this id names. Projections are refused
+					// rather than dropped: specs here are unresolved futures, so
+					// there is nothing to patch or slice.
+					unwrapped := columnId.unwrap(value)
+					ll.assert(is_undefined(unwrapped.specOverrides) &&
+						is_undefined(unwrapped.axisFilters),
+						"tableBuilder: a column id carrying spec overrides or axis filters " +
+						"cannot be resolved here — specs arrive as futures. Use a column " +
+						"bundle for this column. Id: %v", value)
+					value = unwrapped.leafId
+				}
 				if is_string(value) {
 					ref := decodeGlobalPObjectId(value)
 					r := bquery.resolve(ref, _ctx)
@@ -471,24 +536,26 @@ tableBuilder := func(format, ...ctxArg) {
 					headerPrefix: c.headerPrefix,
 					headerSuffix: c.headerSuffix
 				}
-				if isEnrichmentRef(c.query) {
-					resolvedHit := resolveColumn(c.query.hit)
+				if isEnrichmentRef(c.query) || isColumnUniversalId(c.query) {
+					// Both spellings of "a column plus the route to it" reduce to
+					// one shape first, so exactly one resolution path exists below.
+					discovery := normalizeDiscovery(c.query)
+
+					resolvedHit := resolveColumn(discovery.column)
 					entry.spec = resolvedHit.spec
 					entry.data = resolvedHit.data
 					steps := []
-					if !is_undefined(c.query.path) {
-						for _, step in c.query.path {
-							resolvedStep := resolveColumn(enrichmentStepColumn(step))
-							steps = append(steps, {
-								type: step.type,
-								spec: resolvedStep.spec,
-								data: resolvedStep.data
-							})
-						}
+					for _, step in discovery.path {
+						resolvedStep := resolveColumn(step.column)
+						steps = append(steps, {
+							type: step.type,
+							spec: resolvedStep.spec,
+							data: resolvedStep.data
+						})
 					}
 					entry.path = steps
-					if !is_undefined(c.query.qualifications) && len(c.query.qualifications) > 0 {
-						entry.qualifications = c.query.qualifications
+					if !is_undefined(discovery.qualifications) && len(discovery.qualifications) > 0 {
+						entry.qualifications = discovery.qualifications
 					}
 				} else if isResolvedColumn(c.query) {
 					entry.spec = c.query.spec
