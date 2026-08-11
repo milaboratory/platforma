@@ -1,5 +1,19 @@
 # @milaboratories/pl-tree
 
+## 1.13.6
+
+### Patch Changes
+
+- b68715e: Pace shared-seed root discovery by wall clock rather than by a count of refresh iterations, so share-discovery latency no longer drifts with the refresh cadence.
+- 5a9bb41: Back off the tree-sync poll interval when a cycle reports no changes, up to a 5s ceiling, instead of re-polling an idle tree at full rate. Any change, or an observer asking for fresh state, resets it immediately.
+- fa18a18: Scale the tree-sync poll interval to the client's measured RTT instead of polling at a fixed interval regardless of link latency. Also exposes `PlClient.rttEstimateMs`. The configured interval remains the lower bound, so fast links are unaffected, and the derived floor is capped at 30s.
+- Updated dependencies [a666e0d]
+- Updated dependencies [1a17259]
+- Updated dependencies [00a46f7]
+- Updated dependencies [fa18a18]
+  - @milaboratories/pl-client@3.14.6
+  - @milaboratories/pl-errors@1.4.35
+
 ## 1.13.5
 
 ### Patch Changes
