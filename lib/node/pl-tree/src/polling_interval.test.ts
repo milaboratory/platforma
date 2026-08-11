@@ -64,6 +64,19 @@ test("resetting backoff keeps the rtt floor", () => {
   ).toEqual(2800);
 });
 
+test("the rtt floor is itself bounded", () => {
+  // A ping sampled during connect can legitimately take tens of seconds, and the estimate is
+  // never re-sampled. Unbounded, a 40s sample would pin the interval at 80s for the session.
+  expect(
+    derivePollingInterval({ configuredMs: FAST, currentMs: FAST, rttMs: 40_000, changed: true }),
+  ).toEqual(30_000);
+
+  // The bound holds against the idle backoff too, which compounds on the previous interval.
+  expect(
+    derivePollingInterval({ configuredMs: FAST, currentMs: 30_000, rttMs: 40_000, changed: false }),
+  ).toEqual(30_000);
+});
+
 test("the rtt floor outranks the ceiling on a very slow link", () => {
   // 4s RTT implies an 8s floor, past the 5s ceiling. Clamping to 5s would poll faster than
   // the link can answer, so the floor has to win.
