@@ -40,6 +40,12 @@ const IDLE_BACKOFF_MULTIPLIER = 1.5;
  * high-latency link; on a fast link the configured `pollingInterval` still dominates. */
 const RTT_POLL_FACTOR = 2;
 
+/** Ceiling for the RTT-derived floor. The estimate is sampled at connect time and never
+ * re-sampled, so without a bound one slow ping pins the cadence high for the whole session.
+ * Mirrors `MAX_ADAPTIVE_REQUEST_TIMEOUT` on the deadline side: past this the link is stuck
+ * rather than slow, and spacing polls further only delays noticing it recovered. */
+const MAX_RTT_POLL_INTERVAL_MS = 30_000;
+
 type StatLoggingMode = "cumulative" | "per-request";
 
 export type SynchronizedTreeOps = {
@@ -127,8 +133,15 @@ export function derivePollingInterval(opts: {
 }): number {
   const { configuredMs, currentMs, rttMs, changed } = opts;
 
+  // The cap applies to the RTT-derived part only, so `configuredMs` stays an absolute lower
+  // bound even if it is ever set above the cap.
   const floor =
-    rttMs === undefined ? configuredMs : Math.max(configuredMs, Math.ceil(rttMs * RTT_POLL_FACTOR));
+    rttMs === undefined
+      ? configuredMs
+      : Math.max(
+          configuredMs,
+          Math.min(MAX_RTT_POLL_INTERVAL_MS, Math.ceil(rttMs * RTT_POLL_FACTOR)),
+        );
 
   const next = changed ? floor : Math.max(floor, currentMs * IDLE_BACKOFF_MULTIPLIER);
 
