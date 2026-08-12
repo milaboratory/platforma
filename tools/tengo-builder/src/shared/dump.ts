@@ -2,7 +2,7 @@ import type winston from "winston";
 import { getPackageInfo, newCompiler, compile, parseSources } from "../compiler/main";
 import type { ArtifactType } from "../compiler/package";
 import { typedArtifactNameToString } from "../compiler/package";
-import type { TemplateDataV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV4 } from "@milaboratories/pl-model-backend";
 
 export function dumpArtifacts(
   logger: winston.Logger,
@@ -149,8 +149,8 @@ export function dumpSoftware(logger: winston.Logger, stream: NodeJS.WritableStre
   const hashes = new Set<string>();
   const sourceMap = new Map<string, string>();
   for (const tpl of compiled.templates) {
-    Object.entries(tpl.data.hashToSource).forEach(([hash, src]) => sourceMap.set(hash, src));
-    getTemplateSoftware(tpl.data.template).forEach((hash) => hashes.add(hash));
+    for (const [hash, src] of Object.entries(tpl.data.hashToSource)) sourceMap.set(hash, src);
+    for (const hash of getTemplateSoftware(tpl.data)) hashes.add(hash);
   }
 
   for (const hash of hashes) {
@@ -170,14 +170,15 @@ export function dumpSoftware(logger: winston.Logger, stream: NodeJS.WritableStre
   }
 }
 
-function getTemplateSoftware(tpl: TemplateDataV3): Set<string> {
+/** `hashToTemplate` holds every node in the graph once, so a flat scan covers
+ *  the whole transitive closure without recursion. */
+function getTemplateSoftware(pack: CompiledTemplateV4): Set<string> {
   const hashes = new Set<string>();
-  for (const sw of Object.values(tpl.software)) {
-    hashes.add(sw.sourceHash);
-  }
-  for (const subTpl of Object.values(tpl.templates)) {
-    getTemplateSoftware(subTpl).forEach((hash) => hashes.add(hash));
+  for (const node of Object.values(pack.hashToTemplate)) {
+    for (const sw of Object.values(node.software)) {
+      hashes.add(sw.sourceHash);
+    }
   }
 
-  return new Set(hashes);
+  return hashes;
 }

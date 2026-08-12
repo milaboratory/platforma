@@ -3,21 +3,27 @@ import type {
   ManifestFileInfo,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
-import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV3, CompiledTemplateV4 } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import { consolidateBlockPackDescription } from "./model";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { gunzipSync } from "node:zlib";
+import { decompressTemplate, templateCodecForPath } from "@milaboratories/pl-model-backend";
 import { calculateSha256 } from "../util";
 
 /**
  * Returns the capability tokens the workflow's compiled template declares
- * it needs (via `TemplateDataV3.requiredCapabilities`, populated by
- * tengo-builder at compile time). Returns `undefined` for v2 packs, for
- * malformed packs, or when the template carries no requirements — fail-
- * safe so the worst case is "block installs anywhere", the pre-WASM
- * status quo.
+ * it needs (via `requiredCapabilities`, populated by tengo-builder at
+ * compile time).
+ *
+ * Handles both v4 and v3, because a block can be packed with a workflow
+ * built by an older tengo-builder. Reading only v4 would silently drop the
+ * requirement and let a WASM block install on a backend without the
+ * runtime.
+ *
+ * Returns `undefined` for v2 packs, for malformed packs, or when the
+ * template carries no requirements — fail-safe so the worst case is "block
+ * installs anywhere", the pre-WASM status quo.
  */
 async function workflowRequiredCapabilities(
   descriptionRelative: BlockPackDescriptionManifest,
@@ -30,15 +36,21 @@ async function workflowRequiredCapabilities(
 
   let parsed: unknown;
   try {
-    const json = gunzipSync(bytes).toString("utf-8");
+    const json = decompressTemplate(bytes, templateCodecForPath(main.path)).toString("utf-8");
     parsed = JSON.parse(json);
   } catch {
     return undefined;
   }
 
-  const pack = parsed as Partial<CompiledTemplateV3>;
-  if (pack.type !== "pl.tengo-template.v3" || !pack.template) return undefined;
-  return pack.template.requiredCapabilities;
+  const pack = parsed as Partial<CompiledTemplateV3> | Partial<CompiledTemplateV4>;
+  if (pack.type === "pl.tengo-template.v4") {
+    if (!pack.template) return undefined;
+    return pack.hashToTemplate?.[pack.template]?.requiredCapabilities;
+  }
+  if (pack.type === "pl.tengo-template.v3") {
+    return pack.template?.requiredCapabilities;
+  }
+  return undefined;
 }
 
 export async function buildBlockPackDist(

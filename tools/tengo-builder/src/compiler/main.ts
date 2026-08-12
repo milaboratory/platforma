@@ -13,7 +13,7 @@ import { ArtifactSource, parseSourceFile } from "./source";
 import { newTemplateFromContent, templateToSource } from "./template";
 import type winston from "winston";
 import { tryResolve, tryResolveOrError } from "@milaboratories/resolve-helper";
-import { serializeTemplate } from "@milaboratories/pl-model-backend";
+import { serializeTemplate, TemplatePackSuffix } from "@milaboratories/pl-model-backend";
 import {
   assertTemplatePackSize,
   assertWasmFileSize,
@@ -53,7 +53,7 @@ interface PackageJson {
   devDependencies: Record<string, string>;
 }
 
-const compiledTplSuffix = ".plj.gz";
+const compiledTplSuffix = TemplatePackSuffix;
 const compiledLibSuffix = ".lib.tengo";
 const compiledSoftwareSuffix = ".sw.json";
 const compiledAssetSuffix = ".as.json";

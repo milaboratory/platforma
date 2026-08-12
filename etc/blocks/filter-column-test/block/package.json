@@ -37,7 +37,7 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-filter-column.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.test-filter-column.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.test-filter-column.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.test-filter-column.ui/dist"
     },

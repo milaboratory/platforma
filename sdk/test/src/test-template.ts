@@ -117,7 +117,7 @@ export class TplTestHelpers {
       typeof template === "string"
         ? await prepareTemplateSpec({
             type: "from-file",
-            path: `./dist/tengo/tpl/${template}.plj.gz`,
+            path: `./dist/tengo/tpl/${template}.plj.zst`,
           })
         : await prepareTemplateSpec(template);
     const { resultMapRid } = await this.pl.withWriteTx("TemplateRender", async (tx) => {

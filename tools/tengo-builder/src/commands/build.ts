@@ -63,13 +63,13 @@ function generateTsBinding(compiledDist: TemplatesAndLibs) {
   const recordsCjs = compiledDist.templates
     .map(
       (tpl) =>
-        `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
+        `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.zst') }`,
     )
     .join(",\n");
   const recordsMjs = compiledDist.templates
     .map(
       (tpl) =>
-        `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`,
+        `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.zst') }`,
     )
     .join(",\n");
   cjs += recordsCjs;

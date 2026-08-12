@@ -4,6 +4,7 @@ import { loadTemplate } from "../template/template_loading";
 import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from "../../model";
 import type { Signer } from "@milaboratories/ts-helpers";
 import { assertNever } from "@milaboratories/ts-helpers";
+import { templateCodecForPath } from "@milaboratories/pl-model-backend";
 import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -160,7 +161,11 @@ export class BlockPackPreparer {
 
     await using workerManager = new WorkerManager();
 
-    const parsed = await workerManager.process("parseTemplate", explicit.template.content);
+    const parsed = await workerManager.process(
+      "parseTemplate",
+      explicit.template.content,
+      explicit.template.codec,
+    );
 
     const result: BlockPackSpecPrepared = {
       ...explicit,
@@ -203,6 +208,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: templateContent,
+            codec: templateCodecForPath(devPaths.workflow),
           },
           config,
           frontend: {
@@ -234,6 +240,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: workflowContent,
+            codec: templateCodecForPath(description.components.workflow.main.file),
           },
           config,
           frontend: {
@@ -276,6 +283,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: workflowContent,
+            codec: templateCodecForPath(description.components.workflow.main.file),
           },
           config,
           frontend: {
@@ -307,6 +315,9 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: templateContent,
+            // v1 registry packs predate the codec switch and stay gzip under
+            // their published name.
+            codec: templateCodecForPath(templateUrl),
           },
           config,
           frontend: {
@@ -333,6 +344,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: workflowContent,
+            codec: templateCodecForPath(components.workflow.main.url),
           },
           config: model,
           frontend: {

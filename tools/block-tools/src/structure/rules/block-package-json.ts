@@ -5,6 +5,7 @@
 // `workspace:*` devDeps, and the built `dist/` + `block-pack/` carry everything
 // the loader needs.
 
+import { TemplatePackSuffix } from "@milaboratories/pl-model-backend";
 import {
   ensureField,
   ensureScript,
@@ -66,7 +67,7 @@ function prepublishScript(npmOrg: string, isSdkInternal: boolean): string {
 export function blockComponents(ctx: RunContext): Record<string, string> {
   const components: Record<string, string> = {};
   for (const m of findModules(ctx, "workflow"))
-    components.workflow = `${m.name}/dist/tengo/tpl/main.plj.gz`;
+    components.workflow = `${m.name}/dist/tengo/tpl/main${TemplatePackSuffix}`;
   for (const m of findModules(ctx, "model")) components.model = `${m.name}/dist/model.json`;
   for (const m of findModules(ctx, "ui")) components.ui = `${m.name}/dist`;
   return components;

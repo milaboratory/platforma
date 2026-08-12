@@ -7,6 +7,7 @@ import type {
   TemplateSpecPrepared,
 } from "../../model/template_spec";
 import { assertNever } from "@milaboratories/ts-helpers";
+import { templateCodecForPath } from "@milaboratories/pl-model-backend";
 import { loadTemplateFromExplicitDirect, loadTemplateFromPrepared } from "./direct_template_loader";
 
 //
@@ -32,6 +33,7 @@ export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<Templat
       return {
         type: "explicit",
         content: await fs.promises.readFile(tpl.path),
+        codec: templateCodecForPath(tpl.path),
       };
     case "from-registry":
     case "explicit":

@@ -15,14 +15,26 @@ import { assertNever } from "./util";
 import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from "./compileroptions";
 import type {
   BackendCapability,
-  CompiledTemplateV3,
-  TemplateDataV3,
+  CompiledTemplateV4,
+  TemplateNodeV4,
 } from "@milaboratories/pl-model-backend";
+import { rootTemplate, templateNodeHash } from "@milaboratories/pl-model-backend";
+
+/**
+ * A pack under construction. Identical to {@link CompiledTemplateV4} except
+ * that `template` is the node itself, because the node is still being
+ * populated and its content hash is not known until it is complete.
+ */
+interface WorkingPack {
+  hashToSource: Record<string, string>;
+  hashToTemplate: Record<string, TemplateNodeV4>;
+  template: TemplateNodeV4;
+}
 
 /** Add a capability token to a template's `requiredCapabilities` list,
  * skipping duplicates. Initializes the array lazily so the field stays
  * absent for templates that need nothing. */
-function addRequiredCapability(template: TemplateDataV3, capability: BackendCapability): void {
+function addRequiredCapability(template: TemplateNodeV4, capability: BackendCapability): void {
   template.requiredCapabilities = template.requiredCapabilities ?? [];
   if (!template.requiredCapabilities.includes(capability)) {
     template.requiredCapabilities.push(capability);
@@ -50,7 +62,7 @@ export class TengoTemplateCompiler {
   /** Recursively add dependencies to the template. */
   private populateTemplateDataFromDependencies(
     fullName: FullArtifactName,
-    data: CompiledTemplateV3,
+    data: WorkingPack,
     deps: TypedArtifactName[],
     trace: string[],
   ) {
@@ -125,10 +137,15 @@ export class TengoTemplateCompiler {
             continue;
 
           const tpl = this.getTemplateOrError(dep);
+          // Reference the sub-template by its content hash instead of nesting
+          // it. The child is already sealed, so its hash covers its whole
+          // subtree and a node shared by many parents is stored once.
           data.template.templates[artifactNameToString(dep)] = tpl.data.template;
-          data.hashToSource[tpl.data.template.sourceHash] = tpl.source;
 
-          // add all the sources of transitivedependencies to the resulted hashToSource
+          // add all the nodes and sources of transitive dependencies to the result
+          for (const [hash, node] of Object.entries(tpl.data.hashToTemplate)) {
+            data.hashToTemplate[hash] = node;
+          }
           for (const [hash, src] of Object.entries(tpl.data.hashToSource)) {
             data.hashToSource[hash] = src;
           }
@@ -136,7 +153,7 @@ export class TengoTemplateCompiler {
           // Union the sub-template's compile-time-computed capability
           // requirements into ours, so the top template carries the full
           // transitive set without consumers having to walk the tree.
-          for (const cap of tpl.data.template.requiredCapabilities ?? []) {
+          for (const cap of rootTemplate(tpl.data).requiredCapabilities ?? []) {
             addRequiredCapability(data.template, cap);
           }
 
@@ -154,15 +171,15 @@ export class TengoTemplateCompiler {
   }
 
   /** This method assumes that all dependencies are already added to the compiler's context */
-  private compileAndAddTemplate(tplSrc: ArtifactSource): CompiledTemplateV3 {
+  private compileAndAddTemplate(tplSrc: ArtifactSource): CompiledTemplateV4 {
     if (tplSrc.fullName.type !== "template") throw new Error("unexpected source type");
 
     // creating template with unpopulated dependencies
-    const tplData: CompiledTemplateV3 = {
-      type: "pl.tengo-template.v3",
+    const tplData: WorkingPack = {
       hashToSource: {
         [tplSrc.sourceHash]: tplSrc.src,
       },
+      hashToTemplate: {},
       template: {
         ...formatArtefactNameAndVersion(tplSrc.fullName),
         templates: {},
@@ -178,7 +195,17 @@ export class TengoTemplateCompiler {
     // collecting dependencies in output format
     this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies, []);
 
-    return tplData;
+    // Seal the node: it is complete, so its content hash is stable and becomes
+    // its key. Nothing mutates it after this point — parents only read it.
+    const nodeHash = templateNodeHash(tplData.template);
+    tplData.hashToTemplate[nodeHash] = tplData.template;
+
+    return {
+      type: "pl.tengo-template.v4",
+      hashToSource: tplData.hashToSource,
+      hashToTemplate: tplData.hashToTemplate,
+      template: nodeHash,
+    };
   }
 
   addLib(lib: ArtifactSource) {

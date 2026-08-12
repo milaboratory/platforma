@@ -2,6 +2,12 @@ import type { AnyFieldRef, AnyResourceRef } from "@milaboratories/pl-client";
 import { field, resourceType } from "@milaboratories/pl-client";
 import type * as infoV2 from "./template_data_v2";
 import type * as infoV3 from "./template_data_v3";
+import type * as infoV4 from "./template_data_v4";
+
+/** The fields these resource builders read are the same in v3 and v4 — only
+ *  the shape of `templates` differs between the two, and none of them touch
+ *  it. Accepting both keeps one builder per resource type. */
+type AnyTemplateNode = infoV3.TemplateDataV3 | infoV4.TemplateNodeV4;
 export namespace PlTemplateLibV1 {
   export const type = resourceType("TengoLib", "1");
 
@@ -133,7 +139,7 @@ export namespace PlTemplateV1 {
     };
   }
 
-  export function fromV3Data(info: infoV3.TemplateDataV3, sourceCode: string): ResourceStructure {
+  export function fromV3Data(info: AnyTemplateNode, sourceCode: string): ResourceStructure {
     return {
       data: {
         Name: info.name,
@@ -220,7 +226,7 @@ export namespace PlTemplateOverrideV1 {
     };
   }
 
-  export function fromV3Data(info: infoV3.TemplateDataV3): ResourceStructure {
+  export function fromV3Data(info: AnyTemplateNode): ResourceStructure {
     if (!info.hashOverride) {
       throw new Error(
         `template tree rendering error: template has no hash override, cannot generate PlTemplateOverrideV1.ResourceStructure from template data`,

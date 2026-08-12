@@ -26,7 +26,76 @@ import {
   TemplateCacheType,
 } from "./template_cache";
 import { parseTemplate } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV4, TemplateNodeV4 } from "@milaboratories/pl-model-backend";
 import type { BlockPackSpecPrepared } from "../../model";
+
+describe("v4 graph walking", () => {
+  // The compiler cannot emit a cycle — a node's hash covers its children's
+  // hashes, so closing one would need a hash preimage. Only a corrupt pack
+  // reaches a reader with one, and readers walk the graph recursively.
+  test("a reference cycle is reported, not recursed into", () => {
+    const a: TemplateNodeV4 = {
+      name: "@t/pkg:a",
+      version: "1.0.0",
+      sourceHash: "src",
+      libs: {},
+      templates: { b: "hash-b" },
+      software: {},
+      assets: {},
+    };
+    const b: TemplateNodeV4 = { ...a, name: "@t/pkg:b", templates: { a: "hash-a" } };
+    const pack: CompiledTemplateV4 = {
+      type: "pl.tengo-template.v4",
+      hashToSource: { src: "source" },
+      hashToTemplate: { "hash-a": a, "hash-b": b },
+      template: "hash-a",
+    };
+
+    expect(() => flattenTemplateTree(pack)).toThrow(/cycle/);
+  });
+
+  // Guards the reason v4 exists: a node reachable by many paths must be
+  // walked once. Without the memo this still produced correct output via the
+  // `seen` set, so only a visit count catches a regression.
+  test("a shared node is emitted once however many paths reach it", () => {
+    const leaf: TemplateNodeV4 = {
+      name: "@t/pkg:leaf",
+      version: "1.0.0",
+      sourceHash: "leaf",
+      libs: {},
+      templates: {},
+      software: {},
+      assets: {},
+    };
+    const mid = (name: string): TemplateNodeV4 => ({
+      ...leaf,
+      name,
+      sourceHash: name,
+      templates: { leaf: "h-leaf" },
+    });
+    const root: TemplateNodeV4 = {
+      ...leaf,
+      name: "@t/pkg:root",
+      sourceHash: "root",
+      templates: { one: "h-1", two: "h-2" },
+    };
+    const pack: CompiledTemplateV4 = {
+      type: "pl.tengo-template.v4",
+      hashToSource: { leaf: "s", "@t/pkg:m1": "s", "@t/pkg:m2": "s", root: "s" },
+      hashToTemplate: {
+        "h-leaf": leaf,
+        "h-1": mid("@t/pkg:m1"),
+        "h-2": mid("@t/pkg:m2"),
+        "h-root": root,
+      },
+      template: "h-root",
+    };
+
+    const nodes = flattenTemplateTree(pack);
+    expect(nodes.filter((n) => n.childHashes.length === 0)).toHaveLength(1);
+    expect(nodes).toHaveLength(4);
+  });
+});
 
 function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTempRoot>[0]>[0]) {
   return pl.withWriteTx("createTestCache", async (tx) => {
@@ -41,7 +110,7 @@ function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTe
 
 describe("flattenTemplateTree", () => {
   test("produces nodes in topological order for V2 template", () => {
-    const data = parseTemplate(ExplicitTemplateEnterNumbers);
+    const data = parseTemplate(ExplicitTemplateEnterNumbers, "gzip");
     const nodes = flattenTemplateTree(data);
     expect(nodes.length).toBeGreaterThan(0);
 
@@ -60,15 +129,15 @@ describe("flattenTemplateTree", () => {
   });
 
   test("deterministic hashes for same content", () => {
-    const data = parseTemplate(ExplicitTemplateEnterNumbers);
+    const data = parseTemplate(ExplicitTemplateEnterNumbers, "gzip");
     const nodes1 = flattenTemplateTree(data);
     const nodes2 = flattenTemplateTree(data);
     expect(nodes1.map((n) => n.hash)).toStrictEqual(nodes2.map((n) => n.hash));
   });
 
   test("different templates produce different root hashes", () => {
-    const dataEnter = parseTemplate(ExplicitTemplateEnterNumbers);
-    const dataSum = parseTemplate(ExplicitTemplateSumNumbers);
+    const dataEnter = parseTemplate(ExplicitTemplateEnterNumbers, "gzip");
+    const dataSum = parseTemplate(ExplicitTemplateSumNumbers, "gzip");
     const nodesEnter = flattenTemplateTree(dataEnter);
     const nodesSum = flattenTemplateTree(dataSum);
     expect(nodesEnter[nodesEnter.length - 1].hash).not.toBe(nodesSum[nodesSum.length - 1].hash);
@@ -187,7 +256,7 @@ describe("cacheBlockPackTemplate", () => {
         type: "prepared",
         template: {
           type: "prepared",
-          data: parseTemplate(ExplicitTemplateEnterNumbers),
+          data: parseTemplate(ExplicitTemplateEnterNumbers, "gzip"),
         },
         config: { renderingMode: "Heavy" } as any,
         frontend: { type: "url", url: "http://test" },
@@ -268,8 +337,8 @@ describe("shared library dedup", () => {
       const testCache = await createTestCacheInTx(pl);
 
       // Flatten both templates and find common hashes (shared libs)
-      const nodesEnter = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers));
-      const nodesSum = flattenTemplateTree(parseTemplate(ExplicitTemplateSumNumbers));
+      const nodesEnter = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers, "gzip"));
+      const nodesSum = flattenTemplateTree(parseTemplate(ExplicitTemplateSumNumbers, "gzip"));
       const enterHashes = new Set(nodesEnter.map((n) => n.hash));
       const sumHashes = new Set(nodesSum.map((n) => n.hash));
       const sharedHashes = [...enterHashes].filter((h) => sumHashes.has(h));
@@ -299,7 +368,7 @@ describe("GC", () => {
       // Cache enter-numbers template (~37 entries)
       await loadTemplateCached(pl, TplSpecEnterExplicit, { cacheResourceId: testCache });
 
-      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers));
+      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers, "gzip"));
       const allHashes = enterNodes.map((n) => n.hash);
       const halfLen = Math.floor(allHashes.length / 2);
 
@@ -339,7 +408,7 @@ describe("GC", () => {
       // Cache a template (~37 entries)
       await loadTemplateCached(pl, TplSpecEnterExplicit, { cacheResourceId: testCache });
 
-      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers));
+      const enterNodes = flattenTemplateTree(parseTemplate(ExplicitTemplateEnterNumbers, "gzip"));
 
       // Run GC with high max — nothing should be evicted
       const evicted = await runGc(pl, testCache, 100);

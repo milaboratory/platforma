@@ -1,9 +1,11 @@
 import type { TemplateSpecPrepared } from "../model/template_spec";
 import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from "./explicit_templates";
 
+// Base64 snapshots of packs published to the v1 registry, so gzip.
 export const TplSpecEnterExplicit: TemplateSpecPrepared = {
   type: "explicit",
   content: ExplicitTemplateEnterNumbers,
+  codec: "gzip",
 };
 
 export const TplSpecEnterFromRegistry: TemplateSpecPrepared = {
@@ -15,6 +17,7 @@ export const TplSpecEnterFromRegistry: TemplateSpecPrepared = {
 export const TplSpecSumExplicit: TemplateSpecPrepared = {
   type: "explicit",
   content: ExplicitTemplateSumNumbers,
+  codec: "gzip",
 };
 
 export const TplSpecSumFromRegistry: TemplateSpecPrepared = {

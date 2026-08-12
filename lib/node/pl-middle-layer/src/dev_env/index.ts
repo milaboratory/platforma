@@ -2,6 +2,7 @@ import { RegistryV1 } from "@platforma-sdk/block-tools";
 import path from "node:path";
 import { tryStat } from "./util";
 import { tryResolve } from "@milaboratories/resolve-helper";
+import { TemplatePackSuffix } from "@milaboratories/pl-model-backend";
 
 export const LegacyDevBlockPackMetaYaml = [RegistryV1.PlPackageYamlConfigFile];
 export const LegacyDevBlockPackMetaJson = [RegistryV1.PlPackageJsonConfigFile];
@@ -9,7 +10,7 @@ export const LegacyDevBlockPackTemplate = ["backend", "dist", "tengo", "tpl", "m
 export const LegacyDevBlockPackConfig = ["config", "dist", "config.json"];
 export const LegacyDevBlockPackFrontendFolder = ["frontend", "dist"];
 
-export const CanonicalBlockWorkflowRequest = "block-workflow/dist/tengo/tpl/main.plj.gz";
+export const CanonicalBlockWorkflowRequest = `block-workflow/dist/tengo/tpl/main${TemplatePackSuffix}`;
 export const CanonicalBlockConfigRequest = "block-model/dist/config.json";
 export const CanonicalBlockUiRequestPackageJson = "block-ui/package.json";
 
@@ -22,7 +23,7 @@ export const LegacyDevBlockPackFiles = [
 ];
 
 export type DevPacketPaths = {
-  /** main.plj.gz */
+  /** main.plj.zst, or main.plj.gz for a legacy dev pack */
   readonly workflow: string;
   /** config.json */
   readonly config: string;

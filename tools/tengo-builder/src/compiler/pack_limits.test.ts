@@ -1,4 +1,4 @@
-import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV4 } from "@milaboratories/pl-model-backend";
 import { describe, expect, it } from "vitest";
 
 import type { FullArtifactName } from "./package";
@@ -93,59 +93,64 @@ describe("collectWasmContributions", () => {
 
   it("reports direct WASM dependencies with stored byte size derived from base64 length", () => {
     const base64 = base64OfLength(400); // 400 base64 chars → 300 binary bytes
-    const tpl: CompiledTemplateV3 = {
-      type: "pl.tengo-template.v3",
+    const tpl: CompiledTemplateV4 = {
+      type: "pl.tengo-template.v4",
       hashToSource: { "hash-a": base64 },
-      template: {
-        name: "@t/pkg:main",
-        version: "1.0.0",
-        sourceHash: "tpl-hash",
-        libs: {},
-        templates: {},
-        software: {},
-        assets: {},
-        wasm: {
-          "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
+      hashToTemplate: {
+        root: {
+          name: "@t/pkg:main",
+          version: "1.0.0",
+          sourceHash: "tpl-hash",
+          libs: {},
+          templates: {},
+          software: {},
+          assets: {},
+          wasm: {
+            "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
+          },
         },
       },
+      template: "root",
     };
     const got = collectWasmContributions(tpl);
     expect(got).toEqual([{ name: "@w/wasm:a", storedBytes: 300 }]);
   });
 
-  it("recurses into sub-templates and deduplicates by artefact name", () => {
+  it("covers sub-templates and deduplicates by artefact name", () => {
     const base64a = base64OfLength(800); // 600 binary bytes
     const base64b = base64OfLength(400); // 300 binary bytes
-    const tpl: CompiledTemplateV3 = {
-      type: "pl.tengo-template.v3",
+    const tpl: CompiledTemplateV4 = {
+      type: "pl.tengo-template.v4",
       hashToSource: { "hash-a": base64a, "hash-b": base64b },
-      template: {
-        name: "@t/pkg:root",
-        version: "1.0.0",
-        sourceHash: "root-hash",
-        libs: {},
-        software: {},
-        assets: {},
-        wasm: {
-          "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
+      hashToTemplate: {
+        root: {
+          name: "@t/pkg:root",
+          version: "1.0.0",
+          sourceHash: "root-hash",
+          libs: {},
+          software: {},
+          assets: {},
+          wasm: {
+            "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
+          },
+          templates: { "@t/pkg:child": "child" },
         },
-        templates: {
-          "@t/pkg:child": {
-            name: "@t/pkg:child",
-            version: "1.0.0",
-            sourceHash: "child-hash",
-            libs: {},
-            templates: {},
-            software: {},
-            assets: {},
-            wasm: {
-              // duplicate of the parent's WASM — must not be counted twice
-              "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
-              "@w/wasm:b": { name: "@w/wasm:b", version: "1.0.0", sourceHash: "hash-b" },
-            },
+        child: {
+          name: "@t/pkg:child",
+          version: "1.0.0",
+          sourceHash: "child-hash",
+          libs: {},
+          templates: {},
+          software: {},
+          assets: {},
+          wasm: {
+            // duplicate of the parent's WASM — must not be counted twice
+            "@w/wasm:a": { name: "@w/wasm:a", version: "1.0.0", sourceHash: "hash-a" },
+            "@w/wasm:b": { name: "@w/wasm:b", version: "1.0.0", sourceHash: "hash-b" },
           },
         },
       },
+      template: "root",
     };
     const got = collectWasmContributions(tpl).sort((a, b) => a.name.localeCompare(b.name));
     expect(got).toEqual([
@@ -154,19 +159,22 @@ describe("collectWasmContributions", () => {
     ]);
   });
 
-  it("returns an empty list when the template tree contains no WASM", () => {
-    const tpl: CompiledTemplateV3 = {
-      type: "pl.tengo-template.v3",
+  it("returns an empty list when the template graph contains no WASM", () => {
+    const tpl: CompiledTemplateV4 = {
+      type: "pl.tengo-template.v4",
       hashToSource: {},
-      template: {
-        name: "@t/pkg:main",
-        version: "1.0.0",
-        sourceHash: "tpl-hash",
-        libs: {},
-        templates: {},
-        software: {},
-        assets: {},
+      hashToTemplate: {
+        root: {
+          name: "@t/pkg:main",
+          version: "1.0.0",
+          sourceHash: "tpl-hash",
+          libs: {},
+          templates: {},
+          software: {},
+          assets: {},
+        },
       },
+      template: "root",
     };
     expect(collectWasmContributions(tpl)).toEqual([]);
   });

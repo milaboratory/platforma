@@ -37,7 +37,7 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.transfer-files.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.transfer-files.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.transfer-files.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.transfer-files.ui/dist"
     },

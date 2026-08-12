@@ -37,7 +37,7 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-sum-numbers.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.test-sum-numbers.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.test-sum-numbers.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.test-sum-numbers.ui/dist"
     },

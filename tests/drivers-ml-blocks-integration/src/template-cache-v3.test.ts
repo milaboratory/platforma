@@ -13,18 +13,53 @@ import {
   loadTemplateCached,
   TemplateCacheType,
 } from "@milaboratories/pl-middle-layer";
-import { parseTemplate } from "@milaboratories/pl-model-backend";
+import { parseTemplate, TemplatePackSuffix } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
-// Resolve V3 template content from the block package's built output
+// Resolve template content from the block package's built output
 // (BlockPointer.packUrl is a file: URL — convert to a path at this edge).
-const v3WorkflowPath = path.join(fileURLToPath(BlockPointer.packUrl), "main.plj.gz");
+// tengo-builder emits v4, so this is a v4 pack; the v3 flatten path is
+// covered separately below by a synthetic pack, because no build in this
+// repo produces v3 any more.
+const v3WorkflowPath = path.join(fileURLToPath(BlockPointer.packUrl), `main${TemplatePackSuffix}`);
 const V3TemplateContent = fs.existsSync(v3WorkflowPath)
   ? fs.readFileSync(v3WorkflowPath)
   : undefined;
+
+/** Minimal v3 pack: a root with one lib and one sub-template. */
+const syntheticV3: CompiledTemplateV3 = {
+  type: "pl.tengo-template.v3",
+  hashToSource: {
+    "root-src": "root source",
+    "child-src": "child source",
+    "lib-src": "lib source",
+  },
+  template: {
+    name: "@t/pkg:root",
+    version: "1.0.0",
+    sourceHash: "root-src",
+    libs: {
+      "@t/pkg:lib": { name: "@t/pkg:lib", version: "1.0.0", sourceHash: "lib-src" },
+    },
+    software: {},
+    assets: {},
+    templates: {
+      "@t/pkg:child": {
+        name: "@t/pkg:child",
+        version: "1.0.0",
+        sourceHash: "child-src",
+        libs: {},
+        software: {},
+        assets: {},
+        templates: {},
+      },
+    },
+  },
+};
 
 function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTempRoot>[0]>[0]) {
   return pl.withWriteTx("createTestCache", async (tx) => {
@@ -36,27 +71,32 @@ function createTestCacheInTx(pl: Parameters<Parameters<typeof TestHelpers.withTe
   });
 }
 
-describe("V3 template cache", () => {
-  test.skipIf(!V3TemplateContent)("flattenTemplateTree produces topological order for V3", () => {
-    const data = parseTemplate(V3TemplateContent!);
-    expect(data.type).toBe("pl.tengo-template.v3");
-    const nodes = flattenTemplateTree(data);
-    expect(nodes.length).toBeGreaterThan(0);
-
-    const seenHashes = new Set<string>();
-    for (const node of nodes) {
-      for (const ch of node.childHashes) {
-        expect(seenHashes.has(ch)).toBe(true);
-      }
-      seenHashes.add(node.hash);
+function expectTopologicalOrder(nodes: ReturnType<typeof flattenTemplateTree>) {
+  expect(nodes.length).toBeGreaterThan(0);
+  const seenHashes = new Set<string>();
+  for (const node of nodes) {
+    for (const ch of node.childHashes) {
+      expect(seenHashes.has(ch)).toBe(true);
     }
+    seenHashes.add(node.hash);
+  }
+}
+
+describe("V3 template cache", () => {
+  test("flattenTemplateTree produces topological order for V3", () => {
+    expectTopologicalOrder(flattenTemplateTree(syntheticV3));
   });
 
-  test.skipIf(!V3TemplateContent)("V3 hashes are deterministic", () => {
-    const data = parseTemplate(V3TemplateContent!);
-    const nodes1 = flattenTemplateTree(data);
-    const nodes2 = flattenTemplateTree(data);
+  test("V3 hashes are deterministic", () => {
+    const nodes1 = flattenTemplateTree(syntheticV3);
+    const nodes2 = flattenTemplateTree(syntheticV3);
     expect(nodes1.map((n) => n.hash)).toStrictEqual(nodes2.map((n) => n.hash));
+  });
+
+  test.skipIf(!V3TemplateContent)("flattenTemplateTree handles the built pack", () => {
+    const data = parseTemplate(V3TemplateContent!, "zstd");
+    expect(data.type).toBe("pl.tengo-template.v4");
+    expectTopologicalOrder(flattenTemplateTree(data));
   });
 
   test.skipIf(!V3TemplateContent)(
@@ -64,7 +104,11 @@ describe("V3 template cache", () => {
     async () => {
       await TestHelpers.withTempRoot(async (pl) => {
         const testCache = await createTestCacheInTx(pl);
-        const v3Spec = { type: "explicit" as const, content: V3TemplateContent! };
+        const v3Spec = {
+          type: "explicit" as const,
+          content: V3TemplateContent!,
+          codec: "zstd" as const,
+        };
 
         const id1 = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });
         const id2 = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });
@@ -79,7 +123,11 @@ describe("V3 template cache", () => {
     async () => {
       await TestHelpers.withTempRoot(async (pl) => {
         const testCache = await createTestCacheInTx(pl);
-        const v3Spec = { type: "explicit" as const, content: V3TemplateContent! };
+        const v3Spec = {
+          type: "explicit" as const,
+          content: V3TemplateContent!,
+          codec: "zstd" as const,
+        };
 
         // Cached path
         const cachedId = await loadTemplateCached(pl, v3Spec, { cacheResourceId: testCache });

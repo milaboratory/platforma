@@ -9,6 +9,7 @@ import { assertNever } from "@milaboratories/ts-helpers";
 import { LegacyDevBlockPackFiles } from "../dev_env";
 import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
 import { deriveRequiredCapabilities } from "../mutator/block-pack/required_capabilities";
+import { templateCodecForPath } from "@milaboratories/pl-model-backend";
 import type { V2RegistryProvider } from "./registry-v2-provider";
 import type {
   BlockPackId,
@@ -239,10 +240,12 @@ export class BlockPackRegistry {
               // developer to re-pack on every workflow change, derive from
               // the compiled workflow bytes directly.
               if (meta.requiredCapabilities === undefined) {
-                const workflowBytes = await fs.promises.readFile(
-                  v2Description.components.workflow.main.file,
+                const workflowFile = v2Description.components.workflow.main.file;
+                const workflowBytes = await fs.promises.readFile(workflowFile);
+                const derived = deriveRequiredCapabilities(
+                  workflowBytes,
+                  templateCodecForPath(workflowFile),
                 );
-                const derived = deriveRequiredCapabilities(workflowBytes);
                 if (derived !== undefined) meta.requiredCapabilities = derived;
               }
 

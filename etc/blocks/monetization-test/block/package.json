@@ -37,7 +37,7 @@
   "packageManager": "pnpm@9.12.0",
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.monetization-test.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.monetization-test.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.monetization-test.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.monetization-test.ui/dist"
     },

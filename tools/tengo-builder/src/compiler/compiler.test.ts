@@ -6,7 +6,12 @@ import { createLogger } from "./util";
 import { test, expect, describe, it } from "vitest";
 import { MiLogger } from "@milaboratories/ts-helpers";
 import type { FullArtifactName, TypedArtifactName } from "./package";
-import { TemplateDataV3, TemplateLibDataV3 } from "@milaboratories/pl-model-backend";
+import { rootTemplate, templateNodeHash } from "@milaboratories/pl-model-backend";
+import type {
+  CompiledTemplateV4,
+  TemplateLibDataV3,
+  TemplateNodeV4,
+} from "@milaboratories/pl-model-backend";
 
 function parseSrc(logger: MiLogger, src: ta.TestArtifactSource[]): ArtifactSource[] {
   return src.map((tp) => {
@@ -23,7 +28,7 @@ test("compile package 1", () => {
 
   expect(compiled.templates[0]).toMatchObject({
     data: {
-      type: "pl.tengo-template.v3",
+      type: "pl.tengo-template.v4",
       hashToSource: {
         "2e0d81deae0220df5901292911fd96065be96bc2187debb24bd869b47e1caa77": `
 lib := import("package1:other-lib-1")
@@ -34,20 +39,21 @@ export {
 }
 `,
       },
-      template: {
-        name: "package1:template-3",
+    },
+  });
+
+  expect(rootTemplate(compiled.templates[0].data)).toMatchObject({
+    name: "package1:template-3",
+    version: "1.2.3",
+    sourceHash: "2e0d81deae0220df5901292911fd96065be96bc2187debb24bd869b47e1caa77",
+    templates: {},
+    software: {},
+    assets: {},
+    libs: {
+      "package1:other-lib-1": {
+        name: "package1:other-lib-1",
         version: "1.2.3",
-        sourceHash: "2e0d81deae0220df5901292911fd96065be96bc2187debb24bd869b47e1caa77",
-        templates: {},
-        software: {},
-        assets: {},
-        libs: {
-          "package1:other-lib-1": {
-            name: "package1:other-lib-1",
-            version: "1.2.3",
-            sourceHash: "3f850fa4c5f6a8a3017fa883fc03fc2dee159f65e2dbb9c6cd0c6dff0aae6419",
-          },
-        },
+        sourceHash: "3f850fa4c5f6a8a3017fa883fc03fc2dee159f65e2dbb9c6cd0c6dff0aae6419",
       },
     },
   });
@@ -89,7 +95,7 @@ test.skip("compile main source set", () => {
   expect(tpl1).toBeDefined();
 
   // checking that transient library dependency was resolved
-  expect(tpl1.data.template.templates).toHaveProperty("package1:template-3");
+  expect(rootTemplate(tpl1.data).templates).toHaveProperty("package1:template-3");
 });
 
 test("compile template with hash override", () => {
@@ -103,10 +109,12 @@ test("compile template with hash override", () => {
   expect(tpl3).toBeDefined();
 
   // checking that transient library dependency was resolved
-  expect(tpl3.data.template.hashOverride).toEqual(
+  expect(rootTemplate(tpl3.data).hashOverride).toEqual(
     "CE0F6EDF-D97C-44E7-B16B-D661D4C799C1".toLowerCase(),
   );
-  expect(tpl3.data.template.libs[artifactNameToString(ta.testLocalLib3.fullName)]).toBeDefined();
+  expect(
+    rootTemplate(tpl3.data).libs[artifactNameToString(ta.testLocalLib3.fullName)],
+  ).toBeDefined();
 });
 
 test("wrong hash override value throws error", () => {
@@ -132,16 +140,29 @@ const genArtifactSource = (
 
 const genTemplateData = (
   name: FullArtifactName,
-  templates: TemplateDataV3[],
+  templates: TemplateNodeV4[],
   libs: TemplateLibDataV3[],
-) => ({
+): TemplateNodeV4 => ({
   name: genArtifactName(name),
   version: name.version,
   sourceHash: genHash(name.id),
-  templates: Object.fromEntries(templates.map((t) => [t.name, t])),
+  templates: Object.fromEntries(templates.map((t) => [t.name, templateNodeHash(t)])),
   libs: Object.fromEntries(libs.map((l) => [l.name, l])),
   software: {},
   assets: {},
+});
+
+/** Assembles the expected pack around a root node. `nodes` lists every node in
+ *  the graph, root included — each keyed by its own content hash. */
+const genPack = (
+  hashToSource: Record<string, string>,
+  root: TemplateNodeV4,
+  ...nodes: TemplateNodeV4[]
+): CompiledTemplateV4 => ({
+  type: "pl.tengo-template.v4",
+  hashToSource,
+  hashToTemplate: Object.fromEntries([root, ...nodes].map((n) => [templateNodeHash(n), n])),
+  template: templateNodeHash(root),
 });
 
 const genLibData = (name: FullArtifactName) => ({
@@ -199,18 +220,13 @@ describe("TengoTemplateCompiler.compileAndAdd", () => {
             compileMode: "dist",
             fullName: ta.testLocalTpl2Name,
             source: ta.testLocalTpl2Src,
-            data: {
-              type: "pl.tengo-template.v3",
-              hashToSource: {
+            data: genPack(
+              {
                 [genHash(ta.testLocalLib1Name.id)]: ta.testLocalLib1Src,
                 [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src,
               },
-              template: genTemplateData(
-                ta.testLocalTpl2Name,
-                [],
-                [genLibData(ta.testLocalLib1Name)],
-              ),
-            },
+              genTemplateData(ta.testLocalTpl2Name, [], [genLibData(ta.testLocalLib1Name)]),
+            ),
           },
         ],
         software: [],
@@ -230,30 +246,27 @@ describe("TengoTemplateCompiler.compileAndAdd", () => {
             compileMode: "dist",
             fullName: ta.testLocalTpl2Name,
             source: ta.testLocalTpl2Src,
-            data: {
-              type: "pl.tengo-template.v3",
-              hashToSource: {
-                [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src,
-              },
-              template: genTemplateData(ta.testLocalTpl2Name, [], []),
-            },
+            data: genPack(
+              { [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src },
+              genTemplateData(ta.testLocalTpl2Name, [], []),
+            ),
           },
           {
             compileMode: "dist",
             fullName: ta.testLocalTpl1Name,
             source: ta.testLocalTpl1Src,
-            data: {
-              type: "pl.tengo-template.v3",
-              hashToSource: {
+            data: genPack(
+              {
                 [genHash(ta.testLocalTpl1Name.id)]: ta.testLocalTpl1Src,
                 [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src,
               },
-              template: genTemplateData(
+              genTemplateData(
                 ta.testLocalTpl1Name,
                 [genTemplateData(ta.testLocalTpl2Name, [], [])],
                 [],
               ),
-            },
+              genTemplateData(ta.testLocalTpl2Name, [], []),
+            ),
           },
         ],
         software: [],
@@ -274,36 +287,31 @@ describe("TengoTemplateCompiler.compileAndAdd", () => {
             compileMode: "dist",
             fullName: ta.testLocalTpl2Name,
             source: ta.testLocalTpl2Src,
-            data: {
-              type: "pl.tengo-template.v3",
-              hashToSource: {
+            data: genPack(
+              {
                 [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src,
                 [genHash(ta.testLocalLib3Name.id)]: ta.testLocalLib3Src,
               },
-              template: genTemplateData(
-                ta.testLocalTpl2Name,
-                [],
-                [genLibData(ta.testLocalLib3Name)],
-              ),
-            },
+              genTemplateData(ta.testLocalTpl2Name, [], [genLibData(ta.testLocalLib3Name)]),
+            ),
           },
           {
             compileMode: "dist",
             fullName: ta.testLocalTpl1Name,
             source: ta.testLocalTpl1Src,
-            data: {
-              type: "pl.tengo-template.v3",
-              hashToSource: {
+            data: genPack(
+              {
                 [genHash(ta.testLocalTpl1Name.id)]: ta.testLocalTpl1Src,
                 [genHash(ta.testLocalTpl2Name.id)]: ta.testLocalTpl2Src,
                 [genHash(ta.testLocalLib3Name.id)]: ta.testLocalLib3Src,
               },
-              template: genTemplateData(
+              genTemplateData(
                 ta.testLocalTpl1Name,
                 [genTemplateData(ta.testLocalTpl2Name, [], [genLibData(ta.testLocalLib3Name)])],
                 [],
               ),
-            },
+              genTemplateData(ta.testLocalTpl2Name, [], [genLibData(ta.testLocalLib3Name)]),
+            ),
           },
         ],
         software: [],
@@ -365,7 +373,7 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
       new ArtifactSource("dist", tplName, "tpl-hash", "tpl-src", "tpl-file", [wasmName], []),
     ]);
 
-    expect(result.templates[0].data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+    expect(rootTemplate(result.templates[0].data).requiredCapabilities).toEqual(["wasm:v1"]);
   });
 
   it("unions child template requiredCapabilities into the parent", () => {
@@ -405,7 +413,7 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
 
     const result = compiler.compileAndAdd([childSrc, parentSrc]);
     const parent = result.templates.find((t) => t.fullName.id === "parent")!;
-    expect(parent.data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+    expect(rootTemplate(parent.data).requiredCapabilities).toEqual(["wasm:v1"]);
   });
 
   it("leaves requiredCapabilities undefined when no capability is needed", () => {
@@ -421,6 +429,6 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
       new ArtifactSource("dist", tplName, "plain-hash", "plain-src", "plain-file", [], []),
     ]);
 
-    expect(result.templates[0].data.template.requiredCapabilities).toBeUndefined();
+    expect(rootTemplate(result.templates[0].data).requiredCapabilities).toBeUndefined();
   });
 });

@@ -19,18 +19,24 @@ import {
   PlTemplateSoftwareV1,
   PlTemplateV1,
   PlWasmV1,
+  resolveTemplate,
+  rootTemplate,
+  templateCycleError,
 } from "@milaboratories/pl-model-backend";
 import type {
+  AnyCompiledTemplate,
   CompiledTemplateV3,
+  CompiledTemplateV4,
   TemplateData,
   TemplateDataV3,
   TemplateLibData,
   TemplateLibDataV3,
+  TemplateNodeV4,
   TemplateSoftwareData,
   TemplateSoftwareDataV3,
   TemplateWasmDataV3,
 } from "@milaboratories/pl-model-backend";
-import { notEmpty } from "@milaboratories/ts-helpers";
+import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
 import type { BlockPackSpecPrepared } from "../../model";
 import type { TemplateSpecPrepared } from "../../model/template_spec";
 import { getDebugFlags } from "../../debug";
@@ -275,10 +281,33 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
   return nodes;
 }
 
-function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
+/** A node in either post-v2 format. The two differ only in the shape of
+ *  `templates`, which this walker reaches through a callback. */
+type AnyTemplateNode = TemplateDataV3 | TemplateNodeV4;
+
+/**
+ * Shared flattener for v3 and v4 packs.
+ *
+ * `subTemplates` hides the one real difference between the formats: v3 nests
+ * child nodes inline, v4 stores hash references into `hashToTemplate`.
+ *
+ * Memoization is by node object identity, which is what makes v4 cheap. A v4
+ * pack stores each distinct node once, so `resolveTemplate` hands back the
+ * same object for every reference to it and each node is processed once. A v3
+ * pack has a separate object per occurrence, so the memo never hits and
+ * behaviour is unchanged from before.
+ */
+function flattenNodeGraph(
+  sources: Record<string, string>,
+  root: AnyTemplateNode,
+  subTemplates: (tpl: AnyTemplateNode) => [string, AnyTemplateNode][],
+): CacheableNode[] {
   const nodes: CacheableNode[] = [];
   const seen = new Set<string>();
-  const sources = data.hashToSource;
+  const processed = new Map<AnyTemplateNode, string>();
+  /** Nodes on the current path, so a reference cycle is reported instead of
+   *  recursing until the stack runs out. */
+  const visiting = new Set<AnyTemplateNode>();
 
   function processLib(lib: TemplateLibDataV3): string {
     const hash = hashLibV3(lib);
@@ -341,7 +370,12 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
     return hash;
   }
 
-  function processTemplate(tpl: TemplateDataV3): string {
+  function processTemplate(tpl: AnyTemplateNode): string {
+    const memoized = processed.get(tpl);
+    if (memoized !== undefined) return memoized;
+    if (visiting.has(tpl)) throw templateCycleError(tpl as TemplateNodeV4);
+    visiting.add(tpl);
+
     // Defensive: a template can carry no embedded version at runtime even
     // though the type says `string` — the compiler writes `packageJson.version`
     // unchecked, so a template built from a package with no `version` field
@@ -354,27 +388,27 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
     const childHashes: string[] = [];
     const children: { fieldName: string; hash: string }[] = [];
 
-    for (const [libId, lib] of Object.entries(tpl.libs ?? {})) {
+    for (const [libId, lib] of Object.entries<TemplateLibDataV3>(tpl.libs ?? {})) {
       const h = processLib(lib);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.libPrefix}/${libId}`, hash: h });
     }
-    for (const [swId, sw] of Object.entries(tpl.software ?? {})) {
+    for (const [swId, sw] of Object.entries<TemplateSoftwareDataV3>(tpl.software ?? {})) {
       const h = processSoftware(sw);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.softPrefix}/${swId}`, hash: h });
     }
-    for (const [swId, sw] of Object.entries(tpl.assets ?? {})) {
+    for (const [swId, sw] of Object.entries<TemplateSoftwareDataV3>(tpl.assets ?? {})) {
       const h = processSoftware(sw);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.softPrefix}/${swId}`, hash: h });
     }
-    for (const [tplId, sub] of Object.entries(tpl.templates ?? {})) {
+    for (const [tplId, sub] of subTemplates(tpl)) {
       const h = processTemplate(sub);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.tplPrefix}/${tplId}`, hash: h });
     }
-    for (const [wasmId, wasm] of Object.entries(tpl.wasm ?? {})) {
+    for (const [wasmId, wasm] of Object.entries<TemplateWasmDataV3>(tpl.wasm ?? {})) {
       const h = processWasm(wasm);
       childHashes.push(h);
       children.push({ fieldName: `${PlTemplateV1.wasmPrefix}/${wasmId}`, hash: h });
@@ -393,6 +427,8 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
       h.update("child:" + child.fieldName + ":" + child.hash);
     }
     const hash = h.digest("hex");
+    visiting.delete(tpl);
+    processed.set(tpl, hash);
 
     if (seen.has(hash)) return hash;
     seen.add(hash);
@@ -429,16 +465,35 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
     return hash;
   }
 
-  processTemplate(data.template);
+  processTemplate(root);
   return nodes;
 }
 
+function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
+  return flattenNodeGraph(data.hashToSource, data.template, (tpl) =>
+    Object.entries(tpl.templates as Record<string, TemplateDataV3>),
+  );
+}
+
+function flattenV4Tree(data: CompiledTemplateV4): CacheableNode[] {
+  return flattenNodeGraph(data.hashToSource, rootTemplate(data), (tpl) =>
+    Object.entries(tpl.templates as Record<string, string>).map(
+      ([alias, hash]): [string, TemplateNodeV4] => [alias, resolveTemplate(data, hash)],
+    ),
+  );
+}
+
 /** Flatten template tree into a topologically ordered list of cacheable nodes (leaves first). */
-export function flattenTemplateTree(data: TemplateData | CompiledTemplateV3): CacheableNode[] {
-  if (data.type === "pl.tengo-template.v2") {
-    return flattenV2Tree(data);
-  } else {
-    return flattenV3Tree(data);
+export function flattenTemplateTree(data: AnyCompiledTemplate): CacheableNode[] {
+  switch (data.type) {
+    case "pl.tengo-template.v2":
+      return flattenV2Tree(data);
+    case "pl.tengo-template.v3":
+      return flattenV3Tree(data);
+    case "pl.tengo-template.v4":
+      return flattenV4Tree(data);
+    default:
+      return assertNever(data);
   }
 }
 
@@ -706,10 +761,10 @@ export async function loadTemplateCached(
 
   try {
     // Parse to data if needed
-    let tplData: TemplateData | CompiledTemplateV3;
+    let tplData: AnyCompiledTemplate;
     switch (spec.type) {
       case "explicit":
-        tplData = parseTemplate(spec.content);
+        tplData = parseTemplate(spec.content, spec.codec);
         break;
       case "prepared":
         tplData = spec.data;

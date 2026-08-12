@@ -1,4 +1,4 @@
-import type { CompiledTemplateV3, TemplateDataV3 } from "@milaboratories/pl-model-backend";
+import type { CompiledTemplateV4 } from "@milaboratories/pl-model-backend";
 
 import type { FullArtifactName } from "./package";
 import { fullNameToString } from "./package";
@@ -67,16 +67,18 @@ export interface WasmContribution {
 }
 
 /**
- * Walks a compiled template tree and reports every WASM artefact embedded
- * directly or transitively. Used only by the too-large-pack error message —
- * never on the success path. Deduplicates by artefact name (sub-templates can
- * import the same WASM via different aliases and we want to attribute weight
- * only once).
+ * Reports every WASM artefact embedded in a pack, directly or transitively.
+ * Used only by the too-large-pack error message — never on the success path.
+ * Deduplicates by artefact name (sub-templates can import the same WASM via
+ * different aliases and we want to attribute weight only once).
+ *
+ * `hashToTemplate` already holds every node in the graph exactly once, so this
+ * is a flat scan; there is no tree to walk and no need to track visited nodes.
  */
-export function collectWasmContributions(tpl: CompiledTemplateV3): WasmContribution[] {
+export function collectWasmContributions(tpl: CompiledTemplateV4): WasmContribution[] {
   const seen = new Map<string, WasmContribution>();
-  function walk(t: TemplateDataV3) {
-    for (const [name, ref] of Object.entries(t.wasm ?? {})) {
+  for (const node of Object.values(tpl.hashToTemplate)) {
+    for (const [name, ref] of Object.entries(node.wasm ?? {})) {
       if (seen.has(name)) continue;
       const base64 = tpl.hashToSource[ref.sourceHash];
       // base64 encodes 3 binary bytes per 4 chars; the off-by-padding is at
@@ -84,9 +86,7 @@ export function collectWasmContributions(tpl: CompiledTemplateV3): WasmContribut
       const storedBytes = base64 != null ? Math.floor((base64.length * 3) / 4) : 0;
       seen.set(name, { name, storedBytes });
     }
-    for (const sub of Object.values(t.templates ?? {})) walk(sub);
   }
-  walk(tpl.template);
   return [...seen.values()];
 }
 

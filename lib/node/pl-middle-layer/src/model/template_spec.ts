@@ -1,5 +1,5 @@
 import type { SignedResourceId } from "@milaboratories/pl-client";
-import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
+import type { AnyCompiledTemplate, TemplateCodec } from "@milaboratories/pl-model-backend";
 
 export interface TemplateFromRegistry {
   readonly type: "from-registry";
@@ -10,11 +10,17 @@ export interface TemplateFromRegistry {
 export interface ExplicitTemplate {
   readonly type: "explicit";
   content: Uint8Array;
+  /**
+   * How `content` is compressed. Set by whoever read the bytes, from the name
+   * they read them under — a `.plj.zst` file or a `.plj.gz` registry URL.
+   * Required so the bytes never have to be guessed at.
+   */
+  codec: TemplateCodec;
 }
 
 export interface PreparedTemplate {
   readonly type: "prepared";
-  data: TemplateData | CompiledTemplateV3;
+  data: AnyCompiledTemplate;
 }
 
 export interface CachedTemplate {

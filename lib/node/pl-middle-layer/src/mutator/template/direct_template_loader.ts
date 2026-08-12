@@ -16,9 +16,10 @@ import {
   parseTemplate,
 } from "@milaboratories/pl-model-backend";
 import { createTemplateV3Tree } from "./direct_template_loader_v3";
+import { createTemplateV4Tree } from "./direct_template_loader_v4";
 
 export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
-  const templateInfo = parseTemplate(spec.content);
+  const templateInfo = parseTemplate(spec.content, spec.codec);
 
   const templateFormat = templateInfo.type;
   switch (templateFormat) {
@@ -26,6 +27,8 @@ export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: Explicit
       return createTemplateV2Tree(tx, templateInfo);
     case "pl.tengo-template.v3":
       return createTemplateV3Tree(tx, templateInfo);
+    case "pl.tengo-template.v4":
+      return createTemplateV4Tree(tx, templateInfo);
     default:
       assertNever(templateFormat);
   }
@@ -40,6 +43,8 @@ export function loadTemplateFromPrepared(tx: PlTransaction, spec: PreparedTempla
       return createTemplateV2Tree(tx, templateData);
     case "pl.tengo-template.v3":
       return createTemplateV3Tree(tx, templateData);
+    case "pl.tengo-template.v4":
+      return createTemplateV4Tree(tx, templateData);
     default:
       assertNever(templateFormat);
   }

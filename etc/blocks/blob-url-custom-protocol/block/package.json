@@ -37,7 +37,7 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.test-blob-url-custom-protocol.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui/dist"
     },

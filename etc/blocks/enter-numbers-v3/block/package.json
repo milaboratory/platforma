@@ -37,7 +37,7 @@
   },
   "block": {
     "components": {
-      "workflow": "@milaboratories/milaboratories.test-enter-numbers-v3.workflow/dist/tengo/tpl/main.plj.gz",
+      "workflow": "@milaboratories/milaboratories.test-enter-numbers-v3.workflow/dist/tengo/tpl/main.plj.zst",
       "model": "@milaboratories/milaboratories.test-enter-numbers-v3.model/dist/model.json",
       "ui": "@milaboratories/milaboratories.test-enter-numbers-v3.ui/dist"
     },
