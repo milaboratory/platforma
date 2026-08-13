@@ -122,8 +122,9 @@ describe("the reference as a template entry's kind", () => {
     });
 
     // The whole path, end to end: what the block declared is what the file
-    // carries. `id` is the block's project-local UUID, reused verbatim.
-    expect(entry).toEqual({ id: blockId, kind: KIND_REF });
+    // carries. `id` is the block's project-local UUID, reused verbatim, and `params` is the
+    // empty mapping the parser settles an omitted key to.
+    expect(entry).toEqual({ id: blockId, kind: KIND_REF, params: {} });
 
     // No `block` override: a block implements exactly one kind version, so
     // export has nothing to pin.

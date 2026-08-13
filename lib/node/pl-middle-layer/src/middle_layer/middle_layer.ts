@@ -438,12 +438,12 @@ export class MiddleLayer {
         const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp);
 
         // Offered to the block's kind while nothing has been created yet. Every entry is
-        // checked, including one whose file omitted `params` — that reads as `{}`, which a
-        // kind with required fields rejects, and rightly: it would otherwise apply as a
-        // block that looks configured and is not.
+        // checked, including one whose file omitted `params` — the parser read that as `{}`,
+        // which a kind with required fields rejects, and rightly: it would otherwise apply as
+        // a block that looks configured and is not.
         const checked = this.env.projectHelper.validateTemplateParamsInVM(
           blockCfg,
-          liveParamsForCheck(paramsByEntry.get(entry.entryId) ?? {}),
+          liveParamsForCheck(paramsByEntry.get(entry.entryId)!),
         );
         if (checked.error !== undefined) {
           problems.push({ entryId: entry.entryId, error: checked.error.message });
