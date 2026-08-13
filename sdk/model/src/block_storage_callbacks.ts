@@ -25,7 +25,11 @@ import {
 } from "./block_storage";
 import type { PluginHandle } from "./plugin_handle";
 
-import { stringifyJson, type StringifiedJson } from "@milaboratories/pl-model-common";
+import {
+  stringifyJson,
+  wrapTemplateRefs,
+  type StringifiedJson,
+} from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
 import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
@@ -523,19 +527,18 @@ export function derivePrerunArgsFromStorage(
  * The inverse of the data model's `init`: `init` turns `params` into data, this
  * turns data back into the params that would recreate it.
  *
- * The params come back in ordinary **live** form — references as `PlRef`s, column
- * identifiers as they are stored — and nothing is projected here. Turning them into
- * template form means interning every identifier into the document's `columns`
- * dictionary, which is document-scoped work: a block sees only its own params and knows
- * nothing about names already taken by its neighbours. That step therefore belongs to the
- * exporter, which holds the whole document (`pl-middle-layer`'s `template_export.ts`).
+ * The lambda returns ordinary live params — references as `PlRef`s, column identifiers as
+ * they are stored — and `wrapTemplateRefs` then marks each identifier in them as a reference
+ * the template engine may redirect. That step belongs here, in the block's own bundle: it is
+ * the last place that knows the reference system, and past it nothing looks inside a wrapper
+ * again.
  *
  * Every block declares the lambda, so every export produces params; a block with
  * nothing worth restoring returns `{}` rather than declining.
  *
  * @param storageJson - Storage as JSON string
  * @param deriveTemplateParams - The block's templateParams lambda
- * @returns ArgsDeriveResult holding the params in live form
+ * @returns ArgsDeriveResult holding the params with every identifier wrapped
  */
 export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => unknown>(
   storageJson: string,
@@ -544,7 +547,7 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
   const { data } = normalizeStorage(storageJson);
 
   try {
-    return { value: deriveTemplateParams(data) };
+    return { value: wrapTemplateRefs(deriveTemplateParams(data)) };
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
     return { error: `templateParams() threw: ${errorMsg}` };

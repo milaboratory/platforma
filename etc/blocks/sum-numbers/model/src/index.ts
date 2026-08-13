@@ -5,7 +5,6 @@ import {
   DataModelBuilder,
   PlRef,
   readAnnotation,
-  toTemplateRef,
 } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.test-sum-numbers.kind";
 import { z } from "zod";
@@ -35,7 +34,7 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     return { sources: data.sources ?? [] };
   })
 
-  .templateParams((data) => ({ sources: toTemplateRef(data.sources) }))
+  .templateParams((data) => ({ sources: data.sources }))
 
   .output("opts", (ctx) =>
     ctx.resultPool

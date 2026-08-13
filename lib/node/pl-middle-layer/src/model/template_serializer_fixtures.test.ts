@@ -8,7 +8,7 @@ import {
   createGlobalPObjectId,
   createPlRef,
   parseProjectTemplateV1,
-  toTemplateRef,
+  wrapTemplateRefs,
 } from "@milaboratories/pl-model-common";
 import type { ProjectStructure } from "./project_model";
 import type { TemplateParamsResult } from "./template_export";
@@ -35,7 +35,12 @@ import { exportProjectAsTemplateV1 } from "./template_serializer";
  */
 const FIXTURE_DIR = join(import.meta.dirname, "..", "..", "test_fixtures", "template-v1");
 
-const ok = (value: unknown): TemplateParamsResult => ({ value });
+/**
+ * Params as the block's callback hands them over: written live, with every identifier marked
+ * by the same pass that runs inside a block's bundle. Spelling the wrappers by hand instead
+ * would pin what a test author believed the projection does.
+ */
+const ok = (value: unknown): TemplateParamsResult => ({ value: wrapTemplateRefs(value) });
 
 const kind = (name: string, version: string) =>
   `@platforma-open/milaboratories.${name}.kind@${version}` as BlockKindReference;
@@ -88,13 +93,11 @@ const FIXTURES: readonly Fixture[] = [
     params: {
       "aaaaaaaa-0000-4000-8000-000000000001": ok({ dataset: "bulk-rna" }),
       "bbbbbbbb-0000-4000-8000-000000000002": ok({
-        input: toTemplateRef(createPlRef("aaaaaaaa-0000-4000-8000-000000000001", "reads")),
+        input: createPlRef("aaaaaaaa-0000-4000-8000-000000000001", "reads"),
         species: "hsa",
       }),
       "cccccccc-0000-4000-8000-000000000003": ok({
-        clonotypes: toTemplateRef(
-          createPlRef("bbbbbbbb-0000-4000-8000-000000000002", "clonotypes"),
-        ),
+        clonotypes: createPlRef("bbbbbbbb-0000-4000-8000-000000000002", "clonotypes"),
       }),
     },
     kinds: {
@@ -119,10 +122,10 @@ const FIXTURES: readonly Fixture[] = [
           { name: "cluster", enabled: false, seed: 42 },
         ],
         // Two references to the same upstream, inside an array.
-        inputs: toTemplateRef([
+        inputs: [
           createPlRef("dddddddd-0000-4000-8000-000000000004", "a"),
           createPlRef("dddddddd-0000-4000-8000-000000000004", "b"),
-        ]),
+        ],
         advanced: {},
         tags: [],
         note: null,
@@ -135,7 +138,7 @@ const FIXTURES: readonly Fixture[] = [
   },
   {
     file: "wrapped-refs.yaml",
-    pins: "a wrapper is written verbatim, whatever is inside it — a bare ref, a column id, an array",
+    pins: "each identifier is marked where it sits, and written verbatim whatever its form",
     structure: structureOf(
       "aaaaaaaa-0000-4000-8000-000000000001",
       "bbbbbbbb-0000-4000-8000-000000000002",
@@ -146,17 +149,15 @@ const FIXTURES: readonly Fixture[] = [
         // A filtered column id — a canonical JSON string with the block id buried inside it.
         // The engine writes it as it came and redirects the id textually on apply; nothing
         // here parses the identifier.
-        anchor: toTemplateRef(
-          createColumnFilteredId({
-            source: createGlobalPObjectId(
-              "aaaaaaaa-0000-4000-8000-000000000001",
-              "clonotypes",
-            ) as ColumnUniversalId,
-            axisFilters: [[0, "IGH"]],
-          }),
-        ),
-        // The same column as a `PlRef` object, wrapped the same way.
-        upstream: toTemplateRef(createPlRef("aaaaaaaa-0000-4000-8000-000000000001", "clonotypes")),
+        anchor: createColumnFilteredId({
+          source: createGlobalPObjectId(
+            "aaaaaaaa-0000-4000-8000-000000000001",
+            "clonotypes",
+          ) as ColumnUniversalId,
+          axisFilters: [[0, "IGH"]],
+        }),
+        // The same column as a `PlRef` object, marked the same way.
+        upstream: createPlRef("aaaaaaaa-0000-4000-8000-000000000001", "clonotypes"),
       }),
     },
     kinds: {
