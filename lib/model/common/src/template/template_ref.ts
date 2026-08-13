@@ -16,26 +16,17 @@
  */
 export type TemplateRef<T = unknown> = { readonly $ref: T };
 
-/**
- * `Params` as a `templateParams` lambda may return them: any field may be handed over
- * wrapped.
- *
- * The field names and their payload types are still checked against the kind's contract —
- * wrapping changes where a value sits, not what it is.
- */
-export type TemplateParamsOf<P> = { readonly [K in keyof P]: P[K] | TemplateRef<P[K]> };
-
 /** {@link toTemplateRef}'s result: an absent value stays absent rather than wrapping nothing. */
 export type TemplateRefOf<T> = undefined extends T ? TemplateRef<T> | undefined : TemplateRef<T>;
 
 /**
  * Mark a value in template params as carrying references the engine may redirect.
  *
- * Wrap the whole subtree that holds them — a single `PlRef`, an array of column ids, a
- * nested structure of either. There is nothing to gain from wrapping precisely: the engine
- * treats the payload as opaque text, so one wrapper around a whole field costs exactly as
- * much as a wrapper around each id inside it, and it is the block author who would have to
- * keep the precise version in step with their own params shape.
+ * Normally not called by a block: `wrapTemplateRefs` runs over whatever `templateParams()`
+ * returns and marks every column identifier in it, so wrapping is not something an author can
+ * forget. This is the escape hatch for the case that walk cannot recognize — a value that
+ * carries block ids without being an identifier, a foreign JSON document holding a reference
+ * — and a value already wrapped is left alone by the walk.
  *
  * `undefined` passes through unwrapped, so an optional field stays optional instead of
  * becoming a wrapper around nothing.
