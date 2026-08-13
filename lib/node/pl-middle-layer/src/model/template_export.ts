@@ -21,15 +21,13 @@ export type TemplateExportEntry = {
    */
   readonly blockId: string;
   /**
-   * The block's params exactly as it projected them, or `undefined` when the block declares
-   * no `templateParams`.
+   * The block's params exactly as it projected them.
    *
-   * `undefined` is written as an entry with **no** `params` key. Only a block built
-   * against an older SDK gets here: a current block cannot be built without
-   * `templateParams`, and one whose state carries nothing worth restoring returns `{}`
-   * rather than declining.
+   * Always a mapping: a block that declared no `templateParams`, or whose lambda returned
+   * something else, is reported as a problem rather than carried here — see the object check
+   * in the walk. So nothing downstream has an absent case to decide.
    */
-  readonly params: Record<string, unknown> | undefined;
+  readonly params: Record<string, unknown>;
 };
 
 /** Why one block could not be exported. */

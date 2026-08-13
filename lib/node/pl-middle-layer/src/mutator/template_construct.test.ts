@@ -127,10 +127,11 @@ beforeAll(async () => {
 
 const KIND = "@platforma-open/milaboratories.demo.kind@^1.0.0" as BlockKindSelectorReference;
 
-const entry = (id: string, params?: Record<string, unknown>): ProjectTemplateV1Entry => ({
+/** An entry as the parser hands it over: `params` settled, absent read as `{}`. */
+const entry = (id: string, params: Record<string, unknown> = {}): ProjectTemplateV1Entry => ({
   id,
   kind: KIND,
-  ...(params !== undefined ? { params } : {}),
+  params,
 });
 
 const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => ({

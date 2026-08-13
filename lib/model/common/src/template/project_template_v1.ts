@@ -97,10 +97,11 @@ const LocationSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]+):/;
  *
  * `kind` is always required: it carries the params contract the entry is typed
  * against, and it is checked against what the located implementation declares even
- * when it did not do the locating. Omitting `params` means exactly `{}`, validated the
- * same way, so an entry that omits it fails for a kind whose contract has required
- * fields — omission is terseness, not an escape from the contract. There is no `label`
- * field: a template does not name block instances for display.
+ * when it did not do the locating. A file may omit `params`, which is terseness and not an
+ * escape from the contract: the parser reads the omission as `{}`, so an entry that leaves it
+ * out still fails for a kind whose contract has required fields. Past the parser there is
+ * only one spelling, and no reader has to normalize. There is no `label` field: a template
+ * does not name block instances for display.
  *
  * Two optional, mutually exclusive locator overrides answer different questions, and
  * either one skips kind resolution:
@@ -125,14 +126,14 @@ export type ProjectTemplateV1Entry = {
   readonly location?: BlockPackLocationReference;
   /**
    * The block's `BlockParams` instance, exactly as the block projected it — opaque here
-   * and typed by the kind.
+   * and typed by the kind. Always present: an entry whose file omitted it parses as `{}`.
    *
    * The document layer looks inside for one thing only: a `{ $ref: … }` wrapper, which the
    * block puts around any value carrying block ids. Everything else travels verbatim,
    * references included, because an engine that parsed identifiers would have to model the
    * whole reference system to do it. See `TemplateRef`.
    */
-  readonly params?: Record<string, unknown>;
+  readonly params: Record<string, unknown>;
 };
 
 /**
@@ -221,7 +222,8 @@ export const ProjectTemplateV1EntrySchema = z
     kind: kindSelectorReferenceSchema,
     block: blockPackReferenceSchema.optional(),
     location: blockPackLocationSchema.optional(),
-    params: z.record(z.string(), z.unknown()).optional(),
+    // Omissible in the file, settled here: every reader downstream gets a mapping.
+    params: z.record(z.string(), z.unknown()).default({}),
   })
   .strict()
   .superRefine((entry, ctx) => {

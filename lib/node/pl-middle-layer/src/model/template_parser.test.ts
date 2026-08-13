@@ -56,14 +56,14 @@ describe("parseProjectTemplateV1Yaml", () => {
     ]);
   });
 
-  test("an entry without params keeps the key absent", () => {
-    // The parser reports what the file says and invents nothing, so a missing key stays
-    // missing; whoever applies the document is what reads it as `{}`.
+  test("an entry without params reads as empty params", () => {
+    // The one thing the parser fills in. Leaving the key absent would make every reader
+    // downstream normalize it, and one of them would eventually forget.
     const [entry] = documentOf(
       `schema: ${PROJECT_TEMPLATE_SCHEMA_V1}\nblocks:\n  - id: a\n    kind: "${KIND}"\n`,
     ).blocks;
 
-    expect("params" in entry).toBe(false);
+    expect(entry.params).toEqual({});
   });
 
   test("JSON is accepted, being valid YAML", () => {

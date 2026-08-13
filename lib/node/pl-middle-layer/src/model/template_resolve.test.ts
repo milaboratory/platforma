@@ -45,7 +45,7 @@ const foundBlock = (name: string) => ({
 const entry = (
   id: string,
   extra: Partial<Pick<ProjectTemplateV1Entry, "kind" | "block" | "location">> = {},
-): ProjectTemplateV1Entry => ({ id, kind: KIND, ...extra });
+): ProjectTemplateV1Entry => ({ id, kind: KIND, params: {}, ...extra });
 
 const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => ({
   schema: PROJECT_TEMPLATE_SCHEMA_V1,

@@ -244,14 +244,15 @@ describe("parseProjectTemplateV1", () => {
     expect(validateProjectTemplateV1References(doc)).toEqual([]);
   });
 
-  test("params is optional — the parser leaves the key absent rather than filling it in", () => {
+  test("params may be omitted in the file, and reads as `{}`", () => {
+    // The one field the parser fills in. Every reader past it gets a mapping, so none of
+    // them carries a `?? {}` that one of them would eventually forget.
     const doc = parseProjectTemplateV1({
       schema: "template-v1",
       blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
     });
 
-    expect(doc.blocks[0].params).toBeUndefined();
-    expect("params" in doc.blocks[0]).toBe(false);
+    expect(doc.blocks[0].params).toEqual({});
   });
 
   test("kind is required — it carries the params contract", () => {

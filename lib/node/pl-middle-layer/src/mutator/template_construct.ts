@@ -114,11 +114,9 @@ export function applyTemplateEntries(deps: {
     const blockId = newBlockId();
     blockIds.set(entry.id, blockId);
 
-    // An entry that omits `params` is read as `{}`, not routed around the params path.
-    // The two produce the same block — both reach the same init factory and both
-    // assemble storage the same way — but only this one is checked against the kind, so
-    // an omitted key can no longer be a way to apply an entry the contract rejects.
-    const live = resolveTemplateRefs(entry.params ?? {}, blockIds);
+    // Params are a mapping by the time a document exists — the parser reads an omitted key
+    // as `{}` — so every entry goes through the params path and is checked against its kind.
+    const live = resolveTemplateRefs(entry.params, blockIds);
 
     // The block's own model decides what params mean. Run before anything is
     // placed, so params it declines cost nothing but the report.

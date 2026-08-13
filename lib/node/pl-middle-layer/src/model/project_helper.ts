@@ -155,9 +155,10 @@ export class ProjectHelper {
    * identifier wrapped as a `{ $ref: … }`, done inside the block's own bundle, so nothing here
    * has to know a kind's params shape or how a reference is spelled.
    *
-   * A `{ value: undefined }` result is NOT a failure: it means the block declares no
-   * `templateParams`, which only a block built against an older SDK can do, and the
-   * exported entry gets no `params` key.
+   * A `{ value: undefined }` result means the block declares no `templateParams`, which only
+   * a block built against an older SDK can do. It does not reach a document: the export walk
+   * requires a mapping and reports anything else as that block's problem, so an entry always
+   * carries params.
    *
    * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
    * than swallowed — a prerun that cannot derive args just skips a block in
