@@ -31,8 +31,9 @@ export {
   type TemplateResolveOutcome,
 } from "./template_resolve";
 export {
+  TemplateEntryRejected,
+  liveParamsForCheck,
   type AppliedEntry,
-  type TemplateApplyOutcome,
   type TemplateApplyProblem,
   type TemplateApplyReport,
 } from "./template_apply";

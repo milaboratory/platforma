@@ -29,15 +29,11 @@ import {
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
-import type {
-  TemplateApplyOutcome,
-  TemplateApplyProblem,
-  TemplateApplyReport,
-} from "../model/template_apply";
+import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
+import { TemplateEntryRejected, liveParamsForCheck } from "../model/template_apply";
 import type { BlockPackProvider } from "../model/template_resolve";
 import { resolveTemplateEntries } from "../model/template_resolve";
 import { validateTemplateV1ForApply } from "../model/template_validate";
-import { liveParamsForCheck } from "../model/template_ids";
 import type { PreparedTemplateEntry } from "../mutator/template_construct";
 import { applyTemplateEntries } from "../mutator/template_construct";
 import { throwIfMissingServerCapabilities } from "./project";
@@ -96,6 +92,7 @@ import type {
   ProjectMeta,
   BlockPlatform,
 } from "@milaboratories/pl-model-middle-layer";
+import type { AppliedEntry } from "../model/template_apply";
 import { BlockUpdateWatcher } from "../block_registry/watcher";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { getQuickJS } from "quickjs-emscripten";
@@ -394,14 +391,14 @@ export class MiddleLayer {
    * 4. **Create the blocks**, in one transaction.
    *
    * The first three create nothing, so any of them failing leaves the project exactly as
-   * it was — almost every way a template can be wrong is reported with nothing to clean
-   * up. They are also what leaves stage 4 with only in-memory work, and hence able to be a
-   * single transaction.
+   * it was. They are also what leaves stage 4 with only in-memory work, and hence able to be
+   * a single transaction.
    *
-   * **A failure in stage 4 keeps the blocks that landed.** They are valid and the user can
-   * finish by hand, and the report names the entry that stopped the apply, so a partial
-   * project is never mistaken for a complete one. Undoing them would destroy the only
-   * record of how far the apply got.
+   * **Stage 4 is all or nothing too**, because it is that one transaction: an entry it cannot
+   * create throws, the transaction is never committed, and the project keeps none of the
+   * blocks the apply had placed. So `problems` non-empty always means `added` is empty, at
+   * every stage — a caller never has to reconcile a half-built project, and never has to ask
+   * which of the blocks present came from the file.
    *
    * @param id Project to apply into
    * @param document A parsed template document
@@ -468,31 +465,35 @@ export class MiddleLayer {
     if (problems.length > 0) return { added: [], problems };
 
     const rid = await this.resolveProjectId(id);
-    let outcome: TemplateApplyOutcome = { added: [] };
-    await withProjectAuthored(
-      this.env.projectHelper,
-      this.pl,
-      rid,
-      options.author,
-      (mut) => {
-        // Built inside the callback, not outside it: the transaction can be retried, and
-        // an id map carried across a retry would hand one entry a second block id.
-        outcome = applyTemplateEntries({
-          document,
-          placer: mut,
-          entries: prepared,
-          projectHelper: this.env.projectHelper,
-        });
-      },
-      // Under the same lock an open session's own mutations take, so an apply and a user
-      // editing the project cannot interleave.
-      { name: "applyTemplateToProject", lockId: `project:${id}` },
-    );
+    let added: AppliedEntry[] = [];
+    try {
+      await withProjectAuthored(
+        this.env.projectHelper,
+        this.pl,
+        rid,
+        options.author,
+        (mut) => {
+          added = applyTemplateEntries({
+            document,
+            placer: mut,
+            entries: prepared,
+            projectHelper: this.env.projectHelper,
+          });
+        },
+        // Under the same lock an open session's own mutations take, so an apply and a user
+        // editing the project cannot interleave.
+        { name: "applyTemplateToProject", lockId: `project:${id}` },
+      );
+    } catch (e: unknown) {
+      // A statement about the file: the transaction went with the throw, so the project kept
+      // none of the blocks the apply had placed, and `added` is empty by construction.
+      // Anything else — a backend that refused the write, say — is not about the file and
+      // keeps propagating.
+      if (!(e instanceof TemplateEntryRejected)) throw e;
+      return { added: [], problems: [{ entryId: e.entryId, error: e.message }] };
+    }
 
-    return {
-      added: outcome.added,
-      problems: outcome.problem !== undefined ? [outcome.problem] : [],
-    };
+    return { added, problems: [] };
   }
 
   /** Permanently deletes project from the project list, this will result in
