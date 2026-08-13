@@ -69,19 +69,28 @@ type PackageUpdateInfo = {
 };
 
 /**
- * Accumulator for the kind-overview projection, keyed by
- * `kinds/{org}/{name}/overview.json`. Filled while the block manifests are
- * already parsed in the main `updateRegistry` pass — no extra reads.
+ * What one kind overview (`kinds/{org}/{name}/overview.json`) will be rewritten to.
  *
- * `touched` is the set of block id strings re-read this pass (removed from the
- * existing overview before their fresh implementer entries are re-added). In
- * force mode it is `null`: the overview is fully rebuilt from the scan, so the
- * existing content is discarded rather than filtered.
+ * Filled while the block manifests are already parsed in the main `updateRegistry` pass — no
+ * extra reads. Two shapes, because the pass has two modes and they read the existing file
+ * differently:
+ *
+ * - `rebuild: false` — read-modify-write. `replacedBlockIds` names the block-pack ids (with
+ *   version) whose manifests were re-read this pass; their existing `implementers` entries are
+ *   dropped so the fresh ones in `add` take their place instead of duplicating them.
+ * - `rebuild: true` — force mode. The scan re-enumerates every live kind reference, so the
+ *   existing content is discarded rather than filtered, and there is nothing to name.
+ *
+ * A discriminant rather than `Set<string> | null`: the mode is a fact about the pass, and
+ * encoding it as an absent collection makes "rebuild everything" and "replace nothing" look
+ * the same at the use site.
  */
-type KindTouchAccumulator = {
-  touched: Set<string> | null;
-  add: KindImplementer[];
-};
+type KindOverviewMerge = {
+  readonly add: KindImplementer[];
+} & (
+  | { readonly rebuild: true }
+  | { readonly rebuild: false; readonly replacedBlockIds: Set<string> }
+);
 
 export class BlockRegistryV2 {
   private readonly gzipAsync = promisify(gzip);
@@ -157,25 +166,26 @@ export class BlockRegistryV2 {
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
-    // kind-overview projection accumulator, keyed by kinds/{org}/{name}/overview.json
-    const touchedKinds = new Map<string, KindTouchAccumulator>();
+    // planned kind-overview rewrites, keyed by kinds/{org}/{name}/overview.json
+    const kindOverviewMerges = new Map<string, KindOverviewMerge>();
     const seedPaths: string[] = [];
 
     /**
-     * Get-or-create the accumulator for one kind overview, marking `blockId` as
+     * Get-or-create the planned rewrite for one kind overview, recording `blockId` as
      * re-read this pass so the RMW below drops its stale entry before merging.
      *
-     * In force mode `touched` stays `null` (rebuild-from-scan); the optional call
-     * keeps that intact for accumulators the force pre-seed already created.
+     * In force mode the plan is a rebuild and there is nothing to record — including for the
+     * plans the force pre-seed already created, which this must leave as rebuilds.
      */
-    const touchKind = (ovPath: string, blockId: string): KindTouchAccumulator => {
-      const acc = touchedKinds.get(ovPath) ?? {
-        touched: mode === "force" ? null : new Set<string>(),
-        add: [],
-      };
-      acc.touched?.add(blockId);
-      touchedKinds.set(ovPath, acc);
-      return acc;
+    const mergeIntoKindOverview = (ovPath: string, blockId: string): KindOverviewMerge => {
+      const plan =
+        kindOverviewMerges.get(ovPath) ??
+        (mode === "force"
+          ? { rebuild: true as const, add: [] }
+          : { rebuild: false as const, replacedBlockIds: new Set<string>(), add: [] });
+      if (!plan.rebuild) plan.replacedBlockIds.add(blockId);
+      kindOverviewMerges.set(ovPath, plan);
+      return plan;
     };
 
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
@@ -224,7 +234,7 @@ export class BlockRegistryV2 {
       const kindPaths = await this.storage.listFiles(KindsPrefix);
       for (const rel of kindPaths) {
         if (!KindOverviewPathPattern.test(rel)) continue;
-        touchedKinds.set(KindsPrefix + rel, { touched: null, add: [] });
+        kindOverviewMerges.set(KindsPrefix + rel, { rebuild: true, add: [] });
       }
     }
 
@@ -286,7 +296,7 @@ export class BlockRegistryV2 {
       for (const e of droppedVersions) {
         if (!e.description.kind) continue;
         const ovPath = kindOverviewPath(npmNameToKindPath(parseKindRef(e.description.kind).name));
-        touchKind(ovPath, blockPackIdToString(e.description.id));
+        mergeIntoKindOverview(ovPath, blockPackIdToString(e.description.id));
       }
 
       // reading new entries
@@ -324,7 +334,11 @@ export class BlockRegistryV2 {
         if (description.kind) {
           const { name: kindNpmName, version: kindVersion } = parseKindRef(description.kind);
           const ovPath = kindOverviewPath(npmNameToKindPath(kindNpmName));
-          touchKind(ovPath, blockPackIdToString(id)).add.push({ id, kindVersion, channels });
+          mergeIntoKindOverview(ovPath, blockPackIdToString(id)).add.push({
+            id,
+            kindVersion,
+            channels,
+          });
         }
       }
 
@@ -390,23 +404,15 @@ export class BlockRegistryV2 {
     }
 
     // projecting kind overviews (kinds/{org}/{name}/overview.json)
-    for (const [ovPath, acc] of touchedKinds) {
-      const current: KindOverview =
-        acc.touched === null
-          ? { schema: "v1", implementers: [], kindVersions: [] }
-          : ((await this.getKindOverviewAt(ovPath)) ?? {
-              schema: "v1",
-              implementers: [],
-              kindVersions: [],
-            });
-
-      // RMW: drop the (block id) entries re-read this pass, keep the rest; in
-      // force mode `touched` is null and everything is rebuilt from the scan.
-      const kept =
-        acc.touched === null
-          ? []
-          : current.implementers.filter((e) => !acc.touched!.has(blockPackIdToString(e.id)));
-      const merged = [...kept, ...acc.add];
+    for (const [ovPath, plan] of kindOverviewMerges) {
+      // A rebuild reads nothing: the scan re-enumerated every live kind reference, so keeping
+      // any of the existing entries could only resurrect one the scan no longer sees.
+      const kept = plan.rebuild
+        ? []
+        : ((await this.getKindOverviewAt(ovPath))?.implementers ?? []).filter(
+            (e) => !plan.replacedBlockIds.has(blockPackIdToString(e.id)),
+          );
+      const merged = [...kept, ...plan.add];
 
       if (merged.length === 0) {
         if (mode !== "dry-run") await this.storage.deleteFiles(ovPath);
