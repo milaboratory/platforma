@@ -1,23 +1,22 @@
-import type { CompiledBlockKind } from "./descriptor";
+import type { CompiledBlockKind, CompiledBlockKindV1 } from "./descriptor";
 
 export type { CompiledBlockKind, InferBlockParams } from "./descriptor";
 
-/** A kind's identity, as declared in its own `package.json`, plus optional behaviour. */
-export interface BlockKindMeta<BlockParams = unknown> {
-  /**
-   * The FULL npm package name of the kind, e.g.
-   * `@platforma-open/milaboratories.mixcr-clonotyping.kind`. The S3 `{org, name}`
-   * path is derived from this downstream via `npmNameToKindPath`; the descriptor
-   * carries no separate `organization` field.
-   */
-  name: string;
-  version: string;
-  /**
-   * Runtime check for params that did not come from a typed caller. Required — see
-   * {@link CompiledBlockKind}'s `parseTemplateParams` for what it must do and why it exists.
-   */
-  parseTemplateParams: (value: unknown) => BlockParams;
-}
+/**
+ * What {@link defineBlockKind} is given: the descriptor minus what a caller does not supply.
+ *
+ * Derived rather than declared, because a copy of the same fields would let the input and the
+ * descriptor drift — and their documentation with them. A field added to the descriptor
+ * therefore has to be supplied here too, which is the right default.
+ *
+ * Two exclusions, and both are things a caller cannot state: `kindSchema` is this package's to
+ * stamp, and `__PHANTOM_BLOCK_PARAMS__` is a type-level slot that never holds a value — the
+ * factory does not copy it, so accepting it would be accepting something that gets dropped.
+ */
+export type BlockKindMeta<BlockParams = unknown> = Omit<
+  CompiledBlockKindV1<BlockParams>,
+  "kindSchema" | "__PHANTOM_BLOCK_PARAMS__"
+>;
 
 /**
  * Define a block kind.
