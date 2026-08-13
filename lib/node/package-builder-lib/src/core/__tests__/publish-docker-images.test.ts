@@ -307,3 +307,66 @@ describe("Core.buildDockerImages + publishDockerImages", () => {
     }
   });
 });
+
+// selectedDockerPackages answers "what docker images would this build produce?"
+// for a given --package-id selection. Callers use it to reason about a build
+// before running it, so it must mirror buildDockerImages' own id resolution:
+// a plain intersection with dockerPackages would miss the `:docker` virtual
+// entrypoint that python autogen produces.
+describe("Core.selectedDockerPackages", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "selected-docker-test-"));
+  });
+
+  afterEach(() => {
+    try {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
+  });
+
+  function mixedPackageRoot(): string {
+    return makePackageRoot(
+      tempDir,
+      {
+        name: "@test/mixed",
+        version: "1.0.0",
+        "block-software": {
+          entrypoints: { pyep: pythonEntrypoint, javaep: javaEntrypoint },
+        },
+      },
+      { requirementsTxt: true, runenv: { ref: RUNENV_REF, pythonVersion: "3.12.10" } },
+    );
+  }
+
+  it("counts every docker artifact when nothing is selected", () => {
+    const core = new Core(mockLogger, { packageRoot: mixedPackageRoot() });
+    expect(core.selectedDockerPackages()).toHaveLength(1);
+  });
+
+  it("returns none when the selection has no docker artifact", () => {
+    const core = new Core(mockLogger, { packageRoot: mixedPackageRoot() });
+    expect(core.selectedDockerPackages(["javaep"])).toHaveLength(0);
+  });
+
+  it("resolves the virtual :docker entrypoint for a selected python entrypoint", () => {
+    const core = new Core(mockLogger, { packageRoot: mixedPackageRoot() });
+    expect(core.selectedDockerPackages(["pyep"])).toHaveLength(1);
+  });
+
+  it("returns none for a package with no docker artifacts at all", () => {
+    const root = makePackageRoot(tempDir, {
+      name: "@test/java-only-selection",
+      version: "1.0.0",
+      "block-software": { entrypoints: { main: javaEntrypoint } },
+    });
+
+    const core = new Core(mockLogger, { packageRoot: root });
+    expect(core.selectedDockerPackages()).toHaveLength(0);
+    expect(core.selectedDockerPackages(["main"])).toHaveLength(0);
+  });
+});
