@@ -362,7 +362,7 @@ function formatPath(path: readonly unknown[]): string {
  * {@link createInitialStorageFromParams}, which parses again. One authoritative
  * producer, rather than two values that could differ.
  */
-export type TemplateParamsValidateCallbackResult = { error: string } | { error?: undefined };
+export type InitializationParamsValidateCallbackResult = { error: string } | { error?: undefined };
 
 /**
  * Check params that crossed into the model VM as text.
@@ -377,7 +377,7 @@ export type TemplateParamsValidateCallbackResult = { error: string } | { error?:
 export function validateTemplateParamsJson(
   paramsJson: string,
   parseInitializationParams: (value: unknown) => unknown,
-): TemplateParamsValidateCallbackResult {
+): InitializationParamsValidateCallbackResult {
   let params: unknown;
   try {
     params = JSON.parse(paramsJson);

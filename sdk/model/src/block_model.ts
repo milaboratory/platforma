@@ -115,7 +115,7 @@ interface BlockModelV3Config<
   Params = unknown,
 > {
   renderingMode: BlockRenderingMode;
-  dataModel: DataModel<Data, unknown, Transfers>;
+  dataModel: DataModel<Data, Params, Transfers>;
   /** Reference to the block kind this model implements, in `{name}@{version}` form. */
   // @todo: use blockKind, `kind` super comman word
   kind: BlockKindReference | undefined;
@@ -685,7 +685,7 @@ export class BlockModelV3<
         deriveArgsFromStorage(storageJson, deriveArgs),
       [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
         derivePrerunArgsFromStorage(storageJson, deriveArgs, derivePrerunArgs),
-      [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (storageJson) =>
+      [BlockStorageFacadeCallbacks.InitializationParamsDerive]: (storageJson) =>
         deriveTemplateParamsFromStorage(
           storageJson,
           deriveTemplateParams as (data: unknown) => unknown,
@@ -697,7 +697,7 @@ export class BlockModelV3<
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
           parseInitializationParams,
         }),
-      [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (paramsJson) =>
+      [BlockStorageFacadeCallbacks.InitializationParamsValidate]: (paramsJson) =>
         validateTemplateParamsJson(paramsJson, parseInitializationParams),
     });
 
