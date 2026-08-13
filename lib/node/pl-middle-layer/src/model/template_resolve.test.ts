@@ -3,6 +3,7 @@ import type {
   BlockKindReference,
   BlockKindSelectorReference,
   BlockPackLocationReference,
+  BlockPackLocatorOverride,
   BlockPackReference,
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
@@ -42,9 +43,16 @@ const foundBlock = (name: string) => ({
   title: `The ${name} Block`,
 });
 
+/**
+ * An entry as the parser hands it over, with the locator override left to the caller.
+ *
+ * `extra` takes {@link BlockPackLocatorOverride} rather than a `Partial<Pick<…>>` of the
+ * entry: the latter would let a test hand over both `block` and `location`, which is a
+ * document the type forbids and the parser rejects.
+ */
 const entry = (
   id: string,
-  extra: Partial<Pick<ProjectTemplateV1Entry, "kind" | "block" | "location">> = {},
+  extra: { kind?: BlockKindSelectorReference } & BlockPackLocatorOverride = {},
 ): ProjectTemplateV1Entry => ({ id, kind: KIND, params: {}, ...extra });
 
 const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => ({
