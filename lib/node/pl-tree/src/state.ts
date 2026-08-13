@@ -469,6 +469,14 @@ export class PlTreeState {
     this.resources.forEach((v) => cb(v));
   }
 
+  /** False once the tree has been invalidated (an inconsistent update, or termination of
+   *  its synchronization loop). {@link dumpState} deliberately reads through an invalid
+   *  tree, so anything persisting that dump must check this first: the contents of an
+   *  invalidated tree are not something to write to disk. */
+  public get isValid(): boolean {
+    return this._isValid;
+  }
+
   private checkValid() {
     if (!this._isValid) throw new Error(this.invalidationMessage ?? "tree is in invalid state");
   }
