@@ -64,9 +64,8 @@ that system at all.
 **`@milaboratories/pl-middle-layer`** — `MiddleLayer.exportProjectAsTemplate(id)` and
 `MiddleLayer.applyTemplateToProject(id, document)`, backing "Export Project as
 Template…" and "Create Project from Template…". The template import path is public:
-`parseProjectTemplateV1Yaml`, `validateTemplateV1ForApply`, `resolveTemplateEntries`,
-`applyProjectTemplateV1`, plus the `BlockPackProvider` seam deciding which registries to
-consult. Entries resolve against the configured registries, ids are mapped to the blocks
+`parseProjectTemplateV1Yaml`, `validateTemplateV1ForApply`, `resolveTemplateEntries`, plus the
+`BlockPackProvider` seam deciding which registries to consult. Entries resolve against the configured registries, ids are mapped to the blocks
 they become, and each entry's params are offered to the block's kind for a shape check
 before anything is created.
 

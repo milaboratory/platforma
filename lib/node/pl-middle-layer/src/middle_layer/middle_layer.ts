@@ -34,13 +34,12 @@ import type {
   TemplateApplyProblem,
   TemplateApplyReport,
 } from "../model/template_apply";
-import { applyProjectTemplateV1 } from "../model/template_apply";
 import type { BlockPackProvider } from "../model/template_resolve";
 import { resolveTemplateEntries } from "../model/template_resolve";
 import { validateTemplateV1ForApply } from "../model/template_validate";
 import { liveParamsForCheck } from "../model/template_ids";
 import type { PreparedTemplateEntry } from "../mutator/template_construct";
-import { createTemplateApplyApi } from "../mutator/template_construct";
+import { applyTemplateEntries } from "../mutator/template_construct";
 import { throwIfMissingServerCapabilities } from "./project";
 import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 import { ProjectMetaKey } from "../model/project_model";
@@ -478,14 +477,12 @@ export class MiddleLayer {
       (mut) => {
         // Built inside the callback, not outside it: the transaction can be retried, and
         // an id map carried across a retry would hand one entry a second block id.
-        outcome = applyProjectTemplateV1(
+        outcome = applyTemplateEntries({
           document,
-          createTemplateApplyApi({
-            placer: mut,
-            projectHelper: this.env.projectHelper,
-            entries: prepared,
-          }),
-        );
+          placer: mut,
+          entries: prepared,
+          projectHelper: this.env.projectHelper,
+        });
       },
       // Under the same lock an open session's own mutations take, so an apply and a user
       // editing the project cannot interleave.

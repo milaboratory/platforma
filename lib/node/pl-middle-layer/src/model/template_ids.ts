@@ -6,10 +6,10 @@ import { resolveTemplateRefs } from "@milaboratories/pl-model-common";
  * and file-form params into params a block can be initialized with.
  *
  * A template names blocks by ids that mean nothing outside the file; a project names
- * them by UUIDs that do not exist until the blocks are created. One map spans that gap,
- * and it lives here rather than in the orchestrator on purpose — an orchestrator that
- * knew the map would also own the rewrite, and every orchestrator would then carry a
- * copy of the same logic. See `TemplateApplyApi`.
+ * them by UUIDs that do not exist until the blocks are created. One map spans that gap, and
+ * it is separate from the apply loop for one reason: the discipline that makes it correct —
+ * an id is a redirect target only once the block it names actually landed — is easier to keep
+ * behind two methods (`assign`, then `record`) than inline in a loop that also places blocks.
  *
  * The pass is forward-only. File order is instantiation order, and a reference to a
  * later entry is rejected before an apply starts, so by the time an entry's params are

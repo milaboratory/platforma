@@ -31,11 +31,7 @@ export {
   type TemplateResolveOutcome,
 } from "./template_resolve";
 export {
-  applyProjectTemplateV1,
-  type AddBlockOutcome,
-  type AddBlockRequest,
   type AppliedEntry,
-  type TemplateApplyApi,
   type TemplateApplyOutcome,
   type TemplateApplyProblem,
   type TemplateApplyReport,
