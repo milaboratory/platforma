@@ -7,8 +7,8 @@ import type { Branded } from "@milaboratories/helpers";
  * X implement kind Y?"), for which an opaque canonical string is ideal. Any
  * reader that needs the parts calls {@link parseKindRef}; any writer composes
  * the reference through {@link formatKindRef}. Keeping composition in a single
- * function localizes the one open decision — whether the name segment is
- * org-qualified (see Q-0005) — to one place.
+ * function localizes the one open decision — whether the name segment has to be
+ * org-qualified for global uniqueness — to one place.
  */
 export type BlockKindReference = Branded<string, "BlockKindReference">;
 
@@ -17,7 +17,7 @@ export type BlockKindReference = Branded<string, "BlockKindReference">;
  *
  * The single place that decides how the reference is assembled. If global
  * uniqueness later requires the name segment to be org-qualified, this is the
- * one line that changes (Q-0005).
+ * one line that changes.
  */
 export const formatKindRef = (k: { name: string; version: string }): BlockKindReference =>
   `${k.name}@${k.version}` as BlockKindReference;

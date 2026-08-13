@@ -5,9 +5,8 @@ import { checkKindVersionMatch, KindVersionMismatchError } from "./version-match
 /**
  * `checkKindVersionMatch` is the pure pre-publish gate: the model's
  * compiled-against kind and the facade's declared kind must be the SAME kind at
- * the SAME version. Success is "did not throw". Now that the reference model is
- * settled (A-0052/A-0053) the full `{org, name}` identity is compared, not just
- * the terminal name.
+ * the SAME version. Success is "did not throw". The full `{org, name}` identity is
+ * compared, not just the terminal name.
  */
 describe("checkKindVersionMatch", () => {
   const name = "@platforma-open/milaboratories.demo.kind";

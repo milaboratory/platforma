@@ -8,27 +8,29 @@ import { KindManifest } from "../registry/schema_kinds";
 import type { RelativeContentReader } from "../model";
 
 /**
- * Kind → block ref resolution. The single reader of the facade's kind
- * dependency: the kind is a fourth block component the facade depends on
- * DIRECTLY (A-0053, the tetrad), and its concrete version is resolved through
- * the kind's built manifest (A-0052). Keeping every "how the facade names and
- * locates its kind" assumption in this one module means the gate and the
- * orchestrator never touch dependency-shape details.
+ * Kind → block ref resolution. The single reader of the facade's kind dependency.
+ *
+ * A kind is a fourth block component alongside model, ui and workflow, and the facade
+ * depends on it DIRECTLY — not transitively through one of the other three. Its concrete
+ * version is not read from that dependency either: the facade's range may be
+ * `workspace:*` or `catalog:`, so the authority is the kind's own built manifest.
+ *
+ * Keeping every "how the facade names and locates its kind" assumption in this one module
+ * means the publish gate and the orchestrator never touch dependency-shape details.
  */
 
 /** npm package-name suffix marking a package as a block kind (schema_kinds convention). */
 const KIND_PACKAGE_SUFFIX = ".kind";
 
 /**
- * The kind reference the MODEL was compiled against, as baked into the block
- * manifest by concern #3.
+ * The kind reference the MODEL was compiled against, as baked into the block manifest
+ * when the block was built.
  *
- * RECONCILIATION vs. doc §4 pseudocode: the doc read
- * `manifest.description.components.model.kindRef`. The shipped record-kind-ref
- * concern instead lifts the model's container-level `kind` to the TOP LEVEL of
- * the description (`description.kind`, a `{name}@{version}` string — see
- * `block_description.ts` and the reconciler read at `registry.ts:301`). We read
- * the field that actually exists. `undefined` ⇒ the block declares no kind.
+ * It sits at the TOP LEVEL of the description — `description.kind`, a `{name}@{version}`
+ * string (declared in `block_description.ts`, read back by the registry's reconciler) —
+ * rather than under the model component, because the build lifts the model's
+ * container-level `kind` up when it writes the manifest. `undefined` means the block
+ * declares no kind.
  */
 export function readModelCompiledKindRef(
   manifest: BlockPackManifest,
@@ -47,9 +49,9 @@ export interface FacadeKindDependency {
 /**
  * The facade-side kind dependency, read from the facade's `package.json`.
  *
- * The facade depends on its kind DIRECTLY (A-0053): the `.kind`-suffixed entry
- * is a direct dependency of the facade, not something reached transitively
- * through `model/package.json`. We scan both `dependencies` and
+ * The facade depends on its kind DIRECTLY: the `.kind`-suffixed entry is a direct
+ * dependency of the facade, not something reached transitively through
+ * `model/package.json`. We scan both `dependencies` and
  * `devDependencies` for the single `.kind` entry — the slim facade keeps the
  * kind (like its model/ui/workflow siblings) as a build-time `workspace:*`
  * devDep, and its concrete version is resolved from the kind's built manifest
@@ -91,9 +93,8 @@ export interface ResolvedFacadeKind {
  * `package.json` range may be `workspace:*`/`catalog:` and carry no concrete
  * version), and returns a `dist/`-rooted file reader for `publishKind`.
  *
- * The concrete version comes from the built manifest (A-0052), so a
- * `workspace:*`/`catalog:` range in the facade's `package.json` resolves
- * cleanly. Resolution uses standard node resolution from the facade dir; if the
+ * The concrete version comes from the built manifest, so a `workspace:*`/`catalog:`
+ * range in the facade's `package.json` resolves cleanly. Resolution uses standard node resolution from the facade dir; if the
  * package or its manifest cannot be found it throws with a pointed message
  * rather than silently skipping.
  */

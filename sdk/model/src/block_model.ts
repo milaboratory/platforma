@@ -202,10 +202,11 @@ export class BlockModelV3<
     // no reference field of its own.
     const kindRef = formatKindRef(kind);
 
-    // Runtime guard: the kind handed to the builder must match the kind handed
-    // to create() (they are two separately-passed objects — see doc §3). The
-    // builder's own reference is still optional, because a PLUGIN data model is
-    // built without a kind and has none to compare.
+    // Runtime guard: the kind handed to the builder must match the kind handed to
+    // create(). Nothing ties them together at the type level — they arrive as two
+    // separately-passed objects — so a mismatch is only visible here. The builder's own
+    // reference is still optional, because a PLUGIN data model is built without a kind
+    // and has none to compare.
     if (dataModel.kindRef && dataModel.kindRef !== kindRef) {
       throw new Error(
         `Block kind mismatch: data model built for '${dataModel.kindRef}' but create() got '${kindRef}'`,

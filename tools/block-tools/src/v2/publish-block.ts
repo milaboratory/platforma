@@ -14,7 +14,8 @@ import { checkKindVersionMatch } from "./kind/version-match";
  * This is the single forward-compat seam the deferred kind/template phases
  * extend. It sequences exactly three steps around the existing facade publish:
  *
- *   1. resolve both kind refs (Q-0004 quarantined inside `resolve-refs`),
+ *   1. resolve both kind refs — every assumption about how the facade names and locates
+ *      its kind lives in `resolve-refs`, so this step has no shape details of its own,
  *   2. run the pure version-match gate — hard-fails before ANY S3 write,
  *   3. `publishKind` (kind content → `kinds/` tree, idempotent, source-hash
  *      guarded), then
@@ -35,7 +36,7 @@ export async function publishBlock(
   const modelKindRef = readModelCompiledKindRef(manifest);
 
   if (modelKindRef !== undefined) {
-    // 1. resolve the facade-declared kind dependency (Q-0004 quarantine)
+    // 1. resolve the facade-declared kind dependency
     const facadeDep = readFacadeKindDependency(facadeDir);
     if (facadeDep === undefined) {
       throw new Error(
