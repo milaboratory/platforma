@@ -1,10 +1,10 @@
 import { BLOCK_STORAGE_FACADE_VERSION, extractConfig } from "@platforma-sdk/model";
-import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import { resolveTemplateRefs, type ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import type { BlockPackSpecPrepared } from "../model";
 import type { ProjectHelper } from "../model/project_helper";
-import type { AppliedEntry, TemplateApplyOutcome } from "../model/template_apply";
-import type { TemplateIdMap } from "../model/template_ids";
-import { createTemplateIdMap } from "../model/template_ids";
+import type { AppliedEntry } from "../model/template_apply";
+import { TemplateEntryRejected } from "../model/template_apply";
+import { randomUUID } from "node:crypto";
 import type { Block } from "../model/project_model";
 import type { NewBlockSpec } from "./project";
 
@@ -46,44 +46,48 @@ export type BlockPlacer = {
  * references already exists and already has an id. Blocks are appended in the order they are
  * added, so nothing here passes a `before`.
  *
- * **Stops at the first entry it cannot create.** Continuing would place blocks whose
- * upstream is missing, so the surviving project would be wired to nothing in the middle —
- * worse than a project that is short a tail. The blocks already added are kept and reported:
- * they are valid and the user can finish by hand, and deleting them would also destroy the
- * only evidence of how far the apply got.
- *
- * **What is reported and what is thrown.** Params a block declines are reported — they are
- * statements about the file, and the entries already placed stay placed. A failure to
- * *place* a block is not caught: by then the mutator holds half a change, and committing
- * that would persist something no one wrote. So it propagates and takes the transaction with
- * it, and the project ends up as it was before the apply.
+ * **All or nothing.** An entry this project cannot honour throws
+ * {@link TemplateEntryRejected}, which leaves the caller's transaction uncommitted, so the
+ * project keeps none of the blocks this call placed. A half-applied project is not a useful
+ * result: its tail is missing, so whatever the missing entries were supposed to feed is wired
+ * to nothing, and the user cannot tell which of the blocks present were configured by the
+ * file and which they would have to fix. Failing whole also means the reader gets one
+ * statement about their file rather than a project to reconcile.
  *
  * @param entries Prepared entries by template-local id. Resolution covers every entry
  *   or the apply does not start, so a missing one is a caller error rather than a
  *   property of the file
- * @param ids Defaults to a fresh map, which is what an apply wants; injectable so a test
- *   can name the ids it expects
+ * @param newBlockId Source of project-local block ids. Defaults to random UUIDs, the same
+ *   ids `Project.addBlock` would have generated on its own; injectable so a test can name
+ *   the ids it expects
+ * @throws {TemplateEntryRejected} for the first entry the file describes unusably
  */
 export function applyTemplateEntries(deps: {
   readonly document: ProjectTemplateV1;
   readonly placer: BlockPlacer;
   readonly projectHelper: ProjectHelper;
   readonly entries: ReadonlyMap<string, PreparedTemplateEntry>;
-  readonly ids?: TemplateIdMap;
-}): TemplateApplyOutcome {
+  readonly newBlockId?: () => string;
+}): AppliedEntry[] {
   const { document, placer, projectHelper, entries } = deps;
-  const ids = deps.ids ?? createTemplateIdMap();
+  const newBlockId = deps.newBlockId ?? randomUUID;
   const added: AppliedEntry[] = [];
 
-  const stop = (entryId: string, error: string): TemplateApplyOutcome => ({
-    added,
-    problem: { entryId, error },
-  });
+  /**
+   * Template-local entry id → the block id it was given.
+   *
+   * An entry lands in here the moment it is given an id, before its block is placed. That is
+   * safe precisely because the apply is all-or-nothing: there is no surviving project in
+   * which a later entry could point at a block that never got created. It does mean an entry
+   * whose params reference itself is wired to itself rather than left dangling — a document
+   * the reference check rejects before an apply begins.
+   */
+  const blockIds = new Map<string, string>();
 
   for (const entry of document.blocks) {
     const prepared = entries.get(entry.id);
     if (prepared === undefined) {
-      return stop(entry.id, `No block was prepared for entry '${entry.id}'.`);
+      throw new TemplateEntryRejected(entry.id, `No block was prepared for entry '${entry.id}'.`);
     }
 
     const blockConfig = extractConfig(prepared.blockPack.config);
@@ -99,7 +103,7 @@ export function applyTemplateEntries(deps: {
     // recent SDK. An entry pinning an exact version can name anything ever published,
     // which is the way this is reached.
     if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      return stop(
+      throw new TemplateEntryRejected(
         entry.id,
         "This version of the block is too old to be created from a template. Use a " +
           "newer version of the block, or remove the pinned block version from this " +
@@ -107,19 +111,21 @@ export function applyTemplateEntries(deps: {
       );
     }
 
-    const blockId = ids.assign(entry.id);
+    const blockId = newBlockId();
+    blockIds.set(entry.id, blockId);
 
     // An entry that omits `params` is read as `{}`, not routed around the params path.
     // The two produce the same block — both reach the same init factory and both
     // assemble storage the same way — but only this one is checked against the kind, so
     // an omitted key can no longer be a way to apply an entry the contract rejects.
-    const live = ids.liveParams(entry.params ?? {});
-    if (!live.ok) return stop(entry.id, live.error);
+    const live = resolveTemplateRefs(entry.params ?? {}, blockIds);
 
     // The block's own model decides what params mean. Run before anything is
     // placed, so params it declines cost nothing but the report.
-    const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, live.params);
-    if (storage.error !== undefined) return stop(entry.id, storage.error.message);
+    const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, live);
+    if (storage.error !== undefined) {
+      throw new TemplateEntryRejected(entry.id, storage.error.message);
+    }
 
     placer.addBlock(
       { id: blockId, label: prepared.label, renderingMode: blockConfig.renderingMode },
@@ -130,11 +136,8 @@ export function applyTemplateEntries(deps: {
       },
     );
 
-    // Only now is the entry a redirect target: an entry that failed must not become one,
-    // and its own params must not resolve to the block being created from them.
-    ids.record(entry.id, blockId);
     added.push({ templateLocalId: entry.id, blockId });
   }
 
-  return { added };
+  return added;
 }

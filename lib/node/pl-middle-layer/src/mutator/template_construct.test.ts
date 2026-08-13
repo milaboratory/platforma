@@ -12,11 +12,11 @@ import {
   toTemplateRef,
 } from "@milaboratories/pl-model-common";
 import { ProjectHelper } from "../model/project_helper";
-import { createTemplateIdMap } from "../model/template_ids";
 import type { BlockPackSpecPrepared } from "../model";
 import type { Block } from "../model/project_model";
 import type { NewBlockSpec } from "./project";
 import type { PreparedTemplateEntry } from "./template_construct";
+import { TemplateEntryRejected } from "../model/template_apply";
 import { applyTemplateEntries } from "./template_construct";
 
 /**
@@ -150,8 +150,25 @@ function applyOver(
     placer,
     projectHelper: new ProjectHelper(quickJs),
     entries,
-    ids: createTemplateIdMap(() => `block-${++n}`),
+    newBlockId: () => `block-${++n}`,
   });
+}
+
+/**
+ * The rejection an apply throws, for tests that assert which entry stopped it.
+ *
+ * Note what these tests cannot show: that the placements made before the rejection are
+ * discarded. That is the transaction's doing, and the placer here is a recording fake with no
+ * transaction — so it keeps what it was told, while the real apply keeps nothing.
+ */
+function rejectionFrom(run: () => unknown): TemplateEntryRejected {
+  try {
+    run();
+  } catch (e: unknown) {
+    if (e instanceof TemplateEntryRejected) return e;
+    throw e;
+  }
+  throw new Error("expected the apply to reject an entry, but it succeeded");
 }
 
 describe("applyTemplateEntries", () => {
@@ -161,13 +178,13 @@ describe("applyTemplateEntries", () => {
     // correctly initialized state.
     const { placer, placements } = recordingPlacer();
 
-    const outcome = applyOver(
+    const added = applyOver(
       entryMap({ a: preparedBlock(echoModel) }),
       placer,
       documentOf(entry("a", { numbers: [3, 1, 2] })),
     );
 
-    expect(outcome).toEqual({ added: [{ templateLocalId: "a", blockId: "block-1" }] });
+    expect(added).toEqual([{ templateLocalId: "a", blockId: "block-1" }]);
     expect(storageOf(placements[0])).toEqual({ numbers: [3, 1, 2] });
   });
 
@@ -208,7 +225,7 @@ describe("applyTemplateEntries", () => {
     // File order is instantiation order, which is what makes one forward pass enough.
     const { placer, placements } = recordingPlacer();
 
-    const outcome = applyOver(
+    const added = applyOver(
       entryMap({
         a: preparedBlock(echoModel),
         b: preparedBlock(echoModel),
@@ -219,7 +236,7 @@ describe("applyTemplateEntries", () => {
     );
 
     expect(placements.map((p) => p.block.id)).toEqual(["block-1", "block-2", "block-3"]);
-    expect(outcome.added).toEqual([
+    expect(added).toEqual([
       { templateLocalId: "a", blockId: "block-1" },
       { templateLocalId: "b", blockId: "block-2" },
       { templateLocalId: "c", blockId: "block-3" },
@@ -230,7 +247,7 @@ describe("applyTemplateEntries", () => {
     // An exported empty project round-trips to an empty project, not to a failure.
     const { placer, placements } = recordingPlacer();
 
-    expect(applyOver(entryMap({}), placer, documentOf())).toEqual({ added: [] });
+    expect(applyOver(entryMap({}), placer, documentOf())).toEqual([]);
     expect(placements).toHaveLength(0);
   });
 
@@ -250,34 +267,37 @@ describe("applyTemplateEntries", () => {
     // The expected failure for a hand-written file. The message is the block's own.
     const { placer, placements } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({ a: preparedBlock('() => ({ error: "numbers must not be empty" })') }),
-      placer,
-      documentOf(entry("a", { numbers: [] })),
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({ a: preparedBlock('() => ({ error: "numbers must not be empty" })') }),
+        placer,
+        documentOf(entry("a", { numbers: [] })),
+      ),
     );
 
-    expect(outcome.problem).toEqual({ entryId: "a", error: "numbers must not be empty" });
+    expect(rejection.entryId).toBe("a");
+    expect(rejection.message).toBe("numbers must not be empty");
     expect(placements).toHaveLength(0);
   });
 
-  test("it stops at the first entry it cannot create, and keeps what landed", () => {
-    // Everything after the failure may reference it, so continuing would place blocks whose
-    // upstream is missing. What already landed is valid and is kept, and the report is the
-    // only record of how far the apply got.
+  test("it stops at the first entry it cannot create, and names it", () => {
+    // Nothing after the failure is attempted: those entries may reference the one that
+    // failed, and the whole apply is discarded anyway.
     const { placer, placements } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({
-        a: preparedBlock(echoModel),
-        b: preparedBlock('() => ({ error: "params rejected" })'),
-        c: preparedBlock(echoModel),
-      }),
-      placer,
-      documentOf(entry("a"), entry("b"), entry("c")),
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({
+          a: preparedBlock(echoModel),
+          b: preparedBlock('() => ({ error: "params rejected" })'),
+          c: preparedBlock(echoModel),
+        }),
+        placer,
+        documentOf(entry("a"), entry("b"), entry("c")),
+      ),
     );
 
-    expect(outcome.added).toEqual([{ templateLocalId: "a", blockId: "block-1" }]);
-    expect(outcome.problem).toEqual({ entryId: "b", error: "params rejected" });
+    expect(rejection.entryId).toBe("b");
     expect(placements.map((p) => p.block.id)).toEqual(["block-1"]);
   });
 
@@ -287,13 +307,8 @@ describe("applyTemplateEntries", () => {
     const { placer, placements } = recordingPlacer();
     const params = { input: toTemplateRef(createPlRef("b", "out")) };
 
-    const outcome = applyOver(
-      entryMap({ a: preparedBlock(echoModel) }),
-      placer,
-      documentOf(entry("a", params)),
-    );
+    applyOver(entryMap({ a: preparedBlock(echoModel) }), placer, documentOf(entry("a", params)));
 
-    expect(outcome.problem).toBeUndefined();
     expect(placements).toHaveLength(1);
     expect(storageOf(placements[0])).toEqual({ input: createPlRef("b", "out") });
   });
@@ -303,19 +318,20 @@ describe("applyTemplateEntries", () => {
     // template said about it and still look like a successful apply.
     const { placer, placements } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({ a: legacyPreparedBlock() }),
-      placer,
-      documentOf(entry("a", { numbers: [1] })),
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({ a: legacyPreparedBlock() }),
+        placer,
+        documentOf(entry("a", { numbers: [1] })),
+      ),
     );
 
-    expect(outcome.problem).toEqual({
-      entryId: "a",
-      error:
-        "This version of the block is too old to be created from a template. Use a newer " +
+    expect(rejection.entryId).toBe("a");
+    expect(rejection.message).toBe(
+      "This version of the block is too old to be created from a template. Use a newer " +
         "version of the block, or remove the pinned block version from this entry so a " +
         "supported one is chosen automatically.",
-    });
+    );
     expect(placements).toHaveLength(0);
   });
 
@@ -325,13 +341,11 @@ describe("applyTemplateEntries", () => {
     // the entry asked for.
     const { placer } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({ a: legacyPreparedBlock() }),
-      placer,
-      documentOf(entry("a")),
+    const rejection = rejectionFrom(() =>
+      applyOver(entryMap({ a: legacyPreparedBlock() }), placer, documentOf(entry("a"))),
     );
 
-    expect(outcome.problem?.entryId).toBe("a");
+    expect(rejection.entryId).toBe("a");
   });
 
   test("a current block whose model predates the callback reports the model's way out", () => {
@@ -340,19 +354,19 @@ describe("applyTemplateEntries", () => {
     // reach the caller as-is.
     const { placer } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({ a: preparedBlock(echoModel, { declareCallback: false }) }),
-      placer,
-      documentOf(entry("a", { numbers: [1] })),
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({ a: preparedBlock(echoModel, { declareCallback: false }) }),
+        placer,
+        documentOf(entry("a", { numbers: [1] })),
+      ),
     );
 
-    expect(outcome.problem).toEqual({
-      entryId: "a",
-      error:
-        "This version of the block cannot be created from a template. Use a newer version " +
+    expect(rejection.message).toBe(
+      "This version of the block cannot be created from a template. Use a newer version " +
         "of the block, or remove the pinned block version from the template entry so a " +
         "supported one is chosen automatically.",
-    });
+    );
   });
 
   test("an entry nothing was prepared for is reported", () => {
@@ -360,16 +374,12 @@ describe("applyTemplateEntries", () => {
     // reported rather than thrown, so it reads like any other bad entry.
     const { placer } = recordingPlacer();
 
-    const outcome = applyOver(
-      entryMap({ a: preparedBlock(echoModel) }),
-      placer,
-      documentOf(entry("ghost")),
+    const rejection = rejectionFrom(() =>
+      applyOver(entryMap({ a: preparedBlock(echoModel) }), placer, documentOf(entry("ghost"))),
     );
 
-    expect(outcome.problem).toEqual({
-      entryId: "ghost",
-      error: "No block was prepared for entry 'ghost'.",
-    });
+    expect(rejection.entryId).toBe("ghost");
+    expect(rejection.message).toBe("No block was prepared for entry 'ghost'.");
   });
 
   test("a failure to place a block is not swallowed", () => {
@@ -383,23 +393,25 @@ describe("applyTemplateEntries", () => {
     ).toThrow("structure is broken");
   });
 
-  test("a rejected entry does not become a redirect target", () => {
-    // Its id was assigned but never recorded. The apply stops at the rejection, so the entry
-    // that would have named it is never reached — which is the other half of why a
-    // half-wired project cannot be produced here.
+  test("an entry that references a rejected one is never reached", () => {
+    // Why the id map can record an entry before its block is placed: a rejection ends the
+    // apply, so there is no surviving project in which a later entry points at a block that
+    // was never created.
     const { placer, placements } = recordingPlacer();
     const params = { input: toTemplateRef(createPlRef("a", "out")) };
 
-    const outcome = applyOver(
-      entryMap({
-        a: preparedBlock('() => ({ error: "no" })'),
-        b: preparedBlock(echoModel),
-      }),
-      placer,
-      documentOf(entry("a", {}), entry("b", params)),
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({
+          a: preparedBlock('() => ({ error: "no" })'),
+          b: preparedBlock(echoModel),
+        }),
+        placer,
+        documentOf(entry("a", {}), entry("b", params)),
+      ),
     );
 
-    expect(outcome.problem?.entryId).toBe("a");
+    expect(rejection.entryId).toBe("a");
     expect(placements).toHaveLength(0);
   });
 });
