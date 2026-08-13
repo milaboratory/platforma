@@ -108,32 +108,41 @@ const FROM_BUILDER = Symbol("fromBuilder");
 /** Legacy V1 model state shape: { args, uiState } */
 export type LegacyV1State<Args, UiState> = { args: Args; uiState: UiState };
 
-/** Internal state passed from builder to DataModel */
-type BuilderState<S> = {
-  versionChain: DataVersionKey[];
-  steps: MigrationStep[];
-  transferSteps: TransferStep[];
-  /**
-   * The params type is erased to `unknown` here: the builder checks the block's
-   * factory against its kind's params, but a caller that supplies params carries them as
-   * data it did not type — parsed file content, today — and cannot state the type. The
-   * kind's own parser is what recovers it.
-   */
-  initialDataFn: DataCreateFn<S, unknown>;
+/**
+ * The kind a chain belongs to, threaded unchanged from the builder into `DataModel`.
+ *
+ * Named because every constructor in this file carries exactly this pair, and they travel
+ * together by construction: a reference with no parser could not check the params it names,
+ * and a parser with no reference would have nothing to check them against.
+ */
+type KindWiring = {
   /** Reference to the block kind this data model belongs to, if declared. */
   kindRef?: BlockKindReference;
-  /** The kind's runtime params check, threaded with {@link kindRef}. */
+  /** The kind's runtime params check, threaded with {@link KindWiring.kindRef}. */
   parseInitializationParams?: (value: unknown) => unknown;
+};
+
+type RecoverState = {
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   /** Index of the first step to run after recovery. Equals the number of steps
    *  present at the time recover() was called. */
   recoverFromIndex?: number;
 };
 
-type RecoverState = {
-  recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
-  recoverFromIndex?: number;
-};
+/** Internal state passed from builder to DataModel */
+type BuilderState<S> = KindWiring &
+  RecoverState & {
+    versionChain: DataVersionKey[];
+    steps: MigrationStep[];
+    transferSteps: TransferStep[];
+    /**
+     * The params type is erased to `unknown` here: the builder checks the block's
+     * factory against its kind's params, but a caller that supplies params carries them as
+     * data it did not type — parsed file content, today — and cannot state the type. The
+     * kind's own parser is what recovers it.
+     */
+    initialDataFn: DataCreateFn<S, unknown>;
+  };
 
 /**
  * Abstract base for both migration chain types.
@@ -157,13 +166,13 @@ abstract class MigrationChainBase<
   /** The kind's runtime params check, carried for `init()` to hand to the DataModel. */
   protected readonly parseInitializationParams?: (value: unknown) => unknown;
 
-  protected constructor(state: {
-    versionChain: DataVersionKey[];
-    steps: MigrationStep[];
-    transferSteps?: TransferStep[];
-    kindRef?: BlockKindReference;
-    parseInitializationParams?: (value: unknown) => unknown;
-  }) {
+  protected constructor(
+    state: KindWiring & {
+      versionChain: DataVersionKey[];
+      steps: MigrationStep[];
+      transferSteps?: TransferStep[];
+    },
+  ) {
     this.versionChain = state.versionChain;
     this.migrationSteps = state.steps;
     this.transferSteps = state.transferSteps ?? [];
@@ -250,16 +259,14 @@ class DataModelMigrationChainWithRecover<
   private readonly recoverFromIndex?: number;
 
   /** @internal */
-  constructor(state: {
-    versionChain: DataVersionKey[];
-    steps: MigrationStep[];
-    transferSteps?: TransferStep[];
-    kindRef?: BlockKindReference;
-    /** The kind's runtime params check, threaded with {@link kindRef}. */
-    parseInitializationParams?: (value: unknown) => unknown;
-    recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
-    recoverFromIndex?: number;
-  }) {
+  constructor(
+    state: KindWiring &
+      RecoverState & {
+        versionChain: DataVersionKey[];
+        steps: MigrationStep[];
+        transferSteps?: TransferStep[];
+      },
+  ) {
     super(state);
     this.recoverFn = state.recoverFn;
     this.recoverFromIndex = state.recoverFromIndex;
@@ -336,13 +343,10 @@ class DataModelMigrationChain<
     transferSteps = [],
     kindRef,
     parseInitializationParams,
-  }: {
+  }: KindWiring & {
     versionChain: DataVersionKey[];
     steps?: MigrationStep[];
     transferSteps?: TransferStep[];
-    kindRef?: BlockKindReference;
-    /** The kind's runtime params check, threaded with {@link kindRef}. */
-    parseInitializationParams?: (value: unknown) => unknown;
   }) {
     super({ versionChain, steps, transferSteps, kindRef, parseInitializationParams });
   }
