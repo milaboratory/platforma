@@ -4,7 +4,7 @@ import { allBlocks } from "./project_model_util";
 /**
  * One block's template-descriptor output as the walk receives it.
  *
- * Deliberately the same shape the `__pl_templateParams_derive` facade callback
+ * Deliberately the same shape the `__pl_initializationParams_derive` facade callback
  * returns, so a provider can hand the VM's result straight through without
  * reshaping it.
  */

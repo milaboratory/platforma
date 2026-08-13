@@ -82,9 +82,9 @@ export const BlockStorageFacadeCallbacks = {
   ArgsDerive: "__pl_args_derive",
   PrerunArgsDerive: "__pl_prerunArgs_derive",
   StorageInitial: "__pl_storage_initial",
-  TemplateParamsDerive: "__pl_templateParams_derive",
+  InitializationParamsDerive: "__pl_initializationParams_derive",
   StorageInitialFromParams: "__pl_storage_initialFromParams",
-  TemplateParamsValidate: "__pl_templateParams_validate",
+  InitializationParamsValidate: "__pl_initializationParams_validate",
 } as const;
 
 /**
@@ -209,7 +209,7 @@ export interface BlockStorageFacade {
    * @param storageJson - Storage as JSON string
    * @returns Either an error, or the params to write
    */
-  [BlockStorageFacadeCallbacks.TemplateParamsDerive]: (
+  [BlockStorageFacadeCallbacks.InitializationParamsDerive]: (
     storageJson: StringifiedJson,
   ) => { error: string } | { error?: undefined; value: unknown };
 
@@ -217,7 +217,7 @@ export interface BlockStorageFacade {
    * Get initial storage JSON for a block created from params.
    * Called when applying a template, once per entry that carries `params`.
    *
-   * The mirror image of {@link BlockStorageFacadeCallbacks.TemplateParamsDerive}:
+   * The mirror image of {@link BlockStorageFacadeCallbacks.InitializationParamsDerive}:
    * that one turns storage into params, this one turns params into storage. Every
    * applied entry comes through here, including one whose file omitted `params` —
    * an omitted key is read as `{}` and checked like any other value, so no entry
@@ -267,7 +267,7 @@ export interface BlockStorageFacade {
    * @param paramsJson The entry's params as JSON string
    * @returns Why the params were rejected, or nothing
    */
-  [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (
+  [BlockStorageFacadeCallbacks.InitializationParamsValidate]: (
     paramsJson: StringifiedJson,
   ) => { error: string } | { error?: undefined };
 }

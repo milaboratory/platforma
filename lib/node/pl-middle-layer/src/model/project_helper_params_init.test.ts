@@ -159,7 +159,7 @@ describe("getInitialStorageFromParamsInVM", () => {
 });
 
 describe("validateTemplateParamsInVM", () => {
-  const VALIDATE = BlockStorageFacadeCallbacks.TemplateParamsValidate;
+  const VALIDATE = BlockStorageFacadeCallbacks.InitializationParamsValidate;
 
   /** A model registering only the validate callback, with `body` as its implementation. */
   const validatorConfig = (body: string, options: { declareCallback?: boolean } = {}) => {

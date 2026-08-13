@@ -50,9 +50,9 @@ type ParamsStorageResult =
 
 /**
  * Result of checking params against their kind.
- * Returned by the __pl_templateParams_validate VM callback.
+ * Returned by the __pl_initializationParams_validate VM callback.
  */
-type TemplateParamsValidateResult = { error: string } | { error?: undefined };
+type InitializationParamsValidateResult = { error: string } | { error?: undefined };
 
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<
@@ -147,7 +147,7 @@ export class ProjectHelper {
 
   /**
    * Derives this block's template-export params from storage JSON using the VM
-   * callback (`__pl_templateParams_derive`, facade callback #7).
+   * callback (`__pl_initializationParams_derive`).
    *
    * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
    * the args a workflow runs on, it returns the params that would recreate the
@@ -183,7 +183,7 @@ export class ProjectHelper {
     }
 
     const callback =
-      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsDerive];
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.InitializationParamsDerive];
 
     // A model built before this callback existed simply has no entry for it. That is
     // NOT the same as a block declaring no `templateParams`: the block may well have
@@ -319,7 +319,7 @@ export class ProjectHelper {
     }
 
     const callback =
-      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.TemplateParamsValidate];
+      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.InitializationParamsValidate];
     if (callback === undefined) return { value: undefined };
 
     try {
@@ -328,7 +328,7 @@ export class ProjectHelper {
         callback,
         extractCodeWithInfo(blockConfig),
         JSON.stringify(params ?? {}),
-      ) as TemplateParamsValidateResult;
+      ) as InitializationParamsValidateResult;
 
       if (result.error !== undefined) return { error: new Error(result.error) };
       return { value: undefined };
