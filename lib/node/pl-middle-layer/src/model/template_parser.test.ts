@@ -1,10 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import {
-  PROJECT_TEMPLATE_SCHEMA_V1,
-  createTemplateLocalRef,
-} from "@milaboratories/pl-model-common";
+import { PROJECT_TEMPLATE_SCHEMA_V1 } from "@milaboratories/pl-model-common";
 import { parseProjectTemplateV1Yaml } from "./template_parser";
 import { stringifyProjectTemplateV1 } from "./template_serializer";
 
@@ -40,15 +37,22 @@ describe("parseProjectTemplateV1Yaml", () => {
         `    kind: "${KIND}"`,
         "    params:",
         "      input:",
-        "        block: first",
-        "        output: reads",
+        "        $ref:",
+        "          __isRef: true",
+        "          blockId: first",
+        "          name: reads",
         "",
       ].join("\n"),
     );
 
     expect(document.blocks).toEqual([
       { id: "first", kind: KIND, params: { dataset: "bulk-rna" } },
-      { id: "second", kind: KIND, params: { input: createTemplateLocalRef("first", "reads") } },
+      {
+        id: "second",
+        kind: KIND,
+        // Carried verbatim: the parser recognizes the wrapper and looks no further.
+        params: { input: { $ref: { __isRef: true, blockId: "first", name: "reads" } } },
+      },
     ]);
   });
 

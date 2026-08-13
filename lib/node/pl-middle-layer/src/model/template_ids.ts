@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { fromTemplateForm } from "@milaboratories/pl-model-common";
+import { resolveTemplateRefs } from "@milaboratories/pl-model-common";
 
 /**
  * The bookkeeping that turns template-local entry ids into project-local block ids,
@@ -44,8 +44,9 @@ export type TemplateIdMap = {
   record: (templateLocalId: string, blockId: string) => void;
 
   /**
-   * Rewrite one entry's params from file form into live form: every
-   * `{ block, output }` becomes a `PlRef` pointing at the block that entry received.
+   * Rewrite one entry's params from file form into live form: inside every reference wrapper,
+   * each template-local entry id is replaced by the block id that entry received, and the
+   * payload is then handed back unwrapped — exactly the shape the block projected.
    *
    * Call it with params that are present. A caller holding an entry that omitted the
    * key substitutes `{}` before this point, so there is no absent case to decide here.
@@ -83,26 +84,7 @@ export function createTemplateIdMap(newBlockId: () => string = randomUUID): Temp
     },
 
     liveParams: (params) => {
-      try {
-        return {
-          ok: true,
-          params: fromTemplateForm<Record<string, unknown>>(params, (templateLocalId) => {
-            const blockId = recorded.get(templateLocalId);
-            if (blockId === undefined) throw new UnresolvedReference(templateLocalId);
-            return blockId;
-          }),
-        };
-      } catch (e) {
-        if (e instanceof UnresolvedReference) {
-          return {
-            ok: false,
-            error:
-              `This entry references entry '${e.templateLocalId}', which has not been created. ` +
-              `An entry can only reference entries listed above it.`,
-          };
-        }
-        throw e;
-      }
+      return { ok: true, params: resolveTemplateRefs(params, recorded) };
     },
   };
 }
@@ -113,7 +95,7 @@ export function createTemplateIdMap(newBlockId: () => string = randomUUID): Temp
  *
  * For the pre-flight params check, which runs before any block exists and therefore
  * before any reference can be resolved. Checking the file form directly would not work:
- * a kind describing a param as a reference sees `{ block, output }` and rejects it, so
+ * a kind describing a param as a reference sees the `{ $ref: … }` wrapper and rejects it, so
  * every entry with a reference would fail a check meant to catch the opposite. Feeding it
  * the live shape with unresolvable ids asks the only question that stage can answer — are
  * these params the right shape — and leaves what they point at to validation, which
@@ -124,21 +106,7 @@ export function createTemplateIdMap(newBlockId: () => string = randomUUID): Temp
  * reader can find in their file.
  */
 export function liveParamsForCheck(params: Record<string, unknown>): Record<string, unknown> {
-  return fromTemplateForm<Record<string, unknown>>(params, (templateLocalId) => templateLocalId);
-}
-
-/**
- * A reference naming an entry with no block.
- *
- * Thrown to stop the rewrite from inside `fromTemplateForm`'s resolver and caught one
- * frame up, where it becomes a reported problem rather than an exception: at that point
- * earlier blocks are already in the project, and the failure policy is to keep them and
- * say how far the apply got. Validation rejects both dangling and forward references
- * before an apply begins, so this only fires on a document that skipped it.
- */
-class UnresolvedReference extends Error {
-  constructor(readonly templateLocalId: string) {
-    super(`unresolved template-local reference '${templateLocalId}'`);
-    this.name = "UnresolvedReference";
-  }
+  // An empty map: nothing to redirect yet, and the wrappers come off all the same, which is
+  // the whole point — the kind sees the shape it declared.
+  return resolveTemplateRefs(params, new Map());
 }

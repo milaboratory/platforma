@@ -1,6 +1,5 @@
 import type { ProjectTemplateV1, TemplateReferenceProblem } from "@milaboratories/pl-model-common";
 import { findProjectTemplateV1ReferenceProblems } from "@milaboratories/pl-model-common";
-import { inferAllReferencedBlocks } from "./args";
 import type { TemplateApplyProblem } from "./template_apply";
 
 /**
@@ -11,13 +10,13 @@ import type { TemplateApplyProblem } from "./template_apply";
  * once a project exists, the same problems would have to be reported against a
  * half-built project instead.
  *
- * Two checks, both structural:
+ * One check: **references name an earlier entry.** Detection is shared with export
+ * (`findProjectTemplateV1ReferenceProblems`), the wording is not — export tells a developer
+ * their project cannot be written out, this tells a reader how to fix a file they wrote.
  *
- * - **References name an earlier entry.** Detection is shared with export
- *   (`findProjectTemplateV1ReferenceProblems`), the wording is not: export tells a
- *   developer their project cannot be written out, this tells a reader how to fix a file
- *   they wrote.
- * - **No params carry a block id from somewhere else.** See {@link foreignBlockIds}.
+ * Nothing here looks inside an entry's params beyond the `{ $ref: … }` wrapper. What a
+ * payload contains, and whether the block that wrote it wrapped the right things, is not
+ * something this layer models: it exposes the wrapper mechanic and nothing else.
  *
  * Problems are grouped by entry in file order, so the report reads in the same order as
  * the file, and every entry's problems appear together. Everything is collected: a file
@@ -40,48 +39,9 @@ export function validateTemplateV1ForApply(document: ProjectTemplateV1): Templat
     for (const reference of byEntry.get(entry.id) ?? []) {
       problems.push({ entryId: entry.id, error: describeReferenceProblem(reference) });
     }
-
-    const foreign = foreignBlockIds(entry.params);
-    if (foreign.length > 0) {
-      problems.push({
-        entryId: entry.id,
-        error:
-          `This entry carries ${foreign.length === 1 ? "a block id" : "block ids"} from another ` +
-          `project (${foreign.join(", ")}). A reference written inside a value cannot be ` +
-          `redirected to the blocks this template creates, so remove it from the entry's params.`,
-      });
-    }
   }
 
   return problems;
-}
-
-/**
- * Block ids found in an entry's params that name a block in some other project.
- *
- * In a template file, a reference between entries is a `{ block, output }` pair — the
- * form that gets redirected to real ids on apply. Anything that instead looks like a
- * live project reference (`{ __isRef: true, blockId, name }`, whether as an object or
- * canonicalized into a string, as an enrichment's `PObjectId` is) names a block in the
- * project the file was written in, and nothing here can turn it into a block of the
- * project being created. Applied as-is it would be valid-looking params wired to
- * nothing, with no error anywhere — which is why it is rejected rather than warned about.
- *
- * That makes the check unusually cheap to state: because legitimate references are the
- * other shape, everything this finds is by construction foreign, with nothing to
- * subtract. Running it before ids are assigned, rather than after the rewrite, is what
- * buys that.
- *
- * Our own export cannot produce such a file — it fails the export instead — so this
- * only ever fires on a file that was written or edited by hand.
- */
-function foreignBlockIds(params: unknown): string[] {
-  if (params === undefined) return [];
-  // The same detector the export guard uses, and the reason both exist: it recognizes a
-  // reference as an object AND inside any number of JSON.stringify passes, which the
-  // structural rewrite cannot see.
-  const { upstreams } = inferAllReferencedBlocks(params);
-  return [...upstreams].sort();
 }
 
 /**
@@ -92,22 +52,17 @@ function foreignBlockIds(params: unknown): string[] {
  * without re-deriving the finding.
  */
 function describeReferenceProblem(problem: TemplateReferenceProblem): string {
-  const { ref } = problem;
+  const { referencedId } = problem;
   switch (problem.reason) {
     case "self":
       return (
-        `This entry uses its own output '${ref.output}' as an input. Point it at another ` +
-        `entry, or remove the reference.`
-      );
-    case "unknown":
-      return (
-        `This entry uses output '${ref.output}' of entry '${ref.block}', which this file does ` +
-        `not define. Add that entry, or correct the id.`
+        `This entry uses its own output as an input. Point it at another entry, or remove the ` +
+        `reference.`
       );
     case "forward":
       return (
-        `This entry uses entry '${ref.block}', which is listed after it. Blocks are created in ` +
-        `the order they are listed, so move '${ref.block}' above this entry.`
+        `This entry uses entry '${referencedId}', which is listed after it. Blocks are created ` +
+        `in the order they are listed, so move '${referencedId}' above this entry.`
       );
   }
 }

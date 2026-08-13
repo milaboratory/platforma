@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import canonicalize from "canonicalize";
-import { createPlRef, createTemplateLocalRef } from "@milaboratories/pl-model-common";
+import { createPlRef, toTemplateRef } from "@milaboratories/pl-model-common";
 import type { ProjectStructure } from "./project_model";
 import type { TemplateParamsResult } from "./template_export";
 import { walkProjectForTemplateExport } from "./template_export";
@@ -117,33 +117,29 @@ describe("collecting each block's descriptor output", () => {
   });
 });
 
-describe("template-local ids", () => {
+describe("what the walk does with params", () => {
   const UUID_A = "3f1b8c2e-5d4a-4c9f-8b17-2a6e0d9f4c31";
   const UUID_B = "9c7e4d10-2b83-4f6a-91d5-7e0c3a8b5f42";
 
-  test("the project-local id is the template-local id, verbatim", () => {
-    // A template has no id namespace of its own, so there is no remap step:
-    // whatever the project calls a block is what the file calls it, which is why
-    // references already stored in params need no translation.
+  /** A canonical global-leaf identifier, i.e. a reference held as a string. */
+  const leafId = (blockId: string, name: string) => canonicalize({ __isRef: true, blockId, name })!;
+
+  test("params are written exactly as the block projected them", () => {
+    // The walk parses nothing and rewrites nothing: a template-local entry id IS the block's
+    // own id, so a wrapped reference already names the right entry.
+    const params = { input: toTemplateRef(createPlRef(UUID_A, "reads")), species: "hsa" };
     const walk = walkProjectForTemplateExport(
       simpleStructure(UUID_A, UUID_B),
-      providerFrom({
-        [UUID_A]: ok({}),
-        [UUID_B]: ok({ input: createTemplateLocalRef(UUID_A, "reads") }),
-      }),
+      providerFrom({ [UUID_A]: ok({}), [UUID_B]: ok(params) }),
     );
 
     expect(walk.problems).toEqual([]);
-    expect(walk.entries.map((e) => e.blockId)).toEqual([UUID_A, UUID_B]);
-    // The id inside the reference is the same string as the entry id it names —
-    // this identity is the whole content of "no remap".
-    expect(walk.entries[1].params).toEqual({ input: { block: UUID_A, output: "reads" } });
+    expect(walk.entries[1].params).toBe(params);
   });
 
   test("a non-UUID id passes through unchanged too", () => {
-    // `Project.addBlock` accepts an explicit id and only *defaults* it to a random
-    // UUID, so "UUID" describes the common case, not a constraint — and an entry id
-    // is any non-empty string.
+    // `Project.addBlock` accepts an explicit id and only *defaults* it to a random UUID, so
+    // "UUID" describes the common case, not a constraint.
     const walk = walkProjectForTemplateExport(
       simpleStructure("block1"),
       providerFrom({ block1: ok({}) }),
@@ -152,126 +148,51 @@ describe("template-local ids", () => {
     expect(walk.entries).toEqual([{ blockId: "block1", params: {} }]);
   });
 
-  test("a rewritten reference is not mistaken for an un-rewritten one", () => {
-    // `TemplateLocalRef` carries no `__isRef` marker, so the detector cannot see
-    // it — otherwise every correct export would be reported as a problem.
+  test("a wrapper's contents are never inspected, whatever they are", () => {
+    // An identifier as a string, one under escape padding, a whole nested structure — all the
+    // same to the walk, which is the property the wrapper exists to buy.
+    const params = {
+      asObject: toTemplateRef(createPlRef("a", "reads")),
+      asString: toTemplateRef(leafId("a", "clones")),
+      stringified: toTemplateRef(JSON.stringify(leafId("a", "clones"))),
+      nested: { deeper: [toTemplateRef([createPlRef("a", "x")])] },
+    };
     const walk = walkProjectForTemplateExport(
       simpleStructure("a", "b"),
-      providerFrom({
-        a: ok({}),
-        b: ok({
-          input: createTemplateLocalRef("a", "reads"),
-          nested: { list: [createTemplateLocalRef("a", "spec")] },
-        }),
-      }),
+      providerFrom({ a: ok({}), b: ok(params) }),
     );
 
     expect(walk.problems).toEqual([]);
+    expect(walk.entries[1].params).toBe(params);
   });
 
-  test("a PlRef the codec failed to rewrite is caught", () => {
-    // Guards against `toTemplateForm` being skipped or regressing: a live `PlRef`
-    // reaching the walk means a project-local id is about to be written into a file
-    // that has no way to resolve it.
+  test("a reference the block did not wrap is written out as data, not refused", () => {
+    // The engine exposes the wrapper mechanic and models nothing else, so it has no opinion
+    // about an unwrapped `PlRef` — it is a value like any other. Wrapping the right things is
+    // the block's statement to make, and getting it wrong yields a template that does not
+    // work, the same way a wrong field name would. Pinned so the boundary stays deliberate.
+    const params = { input: createPlRef("a", "reads") };
     const walk = walkProjectForTemplateExport(
       simpleStructure("a", "b"),
-      providerFrom({ a: ok({}), b: ok({ input: createPlRef(UUID_A, "reads") }) }),
-    );
-
-    expect(walk.entries.map((e) => e.blockId)).toEqual(["a"]);
-    expect(walk.problems).toHaveLength(1);
-    expect(walk.problems[0].blockId).toBe("b");
-    expect(walk.problems[0].error).toContain(UUID_A);
-  });
-
-  test("a reference carried inside a string is caught — the EnrichmentRef case", () => {
-    // An `EnrichmentRef`'s `hit` and each of its linker steps are global-form
-    // `PObjectId`s: a canonicalized-JSON string of `{ __isRef: true, blockId, name }`.
-    // `toTemplateForm` walks structurally and sees only a string, so the block id
-    // survives the rewrite; `inferAllReferencedBlocks` unwraps it. That asymmetry is
-    // what the guard exists for.
-    const hit = canonicalize({ __isRef: true, blockId: UUID_A, name: "clones" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("b"),
-      providerFrom({ b: ok({ enrichment: { __isEnrichment: "v1", hit } }) }),
-    );
-
-    expect(walk.entries).toEqual([]);
-    expect(walk.problems).toHaveLength(1);
-    expect(walk.problems[0].error).toContain(UUID_A);
-  });
-
-  test("a doubly-stringified reference is caught", () => {
-    // The detector peels one `JSON.stringify` pass per call and recurses, so extra
-    // escape padding does not hide the id.
-    const once = canonicalize({ __isRef: true, blockId: UUID_B, name: "clones" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("b"),
-      providerFrom({ b: ok({ nested: JSON.stringify(once) }) }),
-    );
-
-    expect(walk.problems).toHaveLength(1);
-    expect(walk.problems[0].error).toContain(UUID_B);
-  });
-
-  test("a column id naming a block the template describes is a wire, not a fault", () => {
-    // A rewritten column id still holds `{ __isRef: true, blockId, name }` inside its
-    // string — it has to, or it would stop being a column id a block can resolve. The
-    // detector sees it either way, so membership is what separates the two cases.
-    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("a", "b"),
-      providerFrom({ a: ok({}), b: ok({ anchor }) }),
+      providerFrom({ a: ok({}), b: ok(params) }),
     );
 
     expect(walk.problems).toEqual([]);
-    expect(walk.entries.map((e) => e.blockId)).toEqual(["a", "b"]);
+    expect(walk.entries[1].params).toBe(params);
   });
 
-  test("a column id naming a block the template does not describe is caught", () => {
-    const anchor = canonicalize({ __isRef: true, blockId: UUID_A, name: "clonotypes" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("a", "b"),
-      providerFrom({ a: ok({}), b: ok({ anchor }) }),
-    );
-
-    expect(walk.entries.map((e) => e.blockId)).toEqual(["a"]);
-    expect(walk.problems).toHaveLength(1);
-    expect(walk.problems[0].blockId).toBe("b");
-    expect(walk.problems[0].error).toContain(UUID_A);
-  });
-
-  test("a block cannot name itself — its own id is published only once it is written", () => {
-    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("a"),
-      providerFrom({ a: ok({ anchor }) }),
-    );
-
-    expect(walk.entries).toEqual([]);
-    expect(walk.problems[0].error).toContain("a");
-  });
-
-  test("a block whose upstream failed to export fails too, rather than wiring to nothing", () => {
-    const anchor = canonicalize({ __isRef: true, blockId: "a", name: "clonotypes" })!;
-    const walk = walkProjectForTemplateExport(
-      simpleStructure("a", "b"),
-      providerFrom({ a: { error: "templateParams() threw" }, b: ok({ anchor }) }),
-    );
-
-    expect(walk.entries).toEqual([]);
-    expect(walk.problems.map((p) => p.blockId)).toEqual(["a", "b"]);
-  });
-
-  test("every un-rewritten id is named at once, sorted", () => {
+  test("a reference to a block outside the project is written out too", () => {
+    // Same boundary from the other side: telling this apart would mean recognizing which
+    // strings are identifiers, which is exactly the knowledge the engine does not hold. It
+    // surfaces on apply, as a block wired to nothing.
+    const params = { input: toTemplateRef(createPlRef("deleted", "reads")) };
     const walk = walkProjectForTemplateExport(
       simpleStructure("b"),
-      providerFrom({
-        b: ok({ one: createPlRef(UUID_B, "x"), two: createPlRef(UUID_A, "y") }),
-      }),
+      providerFrom({ b: ok(params) }),
     );
 
-    expect(walk.problems[0].error).toContain(`${UUID_A}, ${UUID_B}`);
+    expect(walk.problems).toEqual([]);
+    expect(walk.entries[0].params).toBe(params);
   });
 });
 

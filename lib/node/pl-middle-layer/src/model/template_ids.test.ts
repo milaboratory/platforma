@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { createPlRef, createTemplateLocalRef } from "@milaboratories/pl-model-common";
+import { createPlRef, toTemplateRef } from "@milaboratories/pl-model-common";
 import type { TemplateIdMap, TemplateParamsRewrite } from "./template_ids";
 import { createTemplateIdMap, liveParamsForCheck } from "./template_ids";
 
@@ -8,7 +8,18 @@ import { createTemplateIdMap, liveParamsForCheck } from "./template_ids";
  *
  * Ids are injected as a counter so the assertions can name them. Nothing here needs a
  * project — the map's whole job is to be the part of construction that does not.
+ *
+ * A reference is written the way a block writes one: the value wrapped in `toTemplateRef`.
+ * The engine never looks inside that wrapper, so the tests do not have to describe what is
+ * in there beyond what the assertion is about.
  */
+
+type LiveEntry = { readonly id: string; readonly params?: Record<string, unknown> };
+
+/** Every field of `live` wrapped, as a block that projected references would write it. */
+function wrapped(live: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(live).map(([k, v]) => [k, toTemplateRef(v)]));
+}
 
 function counterMap(): TemplateIdMap {
   let n = 0;
@@ -16,7 +27,7 @@ function counterMap(): TemplateIdMap {
 }
 
 /** One forward pass over entries, as the construction loop will run it. */
-function applyPass(entries: readonly { id: string; params?: Record<string, unknown> }[]): {
+function applyPass(entries: readonly LiveEntry[]): {
   added: Record<string, unknown>[];
   problem?: string;
 } {
@@ -65,50 +76,58 @@ describe("assign", () => {
     expect(() => ids.assign("a")).toThrow("already assigned");
   });
 
-  test("an assigned id is not yet a reference target", () => {
-    // Only `record` publishes it. This is what keeps an entry from resolving a reference
-    // to itself while its own params are being rewritten.
+  test("an assigned id is not yet a redirect target", () => {
+    // Only `record` publishes it, so an entry's own id is still absent from the map while
+    // its params are rewritten — which is what keeps it from being wired to itself.
+    const params = wrapped({ input: createPlRef("a", "reads") });
     const ids = counterMap();
     ids.assign("a");
 
-    const rewrite = ids.liveParams({ input: createTemplateLocalRef("a", "reads") });
-
-    expect(rewrite.ok).toBe(false);
+    // Left as the file wrote it rather than reported: the engine does not parse a payload,
+    // so it cannot tell an id it was not asked to redirect from any other text in there.
+    // Validation is what rejects such a document, before an apply begins.
+    expect(paramsFrom(ids.liveParams(params))).toEqual({ input: createPlRef("a", "reads") });
   });
 });
 
 describe("liveParams", () => {
   test("a reference becomes a PlRef naming the recorded block", () => {
+    const params = wrapped({ input: createPlRef("samples", "reads") });
     const ids = counterMap();
     ids.record("samples", ids.assign("samples"));
 
-    const params = paramsFrom(
-      ids.liveParams({ input: createTemplateLocalRef("samples", "reads") }),
-    );
-
-    expect(params).toEqual({ input: createPlRef("block-1", "reads") });
+    expect(paramsFrom(ids.liveParams(params))).toEqual({ input: createPlRef("block-1", "reads") });
   });
 
   test("rewrites references wherever they sit, and touches nothing else", () => {
     // The rewrite is structural and kind-agnostic: params are opaque, so it cannot know
     // where a reference will be.
+    const params = wrapped({
+      input: createPlRef("a", "reads"),
+      nested: { deeper: [createPlRef("a", "spec"), { n: 1 }] },
+      species: "hsa",
+      threshold: null,
+    });
     const ids = counterMap();
     ids.record("a", ids.assign("a"));
 
-    const params = paramsFrom(
-      ids.liveParams({
-        input: createTemplateLocalRef("a", "reads"),
-        nested: { deeper: [createTemplateLocalRef("a", "spec"), { n: 1 }] },
-        species: "hsa",
-        threshold: null,
-      }),
-    );
-
-    expect(params).toEqual({
+    expect(paramsFrom(ids.liveParams(params))).toEqual({
       input: createPlRef("block-1", "reads"),
       nested: { deeper: [createPlRef("block-1", "spec"), { n: 1 }] },
       species: "hsa",
       threshold: null,
+    });
+  });
+
+  test("keeps requireEnrichments, which is part of the identifier", () => {
+    // Nothing is stripped from an identifier on the way through a template: the flag is
+    // carried by the dictionary entry and comes back with it.
+    const params = wrapped({ input: createPlRef("a", "reads", true) });
+    const ids = counterMap();
+    ids.record("a", ids.assign("a"));
+
+    expect(paramsFrom(ids.liveParams(params))).toEqual({
+      input: createPlRef("block-1", "reads", true),
     });
   });
 
@@ -119,29 +138,26 @@ describe("liveParams", () => {
     expect(paramsFrom(ids.liveParams({}))).toEqual({});
   });
 
-  test("reports an unresolvable reference instead of throwing", () => {
-    // Unreachable for a validated document — but by this point earlier blocks are already
-    // in the project, and the failure policy is to keep them and report.
+  test("an id the map does not cover is left exactly as it was", () => {
+    // The cost of an engine that does not parse payloads, stated as a test: a dangling
+    // reference cannot be distinguished here, so it survives into the applied block. The
+    // document is rejected earlier — this pins where the responsibility sits.
+    const params = wrapped({ input: createPlRef("ghost", "reads") });
     const ids = counterMap();
 
-    const rewrite = ids.liveParams({ input: createTemplateLocalRef("ghost", "reads") });
-
-    expect(rewrite.ok).toBe(false);
-    if (!rewrite.ok) {
-      expect(rewrite.error).toContain("'ghost'");
-      expect(rewrite.error).toContain("listed above it");
-    }
+    expect(paramsFrom(ids.liveParams(params))).toEqual({ input: createPlRef("ghost", "reads") });
   });
 
   test("leaves the caller's params object alone", () => {
     // Params come from the parsed document, which the caller may still report against.
+    const params = wrapped({ input: createPlRef("a", "reads") });
+    const before = structuredClone(params);
     const ids = counterMap();
     ids.record("a", ids.assign("a"));
-    const original = { input: createTemplateLocalRef("a", "reads") };
 
-    ids.liveParams(original);
+    ids.liveParams(params);
 
-    expect(original).toEqual({ input: createTemplateLocalRef("a", "reads") });
+    expect(params).toEqual(before);
   });
 });
 
@@ -149,7 +165,9 @@ describe("liveParamsForCheck", () => {
   test("a reference takes the live shape, keeping the id the file used", () => {
     // What the pre-flight check needs: a kind describing this param as a reference must
     // see a reference, even though no block exists to point at yet.
-    expect(liveParamsForCheck({ input: createTemplateLocalRef("samples", "reads") })).toEqual({
+    const params = wrapped({ input: createPlRef("samples", "reads") });
+
+    expect(liveParamsForCheck(params)).toEqual({
       input: createPlRef("samples", "reads"),
     });
   });
@@ -168,8 +186,8 @@ describe("the forward pass", () => {
     // deferred references, no patching a block after the fact.
     const outcome = applyPass([
       { id: "samples" },
-      { id: "align", params: { input: createTemplateLocalRef("samples", "reads") } },
-      { id: "report", params: { from: createTemplateLocalRef("align", "clones") } },
+      { id: "align", params: wrapped({ input: createPlRef("samples", "reads") }) },
+      { id: "report", params: wrapped({ from: createPlRef("align", "clones") }) },
     ]);
 
     expect(outcome.added).toEqual([
@@ -182,29 +200,11 @@ describe("the forward pass", () => {
   test("two entries referencing the same upstream get the same block id", () => {
     const outcome = applyPass([
       { id: "samples" },
-      { id: "x", params: { input: createTemplateLocalRef("samples", "reads") } },
-      { id: "y", params: { input: createTemplateLocalRef("samples", "reads") } },
+      { id: "x", params: wrapped({ input: createPlRef("samples", "reads") }) },
+      { id: "y", params: wrapped({ input: createPlRef("samples", "reads") }) },
     ]);
 
     expect(outcome.added[1].params).toEqual(outcome.added[2].params);
-  });
-
-  test("a forward reference stops the pass and keeps what landed", () => {
-    // Validation rejects this before an apply starts; if it ever gets through, the
-    // reference is reported rather than silently dropped.
-    const outcome = applyPass([
-      { id: "a", params: { input: createTemplateLocalRef("later", "reads") } },
-      { id: "later" },
-    ]);
-
-    expect(outcome.added).toEqual([]);
-    expect(outcome.problem).toContain("'later'");
-  });
-
-  test("a self-reference is reported, not connected", () => {
-    const outcome = applyPass([{ id: "a", params: { input: createTemplateLocalRef("a", "out") } }]);
-
-    expect(outcome.problem).toContain("'a'");
   });
 
   test("ids are unique across an apply by default", () => {

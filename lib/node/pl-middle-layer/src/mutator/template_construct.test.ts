@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from "vitest";
 import { getQuickJS, type QuickJSWASMModule } from "quickjs-emscripten";
 import { BlockStorageFacadeCallbacks } from "@platforma-sdk/model";
-import { createPlRef, createTemplateLocalRef } from "@milaboratories/pl-model-common";
+import { createPlRef, toTemplateRef } from "@milaboratories/pl-model-common";
 import { ProjectHelper } from "../model/project_helper";
 import { createTemplateIdMap } from "../model/template_ids";
 import type { BlockPackSpecPrepared } from "../model";
@@ -164,13 +164,14 @@ describe("createTemplateApplyApi", () => {
     // template-local id in the file and reach the block as a reference to the id the
     // first block actually got.
     const { placer, placements } = recordingPlacer();
+    const params = { input: toTemplateRef(createPlRef("samples", "reads")) };
     const api = apiOver(
       entryMap({ samples: preparedBlock(echoModel), align: preparedBlock(echoModel) }),
       placer,
     );
 
     api.addBlock({ id: "samples" });
-    api.addBlock({ id: "align", params: { input: createTemplateLocalRef("samples", "reads") } });
+    api.addBlock({ id: "align", params });
 
     expect(placements[0].block.id).toBe("block-1");
     expect(storageOf(placements[1])).toEqual({ input: createPlRef("block-1", "reads") });
@@ -203,17 +204,18 @@ describe("createTemplateApplyApi", () => {
     expect(placements).toHaveLength(0);
   });
 
-  test("a reference to an entry with no block is reported, and nothing is placed", () => {
+  test("a reference to an entry with no block travels as written, and the block is placed", () => {
     const { placer, placements } = recordingPlacer();
+    // The engine cannot see that `b` names nothing yet, so the reference travels as written
+    // and the block is created wired to it. Validation is what rejects such a document.
+    const params = { input: toTemplateRef(createPlRef("b", "out")) };
     const api = apiOver(entryMap({ a: preparedBlock(echoModel) }), placer);
 
-    const outcome = api.addBlock({
-      id: "a",
-      params: { input: createTemplateLocalRef("b", "out") },
-    });
+    const outcome = api.addBlock({ id: "a", params });
 
-    expect(outcome.ok).toBe(false);
-    expect(placements).toHaveLength(0);
+    expect(outcome.ok).toBe(true);
+    expect(placements).toHaveLength(1);
+    expect(storageOf(placements[0])).toEqual({ input: createPlRef("b", "out") });
   });
 
   test("a block too old to be initialized from params is refused", () => {
@@ -288,10 +290,11 @@ describe("createTemplateApplyApi", () => {
     expect(() => api.addBlock({ id: "a" })).toThrow("structure is broken");
   });
 
-  test("a rejected entry does not become a reference target", () => {
-    // Its id was assigned but never recorded, so a later entry naming it fails instead
-    // of pointing at a block that was never created.
-    const { placer } = recordingPlacer();
+  test("a rejected entry does not become a redirect target", () => {
+    // Its id was assigned but never recorded, so a later entry naming it keeps the file's id
+    // rather than pointing at a block that was never created.
+    const { placer, placements } = recordingPlacer();
+    const params = { input: toTemplateRef(createPlRef("a", "out")) };
     const api = apiOver(
       entryMap({
         a: preparedBlock('() => ({ error: "no" })'),
@@ -301,12 +304,12 @@ describe("createTemplateApplyApi", () => {
     );
 
     api.addBlock({ id: "a", params: {} });
-    const outcome = api.addBlock({
-      id: "b",
-      params: { input: createTemplateLocalRef("a", "out") },
-    });
+    const outcome = api.addBlock({ id: "b", params });
 
-    expect(outcome.ok).toBe(false);
+    expect(outcome.ok).toBe(true);
+    // Not redirected: `a` never landed, so it is not in the map, and the engine has no way to
+    // notice from inside a payload it does not parse.
+    expect(storageOf(placements[0])).toEqual({ input: createPlRef("a", "out") });
   });
 
   test("every block gets its own id", () => {

@@ -151,9 +151,10 @@ export class ProjectHelper {
    *
    * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
    * the args a workflow runs on, it returns the params that would recreate the
-   * block — the inverse of the data model's `init`. References come back
-   * already rewritten into template form by the SDK side, so the middle layer
-   * never has to know a kind's params shape.
+   * block — the inverse of the data model's `init`. Params come back in ordinary LIVE
+   * form, references included: interning them into a document-level dictionary needs the
+   * whole document, which a per-block callback does not have, so the exporter does it —
+   * still without the middle layer knowing a kind's params shape.
    *
    * A `{ value: undefined }` result is NOT a failure: it means the block declares no
    * `templateParams`, which only a block built against an older SDK can do, and the
@@ -166,8 +167,8 @@ export class ProjectHelper {
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived params in template form, `undefined` if the block
-   *   declares no lambda, or an error if derivation failed
+   * @returns The derived params in live form, `undefined` if the block declares no
+   *   lambda, or an error if derivation failed
    */
   public deriveTemplateParamsFromStorage(
     blockConfig: BlockConfig,

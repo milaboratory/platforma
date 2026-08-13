@@ -6,7 +6,8 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   PROJECT_TEMPLATE_SCHEMA_V1,
-  createTemplateLocalRef,
+  createPlRef,
+  toTemplateRef,
 } from "@milaboratories/pl-model-common";
 import type { AddBlockRequest, TemplateApplyApi } from "./template_apply";
 import { applyProjectTemplateV1 } from "./template_apply";
@@ -77,13 +78,12 @@ describe("applyProjectTemplateV1", () => {
   });
 
   test("params are handed over exactly as the file carries them", () => {
-    // References still name template-local ids here. The orchestrator must NOT
-    // rewrite them: only the implementation knows which project-local id each entry
-    // got, and a rewrite done twice, or done differently by two orchestrators, is a
-    // silently mis-wired project.
+    // References are still wrapped here. The orchestrator must NOT redirect them: only the
+    // implementation knows which project-local id each entry got, and a rewrite done twice,
+    // or done differently by two orchestrators, is a silently mis-wired project.
     const params = {
-      input: createTemplateLocalRef("a", "reads"),
-      nested: { deeper: [createTemplateLocalRef("a", "spec")] },
+      input: toTemplateRef(createPlRef("a", "reads")),
+      nested: { deeper: [toTemplateRef(createPlRef("a", "spec"))] },
       species: "hsa",
     };
     const { api, requests } = recordingApi();

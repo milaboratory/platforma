@@ -1,0 +1,15 @@
+schema: template-v1
+blocks:
+  - id: aaaaaaaa-0000-4000-8000-000000000001
+    kind: "@platforma-open/milaboratories.import-fastq.kind@2.1.0"
+    params: {}
+  - id: bbbbbbbb-0000-4000-8000-000000000002
+    kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.2.10"
+    params:
+      anchor:
+        $ref: '{"__isFiltered":true,"axisFilters":[[0,"IGH"]],"source":"{\"__isRef\":true,\"blockId\":\"aaaaaaaa-0000-4000-8000-000000000001\",\"name\":\"clonotypes\"}"}'
+      upstream:
+        $ref:
+          __isRef: true
+          blockId: aaaaaaaa-0000-4000-8000-000000000001
+          name: clonotypes
