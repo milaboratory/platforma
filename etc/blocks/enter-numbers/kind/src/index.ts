@@ -29,5 +29,5 @@ const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
 export const kind = defineBlockKind<BlockParams>({
   name,
   version,
-  parseTemplateParams: (value) => Params.parse(value),
+  parseInitializationParams: (value) => Params.parse(value),
 });

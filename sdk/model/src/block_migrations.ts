@@ -115,15 +115,15 @@ type BuilderState<S> = {
   transferSteps: TransferStep[];
   /**
    * The params type is erased to `unknown` here: the builder checks the block's
-   * factory against its kind's params, but once stored, the only caller that has
-   * params is the template engine, which carries them as parsed file content and
-   * cannot know the type.
+   * factory against its kind's params, but a caller that supplies params carries them as
+   * data it did not type — parsed file content, today — and cannot state the type. The
+   * kind's own parser is what recovers it.
    */
   initialDataFn: DataCreateFn<S, unknown>;
   /** Reference to the block kind this data model belongs to, if declared. */
   kindRef?: BlockKindReference;
   /** The kind's runtime params check, threaded with {@link kindRef}. */
-  parseTemplateParams?: (value: unknown) => unknown;
+  parseInitializationParams?: (value: unknown) => unknown;
   recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
   /** Index of the first step to run after recovery. Equals the number of steps
    *  present at the time recover() was called. */
@@ -155,21 +155,20 @@ abstract class MigrationChainBase<
   /** Kind reference seeded by the builder, threaded through the chain into init(). */
   protected readonly kindRef?: BlockKindReference;
   /** The kind's runtime params check, carried for `init()` to hand to the DataModel. */
-  protected readonly parseTemplateParams?: (value: unknown) => unknown;
+  protected readonly parseInitializationParams?: (value: unknown) => unknown;
 
   protected constructor(state: {
     versionChain: DataVersionKey[];
     steps: MigrationStep[];
     transferSteps?: TransferStep[];
     kindRef?: BlockKindReference;
-    /** The kind's runtime params check, threaded with {@link kindRef}. */
-    parseTemplateParams?: (value: unknown) => unknown;
+    parseInitializationParams?: (value: unknown) => unknown;
   }) {
     this.versionChain = state.versionChain;
     this.migrationSteps = state.steps;
     this.transferSteps = state.transferSteps ?? [];
     this.kindRef = state.kindRef;
-    this.parseTemplateParams = state.parseTemplateParams;
+    this.parseInitializationParams = state.parseInitializationParams;
   }
 
   /** Appends a migration step and returns the new versionChain and steps arrays. */
@@ -227,7 +226,7 @@ abstract class MigrationChainBase<
       transferSteps: this.transferSteps,
       initialDataFn: initialData as DataCreateFn<Current, unknown>,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
       ...this.recoverState(),
     });
   }
@@ -257,7 +256,7 @@ class DataModelMigrationChainWithRecover<
     transferSteps?: TransferStep[];
     kindRef?: BlockKindReference;
     /** The kind's runtime params check, threaded with {@link kindRef}. */
-    parseTemplateParams?: (value: unknown) => unknown;
+    parseInitializationParams?: (value: unknown) => unknown;
     recoverFn?: (version: DataVersionKey, data: unknown) => unknown;
     recoverFromIndex?: number;
   }) {
@@ -287,7 +286,7 @@ class DataModelMigrationChainWithRecover<
       steps,
       transferSteps: this.transferSteps,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
     });
@@ -308,7 +307,7 @@ class DataModelMigrationChainWithRecover<
       steps: this.migrationSteps,
       transferSteps,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
       recoverFn: this.recoverFn,
       recoverFromIndex: this.recoverFromIndex,
     });
@@ -336,16 +335,16 @@ class DataModelMigrationChain<
     steps = [],
     transferSteps = [],
     kindRef,
-    parseTemplateParams,
+    parseInitializationParams,
   }: {
     versionChain: DataVersionKey[];
     steps?: MigrationStep[];
     transferSteps?: TransferStep[];
     kindRef?: BlockKindReference;
     /** The kind's runtime params check, threaded with {@link kindRef}. */
-    parseTemplateParams?: (value: unknown) => unknown;
+    parseInitializationParams?: (value: unknown) => unknown;
   }) {
-    super({ versionChain, steps, transferSteps, kindRef, parseTemplateParams });
+    super({ versionChain, steps, transferSteps, kindRef, parseInitializationParams });
   }
 
   /**
@@ -369,7 +368,7 @@ class DataModelMigrationChain<
       steps,
       transferSteps: this.transferSteps,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
     });
   }
 
@@ -396,7 +395,7 @@ class DataModelMigrationChain<
       steps: this.migrationSteps,
       transferSteps,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
     });
   }
 
@@ -431,7 +430,7 @@ class DataModelMigrationChain<
       steps: this.migrationSteps,
       transferSteps: this.transferSteps,
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
       recoverFn: fn as (version: DataVersionKey, data: unknown) => unknown,
       recoverFromIndex: this.migrationSteps.length,
     });
@@ -508,7 +507,7 @@ class DataModelInitialChain<
       versionChain: [DATA_MODEL_LEGACY_VERSION, ...this.versionChain],
       steps: [step, ...this.migrationSteps],
       kindRef: this.kindRef,
-      parseTemplateParams: this.parseTemplateParams,
+      parseInitializationParams: this.parseInitializationParams,
       // Shift transfer indices to account for the prepended legacy step
       transferSteps: this.transferSteps.map((t) => ({
         ...t,
@@ -566,7 +565,7 @@ class DataModelInitialChain<
  */
 export class DataModelBuilder<Params = never> {
   readonly #kindRef?: BlockKindReference;
-  readonly #parseTemplateParams?: (value: unknown) => Params;
+  readonly #parseInitializationParams?: (value: unknown) => Params;
 
   /**
    * @param opts.kind - The block kind this data model implements. Its reference
@@ -584,7 +583,7 @@ export class DataModelBuilder<Params = never> {
     // Carried alongside the reference, and for the same reason: the kind object is
     // not kept, but two things off it are needed later — how to name the kind, and
     // how to check params claimed to be of it.
-    this.#parseTemplateParams = opts?.kind?.parseTemplateParams;
+    this.#parseInitializationParams = opts?.kind?.parseInitializationParams;
   }
 
   /**
@@ -598,7 +597,9 @@ export class DataModelBuilder<Params = never> {
     return new DataModelInitialChain<T, {}, Params>({
       versionChain: [initialVersion],
       kindRef: this.#kindRef,
-      parseTemplateParams: this.#parseTemplateParams as ((value: unknown) => unknown) | undefined,
+      parseInitializationParams: this.#parseInitializationParams as
+        | ((value: unknown) => unknown)
+        | undefined,
     });
   }
 }
@@ -641,7 +642,7 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
   /** Reference to the block kind this data model was built for, if any. */
   private readonly _kindRef?: BlockKindReference;
   /** The kind's runtime params check, if it declares one. */
-  private readonly _parseTemplateParams?: (value: unknown) => unknown;
+  private readonly _parseInitializationParams?: (value: unknown) => unknown;
 
   private constructor({
     versionChain,
@@ -649,7 +650,7 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
     transferSteps = [],
     initialDataFn,
     kindRef,
-    parseTemplateParams,
+    parseInitializationParams,
     recoverFn = defaultRecover,
     recoverFromIndex,
   }: BuilderState<State>) {
@@ -662,7 +663,7 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
     this.transferSteps = transferSteps;
     this.initialDataFn = initialDataFn;
     this._kindRef = kindRef;
-    this._parseTemplateParams = parseTemplateParams;
+    this._parseInitializationParams = parseInitializationParams;
     this.recoverFn = recoverFn;
     this.recoverFromIndex = recoverFromIndex ?? steps.length;
   }
@@ -696,7 +697,7 @@ export class DataModel<State, Params = never, Transfers extends Record<string, u
    * @internal
    */
   get templateParamsParser(): ((value: unknown) => unknown) | undefined {
-    return this._parseTemplateParams;
+    return this._parseInitializationParams;
   }
 
   /**

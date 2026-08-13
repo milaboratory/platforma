@@ -281,7 +281,7 @@ export interface ParamsStorageHooks extends Omit<InitialStorageHooks, "getDefaul
    * The kind's runtime params check. Applied before the factory sees anything, and its
    * output is what the factory gets.
    */
-  parseTemplateParams: (value: unknown) => unknown;
+  parseInitializationParams: (value: unknown) => unknown;
 }
 
 /** Result of checking params against their kind: the params to use, or why they lost. */
@@ -305,14 +305,14 @@ export type TemplateParamsValidationResult =
  * there is no pass-through path.
  *
  * @param value The params to check, references already in live form
- * @param parseTemplateParams The kind's parser
+ * @param parseInitializationParams The kind's parser
  */
 export function validateTemplateParams(
   value: unknown,
-  parseTemplateParams: (value: unknown) => unknown,
+  parseInitializationParams: (value: unknown) => unknown,
 ): TemplateParamsValidationResult {
   try {
-    return { value: parseTemplateParams(value) };
+    return { value: parseInitializationParams(value) };
   } catch (e) {
     // A rejection is an expected outcome for a hand-written file, so it is reported,
     // not thrown.
@@ -372,11 +372,11 @@ export type TemplateParamsValidateCallbackResult = { error: string } | { error?:
  * project to half-build.
  *
  * @param paramsJson The entry's params as JSON string
- * @param parseTemplateParams The kind's parser
+ * @param parseInitializationParams The kind's parser
  */
 export function validateTemplateParamsJson(
   paramsJson: string,
-  parseTemplateParams: (value: unknown) => unknown,
+  parseInitializationParams: (value: unknown) => unknown,
 ): TemplateParamsValidateCallbackResult {
   let params: unknown;
   try {
@@ -385,7 +385,7 @@ export function validateTemplateParamsJson(
     return { error: `params are not valid JSON: ${messageOf(e)}` };
   }
 
-  const result = validateTemplateParams(params, parseTemplateParams);
+  const result = validateTemplateParams(params, parseInitializationParams);
   if (result.error !== undefined) return { error: result.error };
   return {};
 }
@@ -434,7 +434,7 @@ export function createInitialStorageFromParams(
   // Checked here too, not only in the caller's pre-flight pass. The pre-flight is
   // about reporting every bad entry before anything is created; this is about the
   // factory never being handed a value the kind rejects, whichever path got here.
-  const checked = validateTemplateParams(params, hooks.parseTemplateParams);
+  const checked = validateTemplateParams(params, hooks.parseInitializationParams);
   if (checked.error !== undefined) return { error: checked.error };
 
   try {

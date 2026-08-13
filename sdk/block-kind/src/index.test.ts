@@ -9,7 +9,7 @@ test("InferBlockParams recovers the declared params", () => {
   const k = defineBlockKind<{ ref: PlRef; n: number }>({
     name: "@platforma-open/milaboratories.demo.kind",
     version: "1.0.0",
-    parseTemplateParams: (v) => v as { ref: PlRef; n: number },
+    parseInitializationParams: (v) => v as { ref: PlRef; n: number },
   });
 
   expect(k.kindSchema).toBe("v1");
@@ -17,7 +17,7 @@ test("InferBlockParams recovers the declared params", () => {
   expect(k.version).toBe("1.0.0");
   // Carried through, not dropped: a kind ships this check, so a descriptor without one
   // would leave template params unvalidated at the only point that can catch them.
-  expect(typeof k.parseTemplateParams).toBe("function");
+  expect(typeof k.parseInitializationParams).toBe("function");
 
   // Locks the contract the future init/create wiring relies on.
   expectTypeOf<InferBlockParams<typeof k>>().toEqualTypeOf<{

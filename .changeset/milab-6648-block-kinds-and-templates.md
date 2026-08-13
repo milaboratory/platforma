@@ -16,7 +16,7 @@ of kinds sits the **template engine**: a project exports to `template-v1` YAML, 
 template — exported or hand-authored — applies into a fresh project.
 
 **New package `@platforma-sdk/block-kind`.** `defineBlockKind<BlockParams>({ name,
-version, parseTemplateParams })` returns a frozen `CompiledBlockKind`. Source `name` /
+version, parseInitializationParams })` returns a frozen `CompiledBlockKind`. Source `name` /
 `version` from the kind's own `package.json` so the on-wire `{name}@{version}` cannot
 drift from what npm publishes.
 
@@ -31,7 +31,7 @@ const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
 export const kind = defineBlockKind<BlockParams>({
   name,
   version,
-  parseTemplateParams: (value) => Params.parse(value),
+  parseInitializationParams: (value) => Params.parse(value),
 });
 ```
 
@@ -86,7 +86,7 @@ and registry-side kind resolution.
 - `templateParams()` is required — `done()` throws without it. A block whose state
   cannot be reduced to params returns `{}` explicitly, rather than exporting an entry
   that silently applies as a default-initialized block.
-- Every kind must declare `parseTemplateParams`. A kind whose params are genuinely empty
+- Every kind must declare `parseInitializationParams`. A kind whose params are genuinely empty
   still declares one; it just rejects everything but `{}`.
 - Publishing a block whose model was compiled against a kind requires the facade to
   declare that kind as a dependency, at a matching version. Blocks declaring no kind

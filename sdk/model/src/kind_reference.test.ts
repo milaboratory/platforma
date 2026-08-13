@@ -30,7 +30,7 @@ const KIND_REF = `${KIND_NAME}@${KIND_VERSION}`;
 const kind = defineBlockKind<Params>({
   name: KIND_NAME,
   version: KIND_VERSION,
-  parseTemplateParams: (value) => value as Params,
+  parseInitializationParams: (value) => value as Params,
 });
 
 const dataModel = new DataModelBuilder({ kind })
