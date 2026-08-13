@@ -186,7 +186,26 @@ export type EncodePersistedTreeOps = {
  */
 export function captureTreeState(state: PlTreeState, witness: ResourceSignature): PersistedTree {
   if (!state.isValid) throw new Error("refusing to capture an invalidated tree");
-  return { witness, roots: [...state.roots], resources: state.dumpState() };
+
+  // Field objects are copied, not referenced. `dumpState` hands back the tree's live
+  // `PlTreeField` instances, which the next update mutates in place: a capture that merely
+  // held them would drift under its holder between here and the encode, and a corpus whose
+  // field points at a resource captured a moment earlier does not contain is unrestorable.
+  // Today's caller happens to encode in the same synchronous turn, which is luck, not a
+  // contract.
+  const resources = state.dumpState().map((r) => ({
+    ...r,
+    fields: r.fields.map((f) => ({
+      name: f.name,
+      type: f.type,
+      status: f.status,
+      value: f.value,
+      error: f.error,
+      valueIsFinal: f.valueIsFinal,
+    })),
+  }));
+
+  return { witness, roots: [...state.roots], resources };
 }
 
 /**
@@ -258,6 +277,19 @@ function writePayload(tree: PersistedTree): Buffer {
   const collect = (id: OptionalSignedResourceId) => {
     if (!isNotNullSignedResourceId(id)) return;
     const { globalId, signature } = parseSignedResourceId(id);
+
+    // The tree keys its heap by the whole signed string, so one global id carrying two
+    // different signatures is two distinct resources to the tree and one entry here. Refusing
+    // is the only safe answer: last-write-wins would silently rewrite one resource's
+    // references to point at the other. Unreachable for a single-root tree, where every
+    // resource is signed under one colour, but a tree with several explicit seeds can legally
+    // be served the same resource under two colours.
+    const existing = signatures.get(globalId);
+    if (existing !== undefined && !Buffer.from(existing).equals(Buffer.from(signature)))
+      throw new Error(
+        `cannot persist a tree holding global id ${globalId} under two different signatures`,
+      );
+
     signatures.set(globalId, signature);
   };
 
@@ -636,10 +668,13 @@ class Reader {
     return this.view.getBigUint64(this.take(8), true);
   }
 
+  /** Copies rather than returning a view. A view would keep the whole inflated payload alive
+   *  for as long as the restored tree holds any one byte payload, including all the structure
+   *  bytes it will never read again. The copy is transient; the retention would not be. */
   bytes(): Uint8Array {
     const length = this.u32();
     const at = this.take(length);
-    return this.src.subarray(at, at + length);
+    return Uint8Array.prototype.slice.call(this.src, at, at + length);
   }
 
   shortBytes(): Uint8Array {

@@ -115,10 +115,15 @@ export class Project {
    * that has not moved, which is what makes a project left open and idle go quiet. */
   private snapshotGeneration: number;
 
-  /** When the last snapshot was written, for the periodic write's wall-clock gate. Seeded at
-   * construction so the first write lands one interval after the project opens rather than
-   * immediately. */
-  private lastSnapshotAt = Date.now();
+  /** When a snapshot was last attempted, for the periodic write's wall-clock gate.
+   *
+   * Zero, not the construction time, so the first write lands on the first maintenance pass
+   * after the tree has settled rather than a full interval later. Sessions shorter than one
+   * interval are the common case for a desktop app that is quit with a project still open, and
+   * seeding this to now would leave every one of them with nothing on disk. Set on every
+   * attempt, successful or not, so a persistently failing write retries at the interval rather
+   * than on every pass of the loop. */
+  private lastSnapshotAt = 0;
 
   private get destroyed() {
     return this.abortController.signal.aborted;
@@ -194,7 +199,11 @@ export class Project {
 
   /** Serializes writes, and skips one that the in-flight write has already made redundant. */
   private async writeSnapshot(store: TreeSnapshotStore, generation: number): Promise<void> {
-    if (this.snapshotInFlight !== undefined) {
+    // A loop, not a single check: with three or more callers, re-checking only once would let
+    // a waiter install its own promise over another's and clear the field while that write is
+    // still running. Two callers is the most that can happen today, so this is a guard against
+    // the next caller rather than a live fix.
+    while (this.snapshotInFlight !== undefined) {
       await this.snapshotInFlight;
       if (this.snapshotGeneration >= generation) return;
     }
@@ -205,15 +214,20 @@ export class Project {
     await this.snapshotInFlight;
   }
 
-  /** Captures and writes, never throwing: a snapshot is an optimisation and must not delay or
-   *  fail whatever triggered it. */
+  /** Captures and writes, never throwing: a snapshot is an optimisation and must not fail
+   *  whatever triggered it. */
   private async captureAndWrite(store: TreeSnapshotStore, generation: number): Promise<void> {
+    // Recorded before the attempt and regardless of its outcome, so a failing disk is retried
+    // once per interval instead of on every pass of the maintenance loop.
+    this.lastSnapshotAt = Date.now();
     try {
       // The root's signature is the session witness a later open compares against.
       const snapshot = this.projectTree.capture(parseSignedResourceId(this.rid).signature);
-      await store.write(this.rid, snapshot);
-      this.snapshotGeneration = generation;
-      this.lastSnapshotAt = Date.now();
+
+      // Only a real write advances the change gate. Marking the generation persisted after a
+      // failed write would tell both triggers the tree is already on disk, so one transient
+      // I/O error would cost the rest of the session, close write included.
+      if (await store.write(this.rid, snapshot)) this.snapshotGeneration = generation;
     } catch (e: unknown) {
       this.env.logger.warn(
         new Error(`failed to capture tree snapshot for project ${this.id}`, { cause: e }),
@@ -891,23 +905,40 @@ async function loadProjectTree(
 
     return { tree, restored };
   } catch (e: unknown) {
-    if (!isSnapshotFailsafeError(e)) throw e;
-
+    // Retry cold on ANY failure of the warm open, not only on the classified ones. A cold open
+    // is exactly what this code did before snapshots existed, so the retry cannot regress
+    // anything, whereas rethrowing here leaves a project that fails to open on every attempt
+    // until someone deletes the cache directory by hand: the snapshot stays on disk and the
+    // next open restores it and fails the same way. That is the outcome this fail-safe exists
+    // to prevent, and the error classes that can reach here are not a closed set.
     env.logger.warn(
-      new Error("restored project tree failed its first refresh, discarding it and opening cold", {
-        cause: e,
-      }),
+      new Error("restored project tree failed its first refresh, opening cold", { cause: e }),
     );
-    await store.discard(rid);
+
+    // Deleting is reserved for failures that implicate the snapshot itself. Anything else (a
+    // timeout, a dropped connection) says nothing about the file, and throwing it away would
+    // destroy a mirror that is still good, along with the evidence a later signature refresh
+    // would repair.
+    if (isSnapshotFailsafeError(e)) await store.discard(rid);
+
     return await cold();
   }
 }
 
-/** The failures that can mean a snapshot no longer matches what the backend will serve, as
- *  opposed to a client that has genuinely lost its session. Both look the same on one refresh,
- *  which is why the retry is spent only on the first. */
-function isSnapshotFailsafeError(e: unknown): boolean {
-  return isUnauthenticated(e) || isPermissionDenied(e) || e instanceof TreeStateUpdateError;
+/** The failures that implicate the snapshot rather than the link or the session: a rotated
+ *  master secret, a revoked grant, or state the tree cannot reconcile. Only these delete the
+ *  file; every other failure still falls back to a cold open, it just keeps the file.
+ *
+ *  The cause chain is walked because a wrapper anywhere between the tree update and here would
+ *  otherwise silently disarm the inconsistency arm. `isUnauthenticated` and `isPermissionDenied`
+ *  do their own one-level unwrapping. */
+export function isSnapshotFailsafeError(e: unknown): boolean {
+  if (isUnauthenticated(e) || isPermissionDenied(e)) return true;
+  for (let cause: unknown = e, depth = 0; cause !== undefined && depth < 8; depth++) {
+    if (cause instanceof TreeStateUpdateError) return true;
+    cause = (cause as { cause?: unknown } | null)?.cause;
+  }
+  return false;
 }
 
 export function projectTreePruning(logger: MiLogger): PruningFunction {

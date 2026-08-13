@@ -81,11 +81,14 @@ export type SynchronizedTreeOps = {
   /** A previously persisted mirror to seed the tree with, before its first refresh, so that
    * refresh transfers only what changed while the tree was gone.
    *
-   * Advisory: a snapshot that cannot be applied, or does not belong to this tree, is logged
-   * and dropped, leaving an ordinary cold open. The caller is responsible for having
-   * established that the snapshot's signatures are still live (see
-   * {@link PersistedTree.witness}); this option does not check that. Ignored for trees with
-   * shared-type seeds, which rediscover their roots anyway. */
+   * A snapshot that cannot be applied, or does not belong to this tree, is logged and dropped,
+   * leaving an ordinary cold open.
+   *
+   * A snapshot that applies but whose ids are dead is NOT handled here: its resources become
+   * this tree's seeds, so the first refresh fails and {@link init} rejects, where a cold open
+   * would have succeeded. Establishing that the signatures are still live is the caller's job
+   * (see {@link PersistedTree.witness}), as is deciding what to do when the first refresh is
+   * refused anyway. Ignored for trees with shared-type seeds, which rediscover their roots. */
   restoreFrom?: PersistedTree;
 };
 
@@ -129,7 +132,13 @@ const DISCOVERY_INTERVAL_MS = 3_000;
  * `resourcesUnchanged` is excluded by design, since a cycle that only re-fetched unchanged
  * state is exactly the idle case the backoff exists for. */
 function countedChanges(stat: TreeLoadingStat): number {
-  return stat.resourcesNew + stat.resourcesChanged + stat.resourcesMarkedFinal;
+  // `fieldsRemoved` is included despite being a per-field count, because it is the one change
+  // that never shows up in `resourcesChanged`: the removed-dynamic-field branch in
+  // `updateFromResourceData` does not set its `changed` flag, so a cycle that only dropped a
+  // field (and garbage-collected whatever it pointed at) otherwise reads as an idle cycle.
+  // That double-counts a resource that both changed and lost a field, which is harmless here:
+  // every caller compares this against an earlier value rather than reading it as a total.
+  return stat.resourcesNew + stat.resourcesChanged + stat.resourcesMarkedFinal + stat.fieldsRemoved;
 }
 
 /** The poll-cadence policy, as a pure function of the last cycle's outcome.
@@ -276,7 +285,8 @@ export class SynchronizedTreeState {
     }
 
     const roots = this.currentRootSet();
-    if (snapshot.roots.length !== roots.size || !snapshot.roots.every((r) => roots.has(r))) {
+    const snapshotRoots = new Set(snapshot.roots);
+    if (snapshotRoots.size !== roots.size || ![...snapshotRoots].every((r) => roots.has(r))) {
       // A snapshot addressed to a different root is a mis-keyed file, not a stale one.
       this.logger?.warn("ignoring tree snapshot: its roots are not this tree's roots");
       return false;
