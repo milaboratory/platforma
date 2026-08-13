@@ -155,11 +155,8 @@ export function assembleProjectTemplateV1(
     blocks.push({
       id: entry.blockId,
       kind: selector,
-      ...(location !== undefined ? { location } : {}),
-      // Always written, including as `{}`. Every block projects its params — the model
-      // does not build otherwise — so there is no export that legitimately has none, and
-      // an omitted key would only read back as the same `{}` anyway.
       params: entry.params,
+      ...(location !== undefined ? { location } : {}),
     });
   }
 
@@ -204,7 +201,7 @@ export function stringifyProjectTemplateV1(document: ProjectTemplateV1): string 
  * problem is the other half of that: fixing an export should take one pass.
  *
  * @param structure The project structure, which supplies both membership and order
- * @param paramsProvider A block's derived template params, in template form
+ * @param paramsProvider A block's derived template params, in live form
  * @param kindProvider A block's exact kind reference, read from its stored config
  * @param specProvider A block's origin spec, read from the same stored container
  */

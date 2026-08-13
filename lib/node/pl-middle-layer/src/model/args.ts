@@ -1,5 +1,6 @@
 import { assertNever } from "@milaboratories/ts-helpers";
 import type { PlRef } from "@platforma-sdk/model";
+import { peelJsonLayers } from "@milaboratories/pl-model-common";
 
 export function outputRef(blockId: string, name: string, requireEnrichments?: boolean): PlRef {
   if (requireEnrichments) return { __isRef: true, blockId, name, requireEnrichments };
@@ -48,9 +49,15 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
     case "undefined":
       return;
     case "string": {
-      unwrapEmbeddedRef(node as string, (parsed) =>
-        addAllReferencedBlocks(result, parsed, allowed),
-      );
+      // A reference can be hiding inside a string under any number of `JSON.stringify`
+      // passes, and this walk would otherwise never reach it. Peeling is shared with the
+      // column-id remapper so that "how a value hides inside a string" has one
+      // definition; what happens at the bottom is not shared, and here it is deliberately
+      // broad — anything the peel produced is walked, including a foreign-schema document
+      // that merely contains a reference. That breadth is what makes this detector usable
+      // as a guard over carriers the template codec declines to touch.
+      const peeled = peelJsonLayers(node as string);
+      if (peeled !== undefined) addAllReferencedBlocks(result, peeled.value, allowed);
       return;
     }
     case "object": {
@@ -69,33 +76,6 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
     default:
       assertNever(type);
   }
-}
-
-/**
- * Detect a PlRef carried inside a string and hand the decoded value to `onParsed`.
- *
- * A PlRef-as-string is canonical `{...}` optionally wrapped by N `JSON.stringify`
- * passes. Each pass adds a symmetric prefix/suffix made only of `"` and `\`
- * chars (the escape padding) of equal length. The regex below is the strict
- * shape gate — non-ref strings fail at the very first character, so we never
- * scan their body. One pass is peeled per call; deeper nesting is unwrapped
- * via recursion in the caller.
- */
-const EMBEDDED_REF_RE = /^(?<pre>[\\"]*)\{[\s\S]*?__isRef[\s\S]*\}(?<suf>[\\"]*)$/;
-
-function unwrapEmbeddedRef(s: string, onParsed: (value: unknown) => void) {
-  const c0 = s.charCodeAt(0);
-  if (c0 !== 0x7b /* { */ && c0 !== 0x22 /* " */) return;
-  const m = EMBEDDED_REF_RE.exec(s);
-  if (m === null) return;
-  if (m.groups!.pre.length !== m.groups!.suf.length) return;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(s);
-  } catch {
-    return;
-  }
-  if (parsed !== s) onParsed(parsed);
 }
 
 function recordRef(

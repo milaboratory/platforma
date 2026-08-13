@@ -10,10 +10,8 @@ import {
   parseKindSelectorReference,
   type BlockKindSelectorReference,
 } from "./kind_selector";
+import { isTemplateRef, referencedBlockIds, toTemplateRef } from "./template_ref";
 import {
-  collectTemplateLocalRefs,
-  createTemplateLocalRef,
-  isTemplateLocalRef,
   parseBlockPackLocation,
   parseBlockPackReference,
   parseProjectTemplateV1,
@@ -36,14 +34,14 @@ import {
 //     - id: mixcr
 //       kind: "@platforma-open/milaboratories.mixcr-clonotyping.kind@~1.2.0"
 //       params:
-//         input: { block: samples, output: reads }
+//         input: { $ref: { __isRef: true, blockId: samples, name: reads } }
 //         species: human
 //         preset: milab-human-tcr-rna
 //     - id: browser
 //       kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.0.0"
 //       block: "@platforma-open/milaboratories.clonotype-browser@2.4.1"
 //       params:
-//         clonotypes: { block: mixcr, output: clonotypes }
+//         clonotypes: { $ref: { __isRef: true, blockId: mixcr, name: clonotypes } }
 //
 // The YAML text <-> value step is not this package's job (no `yaml` dependency);
 // byte-level round-tripping belongs to the middle-layer serializer.
@@ -60,7 +58,7 @@ const referenceExample = {
       id: "mixcr",
       kind: "@platforma-open/milaboratories.mixcr-clonotyping.kind@~1.2.0",
       params: {
-        input: { block: "samples", output: "reads" },
+        input: toTemplateRef({ __isRef: true, blockId: "samples", name: "reads" }),
         species: "human",
         preset: "milab-human-tcr-rna",
       },
@@ -69,7 +67,9 @@ const referenceExample = {
       id: "browser",
       kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.0.0",
       block: "@platforma-open/milaboratories.clonotype-browser@2.4.1",
-      params: { clonotypes: { block: "mixcr", output: "clonotypes" } },
+      params: {
+        clonotypes: toTemplateRef({ __isRef: true, blockId: "mixcr", name: "clonotypes" }),
+      },
     },
   ],
 };
@@ -181,36 +181,56 @@ describe("block pack location", () => {
   });
 });
 
-describe("template-local references", () => {
-  test("recognized by the reserved two-key shape only", () => {
-    expect(isTemplateLocalRef(createTemplateLocalRef("samples", "reads"))).toBe(true);
-    expect(isTemplateLocalRef({ block: "samples", output: "reads" })).toBe(true);
+describe("reference wrappers", () => {
+  test("recognized by the reserved $ref shape only", () => {
+    expect(isTemplateRef(toTemplateRef({ __isRef: true }))).toBe(true);
+    expect(isTemplateRef({ $ref: "anything at all" })).toBe(true);
 
-    // A third key, a missing key, a non-string value, an array: not a reference.
-    expect(isTemplateLocalRef({ block: "samples", output: "reads", extra: 1 })).toBe(false);
-    expect(isTemplateLocalRef({ block: "samples" })).toBe(false);
-    expect(isTemplateLocalRef({ block: "samples", output: 1 })).toBe(false);
-    expect(isTemplateLocalRef(["samples", "reads"])).toBe(false);
-    expect(isTemplateLocalRef(null)).toBe(false);
+    // A second key, no `$ref`, an array, null: not a wrapper. The shape is reserved inside
+    // opaque params, so the narrowest recognizable one takes least away from kind authors.
+    expect(isTemplateRef({ $ref: 1, as: "id" })).toBe(false);
+    expect(isTemplateRef({ ref: 1 })).toBe(false);
+    expect(isTemplateRef([1])).toBe(false);
+    expect(isTemplateRef(null)).toBe(false);
   });
 
-  test("collected from anywhere inside params, including nesting", () => {
-    const refs = collectTemplateLocalRefs({
-      input: { block: "samples", output: "reads" },
-      species: "human",
-      nested: {
-        list: [{ block: "mixcr", output: "clonotypes" }, { notARef: true }],
-      },
-    });
+  test("an absent value is not wrapped", () => {
+    expect(toTemplateRef(undefined)).toBeUndefined();
+  });
 
-    expect(refs).toEqual([
-      { block: "samples", output: "reads" },
-      { block: "mixcr", output: "clonotypes" },
+  test("the payload is whatever the block wrapped, untouched", () => {
+    const payload = [{ __isRef: true, blockId: "a", name: "x" }];
+
+    expect(toTemplateRef(payload).$ref).toBe(payload);
+  });
+
+  test("referenced ids are found in any payload, at any depth", () => {
+    const params = {
+      input: toTemplateRef({ __isRef: true, blockId: "samples", name: "reads" }),
+      nested: { list: [toTemplateRef('{"__isRef":true,"blockId":"mixcr","name":"clones"}')] },
+      species: "human",
+    };
+
+    expect(referencedBlockIds(params, ["samples", "mixcr", "absent"])).toEqual([
+      "samples",
+      "mixcr",
     ]);
   });
 
-  test("undefined params yield no references", () => {
-    expect(collectTemplateLocalRefs(undefined)).toEqual([]);
+  test("an id outside a wrapper is not a reference", () => {
+    // Wrapping is the whole signal. What sits outside one is data as far as this layer is
+    // concerned, and is rejected elsewhere — by the export guard and the import check.
+    const params = { loose: { __isRef: true, blockId: "samples", name: "reads" } };
+
+    expect(referencedBlockIds(params, ["samples"])).toEqual([]);
+  });
+
+  test("an id is matched as a whole JSON token, not as a substring", () => {
+    // `a` must not match the `a` inside `"reads"`, or a rewrite would corrupt the payload.
+    const params = { input: toTemplateRef({ __isRef: true, blockId: "b", name: "reads" }) };
+
+    expect(referencedBlockIds(params, ["a"])).toEqual([]);
+    expect(referencedBlockIds(params, ["b"])).toEqual(["b"]);
   });
 });
 
@@ -344,15 +364,14 @@ describe("parseProjectTemplateV1", () => {
 describe("validateProjectTemplateV1References", () => {
   const docWith = (blocks: unknown[]) => parseProjectTemplateV1({ schema: "template-v1", blocks });
 
+  const reader = (id: string, referenced: string) => ({
+    id,
+    kind: "@o/m.kind@1.0.0",
+    params: { input: toTemplateRef({ __isRef: true, blockId: referenced, name: "reads" }) },
+  });
+
   test("flags a reference to an entry declared later", () => {
-    const doc = docWith([
-      {
-        id: "mixcr",
-        kind: "@o/m.kind@1.0.0",
-        params: { input: { block: "samples", output: "reads" } },
-      },
-      { id: "samples", kind: "@o/s.kind@1.0.0" },
-    ]);
+    const doc = docWith([reader("mixcr", "samples"), { id: "samples", kind: "@o/s.kind@1.0.0" }]);
 
     expect(validateProjectTemplateV1References(doc)).toEqual([
       "Entry 'mixcr' references entry 'samples', which is declared after it " +
@@ -360,31 +379,44 @@ describe("validateProjectTemplateV1References", () => {
     ]);
   });
 
-  test("flags a reference to an id that is not in the file", () => {
-    const doc = docWith([
-      {
-        id: "mixcr",
-        kind: "@o/m.kind@1.0.0",
-        params: { input: { block: "ghost", output: "reads" } },
-      },
-    ]);
+  test("flags a self-reference", () => {
+    const doc = docWith([reader("mixcr", "mixcr")]);
 
     expect(validateProjectTemplateV1References(doc)).toEqual([
-      "Entry 'mixcr' references output 'reads' of unknown entry 'ghost'",
+      "Entry 'mixcr' references its own output",
     ]);
   });
 
-  test("flags a self-reference", () => {
+  test("says nothing about a reference to an id the file does not define", () => {
+    // The documented gap of an engine that does not parse payloads: it can only ask which of
+    // the ids this file defines appear in one, so an id naming no entry is indistinguishable
+    // from the rest of the payload's text. Pinned so the gap stays visible.
+    const doc = docWith([reader("mixcr", "ghost")]);
+
+    expect(validateProjectTemplateV1References(doc)).toEqual([]);
+  });
+
+  test("finds a block id however deeply it is buried in the payload", () => {
+    // The engine reads no structure, so depth, escaping and nesting cost it nothing.
     const doc = docWith([
       {
-        id: "mixcr",
+        id: "browser",
         kind: "@o/m.kind@1.0.0",
-        params: { input: { block: "mixcr", output: "reads" } },
+        params: {
+          anchor: toTemplateRef(
+            JSON.stringify({
+              __isFiltered: true,
+              source: JSON.stringify({ __isRef: true, blockId: "samples", name: "c" }),
+            }),
+          ),
+        },
       },
+      { id: "samples", kind: "@o/s.kind@1.0.0" },
     ]);
 
     expect(validateProjectTemplateV1References(doc)).toEqual([
-      "Entry 'mixcr' references its own output 'reads'",
+      "Entry 'browser' references entry 'samples', which is declared after it " +
+        "(blocks order is the instantiation order)",
     ]);
   });
 });

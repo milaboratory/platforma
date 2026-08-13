@@ -38,6 +38,7 @@ import {
   deriveTemplateParamsFromStorage,
 } from "./block_storage_callbacks";
 import { type PluginName } from "./block_storage";
+import type { TemplateParamsOf } from "@milaboratories/pl-model-common";
 import type {
   ConfigRenderLambda,
   DeriveHref,
@@ -129,7 +130,7 @@ interface BlockModelV3Config<
   deriveArgs: ((data: unknown) => unknown) | undefined;
   derivePrerunArgs: ((data: unknown) => unknown) | undefined;
   /** Projects block data back to this kind's params for template export. */
-  deriveTemplateParams: ((data: Data) => Params) | undefined;
+  deriveTemplateParams: ((data: Data) => TemplateParamsOf<Params>) | undefined;
   /**
    * The kind's runtime check for params supplied by a template. Read off the compiled
    * kind rather than declared per block: the params contract belongs to the kind, and
@@ -404,11 +405,11 @@ export class BlockModelV3<
    * @example
    * BlockModelV3.create({ dataModel, kind })
    *   .args((data) => ({ numbers: data.numbers }))
-   *   .templateParams((data) => ({ sources: data.sources }))
+   *   .templateParams((data) => ({ sources: toTemplateRef(data.sources) }))
    *   .done();
    */
   public templateParams(
-    fn: (data: Data) => Params,
+    fn: (data: Data) => TemplateParamsOf<Params>,
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
       ...this.config,
@@ -822,7 +823,7 @@ type _ConfigTest = Expect<
       renderingMode: BlockRenderingMode;
       deriveArgs: ((data: unknown) => unknown) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
-      deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
+      deriveTemplateParams: ((data: _TestData) => TemplateParamsOf<unknown>) | undefined;
       parseTemplateParams: (value: unknown) => unknown;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;

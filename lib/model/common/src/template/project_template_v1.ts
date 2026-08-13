@@ -3,6 +3,7 @@ import type { Branded } from "@milaboratories/helpers";
 import { splitVersionedName } from "../bmodel/block_kind_ref";
 import type { BlockKindSelectorReference } from "./kind_selector";
 import { parseKindSelector, parseKindSelectorReference } from "./kind_selector";
+import { referencedBlockIds } from "./template_ref";
 
 /**
  * Value of a template file's `schema` field — the format marker every
@@ -10,41 +11,6 @@ import { parseKindSelector, parseKindSelectorReference } from "./kind_selector";
  */
 export const PROJECT_TEMPLATE_SCHEMA_V1 = "template-v1";
 export type ProjectTemplateSchemaV1 = typeof PROJECT_TEMPLATE_SCHEMA_V1;
-
-/**
- * A template-local reference: entry `id` plus an upstream output name.
- *
- * A template cannot carry project-local UUIDs — the blocks do not exist until it
- * is applied — so an inter-block wire inside `params` is written as
- * `{ block: <entry id>, output: <output name> }`. On apply the engine rewrites
- * each of these into a concrete `PlRef` against the freshly assigned UUIDs
- * before the params reach the block's init lambda.
- */
-export type TemplateLocalRef = {
-  readonly block: string;
-  readonly output: string;
-};
-
-/** Compose a {@link TemplateLocalRef}. */
-export function createTemplateLocalRef(block: string, output: string): TemplateLocalRef {
-  return { block, output };
-}
-
-/**
- * Whether `value` is a {@link TemplateLocalRef} — a plain object with exactly the
- * two string keys `block` and `output`.
- *
- * Deliberately exact: an object carrying a third key is NOT a reference, so a
- * kind that grows a `{ block, output, … }` param shape fails the reservation rule
- * loudly rather than having its params silently rewritten.
- */
-export function isTemplateLocalRef(value: unknown): value is TemplateLocalRef {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  const keys = Object.keys(value);
-  if (keys.length !== 2) return false;
-  const v = value as Record<string, unknown>;
-  return typeof v.block === "string" && typeof v.output === "string";
-}
 
 /**
  * On-wire reference to one exact block package version, `{name}@X.Y.Z`.
@@ -158,8 +124,13 @@ export type ProjectTemplateV1Entry = {
   readonly block?: BlockPackReference;
   readonly location?: BlockPackLocationReference;
   /**
-   * The block's `BlockParams` instance — opaque here, typed by the kind. Wires
-   * to other entries appear inside it as {@link TemplateLocalRef}s.
+   * The block's `BlockParams` instance, exactly as the block projected it — opaque here
+   * and typed by the kind.
+   *
+   * The document layer looks inside for one thing only: a `{ $ref: … }` wrapper, which the
+   * block puts around any value carrying block ids. Everything else travels verbatim,
+   * references included, because an engine that parsed identifiers would have to model the
+   * whole reference system to do it. See `TemplateRef`.
    */
   readonly params?: Record<string, unknown>;
 };
@@ -292,10 +263,9 @@ export const ProjectTemplateV1Schema = z
  * Parse an already-decoded template document — the value a YAML or JSON reader
  * returns — into a {@link ProjectTemplateV1}.
  *
- * Checks the format marker, every entry's shape, the reference grammars, and id
- * uniqueness. It does NOT check that references point somewhere: that depends on
- * the reservation rule (see {@link TemplateLocalRef}), so it is kept out of the
- * parser and available separately as
+ * Checks the format marker, every entry's shape, the reference grammars and id
+ * uniqueness. It does NOT check what an entry's params point at: params are opaque here,
+ * and the ordering rule they must satisfy is a statement about `blocks`, kept separate as
  * {@link validateProjectTemplateV1References}.
  *
  * @throws {z.ZodError} on any of the above
@@ -304,100 +274,61 @@ export function parseProjectTemplateV1(value: unknown): ProjectTemplateV1 {
   return ProjectTemplateV1Schema.parse(value);
 }
 
-/**
- * Collect every {@link TemplateLocalRef} inside an entry's `params`, walking
- * nested objects and arrays.
- *
- * Structural, kind-agnostic — it recognizes references by the reserved
- * `{ block, output }` shape (see {@link TemplateLocalRef}). It does not descend
- * into a value it recognized as a reference.
- */
-export function collectTemplateLocalRefs(
-  params: Record<string, unknown> | undefined,
-): TemplateLocalRef[] {
-  const found: TemplateLocalRef[] = [];
-  const walk = (value: unknown) => {
-    if (isTemplateLocalRef(value)) {
-      found.push(value);
-      return;
-    }
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-    if (typeof value === "object" && value !== null) {
-      Object.values(value).forEach(walk);
-    }
-  };
-  walk(params);
-  return found;
-}
-
-/** Why one {@link TemplateLocalRef} is not usable, and which entry holds it. */
+/** Why one reference is not usable, and which entry holds it. */
 export type TemplateReferenceProblem = {
   /** The entry whose `params` hold the offending reference. */
   readonly entryId: string;
-  readonly ref: TemplateLocalRef;
+  /** The entry it references. */
+  readonly referencedId: string;
   /**
-   * - `self` — the entry references its own output.
-   * - `unknown` — the target id matches no entry in the document.
-   * - `forward` — the target exists but is declared later, so it does not exist
-   *   yet at the point this entry is created.
+   * - `self` — the entry references an output of its own.
+   * - `forward` — the referenced entry is declared later, so it does not exist yet at the
+   *   point this entry is created.
    */
-  readonly reason: "self" | "unknown" | "forward";
+  readonly reason: "self" | "forward";
   /** Human-readable form, suitable for showing to whoever triggered the export. */
   readonly message: string;
 };
 
 /**
- * Find every template-local reference that does not name an entry declared
- * EARLIER in `blocks`.
+ * Find every reference that does not name an entry declared EARLIER in `blocks`.
  *
- * Both halves of the ordering rule — every block must appear after the blocks it
- * references — in one pass, reporting an unknown target and a forward target
- * distinctly. Empty when the document is consistent.
+ * The ordering rule — every block must appear after the blocks it references — checked
+ * across the whole document and reported per offending pair. Empty when the document is
+ * consistent.
  *
- * Structured rather than string-only so a caller that has to attribute a problem
- * to a block (an exporter reporting per-block failures, for instance) does not
- * have to parse the message back apart.
- *
- * Separate from {@link parseProjectTemplateV1} because it rests on the
- * reservation rule for `{ block, output }` — a parser must not depend on a rule
- * still awaiting sign-off.
+ * **A dangling reference is not among the findings, and cannot be.** The check asks which
+ * of the ids this document defines appear inside a reference payload (see
+ * {@link referencedBlockIds}), because the engine deliberately cannot read a payload's
+ * structure. An id naming no entry is therefore invisible — nothing separates it from the
+ * rest of the payload's text. That is part of the price of keeping the reference system out
+ * of the engine, and it is paid at apply time, where such a reference reaches its block
+ * unredirected.
  */
 export function findProjectTemplateV1ReferenceProblems(
   doc: ProjectTemplateV1,
 ): TemplateReferenceProblem[] {
   const problems: TemplateReferenceProblem[] = [];
+  const allIds = doc.blocks.map((e) => e.id);
   const declaredBefore = new Set<string>();
-  const allIds = new Set(doc.blocks.map((e) => e.id));
 
   for (const entry of doc.blocks) {
-    for (const ref of collectTemplateLocalRefs(entry.params)) {
-      if (ref.block === entry.id) {
+    for (const referencedId of referencedBlockIds(entry.params, allIds)) {
+      if (referencedId === entry.id) {
         problems.push({
           entryId: entry.id,
-          ref,
+          referencedId,
           reason: "self",
-          message: `Entry '${entry.id}' references its own output '${ref.output}'`,
+          message: `Entry '${entry.id}' references its own output`,
         });
-      } else if (!allIds.has(ref.block)) {
+      } else if (!declaredBefore.has(referencedId)) {
         problems.push({
           entryId: entry.id,
-          ref,
-          reason: "unknown",
-          message:
-            `Entry '${entry.id}' references output '${ref.output}' of unknown entry ` +
-            `'${ref.block}'`,
-        });
-      } else if (!declaredBefore.has(ref.block)) {
-        problems.push({
-          entryId: entry.id,
-          ref,
+          referencedId,
           reason: "forward",
           message:
-            `Entry '${entry.id}' references entry '${ref.block}', which is declared after it ` +
-            `(blocks order is the instantiation order)`,
+            `Entry '${entry.id}' references entry '${referencedId}', which is declared after ` +
+            `it (blocks order is the instantiation order)`,
         });
       }
     }

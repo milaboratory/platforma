@@ -50,11 +50,14 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
 
 `init` receives the kind's `params` (optional — a block may be created without a
 template) and builds the block's initial storage from them. `templateParams()` is the
-inverse: it projects block state back to the kind's params for export.
+inverse: it projects block state back to the kind's params for export, wrapping every value
+that carries a block id in `toTemplateRef` so a template can redirect it.
 
 **`@milaboratories/pl-model-common`** — `BlockKindReference` + `formatKindRef`, the
-`template-v1` document schema, the kind selector's semver ranges, and template form
-helpers.
+`template-v1` document schema, the kind selector's semver ranges, and `toTemplateRef` with the
+`{ $ref: … }` wrapper it produces. A block wraps the params values that carry block ids; the
+template engine stores what is inside verbatim and redirects those ids textually, so it holds
+no model of the reference system at all.
 
 **`@milaboratories/pl-middle-layer`** — `MiddleLayer.exportProjectAsTemplate(id)` and
 `MiddleLayer.applyTemplateToProject(id, document)`, backing "Export Project as

@@ -2,7 +2,8 @@ import { describe, expect, test } from "vitest";
 import YAML from "yaml";
 import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import {
-  createTemplateLocalRef,
+  createPlRef,
+  toTemplateRef,
   kindReferenceToSelectorReference,
   parseProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
@@ -108,8 +109,8 @@ describe("the document", () => {
   test("entry order is structure order", () => {
     const result = exportOf(simpleStructure("samples", "mixcr", "browser"), {
       samples: ok({}),
-      mixcr: ok({ input: createTemplateLocalRef("samples", "reads") }),
-      browser: ok({ clones: createTemplateLocalRef("mixcr", "clonotypes") }),
+      mixcr: ok({ input: toTemplateRef(createPlRef("samples", "reads")) }),
+      browser: ok({ clones: toTemplateRef(createPlRef("mixcr", "clonotypes")) }),
     });
 
     expect(result.ok && result.document.blocks.map((b) => b.id)).toEqual([
@@ -126,7 +127,7 @@ describe("the YAML", () => {
     const result = exportOf(simpleStructure("samples", "mixcr"), {
       samples: ok({ dataset: "bulk-rna", replicates: [1, 2, 3] }),
       mixcr: ok({
-        input: createTemplateLocalRef("samples", "reads"),
+        input: toTemplateRef(createPlRef("samples", "reads")),
         species: "hsa",
         nested: { deep: { flag: true, absent: null } },
       }),
@@ -161,21 +162,23 @@ describe("the YAML", () => {
     expect(yaml).toContain(long);
   });
 
-  test("a reference is written as a plain two-key mapping", () => {
-    // How the engine recognizes a reference on apply, so its shape in the file is
-    // part of the contract rather than a rendering detail.
+  test("a reference is written as the block wrapped it, contents untouched", () => {
+    // How the engine finds a reference on apply, so the wrapper's presence in the file is
+    // part of the contract rather than a rendering detail. What is inside it is the block's
+    // own value, written verbatim.
     const result = exportOf(simpleStructure("samples", "mixcr"), {
       samples: ok({}),
-      mixcr: ok({ input: createTemplateLocalRef("samples", "reads") }),
+      mixcr: ok({ input: toTemplateRef(createPlRef("samples", "reads")) }),
     });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // A plain mapping of the two reserved keys, with no marker left over from the
-    // live `PlRef` form the block's lambda returned.
-    expect(result.yaml).toContain("block: samples");
-    expect(result.yaml).toContain("output: reads");
-    expect(result.yaml).not.toContain("__isRef");
+    expect(result.yaml).toContain("$ref:");
+    expect(result.yaml).toContain("__isRef: true");
+    expect(result.yaml).toContain("blockId: samples");
+    expect(result.document.blocks[1].params).toEqual({
+      input: { $ref: createPlRef("samples", "reads") },
+    });
   });
 });
 
@@ -209,23 +212,21 @@ describe("problems", () => {
     expect(result.problems[0].error).toContain("malformed");
   });
 
-  test("a reference to a block that is not in the project is caught", () => {
-    // Deleting a block only removes it from the structure and does not rewrite
-    // downstream args, so a live project holds such references routinely — and
-    // verbatim id reuse carries them straight into the file.
+  test("a reference to a block that is not in the project is NOT caught", () => {
+    // Deleting a block only removes it from the structure and does not rewrite downstream
+    // args, so a live project holds such references routinely. Recognizing one would mean
+    // knowing which values are identifiers, which the engine deliberately does not — so the
+    // reference is written out and surfaces on apply as a block wired to nothing.
     const result = exportOf(simpleStructure("survivor"), {
-      survivor: ok({ input: createTemplateLocalRef("deleted-upstream", "reads") }),
+      survivor: ok({ input: toTemplateRef(createPlRef("deleted-upstream", "reads")) }),
     });
 
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.problems[0].blockId).toBe("survivor");
-    expect(result.problems[0].error).toContain("unknown entry 'deleted-upstream'");
+    expect(result.ok).toBe(true);
   });
 
   test("a forward reference is caught, and named as one", () => {
     const result = exportOf(simpleStructure("downstream", "upstream"), {
-      downstream: ok({ input: createTemplateLocalRef("upstream", "reads") }),
+      downstream: ok({ input: toTemplateRef(createPlRef("upstream", "reads")) }),
       upstream: ok({}),
     });
 

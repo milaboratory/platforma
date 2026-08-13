@@ -1,7 +1,7 @@
 import { BlockPointer as enterNumbersSpec } from "@milaboratories/milaboratories.test-enter-numbers";
 import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
-import { createPlRef, fromTemplateForm, toTemplateForm } from "@milaboratories/pl-model-common";
+import { createPlRef, resolveTemplateRefs } from "@milaboratories/pl-model-common";
 import type { BlockPackProvider, Project } from "@milaboratories/pl-middle-layer";
 import {
   parseProjectTemplateV1Yaml,
@@ -238,43 +238,38 @@ function localPacksOnly(): BlockPackProvider {
 function canonical(document: ProjectTemplateV1): ProjectTemplateV1 {
   const positionOf = new Map(document.blocks.map((entry, i) => [entry.id, `b${i}`]));
 
-  return {
-    ...document,
-    blocks: document.blocks.map((entry, i) => ({
-      ...entry,
-      id: `b${i}`,
-      ...(entry.params !== undefined
-        ? { params: renameInTemplateParams(entry.params, positionOf) }
-        : {}),
-    })),
-  };
+  // Renaming goes through the engine's own redirect, so this recognizes exactly the
+  // references the engine recognizes — reimplementing the walk here would let the comparison
+  // agree with a bug instead of catching it. Note it rewrites INSIDE the wrappers and leaves
+  // them in place, which is what a document holds.
+  const blocks = document.blocks.map((entry, i) => ({
+    ...entry,
+    id: `b${i}`,
+    ...(entry.params !== undefined ? { params: renameInsideRefs(entry.params, positionOf) } : {}),
+  }));
+
+  return { ...document, blocks };
 }
 
-/**
- * Rename the blocks named by references inside live params — the shape a project
- * stores, where a reference is a `PlRef` carrying a block id.
- *
- * Both renamers go through the same codec the export and apply paths use, one pass in
- * each direction, so they recognize exactly the references the system recognizes.
- * Re-implementing the walk here would let this comparison agree with a bug instead of
- * catching it.
- */
-function renameInLiveParams(value: unknown, newIdOf: ReadonlyMap<string, string>): unknown {
-  return fromTemplateForm(toTemplateForm(value), (blockId) => newIdOf.get(blockId) ?? blockId);
-}
-
-/**
- * The same for params in file form, where a reference names an entry rather than a
- * block. The codec passes run in the opposite order, so what goes in comes back out in
- * the shape a document holds.
- */
-function renameInTemplateParams(
+/** Redirect the block ids inside every reference wrapper, keeping the wrappers. */
+function renameInsideRefs(
   params: Record<string, unknown>,
   newIdOf: ReadonlyMap<string, string>,
 ): Record<string, unknown> {
-  const live = fromTemplateForm<Record<string, unknown>>(
-    params,
-    (entryId) => newIdOf.get(entryId) ?? entryId,
+  return Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [key, renameInLiveParams(value, newIdOf)]),
   );
-  return toTemplateForm(live) as Record<string, unknown>;
+}
+
+/**
+ * Rename the blocks named by references inside a value — live params, or one reference
+ * payload.
+ *
+ * Wrapping the value and resolving it back is the engine's own redirect, applied to
+ * something that is not a document. Re-implementing the walk here would let the comparison
+ * agree with a bug instead of catching it.
+ */
+function renameInLiveParams(value: unknown, newIdOf: ReadonlyMap<string, string>): unknown {
+  const wrapped = resolveTemplateRefs({ $ref: value }, newIdOf);
+  return wrapped;
 }

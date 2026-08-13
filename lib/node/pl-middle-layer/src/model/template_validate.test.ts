@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vitest";
-import canonicalize from "canonicalize";
 import type {
   BlockKindSelectorReference,
   ProjectTemplateV1,
@@ -8,7 +7,7 @@ import type {
 import {
   PROJECT_TEMPLATE_SCHEMA_V1,
   createPlRef,
-  createTemplateLocalRef,
+  toTemplateRef,
 } from "@milaboratories/pl-model-common";
 import { validateTemplateV1ForApply } from "./template_validate";
 
@@ -31,12 +30,32 @@ const documentOf = (...blocks: ProjectTemplateV1Entry[]): ProjectTemplateV1 => (
   blocks,
 });
 
+/**
+ * A document whose references are wrapped, as a block that projected them writes it.
+ *
+ * The unwrapped builder above stays for the opposite checks — params that carry a block id
+ * where the engine will never look for one.
+ */
+const wiredDocumentOf = (
+  ...live: readonly { id: string; params?: Record<string, unknown> }[]
+): ProjectTemplateV1 => ({
+  schema: PROJECT_TEMPLATE_SCHEMA_V1,
+  blocks: live.map((e) =>
+    entry(
+      e.id,
+      e.params === undefined
+        ? undefined
+        : Object.fromEntries(Object.entries(e.params).map(([k, v]) => [k, toTemplateRef(v)])),
+    ),
+  ),
+});
+
 describe("validateTemplateV1ForApply", () => {
   test("a consistent document has nothing to report", () => {
-    const document = documentOf(
-      entry("a", { dataset: "bulk-rna" }),
-      entry("b", { input: createTemplateLocalRef("a", "reads") }),
-      entry("c", { input: createTemplateLocalRef("b", "clonotypes"), extra: {} }),
+    const document = wiredDocumentOf(
+      { id: "a", params: { dataset: "bulk-rna" } },
+      { id: "b", params: { input: createPlRef("a", "reads") } },
+      { id: "c", params: { input: createPlRef("b", "clonotypes"), extra: {} } },
     );
 
     expect(validateTemplateV1ForApply(document)).toEqual([]);
@@ -47,10 +66,12 @@ describe("validateTemplateV1ForApply", () => {
   });
 
   test("references at any depth are checked", () => {
-    // The reference could be nested anywhere in opaque params, so a check that only
-    // looked at the top level would pass files it cannot apply.
-    const document = documentOf(
-      entry("a", { steps: [{ from: createTemplateLocalRef("nope", "reads") }] }),
+    // A wrapper can sit anywhere in opaque params, so a check that only looked at the top
+    // level would pass files it cannot apply.
+    const document = wiredDocumentOf(
+      { id: "a" },
+      { id: "b", params: { steps: [{ from: toTemplateRef(createPlRef("later", "reads")) }] } },
+      { id: "later" },
     );
 
     expect(validateTemplateV1ForApply(document)).toHaveLength(1);
@@ -58,22 +79,24 @@ describe("validateTemplateV1ForApply", () => {
 
   test("an entry referencing itself is told what to do about it", () => {
     const problems = validateTemplateV1ForApply(
-      documentOf(entry("a", { input: createTemplateLocalRef("a", "reads") })),
+      wiredDocumentOf({ id: "a", params: { input: createPlRef("a", "reads") } }),
     );
 
     expect(problems[0].entryId).toBe("a");
-    expect(problems[0].error).toContain("its own output 'reads'");
+    expect(problems[0].error).toContain("its own output");
     expect(problems[0].error).toMatch(/Point it at another entry, or remove the reference/);
   });
 
-  test("a reference to an entry the file does not define names the missing id", () => {
+  test("a reference to an entry the file does not define is NOT reported", () => {
+    // The documented cost of an engine that does not parse reference payloads: it can only
+    // ask which of the ids this file defines appear in there, so an id naming no entry is
+    // indistinguishable from any other text. Such a reference surfaces as an applied block
+    // wired to nothing. Pinned as a test so the gap is visible rather than folklore.
     const problems = validateTemplateV1ForApply(
-      documentOf(entry("a"), entry("b", { input: createTemplateLocalRef("typo", "reads") })),
+      wiredDocumentOf({ id: "a" }, { id: "b", params: { input: createPlRef("typo", "reads") } }),
     );
 
-    expect(problems[0].entryId).toBe("b");
-    expect(problems[0].error).toContain("entry 'typo'");
-    expect(problems[0].error).toMatch(/Add that entry, or correct the id/);
+    expect(problems).toEqual([]);
   });
 
   test("a reference to a later entry says to move it up", () => {
@@ -81,7 +104,7 @@ describe("validateTemplateV1ForApply", () => {
     // to exist before the block that reads it. The fix is a move, and the message says
     // so rather than only stating the rule.
     const problems = validateTemplateV1ForApply(
-      documentOf(entry("a", { input: createTemplateLocalRef("b", "reads") }), entry("b")),
+      wiredDocumentOf({ id: "a", params: { input: createPlRef("b", "reads") } }, { id: "b" }),
     );
 
     expect(problems[0].entryId).toBe("a");
@@ -93,13 +116,10 @@ describe("validateTemplateV1ForApply", () => {
     // One pass to fix the file. Grouping by entry keeps the report readable next to the
     // file itself.
     const problems = validateTemplateV1ForApply(
-      documentOf(
-        entry("a", {
-          self: createTemplateLocalRef("a", "x"),
-          gone: createTemplateLocalRef("x", "y"),
-        }),
-        entry("b", { later: createTemplateLocalRef("c", "z") }),
-        entry("c"),
+      wiredDocumentOf(
+        { id: "a", params: { self: createPlRef("a", "x"), later: createPlRef("b", "y") } },
+        { id: "b", params: { later: createPlRef("c", "z") } },
+        { id: "c" },
       ),
     );
 
@@ -107,75 +127,21 @@ describe("validateTemplateV1ForApply", () => {
   });
 });
 
-describe("params carrying a block id from another project", () => {
-  test("a live reference left in params is rejected", () => {
-    // `{ __isRef: true, ... }` is a reference in a running project, not a template one.
-    // Nothing can redirect it to a block this apply creates.
+describe("what the check does not look at", () => {
+  test("a block id outside a wrapper is not the engine's business", () => {
+    // `{ __isRef: true, … }` written straight into params is a reference in a running
+    // project, and applying it would wire the block to nothing. The engine still says
+    // nothing: it exposes the `{ $ref: … }` mechanic and models no other notion of a
+    // reference, so it cannot tell this from data. Pinned so the boundary is deliberate.
     const problems = validateTemplateV1ForApply(
       documentOf(entry("a", { input: createPlRef(FOREIGN, "reads") })),
-    );
-
-    expect(problems).toHaveLength(1);
-    expect(problems[0].entryId).toBe("a");
-    expect(problems[0].error).toContain(FOREIGN);
-    expect(problems[0].error).toMatch(/remove it from the entry's params/);
-  });
-
-  test("a reference hidden inside a string is caught too", () => {
-    // The case the whole check exists for: an enrichment's `hit` is a canonicalized
-    // reference, so the id sits inside a string where a structural walk cannot see it.
-    // Applied as-is, the params would look valid and be wired to nothing.
-    const problems = validateTemplateV1ForApply(
-      documentOf(
-        entry("a", {
-          enrichment: {
-            __isEnrichment: "v1",
-            hit: canonicalize({ __isRef: true, blockId: FOREIGN, name: "clonotypes" }),
-          },
-        }),
-      ),
-    );
-
-    expect(problems).toHaveLength(1);
-    expect(problems[0].error).toContain(FOREIGN);
-  });
-
-  test("a doubly-stringified reference is caught", () => {
-    // Round-tripping params through JSON more than once nests the escaping; the
-    // detector peels it, and a check written by hand would not have.
-    const once = canonicalize({ __isRef: true, blockId: FOREIGN, name: "reads" })!;
-    const problems = validateTemplateV1ForApply(
-      documentOf(entry("a", { hit: JSON.stringify(JSON.stringify(once)) })),
-    );
-
-    expect(problems[0].error).toContain(FOREIGN);
-  });
-
-  test("every foreign id in one entry is named, sorted", () => {
-    // Naming them all is what makes the file fixable in one pass.
-    const other = "bbbbbbbb-0000-4000-8000-000000000002";
-    const problems = validateTemplateV1ForApply(
-      documentOf(entry("a", { second: createPlRef(other, "x"), first: createPlRef(FOREIGN, "y") })),
-    );
-
-    expect(problems).toHaveLength(1);
-    expect(problems[0].error).toContain(`${FOREIGN}, ${other}`);
-    expect(problems[0].error).toContain("block ids");
-  });
-
-  test("a proper template reference is not mistaken for a foreign one", () => {
-    // The two shapes are what tells them apart: `{ block, output }` is the file form
-    // and gets redirected on apply; `{ __isRef: true, blockId, name }` cannot be.
-    const problems = validateTemplateV1ForApply(
-      documentOf(entry("a"), entry("b", { input: createTemplateLocalRef("a", "reads") })),
     );
 
     expect(problems).toEqual([]);
   });
 
-  test("an id-looking string that is not a reference is left alone", () => {
-    // Params legitimately carry uuids as data — a sample id, a label. Only the
-    // reference shape is a reference.
+  test("an id-looking string is not a reference either", () => {
+    // Params legitimately carry uuids as data — a sample id, a label.
     const problems = validateTemplateV1ForApply(
       documentOf(entry("a", { sampleId: FOREIGN, note: `see ${FOREIGN}` })),
     );
