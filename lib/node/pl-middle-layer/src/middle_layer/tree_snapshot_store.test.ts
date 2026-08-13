@@ -12,10 +12,13 @@ const silent: MiLogger = { info: () => {}, warn: () => {}, error: () => {} };
 
 const sig = (hex: string) => toResourceSignature(Buffer.from(hex, "hex"));
 
-/** Only the three fields the store reads. */
-function fakeClient(ops: { host?: string; user?: string | null; asUser?: string } = {}): PlClient {
+/** Only the fields the store reads. */
+function fakeClient(
+  ops: { host?: string; user?: string | null; asUser?: string; instanceId?: string } = {},
+): PlClient {
   return {
     conf: { hostAndPort: ops.host ?? "localhost:6345", asUser: ops.asUser },
+    serverInfo: { instanceId: ops.instanceId ?? "instance-1" },
     authUser: ops.user === undefined ? "someone@example.com" : ops.user,
   } as unknown as PlClient;
 }
@@ -65,6 +68,68 @@ describe("when the store should not exist at all", () => {
     // identity, so nothing is persisted for an impersonated client.
     const client = fakeClient({ asUser: "someone-else@example.com" });
     expect(storeIn(dir, { client })).toBeUndefined();
+  });
+});
+
+describe("purge", () => {
+  test("removes our files, so turning the switch off reclaims the disk", async () => {
+    const store = storeIn()!;
+    await store.write(rootA, snapshotFor(rootA));
+    await store.write(rootB, snapshotFor(rootB));
+    expect(await files()).toHaveLength(2);
+
+    await TreeSnapshotStore.purge(dir, silent);
+    await expect(fsp.stat(dir)).rejects.toThrow();
+  });
+
+  test("leaves anything that is not ours, and the directory holding it", async () => {
+    const store = storeIn()!;
+    await store.write(rootA, snapshotFor(rootA));
+    // The path is caller-supplied, so a misconfigured one must not take a stranger's files
+    // with it.
+    await fsp.writeFile(path.join(dir, "someone-elses.txt"), "not ours");
+
+    await TreeSnapshotStore.purge(dir, silent);
+
+    expect(await files()).toStrictEqual(["someone-elses.txt"]);
+  });
+
+  test("is quiet about a directory that is not there", async () => {
+    await expect(
+      TreeSnapshotStore.purge(path.join(dir, "never-existed"), silent),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("reporting failure", () => {
+  test("a failed write says so, rather than reporting a phantom success", async () => {
+    // A file where the directory should be, so every write fails.
+    const occupied = path.join(dir, "occupied");
+    await fsp.writeFile(occupied, "in the way");
+    const store = storeIn(occupied)!;
+
+    expect(await store.write(rootA, snapshotFor(rootA))).toBe(false);
+    expect(store.stats.writeFailures).toBe(1);
+  });
+
+  test("a successful write says so", async () => {
+    const store = storeIn()!;
+    expect(await store.write(rootA, snapshotFor(rootA))).toBe(true);
+  });
+
+  test("an unreadable file is not reported as absent", async () => {
+    const store = storeIn()!;
+    await store.write(rootA, snapshotFor(rootA));
+
+    // Replace the file with a directory: present, but unopenable.
+    const [name] = await files();
+    const file = path.join(dir, name);
+    await fsp.rm(file);
+    await fsp.mkdir(file);
+
+    const read = await store.read(rootA);
+    expect(read).toStrictEqual({ ok: false, miss: "unreadable" });
+    expect(store.stats.misses.absent).toBe(0);
   });
 });
 
@@ -169,6 +234,15 @@ describe("the key", () => {
     const other = storeIn(dir, { client: fakeClient({ user: "other@example.com" }) })!;
     expect(await other.read(rootA)).toStrictEqual({ ok: false, miss: "absent" });
   });
+
+  test("a backend that reset its database does not see the old state's snapshots", async () => {
+    await storeIn()!.write(rootA, snapshotFor(rootA));
+
+    // Same address, same user, new instance: global ids are reused after a reset, so the
+    // address alone would be a hit against a tree that no longer exists.
+    const reset = storeIn(dir, { client: fakeClient({ instanceId: "instance-2" }) })!;
+    expect(await reset.read(rootA)).toStrictEqual({ ok: false, miss: "absent" });
+  });
 });
 
 describe("eviction", () => {
@@ -229,8 +303,10 @@ describe("eviction", () => {
 
     const store = storeIn(occupied)!;
     await expect(store.evict()).resolves.toBeUndefined();
-    await expect(store.write(rootA, snapshotFor(rootA))).resolves.toBeUndefined();
+    await expect(store.write(rootA, snapshotFor(rootA))).resolves.toBe(false);
     expect(store.stats.writeFailures).toBe(1);
-    expect(await store.read(rootA)).toStrictEqual({ ok: false, miss: "absent" });
+    // "unreadable", not "absent": the directory is broken rather than empty, and that is the
+    // distinction someone reading the counters needs.
+    expect(await store.read(rootA)).toStrictEqual({ ok: false, miss: "unreadable" });
   });
 });

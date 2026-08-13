@@ -170,6 +170,12 @@ describe("reopening a project", () => {
 
       // Never closed, standing in for a reboot, a lost connection or a kill. The periodic
       // write on the maintenance loop is the only thing that can have saved this.
+      //
+      // What this does NOT reproduce is the relaunch: both middle layers here share a session,
+      // because the test client reuses one cached token. In production the equivalent is the
+      // desktop app reconnecting with the JWT it persisted, which keeps the session and so the
+      // signatures; a change that made relaunch re-login instead would break the warm reopen
+      // and no assertion here would notice.
       await tp.setTimeout(1500);
       expect(first.treeSnapshotStats?.writes).toBeGreaterThanOrEqual(1);
       expect(await snapshotFiles(snapshotDir)).toHaveLength(1);
@@ -197,14 +203,15 @@ describe("write cadence", () => {
 
       // Several intervals of nothing happening.
       await tp.setTimeout(2000);
-      const writes = ml.treeSnapshotStats!.writes;
 
-      // At most one: the change gate stops the loop rewriting a mirror that has not moved. A
-      // cold open writes exactly once; a project whose tree never settled writes zero.
-      expect(writes).toBeLessThanOrEqual(1);
+      // Exactly one, not "at most one": a cold open loads a tree, so the change gate is open
+      // and the first maintenance pass writes. Asserting <= 1 would pass with zero writes and
+      // prove nothing about the periodic trigger existing at all.
+      expect(ml.treeSnapshotStats?.writes).toBe(1);
 
+      // And then quiet, because the gate closes on a mirror that has not moved.
       await tp.setTimeout(1500);
-      expect(ml.treeSnapshotStats?.writes).toBe(writes);
+      expect(ml.treeSnapshotStats?.writes).toBe(1);
       await close(ml);
     });
   });

@@ -1116,9 +1116,17 @@ export class MiddleLayer {
       enabled: ops.treeSnapshotOps.enabled,
       logger,
     });
-    // Housekeeping before any project opens: drop snapshots from other builds, backends and
-    // users, then trim to the ceiling.
-    await treeSnapshots?.evict();
+    if (ops.treeSnapshotOps.enabled) {
+      // Housekeeping before any project opens: drop snapshots from other builds, backends and
+      // users, then trim to the ceiling.
+      await treeSnapshots?.evict();
+    } else {
+      // Switched off, so reclaim what earlier sessions left on disk. The reason to reach for
+      // this switch is usually the disk itself, and leaving the files behind would answer the
+      // wrong half of that complaint. Keyed on the setting, not on the store being absent: it
+      // is also absent for an impersonated client, whose session must not delete anything.
+      await TreeSnapshotStore.purge(ops.treeSnapshotPath, logger);
+    }
 
     const env: MiddleLayerEnvironment = {
       pl,
