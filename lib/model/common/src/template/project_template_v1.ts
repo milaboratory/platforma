@@ -122,8 +122,6 @@ export type ProjectTemplateV1Entry = {
    */
   readonly id: string;
   readonly kind: BlockKindSelectorReference;
-  readonly block?: BlockPackReference;
-  readonly location?: BlockPackLocationReference;
   /**
    * The block's `BlockParams` instance, exactly as the block projected it — opaque here
    * and typed by the kind. Always present: an entry whose file omitted it parses as `{}`.
@@ -134,7 +132,22 @@ export type ProjectTemplateV1Entry = {
    * whole reference system to do it. See `TemplateRef`.
    */
   readonly params: Record<string, unknown>;
-};
+} & BlockPackLocatorOverride;
+
+/**
+ * The locator override an entry may carry: a version pin, a place, or neither.
+ *
+ * Two arms rather than two optional fields, so "not both" is a property of the type and not
+ * only of the parser. Each arm forbids the other's field by typing it `never`, which is what
+ * makes `{ block, location }` match neither — and both arms leave their own field optional, so
+ * an entry that pins nothing satisfies either.
+ *
+ * Readers are unaffected: every arm declares both keys, so `entry.block` and `entry.location`
+ * stay directly readable without narrowing.
+ */
+export type BlockPackLocatorOverride =
+  | { readonly block?: BlockPackReference; readonly location?: never }
+  | { readonly block?: never; readonly location?: BlockPackLocationReference };
 
 /**
  * A `template-v1` document — the primitive form of a template.
@@ -238,7 +251,14 @@ export const ProjectTemplateV1EntrySchema = z
       });
     }
   })
-  .readonly() satisfies BoundaryParser<ProjectTemplateV1Entry>;
+  .readonly()
+  // The refine above is what enforces the exclusion; this is what tells the type system it
+  // ran. A `z.union` of the two arms would carry the exclusion in the schema instead, at the
+  // cost of the error a reader gets: a union reports every arm's failure, so a misspelled
+  // `kind` would come back as two unrelated complaints about `block` and `location`.
+  .transform(
+    (entry) => entry as ProjectTemplateV1Entry,
+  ) satisfies BoundaryParser<ProjectTemplateV1Entry>;
 
 export const ProjectTemplateV1Schema = z
   .object({
