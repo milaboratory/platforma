@@ -1,3 +1,65 @@
+/**
+ * On-disk format for a tree mirror.
+ *
+ * Header and trailer are always plain bytes; only the payload is compressed. Every integer
+ * is little-endian and fixed-width.
+ *
+ * ```text
+ * +-- header (never compressed) -----------------------------+
+ * | u32  magic         0x53544C50  ("PLTS", little-endian)   |
+ * | u16  schemaVersion                                       |
+ * | u16  flags         bit0 = payload is deflated            |
+ * | u16  witnessLen  +  witness bytes (the root's signature) |
+ * +-- payload (deflated, or raw if the flag is clear) -------+
+ * | u32 rootCount, then u64 globalId per root                |
+ * |                                                          |
+ * | u32 signatureCount, then per entry:                      |
+ * |      u64 globalId                                        |
+ * |      u16 sigLen + signature bytes                        |
+ * |                                                          |
+ * | u32 resourceCount, then per resource:                    |
+ * |      u64 own globalId                                    |
+ * |      u64 originalResourceId          (0 = none)          |
+ * |      u64 error                       (0 = none)          |
+ * |      u8  kind index                                      |
+ * |      str type.name                                       |
+ * |      str type.version                                    |
+ * |      u8  flags (hasData, inputsLocked, outputsLocked,    |
+ * |                 resourceReady, final)                    |
+ * |      [u32 len + data]                only if hasData     |
+ * |      u32 fieldCount, then per field:                     |
+ * |           str name                                       |
+ * |           u8  field type index                           |
+ * |           u8  field status index                         |
+ * |           u64 value                  (0 = none)          |
+ * |           u64 error                  (0 = none)          |
+ * |           u8  valueIsFinal                               |
+ * |      u32 kvCount, then per entry:                        |
+ * |           str key                                        |
+ * |           u32 len + value bytes                          |
+ * +-- trailer (never compressed) ----------------------------+
+ * | u32  payload length, as stored                           |
+ * | u32  crc32 of the payload, as stored                     |
+ * +----------------------------------------------------------+
+ * ```
+ *
+ * Notes on the encoding:
+ *
+ * - `str` is a u32 length followed by UTF-8.
+ * - A {@link SignedResourceId} is the string `"<decimal globalId>|<signatureHex>"`. Bodies
+ *   store only the global id; the signature comes from the side table. Global id 0 stands
+ *   for "no reference".
+ * - `kind`, field type and field status are stored as indices into {@link KINDS},
+ *   {@link FIELD_TYPES} and {@link FIELD_STATUSES}. Those orderings are part of the format:
+ *   append only, never reorder.
+ * - The payload length in the trailer, not the file size, delimits the payload.
+ * - The witness is the root's signature at write time, and is outside the compressed section
+ *   so it can be read without inflating the payload ({@link readPersistedTreeHeader}).
+ * - Reference counts, resource and data versions, change sources and the derived final state
+ *   are not stored. They are rebuilt on restore. The backend's `final` flag is stored, as
+ *   part of the body.
+ */
+
 import type {
   FieldData,
   FieldStatus,
