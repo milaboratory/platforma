@@ -3,6 +3,7 @@ import { PlTreeEntry, PlTreeRootsEntry } from "./accessors";
 import type {
   FinalResourceDataPredicate,
   PlClient,
+  ResourceSignature,
   ResourceType,
   SignedResourceId,
   TxOps,
@@ -17,6 +18,8 @@ import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
 import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import type { PersistedTree } from "./persisted_tree";
+import { captureTreeState, restoreTreeState } from "./persisted_tree";
 import * as tp from "node:timers/promises";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 
@@ -74,6 +77,16 @@ export type SynchronizedTreeOps = {
 
   /** Controls which tree-loading path to use.  Default `"auto"`. */
   traversalMode?: TraversalMode;
+
+  /** A previously persisted mirror to seed the tree with, before its first refresh, so that
+   * refresh transfers only what changed while the tree was gone.
+   *
+   * Advisory: a snapshot that cannot be applied, or does not belong to this tree, is logged
+   * and dropped, leaving an ordinary cold open. The caller is responsible for having
+   * established that the snapshot's signatures are still live (see
+   * {@link PersistedTree.witness}); this option does not check that. Ignored for trees with
+   * shared-type seeds, which rediscover their roots anyway. */
+  restoreFrom?: PersistedTree;
 };
 
 /** An explicit resource to serve as a tree root. Several explicit seeds may be passed. */
@@ -174,6 +187,11 @@ export class SynchronizedTreeState {
   /** Roots discovered for shared-type seeds on the last discovery poll. */
   private discoveredRoots: SignedResourceId[] = [];
 
+  /** Bumped once per refresh cycle that brought something new: a resource appeared, changed,
+   * or became final. Lets a holder tell whether the tree has moved since it last persisted
+   * it, without diffing state. Read through {@link changeGeneration}. */
+  private changeGenerationCounter = 0;
+
   private constructor(
     private readonly pl: PlClient,
     seeds: TreeSeed[],
@@ -216,6 +234,50 @@ export class SynchronizedTreeState {
   /** The current protected root set: explicit roots plus the latest discovered roots. */
   private currentRootSet(): Set<SignedResourceId> {
     return new Set([...this.explicitRoots, ...this.discoveredRoots]);
+  }
+
+  /** How many refresh cycles brought something new. Only ever increases. Equal values at two
+   * points in time mean nothing was added, changed or settled in between, which is what makes
+   * a periodic snapshot write skippable on an idle tree. */
+  public get changeGeneration(): number {
+    return this.changeGenerationCounter;
+  }
+
+  /** Captures the current mirror for persistence.
+   *
+   * Must be called before {@link terminate}: terminating invalidates the tree, and capturing
+   * an invalidated tree is refused rather than silently written. */
+  public capture(witness: ResourceSignature): PersistedTree {
+    if (this.terminated) throw new Error("tree synchronization is terminated");
+    return captureTreeState(this.state, witness);
+  }
+
+  /** Installs a snapshot as this tree's state. Returns false if the snapshot was refused, in
+   * which case the tree is left as it was and the open proceeds cold.
+   *
+   * Only meaningful before the first refresh, which is why it is private and driven from
+   * {@link init}: replacing the state of a running tree would strand its observers. */
+  private restore(snapshot: PersistedTree): boolean {
+    if (this.sharedSeeds.length > 0) {
+      this.logger?.warn("ignoring tree snapshot: trees with shared-type seeds are not restored");
+      return false;
+    }
+
+    const roots = this.currentRootSet();
+    if (snapshot.roots.length !== roots.size || !snapshot.roots.every((r) => roots.has(r))) {
+      // A snapshot addressed to a different root is a mis-keyed file, not a stale one.
+      this.logger?.warn("ignoring tree snapshot: its roots are not this tree's roots");
+      return false;
+    }
+
+    const restored = restoreTreeState(snapshot, this.finalPredicate, {
+      roots,
+      logger: this.logger,
+    });
+    if (restored === undefined) return false;
+
+    this.state = restored;
+    return true;
   }
 
   /** Resolves the single root for the backward-compatible single-root accessors, throwing
@@ -439,7 +501,9 @@ export class SynchronizedTreeState {
         // actual tree synchronization
         await this.refresh(stat);
 
-        this.updatePollingInterval(countedChanges(stat) > changesBefore);
+        const changed = countedChanges(stat) > changesBefore;
+        if (changed) this.changeGenerationCounter++;
+        this.updatePollingInterval(changed);
 
         // logging stats if we were asked to
         if (this.logStat && this.logger)
@@ -569,7 +633,13 @@ export class SynchronizedTreeState {
   ) {
     const tree = new SynchronizedTreeState(pl, normalizeSeeds(seeds), ops, logger);
 
-    const stat = ops.logStat ? initialTreeLoadingStat() : undefined;
+    // Seed from the snapshot before the first refresh, so that refresh is the one that
+    // transfers only what changed. A refused snapshot leaves an ordinary cold open.
+    const restored = ops.restoreFrom !== undefined && tree.restore(ops.restoreFrom);
+
+    // Always collected, even when not logging: the initial load's change count is what seeds
+    // the change generation, so a holder can tell a populated tree from an untouched one.
+    const stat = initialTreeLoadingStat();
 
     let ok = false;
 
@@ -581,10 +651,14 @@ export class SynchronizedTreeState {
       });
       ok = true;
     } finally {
+      if (countedChanges(stat) > 0) tree.changeGenerationCounter++;
+
       // logging stats if we were asked to (even if error occured)
-      if (stat && logger)
+      if (ops.logStat && logger)
         logger.info(
-          `Tree stat (initial load, ${ok ? "success" : "failure"}): ${JSON.stringify(stat)}`,
+          `Tree stat (initial load, ${ok ? "success" : "failure"}, ${
+            restored ? "restored from snapshot" : "cold"
+          }): ${JSON.stringify(stat)}`,
         );
     }
 

@@ -94,6 +94,7 @@ import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
 import { ProjectHelper } from "../model/project_helper";
+import { TreeSnapshotStore } from "./tree_snapshot_store";
 
 export interface MiddleLayerEnvironment {
   dispose(): Promise<void>;
@@ -112,6 +113,9 @@ export interface MiddleLayerEnvironment {
   readonly driverKit: MiddleLayerDriverKit;
   readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
+  /** Persisted project tree mirrors. Undefined when snapshots are switched off, or when the
+   *  client is impersonating another user, in which case nothing is read or written. */
+  readonly treeSnapshots?: TreeSnapshotStore;
 }
 
 /**
@@ -954,6 +958,12 @@ export class MiddleLayer {
     const prj = this.openedProjects.get(id);
     if (prj === undefined) throw new Error(`Project ${id} not found among opened projects`);
     this.openedProjects.delete(id);
+
+    // Snapshot before destroy, and here rather than inside destroy(): destroy() is also what
+    // application shutdown runs, and quitting should perform no snapshot work. Terminating the
+    // tree invalidates it, so the state has to be taken first either way.
+    await prj.writeSnapshotOnClose();
+
     await prj.destroy();
     this.openedProjectsList.setValue([...this.openedProjects.keys()]);
   }
@@ -1092,6 +1102,16 @@ export class MiddleLayer {
 
     const serviceRegistry = createModelServiceRegistry({ logger });
 
+    const treeSnapshots = TreeSnapshotStore.create(pl, {
+      dir: ops.treeSnapshotPath,
+      maxSizeBytes: ops.treeSnapshotOps.maxSizeBytes,
+      enabled: ops.treeSnapshotOps.enabled,
+      logger,
+    });
+    // Housekeeping before any project opens: drop snapshots from other builds, backends and
+    // users, then trim to the ceiling.
+    await treeSnapshots?.evict();
+
     const env: MiddleLayerEnvironment = {
       pl,
       blockEventDispatcher: new BlockEventDispatcher(),
@@ -1112,6 +1132,7 @@ export class MiddleLayer {
       serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
+      treeSnapshots,
       dispose: async () => {
         await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();

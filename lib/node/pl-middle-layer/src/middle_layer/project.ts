@@ -11,7 +11,10 @@ import {
   ensureSignedResourceIdNotNull,
   field,
   isNotFoundError,
+  isPermissionDenied,
   isTimeoutOrCancelError,
+  isUnauthenticated,
+  parseSignedResourceId,
   Pl,
   resourceIdToString,
   ResourceTypeName,
@@ -25,7 +28,12 @@ import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
 import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
-import { SynchronizedTreeState, treeDumpStats } from "@milaboratories/pl-tree";
+import {
+  SynchronizedTreeState,
+  treeDumpStats,
+  TreeStateUpdateError,
+} from "@milaboratories/pl-tree";
+import type { TreeSnapshotStore } from "./tree_snapshot_store";
 import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
@@ -102,6 +110,16 @@ export class Project {
 
   private readonly abortController = new AbortController();
 
+  /** Tree change generation as of the snapshot currently on disk, or -1 when this session has
+   * not written one. Compared against the tree's current generation to skip writing a mirror
+   * that has not moved, which is what makes a project left open and idle go quiet. */
+  private snapshotGeneration: number;
+
+  /** When the last snapshot was written, for the periodic write's wall-clock gate. Seeded at
+   * construction so the first write lands one interval after the project opens rather than
+   * immediately. */
+  private lastSnapshotAt = Date.now();
+
   private get destroyed() {
     return this.abortController.signal.aborted;
   }
@@ -111,7 +129,11 @@ export class Project {
     public readonly id: ProjectId /* Project ID, exposed to outer consumers, who work with ML */,
     readonly rid: SignedResourceId /* Contains signature, not exposed outside middle layer. */,
     private readonly projectTree: SynchronizedTreeState,
+    /** Whether this tree was seeded from a snapshot. When it was, the file on disk already
+     * holds generation 0, so an idle warm reopen writes nothing at all. */
+    restoredFromSnapshot: boolean = false,
   ) {
+    this.snapshotGeneration = restoredFromSnapshot ? 0 : -1;
     this.overview = projectOverview(
       projectTree.entry(),
       this.navigationStates,
@@ -127,6 +149,76 @@ export class Project {
 
   get projectLockId(): string {
     return "project:" + this.id.toString();
+  }
+
+  /**
+   * Periodic snapshot write, carried on the maintenance loop rather than a timer of its own.
+   *
+   * Gated on the tree having changed since the last snapshot, so a project left open and idle
+   * writes once and then goes quiet, and on wall clock, so a project changing continuously
+   * writes at most once per interval.
+   */
+  private async maybeWriteSnapshot(): Promise<void> {
+    const store = this.env.treeSnapshots;
+    if (store === undefined) return;
+
+    const generation = this.projectTree.changeGeneration;
+    if (generation === this.snapshotGeneration) return;
+    if (Date.now() - this.lastSnapshotAt < this.env.ops.treeSnapshotOps.writeInterval) return;
+
+    await this.writeSnapshot(store, generation);
+  }
+
+  /**
+   * Snapshot write at the close boundary, on top of the periodic one, since closing is a
+   * natural point to persist. Change-gated but not interval-gated: rewriting a mirror that has
+   * not moved is pure waste, but a mirror that has moved is worth keeping however recently the
+   * last write happened.
+   *
+   * Must run before {@link destroy}, which terminates the tree and thereby invalidates it.
+   */
+  public async writeSnapshotOnClose(): Promise<void> {
+    const store = this.env.treeSnapshots;
+    if (store === undefined) return;
+
+    const generation = this.projectTree.changeGeneration;
+    if (generation === this.snapshotGeneration) return;
+
+    await this.writeSnapshot(store, generation);
+  }
+
+  /** In-flight snapshot write, if any. Both triggers can fire close together (the close write
+   *  lands while the loop is mid-write), and encoding ten megabytes twice for the same mirror
+   *  is worth avoiding. */
+  private snapshotInFlight: Promise<void> | undefined;
+
+  /** Serializes writes, and skips one that the in-flight write has already made redundant. */
+  private async writeSnapshot(store: TreeSnapshotStore, generation: number): Promise<void> {
+    if (this.snapshotInFlight !== undefined) {
+      await this.snapshotInFlight;
+      if (this.snapshotGeneration >= generation) return;
+    }
+
+    this.snapshotInFlight = this.captureAndWrite(store, generation).finally(() => {
+      this.snapshotInFlight = undefined;
+    });
+    await this.snapshotInFlight;
+  }
+
+  /** Captures and writes, never throwing: a snapshot is an optimisation and must not delay or
+   *  fail whatever triggered it. */
+  private async captureAndWrite(store: TreeSnapshotStore, generation: number): Promise<void> {
+    try {
+      // The root's signature is the session witness a later open compares against.
+      const snapshot = this.projectTree.capture(parseSignedResourceId(this.rid).signature);
+      await store.write(this.rid, snapshot);
+      this.snapshotGeneration = generation;
+      this.lastSnapshotAt = Date.now();
+    } catch (e: unknown) {
+      this.env.logger.warn(
+        new Error(`failed to capture tree snapshot for project ${this.id}`, { cause: e }),
+      );
+    }
   }
 
   private async refreshLoop(): Promise<void> {
@@ -146,6 +238,8 @@ export class Project {
         await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
           signal: this.abortController.signal,
         });
+
+        await this.maybeWriteSnapshot();
 
         // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
@@ -727,18 +821,8 @@ export class Project {
     // Doing a no-op mutation to apply all migration and schema fixes
     await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: "init" });
 
-    // Loading project tree
-    const projectTree = await SynchronizedTreeState.init(
-      env.pl,
-      rid,
-      {
-        ...env.ops.defaultTreeOptions,
-        pruning: projectTreePruning(env.logger),
-        fieldFilter: projectTreeFieldFilter(),
-        traverseStopRules: projectTreeTraverseStopRules(),
-      },
-      env.logger,
-    );
+    // Loading project tree, warm from a persisted mirror when one is usable
+    const { tree: projectTree, restored } = await loadProjectTree(env, rid);
 
     if (env.ops.debugOps.dumpInitialTreeState) {
       const state = projectTree.dumpState();
@@ -748,8 +832,76 @@ export class Project {
       await fs.writeFile(`${resourceIdToString(rid)}.stats.json`, stringifyForDump(stats));
     }
 
-    return new Project(env, id, rid, projectTree);
+    return new Project(env, id, rid, projectTree, restored);
   }
+}
+
+/**
+ * Opens the project tree, seeded from a persisted mirror when there is a usable one.
+ *
+ * Carries the fail-safe: if the restored tree fails its first refresh on authentication,
+ * permission or an inconsistency, the snapshot is deleted and the open is retried cold. Once,
+ * and only for that first refresh, so a genuinely dead session still surfaces as itself rather
+ * than being masked as a slow open.
+ *
+ * The fail-safe is what bounds every case the cache key does not cover: a rotated master
+ * secret, a revoked grant, a snapshot valid in itself but no longer matching what the backend
+ * will serve. Without it, an explicit-root tree propagates the refresh failure rather than
+ * healing, so the project would fail to open on every attempt until someone deleted the cache
+ * directory by hand.
+ */
+async function loadProjectTree(
+  env: MiddleLayerEnvironment,
+  rid: SignedResourceId,
+): Promise<{ tree: SynchronizedTreeState; restored: boolean }> {
+  const treeOps = {
+    ...env.ops.defaultTreeOptions,
+    pruning: projectTreePruning(env.logger),
+    fieldFilter: projectTreeFieldFilter(),
+    traverseStopRules: projectTreeTraverseStopRules(),
+  };
+  const cold = async () => ({
+    tree: await SynchronizedTreeState.init(env.pl, rid, treeOps, env.logger),
+    restored: false,
+  });
+
+  const store = env.treeSnapshots;
+  if (store === undefined) return await cold();
+
+  const snapshot = await store.read(rid);
+  if (!snapshot.ok) {
+    env.logger.info(`project tree opening cold, snapshot miss: ${snapshot.miss}`);
+    return await cold();
+  }
+
+  try {
+    return {
+      tree: await SynchronizedTreeState.init(
+        env.pl,
+        rid,
+        { ...treeOps, restoreFrom: snapshot.tree },
+        env.logger,
+      ),
+      restored: true,
+    };
+  } catch (e: unknown) {
+    if (!isSnapshotFailsafeError(e)) throw e;
+
+    env.logger.warn(
+      new Error("restored project tree failed its first refresh, discarding it and opening cold", {
+        cause: e,
+      }),
+    );
+    await store.discard(rid);
+    return await cold();
+  }
+}
+
+/** The failures that can mean a snapshot no longer matches what the backend will serve, as
+ *  opposed to a client that has genuinely lost its session. Both look the same on one refresh,
+ *  which is why the retry is spent only on the first. */
+function isSnapshotFailsafeError(e: unknown): boolean {
+  return isUnauthenticated(e) || isPermissionDenied(e) || e instanceof TreeStateUpdateError;
 }
 
 export function projectTreePruning(logger: MiLogger): PruningFunction {
