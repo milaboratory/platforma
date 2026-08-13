@@ -94,6 +94,7 @@ import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
 import { ProjectHelper } from "../model/project_helper";
+import type { TreeSnapshotStat } from "./tree_snapshot_store";
 import { TreeSnapshotStore } from "./tree_snapshot_store";
 
 export interface MiddleLayerEnvironment {
@@ -978,6 +979,13 @@ export class MiddleLayer {
   /** Returns true if project with given id is currently opened. */
   public isProjectOpened(id: ProjectId): boolean {
     return this.openedProjects.has(id);
+  }
+
+  /** Counters for the persisted project tree mirrors, or undefined when they are switched off.
+   *  Reads and hits are what show whether a reopen was actually warm, and the miss breakdown
+   *  says why it was not. */
+  public get treeSnapshotStats(): Readonly<TreeSnapshotStat> | undefined {
+    return this.env.treeSnapshots?.stats;
   }
 
   /**

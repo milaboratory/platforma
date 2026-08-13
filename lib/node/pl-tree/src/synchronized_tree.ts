@@ -192,6 +192,10 @@ export class SynchronizedTreeState {
    * it, without diffing state. Read through {@link changeGeneration}. */
   private changeGenerationCounter = 0;
 
+  /** Whether a snapshot was actually applied. Read through
+   * {@link wasRestoredFromSnapshot}. */
+  private restoredFromSnapshot = false;
+
   private constructor(
     private readonly pl: PlClient,
     seeds: TreeSeed[],
@@ -243,6 +247,14 @@ export class SynchronizedTreeState {
     return this.changeGenerationCounter;
   }
 
+  /** True only if a snapshot was actually applied as this tree's initial state. A snapshot can
+   * be supplied and still be refused (wrong roots, or state the update call will not accept),
+   * in which case this stays false and the tree started empty like any other. Passing
+   * `restoreFrom` is therefore not evidence of a warm start; this is. */
+  public get wasRestoredFromSnapshot(): boolean {
+    return this.restoredFromSnapshot;
+  }
+
   /** Captures the current mirror for persistence.
    *
    * Must be called before {@link terminate}: terminating invalidates the tree, and capturing
@@ -277,6 +289,7 @@ export class SynchronizedTreeState {
     if (restored === undefined) return false;
 
     this.state = restored;
+    this.restoredFromSnapshot = true;
     return true;
   }
 

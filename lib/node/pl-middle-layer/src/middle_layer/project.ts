@@ -875,15 +875,21 @@ async function loadProjectTree(
   }
 
   try {
-    return {
-      tree: await SynchronizedTreeState.init(
-        env.pl,
-        rid,
-        { ...treeOps, restoreFrom: snapshot.tree },
-        env.logger,
-      ),
-      restored: true,
-    };
+    const tree = await SynchronizedTreeState.init(
+      env.pl,
+      rid,
+      { ...treeOps, restoreFrom: snapshot.tree },
+      env.logger,
+    );
+
+    // Read from the tree rather than assumed: a snapshot can be handed over and still be
+    // refused, in which case this open was cold and the file on disk does not describe the
+    // tree we now hold.
+    const restored = tree.wasRestoredFromSnapshot;
+    if (restored) store.noteRestored();
+    else env.logger.info("project tree opening cold: the snapshot was not applied");
+
+    return { tree, restored };
   } catch (e: unknown) {
     if (!isSnapshotFailsafeError(e)) throw e;
 
