@@ -721,6 +721,7 @@ export class BlockRegistryV2 {
     this.logger.info(`Uploading kind manifest to ${manifestDst} ...`);
     await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(toStore)));
 
-    // NO marchChanged — projection rides the block ticket (see doc §5).
+    // NO `marchChanged`: the kind projection is derived from block manifests, so this
+    // publish drops no ticket of its own — see the note on this method.
   }
 }
