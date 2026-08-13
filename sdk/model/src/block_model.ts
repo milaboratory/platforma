@@ -136,7 +136,7 @@ interface BlockModelV3Config<
    * two blocks implementing it must not be able to disagree about what a valid params
    * object is. Always present — a kind cannot omit it, and a block cannot omit a kind.
    */
-  parseTemplateParams: (value: unknown) => unknown;
+  parseInitializationParams: (value: unknown) => unknown;
   plugins: Plugins;
 }
 
@@ -218,7 +218,7 @@ export class BlockModelV3<
       kind: kindRef,
       // Read off the kind, which cannot omit it — not off the data model. The two
       // are cross-checked above, so there is one source, not a precedence order.
-      parseTemplateParams: kind.parseTemplateParams,
+      parseInitializationParams: kind.parseInitializationParams,
       outputs: {},
       sections: createAndRegisterRenderLambda({ handle: "sections", lambda: () => [] }, true),
       title: undefined,
@@ -646,8 +646,13 @@ export class BlockModelV3<
       pluginRegistry[handle] = plugins[handle].model.name;
     }
 
-    const { dataModel, deriveArgs, derivePrerunArgs, deriveTemplateParams, parseTemplateParams } =
-      this.config;
+    const {
+      dataModel,
+      deriveArgs,
+      derivePrerunArgs,
+      deriveTemplateParams,
+      parseInitializationParams,
+    } = this.config;
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -689,10 +694,10 @@ export class BlockModelV3<
           getBlockDataFromParams: (params) => dataModel.getDataFromParams(params),
           getPluginRegistry: () => pluginRegistry,
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
-          parseTemplateParams,
+          parseInitializationParams,
         }),
       [BlockStorageFacadeCallbacks.TemplateParamsValidate]: (paramsJson) =>
-        validateTemplateParamsJson(paramsJson, parseTemplateParams),
+        validateTemplateParamsJson(paramsJson, parseInitializationParams),
     });
 
     // Register plugin input and output lambdas
@@ -823,7 +828,7 @@ type _ConfigTest = Expect<
       deriveArgs: ((data: unknown) => unknown) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
       deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
-      parseTemplateParams: (value: unknown) => unknown;
+      parseInitializationParams: (value: unknown) => unknown;
       dataModel: DataModel<_TestData, unknown, {}>;
       kind: BlockKindReference | undefined;
       outputs: _TestOutputs;

@@ -38,5 +38,5 @@ const Params = z.object({ inputHandle: ImportFileHandleParam.optional() }).stric
 export const kind = defineBlockKind<BlockParams>({
   name,
   version,
-  parseTemplateParams: (value) => Params.parse(value),
+  parseInitializationParams: (value) => Params.parse(value),
 });

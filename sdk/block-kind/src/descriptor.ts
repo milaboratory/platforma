@@ -10,7 +10,7 @@
  * S3 `{org, name}` path is always DERIVED from this npm name via the single
  * `npmNameToKindPath` helper — there is no separate `organization` field.
  *
- * A descriptor is not a types-only object: it carries `parseTemplateParams`, the
+ * A descriptor is not a types-only object: it carries `parseInitializationParams`, the
  * required runtime check of its params, so a kind package ships executable code.
  *
  * `BlockParams` is additionally pinned by a contravariant phantom slot (a
@@ -24,8 +24,10 @@ export interface CompiledBlockKindV1<BlockParams> {
   readonly name: string;
   readonly version: string;
   /**
-   * Runtime check of params that did not come from a typed caller — in practice,
-   * params read out of a template file someone wrote by hand.
+   * Runtime check of the params a block is initialized with, whenever they did not come from
+   * a typed caller. Today that means params read out of a template file someone wrote by
+   * hand, but the slot is not the template engine's: anything that initializes a block from
+   * data it did not type — a wizard, a generated pipeline — arrives the same way.
    *
    * REQUIRED. Without it a bad value is not caught at the entry that carries it but
    * much later, or never — params typed `number[]` arriving as `["3","1","2"]` reach
@@ -44,7 +46,7 @@ export interface CompiledBlockKindV1<BlockParams> {
    * ```ts
    * const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
    * export const kind = defineBlockKind<BlockParams>({
-   *   name, version, parseTemplateParams: (v) => Params.parse(v),
+   *   name, version, parseInitializationParams: (v) => Params.parse(v),
    * });
    * ```
    *
@@ -57,7 +59,7 @@ export interface CompiledBlockKindV1<BlockParams> {
    * check that happens before any block exists, the reference ids are placeholders,
    * so a parser must not treat a specific id as meaningful.
    */
-  readonly parseTemplateParams: (value: unknown) => BlockParams;
+  readonly parseInitializationParams: (value: unknown) => BlockParams;
   readonly __PHANTOM_BLOCK_PARAMS__?: (p: BlockParams) => void;
 }
 

@@ -24,5 +24,5 @@ const Params = z.object({ label: z.string() }).strict();
 export const kind = defineBlockKind<TableTestKindParams>({
   name,
   version,
-  parseTemplateParams: (value) => Params.parse(value),
+  parseInitializationParams: (value) => Params.parse(value),
 });

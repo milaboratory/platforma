@@ -35,7 +35,7 @@ const passThrough = (value: unknown) => value as Params;
 const kind = defineBlockKind<Params>({
   name: "@platforma-open/milaboratories.demo.kind",
   version: "1.0.0",
-  parseTemplateParams: passThrough,
+  parseInitializationParams: passThrough,
 });
 
 type BlockData = { sources: PlRef[]; label: string; scratch: number };
@@ -59,7 +59,7 @@ const noPlugins = {
 const fromParams = (params: unknown) =>
   createInitialStorageFromParams(JSON.stringify(params), {
     getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
-    parseTemplateParams: passThrough,
+    parseInitializationParams: passThrough,
     ...noPlugins,
   });
 
@@ -119,7 +119,7 @@ describe("createInitialStorageFromParams", () => {
   test("params that are not valid JSON are reported", () => {
     const result = createInitialStorageFromParams("{not json", {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
-      parseTemplateParams: passThrough,
+      parseInitializationParams: passThrough,
       ...noPlugins,
     });
 
@@ -134,7 +134,7 @@ describe("createInitialStorageFromParams", () => {
       getBlockDataFromParams: () => {
         throw new Error("label must not be empty");
       },
-      parseTemplateParams: passThrough,
+      parseInitializationParams: passThrough,
       ...noPlugins,
     });
 
@@ -147,7 +147,7 @@ describe("createInitialStorageFromParams", () => {
     const handle = "p1" as PluginHandle;
     const result = createInitialStorageFromParams(JSON.stringify({ label: "x" }), {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
-      parseTemplateParams: passThrough,
+      parseInitializationParams: passThrough,
       getPluginRegistry: () => ({ [handle]: "demoPlugin" as PluginName }),
       createPluginData: (h) => {
         expect(h).toBe(handle);
@@ -192,7 +192,7 @@ describe("params round trip", () => {
     });
 
     expect(derived).toEqual({
-      value: { label: "run 1", sources: [{ block: upstream, output: "reads" }] },
+      value: { label: "run 1", sources: [{ $ref: createPlRef(upstream, "reads") }] },
     });
   });
 });
@@ -223,7 +223,7 @@ describe("params reaching init", () => {
     const storage = storageOf(
       createInitialStorageFromParams(JSON.stringify({ label: "raw", stray: 1 }), {
         getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
-        parseTemplateParams: () => ({ label: "parsed" }),
+        parseInitializationParams: () => ({ label: "parsed" }),
         ...noPlugins,
       }),
     );
@@ -241,7 +241,7 @@ describe("params reaching init", () => {
         reached = true;
         return dataModel.getDataFromParams(p);
       },
-      parseTemplateParams: () => {
+      parseInitializationParams: () => {
         throw new Error("label must not be empty");
       },
       ...noPlugins,
@@ -278,7 +278,7 @@ describe("the kind carries the check", () => {
     const checkedKind = defineBlockKind<Params>({
       name: "@platforma-open/milaboratories.checked.kind",
       version: "1.0.0",
-      parseTemplateParams: parse,
+      parseInitializationParams: parse,
     });
     const model = new DataModelBuilder({ kind: checkedKind })
       .from<BlockData>("v1")

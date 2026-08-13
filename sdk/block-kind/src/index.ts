@@ -35,12 +35,12 @@ export type BlockKindMeta<BlockParams = unknown> = Omit<
  * rolldown inlines the JSON import (tree-shaken to the two strings) into the
  * bundled `kind.js`, so no build-time injection is needed.
  *
- * A kind must also declare `parseTemplateParams` — the runtime check applied to params
+ * A kind must also declare `parseInitializationParams` — the runtime check applied to params
  * that came from a template file rather than from typed code. See
  * {@link CompiledBlockKind} for what it must do.
  *
  * @typeParam BlockParams - shape of the params a block of this kind reads. Pinned both
- *   as a type and by `parseTemplateParams`, whose return type is checked against it.
+ *   as a type and by `parseInitializationParams`, whose return type is checked against it.
  */
 export function defineBlockKind<BlockParams>(
   meta: BlockKindMeta<BlockParams>,
@@ -52,6 +52,6 @@ export function defineBlockKind<BlockParams>(
     kindSchema: "v1" as const,
     name: meta.name,
     version: meta.version,
-    parseTemplateParams: meta.parseTemplateParams,
+    parseInitializationParams: meta.parseInitializationParams,
   });
 }

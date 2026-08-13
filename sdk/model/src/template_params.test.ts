@@ -15,7 +15,7 @@ const kind = defineBlockKind<Params>({
   version: "1.0.0",
   // These tests are about the export direction, so the parser only carries the shape
   // through; rejection behaviour lives in `template_init.test.ts`.
-  parseTemplateParams: (value) => value as Params,
+  parseInitializationParams: (value) => value as Params,
 });
 
 type BlockData = { sources: PlRef[]; label: string; scratch: number };
@@ -32,7 +32,7 @@ const upstream = "3f1c2b7a-0000-4000-8000-000000000001";
 const storageOf = (data: BlockData) => stringifyJson(createBlockStorage(data));
 
 describe("deriveTemplateParamsFromStorage", () => {
-  test("projects data back to params, with references in template form", () => {
+  test("projects data back to params, with each reference marked", () => {
     const result = deriveTemplateParamsFromStorage(
       storageOf({ sources: [createPlRef(upstream, "reads")], label: "run 1", scratch: 42 }),
       (data) => {
@@ -41,10 +41,11 @@ describe("deriveTemplateParamsFromStorage", () => {
       },
     );
 
-    // `scratch` is dropped because the lambda does not return it; the PlRef
-    // became a template-local reference without the lambda doing anything.
+    // `scratch` is dropped because the lambda does not return it; the `PlRef` was wrapped
+    // without the lambda doing anything, which is the point — marking references is the
+    // SDK's job, not a block author's.
     expect(result).toEqual({
-      value: { sources: [{ block: upstream, output: "reads" }], label: "run 1" },
+      value: { sources: [{ $ref: createPlRef(upstream, "reads") }], label: "run 1" },
     });
   });
 
