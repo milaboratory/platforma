@@ -148,6 +148,20 @@ export class Core {
     );
   }
 
+  /**
+   * The docker artifacts a build would actually produce for this selection.
+   *
+   * Mirrors the resolution `buildDockerImages` performs, so callers can reason
+   * about a build before running it. Note that `ids` are entrypoint names, not
+   * docker package keys: `getArtifact(id, "docker")` resolves the `:docker`
+   * virtual entrypoint, so a plain set intersection with `dockerPackages`
+   * would be wrong.
+   */
+  public selectedDockerPackages(ids?: string[]): string[] {
+    const selected = ids ?? Array.from(this.dockerPackages.keys());
+    return selected.filter((id) => this.getArtifact(id, "docker") !== undefined);
+  }
+
   public packageHasType(id: string, type: artifacts.artifactType): boolean {
     const pkg = this.packages.get(id);
     if (pkg && pkg.type === type) {
