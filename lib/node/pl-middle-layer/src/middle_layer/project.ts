@@ -175,21 +175,52 @@ export class Project {
   }
 
   /**
-   * Snapshot write at the close boundary, on top of the periodic one, since closing is a
-   * natural point to persist. Change-gated but not interval-gated: rewriting a mirror that has
-   * not moved is pure waste, but a mirror that has moved is worth keeping however recently the
-   * last write happened.
+   * Starts the close-boundary snapshot and returns without waiting for the write.
    *
-   * Must run before {@link destroy}, which terminates the tree and thereby invalidates it.
+   * On top of the periodic write, since closing is a natural point to persist. Change-gated but
+   * not interval-gated: rewriting a mirror that has not moved is pure waste, but a mirror that
+   * has moved is worth keeping however recently the last write happened.
+   *
+   * The **capture is synchronous and happens here**, before the caller destroys the tree,
+   * because destroying it invalidates it and a later capture would be refused. Only the encode
+   * and the write are deferred: they are up to ten megabytes of work, and project switching
+   * should not wait for them. Deferring is safe only because a capture is a copy rather than a
+   * view of the tree.
+   *
+   * The returned promise never rejects. The caller is expected to keep it so it can be drained
+   * at shutdown, not to await it here.
    */
-  public async writeSnapshotOnClose(): Promise<void> {
+  public snapshotOnClose(): Promise<void> {
     const store = this.env.treeSnapshots;
-    if (store === undefined) return;
+    if (store === undefined) return Promise.resolve();
 
     const generation = this.projectTree.changeGeneration;
-    if (generation === this.snapshotGeneration) return;
+    if (generation === this.snapshotGeneration) return Promise.resolve();
 
-    await this.writeSnapshot(store, generation);
+    let snapshot;
+    try {
+      snapshot = this.projectTree.capture(parseSignedResourceId(this.rid).signature);
+    } catch (e: unknown) {
+      this.env.logger.warn(
+        new Error(`failed to capture tree snapshot for project ${this.id} on close`, { cause: e }),
+      );
+      return Promise.resolve();
+    }
+
+    this.lastSnapshotAt = Date.now();
+
+    // Queued behind any in-flight periodic write rather than racing it. Both would land
+    // atomically, but the loser would be a wasted encode of the same mirror.
+    const previous = this.snapshotInFlight ?? Promise.resolve();
+    const write = previous.then(async () => {
+      if (this.snapshotGeneration >= generation) return; // the in-flight write covered it
+      if (await store.write(this.rid, snapshot)) this.snapshotGeneration = generation;
+    });
+
+    this.snapshotInFlight = write.finally(() => {
+      this.snapshotInFlight = undefined;
+    });
+    return this.snapshotInFlight;
   }
 
   /** In-flight snapshot write, if any. Both triggers can fire close together (the close write

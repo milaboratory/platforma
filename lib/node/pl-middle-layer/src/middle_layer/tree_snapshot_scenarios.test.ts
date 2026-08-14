@@ -124,10 +124,13 @@ describe("reopening a project", () => {
       const id = await project(first, "warm reopen");
       await first.closeProject(id);
 
+      // The close write is started, not awaited, so that closing a project does not sit behind
+      // an encode. Shutdown drains it, which is what makes it observable here.
+      await close(first);
+
       // One file for the one project, written at the close boundary.
       expect(await snapshotFiles(snapshotDir)).toHaveLength(1);
       expect(first.treeSnapshotStats?.writes).toBeGreaterThanOrEqual(1);
-      await close(first);
 
       const second = await open();
       await second.openProject(id);
@@ -144,6 +147,24 @@ describe("reopening a project", () => {
     });
   });
 
+  test("closing a project does not wait for its snapshot to be written", async () => {
+    await withScenario(async ({ open, close, project, snapshotDir }) => {
+      const ml = await open();
+      const id = await project(ml, "unblocked close");
+
+      await ml.closeProject(id);
+      // The capture happened synchronously inside closeProject, but the encode and write are
+      // deferred, so the file is normally not there yet. Asserted as "not blocked on it"
+      // rather than "definitely absent": a tiny mirror can beat us to the assertion, and the
+      // point is that close does not await, not that the write is slow.
+      const writesRightAfterClose = ml.treeSnapshotStats!.writes;
+
+      await close(ml); // drains
+      expect(ml.treeSnapshotStats!.writes).toBeGreaterThanOrEqual(writesRightAfterClose);
+      expect(await snapshotFiles(snapshotDir)).toHaveLength(1);
+    });
+  });
+
   test("project switching: both returns hit", async () => {
     await withScenario(async ({ open, close, project, snapshotDir }) => {
       const first = await open();
@@ -151,8 +172,8 @@ describe("reopening a project", () => {
       const b = await project(first, "B");
       await first.closeProject(a);
       await first.closeProject(b);
+      await close(first); // drains both deferred close writes
       expect(await snapshotFiles(snapshotDir)).toHaveLength(2);
-      await close(first);
 
       const second = await open();
       await second.openProject(a);
