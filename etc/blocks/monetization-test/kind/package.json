@@ -29,8 +29,7 @@
     "watch": "ts-builder build --target block-kind --watch"
   },
   "dependencies": {
-    "@platforma-sdk/block-kind": "workspace:*",
-    "zod": "catalog:"
+    "@platforma-sdk/block-kind": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",

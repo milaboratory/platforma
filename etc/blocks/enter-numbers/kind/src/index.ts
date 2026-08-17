@@ -1,5 +1,4 @@
-import { defineBlockKind } from "@platforma-sdk/block-kind";
-import { z } from "zod";
+import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -15,19 +14,34 @@ export type BlockParams = { numbers?: number[] };
  * The same contract at runtime, for params that arrive from a template file rather
  * than from typed code.
  *
- * `.strict()` is most of the reason to write this at all. Without it, a file saying
- * `number: [1, 2, 3]` — singular — passes every check: the key is ignored, the block
- * initializes empty, and the only complaint arrives later from the block's own
- * `args()`, saying "Numbers are required!" and naming nothing about the typo. With it,
- * the entry is rejected and the unrecognized key is named.
+ * Refusing an undeclared key is most of the reason to write this at all. Without it, a file
+ * saying `number: [1, 2, 3]` — singular — passes every check: the key is ignored, the block
+ * initializes empty, and the only complaint arrives later from the block's own `args()`,
+ * saying "Numbers are required!" and naming nothing about the typo. With it, the entry is
+ * rejected and the unrecognized key is named.
  *
- * The type argument to `defineBlockKind` keeps the two in step: this schema has to
- * produce `BlockParams`, so dropping a field it declares is a compile error.
+ * The type argument to `defineBlockKind` keeps the two in step: this function has to return
+ * `BlockParams`, so dropping a field it declares is a compile error.
  */
-const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
+function parseInitializationParams(value: unknown): BlockParams {
+  assertDeclaredParams(value, ["numbers"]);
+
+  const { numbers } = value;
+  if (numbers !== undefined && !isNumberArray(numbers)) {
+    throw new Error("'numbers' must be an array of numbers.");
+  }
+
+  return { numbers };
+}
+
+function isNumberArray(value: unknown): value is number[] {
+  // `Number.isFinite` rather than `typeof`: YAML admits `.nan` and `.inf`, and a block that
+  // sums its input has nothing to do with either.
+  return Array.isArray(value) && value.every((item) => Number.isFinite(item));
+}
 
 export const kind = defineBlockKind<BlockParams>({
   name,
   version,
-  parseInitializationParams: (value) => Params.parse(value),
+  parseInitializationParams,
 });

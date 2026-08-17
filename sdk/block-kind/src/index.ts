@@ -1,6 +1,7 @@
 import type { CompiledBlockKind, CompiledBlockKindV1 } from "./descriptor";
 
 export type { CompiledBlockKind, InferBlockParams } from "./descriptor";
+export { assertDeclaredParams } from "./params";
 
 /**
  * What {@link defineBlockKind} is given: the descriptor minus what a caller does not supply.

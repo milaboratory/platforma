@@ -39,21 +39,28 @@ export interface CompiledBlockKindV1<BlockParams> {
    * validating in place is what lets a parser strip keys the kind does not declare
    * and coerce what it chooses to coerce — its output is what the block receives.
    *
-   * The signature is a plain function, so this package needs no validation library of
-   * its own and a kind author picks their own tool — a hand-written check satisfies it.
-   * zod is what the workspace kinds use, and what the scaffold generates:
+   * The signature is a plain function, so this package needs no validation library of its
+   * own and a kind author picks their own tool. Plain TypeScript is the default, and what
+   * the scaffold generates — `assertDeclaredParams` covers the part every kind shares, and
+   * each field is then read and checked in the open:
    *
    * ```ts
-   * const Params = z.object({ numbers: z.array(z.number()).optional() }).strict();
-   * export const kind = defineBlockKind<BlockParams>({
-   *   name, version, parseInitializationParams: (v) => Params.parse(v),
-   * });
+   * function parseInitializationParams(value: unknown): BlockParams {
+   *   assertDeclaredParams(value, ["numbers"]);
+   *
+   *   const { numbers } = value;
+   *   if (numbers !== undefined && !isNumberArray(numbers)) {
+   *     throw new Error("'numbers' must be an array of numbers.");
+   *   }
+   *   return { numbers };
+   * }
    * ```
    *
    * TypeScript checks the parser against the declared type, since it must return
-   * `BlockParams` — so a schema that forgets a required field does not compile. The
-   * reverse (a schema that accepts less than the type allows) is not caught, which is
-   * the honest limit of this slot.
+   * `BlockParams` — so a check that forgets a required field does not compile. The reverse
+   * (a check that accepts less than the type allows) is not caught, which is the honest
+   * limit of this slot. Nor is a cast: `value as BlockParams` satisfies the signature and
+   * verifies nothing, which is the one way to hold this slot open and get no value from it.
    *
    * Params reach it with references already in live `PlRef` form; on the pre-flight
    * check that happens before any block exists, the reference ids are placeholders,

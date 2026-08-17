@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { PlRef } from "@milaboratories/pl-model-common";
-import { defineBlockKind } from "@platforma-sdk/block-kind";
+import type { PlRef } from "@milaboratories/pl-model-common";
+import { isPlRef } from "@milaboratories/pl-model-common";
+import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -17,18 +17,27 @@ export type BlockParams = { sources?: PlRef[] };
  * The same contract at runtime, for params that arrive from a template file rather
  * than from typed code.
  *
- * The reference shape is reused from `pl-model-common` rather than restated, so a
- * hand-written entry is held to exactly what the rest of the system calls a reference
- * — including the `__isRef: true` marker the block dependency tree is rebuilt from,
+ * The reference check is `pl-model-common`'s own `isPlRef` rather than a restatement of the
+ * shape, so a hand-written entry is held to exactly what the rest of the system calls a
+ * reference — including the `__isRef: true` marker the block dependency tree is rebuilt from,
  * whose absence would otherwise produce a block wired to nothing.
  *
- * `.strict()` rejects and names any key this contract does not declare, instead of
- * dropping it and applying a block that looks configured and is not.
+ * An undeclared key is refused and named, instead of dropped while a block that looks
+ * configured is applied unconfigured.
  */
-const Params = z.object({ sources: z.array(PlRef).optional() }).strict();
+function parseInitializationParams(value: unknown): BlockParams {
+  assertDeclaredParams(value, ["sources"]);
+
+  const { sources } = value;
+  if (sources !== undefined && !(Array.isArray(sources) && sources.every(isPlRef))) {
+    throw new Error("'sources' must be an array of references to upstream columns.");
+  }
+
+  return { sources };
+}
 
 export const kind = defineBlockKind<BlockParams>({
   name,
   version,
-  parseInitializationParams: (value) => Params.parse(value),
+  parseInitializationParams,
 });

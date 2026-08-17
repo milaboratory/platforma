@@ -417,9 +417,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -571,9 +568,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -725,9 +719,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -873,9 +864,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1046,9 +1034,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1219,9 +1204,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1370,9 +1352,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1518,9 +1497,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1672,9 +1648,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1823,9 +1796,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -1993,9 +1963,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2144,9 +2111,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
@@ -2313,9 +2277,6 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/ts-builder':
         specifier: workspace:*
