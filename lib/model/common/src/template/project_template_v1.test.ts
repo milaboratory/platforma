@@ -15,7 +15,7 @@ import {
   parseBlockPackLocation,
   parseBlockPackReference,
   parseProjectTemplateV1,
-  ProjectTemplateV1Schema,
+  readProjectTemplateV1,
   validateProjectTemplateV1References,
   type BlockPackLocationReference,
   type BlockPackReference,
@@ -288,7 +288,7 @@ describe("parseProjectTemplateV1", () => {
   test("an entry cannot pin both a version and a place", () => {
     // Two different statements with nothing to reconcile them, so it is refused
     // rather than settled by precedence.
-    const result = ProjectTemplateV1Schema.safeParse({
+    const result = readProjectTemplateV1({
       schema: "template-v1",
       blocks: [
         {
@@ -300,21 +300,23 @@ describe("parseProjectTemplateV1", () => {
       ],
     });
 
-    expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.error.issues[0].path).toEqual(["blocks", 0, "location"]);
-    expect(result.error.issues[0].message).toMatch(/cannot carry both 'block' and 'location'/);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0].path).toEqual(["blocks", 0, "location"]);
+    expect(result.issues[0].message).toMatch(/cannot carry both 'block' and 'location'/);
   });
 
   test("a malformed location is reported on its own path", () => {
-    const result = ProjectTemplateV1Schema.safeParse({
+    const result = readProjectTemplateV1({
       schema: "template-v1",
       blocks: [{ id: "a", kind: "@o/a.kind@1.0.0", location: "/blocks/a" }],
     });
 
-    expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.error.issues[0].path).toEqual(["blocks", 0, "location"]);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0].path).toEqual(["blocks", 0, "location"]);
+    // The grammar's own message, reported as it comes rather than restated.
+    expect(result.issues[0].message).toMatch(/absolute URI with a scheme/);
   });
 
   test("the format marker is checked", () => {
@@ -337,15 +339,15 @@ describe("parseProjectTemplateV1", () => {
   });
 
   test("a malformed kind selector is reported on its own path", () => {
-    const result = ProjectTemplateV1Schema.safeParse({
+    const result = readProjectTemplateV1({
       schema: "template-v1",
       blocks: [{ id: "a", kind: "@o/a.kind@>=1.0.0" }],
     });
 
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0].path).toEqual(["blocks", 0, "kind"]);
-      expect(result.error.issues[0].message).toMatch(/Malformed kind version selector/);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.issues[0].path).toEqual(["blocks", 0, "kind"]);
+      expect(result.issues[0].message).toMatch(/Malformed kind version selector/);
     }
   });
 
@@ -423,10 +425,7 @@ describe("validateProjectTemplateV1References", () => {
 });
 
 test("the parser's output type is exactly ProjectTemplateV1", () => {
-  // `satisfies` only checks one direction — a parser narrower than the type
-  // still passes it — so pin exactness here. NOTE: vitest runs without
-  // `--typecheck` and tsconfig excludes *.test.ts, so this assertion is
-  // authoring-time only; it is verified by running tsc over this file.
+  // NOTE: vitest runs without `--typecheck` and tsconfig excludes *.test.ts, so this
+  // assertion is authoring-time only; it is verified by running tsc over this file.
   expectTypeOf<ReturnType<typeof parseProjectTemplateV1>>().toEqualTypeOf<ProjectTemplateV1>();
-  expectTypeOf<typeof ProjectTemplateV1Schema._output>().toEqualTypeOf<ProjectTemplateV1>();
 });

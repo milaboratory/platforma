@@ -1,7 +1,8 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
 import type { BlockConfigContainer, BlockKindReference } from "@milaboratories/pl-model-common";
 import {
-  ProjectTemplateV1EntrySchema,
+  PROJECT_TEMPLATE_SCHEMA_V1,
+  parseProjectTemplateV1,
   kindReferenceToSelectorReference,
 } from "@milaboratories/pl-model-common";
 import { extractConfig } from "./bconfig/normalization";
@@ -116,10 +117,10 @@ describe("the reference as a template entry's kind", () => {
   test("the widened reference is accepted as a template-v1 entry's kind", () => {
     const blockId = "3f1c2b7a-0000-4000-8000-000000000001";
 
-    const entry = ProjectTemplateV1EntrySchema.parse({
-      id: blockId,
-      kind: kindReferenceToSelectorReference(kindfulContainer().kind!),
-    });
+    const [entry] = parseProjectTemplateV1({
+      schema: PROJECT_TEMPLATE_SCHEMA_V1,
+      blocks: [{ id: blockId, kind: kindReferenceToSelectorReference(kindfulContainer().kind!) }],
+    }).blocks;
 
     // The whole path, end to end: what the block declared is what the file
     // carries. `id` is the block's project-local UUID, reused verbatim, and `params` is the
