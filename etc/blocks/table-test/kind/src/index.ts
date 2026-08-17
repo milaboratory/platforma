@@ -1,5 +1,4 @@
-import { defineBlockKind } from "@platforma-sdk/block-kind";
-import { z } from "zod";
+import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -19,10 +18,19 @@ export type TableTestKindParams = { label: string };
  * block with `undefined` where a string is declared, and the mismatch would only show
  * up wherever that label is rendered.
  */
-const Params = z.object({ label: z.string() }).strict();
+function parseInitializationParams(value: unknown): TableTestKindParams {
+  assertDeclaredParams(value, ["label"]);
+
+  const { label } = value;
+  if (typeof label !== "string") {
+    throw new Error("'label' is required, and must be a string.");
+  }
+
+  return { label };
+}
 
 export const kind = defineBlockKind<TableTestKindParams>({
   name,
   version,
-  parseInitializationParams: (value) => Params.parse(value),
+  parseInitializationParams,
 });

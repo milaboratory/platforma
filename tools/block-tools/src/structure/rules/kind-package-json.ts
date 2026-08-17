@@ -59,12 +59,12 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
       build: "ts-builder build --target block-kind && block-tools build-kind-manifest",
       check: "ts-builder check --target block-kind",
     },
+    // A kind ships a runtime params check, so it is not a types-only package — but the
+    // check is plain TypeScript, held to the contract by its return type, so nothing but
+    // the SDK is needed to write one. An author whose params shape earns a schema library
+    // adds it here themselves; seeding one would make every kind carry it to be deleted.
     dependencies: {
       "@platforma-sdk/block-kind": "sdk:",
-      // A kind ships a runtime params check, so it is not a types-only package. zod is
-      // the default the scaffolded parser is written against; an author who validates by
-      // hand can drop this, which is why it is seeded rather than asserted on refresh.
-      zod: "catalog:",
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
