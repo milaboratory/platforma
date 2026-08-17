@@ -1,5 +1,5 @@
 import type { ImportFileHandle } from "@milaboratories/pl-model-common";
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -22,11 +22,12 @@ export type BlockParams = { inputHandle?: ImportFileHandle };
  * file. What cannot be checked here is whether the handle still resolves — it is machine- and
  * session-local, so only the importing side knows.
  *
- * An undeclared key is refused and named, instead of dropped while a block that looks
- * configured is applied unconfigured.
+ * `inputHandle` is the only field read, so anything else a file sets is dropped by not being
+ * read — which for this block means a handle that never arrives and an import with no input,
+ * the same state a block created without a template starts in.
  */
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, ["inputHandle"]);
+  assertParamsObject(value);
 
   const { inputHandle } = value;
   if (inputHandle !== undefined && !isImportFileHandle(inputHandle)) {

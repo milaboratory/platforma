@@ -33,7 +33,7 @@ export interface CompiledBlockKindV1<BlockParams> {
    * much later, or never — params typed `number[]` arriving as `["3","1","2"]` reach
    * the block's init and the workflow with no error anywhere, and a numeric sort
    * silently becomes a lexicographic one. A kind whose params are genuinely empty
-   * still declares a parser; it just rejects everything but `{}`.
+   * still declares a parser; it just has no field to read, and returns none.
    *
    * Must THROW to reject, and must RETURN the params to use. Returning rather than
    * validating in place is what lets a parser strip keys the kind does not declare
@@ -41,12 +41,12 @@ export interface CompiledBlockKindV1<BlockParams> {
    *
    * The signature is a plain function, so this package needs no validation library of its
    * own and a kind author picks their own tool. Plain TypeScript is the default, and what
-   * the scaffold generates — `assertDeclaredParams` covers the part every kind shares, and
-   * each field is then read and checked in the open:
+   * the scaffold generates — `assertParamsObject` covers the part every kind shares, and each
+   * field the contract requires is then read and checked in the open:
    *
    * ```ts
    * function parseInitializationParams(value: unknown): BlockParams {
-   *   assertDeclaredParams(value, ["numbers"]);
+   *   assertParamsObject(value);
    *
    *   const { numbers } = value;
    *   if (numbers !== undefined && !isNumberArray(numbers)) {

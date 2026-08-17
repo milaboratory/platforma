@@ -1,6 +1,6 @@
 import type { PlRef } from "@milaboratories/pl-model-common";
 import { isPlRef } from "@milaboratories/pl-model-common";
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -22,11 +22,12 @@ export type BlockParams = { sources?: PlRef[] };
  * reference — including the `__isRef: true` marker the block dependency tree is rebuilt from,
  * whose absence would otherwise produce a block wired to nothing.
  *
- * An undeclared key is refused and named, instead of dropped while a block that looks
- * configured is applied unconfigured.
+ * `sources` is the only field read, so anything else a file sets is dropped by not being
+ * read — which for this block means no upstream columns, the same state a block created
+ * without a template starts in.
  */
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, ["sources"]);
+  assertParamsObject(value);
 
   const { sources } = value;
   if (sources !== undefined && !(Array.isArray(sources) && sources.every(isPlRef))) {

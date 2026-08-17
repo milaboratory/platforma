@@ -1,4 +1,4 @@
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -20,11 +20,13 @@ export type BlockParams = NEEDS_BLOCK_PARAMS;
  * The same contract at runtime, for params that arrive from a template file rather than
  * from typed code — the only point that can catch a hand-written entry being wrong.
  *
- * TODO(block-kind): list every key `BlockParams` declares in the `assertDeclaredParams`
- * call, then read each one and say what it must be. Plain TypeScript is the default here:
- * a kind owes no schema library, and a check written by hand is held to the contract by
- * the return type. Reach for a validation library only where the shape earns it, and add
- * it to this package's dependencies yourself.
+ * TODO(block-kind): read each key `BlockParams` declares and say what it must be, then
+ * return them. Plain TypeScript is the default here: a kind owes no schema library, and a
+ * check written by hand is held to the contract by the return type. Reach for a validation
+ * library only where the shape earns it, and add it to this package's dependencies yourself.
+ *
+ * Check the fields the contract requires, and stop there. A key the contract does not name
+ * needs no rejection: it is dropped by not being read.
  *
  * This is a second intentional sentinel. The function has to return `BlockParams`, so
  * `return {}` stops compiling the moment the contract declares a required field — the check
@@ -32,7 +34,7 @@ export type BlockParams = NEEDS_BLOCK_PARAMS;
  * as BlockParams` compiles today and checks nothing forever.
  */
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, []);
+  assertParamsObject(value);
 
   return {};
 }
