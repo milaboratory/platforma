@@ -30,7 +30,7 @@ import type { ProjectTemplateExportOutcome } from "../model/template_serializer"
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
-import { TemplateEntryRejected, liveParamsForCheck } from "../model/template_apply";
+import { TemplateEntryRejected, kindMismatch, liveParamsForCheck } from "../model/template_apply";
 import type { BlockPackProvider } from "../model/template_resolve";
 import { resolveTemplateEntries } from "../model/template_resolve";
 import { validateTemplateV1ForApply } from "../model/template_validate";
@@ -420,14 +420,32 @@ export class MiddleLayer {
     });
     if (resolution.problems.length > 0) return { added: [], problems: resolution.problems };
 
-    const paramsByEntry = new Map(document.blocks.map((entry) => [entry.id, entry.params]));
+    // One map, not one per field: resolution reports by entry id, so everything this loop
+    // needs about an entry is looked up the same way.
+    const byEntryId = new Map(document.blocks.map((entry) => [entry.id, entry]));
     const prepared = new Map<string, PreparedTemplateEntry>();
     const problems: TemplateApplyProblem[] = [];
 
     for (const entry of resolution.resolved) {
       try {
+        const documentEntry = byEntryId.get(entry.entryId)!;
         const preparedBp = await this.env.bpPreparer.prepare(entry.spec);
         const blockCfg = extractConfig(preparedBp.config);
+
+        // The first question asked of the prepared block: is it the block this entry meant.
+        // Everything below is only meaningful once the answer is yes.
+        //
+        // The locator is appended here rather than inside the check, which names no route:
+        // when the file chose the implementation itself, what it chose is the thing to correct.
+        const mismatch = kindMismatch(documentEntry.kind, preparedBp.config.kind);
+        if (mismatch !== undefined) {
+          const locator = documentEntry.location ?? documentEntry.block;
+          problems.push({
+            entryId: entry.entryId,
+            error: locator === undefined ? `${mismatch}.` : `${mismatch} (${locator}).`,
+          });
+          continue;
+        }
 
         // The same two gates `Project.addBlock` applies, for the same reason: a block that
         // cannot run here must not be installed. Here they become per-entry problems
@@ -443,7 +461,7 @@ export class MiddleLayer {
         // a block that looks configured and is not.
         const checked = this.env.projectHelper.validateTemplateParamsInVM(
           blockCfg,
-          liveParamsForCheck(paramsByEntry.get(entry.entryId)!),
+          liveParamsForCheck(documentEntry.params),
         );
         if (checked.error !== undefined) {
           problems.push({ entryId: entry.entryId, error: checked.error.message });

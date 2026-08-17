@@ -94,12 +94,14 @@ const LocationSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]+):/;
 /**
  * One block in a template file.
  *
- * `kind` is always required: it carries the params contract the entry is typed
- * against, and it is checked against what the located implementation declares even
- * when it did not do the locating. A file may omit `params`, which is terseness and not an
- * escape from the contract: the parser reads the omission as `{}`, so an entry that leaves it
- * out still fails for a kind whose contract has required fields. Past the parser there is
- * only one spelling, and no reader has to normalize. There is no `label` field: a template
+ * `kind` is always required: it carries the params contract the entry is typed against, and
+ * whichever of the three routes finds the block, what that block declares is checked against
+ * it — so params written for one contract cannot reach an implementation of another.
+ *
+ * A file may omit `params`, which is terseness and not an escape from the contract: the parser
+ * reads the omission as `{}`, so an entry that leaves it out still fails for a kind whose
+ * contract has required fields. Past the parser there is only one spelling, and no reader has
+ * to normalize. There is no `label` field: a template
  * does not name block instances for display.
  *
  * An entry may also carry one locator override — see {@link BlockPackLocatorOverride} for

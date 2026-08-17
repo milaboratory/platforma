@@ -9,10 +9,10 @@ import { resolveBlockPackLocation } from "./location_provider";
 /**
  * The filesystem side of template import, driven against real directories.
  *
- * Everything here is about what is actually on disk — which layout is present, whether
- * the kind survived the build, whether a path with a space still resolves — so these
- * tests build the layouts rather than mock the readers. What each failure *says* to the
- * reader is the resolver's, and lives with it.
+ * Everything here is about what is actually on disk — which layout is present, which spec
+ * addresses it, whether a path with a space still resolves — so these tests build the layouts
+ * rather than mock the readers. What each failure *says* to the reader is the resolver's, and
+ * lives with it.
  */
 
 const KIND = "@milaboratories/milaboratories.test-loc.kind@1.2.3";
@@ -111,25 +111,14 @@ describe("a block built from source", () => {
     expect(outcome.title).toBe("Located Block");
   });
 
-  test("its kind is read out of the compiled model", async () => {
-    // The source `package.json` carries no kind — it is recorded when the model is
-    // compiled — so requiring a re-pack to see it would make every edit cost one.
-    const dir = await writeDevBlock(path.join(root, "dev-kind"));
-
-    const outcome = await locate(dir);
-
-    expect(outcome.ok && outcome.kind).toBe(KIND);
-  });
-
-  test("a model with no kind resolves, but declares none", async () => {
-    // Left for the resolver to refuse: it is the side holding the entry that says
-    // which kind was expected.
+  test("a model declaring no kind still resolves", async () => {
+    // Whether the block is the one the entry meant is settled once it has been prepared,
+    // from the compiled model there. Here it is only a block that was found.
     const dir = await writeDevBlock(path.join(root, "dev-no-kind"), { kind: null });
 
     const outcome = await locate(dir);
 
     expect(outcome.ok).toBe(true);
-    expect(outcome.ok && outcome.kind).toBeUndefined();
   });
 });
 
@@ -143,7 +132,6 @@ describe("a packed block", () => {
     if (!outcome.ok) return;
     expect(outcome.spec).toEqual({ type: "from-pack-v2", packUrl: pathToFileURL(dir).href });
     expect(outcome.title).toBe("Packed Block");
-    expect(outcome.kind).toBe(KIND);
   });
 
   test("the manifest wins over a package.json beside it", async () => {

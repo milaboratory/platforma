@@ -1,10 +1,7 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type {
-  BlockKindReference,
-  BlockPackLocationReference,
-} from "@milaboratories/pl-model-common";
+import type { BlockPackLocationReference } from "@milaboratories/pl-model-common";
 import { parseBlockPackLocation } from "@milaboratories/pl-model-common";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { BlockPackDescriptionAbsolute } from "@platforma-sdk/block-tools";
@@ -42,14 +39,13 @@ export async function resolveBlockPackLocation(
       : { ok: false, reason: "not-found" };
   }
 
-  return { ok: true, spec: found.spec, title: found.description.meta.title, kind: found.kind };
+  return { ok: true, spec: found.spec, title: found.description.meta.title };
 }
 
 /** One readable block pack: which spec addresses it, and what it declares. */
 type FoundPack = {
   readonly spec: BlockPackSpec;
   readonly description: BlockPackDescriptionAbsolute;
-  readonly kind: BlockKindReference | undefined;
 };
 
 /**
@@ -91,13 +87,12 @@ async function readPackExactlyAt(dir: string): Promise<FoundPack | undefined> {
       // the manifest was just read from — not something reconstructed from a parent.
       spec: { type: "from-pack-v2", packUrl: pathToFileURL(dir).href },
       description,
-      kind: description.kind,
     };
   }
 
   if (await hasBlockDescription(path.join(dir, "package.json"))) {
     const description = await loadPackDescription(dir);
-    return { spec: { type: "dev-v2", folder: dir }, description, kind: description.kind };
+    return { spec: { type: "dev-v2", folder: dir }, description };
   }
 
   return undefined;
