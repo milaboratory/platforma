@@ -12,7 +12,11 @@ import {
 import { validateTemplateV1ForApply } from "./template_validate";
 
 /**
- * The checks that can be made from the file alone, before anything is created.
+ * The one check that can be made from the file alone, before anything is created: a reference
+ * must name an entry declared earlier.
+ *
+ * The second describe below is the other half of the contract — what this stage deliberately
+ * says nothing about — written as tests so the gaps read as decisions rather than oversights.
  */
 
 const KIND = "@platforma-open/milaboratories.demo.kind@^1.0.0" as BlockKindSelectorReference;
