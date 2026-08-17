@@ -1,4 +1,4 @@
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -20,18 +20,20 @@ export type BlockParams = {
  * The same contract at runtime, for params that arrive from a template file rather
  * than from typed code.
  *
- * Refusing an undeclared key matters most here, where all five fields are near-synonyms: a
- * file saying `titleArgs` or `tagArg` would otherwise be ignored key and all, the block would
- * initialize blank, and nothing would say which of the five was misspelled.
+ * Every field is optional, so what this checks is types and nothing else: a file that
+ * misspells one of the five near-synonyms — `titleArgs` for `titleArg` — has that key dropped
+ * by not being read, and the block initializes blank. This is where that hurts most, and it is
+ * still not this kind's job to guess: a list of its own field names as strings would drift
+ * from the contract above the moment a sixth field is added.
  *
  * The optional strings are checked in a loop rather than one by one, because they are the same
- * check five times over — and a sixth field added to the contract joins the list rather than
- * needing another block of its own.
+ * check four times over — and a fifth string field joins the list rather than needing another
+ * block of its own.
  */
 const OPTIONAL_STRINGS = ["titleArg", "subtitleArg", "badgeArg", "tagToWorkflow"] as const;
 
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, [...OPTIONAL_STRINGS, "tagArgs"]);
+  assertParamsObject(value);
 
   const params: BlockParams = {};
   for (const field of OPTIONAL_STRINGS) {

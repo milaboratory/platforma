@@ -1,4 +1,4 @@
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -16,12 +16,12 @@ export type BlockParams = Record<string, never>;
  * The same contract at runtime, for params that arrive from a template file rather
  * than from typed code.
  *
- * Refusing every key is the whole point for an empty contract: a file that sets any key at
- * all is rejected naming that key, instead of having it ignored and applying a block that
- * looks configured and is not.
+ * An empty contract has nothing to check beyond the envelope: any field a file sets is a
+ * field this block does not read, so it is dropped rather than refused, and the block
+ * initializes exactly as it would with no params at all.
  */
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, []);
+  assertParamsObject(value);
 
   return {};
 }

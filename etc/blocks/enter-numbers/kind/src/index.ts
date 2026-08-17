@@ -1,4 +1,4 @@
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -14,17 +14,19 @@ export type BlockParams = { numbers?: number[] };
  * The same contract at runtime, for params that arrive from a template file rather
  * than from typed code.
  *
- * Refusing an undeclared key is most of the reason to write this at all. Without it, a file
- * saying `number: [1, 2, 3]` — singular — passes every check: the key is ignored, the block
- * initializes empty, and the only complaint arrives later from the block's own `args()`,
- * saying "Numbers are required!" and naming nothing about the typo. With it, the entry is
- * rejected and the unrecognized key is named.
+ * Only `numbers` is looked at, because it is the only field this block reads. A file setting
+ * anything else says nothing to this kind and is dropped by not being read — including
+ * `number:`, singular, which is the typo this contract invites. That one is not caught here:
+ * the complaint arrives later from the block's own `args()`, saying "Numbers are required!"
+ * and naming nothing about the typo. Catching it would mean this kind keeping a list of its
+ * own field names as strings, which nothing would hold in step with the type above.
  *
- * The type argument to `defineBlockKind` keeps the two in step: this function has to return
- * `BlockParams`, so dropping a field it declares is a compile error.
+ * The type argument to `defineBlockKind` keeps the two in step for the fields that are read:
+ * this function has to return `BlockParams`, so dropping a field it declares is a compile
+ * error.
  */
 function parseInitializationParams(value: unknown): BlockParams {
-  assertDeclaredParams(value, ["numbers"]);
+  assertParamsObject(value);
 
   const { numbers } = value;
   if (numbers !== undefined && !isNumberArray(numbers)) {

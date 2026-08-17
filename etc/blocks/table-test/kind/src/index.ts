@@ -1,4 +1,4 @@
-import { assertDeclaredParams, defineBlockKind } from "@platforma-sdk/block-kind";
+import { assertParamsObject, defineBlockKind } from "@platforma-sdk/block-kind";
 import { name, version } from "../package.json" with { type: "json" };
 
 /**
@@ -19,7 +19,7 @@ export type TableTestKindParams = { label: string };
  * up wherever that label is rendered.
  */
 function parseInitializationParams(value: unknown): TableTestKindParams {
-  assertDeclaredParams(value, ["label"]);
+  assertParamsObject(value);
 
   const { label } = value;
   if (typeof label !== "string") {
