@@ -103,16 +103,10 @@ const LocationSchemePattern = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]+):/;
  * only one spelling, and no reader has to normalize. There is no `label` field: a template
  * does not name block instances for display.
  *
- * Two optional, mutually exclusive locator overrides answer different questions, and
- * either one skips kind resolution:
- *
- * - `block` — WHICH VERSION, leaving the environment to decide which registry serves
- *   it. Portable.
- * - `location` — WHICH PLACE. Names a concrete, possibly unpublished implementation,
- *   and is therefore only meaningful where that place exists.
- *
- * An entry carrying both states two different things with no way to reconcile them,
- * so it is rejected rather than resolved by precedence.
+ * An entry may also carry one locator override — see {@link BlockPackLocatorOverride} for
+ * what each answers. Either one is resolved on its own and kind resolution is skipped
+ * entirely; carrying both would state two different things with no way to reconcile them, so
+ * the type admits at most one.
  */
 export type ProjectTemplateV1Entry = {
   /**
@@ -146,8 +140,36 @@ export type ProjectTemplateV1Entry = {
  * stay directly readable without narrowing.
  */
 export type BlockPackLocatorOverride =
-  | { readonly block?: BlockPackReference; readonly location?: never }
-  | { readonly block?: never; readonly location?: BlockPackLocationReference };
+  | {
+      /**
+       * WHICH VERSION to install, leaving it to the environment to decide which registry
+       * serves it — so an entry pinned this way stays portable.
+       *
+       * Exact only, `{name}@X.Y.Z` (see {@link BlockPackReference}): the override exists to
+       * pin one implementation, and a range would defeat that. Export never writes it, because
+       * it already records the exact version the block implements, leaving a pin nothing to
+       * add — so this is a hand-written field.
+       */
+      readonly block?: BlockPackReference;
+      /** Excluded: this arm is the version pin. */
+      readonly location?: never;
+    }
+  | {
+      /** Excluded: this arm is the place. */
+      readonly block?: never;
+      /**
+       * WHICH PLACE to install from, as an absolute URI (see
+       * {@link BlockPackLocationReference}).
+       *
+       * Names a concrete, possibly unpublished implementation, and is therefore only
+       * meaningful where that place exists: a `file:` locator written on one machine says
+       * nothing on another. That is the trade it makes — it is the only answer for a block
+       * that is built but not published, which no registry can find and no kind can resolve
+       * to. Export writes it for every block installed from the filesystem, since omitting it
+       * would describe a project that cannot be recreated at all.
+       */
+      readonly location?: BlockPackLocationReference;
+    };
 
 /**
  * A `template-v1` document — the primitive form of a template.
