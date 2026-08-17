@@ -91,7 +91,10 @@ test("v3: a project exported as a template applies back as an equivalent project
     // that both carry nothing.
     expect(exported.document.blocks[0].params).toStrictEqual({ numbers: [1, 2, 3] });
     expect(exported.document.blocks[1].params).toStrictEqual({
-      sources: [{ block: numbersId, output: "numbers" }],
+      // The reference is stored as the block itself holds it, inside the one wrapper the
+      // document recognizes — and the wrapper is around the reference, not around the array
+      // holding it, so each identifier is marked where it sits.
+      sources: [{ $ref: createPlRef(numbersId, "numbers") }],
     });
 
     // Both blocks came from a folder on this machine, and each entry says so by
@@ -161,7 +164,22 @@ test("v3: a project exported as a template applies back as an equivalent project
   });
 });
 
-test("v3: a block whose params name a deleted block cannot be exported", async ({ expect }) => {
+/**
+ * A reference naming a block the project no longer has is written out as-is.
+ *
+ * The boundary rather than a wish: the engine stores a reference payload verbatim and never
+ * opens one, so it cannot know that an id inside a payload names nothing. Reporting this would
+ * take exactly the reference knowledge that was deliberately removed — knowing which values
+ * carry block ids is the block's statement to make, not the document's.
+ *
+ * Nothing is lost by allowing it, which is why the state is reachable at all: a live project
+ * holds these routinely, because deleting a block does not rewrite what pointed at it. The
+ * exported file is as broken as the project it was exported from, and in the same way.
+ *
+ * What a subsequent apply makes of such a file is not asserted here. Only the redirect is
+ * certain: an id with no entry to redirect to is left as it is.
+ */
+test("v3: a reference to a deleted block survives the export unexamined", async ({ expect }) => {
   await withMl(async (ml) => {
     const projectId = await ml.createProject({ label: "With a dangling reference" });
     await ml.openProject(projectId);
@@ -175,16 +193,19 @@ test("v3: a block whose params name a deleted block cannot be exported", async (
     });
     await settled(project, sumId);
 
-    // Deleting a block removes it from the structure and leaves downstream params
-    // naming it, so the reference survives into the file pointing at nothing. All or
-    // nothing: no partial template is written.
     await project.deleteBlock(numbersId);
     await settled(project, sumId);
 
     const exported = await ml.exportProjectAsTemplate(projectId);
-    expect(exported.ok).toBe(false);
-    if (exported.ok) return;
-    expect(exported.problems.map((problem) => problem.blockId)).toStrictEqual([sumId]);
+    if (!exported.ok) throw new Error(`export failed: ${JSON.stringify(exported.problems)}`);
+
+    // One entry, because the block the reference names is gone from the structure — while the
+    // reference to it is still in the surviving block's params, naming an entry the document
+    // does not define.
+    expect(exported.document.blocks.map((entry) => entry.id)).toStrictEqual([sumId]);
+    expect(exported.document.blocks[0].params).toStrictEqual({
+      sources: [{ $ref: createPlRef(numbersId, "numbers") }],
+    });
   });
 });
 
