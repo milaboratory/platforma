@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import type {
-  BlockKindReference,
   BlockKindSelectorReference,
   BlockPackLocationReference,
   BlockPackLocatorOverride,
@@ -90,16 +89,13 @@ function fakeProvider(answers: {
       },
       byLocation: (location) => {
         locationCalls.push(location);
-        return Promise.resolve(
-          answers.byLocation ?? { ...foundBlock("located"), kind: DECLARED_KIND },
-        );
+        return Promise.resolve(answers.byLocation ?? foundBlock("located"));
       },
     },
   };
 }
 
 /** The concrete kind the located block declares, matching {@link KIND}'s selector. */
-const DECLARED_KIND = "@platforma-open/milaboratories.demo.kind@1.0.0" as BlockKindReference;
 
 const LOCATION = "file:///Users/dev/blocks/demo/block" as BlockPackLocationReference;
 
@@ -304,67 +300,6 @@ describe("an entry that says where its block is", () => {
 
       expect(message).toMatch(/is not a block/);
       expect(message).toMatch(/package\.json/);
-    });
-  });
-
-  describe("the entry's kind is verified against what was found", () => {
-    const resolveWith = async (kind: BlockKindReference | undefined) => {
-      const { provider } = fakeProvider({
-        byLocation: { ...foundBlock("located"), ...(kind !== undefined ? { kind } : {}) },
-      });
-      return await resolve(documentOf(entry("a", { location: LOCATION })), provider);
-    };
-
-    test("a version inside the entry's range is accepted", async () => {
-      // KIND asks for `^1.0.0`, so a later minor of the same kind still implements the
-      // contract the params were written against.
-      const outcome = await resolveWith(
-        "@platforma-open/milaboratories.demo.kind@1.4.0" as BlockKindReference,
-      );
-
-      expect(outcome.problems).toEqual([]);
-      expect(outcome.resolved).toHaveLength(1);
-    });
-
-    test("a version outside the range is refused, naming both sides", async () => {
-      const outcome = await resolveWith(
-        "@platforma-open/milaboratories.demo.kind@2.0.0" as BlockKindReference,
-      );
-
-      expect(outcome.resolved).toEqual([]);
-      expect(outcome.problems[0].error).toContain(KIND);
-      expect(outcome.problems[0].error).toContain("version 2.0.0");
-    });
-
-    test("a different kind entirely is refused, naming both", async () => {
-      // The failure a location makes possible: the path still resolves, but what is
-      // there now is a different block than the one the params were written for.
-      const outcome = await resolveWith(
-        "@platforma-open/milaboratories.other.kind@1.0.0" as BlockKindReference,
-      );
-
-      expect(outcome.problems[0].error).toContain("@platforma-open/milaboratories.demo.kind");
-      expect(outcome.problems[0].error).toContain("@platforma-open/milaboratories.other.kind");
-    });
-
-    test("a block declaring no kind cannot serve the entry", async () => {
-      const outcome = await resolveWith(undefined);
-
-      expect(outcome.problems[0].error).toMatch(/declares no kind/);
-    });
-
-    test("an unreadable declared kind is a problem, not a throw", async () => {
-      const outcome = await resolveWith("no-version-here" as BlockKindReference);
-
-      expect(outcome.problems[0].error).toMatch(/unreadable kind/);
-    });
-
-    test("the failing entry's location is named, since the path is what to fix", async () => {
-      const outcome = await resolveWith(
-        "@platforma-open/milaboratories.other.kind@1.0.0" as BlockKindReference,
-      );
-
-      expect(outcome.problems[0].error).toContain(LOCATION);
     });
   });
 });

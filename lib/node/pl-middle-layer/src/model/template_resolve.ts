@@ -1,5 +1,4 @@
 import type {
-  BlockKindReference,
   BlockKindSelectorReference,
   BlockPackLocationReference,
   ProjectTemplateV1,
@@ -7,12 +6,9 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   parseBlockPackReference,
-  parseKindRef,
   parseKindSelectorReference,
 } from "@milaboratories/pl-model-common";
 import type { BlockPackId, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
-import { selectorToRange } from "@platforma-sdk/block-tools";
-import * as semver from "semver";
 import type { TemplateApplyProblem } from "./template_apply";
 
 /**
@@ -65,10 +61,11 @@ export type BlockPackProvider = {
    * built and never published. Nothing is searched: the entry says where, so either
    * that place holds a block or the entry is wrong.
    *
-   * Unlike the other two, this one also returns the kind the implementation declares.
-   * Resolution cannot take the entry's word for it here — a folder's contents change
-   * under a path that does not — so the two are compared, and that comparison needs
-   * both halves. See {@link LocationResolution}'s `kind`.
+   * Answers "is there a block here", not "is it the right one". Whether the block found
+   * implements the kind the entry asks for is settled once it has been prepared, from the
+   * compiled model — the one place all three routes have it. This reader could answer it
+   * too, since it reads the block's description anyway, and answering it here as well would
+   * make two homes for one invariant while leaving the pinned-version route uncovered.
    */
   byLocation: (location: BlockPackLocationReference) => Promise<LocationResolution>;
 };
@@ -120,16 +117,6 @@ export type LocationResolution =
       readonly ok: true;
       readonly spec: BlockPackSpec;
       readonly title: string;
-      /**
-       * The kind this implementation declares, absent for one that declares none.
-       *
-       * Returned so resolution can hold it against what the entry asked for. A
-       * location is the one locator whose target can be swapped without the file
-       * changing, so it is also the one where the entry's kind has to be verified
-       * rather than assumed — params written against one contract must not be handed
-       * to a block implementing another.
-       */
-      readonly kind?: BlockKindReference;
     }
   | {
       readonly ok: false;
@@ -255,11 +242,6 @@ async function resolveEntry(
       }
     }
 
-    // The entry's kind is not what found this block, but it is still the contract its
-    // params were written against, so the block has to actually implement it.
-    const mismatch = kindMismatch(entry.kind, outcome.kind);
-    if (mismatch !== undefined) return problem(`${mismatch} (${entry.location})`);
-
     return {
       ok: true,
       entry: { entryId: entry.id, spec: outcome.spec, title: outcome.title, pinned: true },
@@ -326,58 +308,6 @@ async function resolveEntry(
           `pre-release versions. Import again with unstable versions allowed to use them.`,
       );
   }
-}
-
-/**
- * Why the block found at a location cannot serve the entry that named it, or
- * `undefined` when it can.
- *
- * The check the registry route gets for free: there, the kind's own projection picks
- * the block, so the block provably implements the kind. A location skips that, and a
- * folder's contents can change without the file changing — so the same guarantee has
- * to be re-established by asking the implementation what it implements.
- *
- * Version comparison goes through the same selector-to-range translation the registry
- * resolver uses, so "this resolves locally" and "this would resolve once published"
- * cannot disagree about the version math.
- */
-function kindMismatch(
-  asked: BlockKindSelectorReference,
-  declared: BlockKindReference | undefined,
-): string | undefined {
-  if (declared === undefined) {
-    return (
-      "The block at this location declares no kind, so it cannot be the implementation " +
-      "this entry asks for"
-    );
-  }
-
-  let wanted: { name: string; selector: { op: "exact" | "patch" | "minor"; version: string } };
-  let has: { name: string; version: string };
-  try {
-    wanted = parseKindSelectorReference(asked);
-    has = parseKindRef(declared);
-  } catch (e) {
-    // The entry's own selector was checked when the document was parsed, so this is
-    // the block's stored reference being unreadable.
-    return `The block at this location declares an unreadable kind: ${messageOf(e)}`;
-  }
-
-  if (wanted.name !== has.name) {
-    return (
-      `This entry asks for kind '${wanted.name}', but the block at this location ` +
-      `implements '${has.name}'`
-    );
-  }
-
-  if (!semver.satisfies(has.version, selectorToRange(wanted.selector))) {
-    return (
-      `This entry asks for '${asked}', but the block at this location implements ` +
-      `version ${has.version} of that kind`
-    );
-  }
-
-  return undefined;
 }
 
 /**
