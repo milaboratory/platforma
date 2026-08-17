@@ -1,9 +1,9 @@
 import YAML from "yaml";
-import { z } from "zod";
-import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import type { ProjectTemplateV1, TemplateParseIssue } from "@milaboratories/pl-model-common";
 import {
   PROJECT_TEMPLATE_SCHEMA_V1,
-  parseProjectTemplateV1,
+  formatTemplateParseIssue,
+  readProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
 
 /**
@@ -67,9 +67,9 @@ export function parseProjectTemplateV1Yaml(text: string): TemplateParseOutcome {
     };
   }
 
-  // Checked ahead of the schema because it is the likeliest mistake by far — the wrong
-  // file was picked — and because the schema's own wording for it ("Invalid literal
-  // value, expected \"template-v1\"") describes a type mismatch rather than that.
+  // Checked ahead of the document reader because it is the likeliest mistake by far — the
+  // wrong file was picked — and deserves a sentence about that rather than one about a field
+  // whose value is not what was expected.
   const marker = (value as { schema?: unknown }).schema;
   if (marker !== PROJECT_TEMPLATE_SCHEMA_V1) {
     return {
@@ -81,33 +81,23 @@ export function parseProjectTemplateV1Yaml(text: string): TemplateParseOutcome {
     };
   }
 
-  try {
-    return { ok: true, document: parseProjectTemplateV1(value) };
-  } catch (e) {
-    if (e instanceof z.ZodError) return { ok: false, error: describeIssues(e) };
-    throw e;
-  }
+  const outcome = readProjectTemplateV1(value);
+  return outcome.ok
+    ? { ok: true, document: outcome.document }
+    : { ok: false, error: describeIssues(outcome.issues) };
 }
 
 /**
- * Turn schema issues into something a person can act on, all of them at once.
+ * Turn the reader's issues into something a person can act on, all of them at once.
  *
- * Each line locates the problem the way the file is written — `blocks[2].kind` rather
- * than the parser's `blocks.2.kind` — so it can be found by reading, not counting.
+ * The per-issue line comes from `formatTemplateParseIssue`, shared with the error the reader
+ * throws, so a problem reads the same whether it reached a person through this outcome or
+ * through a log. What is added here is the headline, which is the one part that belongs to
+ * this stage: it says the FILE is at fault, which a caller that has one can say and the
+ * document reader cannot.
  */
-function describeIssues(error: z.ZodError): string {
-  const lines = error.issues.map((issue) => {
-    const path = issue.path.reduce<string>(
-      (acc, segment) =>
-        typeof segment === "number"
-          ? `${acc}[${segment}]`
-          : acc === ""
-            ? segment
-            : `${acc}.${segment}`,
-      "",
-    );
-    return path === "" ? `- ${issue.message}` : `- ${path}: ${issue.message}`;
-  });
+function describeIssues(issues: readonly TemplateParseIssue[]): string {
+  const lines = issues.map((issue) => `- ${formatTemplateParseIssue(issue)}`);
 
   const headline =
     lines.length === 1

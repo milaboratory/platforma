@@ -1,4 +1,3 @@
-import { z } from "zod";
 import type { Branded } from "@milaboratories/helpers";
 import { splitVersionedName } from "../bmodel/block_kind_ref";
 import type { BlockKindSelectorReference } from "./kind_selector";
@@ -191,131 +190,248 @@ export type ProjectTemplateV1 = {
 };
 
 //
-// Zod schemas — boundary validators only. The TS types above are the source of
-// truth; each schema is pegged to its type via `satisfies`.
+// Reading a decoded document.
 //
-// The peg is `BoundaryParser<T>` rather than the repo-standard `z.ZodType<T>`
-// because the branded string fields need a `.transform` to reach their branded
-// output type, and a transforming schema's *input* is a plain `string`, which
-// the two-parameter `z.ZodType<T>` (input defaults to output) rejects. Widening
-// the input to `unknown` is also the more honest signature for a parser whose
-// job is to accept whatever a file reader produced.
-//
-// `satisfies` only checks that the parser's output is assignable to the type —
-// a parser NARROWER than the type still passes — so the exactness guard is the
-// `expectTypeOf` assertion in the sibling test.
+// Hand-written rather than schema-driven, for what a reader of a hand-written file gets out
+// of it. A template is a file a person edits, so the parser's output is a bug report: every
+// problem at once, each located the way the file is written, worded as the edit to make. That
+// means owning the wording, which a schema library gives away — and the values here need
+// checks a schema cannot express anyway (the reference grammars are functions, and the locator
+// exclusion is a rule about two fields), so the schema was carrying the trivial half while the
+// interesting half sat in refinements beside it.
 //
 
-type BoundaryParser<T> = z.ZodType<T, z.ZodTypeDef, unknown>;
-
-const issue = (ctx: z.RefinementCtx, e: unknown) =>
-  ctx.addIssue({
-    code: z.ZodIssueCode.custom,
-    message: e instanceof Error ? e.message : String(e),
-  });
-
-const kindSelectorReferenceSchema = z
-  .string()
-  .superRefine((value, ctx) => {
-    try {
-      parseKindSelectorReference(value as BlockKindSelectorReference);
-    } catch (e) {
-      issue(ctx, e);
-    }
-  })
-  .transform(
-    (value) => value as BlockKindSelectorReference,
-  ) satisfies BoundaryParser<BlockKindSelectorReference>;
-
-const blockPackReferenceSchema = z
-  .string()
-  .superRefine((value, ctx) => {
-    try {
-      parseBlockPackReference(value as BlockPackReference);
-    } catch (e) {
-      issue(ctx, e);
-    }
-  })
-  .transform((value) => value as BlockPackReference) satisfies BoundaryParser<BlockPackReference>;
-
-const blockPackLocationSchema = z
-  .string()
-  .superRefine((value, ctx) => {
-    try {
-      parseBlockPackLocation(value as BlockPackLocationReference);
-    } catch (e) {
-      issue(ctx, e);
-    }
-  })
-  .transform(
-    (value) => value as BlockPackLocationReference,
-  ) satisfies BoundaryParser<BlockPackLocationReference>;
-
-export const ProjectTemplateV1EntrySchema = z
-  .object({
-    id: z.string().min(1),
-    kind: kindSelectorReferenceSchema,
-    block: blockPackReferenceSchema.optional(),
-    location: blockPackLocationSchema.optional(),
-    // Omissible in the file, settled here: every reader downstream gets a mapping.
-    params: z.record(z.string(), z.unknown()).default({}),
-  })
-  .strict()
-  .superRefine((entry, ctx) => {
-    if (entry.block !== undefined && entry.location !== undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["location"],
-        message:
-          `An entry cannot carry both 'block' and 'location': the first pins which version ` +
-          `to install, the second pins where to install it from. Keep the one that is ` +
-          `actually meant.`,
-      });
-    }
-  })
-  .readonly()
-  // The refine above is what enforces the exclusion; this is what tells the type system it
-  // ran. A `z.union` of the two arms would carry the exclusion in the schema instead, at the
-  // cost of the error a reader gets: a union reports every arm's failure, so a misspelled
-  // `kind` would come back as two unrelated complaints about `block` and `location`.
-  .transform(
-    (entry) => entry as ProjectTemplateV1Entry,
-  ) satisfies BoundaryParser<ProjectTemplateV1Entry>;
-
-export const ProjectTemplateV1Schema = z
-  .object({
-    schema: z.literal(PROJECT_TEMPLATE_SCHEMA_V1),
-    blocks: z.array(ProjectTemplateV1EntrySchema).readonly(),
-  })
-  .strict()
-  .readonly()
-  .superRefine((doc, ctx) => {
-    const seen = new Set<string>();
-    doc.blocks.forEach((entry, i) => {
-      if (seen.has(entry.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["blocks", i, "id"],
-          message: `Duplicate template-local id: ${entry.id}`,
-        });
-      }
-      seen.add(entry.id);
-    });
-  }) satisfies BoundaryParser<ProjectTemplateV1>;
+/** One thing wrong with a document, and where in it. */
+export type TemplateParseIssue = {
+  /** Location in the decoded value: `["blocks", 2, "kind"]`. */
+  readonly path: readonly (string | number)[];
+  /** What is wrong, worded for whoever is editing the file. */
+  readonly message: string;
+};
 
 /**
- * Parse an already-decoded template document — the value a YAML or JSON reader
- * returns — into a {@link ProjectTemplateV1}.
+ * One issue as a line: `blocks[2].kind: Expected a kind reference, got nothing.`
  *
- * Checks the format marker, every entry's shape, the reference grammars and id
- * uniqueness. It does NOT check what an entry's params point at: params are opaque here,
- * and the ordering rule they must satisfy is a statement about `blocks`, kept separate as
+ * Indexes read as they are written in the file — `blocks[2]`, not `blocks.2` — so the place
+ * can be found by reading rather than by counting.
+ */
+export function formatTemplateParseIssue(issue: TemplateParseIssue): string {
+  const path = issue.path.reduce<string>(
+    (acc, segment) =>
+      typeof segment === "number"
+        ? `${acc}[${segment}]`
+        : acc === ""
+          ? segment
+          : `${acc}.${segment}`,
+    "",
+  );
+  return path === "" ? issue.message : `${path}: ${issue.message}`;
+}
+
+/**
+ * Every problem a document has, thrown once so a caller fixes the file in one pass.
+ *
+ * The issues are in `message` as well as on `issues`, because a throw that escapes to a log is
+ * read as its message and nothing else.
+ */
+export class ProjectTemplateV1ParseError extends Error {
+  constructor(readonly issues: readonly TemplateParseIssue[]) {
+    super(
+      [
+        `The template document could not be read (${issues.length} problem(s)):`,
+        ...issues.map((issue) => `- ${formatTemplateParseIssue(issue)}`),
+      ].join("\n"),
+    );
+    this.name = "ProjectTemplateV1ParseError";
+  }
+}
+
+/** A document, or everything wrong with the value that was supposed to be one. */
+export type ProjectTemplateV1ReadResult =
+  | { readonly ok: true; readonly document: ProjectTemplateV1 }
+  | { readonly ok: false; readonly issues: readonly TemplateParseIssue[] };
+
+const isMapping = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/** Keys an entry may carry. Anything else is a mistake, not an extension point. */
+const ENTRY_KEYS = ["id", "kind", "block", "location", "params"] as const;
+
+/**
+ * Read an already-decoded template document — the value a YAML or JSON reader returns.
+ *
+ * Checks the format marker, every entry's shape, the reference grammars and id uniqueness,
+ * and settles an omitted `params` to `{}`. Unknown keys are refused rather than ignored: a
+ * misspelled key that was silently dropped would apply a file that does not say what its
+ * author meant.
+ *
+ * It does NOT check what an entry's params point at. Params are opaque here, and the ordering
+ * rule they must satisfy is a statement about `blocks` as a whole, kept separate as
  * {@link validateProjectTemplateV1References}.
  *
- * @throws {z.ZodError} on any of the above
+ * Collects rather than stops: a file with three mistakes should take one pass to fix.
+ */
+export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResult {
+  const issues: TemplateParseIssue[] = [];
+  const fail = (path: readonly (string | number)[], message: string) =>
+    issues.push({ path, message });
+
+  if (!isMapping(value)) {
+    return {
+      ok: false,
+      issues: [{ path: [], message: "A template must be a mapping with 'schema' and 'blocks'." }],
+    };
+  }
+
+  for (const key of Object.keys(value)) {
+    if (key !== "schema" && key !== "blocks") fail([], `Unrecognized key: '${key}'`);
+  }
+
+  if (value.schema !== PROJECT_TEMPLATE_SCHEMA_V1) {
+    fail(
+      ["schema"],
+      `Expected '${PROJECT_TEMPLATE_SCHEMA_V1}', got ${describe(value.schema)}. This is the ` +
+        `format marker every template opens with.`,
+    );
+  }
+
+  if (!Array.isArray(value.blocks)) {
+    fail(["blocks"], `Expected a list of entries, got ${describe(value.blocks)}.`);
+    return { ok: false, issues };
+  }
+
+  const blocks: ProjectTemplateV1Entry[] = [];
+  const seen = new Set<string>();
+
+  value.blocks.forEach((raw, i) => {
+    const entry = readEntry(raw, ["blocks", i], fail);
+    if (entry === undefined) return;
+    if (seen.has(entry.id)) fail(["blocks", i, "id"], `Duplicate template-local id: ${entry.id}`);
+    seen.add(entry.id);
+    blocks.push(entry);
+  });
+
+  if (issues.length > 0) return { ok: false, issues };
+  return { ok: true, document: { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks } };
+}
+
+/**
+ * One entry, or `undefined` when it is not even a mapping — in which case its own fields are
+ * not reported on top, since a reader given "this entry is not a mapping" does not also need
+ * to hear that its `id` is missing.
+ */
+function readEntry(
+  raw: unknown,
+  at: readonly (string | number)[],
+  fail: (path: readonly (string | number)[], message: string) => void,
+): ProjectTemplateV1Entry | undefined {
+  if (!isMapping(raw)) {
+    fail(at, `Expected an entry mapping, got ${describe(raw)}.`);
+    return undefined;
+  }
+
+  for (const key of Object.keys(raw)) {
+    if (!(ENTRY_KEYS as readonly string[]).includes(key)) {
+      fail(at, `Unrecognized key: '${key}'`);
+    }
+  }
+
+  let ok = true;
+
+  if (typeof raw.id !== "string" || raw.id.length === 0) {
+    fail([...at, "id"], `Expected a non-empty id, got ${describe(raw.id)}.`);
+    ok = false;
+  }
+
+  if (typeof raw.kind !== "string") {
+    fail([...at, "kind"], `Expected a kind reference, got ${describe(raw.kind)}.`);
+    ok = false;
+  } else {
+    // The grammars are functions, and their messages already name the fix, so they are
+    // reported as they come rather than restated.
+    ok = check([...at, "kind"], () => parseKindSelectorReference(raw.kind as never), fail) && ok;
+  }
+
+  if (raw.block !== undefined) {
+    if (typeof raw.block !== "string") {
+      fail([...at, "block"], `Expected a block package reference, got ${describe(raw.block)}.`);
+      ok = false;
+    } else {
+      ok = check([...at, "block"], () => parseBlockPackReference(raw.block as never), fail) && ok;
+    }
+  }
+
+  if (raw.location !== undefined) {
+    if (typeof raw.location !== "string") {
+      fail([...at, "location"], `Expected a locator URI, got ${describe(raw.location)}.`);
+      ok = false;
+    } else {
+      ok =
+        check([...at, "location"], () => parseBlockPackLocation(raw.location as never), fail) && ok;
+    }
+  }
+
+  if (raw.block !== undefined && raw.location !== undefined) {
+    fail(
+      [...at, "location"],
+      `An entry cannot carry both 'block' and 'location': the first pins which version to ` +
+        `install, the second pins where to install it from. Keep the one that is actually meant.`,
+    );
+    ok = false;
+  }
+
+  if (raw.params !== undefined && !isMapping(raw.params)) {
+    fail([...at, "params"], `Expected a mapping of params, got ${describe(raw.params)}.`);
+    ok = false;
+  }
+
+  if (!ok) return undefined;
+
+  return {
+    id: raw.id as string,
+    kind: raw.kind as BlockKindSelectorReference,
+    ...(raw.block !== undefined ? { block: raw.block as BlockPackReference } : {}),
+    ...(raw.location !== undefined ? { location: raw.location as BlockPackLocationReference } : {}),
+    // Omissible in the file, settled here: every reader downstream gets a mapping.
+    params: (raw.params ?? {}) as Record<string, unknown>,
+  } as ProjectTemplateV1Entry;
+}
+
+/** Run a grammar check, turning its throw into an issue at `path`. */
+function check(
+  path: readonly (string | number)[],
+  grammar: () => unknown,
+  fail: (path: readonly (string | number)[], message: string) => void,
+): boolean {
+  try {
+    grammar();
+    return true;
+  } catch (e) {
+    fail(path, e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
+/** A value named the way an error message should name it, without printing its contents. */
+function describe(value: unknown): string {
+  if (value === undefined) return "nothing";
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "a list";
+  if (typeof value === "string") return `'${value}'`;
+  if (typeof value === "object") return "a mapping";
+  return String(value);
+}
+
+/**
+ * {@link readProjectTemplateV1} for a caller that treats an unreadable document as
+ * exceptional — export, which asserts on every run that what it wrote can be read back.
+ *
+ * @throws {ProjectTemplateV1ParseError} carrying every problem found
  */
 export function parseProjectTemplateV1(value: unknown): ProjectTemplateV1 {
-  return ProjectTemplateV1Schema.parse(value);
+  const outcome = readProjectTemplateV1(value);
+  if (!outcome.ok) throw new ProjectTemplateV1ParseError(outcome.issues);
+  return outcome.document;
 }
 
 /** Why one reference is not usable, and which entry holds it. */
