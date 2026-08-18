@@ -18,6 +18,14 @@ import { ProjectHelper } from "./project_helper";
 const HANDLE = BlockStorageFacadeCallbacks.StorageInitialFromParams;
 
 /**
+ * No entries created yet, which is what these tests want: relocation is the SDK's half of this
+ * callback and is covered where it lives (`pl-model-common`'s `relocateBlockIds`). What is
+ * being driven here is the boundary — does the callback exist, what crosses it as text, how
+ * each failure is reported — and an empty map keeps the params arriving as written.
+ */
+const NO_IDS: ReadonlyMap<string, string> = new Map();
+
+/**
  * A block model whose params callback body is `body`.
  *
  * Registration mirrors what the SDK's `tryRegisterCallback` does inside a real
@@ -69,20 +77,22 @@ describe("getInitialStorageFromParamsInVM", () => {
     const result = helper.getInitialStorageFromParamsInVM(
       configWith(modelCode("(paramsJson) => ({ storageJson: paramsJson })")),
       { numbers: [3, 1, 2], label: "run 1" },
+      NO_IDS,
     );
 
     expect(storageFrom(result)).toEqual({ numbers: [3, 1, 2], label: "run 1" });
   });
 
   test("a reference in params survives the crossing unchanged", () => {
-    // References are resolved before this call, so the concrete ids the applier
-    // just assigned must arrive byte-identical — a mangled `__isRef` object would
-    // produce a block wired to nothing.
+    // With no entries in the map there is nothing to repoint, so this asserts the crossing
+    // alone: a `__isRef` object must arrive byte-identical, since a mangled one would produce
+    // a block wired to nothing.
     const ref = { __isRef: true, blockId: "11111111-1111-4111-8111-111111111111", name: "reads" };
 
     const result = helper.getInitialStorageFromParamsInVM(
       configWith(modelCode("(paramsJson) => ({ storageJson: paramsJson })")),
       { source: ref },
+      NO_IDS,
     );
 
     expect(storageFrom(result)).toEqual({ source: ref });
@@ -95,6 +105,7 @@ describe("getInitialStorageFromParamsInVM", () => {
     const result = helper.getInitialStorageFromParamsInVM(
       configWith(modelCode("(paramsJson) => ({ storageJson: paramsJson })")),
       undefined,
+      NO_IDS,
     );
 
     expect(storageFrom(result)).toEqual({});
@@ -113,6 +124,7 @@ describe("getInitialStorageFromParamsInVM", () => {
         declareCallback: false,
       }),
       { numbers: [1] },
+      NO_IDS,
     );
 
     expect(result.error?.message).toBe(
@@ -128,6 +140,7 @@ describe("getInitialStorageFromParamsInVM", () => {
     const result = helper.getInitialStorageFromParamsInVM(
       configWith(modelCode('() => ({ error: "numbers must not be empty" })')),
       { numbers: [] },
+      NO_IDS,
     );
 
     expect(result.error?.message).toBe("numbers must not be empty");
@@ -140,6 +153,7 @@ describe("getInitialStorageFromParamsInVM", () => {
     const result = helper.getInitialStorageFromParamsInVM(
       configWith(modelCode('() => { throw new Error("boom"); }')),
       { numbers: [1] },
+      NO_IDS,
     );
 
     expect(result.error?.message).toContain("Initial storage creation from params failed");
@@ -152,6 +166,7 @@ describe("getInitialStorageFromParamsInVM", () => {
         modelAPIVersion: 1,
       }),
       { numbers: [1] },
+      NO_IDS,
     );
 
     expect(result.error?.message).toMatch(/only supported for model API version 2/);

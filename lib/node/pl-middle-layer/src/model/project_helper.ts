@@ -54,14 +54,6 @@ type ParamsStorageResult =
  */
 type InitializationParamsValidateResult = { error: string } | { error?: undefined };
 
-/**
- * Result of pointing an entry's references at the project being built.
- * Returned by the __pl_initializationParams_relocate VM callback.
- */
-type InitializationParamsRelocateResult =
-  | { error: string }
-  | { error?: undefined; paramsJson: StringifiedJson };
-
 export class ProjectHelper {
   private readonly enrichmentTargetsCache = new LRUCache<
     string,
@@ -347,73 +339,6 @@ export class ProjectHelper {
   }
 
   /**
-   * Points an entry's references at the blocks of the project being built.
-   *
-   * The only stage of a template's life where a reference is recognized at all, and it
-   * happens inside the block's own model VM — because recognizing one means knowing the
-   * reference system, and a template engine deliberately does not. Params reach here exactly
-   * as the file held them: nothing between the block that exported them and this call marks a
-   * reference, reads one, or rewrites one.
-   *
-   * Runs per entry at construction, immediately before {@link getInitialStorageFromParamsInVM}
-   * consumes what it returns. `blockIds` holds the entries created so far, so an id it does
-   * not name is left as it is — a reference to an entry listed further down the file keeps
-   * pointing at nothing, and the applied block reports itself as missing references rather
-   * than being wired to a block below it.
-   *
-   * A block whose model predates the callback is refused. Falling back to the params as
-   * written would create a block wired to the ids of the project the template came from —
-   * ids that mean nothing here, or worse, mean some unrelated block.
-   *
-   * @param blockConfig The block configuration (provides the model code)
-   * @param params The entry's params, as the document held them
-   * @param blockIds template-local entry id → the block id that entry was given
-   * @returns The params with every reference repointed, or why they could not be
-   */
-  public relocateTemplateParamsInVM(
-    blockConfig: BlockConfig,
-    params: unknown,
-    blockIds: ReadonlyMap<string, string>,
-  ): ResultOrError<unknown> {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      return {
-        error: new Error("relocateTemplateParamsInVM is only supported for model API version 2"),
-      };
-    }
-
-    const callback =
-      blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.InitializationParamsRelocate];
-    if (callback === undefined) {
-      return {
-        error: new Error(
-          "This version of the block cannot be created from a template: it cannot point " +
-            "the template's references at the blocks of this project. Use a newer version " +
-            "of the block, or remove the pinned block version from the template entry so a " +
-            "supported one is chosen automatically.",
-        ),
-      };
-    }
-
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        callback,
-        extractCodeWithInfo(blockConfig),
-        JSON.stringify(params ?? {}),
-        JSON.stringify(Object.fromEntries(blockIds)),
-      ) as InitializationParamsRelocateResult;
-
-      if (result.error !== undefined) return { error: new Error(result.error) };
-      return { value: JSON.parse(result.paramsJson) };
-    } catch (e) {
-      const cause = ensureError(e);
-      return {
-        error: new Error(`Relocating this entry's references failed: ${cause.message}`, { cause }),
-      };
-    }
-  }
-
-  /**
    * Creates initial BlockStorage for a block being created from template params.
    *
    * The inverse of {@link deriveTemplateParamsFromStorage}, and the reason a block
@@ -421,16 +346,28 @@ export class ProjectHelper {
    * block's own init factory inside the model VM, so the resulting storage is
    * whatever that block considers a correctly-initialized state.
    *
-   * The caller must relocate `params` first, through {@link relocateTemplateParamsInVM} — a
-   * reference reaching the factory has to name a block of the project being built.
+   * **Pointing the entry's references at this project happens in the same call**, before the
+   * factory sees them — inside the block's bundle, because recognizing a reference means
+   * knowing the reference system and a template engine deliberately does not. Params reach
+   * here exactly as the file held them.
+   *
+   * One call and not two: every VM call builds a fresh runtime and re-evaluates the whole
+   * model bundle, so asking the block to relocate and then asking it to initialize would parse
+   * it twice per entry, for an intermediate value nothing else reads.
+   *
+   * `blockIds` holds the entries created so far, so an id it does not name is left as it is —
+   * a reference to an entry further down the file keeps pointing at nothing, and the applied
+   * block reports itself as missing references rather than being wired to a block below it.
    *
    * @param blockConfig The block configuration (provides the model code)
-   * @param params The entry's params, already relocated
+   * @param params The entry's params, as the document held them
+   * @param blockIds template-local entry id → the block id that entry was given
    * @returns The initial storage as JSON string, or why the params yield none
    */
   public getInitialStorageFromParamsInVM(
     blockConfig: BlockConfig,
     params: unknown,
+    blockIds: ReadonlyMap<string, string>,
   ): ResultOrError<string> {
     if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       return {
@@ -443,10 +380,12 @@ export class ProjectHelper {
     const callback =
       blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitialFromParams];
 
-    // A model built before this callback existed has no entry for it. Falling back
-    // to the params-less initializer is not an option: it would produce a
-    // default-configured block that looks like a successful apply, so the block the
-    // user gets would silently differ from the one the template describes.
+    // A model built before this callback existed has no entry for it. Falling back to the
+    // params-less initializer is not an option: it would produce a default-configured block
+    // that looks like a successful apply, so the block the user gets would silently differ
+    // from the one the template describes. Nor could its params be used as written — they name
+    // the blocks of the project the template came from, and only this callback knows which of
+    // the values in there are references at all.
     //
     // The message offers the two actions available to whoever applied the file. The
     // second one is the reason this branch is reachable at all: kind resolution only
@@ -472,6 +411,7 @@ export class ProjectHelper {
         // stringify to nothing at all, and an entry with no params must go through
         // the params-less initializer rather than reaching this method.
         JSON.stringify(params ?? {}),
+        JSON.stringify(Object.fromEntries(blockIds)),
       ) as ParamsStorageResult;
 
       if (result.error !== undefined) return { error: new Error(result.error) };

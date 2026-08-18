@@ -411,24 +411,48 @@ export type ParamsStorageResult =
  * {@link createInitialStorage} wraps the defaults — so a block created from a
  * template is indistinguishable from one created in the UI and then edited.
  *
+ * **This is where a template's references are pointed at the project being built**, and it is
+ * the only place in a template's life where a reference is recognized at all. Params travel
+ * from the file untouched — the engine carrying them neither marks a reference nor reads one,
+ * because recognizing one means knowing the reference system, and that knowledge is here.
+ * `blockIds` maps each template-local entry id to the block id it was given; an id it does not
+ * name is left alone, which is how a reference to an entry created later ends up naming
+ * nothing rather than naming the wrong block.
+ *
+ * Relocation happens before the kind's parser and before the factory, so both see the ids the
+ * block will actually hold. It is one step of this function rather than a callback of its own
+ * precisely because nothing else wants its result: every VM call re-instantiates the runtime
+ * and re-evaluates the whole model bundle, so a separate call would parse the block twice per
+ * entry to produce a value only the next line reads.
+ *
  * Params arrive as JSON text because this runs across the model-VM boundary, where
  * only strings pass. Anything the factory rejects is returned as an error rather
  * than thrown: applying a hand-written template is expected to surface bad params,
  * and the applier reports every entry's problem in one pass.
  *
- * @param paramsJson - The entry's params as JSON string, with references resolved
+ * @param paramsJson - The entry's params as JSON string, exactly as the file held them
+ * @param blockIdsJson - template-local entry id → assigned block id, as a JSON object
  * @param hooks - The block's init factory plus plugin creation
  * @returns The storage to write, or why the params could not produce any
  */
 export function createInitialStorageFromParams(
   paramsJson: string,
+  blockIdsJson: string,
   hooks: ParamsStorageHooks,
 ): ParamsStorageResult {
   let params: unknown;
+  let blockIds: Map<string, string>;
   try {
     params = JSON.parse(paramsJson);
+    blockIds = new Map(Object.entries(JSON.parse(blockIdsJson) as Record<string, string>));
   } catch (e) {
     return { error: `params are not valid JSON: ${messageOf(e)}` };
+  }
+
+  try {
+    params = relocateBlockIds(params, blockIds);
+  } catch (e) {
+    return { error: `this entry's references could not be relocated: ${messageOf(e)}` };
   }
 
   // Checked here too, not only in the caller's pre-flight pass. The pre-flight is
@@ -530,8 +554,8 @@ export function derivePrerunArgsFromStorage(
  * The lambda returns ordinary live params — references as `PlRef`s, column identifiers as they
  * are stored — and that is exactly what gets written. Nothing is marked, normalized or
  * rewritten on the way out: a template holds what the block holds. Repointing those references
- * at another project is the business of {@link relocateTemplateParams}, on the way back in,
- * where the ids to point at are known.
+ * at another project is the business of {@link createInitialStorageFromParams}, on the way back
+ * in, where the ids to point at are known.
  *
  * Every block declares the lambda, so every export produces params; a block with
  * nothing worth restoring returns `{}` rather than declining.
@@ -556,49 +580,3 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
 
 // Export discriminator key and schema version for external checks
 export { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION };
-
-/** What {@link relocateTemplateParams} hands back: the repointed params, or why it could not. */
-export type InitializationParamsRelocateResult =
-  | { readonly error: string }
-  | { readonly error?: undefined; readonly paramsJson: StringifiedJson };
-
-/**
- * Point every reference in an entry's params at the blocks of the project being built.
- *
- * The inverse of nothing: export writes params untouched, so this is the only place in a
- * template's life where a reference is recognized at all. It runs in the block's own bundle
- * because recognizing one means knowing the reference system — five key forms, nesting by
- * string, identifiers in map keys — and that knowledge stops here.
- *
- * Rewriting is structural: an identifier is taken apart, its block ids replaced, and it is
- * rebuilt canonically. So a spec override whose value happens to equal a block id is not
- * rewritten with it, and a qualifications map keyed by identifier comes back sorted the way a
- * fresh project would have built it.
- *
- * Errors are returned rather than thrown, like every other callback here: a file that cannot
- * be relocated is an expected outcome, reported against the entry that carries it.
- *
- * @param paramsJson The entry's params as JSON string, as the file held them
- * @param blockIdsJson template-local entry id → assigned block id, as a JSON object
- */
-export function relocateTemplateParams(
-  paramsJson: string,
-  blockIdsJson: string,
-): InitializationParamsRelocateResult {
-  let params: unknown;
-  let blockIds: Map<string, string>;
-  try {
-    params = JSON.parse(paramsJson);
-    blockIds = new Map(Object.entries(JSON.parse(blockIdsJson) as Record<string, string>));
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `Could not read the params to relocate: ${errorMsg}` };
-  }
-
-  try {
-    return { paramsJson: JSON.stringify(relocateBlockIds(params, blockIds)) as StringifiedJson };
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `Relocating this entry's references failed: ${errorMsg}` };
-  }
-}

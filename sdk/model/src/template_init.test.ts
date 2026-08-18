@@ -32,6 +32,15 @@ type Params = { sources?: PlRef[]; label: string };
  */
 const passThrough = (value: unknown) => value as Params;
 
+/**
+ * No entries created yet, so nothing to repoint.
+ *
+ * Relocation is the callback's other half and is covered where it lives — `relocateBlockIds`
+ * in `pl-model-common`. What these tests drive is the factory and the shape of the storage it
+ * produces, and an empty map keeps the params arriving exactly as written.
+ */
+const NO_IDS = JSON.stringify({});
+
 const kind = defineBlockKind<Params>({
   name: "@platforma-open/milaboratories.demo.kind",
   version: "1.0.0",
@@ -57,7 +66,7 @@ const noPlugins = {
 };
 
 const fromParams = (params: unknown) =>
-  createInitialStorageFromParams(JSON.stringify(params), {
+  createInitialStorageFromParams(JSON.stringify(params), NO_IDS, {
     getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
     parseInitializationParams: passThrough,
     ...noPlugins,
@@ -117,7 +126,7 @@ describe("createInitialStorageFromParams", () => {
   });
 
   test("params that are not valid JSON are reported", () => {
-    const result = createInitialStorageFromParams("{not json", {
+    const result = createInitialStorageFromParams("{not json", NO_IDS, {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
       parseInitializationParams: passThrough,
       ...noPlugins,
@@ -130,7 +139,7 @@ describe("createInitialStorageFromParams", () => {
     // The expected failure mode for a hand-written template file: params the block
     // cannot make sense of. It must come back as a problem the applier can attach
     // to an entry, not as a throw that aborts the whole apply.
-    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), {
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), NO_IDS, {
       getBlockDataFromParams: () => {
         throw new Error("label must not be empty");
       },
@@ -145,7 +154,7 @@ describe("createInitialStorageFromParams", () => {
     // Params belong to the block's kind; a plugin has no params channel, so it is
     // initialized the same way whether the block came from a template or the UI.
     const handle = "p1" as PluginHandle;
-    const result = createInitialStorageFromParams(JSON.stringify({ label: "x" }), {
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "x" }), NO_IDS, {
       getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
       parseInitializationParams: passThrough,
       getPluginRegistry: () => ({ [handle]: "demoPlugin" as PluginName }),
@@ -219,7 +228,7 @@ describe("validateTemplateParams", () => {
 describe("params reaching init", () => {
   test("init sees what the parser returned", () => {
     const storage = storageOf(
-      createInitialStorageFromParams(JSON.stringify({ label: "raw", stray: 1 }), {
+      createInitialStorageFromParams(JSON.stringify({ label: "raw", stray: 1 }), NO_IDS, {
         getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
         parseInitializationParams: () => ({ label: "parsed" }),
         ...noPlugins,
@@ -234,7 +243,7 @@ describe("params reaching init", () => {
     // report every bad entry before anything is created, this exists so the factory is
     // never handed a value the kind refused, whichever path got here.
     let reached = false;
-    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), {
+    const result = createInitialStorageFromParams(JSON.stringify({ label: "" }), NO_IDS, {
       getBlockDataFromParams: (p) => {
         reached = true;
         return dataModel.getDataFromParams(p);

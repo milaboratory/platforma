@@ -85,7 +85,6 @@ export const BlockStorageFacadeCallbacks = {
   InitializationParamsDerive: "__pl_initializationParams_derive",
   StorageInitialFromParams: "__pl_storage_initialFromParams",
   InitializationParamsValidate: "__pl_initializationParams_validate",
-  InitializationParamsRelocate: "__pl_initializationParams_relocate",
 } as const;
 
 /**
@@ -241,11 +240,25 @@ export interface BlockStorageFacade {
    * an expected outcome for a hand-written template file, and every entry's
    * problem is reported together.
    *
-   * @param paramsJson - The entry's params as JSON string
+   * **Also where the entry's references are pointed at this project.** Params reach here
+   * exactly as the file held them: nothing between the block that exported them and this call
+   * marks a reference, reads one, or rewrites one, because recognizing one means knowing the
+   * reference system and this bundle is where that knowledge lives. `blockIdsJson` maps each
+   * template-local entry id to the block id it was given, holding the entries created so far —
+   * so an id it does not name is left alone, and a reference to an entry created later names
+   * nothing rather than naming the wrong block.
+   *
+   * Relocating and initializing are one call rather than two because every call
+   * re-instantiates the runtime and re-evaluates the whole model bundle: splitting them would
+   * parse the block twice per entry to produce an intermediate only the second half reads.
+   *
+   * @param paramsJson - The entry's params as JSON string, as the file held them
+   * @param blockIdsJson - template-local entry id → assigned block id, as a JSON object
    * @returns Either an error, or the initial storage as JSON string
    */
   [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (
     paramsJson: StringifiedJson,
+    blockIdsJson: StringifiedJson,
   ) => { error: string } | { error?: undefined; storageJson: StringifiedJson };
 
   /**
@@ -271,34 +284,6 @@ export interface BlockStorageFacade {
   [BlockStorageFacadeCallbacks.InitializationParamsValidate]: (
     paramsJson: StringifiedJson,
   ) => { error: string } | { error?: undefined };
-
-  /**
-   * Point the references in an entry's params at the blocks of the project being built.
-   *
-   * The one thing about a template that only a block can do. Params travel from the file to
-   * here untouched — the engine neither marks a reference nor recognizes one — because which
-   * values carry block ids is knowledge of the reference system, and this bundle is where that
-   * knowledge lives. Nothing between the block that exported the params and this call looks
-   * inside them.
-   *
-   * Called once per entry, at construction, with the ids of the blocks created so far. An id
-   * the map does not name is left as it is: that is the ordering rule, not an oversight — a
-   * reference to an entry listed further down the file keeps pointing at nothing, and the
-   * applied block reports itself as missing references rather than being wired to a block
-   * below it.
-   *
-   * The block's own params contract is untouched by this: `templateParams()` returns live
-   * params and `init` receives live params, so a kind never sees a template-shaped variant of
-   * its own type.
-   *
-   * @param paramsJson The entry's params as JSON string, exactly as the file held them
-   * @param blockIdsJson template-local entry id → assigned block id, as a JSON object
-   * @returns The params with every reference repointed, or why they could not be
-   */
-  [BlockStorageFacadeCallbacks.InitializationParamsRelocate]: (
-    paramsJson: StringifiedJson,
-    blockIdsJson: StringifiedJson,
-  ) => { error: string } | { error?: undefined; paramsJson: StringifiedJson };
 }
 
 /** Register all facade callbacks at once. Ensures all required callbacks are provided. */
