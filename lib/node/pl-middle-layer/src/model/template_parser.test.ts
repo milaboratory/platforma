@@ -37,10 +37,12 @@ describe("parseProjectTemplateV1Yaml", () => {
         `    kind: "${KIND}"`,
         "    params:",
         "      input:",
-        "        $ref:",
-        "          __isRef: true",
-        "          blockId: first",
-        "          name: reads",
+        "        __isRef: true",
+        "        blockId: first",
+        "        name: reads",
+        "      readable:",
+        "        block: first",
+        "        name: reads",
         "",
       ].join("\n"),
     );
@@ -50,8 +52,12 @@ describe("parseProjectTemplateV1Yaml", () => {
       {
         id: "second",
         kind: KIND,
-        // Carried verbatim: the parser recognizes the wrapper and looks no further.
-        params: { input: { $ref: { __isRef: true, blockId: "first", name: "reads" } } },
+        // Carried verbatim, both spellings alike: the parser recognizes neither as a
+        // reference, because recognizing one is the receiving block's business.
+        params: {
+          input: { __isRef: true, blockId: "first", name: "reads" },
+          readable: { block: "first", name: "reads" },
+        },
       },
     ]);
   });

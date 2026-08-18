@@ -27,6 +27,7 @@ import type { PluginHandle } from "./plugin_handle";
 
 import {
   stringifyJson,
+  expandTemplateRefs,
   relocateBlockIds,
   type StringifiedJson,
 } from "@milaboratories/pl-model-common";
@@ -371,6 +372,10 @@ export type InitializationParamsValidateCallbackResult = { error: string } | { e
  * template entry, so params a kind rejects are reported while there is still no
  * project to half-build.
  *
+ * The readable reference spelling is expanded here too, so what the kind checks is the shape it
+ * declared. The ids it sees are the file's own — no block exists yet — which is why a kind must
+ * not read meaning into a specific id.
+ *
  * @param paramsJson The entry's params as JSON string
  * @param parseInitializationParams The kind's parser
  */
@@ -385,7 +390,11 @@ export function validateTemplateParamsJson(
     return { error: `params are not valid JSON: ${messageOf(e)}` };
   }
 
-  const result = validateTemplateParams(params, parseInitializationParams);
+  // Expanded before the kind sees anything, or a hand-written file would be rejected by every
+  // kind that declares a reference: `{ block, name }` is not a `PlRef` and no contract accepts
+  // one. Expansion needs nothing but the params, so this stays a two-argument check — the ids
+  // are not known yet and are not needed to answer the question this asks.
+  const result = validateTemplateParams(expandTemplateRefs(params), parseInitializationParams);
   if (result.error !== undefined) return { error: result.error };
   return {};
 }
@@ -411,13 +420,16 @@ export type ParamsStorageResult =
  * {@link createInitialStorage} wraps the defaults — so a block created from a
  * template is indistinguishable from one created in the UI and then edited.
  *
- * **This is where a template's references are pointed at the project being built**, and it is
- * the only place in a template's life where a reference is recognized at all. Params travel
- * from the file untouched — the engine carrying them neither marks a reference nor reads one,
- * because recognizing one means knowing the reference system, and that knowledge is here.
- * `blockIds` maps each template-local entry id to the block id it was given; an id it does not
- * name is left alone, which is how a reference to an entry created later ends up naming
- * nothing rather than naming the wrong block.
+ * **This is where a template's references become the block's own**, and it is the only place in
+ * a template's life where a reference is recognized at all. Params travel from the file
+ * untouched — the engine carrying them neither marks a reference nor reads one, because
+ * recognizing one means knowing the reference system, and that knowledge is here.
+ *
+ * Two things happen, in this order. The readable spelling a person may have written
+ * (`{ block, name }`) is expanded into the `PlRef` it stands for. Then every reference naming
+ * an entry that has a block is repointed at it: `blockIds` maps each template-local entry id to
+ * the block id it was given, and an id it does not name is left alone, which is how a reference
+ * to an entry created later ends up naming nothing rather than naming the wrong block.
  *
  * Relocation happens before the kind's parser and before the factory, so both see the ids the
  * block will actually hold. It is one step of this function rather than a callback of its own
@@ -465,7 +477,10 @@ export function createInitialStorageFromParams(
   }
 
   try {
-    params = relocateBlockIds(params, blockIds);
+    // Spelling first, ids second. Expansion turns `{ block, name }` into a `PlRef` naming an
+    // ENTRY, which is exactly what relocation then repoints — so both spellings reach the
+    // block through the same step and cannot diverge in how they behave.
+    params = relocateBlockIds(expandTemplateRefs(params), blockIds);
   } catch (e) {
     return { error: `this entry's references could not be relocated: ${messageOf(e)}` };
   }

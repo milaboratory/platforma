@@ -367,3 +367,47 @@ describe("a caller that predates this callback", () => {
     expect(result.error).toMatch(/older than the block; rebuild or update it/);
   });
 });
+
+describe("the readable reference spelling", () => {
+  const hooks = () => ({
+    getBlockDataFromParams: (p: unknown) => dataModel.getDataFromParams(p),
+    parseInitializationParams: passThrough,
+    ...noPlugins,
+  });
+
+  test("becomes a PlRef, and is repointed like a long-form one", () => {
+    // What a hand-written file gets to say: `{ block, name }`, no `__isRef`. It arrives at the
+    // block as the reference it stands for, pointing at the block the entry was given.
+    const result = createInitialStorageFromParams(
+      JSON.stringify({ label: "x", sources: [{ block: "samples", name: "reads" }] }),
+      JSON.stringify({ samples: "block-1" }),
+      hooks(),
+    );
+
+    expect(JSON.parse(result.storageJson!).__data).toEqual({
+      label: "x",
+      sources: [createPlRef("block-1", "reads")],
+      scratch: 0,
+    });
+  });
+
+  test("the kind's parser is the check, and it sees the expanded form", () => {
+    // The whole reason expansion happens before the parser: a contract declared against `PlRef`
+    // would reject `{ block, name }` outright, so the readable spelling would be unusable.
+    const rejectsShorthand = (value: unknown) => {
+      const { sources } = value as { sources: unknown };
+      if (!Array.isArray(sources) || sources.some((s) => (s as PlRef).__isRef !== true)) {
+        throw new Error("'sources' must be an array of references");
+      }
+      return value as Params;
+    };
+
+    const result = createInitialStorageFromParams(
+      JSON.stringify({ label: "x", sources: [{ block: "samples", name: "reads" }] }),
+      JSON.stringify({}),
+      { ...hooks(), parseInitializationParams: rejectsShorthand },
+    );
+
+    expect(result.error).toBeUndefined();
+  });
+});

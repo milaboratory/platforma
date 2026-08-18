@@ -71,11 +71,11 @@ export type TemplateExportWalk = {
  * reordering would change which references are legal in the first place.
  *
  * Params are written exactly as the block projected them. The walk parses nothing, rewrites
- * nothing and inspects nothing inside them — a template engine is the mechanical half: it
- * exposes the `{ $ref: … }` mechanic and knows no more about references than that. Which
- * values carry block ids, and therefore which have to be wrapped, is the block's statement to
- * make, and a block that gets it wrong produces a template that does not work — the same way
- * one whose `templateParams` returns the wrong fields does.
+ * nothing and inspects nothing inside them, and neither does anything else between here and the
+ * file — which values carry block ids is knowledge of the reference system, and a template
+ * engine holds none of it. The block that receives these params on the way back in is what
+ * recognizes them; a block that projects the wrong fields produces a template that does not
+ * work, the same way one whose `templateParams` returns the wrong shape does.
  *
  * @param structure The project structure — the source of both membership and order
  * @param paramsProvider Yields a block's derived template params. Return

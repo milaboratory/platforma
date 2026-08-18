@@ -37,9 +37,12 @@ const HANDLE = BlockStorageFacadeCallbacks.StorageInitialFromParams;
  */
 const relocatingEchoModel = `(paramsJson, blockIdsJson) => {
   const ids = JSON.parse(blockIdsJson);
+  const keys = (o) => Object.keys(o).sort().join(",");
   const walk = (node) => {
     if (Array.isArray(node)) return node.map(walk);
     if (node !== null && typeof node === "object") {
+      // The readable spelling first, as the real one does, so both arrive the same way.
+      if (keys(node) === "block,name") node = { __isRef: true, blockId: node.block, name: node.name };
       if (node.__isRef === true) return { ...node, blockId: ids[node.blockId] ?? node.blockId };
       return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, walk(v)]));
     }
@@ -237,6 +240,21 @@ describe("applyTemplateEntries", () => {
     );
 
     expect(placements[0].block.id).toBe("block-1");
+    expect(storageOf(placements[1])).toEqual({ input: createPlRef("block-1", "reads") });
+  });
+
+  test("the readable spelling arrives as the same reference the long one does", () => {
+    // What a hand-written file gets to write. It is expanded in the block's bundle, before its
+    // ids are repointed, so it reaches init indistinguishable from a reference the file spelled
+    // out in full — which is what keeps a kind's contract written against `PlRef` alone.
+    const { placer, placements } = recordingPlacer();
+
+    applyOver(
+      entryMap({ samples: preparedBlock(echoModel), align: preparedBlock(echoModel) }),
+      placer,
+      documentOf(entry("samples"), entry("align", { input: { block: "samples", name: "reads" } })),
+    );
+
     expect(storageOf(placements[1])).toEqual({ input: createPlRef("block-1", "reads") });
   });
 
