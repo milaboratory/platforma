@@ -1,0 +1,28 @@
+schema: template-v1
+blocks:
+  - id: dddddddd-0000-4000-8000-000000000004
+    kind: "@platforma-open/milaboratories.import-fastq.kind@2.1.0"
+    params: {}
+  - id: ffffffff-0000-4000-8000-000000000006
+    kind: "@platforma-open/milaboratories.clonotype-clustering.kind@0.4.1"
+    params:
+      thresholds:
+        min: 0.01
+        max: 1
+        exact: 0.5
+      steps:
+        - name: filter
+          enabled: true
+        - name: cluster
+          enabled: false
+          seed: 42
+      inputs:
+        - __isRef: true
+          blockId: dddddddd-0000-4000-8000-000000000004
+          name: a
+        - __isRef: true
+          blockId: dddddddd-0000-4000-8000-000000000004
+          name: b
+      advanced: {}
+      tags: []
+      note: null

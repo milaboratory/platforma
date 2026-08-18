@@ -14,13 +14,13 @@ import path from "node:path";
 // These blocks use the new unified state format (state instead of args+uiState)
 const BPSpecEnterV3: BlockPackSpec = {
   type: "dev-v2",
-  // Navigate from lib/node/pl-middle-layer/src/mutator to etc/blocks/enter-numbers-v3/block
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/enter-numbers-v3/block"),
+  // Navigate from lib/node/pl-middle-layer/src/mutator to etc/blocks/enter-numbers/block
+  folder: path.resolve(__dirname, "../../../../../etc/blocks/enter-numbers/block"),
 };
 
 const BPSpecSumV3: BlockPackSpec = {
   type: "dev-v2",
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers-v3/block"),
+  folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers/block"),
 };
 
 test("v3 blocks: basic test with unified state", async () => {
@@ -34,7 +34,7 @@ test("v3 blocks: basic test with unified state", async () => {
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block with storageMode: 'fromModel'
+    // Add enter-numbers block with storageMode: 'fromModel'
     // Initial storage comes from VM, then we set desired state via setStates
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
@@ -68,7 +68,7 @@ test("v3 blocks: basic test with unified state", async () => {
       expect(JSON.parse(stateData).__data).toStrictEqual({ numbers: [1, 2, 3] });
     });
 
-    // Add second enter-numbers-v3 block
+    // Add second enter-numbers block
     await pl.withWriteTx("AddEnterNumbersV3Block2", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -93,7 +93,7 @@ test("v3 blocks: basic test with unified state", async () => {
       await tx.commit();
     });
 
-    // Add sum-numbers-v3 block that references both enter blocks
+    // Add sum-numbers block that references both enter blocks
     await pl.withWriteTx("AddSumNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -126,7 +126,7 @@ test("v3 blocks: basic test with unified state", async () => {
         .get(projectFieldName("enter1", "stagingOutput"))
         .then((r) => r.final());
       const all = await stagingOutput.getAllFinal();
-      // V3 enter-numbers-v3 block has prerun with numbersCount output
+      // V3 enter-numbers block has prerun with numbersCount output
       expect(Object.keys(all)).toContain("numbersCount");
     });
 
@@ -167,7 +167,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block
+    // Add enter-numbers block
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -296,7 +296,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block and set data with even numbers
+    // Add enter-numbers block and set data with even numbers
     await pl.withWriteTx("AddBlock", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -368,7 +368,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block with initial data
+    // Add enter-numbers block with initial data
     await pl.withWriteTx("AddBlock", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -559,7 +559,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
 // return undefined`) must not crash. Previously applyStorageAndDeriveArgs passed the
 // undefined value straight to createJsonFieldValue -> Buffer.from(undefined) -> ERR_INVALID_ARG_TYPE,
 // aborting the update-block-pack task (reported by AstraZeneca on mixcr-clonotyping 2.14 -> 2.20).
-// The sentinel input [777] makes the enter-numbers-v3 model's args() return undefined without throwing.
+// The sentinel input [777] makes the enter-numbers model's args() return undefined without throwing.
 test("v3 blocks: migrateBlockPack does not crash when args() returns undefined", async () => {
   const quickJs = await getQuickJS();
 

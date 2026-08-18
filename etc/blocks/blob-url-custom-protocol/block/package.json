@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-blob-url-custom-protocol.kind": "workspace:*",
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.model": "workspace:*",
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.ui": "workspace:*",
     "@milaboratories/milaboratories.test-blob-url-custom-protocol.workflow": "workspace:*",

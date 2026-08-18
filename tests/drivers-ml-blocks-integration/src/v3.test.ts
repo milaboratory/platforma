@@ -1,5 +1,5 @@
-import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers-v3";
-import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers-v3";
+import { BlockPointer as enterNumberSpec } from "@milaboratories/milaboratories.test-enter-numbers";
+import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
 import { test } from "vitest";
 import { withMl } from "./with-ml";
 import {
@@ -189,6 +189,8 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
       expect(sumNumbersBlock?.calculationStatus).toBe("NotCalculated");
       expect(sumNumbersBlock?.canRun).toBe(false);
       expect(enterNumberBlock?.sections).toBeDefined(); // should be defined
+      expect(enterNumberBlock?.currentBlockPack).toBeDefined();
+      expect(sumNumbersBlock?.currentBlockPack).toBeDefined();
     });
 
     // v3 state format: direct state object (not wrapped in {args: ...})
@@ -228,6 +230,8 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
       expect(enterNumberBlock?.canRun).toBe(false);
       expect(sumNumbersBlock?.calculationStatus).toBe("Done");
       expect(sumNumbersBlock?.canRun).toBe(false);
+      expect(enterNumberBlock?.currentBlockPack).toBeDefined();
+      expect(sumNumbersBlock?.currentBlockPack).toBeDefined();
     });
 
     await prj.mutateBlockStorage(enterNumberId, {

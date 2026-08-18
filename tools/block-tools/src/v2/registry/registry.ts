@@ -10,6 +10,7 @@ import {
   blockPackIdToString,
   BlockPackManifest,
 } from "@milaboratories/pl-model-middle-layer";
+import { parseKindRef } from "@milaboratories/pl-model-common";
 import {
   GlobalUpdateSeedInFile,
   GlobalUpdateSeedOutFile,
@@ -37,6 +38,17 @@ import {
   MainPrefix,
   PackageManifestPattern,
 } from "./schema_public";
+import {
+  KindsPrefix,
+  KindManifest,
+  KindManifestFileName,
+  KindOverview,
+  KindOverviewPathPattern,
+  kindContentPrefix,
+  kindOverviewPath,
+  npmNameToKindPath,
+} from "./schema_kinds";
+import type { KindImplementer, KindVersionOverview } from "./schema_kinds";
 import type { RelativeContentReader } from "../model";
 import { addRelativePathPrefix } from "../model";
 import { randomUUID } from "node:crypto";
@@ -55,6 +67,30 @@ type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
   versions: Set<string>;
 };
+
+/**
+ * What one kind overview (`kinds/{org}/{name}/overview.json`) will be rewritten to.
+ *
+ * Filled while the block manifests are already parsed in the main `updateRegistry` pass — no
+ * extra reads. Two shapes, because the pass has two modes and they read the existing file
+ * differently:
+ *
+ * - `rebuild: false` — read-modify-write. `replacedBlockIds` names the block-pack ids (with
+ *   version) whose manifests were re-read this pass; their existing `implementers` entries are
+ *   dropped so the fresh ones in `add` take their place instead of duplicating them.
+ * - `rebuild: true` — force mode. The scan re-enumerates every live kind reference, so the
+ *   existing content is discarded rather than filtered, and there is nothing to name.
+ *
+ * A discriminant rather than `Set<string> | null`: the mode is a fact about the pass, and
+ * encoding it as an absent collection makes "rebuild everything" and "replace nothing" look
+ * the same at the use site.
+ */
+type KindOverviewMerge = {
+  readonly add: KindImplementer[];
+} & (
+  | { readonly rebuild: true }
+  | { readonly rebuild: false; readonly replacedBlockIds: Set<string> }
+);
 
 export class BlockRegistryV2 {
   private readonly gzipAsync = promisify(gzip);
@@ -130,7 +166,28 @@ export class BlockRegistryV2 {
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
+    // planned kind-overview rewrites, keyed by kinds/{org}/{name}/overview.json
+    const kindOverviewMerges = new Map<string, KindOverviewMerge>();
     const seedPaths: string[] = [];
+
+    /**
+     * Get-or-create the planned rewrite for one kind overview, recording `blockId` as
+     * re-read this pass so the RMW below drops its stale entry before merging.
+     *
+     * In force mode the plan is a rebuild and there is nothing to record — including for the
+     * plans the force pre-seed already created, which this must leave as rebuilds.
+     */
+    const mergeIntoKindOverview = (ovPath: string, blockId: string): KindOverviewMerge => {
+      const plan =
+        kindOverviewMerges.get(ovPath) ??
+        (mode === "force"
+          ? { rebuild: true as const, add: [] }
+          : { rebuild: false as const, replacedBlockIds: new Set<string>(), add: [] });
+      if (!plan.rebuild) plan.replacedBlockIds.add(blockId);
+      kindOverviewMerges.set(ovPath, plan);
+      return plan;
+    };
+
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
 
     const addVersionToBeUpdated = ({ organization, name, version }: BlockPackId) => {
@@ -168,6 +225,16 @@ export class BlockRegistryV2 {
         const { organization, name, version } = match.groups!;
         const added = addVersionToBeUpdated({ organization, name, version });
         this.logger.info(`  - ${organization}:${name}:${version} force_added:${added}`);
+      }
+
+      // Seed every existing kind overview empty so kinds orphaned by
+      // migration/removal are rewritten (or deleted) this pass. The block scan
+      // above already re-enumerates every live kind ref (refs live inside block
+      // manifests); this LIST exists solely to reset orphans.
+      const kindPaths = await this.storage.listFiles(KindsPrefix);
+      for (const rel of kindPaths) {
+        if (!KindOverviewPathPattern.test(rel)) continue;
+        kindOverviewMerges.set(KindsPrefix + rel, { rebuild: true, add: [] });
       }
     }
 
@@ -219,9 +286,18 @@ export class BlockRegistryV2 {
       );
 
       // removing versions that we will update
+      const droppedVersions = packageOverview.versions.filter((e) =>
+        packageInfo.versions.has(e.description.id.version),
+      );
       const newVersions = packageOverview.versions.filter(
         (e) => !packageInfo.versions.has(e.description.id.version),
       );
+
+      for (const e of droppedVersions) {
+        if (!e.description.kind) continue;
+        const ovPath = kindOverviewPath(npmNameToKindPath(parseKindRef(e.description.kind).name));
+        mergeIntoKindOverview(ovPath, blockPackIdToString(e.description.id));
+      }
 
       // reading new entries
       for (const [v] of packageInfo.versions.entries()) {
@@ -244,14 +320,26 @@ export class BlockRegistryV2 {
           }
         });
         // pushing the overview
+        const description = BlockPackManifest.parse(
+          JSON.parse(manifestContent.toString("utf8")),
+        ).description;
         newVersions.push({
-          description: addRelativePathPrefix(
-            BlockPackManifest.parse(JSON.parse(manifestContent.toString("utf8"))).description,
-            version,
-          ),
+          description: addRelativePathPrefix(description, version),
           manifestSha256: sha256,
           channels,
         });
+
+        // accumulate the kind-overview projection from this block's kind ref
+        // (both inputs already in hand: parsed manifest + listed channels).
+        if (description.kind) {
+          const { name: kindNpmName, version: kindVersion } = parseKindRef(description.kind);
+          const ovPath = kindOverviewPath(npmNameToKindPath(kindNpmName));
+          mergeIntoKindOverview(ovPath, blockPackIdToString(id)).add.push({
+            id,
+            kindVersion,
+            channels,
+          });
+        }
       }
 
       // sorting entries according to version
@@ -313,6 +401,61 @@ export class BlockRegistryV2 {
           }),
         ),
       });
+    }
+
+    // projecting kind overviews (kinds/{org}/{name}/overview.json)
+    for (const [ovPath, plan] of kindOverviewMerges) {
+      // A rebuild reads nothing: the scan re-enumerated every live kind reference, so keeping
+      // any of the existing entries could only resurrect one the scan no longer sees.
+      const kept = plan.rebuild
+        ? []
+        : ((await this.getKindOverviewAt(ovPath))?.implementers ?? []).filter(
+            (e) => !plan.replacedBlockIds.has(blockPackIdToString(e.id)),
+          );
+      const merged = [...kept, ...plan.add];
+
+      if (merged.length === 0) {
+        if (mode !== "dry-run") await this.storage.deleteFiles(ovPath);
+        this.logger.info(`Kind overview ${ovPath} orphaned — removed`);
+        continue;
+      }
+
+      // bucket implementers by kind version, then compute the newest block per
+      // channel (+ derived AnyChannel), mirroring the package latestByChannel.
+      const byKindVersion = new Map<string, KindImplementer[]>();
+      for (const impl of merged) {
+        const bucket = byKindVersion.get(impl.kindVersion);
+        if (bucket) bucket.push(impl);
+        else byKindVersion.set(impl.kindVersion, [impl]);
+      }
+
+      const kindVersions: KindVersionOverview[] = [...byKindVersion.entries()]
+        .map(([kindVersion, impls]) => {
+          const allChannels = new Set<string>();
+          for (const i of impls) for (const c of i.channels) allChannels.add(c);
+          const latestByChannel = Object.fromEntries(
+            [...allChannels, AnyChannel].map((c) => {
+              const candidate = impls
+                .filter((i) => c === AnyChannel || i.channels.indexOf(c) !== -1)
+                .sort((a, b) => compareSemver(b.id.version, a.id.version))[0];
+              if (!candidate) throw new Error("Assertion error");
+              return [c, candidate.id];
+            }),
+          );
+          return { kindVersion, latestByChannel };
+        })
+        .sort((e1, e2) => compareSemver(e2.kindVersion, e1.kindVersion));
+
+      const overviewData = {
+        schema: "v1",
+        implementers: merged,
+        kindVersions,
+      } satisfies KindOverview;
+      if (mode !== "dry-run")
+        await this.storage.putFile(ovPath, Buffer.from(JSON.stringify(overviewData)));
+      this.logger.info(
+        `Kind overview ${ovPath} updated (${merged.length} implementers, ${kindVersions.length} kind versions)`,
+      );
     }
 
     // writing global overview
@@ -382,6 +525,13 @@ export class BlockRegistryV2 {
     const content = await this.storage.getFile(GlobalOverviewPath);
     if (content === undefined) return undefined;
     return parseGlobalOverviewReg(JSON.parse(content.toString()));
+  }
+
+  /** Read+parse a kind overview by its absolute `kinds/{org}/{name}/overview.json` path. */
+  private async getKindOverviewAt(path: string): Promise<KindOverview | undefined> {
+    const content = await this.storage.getFile(path);
+    if (content === undefined) return undefined;
+    return KindOverview.parse(JSON.parse(content.toString()));
   }
 
   private async marchChanged(id: BlockPackId) {
@@ -500,5 +650,78 @@ export class BlockRegistryV2 {
     await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(manifest)));
 
     await this.marchChanged(manifest.description.id);
+  }
+
+  /**
+   * Publish a block *kind* into the `kinds/` tree — idempotent, immutable,
+   * content-first. Cloned from {@link publishPackage} with two differences:
+   *
+   *   1. NET-NEW source-hash guard: kind versions are immutable. If a manifest
+   *      already exists with the same `sourceHash` this is a no-op; with a
+   *      different `sourceHash` it hard-fails. (No such guard exists for
+   *      blocks — `publishPackage` still overwrites same-version content.)
+   *   2. NO `marchChanged`: the kind projection is derived from *block*
+   *      manifests by the reconciler, so kind content publish drops no ticket —
+   *      it rides the block's publish ticket. A kind with zero implementing
+   *      blocks is deliberately invisible (no `overview.json`).
+   *
+   * The path is derived from the manifest's full npm package name
+   * (`kind.name`) via `npmNameToKindPath` (inside `kindContentPrefix`) — the
+   * SAME derivation the reconciler and readers use, so content and overview
+   * always co-locate under one `{org}/{name}` folder. There is no separate
+   * `organization` field on the identity.
+   */
+  public async publishKind(
+    kindManifest: KindManifest,
+    fileReader: RelativeContentReader,
+  ): Promise<void> {
+    const { name: npmName, version } = kindManifest.kind;
+    const prefix = kindContentPrefix(npmName, version);
+
+    // NET-NEW source-hash immutability guard (absent / equal / differ).
+    const existing = await this.storage.getFile(`${prefix}/${KindManifestFileName}`);
+    if (existing !== undefined) {
+      const prev = KindManifest.parse(JSON.parse(existing.toString()));
+      if (prev.sourceHash === kindManifest.sourceHash) {
+        this.logger.info(
+          `Kind ${npmName}@${version} already published with identical source — no-op`,
+        );
+        return; // idempotent
+      }
+      throw new Error(
+        `Immutable kind version republished with different content: ${prefix} ` +
+          `(stored sourceHash ${prev.sourceHash} != ${kindManifest.sourceHash})`,
+      );
+    }
+
+    // content-first upload, per-file size + sha256 verify (mirrors publishPackage)
+    for (const f of kindManifest.files) {
+      const bytes = await fileReader(f.name);
+      if (bytes.length !== f.size)
+        throw new Error(
+          `Actual file size don't match the manifest for ${f.name} (actual = ${bytes.length}; manifest = ${f.size})`,
+        );
+      const sha256 = await calculateSha256(bytes);
+      if (sha256 !== f.sha256.toUpperCase())
+        throw new Error(
+          `Actual file SHA-256 don't match the manifest for ${f.name} (actual = ${sha256}; manifest = ${f.sha256.toUpperCase()})`,
+        );
+
+      const dst = `${prefix}/${f.name}`;
+      this.logger.info(`Uploading ${f.name} -> ${dst} ...`);
+      await this.storage.putFile(dst, bytes);
+    }
+
+    // manifest LAST = commit marker; stamp firstUploadTimestamp when absent.
+    const toStore = KindManifest.parse({
+      ...kindManifest,
+      firstUploadTimestamp: kindManifest.firstUploadTimestamp ?? Date.now(),
+    } satisfies KindManifest);
+    const manifestDst = `${prefix}/${KindManifestFileName}`;
+    this.logger.info(`Uploading kind manifest to ${manifestDst} ...`);
+    await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(toStore)));
+
+    // NO `marchChanged`: the kind projection is derived from block manifests, so this
+    // publish drops no ticket of its own — see the note on this method.
   }
 }

@@ -7,6 +7,7 @@ export type TargetType =
   | "browser-lib"
   | "block-model"
   | "block-facade"
+  | "block-kind"
   | "block-ui"
   | "block-test";
 
@@ -37,6 +38,10 @@ const TARGET_CONFIG_MAP: Record<Exclude<TargetType, "block-test">, ConfigInfo> =
     filename: "rolldown.block-facade.config.js",
     outputPath: "./build.block-facade.config.js",
   },
+  "block-kind": {
+    filename: "rolldown.block-kind.config.js",
+    outputPath: "./build.block-kind.config.js",
+  },
   "block-ui": {
     filename: "vite.block-ui.config.js",
     outputPath: "./build.block-ui.config.js",
@@ -49,6 +54,7 @@ const TSCONFIG_MAP: Record<TargetType, string> = {
   "browser-lib": "tsconfig.browser.json",
   "block-model": "tsconfig.block-model.json",
   "block-facade": "tsconfig.block-facade.json",
+  "block-kind": "tsconfig.block-kind.json",
   "block-ui": "tsconfig.block-ui.json",
   "block-test": "tsconfig.block-test.json",
 };
@@ -180,6 +186,7 @@ const TARGET_TO_OXLINT_MAP: Record<TargetType, OxlintConfigType> = {
   "browser-lib": "browser",
   "block-model": "block-model",
   "block-facade": "node",
+  "block-kind": "node",
   "block-ui": "block-ui",
   "block-test": "block-test",
 };

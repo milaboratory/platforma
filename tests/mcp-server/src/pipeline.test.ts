@@ -15,7 +15,7 @@ const enterNumbersBlockFolder = path.resolve(
   "..",
   "etc",
   "blocks",
-  "enter-numbers-v3",
+  "enter-numbers",
   "block",
 );
 

@@ -8,6 +8,7 @@ import { rootRules } from "./rules/root";
 import { rootCiRules } from "./rules/root-ci";
 import { blockRules } from "./rules/block";
 import { modelRules } from "./rules/model";
+import { kindRules } from "./rules/kind";
 import { uiRules } from "./rules/ui";
 import { workflowRules } from "./rules/workflow";
 import { testRules } from "./rules/test";
@@ -20,6 +21,7 @@ export const STRUCTURE = defineStructure(() => {
   rootCiRules();
   blockRules();
   modelRules();
+  kindRules();
   uiRules();
   workflowRules();
   testRules();
