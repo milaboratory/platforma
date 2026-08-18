@@ -347,3 +347,23 @@ describe("how a rejection reads", () => {
     expect(result.error).toBe("params do not match this block's kind: numbers must not be empty");
   });
 });
+
+describe("a caller that predates this callback", () => {
+  test("is named as the cause, instead of blaming the template's params", () => {
+    // A middle layer older than the block calls this with one argument, so the id map arrives
+    // as `undefined`. It happened for real: an entry with no references at all failed with
+    // "params are not valid JSON", sending the reader to a file that was perfectly fine.
+    const result = createInitialStorageFromParams(
+      JSON.stringify({ label: "x" }),
+      undefined as unknown as string,
+      {
+        getBlockDataFromParams: (p) => dataModel.getDataFromParams(p),
+        parseInitializationParams: passThrough,
+        ...noPlugins,
+      },
+    );
+
+    expect(result.error).toMatch(/not told which blocks/);
+    expect(result.error).toMatch(/older than the block; rebuild or update it/);
+  });
+});
