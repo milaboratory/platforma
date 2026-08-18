@@ -1,0 +1,21 @@
+schema: template-v1
+blocks:
+  - id: aaaaaaaa-0000-4000-8000-000000000001
+    kind: "@platforma-open/milaboratories.import-fastq.kind@2.1.0"
+    params:
+      dataset: bulk-rna
+  - id: bbbbbbbb-0000-4000-8000-000000000002
+    kind: "@platforma-open/milaboratories.mixcr-clonotyping.kind@3.0.4"
+    params:
+      input:
+        __isRef: true
+        blockId: aaaaaaaa-0000-4000-8000-000000000001
+        name: reads
+      species: hsa
+  - id: cccccccc-0000-4000-8000-000000000003
+    kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.2.10"
+    params:
+      clonotypes:
+        __isRef: true
+        blockId: bbbbbbbb-0000-4000-8000-000000000002
+        name: clonotypes

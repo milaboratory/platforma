@@ -153,6 +153,11 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
     ...scopeDepMaps(ctx, "model"),
     ...scopeDepMaps(ctx, "ui"),
     ...scopeDepMaps(ctx, "workflow"),
+    // The kind is a fourth block component the facade depends on directly (the
+    // tetrad); like its siblings it is a build-time workspace devDep, never a
+    // runtime dependency, and it is NOT a bundled `block.component` (its content
+    // publishes to the `kinds/` registry tree, not into block-pack).
+    ...scopeDepMaps(ctx, "kind"),
   };
   // `block-tools pack` requires both `block.components` and `block.meta`. The
   // author edits the placeholder meta before publishing.
@@ -194,6 +199,18 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
 export function blockPackageJsonRules(ctx: RunContext): void {
   const v = ctx.blockVars;
 
+  // The kind is a MANDATORY block component: every block must declare exactly
+  // one sibling `kind/` package. Fail loudly otherwise — a kind-less block is
+  // invalid, and this is what surfaces the not-yet-migrated blocks.
+  const kindModules = findModules(ctx, "kind");
+  if (kindModules.length !== 1) {
+    throw new Error(
+      kindModules.length === 0
+        ? `block '${v.facadeName}' declares no kind — every block must have a sibling kind/ package`
+        : `block '${v.facadeName}' declares ${kindModules.length} kinds; exactly one is required`,
+    );
+  }
+
   ensureField("type", "module");
   ensureField("files", ["dist", "block-pack"]);
   ensureField("main", "./dist/index.js");
@@ -212,6 +229,7 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   ensureWorkspaceScopeDevDeps("model");
   ensureWorkspaceScopeDevDeps("ui");
   ensureWorkspaceScopeDevDeps("workflow");
+  ensureWorkspaceScopeDevDeps("kind");
   ensureDevDep("@milaboratories/ts-builder", "sdk:");
   ensureDevDep("@milaboratories/ts-configs", "sdk:");
   ensureDevDep("@platforma-sdk/block-tools", "sdk:");

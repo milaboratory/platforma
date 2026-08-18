@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { buildMetaCommand } from "./cmd/build-meta";
 import { buildModelCommand } from "./cmd/build-model";
+import { buildKindManifestCommand } from "./cmd/build-kind-manifest";
 import { packCommand } from "./cmd/pack";
 import { publishCommand } from "./cmd/publish";
 import { refreshRegistryCommand } from "./cmd/refresh-registry";
@@ -25,6 +26,7 @@ export function buildProgram(packageRoot: string = process.cwd()): Command {
 
   program.addCommand(buildMetaCommand());
   program.addCommand(buildModelCommand());
+  program.addCommand(buildKindManifestCommand());
   program.addCommand(packCommand());
   program.addCommand(publishCommand());
   program.addCommand(refreshRegistryCommand());

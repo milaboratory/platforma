@@ -55,6 +55,7 @@ export function modulesForInit(vars: BlockVars): Module[] {
     { scope: "root", name: facade, path: "" },
     { scope: "block", name: `${facade}.block`, path: "block" },
     { scope: "model", name: `${facade}.model`, path: "model" },
+    { scope: "kind", name: `${facade}.kind`, path: "kind" },
     { scope: "ui", name: `${facade}.ui`, path: "ui" },
     { scope: "workflow", name: `${facade}.workflow`, path: "workflow" },
     { scope: "test", name: `${facade}.test`, path: "test" },

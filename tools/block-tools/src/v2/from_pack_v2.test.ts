@@ -80,12 +80,12 @@ test("loadPackDescriptionFromManifest resolves manifest entries to absolute FS p
   expect(existsSync(description.components.ui.folder)).toBe(true);
 });
 
-test("loadPackDescriptionFromManifest works against a real packed sum-numbers-v3", async () => {
+test("loadPackDescriptionFromManifest works against a real packed sum-numbers", async () => {
   // Runs when the block has been built+packed; skips gracefully in a clean
   // checkout where block-pack/ is gitignored. Guards against manifest-shape
   // drift the hermetic fixture above can't catch.
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const real = path.resolve(here, "../../../../etc/blocks/sum-numbers-v3/block");
+  const real = path.resolve(here, "../../../../etc/blocks/sum-numbers/block");
   if (!existsSync(path.join(real, "block-pack", "manifest.json"))) return;
 
   const description = await loadPackDescriptionFromManifest(path.join(real, "block-pack"));

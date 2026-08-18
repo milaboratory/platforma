@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-download-file.kind": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.ui": "workspace:*",
     "@milaboratories/milaboratories.test-download-file.workflow": "workspace:*",

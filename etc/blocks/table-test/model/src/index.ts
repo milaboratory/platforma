@@ -13,6 +13,7 @@ import {
   type InferOutputsType,
   type PlDataTableStateV2,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-block-table.kind";
 
 export type BlockData = {
   label: string;
@@ -20,16 +21,20 @@ export type BlockData = {
   tableSplitState: PlDataTableStateV2;
 };
 
-const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
-  label: "Table Test",
+// `params` is optional — a block may be created without a template supplying
+// them — so every kind-declared field keeps a fallback default.
+const blockDataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(({ params }) => ({
+  label: params?.label ?? "Table Test",
   tableState: createPlDataTableStateV2(),
   tableSplitState: createPlDataTableStateV2(),
 }));
 
 export type BlockArgs = BlockData;
 
-export const platforma = BlockModelV3.create(blockDataModel)
+export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
+
+  .templateParams((data) => ({ label: data.label }))
 
   .sections(() => {
     return [

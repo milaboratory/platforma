@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-filter-column.kind": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.ui": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.workflow": "workspace:*",

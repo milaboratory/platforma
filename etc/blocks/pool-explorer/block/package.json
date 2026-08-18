@@ -24,6 +24,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.pool-explorer.kind": "workspace:*",
     "@milaboratories/milaboratories.pool-explorer.model": "workspace:*",
     "@milaboratories/milaboratories.pool-explorer.ui": "workspace:*",
     "@milaboratories/milaboratories.pool-explorer.workflow": "workspace:*",

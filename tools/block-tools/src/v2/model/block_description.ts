@@ -22,7 +22,14 @@ export type BlockPackDescriptionAbsolute = BlockPackDescription<
  * Resolves a raw `package.json`-form block-pack description against the
  * module root: workflow/model/ui paths via node module resolution, text and
  * binary fields in `meta` via `mapLocalToAbsolute`. Reads the resolved model
- * file to extract feature flags from its `BlockConfigContainer`.
+ * file to extract feature flags and the kind reference from its
+ * `BlockConfigContainer`.
+ *
+ * Both of those come from the built model rather than from `package.json`,
+ * because both are decided when the model is compiled. Carrying the kind here
+ * means a description means the same thing whichever side it was loaded from —
+ * a manifest already records it, and a caller should not have to know that a
+ * source package does not and re-read the model to find out.
  */
 export async function resolveBlockPackDescription(
   raw: BlockPackDescriptionRaw,
@@ -30,14 +37,18 @@ export async function resolveBlockPackDescription(
 ): Promise<BlockPackDescriptionAbsolute> {
   const components = resolveBlockComponents(raw.components, root);
   const meta = await resolveBlockPackMeta(raw.meta, root);
-  const cfg = extractConfigGeneric(
-    JSON.parse(await fsp.readFile(components.model.file, "utf-8")) as BlockConfigContainer,
-  );
+  const container = JSON.parse(
+    await fsp.readFile(components.model.file, "utf-8"),
+  ) as BlockConfigContainer;
+  const cfg = extractConfigGeneric(container);
   return {
     ...raw,
     components,
     meta,
     featureFlags: cfg.featureFlags,
+    // The kind sits at the container level, above the render envelope, so it
+    // survives `extractConfigGeneric` normalizing that envelope away.
+    ...(container.kind !== undefined ? { kind: container.kind } : {}),
   };
 }
 

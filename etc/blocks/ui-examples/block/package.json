@@ -24,6 +24,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.ui-examples.kind": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.ui": "workspace:*",
     "@milaboratories/milaboratories.ui-examples.workflow": "workspace:*",

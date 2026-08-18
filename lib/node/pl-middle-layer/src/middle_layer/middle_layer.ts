@@ -20,7 +20,23 @@ import {
   ProjectsField,
   ProjectsResourceType,
 } from "./project_list";
-import { createProject, duplicateProject, withProjectAuthored } from "../mutator/project";
+import {
+  createProject,
+  duplicateProject,
+  withProject,
+  withProjectAuthored,
+} from "../mutator/project";
+import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
+import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import { extractConfig, ensureError } from "@platforma-sdk/model";
+import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
+import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
+import type { BlockPackProvider } from "../model/template_resolve";
+import { resolveTemplateEntries } from "../model/template_resolve";
+import type { PreparedTemplateEntry } from "../mutator/template_construct";
+import { applyTemplateEntries } from "../mutator/template_construct";
+import { throwIfMissingServerCapabilities } from "./project";
+import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
@@ -75,6 +91,7 @@ import type {
   ProjectMeta,
   BlockPlatform,
 } from "@milaboratories/pl-model-middle-layer";
+import type { AppliedEntry } from "../model/template_apply";
 import { BlockUpdateWatcher } from "../block_registry/watcher";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { getQuickJS } from "quickjs-emscripten";
@@ -323,6 +340,180 @@ export class MiddleLayer {
       { name: "setProjectMeta" },
     );
     await this.projectListTree.refreshState();
+  }
+
+  /**
+   * Renders a project as a `template-v1` YAML document, or reports every reason it
+   * cannot be — the backing call for an "Export Project as Template…" command.
+   *
+   * Takes a project id rather than an open {@link Project} because exporting is a
+   * property of the stored project, not of a session with it: the command belongs on
+   * a project card, where the project is usually closed. Opening one to read it would
+   * spin up trees and watchers for a one-shot read, and then have to decide whether to
+   * close them again.
+   *
+   * Read-only — the underlying mutator touches no field, so the transaction is never
+   * committed and the project list needs no refresh.
+   *
+   * @param id - project id of the project to export
+   */
+  public async exportProjectAsTemplate(id: ProjectId): Promise<ProjectTemplateExportOutcome> {
+    const rid = await this.resolveProjectId(id);
+    return await withProject(
+      this.env.projectHelper,
+      this.pl,
+      rid,
+      (prj) => prj.exportAsTemplateV1(),
+      { name: "exportProjectAsTemplate" },
+    );
+  }
+
+  /**
+   * Creates the blocks a `template-v1` document describes in an existing project, in the
+   * order the document lists them — the backing call for a "Create Project from Template
+   * file…" command, which is `createProject` followed by this.
+   *
+   * Takes a project id rather than an open {@link Project}, like
+   * {@link exportProjectAsTemplate} and for the same reason: applying a template is a
+   * property of the stored project, not of a session with it, and the flow that needs it
+   * has just created the project and has no session yet. An already-open session picks the
+   * new blocks up through its own refresh loop.
+   *
+   * Three stages, and their order is the design:
+   *
+   * 1. **Resolve every entry** to a concrete block pack, through `provider`.
+   * 2. **Prepare every block**: fetch it, check it can run against this backend, cache its
+   *    workflow template, and offer the entry's params to the block's kind for a shape
+   *    check.
+   * 3. **Create the blocks**, in one transaction — each one's params first pointed at this
+   *    project by the block's own model, since which values in there are references is
+   *    knowledge only the block has.
+   *
+   * The first two create nothing, so either of them failing leaves the project exactly as it
+   * was. They are also what leaves stage 3 with only in-memory work, and hence able to be a
+   * single transaction.
+   *
+   * **Stage 3 is all or nothing too**, because it is that one transaction: an entry it cannot
+   * create throws, the transaction is never committed, and the project keeps none of the
+   * blocks the apply had placed. So `problems` non-empty always means `added` is empty, at
+   * every stage — a caller never has to reconcile a half-built project, and never has to ask
+   * which of the blocks present came from the file.
+   *
+   * What is NOT checked before the work starts: which entries an entry references. Reading
+   * that means reading the params, which only the block can do, and no block exists until
+   * stage 2 has fetched one. A file whose entry references one listed below it therefore
+   * applies, and the block it creates reports itself as missing references — the same way a
+   * reference to a deleted block already behaves.
+   *
+   * @param id Project to apply into
+   * @param document A parsed template document
+   * @param provider Where each entry's block comes from
+   * @param options `allowUnstable` widens resolution to pre-release implementations, for
+   *   the whole document
+   */
+  public async applyTemplateToProject(
+    id: ProjectId,
+    document: ProjectTemplateV1,
+    provider: BlockPackProvider,
+    options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
+  ): Promise<TemplateApplyReport> {
+    const resolution = await resolveTemplateEntries(document, provider, {
+      allowUnstable: options.allowUnstable ?? false,
+    });
+    if (resolution.problems.length > 0) return { added: [], problems: resolution.problems };
+
+    // One map, not one per field: resolution reports by entry id, so everything this loop
+    // needs about an entry is looked up the same way.
+    const byEntryId = new Map(document.blocks.map((entry) => [entry.id, entry]));
+    const prepared = new Map<string, PreparedTemplateEntry>();
+    const problems: TemplateApplyProblem[] = [];
+
+    for (const entry of resolution.resolved) {
+      try {
+        const documentEntry = byEntryId.get(entry.entryId)!;
+        const preparedBp = await this.env.bpPreparer.prepare(entry.spec);
+        const blockCfg = extractConfig(preparedBp.config);
+
+        // The first question asked of the prepared block: is it the block this entry meant.
+        // Everything below is only meaningful once the answer is yes.
+        //
+        // The locator is appended here rather than inside the check, which names no route:
+        // when the file chose the implementation itself, what it chose is the thing to correct.
+        const mismatch = kindMismatch(documentEntry.kind, preparedBp.config.kind);
+        if (mismatch !== undefined) {
+          const locator = documentEntry.location ?? documentEntry.block;
+          problems.push({
+            entryId: entry.entryId,
+            error: locator === undefined ? `${mismatch}.` : `${mismatch} (${locator}).`,
+          });
+          continue;
+        }
+
+        // The same two gates `Project.addBlock` applies, for the same reason: a block that
+        // cannot run here must not be installed. Here they become per-entry problems
+        // rather than throws, so one unusable block reads as one bad entry.
+        this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
+        throwIfMissingServerCapabilities(this.pl, preparedBp.requiredCapabilities);
+
+        const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp);
+
+        // Offered to the block's kind while nothing has been created yet. Every entry is
+        // checked, including one whose file omitted `params` — the parser read that as `{}`,
+        // which a kind with required fields rejects, and rightly: it would otherwise apply as
+        // a block that looks configured and is not.
+        const checked = this.env.projectHelper.validateTemplateParamsInVM(
+          blockCfg,
+          documentEntry.params,
+        );
+        if (checked.error !== undefined) {
+          problems.push({ entryId: entry.entryId, error: checked.error.message });
+          continue;
+        }
+
+        // The block package's own title, the same thing the add-block UI writes. It is
+        // what the user sees for a block whose model derives no title of its own, and it
+        // is resolution's to supply — nothing here could reconstruct it.
+        prepared.set(entry.entryId, { blockPack: cachedBp, label: entry.title });
+      } catch (e) {
+        problems.push({
+          entryId: entry.entryId,
+          error: `This entry's block could not be installed: ${ensureError(e).message}`,
+        });
+      }
+    }
+
+    if (problems.length > 0) return { added: [], problems };
+
+    const rid = await this.resolveProjectId(id);
+    let added: AppliedEntry[] = [];
+    try {
+      await withProjectAuthored(
+        this.env.projectHelper,
+        this.pl,
+        rid,
+        options.author,
+        (mut) => {
+          added = applyTemplateEntries({
+            document,
+            placer: mut,
+            entries: prepared,
+            projectHelper: this.env.projectHelper,
+          });
+        },
+        // Under the same lock an open session's own mutations take, so an apply and a user
+        // editing the project cannot interleave.
+        { name: "applyTemplateToProject", lockId: `project:${id}` },
+      );
+    } catch (e: unknown) {
+      // A statement about the file: the transaction went with the throw, so the project kept
+      // none of the blocks the apply had placed, and `added` is empty by construction.
+      // Anything else — a backend that refused the write, say — is not about the file and
+      // keeps propagating.
+      if (!(e instanceof TemplateEntryRejected)) throw e;
+      return { added: [], problems: [{ entryId: e.entryId, error: e.message }] };
+    }
+
+    return { added, problems: [] };
   }
 
   /** Permanently deletes project from the project list, this will result in
