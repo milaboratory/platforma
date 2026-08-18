@@ -1,5 +1,5 @@
 ---
-'@platforma-sdk/workflow-tengo': minor
+'@platforma-sdk/workflow-tengo': patch
 ---
 
 pframes.processColumn batch mode: make `batch.maxBatches` actually bind, and stop dropping rows on the `passContent: true` path.
