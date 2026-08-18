@@ -103,6 +103,17 @@ interface BlockFieldState {
   ref?: AnyRef;
   status?: FieldStatus;
   value?: Uint8Array;
+  /**
+   * True when the project field's own error slot is filled, i.e. the render failed outright
+   * and left no value resource behind. Distinct from `status === "Error"`, which describes a
+   * value resource that exists but carries an error.
+   */
+  fieldError?: boolean;
+}
+
+/** Either failure shape a production field can be in: no value resource, or an errored one. */
+function hasError(state: BlockFieldState | undefined): boolean {
+  return state?.fieldError === true || state?.status === "Error";
 }
 
 type BlockFieldStates = Partial<Record<ProjectField["fieldName"], BlockFieldState>>;
@@ -258,11 +269,19 @@ class BlockInfo {
     return this.fields.prodCtx !== undefined;
   }
 
+  /**
+   * True if the rendered production failed, in either shape {@link hasError} covers.
+   *
+   * Must stay in step with the `outputError` the desktop derives in
+   * `middle_layer/project_overview.ts`, because that flag is what enables the Run button.
+   * Any failure counted there but not here leaves Run enabled yet inert: `renderProduction`
+   * finds nothing to re-render and commits an empty transaction.
+   */
   get productionHasErrors(): boolean {
     return (
-      this.fields.prodUiCtx?.status === "Error" ||
-      this.fields.prodOutput?.status === "Error" ||
-      this.fields.prodCtx?.status === "Error"
+      hasError(this.fields.prodUiCtx) ||
+      hasError(this.fields.prodOutput) ||
+      hasError(this.fields.prodCtx)
     );
   }
 
@@ -1809,9 +1828,12 @@ export class ProjectMutator {
         blockInfoStates.set(projectField.blockId, info);
       }
 
+      // `f.error` is carried separately from `f.value`: a field that errored has no value
+      // resource to read a status off, so this is the only trace the failure leaves here.
+      const fieldError = isNotNullSignedResourceId(f.error);
       info.fields[projectField.fieldName] = isNullSignedResourceId(f.value)
-        ? { modCount: 0 }
-        : { modCount: 0, ref: f.value };
+        ? { modCount: 0, fieldError }
+        : { modCount: 0, ref: f.value, fieldError };
     }
 
     //
