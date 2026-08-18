@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-spec-driver",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "PSpecDriver implementation: a handle pool and error handling over pf-spec",
   "keywords": [],
   "license": "UNLICENSED",
