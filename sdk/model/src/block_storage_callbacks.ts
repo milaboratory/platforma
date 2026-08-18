@@ -441,12 +441,27 @@ export function createInitialStorageFromParams(
   hooks: ParamsStorageHooks,
 ): ParamsStorageResult {
   let params: unknown;
-  let blockIds: Map<string, string>;
   try {
     params = JSON.parse(paramsJson);
-    blockIds = new Map(Object.entries(JSON.parse(blockIdsJson) as Record<string, string>));
   } catch (e) {
     return { error: `params are not valid JSON: ${messageOf(e)}` };
+  }
+
+  // Read separately from the params, and reported separately, because the two fail for
+  // completely different reasons. Params are the file's and a bad one is the author's mistake;
+  // this argument is the caller's, so the only way it arrives unreadable is a caller that does
+  // not send it — a middle layer older than this block, which is a build to refresh rather than
+  // anything to fix in the template. Folding both into one message sent the reader to the file.
+  let blockIds: Map<string, string>;
+  try {
+    blockIds = new Map(Object.entries(JSON.parse(blockIdsJson) as Record<string, string>));
+  } catch (e) {
+    return {
+      error:
+        `this block was not told which blocks the template's references should point at ` +
+        `(${messageOf(e)}). The application applying the template is older than the block; ` +
+        `rebuild or update it.`,
+    };
   }
 
   try {
