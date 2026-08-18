@@ -1,5 +1,14 @@
 # @milaboratories/pl-client
 
+## 3.14.7
+
+### Patch Changes
+
+- Updated dependencies [80a9963]
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
 ## 3.14.6
 
 ### Patch Changes

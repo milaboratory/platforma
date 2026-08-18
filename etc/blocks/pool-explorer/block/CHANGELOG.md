@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.2.67
+
+### Patch Changes
+
+- 80a9963: Declare a block kind. Each block gains a `kind/` package holding its init-params
+  contract, and its model is built with `new DataModelBuilder({ kind })` /
+  `BlockModelV3.create({ dataModel, kind })` and projects its params back via
+  `templateParams()`.
+
 ## 1.2.66
 
 ### Patch Changes

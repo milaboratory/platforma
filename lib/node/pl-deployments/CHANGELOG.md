@@ -1,5 +1,16 @@
 # @milaboratories/pl-local
 
+## 3.0.16
+
+### Patch Changes
+
+- Updated dependencies [80a9963]
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-config@1.8.5
+  - @milaboratories/pl-healthcheck@1.0.5
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
 ## 3.0.15
 
 ### Patch Changes
