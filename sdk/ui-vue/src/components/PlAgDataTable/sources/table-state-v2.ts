@@ -413,14 +413,23 @@ function convertPartitionFiltersToFilterSpec(
   });
 }
 
-function convertAgSortingToPTableSorting(state: PlDataTableGridStateCore["sort"]): PTableSorting[] {
-  return (
-    state?.sortModel.map((item) => ({
-      column: parseJson<PTableColumnId>(item.colId),
-      ascending: item.sort === "asc",
-      naAndAbsentAreLeastValues: item.sort === "asc",
-    })) ?? []
-  );
+/**
+ * AG Grid omits `sort` from its state while nothing is sorted, so the absent
+ * state must stay distinguishable from an explicitly emptied sort model: the
+ * model falls back to the block's default sorting on `null` only, and treats
+ * `[]` as "user cleared the sorting" (see `resolveSorting` in
+ * `createPlDataTableV3`). `normalizeSort` in `PlAgDataTableV2.vue` turns the
+ * absent state into `{ sortModel: [] }` once an explicit one has been seen.
+ */
+export function convertAgSortingToPTableSorting(
+  state: PlDataTableGridStateCore["sort"],
+): PTableSorting[] | null {
+  if (isNil(state)) return null;
+  return state.sortModel.map((item) => ({
+    column: parseJson<PTableColumnId>(item.colId),
+    ascending: item.sort === "asc",
+    naAndAbsentAreLeastValues: item.sort === "asc",
+  }));
 }
 
 function getHiddenColIds(

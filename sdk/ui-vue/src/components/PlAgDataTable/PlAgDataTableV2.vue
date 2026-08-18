@@ -129,7 +129,7 @@ const { gridApi, gridOptions } = useGrid({
 let isReloading = false;
 gridOptions.value.onGridPreDestroyed = (event) => {
   if (!isReloading) {
-    gridOptions.value.initialState = gridState.value = normalizeColumnVisibility(
+    gridOptions.value.initialState = gridState.value = normalizeGridState(
       makePartialState(event.api.getState()),
       gridState.value,
       event.api,
@@ -142,7 +142,7 @@ gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  const partialState = normalizeColumnVisibility(
+  const partialState = normalizeGridState(
     makePartialState(event.state),
     gridState.value,
     event.api,
@@ -213,6 +213,42 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
   };
 }
 
+// AG Grid omits parts of its state that carry no information — columnVisibility
+// when every column is visible, sort when nothing is sorted. The model needs
+// "no state yet" (fall back to the block's defaults) to stay distinguishable
+// from "user explicitly cleared it" (store []), so both are normalized against
+// the previous state before the state is persisted.
+function normalizeGridState(
+  partialState: PlDataTableGridStateCore,
+  prevState: PlDataTableGridStateCore,
+  api: GridApi<PlAgDataTableV2Row>,
+  columnsMeta: PlDataTableColumnsMeta | undefined,
+): PlDataTableGridStateCore {
+  return normalizeSort(
+    normalizeColumnVisibility(partialState, prevState, api, columnsMeta),
+    prevState,
+  );
+}
+
+// AG Grid returns sort: undefined when no column is sorted. Left as-is that
+// erases the block's default sorting the moment any unrelated grid state is
+// persisted, so the undefined is only turned into an explicit empty sort model
+// once the user has actually sorted something before.
+function normalizeSort(
+  partialState: PlDataTableGridStateCore,
+  prevState: PlDataTableGridStateCore,
+): PlDataTableGridStateCore {
+  if (partialState.sort !== undefined) return partialState;
+
+  if (prevState.sort !== undefined) {
+    // Had an explicit sort model before → user cleared the sorting → store [].
+    return { ...partialState, sort: { sortModel: [] } };
+  }
+
+  // Never sorted → leave undefined so the model applies its default sorting.
+  return partialState;
+}
+
 // AG Grid returns columnVisibility: undefined when all columns are visible.
 // We need to distinguish "no state yet" (use isColumnOptional defaults) from
 // "user explicitly showed all columns" (store []). This function normalizes
@@ -264,11 +300,14 @@ function getDefaultHiddenColIds(
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
 
-// Normalize columnVisibility for comparison: undefined and { hiddenColIds: [] } are equivalent.
+// Normalize for comparison: an absent and an empty columnVisibility / sort mean
+// the same thing to AG Grid, and must not count as a state change to reload on.
 function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
   const cv = state.columnVisibility;
   const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
-  return { ...state, columnVisibility: normalizedCv };
+  const sort = state.sort;
+  const normalizedSort = !sort || sort.sortModel.length === 0 ? undefined : sort;
+  return { ...state, columnVisibility: normalizedCv, sort: normalizedSort };
 }
 
 // Reload AgGrid when new state arrives from server
