@@ -116,20 +116,20 @@ export function applyTemplateEntries(deps: {
 
     // Params travelled from the file untouched, so pointing their references at this project
     // is the block's own job, in its own bundle — nothing here knows which of the values in
-    // there carry block ids. The map holds the entries created so far, including this one, so
-    // an entry referencing itself is wired to itself and one referencing an entry below is
-    // left pointing at nothing.
+    // there carry block ids. It happens inside this same call, along with the kind's check and
+    // the block's own init: the block decides what its params mean, and this is the one place
+    // that asks it. The map holds the entries created so far, including this one, so an entry
+    // referencing itself is wired to itself and one referencing an entry below is left
+    // pointing at nothing.
     //
     // Params are a mapping by the time a document exists — the parser reads an omitted key
-    // as `{}` — so every entry goes through this path and is checked against its kind.
-    const relocated = projectHelper.relocateTemplateParamsInVM(blockConfig, entry.params, blockIds);
-    if (relocated.error !== undefined) {
-      throw new TemplateEntryRejected(entry.id, relocated.error.message);
-    }
-
-    // The block's own model decides what params mean. Run before anything is
-    // placed, so params it declines cost nothing but the report.
-    const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, relocated.value);
+    // as `{}` — so every entry goes through this path and is checked against its kind. Run
+    // before anything is placed, so params the block declines cost nothing but the report.
+    const storage = projectHelper.getInitialStorageFromParamsInVM(
+      blockConfig,
+      entry.params,
+      blockIds,
+    );
     if (storage.error !== undefined) {
       throw new TemplateEntryRejected(entry.id, storage.error.message);
     }

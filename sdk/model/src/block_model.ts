@@ -36,7 +36,6 @@ import {
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
   deriveTemplateParamsFromStorage,
-  relocateTemplateParams,
 } from "./block_storage_callbacks";
 import { type PluginName } from "./block_storage";
 import type {
@@ -691,15 +690,13 @@ export class BlockModelV3<
           storageJson,
           deriveTemplateParams as (data: unknown) => unknown,
         ),
-      [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (paramsJson) =>
-        createInitialStorageFromParams(paramsJson, {
+      [BlockStorageFacadeCallbacks.StorageInitialFromParams]: (paramsJson, blockIdsJson) =>
+        createInitialStorageFromParams(paramsJson, blockIdsJson, {
           getBlockDataFromParams: (params) => dataModel.getDataFromParams(params),
           getPluginRegistry: () => pluginRegistry,
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
           parseInitializationParams,
         }),
-      [BlockStorageFacadeCallbacks.InitializationParamsRelocate]: (paramsJson, blockIdsJson) =>
-        relocateTemplateParams(paramsJson, blockIdsJson),
       [BlockStorageFacadeCallbacks.InitializationParamsValidate]: (paramsJson) =>
         validateTemplateParamsJson(paramsJson, parseInitializationParams),
     });

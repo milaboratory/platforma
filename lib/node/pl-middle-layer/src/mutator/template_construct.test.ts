@@ -26,16 +26,16 @@ import { applyTemplateEntries } from "./template_construct";
  */
 
 const HANDLE = BlockStorageFacadeCallbacks.StorageInitialFromParams;
-const RELOCATE = BlockStorageFacadeCallbacks.InitializationParamsRelocate;
 
 /**
- * A relocation, in the block's own bundle, as plain text for the VM.
+ * A block that relocates its references and echoes the result as its storage.
  *
- * Repoints `PlRef`s only. The real one recognizes all five identifier forms at any depth and
- * is unit-tested where it lives (`pl-model-common`); what these tests need from it is that the
- * seam works — the map arrives, and what comes back is what the block is initialized with.
+ * Both halves of the real callback, in the order the real one does them: repoint, then
+ * initialize. Only `PlRef`s here — the real relocation recognizes all five identifier forms at
+ * any depth and is unit-tested where it lives (`pl-model-common`). What these tests need is
+ * that the seam works: the map arrives, and what the block returns is what it is created with.
  */
-const relocateModel = `(paramsJson, blockIdsJson) => {
+const relocatingEchoModel = `(paramsJson, blockIdsJson) => {
   const ids = JSON.parse(blockIdsJson);
   const walk = (node) => {
     if (Array.isArray(node)) return node.map(walk);
@@ -45,23 +45,21 @@ const relocateModel = `(paramsJson, blockIdsJson) => {
     }
     return node;
   };
-  return { paramsJson: JSON.stringify(walk(JSON.parse(paramsJson))) };
+  return { storageJson: JSON.stringify(walk(JSON.parse(paramsJson))) };
 }`;
 
 /** A v4 block whose params-to-storage callback body is `body`. */
 function preparedBlock(
   body: string,
-  options: { declareCallback?: boolean; declareRelocate?: boolean } = {},
+  options: { declareCallback?: boolean } = {},
 ): BlockPackSpecPrepared {
-  const { declareCallback = true, declareRelocate = true } = options;
+  const { declareCallback = true } = options;
   return {
     type: "prepared",
     config: {
       code: {
         type: "plain",
-        content:
-          `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(HANDLE)}] = ${body};` +
-          `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(RELOCATE)}] = ${relocateModel};`,
+        content: `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(HANDLE)}] = ${body};`,
       },
       v4: {
         sdkVersion: "1.0.0",
@@ -76,7 +74,6 @@ function preparedBlock(
             handle: BlockStorageFacadeCallbacks.StorageInitial,
           },
           ...(declareCallback ? { [HANDLE]: { handle: HANDLE } } : {}),
-          ...(declareRelocate ? { [RELOCATE]: { handle: RELOCATE } } : {}),
         },
       },
     },
@@ -101,8 +98,8 @@ function legacyPreparedBlock(): BlockPackSpecPrepared {
   } as unknown as BlockPackSpecPrepared;
 }
 
-/** Echoes its params back as the block's storage. */
-const echoModel = "(paramsJson) => ({ storageJson: paramsJson })";
+/** Echoes its params back as the block's storage, relocating references on the way. */
+const echoModel = relocatingEchoModel;
 
 type Placement = { block: Block; spec: NewBlockSpec };
 
@@ -335,26 +332,6 @@ describe("applyTemplateEntries", () => {
 
     expect(placements).toHaveLength(1);
     expect(storageOf(placements[0])).toEqual({ input: createPlRef("b", "out") });
-  });
-
-  test("a block that cannot repoint references is refused, not applied as written", () => {
-    // The block predates the relocation callback: on this facade version but built before
-    // references became its business. Applying its params as written would wire it to the ids
-    // of the project the template came from — ids that name nothing here, or worse, name an
-    // unrelated block that happens to share an id.
-    const { placer, placements } = recordingPlacer();
-
-    const rejection = rejectionFrom(() =>
-      applyOver(
-        entryMap({ a: preparedBlock(echoModel, { declareRelocate: false }) }),
-        placer,
-        documentOf(entry("a", { input: createPlRef("a", "out") })),
-      ),
-    );
-
-    expect(rejection.entryId).toBe("a");
-    expect(rejection.message).toMatch(/cannot point the template's references/);
-    expect(placements).toHaveLength(0);
   });
 
   test("a block too old to be initialized from params is refused", () => {
