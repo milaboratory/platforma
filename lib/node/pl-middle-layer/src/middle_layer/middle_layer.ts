@@ -30,10 +30,9 @@ import type { ProjectTemplateExportOutcome } from "../model/template_serializer"
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
-import { TemplateEntryRejected, kindMismatch, liveParamsForCheck } from "../model/template_apply";
+import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
 import type { BlockPackProvider } from "../model/template_resolve";
 import { resolveTemplateEntries } from "../model/template_resolve";
-import { validateTemplateV1ForApply } from "../model/template_validate";
 import type { PreparedTemplateEntry } from "../mutator/template_construct";
 import { applyTemplateEntries } from "../mutator/template_construct";
 import { throwIfMissingServerCapabilities } from "./project";
@@ -380,25 +379,31 @@ export class MiddleLayer {
    * has just created the project and has no session yet. An already-open session picks the
    * new blocks up through its own refresh loop.
    *
-   * Four stages, and their order is the design:
+   * Three stages, and their order is the design:
    *
-   * 1. **Check the document** — reference consistency, and ids belonging to the project
-   *    the file was written in. All of it knowable from the file alone.
-   * 2. **Resolve every entry** to a concrete block pack, through `provider`.
-   * 3. **Prepare every block**: fetch it, check it can run against this backend, cache its
+   * 1. **Resolve every entry** to a concrete block pack, through `provider`.
+   * 2. **Prepare every block**: fetch it, check it can run against this backend, cache its
    *    workflow template, and offer the entry's params to the block's kind for a shape
    *    check.
-   * 4. **Create the blocks**, in one transaction.
+   * 3. **Create the blocks**, in one transaction — each one's params first pointed at this
+   *    project by the block's own model, since which values in there are references is
+   *    knowledge only the block has.
    *
-   * The first three create nothing, so any of them failing leaves the project exactly as
-   * it was. They are also what leaves stage 4 with only in-memory work, and hence able to be
-   * a single transaction.
+   * The first two create nothing, so either of them failing leaves the project exactly as it
+   * was. They are also what leaves stage 3 with only in-memory work, and hence able to be a
+   * single transaction.
    *
-   * **Stage 4 is all or nothing too**, because it is that one transaction: an entry it cannot
+   * **Stage 3 is all or nothing too**, because it is that one transaction: an entry it cannot
    * create throws, the transaction is never committed, and the project keeps none of the
    * blocks the apply had placed. So `problems` non-empty always means `added` is empty, at
    * every stage — a caller never has to reconcile a half-built project, and never has to ask
    * which of the blocks present came from the file.
+   *
+   * What is NOT checked before the work starts: which entries an entry references. Reading
+   * that means reading the params, which only the block can do, and no block exists until
+   * stage 2 has fetched one. A file whose entry references one listed below it therefore
+   * applies, and the block it creates reports itself as missing references — the same way a
+   * reference to a deleted block already behaves.
    *
    * @param id Project to apply into
    * @param document A parsed template document
@@ -412,9 +417,6 @@ export class MiddleLayer {
     provider: BlockPackProvider,
     options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
   ): Promise<TemplateApplyReport> {
-    const documentProblems = validateTemplateV1ForApply(document);
-    if (documentProblems.length > 0) return { added: [], problems: documentProblems };
-
     const resolution = await resolveTemplateEntries(document, provider, {
       allowUnstable: options.allowUnstable ?? false,
     });
@@ -461,7 +463,7 @@ export class MiddleLayer {
         // a block that looks configured and is not.
         const checked = this.env.projectHelper.validateTemplateParamsInVM(
           blockCfg,
-          liveParamsForCheck(documentEntry.params),
+          documentEntry.params,
         );
         if (checked.error !== undefined) {
           problems.push({ entryId: entry.entryId, error: checked.error.message });

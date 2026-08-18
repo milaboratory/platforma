@@ -17,14 +17,12 @@ blocks:
           enabled: false
           seed: 42
       inputs:
-        - $ref:
-            __isRef: true
-            blockId: dddddddd-0000-4000-8000-000000000004
-            name: a
-        - $ref:
-            __isRef: true
-            blockId: dddddddd-0000-4000-8000-000000000004
-            name: b
+        - __isRef: true
+          blockId: dddddddd-0000-4000-8000-000000000004
+          name: a
+        - __isRef: true
+          blockId: dddddddd-0000-4000-8000-000000000004
+          name: b
       advanced: {}
       tags: []
       note: null

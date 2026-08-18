@@ -10,13 +10,11 @@ import {
   parseKindSelectorReference,
   type BlockKindSelectorReference,
 } from "./kind_selector";
-import { isTemplateRef, referencedBlockIds, toTemplateRef } from "./template_ref";
 import {
   parseBlockPackLocation,
   parseBlockPackReference,
   parseProjectTemplateV1,
   readProjectTemplateV1,
-  validateProjectTemplateV1References,
   type BlockPackLocationReference,
   type BlockPackReference,
   type ProjectTemplateV1,
@@ -34,14 +32,14 @@ import {
 //     - id: mixcr
 //       kind: "@platforma-open/milaboratories.mixcr-clonotyping.kind@~1.2.0"
 //       params:
-//         input: { $ref: { __isRef: true, blockId: samples, name: reads } }
+//         input: { __isRef: true, blockId: samples, name: reads }
 //         species: human
 //         preset: milab-human-tcr-rna
 //     - id: browser
 //       kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.0.0"
 //       block: "@platforma-open/milaboratories.clonotype-browser@2.4.1"
 //       params:
-//         clonotypes: { $ref: { __isRef: true, blockId: mixcr, name: clonotypes } }
+//         clonotypes: { __isRef: true, blockId: mixcr, name: clonotypes }
 //
 // The YAML text <-> value step is not this package's job (no `yaml` dependency);
 // byte-level round-tripping belongs to the middle-layer serializer.
@@ -58,7 +56,7 @@ const referenceExample = {
       id: "mixcr",
       kind: "@platforma-open/milaboratories.mixcr-clonotyping.kind@~1.2.0",
       params: {
-        input: toTemplateRef({ __isRef: true, blockId: "samples", name: "reads" }),
+        input: { __isRef: true, blockId: "samples", name: "reads" },
         species: "human",
         preset: "milab-human-tcr-rna",
       },
@@ -68,7 +66,7 @@ const referenceExample = {
       kind: "@platforma-open/milaboratories.clonotype-browser.kind@1.0.0",
       block: "@platforma-open/milaboratories.clonotype-browser@2.4.1",
       params: {
-        clonotypes: toTemplateRef({ __isRef: true, blockId: "mixcr", name: "clonotypes" }),
+        clonotypes: { __isRef: true, blockId: "mixcr", name: "clonotypes" },
       },
     },
   ],
@@ -181,59 +179,6 @@ describe("block pack location", () => {
   });
 });
 
-describe("reference wrappers", () => {
-  test("recognized by the reserved $ref shape only", () => {
-    expect(isTemplateRef(toTemplateRef({ __isRef: true }))).toBe(true);
-    expect(isTemplateRef({ $ref: "anything at all" })).toBe(true);
-
-    // A second key, no `$ref`, an array, null: not a wrapper. The shape is reserved inside
-    // opaque params, so the narrowest recognizable one takes least away from kind authors.
-    expect(isTemplateRef({ $ref: 1, as: "id" })).toBe(false);
-    expect(isTemplateRef({ ref: 1 })).toBe(false);
-    expect(isTemplateRef([1])).toBe(false);
-    expect(isTemplateRef(null)).toBe(false);
-  });
-
-  test("an absent value is not wrapped", () => {
-    expect(toTemplateRef(undefined)).toBeUndefined();
-  });
-
-  test("the payload is whatever the block wrapped, untouched", () => {
-    const payload = [{ __isRef: true, blockId: "a", name: "x" }];
-
-    expect(toTemplateRef(payload).$ref).toBe(payload);
-  });
-
-  test("referenced ids are found in any payload, at any depth", () => {
-    const params = {
-      input: toTemplateRef({ __isRef: true, blockId: "samples", name: "reads" }),
-      nested: { list: [toTemplateRef('{"__isRef":true,"blockId":"mixcr","name":"clones"}')] },
-      species: "human",
-    };
-
-    expect(referencedBlockIds(params, ["samples", "mixcr", "absent"])).toEqual([
-      "samples",
-      "mixcr",
-    ]);
-  });
-
-  test("an id outside a wrapper is not a reference", () => {
-    // Wrapping is the whole signal. What sits outside one is data as far as this layer is
-    // concerned, and is rejected elsewhere — by the export guard and the import check.
-    const params = { loose: { __isRef: true, blockId: "samples", name: "reads" } };
-
-    expect(referencedBlockIds(params, ["samples"])).toEqual([]);
-  });
-
-  test("an id is matched as a whole JSON token, not as a substring", () => {
-    // `a` must not match the `a` inside `"reads"`, or a rewrite would corrupt the payload.
-    const params = { input: toTemplateRef({ __isRef: true, blockId: "b", name: "reads" }) };
-
-    expect(referencedBlockIds(params, ["a"])).toEqual([]);
-    expect(referencedBlockIds(params, ["b"])).toEqual(["b"]);
-  });
-});
-
 describe("parseProjectTemplateV1", () => {
   test("parses the reference example unchanged", () => {
     const doc = parseProjectTemplateV1(referenceExample);
@@ -241,7 +186,6 @@ describe("parseProjectTemplateV1", () => {
     expect(doc).toEqual(referenceExample);
     expect(doc.blocks.map((b) => b.id)).toEqual(["samples", "mixcr", "browser"]);
     expect(doc.blocks[2].block).toBe("@platforma-open/milaboratories.clonotype-browser@2.4.1");
-    expect(validateProjectTemplateV1References(doc)).toEqual([]);
   });
 
   test("params may be omitted in the file, and reads as `{}`", () => {
@@ -361,66 +305,6 @@ describe("parseProjectTemplateV1", () => {
         ],
       }),
     ).toThrow(/Duplicate template-local id: a/);
-  });
-});
-
-describe("validateProjectTemplateV1References", () => {
-  const docWith = (blocks: unknown[]) => parseProjectTemplateV1({ schema: "template-v1", blocks });
-
-  const reader = (id: string, referenced: string) => ({
-    id,
-    kind: "@o/m.kind@1.0.0",
-    params: { input: toTemplateRef({ __isRef: true, blockId: referenced, name: "reads" }) },
-  });
-
-  test("flags a reference to an entry declared later", () => {
-    const doc = docWith([reader("mixcr", "samples"), { id: "samples", kind: "@o/s.kind@1.0.0" }]);
-
-    expect(validateProjectTemplateV1References(doc)).toEqual([
-      "Entry 'mixcr' references entry 'samples', which is declared after it " +
-        "(blocks order is the instantiation order)",
-    ]);
-  });
-
-  test("flags a self-reference", () => {
-    const doc = docWith([reader("mixcr", "mixcr")]);
-
-    expect(validateProjectTemplateV1References(doc)).toEqual([
-      "Entry 'mixcr' references its own output",
-    ]);
-  });
-
-  test("says nothing about a reference to an id the file does not define", () => {
-    // The documented gap of an engine that does not parse payloads: it can only ask which of
-    // the ids this file defines appear in one, so an id naming no entry is indistinguishable
-    // from the rest of the payload's text. Pinned so the gap stays visible.
-    const doc = docWith([reader("mixcr", "ghost")]);
-
-    expect(validateProjectTemplateV1References(doc)).toEqual([]);
-  });
-
-  test("finds a block id however deeply it is buried in the payload", () => {
-    // The engine reads no structure, so depth, escaping and nesting cost it nothing.
-    const doc = docWith([
-      {
-        id: "browser",
-        kind: "@o/m.kind@1.0.0",
-        params: {
-          anchor: toTemplateRef(
-            JSON.stringify({
-              __isFiltered: true,
-              source: JSON.stringify({ __isRef: true, blockId: "samples", name: "c" }),
-            }),
-          ),
-        },
-      },
-      { id: "samples", kind: "@o/s.kind@1.0.0" },
-    ]);
-
-    expect(validateProjectTemplateV1References(doc)).toEqual([
-      "Entry 'browser' references entry 'samples', which is declared after it " +
-        "(blocks order is the instantiation order)",
-    ]);
   });
 });
 

@@ -20,7 +20,6 @@ export * from "./sharing_model";
 // `MiddleLayer.applyTemplateToProject` that consumes them. `BlockPackProvider` is here
 // for the same reason: which registries to consult is the caller's decision.
 export { parseProjectTemplateV1Yaml, type TemplateParseOutcome } from "./template_parser";
-export { validateTemplateV1ForApply } from "./template_validate";
 export {
   resolveTemplateEntries,
   parseBlockPackName,
@@ -32,7 +31,6 @@ export {
 } from "./template_resolve";
 export {
   TemplateEntryRejected,
-  liveParamsForCheck,
   type AppliedEntry,
   type TemplateApplyProblem,
   type TemplateApplyReport,

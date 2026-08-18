@@ -3,15 +3,14 @@ import type {
   BlockKindReference,
   BlockKindSelectorReference,
 } from "@milaboratories/pl-model-common";
-import { kindMismatch, liveParamsForCheck } from "./template_apply";
+import { kindMismatch } from "./template_apply";
 
 /**
- * The two checks an apply performs on one entry against the block prepared for it.
+ * Whether the block prepared for an entry is the block that entry meant.
  *
  * Tested directly rather than through `applyTemplateToProject`, which needs a backend to
- * prepare a block pack at all. Both are pure functions for exactly that reason: the
- * questions "is this the block the entry meant" and "are these params the right shape" do
- * not need a project, and keeping them answerable without one is what makes them testable.
+ * prepare a block pack at all. It is a pure function for exactly that reason: the question
+ * does not need a project, and keeping it answerable without one is what makes it testable.
  */
 
 const ASKED = "@platforma-open/milaboratories.demo.kind@^1.0.0" as BlockKindSelectorReference;
@@ -62,27 +61,5 @@ describe("kindMismatch", () => {
 
     expect(message).not.toContain("file:");
     expect(message).not.toContain("location");
-  });
-});
-
-describe("liveParamsForCheck", () => {
-  test("references are unwrapped, so a kind sees the shape it declared", () => {
-    const params = {
-      anchor: { $ref: { __isRef: true, blockId: "entry-1", name: "clonotypes" } },
-      species: "hsa",
-    };
-
-    expect(liveParamsForCheck(params)).toEqual({
-      anchor: { __isRef: true, blockId: "entry-1", name: "clonotypes" },
-      species: "hsa",
-    });
-  });
-
-  test("the file's own entry ids stand in for block ids, since no block exists yet", () => {
-    // Not placeholders: if one surfaces in a kind's rejection message, it names something
-    // the reader can find in their file.
-    const params = { anchor: { $ref: { __isRef: true, blockId: "entry-1", name: "reads" } } };
-
-    expect(JSON.stringify(liveParamsForCheck(params))).toContain("entry-1");
   });
 });

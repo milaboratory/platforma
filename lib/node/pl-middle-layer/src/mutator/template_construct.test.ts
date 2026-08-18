@@ -6,11 +6,7 @@ import type {
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
 } from "@milaboratories/pl-model-common";
-import {
-  PROJECT_TEMPLATE_SCHEMA_V1,
-  createPlRef,
-  toTemplateRef,
-} from "@milaboratories/pl-model-common";
+import { PROJECT_TEMPLATE_SCHEMA_V1, createPlRef } from "@milaboratories/pl-model-common";
 import { ProjectHelper } from "../model/project_helper";
 import type { BlockPackSpecPrepared } from "../model";
 import type { Block } from "../model/project_model";
@@ -30,19 +26,42 @@ import { applyTemplateEntries } from "./template_construct";
  */
 
 const HANDLE = BlockStorageFacadeCallbacks.StorageInitialFromParams;
+const RELOCATE = BlockStorageFacadeCallbacks.InitializationParamsRelocate;
+
+/**
+ * A relocation, in the block's own bundle, as plain text for the VM.
+ *
+ * Repoints `PlRef`s only. The real one recognizes all five identifier forms at any depth and
+ * is unit-tested where it lives (`pl-model-common`); what these tests need from it is that the
+ * seam works — the map arrives, and what comes back is what the block is initialized with.
+ */
+const relocateModel = `(paramsJson, blockIdsJson) => {
+  const ids = JSON.parse(blockIdsJson);
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.map(walk);
+    if (node !== null && typeof node === "object") {
+      if (node.__isRef === true) return { ...node, blockId: ids[node.blockId] ?? node.blockId };
+      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, walk(v)]));
+    }
+    return node;
+  };
+  return { paramsJson: JSON.stringify(walk(JSON.parse(paramsJson))) };
+}`;
 
 /** A v4 block whose params-to-storage callback body is `body`. */
 function preparedBlock(
   body: string,
-  options: { declareCallback?: boolean } = {},
+  options: { declareCallback?: boolean; declareRelocate?: boolean } = {},
 ): BlockPackSpecPrepared {
-  const { declareCallback = true } = options;
+  const { declareCallback = true, declareRelocate = true } = options;
   return {
     type: "prepared",
     config: {
       code: {
         type: "plain",
-        content: `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(HANDLE)}] = ${body};`,
+        content:
+          `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(HANDLE)}] = ${body};` +
+          `globalThis.cfgRenderCtx.callbackRegistry[${JSON.stringify(RELOCATE)}] = ${relocateModel};`,
       },
       v4: {
         sdkVersion: "1.0.0",
@@ -57,6 +76,7 @@ function preparedBlock(
             handle: BlockStorageFacadeCallbacks.StorageInitial,
           },
           ...(declareCallback ? { [HANDLE]: { handle: HANDLE } } : {}),
+          ...(declareRelocate ? { [RELOCATE]: { handle: RELOCATE } } : {}),
         },
       },
     },
@@ -205,12 +225,13 @@ describe("applyTemplateEntries", () => {
     expect(storageOf(placements[0])).toEqual({});
   });
 
-  test("references are redirected to the blocks already placed", () => {
-    // The payoff of the whole import path: the second entry's params name a
-    // template-local id in the file and reach the block as a reference to the id the
-    // first block actually got.
+  test("references are repointed by the block, to the blocks already placed", () => {
+    // The payoff of the whole import path: the second entry's params name a template-local id
+    // in the file and reach the block as a reference to the id the first block actually got.
+    // Nothing here recognized that reference — the block's own bundle did, which is why the
+    // params travelled from the file untouched.
     const { placer, placements } = recordingPlacer();
-    const params = { input: toTemplateRef(createPlRef("samples", "reads")) };
+    const params = { input: createPlRef("samples", "reads") };
 
     applyOver(
       entryMap({ samples: preparedBlock(echoModel), align: preparedBlock(echoModel) }),
@@ -302,16 +323,38 @@ describe("applyTemplateEntries", () => {
     expect(placements.map((p) => p.block.id)).toEqual(["block-1"]);
   });
 
-  test("a reference to an entry with no block travels as written, and the block is placed", () => {
-    // The engine cannot see that `b` names nothing yet, so the reference travels as written
-    // and the block is created wired to it. Validation is what rejects such a document.
+  test("a reference the map does not name travels as written, and the block is placed", () => {
+    // `b` is not in the map — it names no entry at all here, and an entry listed below this
+    // one would look the same. Either way the block is created wired to an id that means
+    // nothing in this project, and reports itself as missing references. That is the ordering
+    // rule's only enforcement now: nothing rejects such a document up front.
     const { placer, placements } = recordingPlacer();
-    const params = { input: toTemplateRef(createPlRef("b", "out")) };
+    const params = { input: createPlRef("b", "out") };
 
     applyOver(entryMap({ a: preparedBlock(echoModel) }), placer, documentOf(entry("a", params)));
 
     expect(placements).toHaveLength(1);
     expect(storageOf(placements[0])).toEqual({ input: createPlRef("b", "out") });
+  });
+
+  test("a block that cannot repoint references is refused, not applied as written", () => {
+    // The block predates the relocation callback: on this facade version but built before
+    // references became its business. Applying its params as written would wire it to the ids
+    // of the project the template came from — ids that name nothing here, or worse, name an
+    // unrelated block that happens to share an id.
+    const { placer, placements } = recordingPlacer();
+
+    const rejection = rejectionFrom(() =>
+      applyOver(
+        entryMap({ a: preparedBlock(echoModel, { declareRelocate: false }) }),
+        placer,
+        documentOf(entry("a", { input: createPlRef("a", "out") })),
+      ),
+    );
+
+    expect(rejection.entryId).toBe("a");
+    expect(rejection.message).toMatch(/cannot point the template's references/);
+    expect(placements).toHaveLength(0);
   });
 
   test("a block too old to be initialized from params is refused", () => {
@@ -399,7 +442,7 @@ describe("applyTemplateEntries", () => {
     // apply, so there is no surviving project in which a later entry points at a block that
     // was never created.
     const { placer, placements } = recordingPlacer();
-    const params = { input: toTemplateRef(createPlRef("a", "out")) };
+    const params = { input: createPlRef("a", "out") };
 
     const rejection = rejectionFrom(() =>
       applyOver(

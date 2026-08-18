@@ -1,7 +1,7 @@
 import { BlockPointer as enterNumbersSpec } from "@milaboratories/milaboratories.test-enter-numbers";
 import { BlockPointer as sumNumbersSpec } from "@milaboratories/milaboratories.test-sum-numbers";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
-import { createPlRef, resolveTemplateRefs } from "@milaboratories/pl-model-common";
+import { createPlRef, relocateBlockIds } from "@milaboratories/pl-model-common";
 import type { BlockPackProvider, Project } from "@milaboratories/pl-middle-layer";
 import {
   parseProjectTemplateV1Yaml,
@@ -91,10 +91,10 @@ test("v3: a project exported as a template applies back as an equivalent project
     // that both carry nothing.
     expect(exported.document.blocks[0].params).toStrictEqual({ numbers: [1, 2, 3] });
     expect(exported.document.blocks[1].params).toStrictEqual({
-      // The reference is stored as the block itself holds it, inside the one wrapper the
-      // document recognizes — and the wrapper is around the reference, not around the array
-      // holding it, so each identifier is marked where it sits.
-      sources: [{ $ref: createPlRef(numbersId, "numbers") }],
+      // Exactly as the block holds it, with no marker of any kind: the file says nothing
+      // about which of its values are references, because the block that receives them is
+      // what recognizes them.
+      sources: [createPlRef(numbersId, "numbers")],
     });
 
     // Both blocks came from a folder on this machine, and each entry says so by
@@ -259,38 +259,27 @@ function localPacksOnly(): BlockPackProvider {
 function canonical(document: ProjectTemplateV1): ProjectTemplateV1 {
   const positionOf = new Map(document.blocks.map((entry, i) => [entry.id, `b${i}`]));
 
-  // Renaming goes through the engine's own redirect, so this recognizes exactly the
-  // references the engine recognizes — reimplementing the walk here would let the comparison
-  // agree with a bug instead of catching it. Note it rewrites INSIDE the wrappers and leaves
-  // them in place, which is what a document holds.
+  // Renaming goes through the SDK's own relocation, so this recognizes exactly the references
+  // a block recognizes — reimplementing the walk here would let the comparison agree with a
+  // bug instead of catching it.
   const blocks = document.blocks.map((entry, i) => ({
     ...entry,
     id: `b${i}`,
-    ...(entry.params !== undefined ? { params: renameInsideRefs(entry.params, positionOf) } : {}),
+    ...(entry.params !== undefined
+      ? { params: renameInLiveParams(entry.params, positionOf) as Record<string, unknown> }
+      : {}),
   }));
 
   return { ...document, blocks };
 }
 
-/** Redirect the block ids inside every reference wrapper, keeping the wrappers. */
-function renameInsideRefs(
-  params: Record<string, unknown>,
-  newIdOf: ReadonlyMap<string, string>,
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(params).map(([key, value]) => [key, renameInLiveParams(value, newIdOf)]),
-  );
-}
-
 /**
- * Rename the blocks named by references inside a value — live params, or one reference
- * payload.
+ * Rename the blocks named by the references inside a value.
  *
- * Wrapping the value and resolving it back is the engine's own redirect, applied to
- * something that is not a document. Re-implementing the walk here would let the comparison
- * agree with a bug instead of catching it.
+ * The SDK's own relocation, which is what runs inside a block's bundle on apply.
+ * Re-implementing the walk here would let the comparison agree with a bug instead of catching
+ * it.
  */
 function renameInLiveParams(value: unknown, newIdOf: ReadonlyMap<string, string>): unknown {
-  const wrapped = resolveTemplateRefs({ $ref: value }, newIdOf);
-  return wrapped;
+  return relocateBlockIds(value, newIdOf);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import canonicalize from "canonicalize";
-import { createPlRef, toTemplateRef } from "@milaboratories/pl-model-common";
+import { createPlRef } from "@milaboratories/pl-model-common";
 import type { ProjectStructure } from "./project_model";
 import type { TemplateParamsResult } from "./template_export";
 import { walkProjectForTemplateExport } from "./template_export";
@@ -127,7 +127,7 @@ describe("what the walk does with params", () => {
   test("params are written exactly as the block projected them", () => {
     // The walk parses nothing and rewrites nothing: a template-local entry id IS the block's
     // own id, so a wrapped reference already names the right entry.
-    const params = { input: toTemplateRef(createPlRef(UUID_A, "reads")), species: "hsa" };
+    const params = { input: createPlRef(UUID_A, "reads"), species: "hsa" };
     const walk = walkProjectForTemplateExport(
       simpleStructure(UUID_A, UUID_B),
       providerFrom({ [UUID_A]: ok({}), [UUID_B]: ok(params) }),
@@ -152,10 +152,10 @@ describe("what the walk does with params", () => {
     // An identifier as a string, one under escape padding, a whole nested structure — all the
     // same to the walk, which is the property the wrapper exists to buy.
     const params = {
-      asObject: toTemplateRef(createPlRef("a", "reads")),
-      asString: toTemplateRef(leafId("a", "clones")),
-      stringified: toTemplateRef(JSON.stringify(leafId("a", "clones"))),
-      nested: { deeper: [toTemplateRef([createPlRef("a", "x")])] },
+      asObject: createPlRef("a", "reads"),
+      asString: leafId("a", "clones"),
+      stringified: JSON.stringify(leafId("a", "clones")),
+      nested: { deeper: [[createPlRef("a", "x")]] },
     };
     const walk = walkProjectForTemplateExport(
       simpleStructure("a", "b"),
@@ -185,7 +185,7 @@ describe("what the walk does with params", () => {
     // Same boundary from the other side: telling this apart would mean recognizing which
     // strings are identifiers, which is exactly the knowledge the engine does not hold. It
     // surfaces on apply, as a block wired to nothing.
-    const params = { input: toTemplateRef(createPlRef("deleted", "reads")) };
+    const params = { input: createPlRef("deleted", "reads") };
     const walk = walkProjectForTemplateExport(
       simpleStructure("b"),
       providerFrom({ b: ok(params) }),
