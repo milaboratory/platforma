@@ -209,6 +209,16 @@ describe("a snapshot that cannot be read", () => {
     expect(await decodePersistedTree(bytes)).toStrictEqual({ ok: false, reason: "checksum" });
   });
 
+  test("a payload that inflates past the ceiling is refused, not inflated", async () => {
+    // The checksum only says the compressed bytes are the ones that were written, so a
+    // replaced file can be consistent and still inflate to far more than a snapshot can be.
+    const bytes = await encoded();
+    expect(await decodePersistedTree(bytes, { maxPayloadBytes: 16 })).toStrictEqual({
+      ok: false,
+      reason: "checksum",
+    });
+  });
+
   test("an unknown schema version loads as absent", async () => {
     const bytes = Buffer.from(await encoded());
     bytes.writeUInt16LE(PERSISTED_TREE_SCHEMA_VERSION + 1, 4);

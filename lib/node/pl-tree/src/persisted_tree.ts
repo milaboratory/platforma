@@ -104,6 +104,13 @@ const FLAG_COMPRESSED = 1 << 0;
 const HEADER_FIXED_BYTES = 4 /* magic */ + 2 /* schema */ + 2 /* flags */ + 2 /* witness len */;
 const TRAILER_BYTES = 4 /* payload length */ + 4 /* checksum */;
 
+/** Ceiling on the inflated payload. The checksum only says the bytes are the ones that were
+ *  written, so a replaced file can pair a small, consistent payload with a ratio that
+ *  inflates to gigabytes: unbounded, that costs the process its memory instead of costing
+ *  one cold open. Far above anything real, the heaviest reference project being 10 MB
+ *  compressed against a 256 MB cap on the whole directory. */
+const DEFAULT_MAX_PAYLOAD_BYTES = 512 * 1024 * 1024;
+
 /** Enum orderings are part of the on-disk format: append only, never reorder. An index
  *  the decoder does not know is malformed input, which is why decoding is bounds-checked
  *  rather than cast. */
@@ -164,6 +171,11 @@ export type PersistedTreeReadFailure =
 export type PersistedTreeReadResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly reason: PersistedTreeReadFailure };
+
+export type DecodePersistedTreeOps = {
+  /** Refuses a payload that inflates past this. Defaults to 512 MB. */
+  readonly maxPayloadBytes?: number;
+};
 
 export type EncodePersistedTreeOps = {
   /** Defaults to true. Turning it off trades roughly a factor of three in file size for
@@ -388,6 +400,7 @@ export function readPersistedTreeHeader(
  *  reported as a failure reason, so the caller opens cold instead of replaying garbage. */
 export async function decodePersistedTree(
   bytes: Uint8Array,
+  ops: DecodePersistedTreeOps = {},
 ): Promise<PersistedTreeReadResult<PersistedTree>> {
   const header = readPersistedTreeHeader(bytes);
   if (!header.ok) return header;
@@ -412,10 +425,16 @@ export async function decodePersistedTree(
     const stored = bytes.subarray(payloadStart, payloadStart + payloadLength);
     if (crc32(stored) !== checksum) return failure("checksum");
 
-    payload = (flags & FLAG_COMPRESSED) !== 0 ? await inflateAsync(stored) : stored;
+    payload =
+      (flags & FLAG_COMPRESSED) !== 0
+        ? await inflateAsync(stored, {
+            maxOutputLength: ops.maxPayloadBytes ?? DEFAULT_MAX_PAYLOAD_BYTES,
+          })
+        : stored;
   } catch {
-    // Includes inflate failures: a payload that passes its checksum but will not
-    // decompress is damaged in a way we cannot distinguish from corruption.
+    // Includes inflate failures: a payload that passes its checksum but will not decompress,
+    // or inflates past the ceiling, is damaged in a way we cannot distinguish from
+    // corruption. Either way the answer is the same, open cold.
     return failure("checksum");
   }
 

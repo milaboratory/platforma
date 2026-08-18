@@ -96,6 +96,14 @@ function safe(part: string): string {
   return part.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
+/** Names this class writes: a finished snapshot, or the staging file of a write killed before
+ *  its rename. The directory is caller-supplied and only defaults to one of ours, so nothing
+ *  failing this is ever deleted, by the purge or by the startup eviction. */
+function isOurFile(name: string): boolean {
+  if (!name.startsWith(FILE_PREFIX)) return false;
+  return name.endsWith(FILE_SUFFIX) || name.includes(`${FILE_SUFFIX}.tmp.`);
+}
+
 /**
  * Snapshots of project tree mirrors on the local filesystem.
  *
@@ -177,8 +185,7 @@ export class TreeSnapshotStore {
       // reached for a switch labelled "my disk is troublesome". Only files this class writes
       // are removed, then the directory itself if that emptied it.
       for (const name of await fsp.readdir(dir)) {
-        if (!name.startsWith(FILE_PREFIX)) continue;
-        if (!name.endsWith(FILE_SUFFIX) && !name.includes(".tmp.")) continue;
+        if (!isOurFile(name)) continue;
         await fsp.rm(path.join(dir, name), { force: true }).catch(() => {});
       }
       await fsp.rmdir(dir).catch(() => {
@@ -346,11 +353,16 @@ export class TreeSnapshotStore {
       for (const name of names) {
         const file = path.join(this.ops.dir, name);
 
-        // Anything not addressed to the current scope goes: another build, backend, user or
-        // schema version, and also the staging files of a write that was killed before its
-        // rename, which end in `.tmp.<hex>` rather than the suffix.
+        // Anything of ours not addressed to the current scope goes: another build, backend,
+        // user or schema version, and also the staging files of a write that was killed
+        // before its rename, which end in `.tmp.<hex>` rather than the suffix.
         const inScope =
           name.startsWith(`${FILE_PREFIX}${this.scope}.`) && name.endsWith(FILE_SUFFIX);
+
+        // Out of scope is not the same as ours to delete: a `treeSnapshotPath` pointed at an
+        // existing or shared directory would otherwise have every file in it removed at
+        // startup. Same rule as `purge`, for the same reason.
+        if (!inScope && !isOurFile(name)) continue;
 
         let size = 0;
         let mtimeMs = 0;

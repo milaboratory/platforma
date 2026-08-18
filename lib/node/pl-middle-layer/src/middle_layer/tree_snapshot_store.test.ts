@@ -263,6 +263,21 @@ describe("eviction", () => {
     expect(store.stats.evictedForSize).toBe(0);
   });
 
+  test("leaves files that are not ours, whatever the directory holds", async () => {
+    const store = storeIn()!;
+    await store.write(rootA, snapshotFor(rootA));
+    // `treeSnapshotPath` is caller-supplied: pointed at an existing or shared directory,
+    // startup housekeeping must not take a stranger's files with it.
+    await fsp.writeFile(path.join(dir, "someone-elses.txt"), "not ours");
+    await fsp.writeFile(path.join(dir, "tree.txt"), "shares our prefix, not our suffix");
+
+    await store.evict();
+
+    expect(await files()).toContain("someone-elses.txt");
+    expect(await files()).toContain("tree.txt");
+    expect(store.stats.evicted).toBe(0);
+  });
+
   test("keeps everything when under the ceiling", async () => {
     const store = storeIn()!;
     await store.write(rootA, snapshotFor(rootA));
