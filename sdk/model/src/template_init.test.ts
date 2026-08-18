@@ -178,9 +178,9 @@ describe("DataModel.getDataFromParams", () => {
 
 describe("params round trip", () => {
   test("init then templateParams returns the params it started from", () => {
-    // The closest thing to an export→import round trip available without the
-    // engine: params → storage → params. References come back in template form,
-    // since that is what the export side writes to the file.
+    // The closest thing to an export→import round trip available without the engine: params
+    // → storage → params. It comes back byte-identical, references included — a template
+    // holds what the block holds, so the two ends of the trip have nothing to convert.
     const params = { label: "run 1", sources: [createPlRef(upstream, "reads")] };
 
     const storageJson = stringifyJson(
@@ -191,9 +191,7 @@ describe("params round trip", () => {
       return { sources: d.sources, label: d.label };
     });
 
-    expect(derived).toEqual({
-      value: { label: "run 1", sources: [{ $ref: createPlRef(upstream, "reads") }] },
-    });
+    expect(derived).toEqual({ value: params });
   });
 });
 

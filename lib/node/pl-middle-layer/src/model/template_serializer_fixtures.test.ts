@@ -8,7 +8,6 @@ import {
   createGlobalPObjectId,
   createPlRef,
   parseProjectTemplateV1,
-  wrapTemplateRefs,
 } from "@milaboratories/pl-model-common";
 import type { ProjectStructure } from "./project_model";
 import type { TemplateParamsResult } from "./template_export";
@@ -36,11 +35,11 @@ import { exportProjectAsTemplateV1 } from "./template_serializer";
 const FIXTURE_DIR = join(import.meta.dirname, "..", "..", "test_fixtures", "template-v1");
 
 /**
- * Params as the block's callback hands them over: written live, with every identifier marked
- * by the same pass that runs inside a block's bundle. Spelling the wrappers by hand instead
- * would pin what a test author believed the projection does.
+ * Params as the block's callback hands them over — live, and untouched on the way out. What a
+ * block projects is what the file holds, so there is nothing between these values and the
+ * rendered bytes.
  */
-const ok = (value: unknown): TemplateParamsResult => ({ value: wrapTemplateRefs(value) });
+const ok = (value: unknown): TemplateParamsResult => ({ value });
 
 const kind = (name: string, version: string) =>
   `@platforma-open/milaboratories.${name}.kind@${version}` as BlockKindReference;
@@ -137,8 +136,8 @@ const FIXTURES: readonly Fixture[] = [
     },
   },
   {
-    file: "wrapped-refs.yaml",
-    pins: "each identifier is marked where it sits, and written verbatim whatever its form",
+    file: "column-ids.yaml",
+    pins: "an identifier is written verbatim whatever its form — key object or canonical string",
     structure: structureOf(
       "aaaaaaaa-0000-4000-8000-000000000001",
       "bbbbbbbb-0000-4000-8000-000000000002",
@@ -147,8 +146,8 @@ const FIXTURES: readonly Fixture[] = [
       "aaaaaaaa-0000-4000-8000-000000000001": ok({}),
       "bbbbbbbb-0000-4000-8000-000000000002": ok({
         // A filtered column id — a canonical JSON string with the block id buried inside it.
-        // The engine writes it as it came and redirects the id textually on apply; nothing
-        // here parses the identifier.
+        // It goes into the file as it came: repointing it is the receiving block's business,
+        // in its own bundle, and nothing on the way out parses it.
         anchor: createColumnFilteredId({
           source: createGlobalPObjectId(
             "aaaaaaaa-0000-4000-8000-000000000001",
@@ -156,7 +155,8 @@ const FIXTURES: readonly Fixture[] = [
           ) as ColumnUniversalId,
           axisFilters: [[0, "IGH"]],
         }),
-        // The same column as a `PlRef` object, marked the same way.
+        // The same column in its object spelling. Both survive as written — no marker, no
+        // normalization, so a round trip cannot change which of the two a block gets back.
         upstream: createPlRef("aaaaaaaa-0000-4000-8000-000000000001", "clonotypes"),
       }),
     },

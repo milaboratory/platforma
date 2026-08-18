@@ -27,7 +27,7 @@ import type { PluginHandle } from "./plugin_handle";
 
 import {
   stringifyJson,
-  wrapTemplateRefs,
+  relocateBlockIds,
   type StringifiedJson,
 } from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
@@ -527,18 +527,18 @@ export function derivePrerunArgsFromStorage(
  * The inverse of the data model's `init`: `init` turns `params` into data, this
  * turns data back into the params that would recreate it.
  *
- * The lambda returns ordinary live params — references as `PlRef`s, column identifiers as
- * they are stored — and `wrapTemplateRefs` then marks each identifier in them as a reference
- * the template engine may redirect. That step belongs here, in the block's own bundle: it is
- * the last place that knows the reference system, and past it nothing looks inside a wrapper
- * again.
+ * The lambda returns ordinary live params — references as `PlRef`s, column identifiers as they
+ * are stored — and that is exactly what gets written. Nothing is marked, normalized or
+ * rewritten on the way out: a template holds what the block holds. Repointing those references
+ * at another project is the business of {@link relocateTemplateParams}, on the way back in,
+ * where the ids to point at are known.
  *
  * Every block declares the lambda, so every export produces params; a block with
  * nothing worth restoring returns `{}` rather than declining.
  *
  * @param storageJson - Storage as JSON string
  * @param deriveTemplateParams - The block's templateParams lambda
- * @returns ArgsDeriveResult holding the params with every identifier wrapped
+ * @returns ArgsDeriveResult holding the params exactly as the block projected them
  */
 export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => unknown>(
   storageJson: string,
@@ -547,7 +547,7 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
   const { data } = normalizeStorage(storageJson);
 
   try {
-    return { value: wrapTemplateRefs(deriveTemplateParams(data)) };
+    return { value: deriveTemplateParams(data) };
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);
     return { error: `templateParams() threw: ${errorMsg}` };
@@ -556,3 +556,49 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
 
 // Export discriminator key and schema version for external checks
 export { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION };
+
+/** What {@link relocateTemplateParams} hands back: the repointed params, or why it could not. */
+export type InitializationParamsRelocateResult =
+  | { readonly error: string }
+  | { readonly error?: undefined; readonly paramsJson: StringifiedJson };
+
+/**
+ * Point every reference in an entry's params at the blocks of the project being built.
+ *
+ * The inverse of nothing: export writes params untouched, so this is the only place in a
+ * template's life where a reference is recognized at all. It runs in the block's own bundle
+ * because recognizing one means knowing the reference system — five key forms, nesting by
+ * string, identifiers in map keys — and that knowledge stops here.
+ *
+ * Rewriting is structural: an identifier is taken apart, its block ids replaced, and it is
+ * rebuilt canonically. So a spec override whose value happens to equal a block id is not
+ * rewritten with it, and a qualifications map keyed by identifier comes back sorted the way a
+ * fresh project would have built it.
+ *
+ * Errors are returned rather than thrown, like every other callback here: a file that cannot
+ * be relocated is an expected outcome, reported against the entry that carries it.
+ *
+ * @param paramsJson The entry's params as JSON string, as the file held them
+ * @param blockIdsJson template-local entry id → assigned block id, as a JSON object
+ */
+export function relocateTemplateParams(
+  paramsJson: string,
+  blockIdsJson: string,
+): InitializationParamsRelocateResult {
+  let params: unknown;
+  let blockIds: Map<string, string>;
+  try {
+    params = JSON.parse(paramsJson);
+    blockIds = new Map(Object.entries(JSON.parse(blockIdsJson) as Record<string, string>));
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `Could not read the params to relocate: ${errorMsg}` };
+  }
+
+  try {
+    return { paramsJson: JSON.stringify(relocateBlockIds(params, blockIds)) as StringifiedJson };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `Relocating this entry's references failed: ${errorMsg}` };
+  }
+}

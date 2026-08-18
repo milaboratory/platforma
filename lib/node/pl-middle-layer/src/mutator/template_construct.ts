@@ -1,5 +1,5 @@
 import { BLOCK_STORAGE_FACADE_VERSION, extractConfig } from "@platforma-sdk/model";
-import { resolveTemplateRefs, type ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import type { BlockPackSpecPrepared } from "../model";
 import type { ProjectHelper } from "../model/project_helper";
 import type { AppliedEntry } from "../model/template_apply";
@@ -114,13 +114,22 @@ export function applyTemplateEntries(deps: {
     const blockId = newBlockId();
     blockIds.set(entry.id, blockId);
 
+    // Params travelled from the file untouched, so pointing their references at this project
+    // is the block's own job, in its own bundle — nothing here knows which of the values in
+    // there carry block ids. The map holds the entries created so far, including this one, so
+    // an entry referencing itself is wired to itself and one referencing an entry below is
+    // left pointing at nothing.
+    //
     // Params are a mapping by the time a document exists — the parser reads an omitted key
-    // as `{}` — so every entry goes through the params path and is checked against its kind.
-    const live = resolveTemplateRefs(entry.params, blockIds);
+    // as `{}` — so every entry goes through this path and is checked against its kind.
+    const relocated = projectHelper.relocateTemplateParamsInVM(blockConfig, entry.params, blockIds);
+    if (relocated.error !== undefined) {
+      throw new TemplateEntryRejected(entry.id, relocated.error.message);
+    }
 
     // The block's own model decides what params mean. Run before anything is
     // placed, so params it declines cost nothing but the report.
-    const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, live);
+    const storage = projectHelper.getInitialStorageFromParamsInVM(blockConfig, relocated.value);
     if (storage.error !== undefined) {
       throw new TemplateEntryRejected(entry.id, storage.error.message);
     }

@@ -2,11 +2,7 @@ import type {
   BlockKindReference,
   BlockKindSelectorReference,
 } from "@milaboratories/pl-model-common";
-import {
-  parseKindRef,
-  parseKindSelectorReference,
-  resolveTemplateRefs,
-} from "@milaboratories/pl-model-common";
+import { parseKindRef, parseKindSelectorReference } from "@milaboratories/pl-model-common";
 import { selectorToRange } from "@platforma-sdk/block-tools";
 import { ensureError } from "@platforma-sdk/model";
 import * as semver from "semver";
@@ -28,25 +24,6 @@ export class TemplateEntryRejected extends Error {
     super(message);
     this.name = "TemplateEntryRejected";
   }
-}
-
-/**
- * Params in live shape, with each entry's template-local id standing in for the block id it
- * has not been given yet.
- *
- * For the pre-flight check, which runs before any block exists and therefore before any
- * reference can be redirected. Checking the file form directly would not work: a kind
- * describing a param as a reference sees the `{ $ref: … }` wrapper and rejects it, so every
- * entry with a reference would fail a check meant to catch the opposite. Unwrapping with
- * nothing to redirect asks the only question this stage can answer — are these params the
- * right shape — and leaves what they point at to validation, which already owns it.
- *
- * The ids stay the file's own rather than becoming invented placeholders: nothing dereferences
- * them here, and if one surfaces in a kind's rejection message it names something the reader
- * can find in their file.
- */
-export function liveParamsForCheck(params: Record<string, unknown>): Record<string, unknown> {
-  return resolveTemplateRefs(params, new Map());
 }
 
 /**
@@ -95,11 +72,11 @@ export type TemplateApplyReport = {
  * a location's folder can change without the file changing, and a pinned version names a
  * package with no reference to a kind at all.
  *
- * So this belongs here, beside {@link liveParamsForCheck}, and not in resolution: it is asked
- * once, of the block that was actually prepared, whichever route found it. Resolution could
- * answer it for a location — `byLocation` reads the block's config anyway — and doing so there
- * would have been a second place stating the same invariant, with the pinned-version route
- * still uncovered. One caller is the point.
+ * So this belongs here, with the apply's other per-entry checks, and not in resolution: it is
+ * asked once, of the block that was actually prepared, whichever route found it. Resolution
+ * could answer it for a location — `byLocation` reads the block's config anyway — and doing so
+ * there would have been a second place stating the same invariant, with the pinned-version
+ * route still uncovered. One caller is the point.
  *
  * It is also the check that makes the params check meaningful, so it is asked first: params are
  * checked by the INSTALLED block's kind parser, which against a block of the wrong kind would

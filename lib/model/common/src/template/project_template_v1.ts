@@ -2,7 +2,6 @@ import type { Branded } from "@milaboratories/helpers";
 import { splitVersionedName } from "../bmodel/block_kind_ref";
 import type { BlockKindSelectorReference } from "./kind_selector";
 import { parseKindSelector, parseKindSelectorReference } from "./kind_selector";
-import { referencedBlockIds } from "./template_ref";
 
 /**
  * Value of a template file's `schema` field — the format marker every
@@ -124,7 +123,7 @@ export type ProjectTemplateV1Entry = {
    * The document layer looks inside for one thing only: a `{ $ref: … }` wrapper, which the
    * block puts around any value carrying block ids. Everything else travels verbatim,
    * references included, because an engine that parsed identifiers would have to model the
-   * whole reference system to do it. See `TemplateRef`.
+   * whole reference system to do it.
    */
   readonly params: Record<string, unknown>;
 } & BlockPackLocatorOverride;
@@ -267,9 +266,12 @@ const ENTRY_KEYS = ["id", "kind", "block", "location", "params"] as const;
  * misspelled key that was silently dropped would apply a file that does not say what its
  * author meant.
  *
- * It does NOT check what an entry's params point at. Params are opaque here, and the ordering
- * rule they must satisfy is a statement about `blocks` as a whole, kept separate as
- * {@link validateProjectTemplateV1References}.
+ * It does NOT check what an entry's params point at, and nothing downstream of it does
+ * either. Which values in there carry block ids is knowable only to the block, in its own
+ * bundle, where the params are relocated onto the project being built — so a reference to an
+ * entry listed later, or to the entry holding it, is not refused here. It survives into the
+ * applied project as a block whose references name nothing, which is how a reference to a
+ * deleted block already behaves.
  *
  * Collects rather than stops: a file with three mistakes should take one pass to fix.
  */
@@ -434,76 +436,4 @@ export function parseProjectTemplateV1(value: unknown): ProjectTemplateV1 {
   const outcome = readProjectTemplateV1(value);
   if (!outcome.ok) throw new ProjectTemplateV1ParseError(outcome.issues);
   return outcome.document;
-}
-
-/** Why one reference is not usable, and which entry holds it. */
-export type TemplateReferenceProblem = {
-  /** The entry whose `params` hold the offending reference. */
-  readonly entryId: string;
-  /** The entry it references. */
-  readonly referencedId: string;
-  /**
-   * - `self` — the entry references an output of its own.
-   * - `forward` — the referenced entry is declared later, so it does not exist yet at the
-   *   point this entry is created.
-   */
-  readonly reason: "self" | "forward";
-  /** Human-readable form, suitable for showing to whoever triggered the export. */
-  readonly message: string;
-};
-
-/**
- * Find every reference that does not name an entry declared EARLIER in `blocks`.
- *
- * The ordering rule — every block must appear after the blocks it references — checked
- * across the whole document and reported per offending pair. Empty when the document is
- * consistent.
- *
- * **A dangling reference is not among the findings, and cannot be.** The check asks which
- * of the ids this document defines appear inside a reference payload (see
- * {@link referencedBlockIds}), because the engine deliberately cannot read a payload's
- * structure. An id naming no entry is therefore invisible — nothing separates it from the
- * rest of the payload's text. That is part of the price of keeping the reference system out
- * of the engine, and it is paid at apply time, where such a reference reaches its block
- * unredirected.
- */
-export function findProjectTemplateV1ReferenceProblems(
-  doc: ProjectTemplateV1,
-): TemplateReferenceProblem[] {
-  const problems: TemplateReferenceProblem[] = [];
-  const allIds = doc.blocks.map((e) => e.id);
-  const declaredBefore = new Set<string>();
-
-  for (const entry of doc.blocks) {
-    for (const referencedId of referencedBlockIds(entry.params, allIds)) {
-      if (referencedId === entry.id) {
-        problems.push({
-          entryId: entry.id,
-          referencedId,
-          reason: "self",
-          message: `Entry '${entry.id}' references its own output`,
-        });
-      } else if (!declaredBefore.has(referencedId)) {
-        problems.push({
-          entryId: entry.id,
-          referencedId,
-          reason: "forward",
-          message:
-            `Entry '${entry.id}' references entry '${referencedId}', which is declared after ` +
-            `it (blocks order is the instantiation order)`,
-        });
-      }
-    }
-    declaredBefore.add(entry.id);
-  }
-
-  return problems;
-}
-
-/**
- * {@link findProjectTemplateV1ReferenceProblems} as human-readable lines, for a
- * caller that only needs to show them.
- */
-export function validateProjectTemplateV1References(doc: ProjectTemplateV1): string[] {
-  return findProjectTemplateV1ReferenceProblems(doc).map((p) => p.message);
 }

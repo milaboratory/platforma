@@ -32,7 +32,7 @@ const upstream = "3f1c2b7a-0000-4000-8000-000000000001";
 const storageOf = (data: BlockData) => stringifyJson(createBlockStorage(data));
 
 describe("deriveTemplateParamsFromStorage", () => {
-  test("projects data back to params, with each reference marked", () => {
+  test("projects data back to params, untouched", () => {
     const result = deriveTemplateParamsFromStorage(
       storageOf({ sources: [createPlRef(upstream, "reads")], label: "run 1", scratch: 42 }),
       (data) => {
@@ -41,11 +41,12 @@ describe("deriveTemplateParamsFromStorage", () => {
       },
     );
 
-    // `scratch` is dropped because the lambda does not return it; the `PlRef` was wrapped
-    // without the lambda doing anything, which is the point — marking references is the
-    // SDK's job, not a block author's.
+    // `scratch` is dropped because the lambda does not return it. Everything the lambda DID
+    // return is written exactly as it is: the reference is not marked, normalized or rewritten
+    // on the way out, because pointing it at another project is the receiving block's job, on
+    // the way back in.
     expect(result).toEqual({
-      value: { sources: [{ $ref: createPlRef(upstream, "reads") }], label: "run 1" },
+      value: { sources: [createPlRef(upstream, "reads")], label: "run 1" },
     });
   });
 

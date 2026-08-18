@@ -3,7 +3,6 @@ import YAML from "yaml";
 import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import {
   createPlRef,
-  toTemplateRef,
   kindReferenceToSelectorReference,
   parseProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
@@ -109,8 +108,8 @@ describe("the document", () => {
   test("entry order is structure order", () => {
     const result = exportOf(simpleStructure("samples", "mixcr", "browser"), {
       samples: ok({}),
-      mixcr: ok({ input: toTemplateRef(createPlRef("samples", "reads")) }),
-      browser: ok({ clones: toTemplateRef(createPlRef("mixcr", "clonotypes")) }),
+      mixcr: ok({ input: createPlRef("samples", "reads") }),
+      browser: ok({ clones: createPlRef("mixcr", "clonotypes") }),
     });
 
     expect(result.ok && result.document.blocks.map((b) => b.id)).toEqual([
@@ -127,7 +126,7 @@ describe("the YAML", () => {
     const result = exportOf(simpleStructure("samples", "mixcr"), {
       samples: ok({ dataset: "bulk-rna", replicates: [1, 2, 3] }),
       mixcr: ok({
-        input: toTemplateRef(createPlRef("samples", "reads")),
+        input: createPlRef("samples", "reads"),
         species: "hsa",
         nested: { deep: { flag: true, absent: null } },
       }),
@@ -162,22 +161,22 @@ describe("the YAML", () => {
     expect(yaml).toContain(long);
   });
 
-  test("a reference is written as the block wrapped it, contents untouched", () => {
-    // How the engine finds a reference on apply, so the wrapper's presence in the file is
-    // part of the contract rather than a rendering detail. What is inside it is the block's
-    // own value, written verbatim.
+  test("a reference is written exactly as the block holds it, with no marker", () => {
+    // Nothing in the file says this value is a reference, because nothing downstream needs
+    // told: the block that receives these params is the one that recognizes them. So the
+    // rendering is the block's own value and nothing else.
     const result = exportOf(simpleStructure("samples", "mixcr"), {
       samples: ok({}),
-      mixcr: ok({ input: toTemplateRef(createPlRef("samples", "reads")) }),
+      mixcr: ok({ input: createPlRef("samples", "reads") }),
     });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.yaml).toContain("$ref:");
+    expect(result.yaml).not.toContain("$ref");
     expect(result.yaml).toContain("__isRef: true");
     expect(result.yaml).toContain("blockId: samples");
     expect(result.document.blocks[1].params).toEqual({
-      input: { $ref: createPlRef("samples", "reads") },
+      input: createPlRef("samples", "reads"),
     });
   });
 });
@@ -218,21 +217,23 @@ describe("problems", () => {
     // knowing which values are identifiers, which the engine deliberately does not — so the
     // reference is written out and surfaces on apply as a block wired to nothing.
     const result = exportOf(simpleStructure("survivor"), {
-      survivor: ok({ input: toTemplateRef(createPlRef("deleted-upstream", "reads")) }),
+      survivor: ok({ input: createPlRef("deleted-upstream", "reads") }),
     });
 
     expect(result.ok).toBe(true);
   });
 
-  test("a forward reference is caught, and named as one", () => {
+  test("a forward reference is not caught here, and cannot be", () => {
+    // Reading which entries an entry references means reading its params, which only the
+    // block that wrote them can do. A project's structure is topological by construction, so
+    // this state is not reachable from a real project — it is pinned to say that the export
+    // asserts nothing about it rather than to bless it.
     const result = exportOf(simpleStructure("downstream", "upstream"), {
-      downstream: ok({ input: toTemplateRef(createPlRef("upstream", "reads")) }),
+      downstream: ok({ input: createPlRef("upstream", "reads") }),
       upstream: ok({}),
     });
 
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.problems[0].error).toContain("declared after it");
+    expect(result.ok).toBe(true);
   });
 
   test("walk problems and assembly problems are reported together, in one pass", () => {

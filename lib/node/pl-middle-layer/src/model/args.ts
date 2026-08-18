@@ -67,8 +67,13 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: unknown, allowed?:
       } else if (Array.isArray(node)) {
         for (const child of node) addAllReferencedBlocks(result, child, allowed);
       } else {
-        for (const [, child] of Object.entries(node as object))
+        // Keys as well as values: a discovered column's `queriesQualifications` is keyed BY
+        // column id, so a map key can carry a block id — and dropping the key loses that
+        // upstream edge entirely.
+        for (const [key, child] of Object.entries(node as object)) {
+          addAllReferencedBlocks(result, key, allowed);
           addAllReferencedBlocks(result, child, allowed);
+        }
       }
 
       return;

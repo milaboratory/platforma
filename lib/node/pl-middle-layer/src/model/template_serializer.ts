@@ -9,7 +9,6 @@ import type {
 } from "@milaboratories/pl-model-common";
 import {
   PROJECT_TEMPLATE_SCHEMA_V1,
-  findProjectTemplateV1ReferenceProblems,
   kindReferenceToSelectorReference,
   parseProjectTemplateV1,
 } from "@milaboratories/pl-model-common";
@@ -160,11 +159,10 @@ export function assembleProjectTemplateV1(
     });
   }
 
+  // References are not examined. A project's structure is topological by construction, so an
+  // entry cannot legally reference one below it — and checking would mean reading the params,
+  // which only the block that wrote them can do.
   const document: ProjectTemplateV1 = { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks };
-
-  for (const problem of findProjectTemplateV1ReferenceProblems(document)) {
-    problems.push({ blockId: problem.entryId, error: problem.message });
-  }
 
   return { document, problems };
 }
