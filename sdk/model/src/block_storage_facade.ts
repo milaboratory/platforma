@@ -201,10 +201,10 @@ export interface BlockStorageFacade {
    * it — so every export produces params. A block whose state carries nothing worth
    * restoring returns `{}`, which is written out and used as-is by init.
    *
-   * The returned params carry every column identifier wrapped as a `{ $ref: … }`, which is
-   * the only structure the template engine reads — what is inside a wrapper it stores and
-   * redirects without parsing. The caller supplies everything
-   * else in the entry — `id`, `kind` — so the lambda cannot set them.
+   * The returned params are written out exactly as they come back, references included: the
+   * template engine carrying them recognizes nothing in there, and the block that receives
+   * them on the way back in is what repoints them. The caller supplies everything else in the
+   * entry — `id`, `kind` — so the lambda cannot set them.
    *
    * @param storageJson - Storage as JSON string
    * @returns Either an error, or the params to write

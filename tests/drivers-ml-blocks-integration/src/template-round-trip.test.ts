@@ -204,7 +204,7 @@ test("v3: a reference to a deleted block survives the export unexamined", async 
     // does not define.
     expect(exported.document.blocks.map((entry) => entry.id)).toStrictEqual([sumId]);
     expect(exported.document.blocks[0].params).toStrictEqual({
-      sources: [{ $ref: createPlRef(numbersId, "numbers") }],
+      sources: [createPlRef(numbersId, "numbers")],
     });
   });
 });

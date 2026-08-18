@@ -151,9 +151,9 @@ export class ProjectHelper {
    *
    * The template-export counterpart of {@link deriveArgsFromStorage}: instead of
    * the args a workflow runs on, it returns the params that would recreate the
-   * block — the inverse of the data model's `init`. Params come back with every column
-   * identifier wrapped as a `{ $ref: … }`, done inside the block's own bundle, so nothing here
-   * has to know a kind's params shape or how a reference is spelled.
+   * block — the inverse of the data model's `init`. Params come back exactly as the block
+   * projected them, references included: nothing marks or rewrites them on the way out, so
+   * nothing here has to know a kind's params shape or how a reference is spelled.
    *
    * A `{ value: undefined }` result means the block declares no `templateParams`, which only
    * a block built against an older SDK can do. It does not reach a document: the export walk

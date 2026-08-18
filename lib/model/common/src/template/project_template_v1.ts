@@ -120,10 +120,15 @@ export type ProjectTemplateV1Entry = {
    * The block's `BlockParams` instance, exactly as the block projected it — opaque here
    * and typed by the kind. Always present: an entry whose file omitted it parses as `{}`.
    *
-   * The document layer looks inside for one thing only: a `{ $ref: … }` wrapper, which the
-   * block puts around any value carrying block ids. Everything else travels verbatim,
-   * references included, because an engine that parsed identifiers would have to model the
-   * whole reference system to do it.
+   * **Nothing here looks inside.** Not for a reference, not for a marker: values travel from
+   * the block that projected them to the block that receives them verbatim, and which of them
+   * carry block ids is recognized in the receiving block's own bundle. A document layer that
+   * recognized a reference would have to model the whole reference system to do it.
+   *
+   * That is also what lets a hand-written file spell a reference readably. A block stores
+   * `{ __isRef: true, blockId, name }` and an export writes that, but a person may write
+   * `{ block: <entry id>, name: … }` instead — see `TemplatePlRef`. Both arrive at the block as
+   * the same reference; neither is understood here.
    */
   readonly params: Record<string, unknown>;
 } & BlockPackLocatorOverride;
