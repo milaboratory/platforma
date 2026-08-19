@@ -15,7 +15,7 @@ jobs:
     uses: milaboratory/github-ci/.github/workflows/block-mark-stable.yaml@v4
     with:
       app-name: '${appName}'
-      node-version: '20.x'
+      node-version: '22.x'
       npmrc-config: |
         {
           "registries": {

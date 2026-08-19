@@ -29,6 +29,7 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 const KIND_EXPORTS = {
   ".": {
@@ -44,6 +45,7 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.kind`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     // `main` is the CommonJS entry (require fallback), `module` the ESM one —
@@ -81,7 +83,9 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 export function kindPackageJsonRules(): void {
   // Controlled sibling — workspace-only, never published to npm. `private: true`
   // makes npm refuse to publish it; the `version` is kept (changesets-owned) and
-  // is what the kind's on-wire `{name}@{version}` reference is baked from.
+  // is what the kind's on-wire `{name}@{version}` reference is baked from — only
+  // backfilled when the manifest predates the seeded field.
+  ensureModuleVersion();
   ensureField("private", true);
 
   ensureField("type", "module");
