@@ -31,6 +31,7 @@ export const SDK_CATALOG_PACKAGES: readonly string[] = [
   "@platforma-sdk/workflow-tengo",
   "@platforma-sdk/test",
   "@platforma-sdk/block-tools",
+  "@platforma-sdk/block-kind",
   "@platforma-sdk/tengo-builder",
   "@platforma-sdk/package-builder",
   "@milaboratories/ts-builder",
