@@ -30,6 +30,7 @@ export const SDK_CATALOG_PACKAGES: readonly string[] = [
   "@platforma-sdk/ui-vue",
   "@platforma-sdk/workflow-tengo",
   "@platforma-sdk/test",
+  "@platforma-sdk/block-kind",
   "@platforma-sdk/block-tools",
   "@platforma-sdk/block-kind",
   "@platforma-sdk/tengo-builder",
@@ -64,6 +65,7 @@ export const INFRA_CATALOG_FLOOR: Record<string, string> = {
   shx: "~0.4.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
+  typescript: "~5.9.3",
 };
 
 /** Catalog entries whose exact version is DERIVED from the version another

@@ -11,7 +11,7 @@ const dataModel = new DataModelBuilder({ kind })
 
 export const platforma = BlockModelV3.create({ dataModel, kind })
   .args(() => ({}))
-  .templateParams((data) => ({}))
+  .templateParams(() => ({}))
   .sections(() => [{ type: "link", href: "/", label: "Main" }])
   .done();
 

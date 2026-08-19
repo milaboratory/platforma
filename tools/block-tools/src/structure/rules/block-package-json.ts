@@ -18,6 +18,7 @@ import {
 } from "../engine/api";
 import { findModules, scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 /** Per-org publish coordinates: the S3 upload bucket and the public registry
  *  serve URL the facade's `prepublishOnly` script passes to `block-tools
@@ -177,7 +178,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
   assertBlockFieldsFilled(block);
   return {
     name: `${v.facadeName}.block`,
-    version: "1.0.0",
+    version: INITIAL_MODULE_VERSION,
     // Facade is ESM: rolldown-plugin-dts requires it, and the BlockPointer's
     // `import.meta.url` path math needs it.
     type: "module",

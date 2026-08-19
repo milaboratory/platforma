@@ -9,6 +9,7 @@ import { classifyOne, type WorkspacePackage } from "../engine/discovery";
 import { STRUCTURE } from "../structure-definition";
 import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
+import { INITIAL_MODULE_VERSION } from "../rules/shared/initial-version";
 
 const TEMPLATES = defaultTemplateProvider();
 
@@ -166,13 +167,77 @@ describe("facade: `prepublishOnly` publish target branches on isSdkInternal", ()
 });
 
 describe("facade: sibling package privacy", () => {
-  test("model / ui / workflow / test are `private` with no `version`", () => {
+  // Private but versioned. `pnpm pack` in the facade has to rewrite each
+  // `workspace:*` devDep to a concrete range, so a versionless sibling fails
+  // `do-pack` with ERR_PNPM_CANNOT_RESOLVE_WORKSPACE_PROTOCOL. The kind needs
+  // one for a second reason: its own src imports `version` from its
+  // package.json.
+  test("kind / model / ui / workflow / test are `private` and versioned", () => {
     const { fs } = simulateInit({ vars: VARS });
-    for (const scope of ["model", "ui", "workflow", "test"]) {
+    for (const scope of ["kind", "model", "ui", "workflow", "test"]) {
       const p = JSON.parse(fs.read(`${scope}/package.json`));
       expect(p.private, `${scope} must be private`).toBe(true);
-      expect("version" in p, `${scope} must not carry a version`).toBe(false);
+      expect(p.version, `${scope} must carry a version`).toBe(INITIAL_MODULE_VERSION);
     }
+  });
+
+  test("every `workspace:*` dep of the facade resolves to a versioned package", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const facade = JSON.parse(fs.read("block/package.json"));
+    const byName = new Map<string, string | undefined>();
+    for (const scope of ["kind", "model", "ui", "workflow", "test"]) {
+      const p = JSON.parse(fs.read(`${scope}/package.json`));
+      byName.set(p.name, p.version);
+    }
+
+    const workspaceDeps = Object.entries({
+      ...facade.dependencies,
+      ...facade.devDependencies,
+    }).filter(([, spec]) => String(spec).startsWith("workspace:"));
+    expect(workspaceDeps.length).toBeGreaterThan(0);
+
+    for (const [name] of workspaceDeps) {
+      expect(byName.get(name), `${name} is a workspace dep with no version`).toBeDefined();
+    }
+  });
+});
+
+describe("facade: sibling versions on refresh", () => {
+  // A block scaffolded before the initials seeded `version` carries versionless
+  // sibling manifests. `refresh` never re-runs an initial for a file that
+  // exists, so the bodies have to backfill the field themselves — otherwise
+  // `do-pack` dies on ERR_PNPM_CANNOT_RESOLVE_WORKSPACE_PROTOCOL rewriting the
+  // facade's `workspace:*` deps.
+  test("a refresh backfills `version` on versionless siblings", () => {
+    const { fs, ctx } = simulateInit({ vars: VARS });
+    const scopes = ["kind", "model", "ui", "workflow", "test"];
+    for (const scope of scopes) {
+      const p = JSON.parse(fs.read(`${scope}/package.json`));
+      delete p.version;
+      fs.write(`${scope}/package.json`, `${JSON.stringify(p, null, 2)}\n`);
+    }
+
+    const refreshCtx: RunContext = { ...ctx, dryRun: false };
+    expect(() => engineRun(STRUCTURE, fs, refreshCtx, { templates: TEMPLATES })).not.toThrow();
+
+    for (const scope of scopes) {
+      const p = JSON.parse(fs.read(`${scope}/package.json`));
+      expect(p.version, `${scope} must be versioned after refresh`).toBe(INITIAL_MODULE_VERSION);
+      // `version` sits right after `name` — the canonical order the formatter
+      // enforces; a backfill appended at the end would fail `oxfmt --check`.
+      expect(Object.keys(p).indexOf("version")).toBe(1);
+    }
+  });
+
+  test("a refresh leaves an existing sibling `version` alone (changesets owns it)", () => {
+    const { fs, ctx } = simulateInit({ vars: VARS });
+    const bumped = JSON.parse(fs.read("model/package.json"));
+    bumped.version = "3.4.5";
+    fs.write("model/package.json", `${JSON.stringify(bumped, null, 2)}\n`);
+
+    engineRun(STRUCTURE, fs, { ...ctx, dryRun: false }, { templates: TEMPLATES });
+
+    expect(JSON.parse(fs.read("model/package.json")).version).toBe("3.4.5");
   });
 });
 
