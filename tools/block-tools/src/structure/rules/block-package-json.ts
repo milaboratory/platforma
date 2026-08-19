@@ -11,7 +11,6 @@ import {
   ensureDevDep,
   ensureWorkspaceScopeDevDeps,
   requireField,
-  removeScript,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   type RunContext,
@@ -220,7 +219,10 @@ export function blockPackageJsonRules(ctx: RunContext): void {
 
   const scripts = blockScripts(v.npmOrg, ctx.isSdkInternal);
   for (const [name, command] of Object.entries(scripts)) ensureScript(name, command);
-  removeScript("mark-stable");
+  // Scripts beyond the canonical set are block-author territory — left as-is.
+  // `mark-stable` in particular is invoked by the engine-generated
+  // `.github/workflows/mark-stable.yaml` (which does `cd block && pnpm run
+  // mark-stable`), so stripping it broke that workflow.
 
   // Slim invariant: the facade carries ZERO runtime dependencies. The siblings
   // and the SDK build/publish deps are all devDeps, so `dependencies` ends
