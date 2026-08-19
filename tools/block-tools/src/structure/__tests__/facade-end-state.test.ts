@@ -1,7 +1,7 @@
 // Facade end-state coverage — the slim `block/` the structurer emits and
 // enforces: block-scope detection by the top-level `block` field, the four-file
 // `src/` surface + facade `tsconfig.json`, the slim publishable `package.json`,
-// sibling privacy, and legacy-shim cleanup.
+// sibling privacy, legacy-shim cleanup, and author-script preservation.
 
 import { describe, test, expect } from "vitest";
 import type { BlockVars, RunContext } from "../engine/api";
@@ -238,6 +238,26 @@ describe("facade: sibling versions on refresh", () => {
     engineRun(STRUCTURE, fs, { ...ctx, dryRun: false }, { templates: TEMPLATES });
 
     expect(JSON.parse(fs.read("model/package.json")).version).toBe("3.4.5");
+  });
+});
+
+describe("facade: author scripts beyond the canonical set survive a refresh", () => {
+  test("a pre-existing `mark-stable` script is preserved", () => {
+    const { fs, ctx } = simulateInit({ vars: VARS });
+    const MARK_STABLE =
+      "block-tools mark-stable -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/releases/?region=eu-central-1'";
+
+    // `.github/workflows/mark-stable.yaml` (engine-generated) runs
+    // `cd block && pnpm run mark-stable`, so the facade must keep the script.
+    const before = JSON.parse(fs.read("block/package.json"));
+    before.scripts["mark-stable"] = MARK_STABLE;
+    fs.write("block/package.json", `${JSON.stringify(before, null, 2)}\n`);
+
+    const refreshCtx: RunContext = { ...ctx, dryRun: false };
+    expect(() => engineRun(STRUCTURE, fs, refreshCtx, { templates: TEMPLATES })).not.toThrow();
+
+    const after = JSON.parse(fs.read("block/package.json"));
+    expect(after.scripts["mark-stable"]).toBe(MARK_STABLE);
   });
 });
 
