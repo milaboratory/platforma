@@ -20,6 +20,7 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 // The software-build build/pack commands, shared by the generator and the reconciler. block-tools
 // bundles the build engine, so these are the only build-tool commands a software-build block runs.
@@ -56,6 +57,7 @@ export function softwarePackageJsonInitial(ctx: RunContext): Record<string, unkn
 
   return {
     name: `${v.facadeName}.software`,
+    version: INITIAL_MODULE_VERSION,
     type: "module",
     description: "Block Software",
     files: ["./dist/**/*"],

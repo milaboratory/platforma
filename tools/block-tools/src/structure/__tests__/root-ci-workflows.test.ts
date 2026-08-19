@@ -37,6 +37,9 @@ describe("root CI workflows (fixed, generated)", () => {
     // Shared constants.
     expect(build).toContain("team-id: 'ciplopen'");
     expect(build).toContain("test: true");
+    // Both workflows track the toolchain's node major (mise pins 22).
+    expect(build).toContain("node-version: '22.x'");
+    expect(fs.read(MARK_STABLE)).toContain("node-version: '22.x'");
     // Opt-in gate: the published `block` package must be bumped on PRs.
     expect(build).toContain("require-package-path-bump: true");
     // No bare `build` script exists (root-package-json removes it), so both
