@@ -1,67 +1,7 @@
-import { getTestLLClient, withTempRoot } from "../test/test_config";
+import { withTempRoot } from "../test/test_config";
 import { StructTestResource, ValueTestResource } from "../helpers/pl";
 import { field } from "./transaction";
-import type { SignedResourceId } from "./types";
-import { parseSignedResourceId } from "./types";
-import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
-import { notEmpty } from "@milaboratories/ts-helpers";
 import { test, expect } from "vitest";
-
-/**
- * Reads the canonical id the server exposes for each resource, in one read-only
- * transaction of its own.
- *
- * The request goes through the low-level client because the high-level
- * {@link PlTransaction.getResourceData} drops the `canonicalId` field of the
- * wire message. The canonical id here is exactly what any API client sees.
- */
-async function readExposedCanonicalIds(ids: SignedResourceId[]): Promise<Uint8Array[]> {
-  // The suite-wide default request timeout is deliberately short (500 ms); this
-  // read runs while the rest of the suite loads the same server, so it gets a
-  // timeout of its own to stay stable.
-  const client = await getTestLLClient({ defaultRequestTimeout: 10_000 });
-  try {
-    const tx = client.createTx(false);
-    try {
-      await tx.send(
-        {
-          oneofKind: "txOpen",
-          txOpen: {
-            name: "readExposedCanonicalIds",
-            writable: TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
-            enableFormattedErrors: false,
-          },
-        },
-        false,
-      );
-
-      const canonicalIds: Uint8Array[] = [];
-      for (const id of ids) {
-        const { globalId, signature } = parseSignedResourceId(id);
-        const response = await tx.send(
-          {
-            oneofKind: "resourceGet",
-            resourceGet: {
-              resourceId: globalId,
-              resourceSignature: signature,
-              loadFields: false,
-              showSoftDeletes: false,
-            },
-          },
-          false,
-        );
-        canonicalIds.push(notEmpty(response.resourceGet.resource).canonicalId);
-      }
-
-      return canonicalIds;
-    } finally {
-      await tx.complete();
-      await tx.await();
-    }
-  } finally {
-    await client.close();
-  }
-}
 
 /**
  * Every pure resource must expose a non-empty canonical id to clients once its
@@ -83,7 +23,10 @@ async function readExposedCanonicalIds(ids: SignedResourceId[]): Promise<Uint8Ar
  * (platform/core/coretest/value_resource_canonical_id_test.go).
  *
  * The read happens in a separate transaction on purpose: the subject is what a
- * client observes after the commit, not what the writing transaction sees.
+ * client observes after the commit, not what the writing transaction sees. It
+ * stays on the same client, because resource signatures are bound to the
+ * session that minted them and a user-role client may not replay them
+ * elsewhere.
  */
 test("pure resources expose a canonical id to clients after commit", async () => {
   await withTempRoot(async (pl) => {
@@ -107,20 +50,23 @@ test("pure resources expose a canonical id to clients after commit", async () =>
       { sync: true },
     );
 
-    // Confirm the resources are what this test claims they are, then check the
-    // canonical id of each one.
-    const [valueData, structData] = await pl.withReadTx("checkResourceKinds", async (tx) => {
-      return await Promise.all([
-        tx.getResourceData(valueId, false),
-        tx.getResourceData(structId, false),
-      ]);
-    });
+    const { valueData, structData, valueCid, structCid } = await pl.withReadTx(
+      "readCanonicalIds",
+      async (tx) => {
+        // Confirm the resources are what this test claims they are, then read
+        // the canonical id the server exposes for each one.
+        return {
+          valueData: await tx.getResourceData(valueId, false),
+          structData: await tx.getResourceData(structId, false),
+          valueCid: await tx.getResourceCanonicalId(valueId),
+          structCid: await tx.getResourceCanonicalId(structId),
+        };
+      },
+    );
 
     expect(valueData.kind).toEqual("Value");
     expect(structData.kind).toEqual("Structural");
     expect(structData.final).toBe(true);
-
-    const [valueCid, structCid] = await readExposedCanonicalIds([valueId, structId]);
 
     expect(
       valueCid.length,
