@@ -15,6 +15,7 @@ import {
   enforceFieldOrder,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 // `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
 // choice. `no-software` builds placeholder software for validators.
@@ -42,7 +43,7 @@ export function rootPackageJsonInitial(): Record<string, unknown> {
   // No `name`: the root is never published. Body rules re-assert
   // (removeField("name")) as a drift-corrector.
   return {
-    version: "1.0.0",
+    version: INITIAL_MODULE_VERSION,
     private: true,
     scripts: {
       fmt: "turbo run fmt",

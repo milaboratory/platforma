@@ -29,6 +29,7 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 const KIND_EXPORTS = {
   ".": {
@@ -44,6 +45,7 @@ export function kindPackageJsonInitial(ctx: RunContext): Record<string, unknown>
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.kind`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     // `main` is the CommonJS entry (require fallback), `module` the ESM one —

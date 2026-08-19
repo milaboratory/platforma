@@ -18,6 +18,7 @@ import {
 } from "../engine/api";
 import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
@@ -25,6 +26,7 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.workflow`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     scripts: {

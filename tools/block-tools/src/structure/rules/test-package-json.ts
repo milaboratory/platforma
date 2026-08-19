@@ -13,12 +13,14 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.test`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     scripts: {

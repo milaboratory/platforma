@@ -9,6 +9,7 @@ import { classifyOne, type WorkspacePackage } from "../engine/discovery";
 import { STRUCTURE } from "../structure-definition";
 import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
+import { INITIAL_MODULE_VERSION } from "../rules/shared/initial-version";
 
 const TEMPLATES = defaultTemplateProvider();
 
@@ -166,12 +167,37 @@ describe("facade: `prepublishOnly` publish target branches on isSdkInternal", ()
 });
 
 describe("facade: sibling package privacy", () => {
-  test("model / ui / workflow / test are `private` with no `version`", () => {
+  // Private but versioned. `pnpm pack` in the facade has to rewrite each
+  // `workspace:*` devDep to a concrete range, so a versionless sibling fails
+  // `do-pack` with ERR_PNPM_CANNOT_RESOLVE_WORKSPACE_PROTOCOL. The kind needs
+  // one for a second reason: its own src imports `version` from its
+  // package.json.
+  test("kind / model / ui / workflow / test are `private` and versioned", () => {
     const { fs } = simulateInit({ vars: VARS });
-    for (const scope of ["model", "ui", "workflow", "test"]) {
+    for (const scope of ["kind", "model", "ui", "workflow", "test"]) {
       const p = JSON.parse(fs.read(`${scope}/package.json`));
       expect(p.private, `${scope} must be private`).toBe(true);
-      expect("version" in p, `${scope} must not carry a version`).toBe(false);
+      expect(p.version, `${scope} must carry a version`).toBe(INITIAL_MODULE_VERSION);
+    }
+  });
+
+  test("every `workspace:*` dep of the facade resolves to a versioned package", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const facade = JSON.parse(fs.read("block/package.json"));
+    const byName = new Map<string, string | undefined>();
+    for (const scope of ["kind", "model", "ui", "workflow", "test"]) {
+      const p = JSON.parse(fs.read(`${scope}/package.json`));
+      byName.set(p.name, p.version);
+    }
+
+    const workspaceDeps = Object.entries({
+      ...facade.dependencies,
+      ...facade.devDependencies,
+    }).filter(([, spec]) => String(spec).startsWith("workspace:"));
+    expect(workspaceDeps.length).toBeGreaterThan(0);
+
+    for (const [name] of workspaceDeps) {
+      expect(byName.get(name), `${name} is a workspace dep with no version`).toBeDefined();
     }
   });
 });
