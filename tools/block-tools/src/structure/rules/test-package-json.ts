@@ -13,7 +13,7 @@ import {
   type RunContext,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
-import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
+import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
@@ -44,7 +44,9 @@ export function testPackageJsonInitial(ctx: RunContext): Record<string, unknown>
 export function testPackageJsonRules(): void {
   // Controlled sibling — workspace-only, never published. (The initial already
   // seeds `private: true`; the body re-asserts it. The `version` is kept —
-  // changesets-owned — so the packed template's lib carries a version.)
+  // changesets-owned — so the packed template's lib carries a version, and
+  // backfilled when the manifest predates the seeded field.)
+  ensureModuleVersion();
   ensureField("private", true);
 
   ensureField("type", "module");

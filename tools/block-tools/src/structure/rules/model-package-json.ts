@@ -28,7 +28,7 @@ import {
 } from "../engine/api";
 import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
-import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
+import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
@@ -79,7 +79,9 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
 export function modelPackageJsonRules(): void {
   // Controlled sibling — workspace-only, never published. `private: true` makes
   // npm refuse to publish it; the `version` is kept (changesets-owned) so the
-  // packed template's lib carries a version.
+  // packed template's lib carries a version, and backfilled when the manifest
+  // predates the seeded field.
+  ensureModuleVersion();
   ensureField("private", true);
 
   ensureField("type", "module");
