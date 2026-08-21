@@ -18,7 +18,11 @@ export async function runTypeCheck(globalOpts: GlobalOptions, project: string): 
     "--project",
     tsconfigPath,
     "--customConditions",
-    globalOpts.useSources ? "sources" : ",",
+    // Non-sources mode resolves workspace deps via their built `dist` (types/import
+    // conditions). We must still override the base tsconfig's `customConditions:
+    // ["sources"]`, so we pass a benign non-"sources" condition. TypeScript 7's CLI
+    // parses a bare "," as a source-file positional (TS5042), so use "default" instead.
+    globalOpts.useSources ? "sources" : "default",
   ];
 
   await executeCommand(commandPath, args);
