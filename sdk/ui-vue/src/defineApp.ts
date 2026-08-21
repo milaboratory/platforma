@@ -1,9 +1,6 @@
 import { notEmpty } from "@milaboratories/helpers";
 import type {
-  PlatformaExtended,
   PlatformaV3,
-  PlatformaV1,
-  PlatformaV2,
   BlockCodeKnownFeatureFlags,
   UiServices as AllUiServices,
 } from "@platforma-sdk/model";
@@ -15,8 +12,6 @@ import {
 } from "@platforma-sdk/model";
 import type { App as VueApp, Component, Reactive } from "vue";
 import { inject, markRaw, reactive } from "vue";
-import { createAppV1, type BaseAppV1 } from "./internal/createAppV1";
-import { createAppV2, type BaseAppV2 } from "./internal/createAppV2";
 import { createAppV3, type BaseAppV3 } from "./internal/createAppV3";
 import type { AppSettings, ExtendSettings, Routes } from "./types";
 
@@ -30,135 +25,6 @@ export function useSdkPlugin(): SdkPlugin {
 export function useFeatureFlags() {
   const sdk = useSdkPlugin();
   return sdk.featureFlags;
-}
-
-export function defineApp<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
->(
-  platforma: PlatformaV1<Args, Outputs, UiState, Href> & {
-    blockModelInfo: BlockModelInfo;
-  },
-  extendApp: (app: BaseAppV1<Args, Outputs, UiState, Href>) => Extend,
-  settings?: AppSettings,
-): SdkPluginV1<Args, Outputs, UiState, Href, Extend>;
-
-export function defineApp<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
->(
-  platforma: PlatformaV2<Args, Outputs, UiState, Href> & {
-    blockModelInfo: BlockModelInfo;
-  },
-  extendApp: (app: BaseAppV2<Args, Outputs, UiState, Href>) => Extend,
-  settings?: AppSettings,
-): SdkPluginV2<Args, Outputs, UiState, Href, Extend>;
-
-export function defineApp<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Extend extends ExtendSettings<Href> = ExtendSettings<Href>,
->(
-  platforma: PlatformaExtended<
-    PlatformaV1<Args, Outputs, UiState, Href> | PlatformaV2<Args, Outputs, UiState, Href>
-  >,
-
-  //
-  extendApp: (app: any) => Extend,
-  settings: AppSettings = {},
-):
-  | SdkPluginV1<Args, Outputs, UiState, Href, Extend>
-  | SdkPluginV2<Args, Outputs, UiState, Href, Extend> {
-  let app:
-    | AppV1<Args, Outputs, UiState, Href, Extend>
-    | AppV2<Args, Outputs, UiState, Href, Extend>
-    | undefined = undefined;
-
-  const runtimeApiVersion = platforma.apiVersion ?? 1; // undefined means 1 (backward compatibility)
-  const blockRequestedApiVersion = getPlatformaApiVersion();
-
-  const loadApp = async () => {
-    if (blockRequestedApiVersion !== runtimeApiVersion) {
-      throw new Error(`Block requested API version ${blockRequestedApiVersion} but runtime API version is ${runtimeApiVersion}.
-      Please update the desktop app to use the latest API version.`);
-    }
-
-    if (platforma.apiVersion === undefined || platforma.apiVersion === 1) {
-      await platforma.loadBlockState().then((state) => {
-        plugin.loaded = true;
-        const baseApp = createAppV1<Args, Outputs, UiState, Href>(state, platforma, settings);
-
-        const localState = extendApp(baseApp);
-
-        const routes = Object.fromEntries(
-          Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
-            const c = typeof component === "function" ? component() : component;
-            return [href, markRaw(c as Component)];
-          }),
-        );
-
-        app = Object.assign(baseApp, {
-          ...localState,
-          getRoute(href: Href): Component | undefined {
-            return routes[href];
-          },
-        } as unknown as AppV1<Args, Outputs, UiState, Href, Extend>);
-      });
-    } else if (platforma.apiVersion === 2) {
-      await platforma.loadBlockState().then((stateOrError) => {
-        const state = unwrapResult(stateOrError);
-        plugin.loaded = true;
-        const baseApp = createAppV2<Args, Outputs, UiState, Href>(state, platforma, settings);
-
-        const localState = extendApp(baseApp);
-
-        const routes = Object.fromEntries(
-          Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
-            const c = typeof component === "function" ? component() : component;
-            return [href, markRaw(c as Component)];
-          }),
-        );
-
-        app = Object.assign(baseApp, {
-          ...localState,
-          getRoute(href: Href): Component | undefined {
-            return routes[href];
-          },
-        } as unknown as AppV2<Args, Outputs, UiState, Href, Extend>);
-      });
-    }
-  };
-
-  const plugin = reactive({
-    apiVersion: platforma.apiVersion ?? 1,
-    featureFlags: platforma.blockModelInfo.featureFlags,
-    loaded: false,
-    error: undefined as unknown,
-    useApp<PageHref extends Href = Href>() {
-      return notEmpty(app, "App is not loaded") as
-        | AppV1<Args, Outputs, UiState, PageHref, Extend>
-        | AppV2<Args, Outputs, UiState, PageHref, Extend>;
-    },
-    install(app: VueApp) {
-      app.provide(pluginKey, this);
-      loadApp().catch((err) => {
-        console.error("load initial state error", err);
-        plugin.error = err;
-      });
-    },
-  });
-
-  return plugin as
-    | SdkPluginV1<Args, Outputs, UiState, Href, Extend>
-    | SdkPluginV2<Args, Outputs, UiState, Href, Extend>;
 }
 
 export function defineAppV3<
@@ -256,24 +122,6 @@ export function defineAppV3<
   return plugin as SdkPluginV3<Data, Args, Outputs, Href, Plugins, Extend, UiServices>;
 }
 
-export type AppV1<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = BaseAppV1<Args, Outputs, UiState, Href> &
-  Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
-
-export type AppV2<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = BaseAppV2<Args, Outputs, UiState, Href> &
-  Reactive<Omit<Local, "routes">> & { getRoute(href: Href): Component | undefined };
-
 export type AppV3<
   Data = unknown,
   Args = unknown,
@@ -288,36 +136,6 @@ export type AppV3<
 // ---------------------------------------------------------------------------
 // SdkPlugin types
 // ---------------------------------------------------------------------------
-
-export type SdkPluginV1<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = {
-  apiVersion: 1;
-  featureFlags: BlockCodeKnownFeatureFlags;
-  loaded: boolean;
-  error: unknown;
-  useApp<PageHref extends Href = Href>(): AppV1<Args, Outputs, UiState, PageHref, Local>;
-  install(app: VueApp): void;
-};
-
-export type SdkPluginV2<
-  Args = unknown,
-  Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown,
-  Href extends `/${string}` = `/${string}`,
-  Local extends ExtendSettings<Href> = ExtendSettings<Href>,
-> = {
-  apiVersion: 2;
-  featureFlags: BlockCodeKnownFeatureFlags;
-  loaded: boolean;
-  error: unknown;
-  useApp<PageHref extends Href = Href>(): AppV2<Args, Outputs, UiState, PageHref, Local>;
-  install(app: VueApp): void;
-};
 
 export type SdkPluginV3<
   Data = unknown,
@@ -344,4 +162,4 @@ export type SdkPluginV3<
   install(app: VueApp): void;
 };
 
-export type SdkPlugin = SdkPluginV1 | SdkPluginV2 | SdkPluginV3;
+export type SdkPlugin = SdkPluginV3;

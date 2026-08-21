@@ -46,7 +46,6 @@ export * from "./pframe";
 export * from "./labels";
 export * from "./columns";
 export * from "./platforma";
-export * from "./ref_util";
 export * from "./render";
 export * from "./version";
 export * from "./raw_globals";
