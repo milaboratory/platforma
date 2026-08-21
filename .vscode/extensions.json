@@ -1,10 +1,3 @@
 {
-  "recommendations": [
-    "oxc.oxc-vscode",
-    // Required to honour "typescript.tsdk" now that the workspace is on TypeScript 7:
-    // TS7 is the native compiler and ships no tsserver.js, so VS Code's built-in TS
-    // extension cannot load the workspace version. This extension reads the same
-    // "typescript.tsdk" and resolves it to the native binary instead.
-    "TypeScriptTeam.native-preview"
-  ]
+  "recommendations": ["oxc.oxc-vscode", "TypeScriptTeam.native-preview"]
 }
