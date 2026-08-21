@@ -170,9 +170,6 @@ packages:
 catalog:
   # Build
   "typescript": 7.0.2
-  # TS7 is the native compiler and no longer ships the classic JS Compiler API.
-  # Tools that need that API (vite-plugin-dts/unplugin-dts, api-extractor) load this
-  # official bridge package (classic API packaged from typescript@6) as a fallback.
   "@typescript/typescript6": 6.0.2
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
