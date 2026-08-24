@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.15.25
+
+### Patch Changes
+
+- fdca274: PlElementListItem: wrap drag handle and chevron into a single container aligned to the top of the head, so icons stay on the first title line with multiline titles
+
 ## 2.15.24
 
 ### Patch Changes
