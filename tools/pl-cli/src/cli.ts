@@ -6,6 +6,7 @@ import projectRenameCommand from "./cmd/project/rename";
 import projectDeleteCommand from "./cmd/project/delete";
 import adminCopyProjectCommand from "./cmd/admin/copy-project";
 import adminUserListCommand from "./cmd/admin/user-list";
+import adminDeleteUserCommand from "./cmd/admin/delete-user";
 
 export function buildProgram(): Command {
   const program = new Command();
@@ -24,6 +25,7 @@ export function buildProgram(): Command {
   );
   admin.addCommand(adminCopyProjectCommand());
   admin.addCommand(adminUserListCommand());
+  admin.addCommand(adminDeleteUserCommand());
   program.addCommand(admin);
 
   return program;

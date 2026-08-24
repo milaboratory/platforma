@@ -1077,6 +1077,20 @@ export class LLPlClient implements WireClientProviderFactory {
     return (await cl.listUsers({})).response.users;
   }
 
+  /** Deletes a user account: the record, its login-index entries, its grants, and its root
+   *  resource with everything still attached under it. Admin/controller credentials only, and
+   *  irreversible — re-attach anything worth keeping to another user's root first.
+   *  gRPC-only (unary, no REST binding), like {@link listUsers}. */
+  public async deleteUser(login: string): Promise<grpcTypes.AuthAPI_DeleteUser_Response> {
+    const cl = this.clientProvider.get();
+
+    if (!(cl instanceof GrpcPlApiClient)) {
+      throw new Error("DeleteUser requires gRPC wire protocol; REST is not supported");
+    }
+
+    return (await cl.deleteUser({ login })).response;
+  }
+
   public async txSync(txId: bigint): Promise<void> {
     const cl = this.clientProvider.get();
     if (cl instanceof GrpcPlApiClient) {

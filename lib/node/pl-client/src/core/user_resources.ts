@@ -36,6 +36,19 @@ export interface UserEntry {
   readonly login: string;
 }
 
+/** What {@link UserResources.deleteUser} removed, so a caller can report it. */
+export interface UserDeletionReport {
+  /** Raw id of the root resource the user owned, or undefined when they had none. Unsigned —
+   *  the resource is gone, so this is for the audit line, not for further calls. */
+  readonly userRootId: bigint | undefined;
+  /** Whether that root resource was deleted. */
+  readonly userRootDeleted: boolean;
+  /** Grants revoked, the user-root self-grant included. */
+  readonly revokedGrants: number;
+  /** Login-index entries removed — one per (provider, match key) the login was indexed under. */
+  readonly removedLoginIndexEntries: number;
+}
+
 /** Information about a single data library (LS storage). */
 export interface StorageInfo {
   /** Machine-stable identifier, e.g. "library". Used for filtering and map keys. */
@@ -255,6 +268,28 @@ export class UserResources {
   async listUsers(): Promise<UserEntry[]> {
     const users = await this.ll.listUsers();
     return users.map((user) => ({ login: user.login }));
+  }
+
+  /**
+   * Deletes a user account: the record, every login-index entry that resolves to it, every grant
+   * it holds, and its root resource — and with the root, everything still attached under it.
+   *
+   * Exists for the duplicate a misconfigured provider can mint for one person: the spare record
+   * shows up wherever users are listed and its projects keep taking part in deduplication.
+   *
+   * Destructive and irreversible. Re-attach anything worth keeping to another user's root before
+   * calling — `pl-cli admin delete-user` does both steps in order. Requires admin/controller
+   * credentials; gRPC-only, like {@link listUsers}.
+   */
+  async deleteUser(login: string): Promise<UserDeletionReport> {
+    const resp = await this.ll.deleteUser(login);
+
+    return {
+      userRootId: resp.userRootId === 0n ? undefined : resp.userRootId,
+      userRootDeleted: resp.userRootDeleted,
+      revokedGrants: resp.revokedGrants,
+      removedLoginIndexEntries: resp.removedLoginIndexEntries,
+    };
   }
 
   private async getUserRootViaRpc(opts: {
