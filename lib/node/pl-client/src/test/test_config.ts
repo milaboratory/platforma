@@ -62,10 +62,16 @@ export function getTestConfig(): TestConfig {
 /** Default request timeout for tests (ms) */
 export const TEST_REQUEST_TIMEOUT = 500;
 
-/** Returns PlClientConfig with reduced timeout for tests */
+/** Returns PlClientConfig with reduced timeout for tests, unless the address sets its own */
 export function plAddressToTestConfig(address: string): PlClientConfig {
   const plConf = plAddressToConfig(address);
-  plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
+  // An explicit request-timeout in the address wins over TEST_REQUEST_TIMEOUT. In the k8s e2e
+  // deploy the client dials a cluster service DNS name, and the first call on a cold channel must
+  // finish name resolution and get a load-balancer pick before it is even sent; 500ms does not
+  // cover that, so whichever test happened to open the cold channel died with DEADLINE_EXCEEDED
+  // ("Waiting for LB pick") against a healthy backend. Addresses that carry no request-timeout
+  // keep the short default, so local runs still fail fast.
+  if (!/[?&]request-timeout=/.test(address)) plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
   return plConf;
 }
 
